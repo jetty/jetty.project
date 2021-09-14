@@ -19,9 +19,11 @@ import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import org.eclipse.jetty.quic.quiche.ffi.linux.netinet_linux;
 import org.eclipse.jetty.quic.quiche.ffi.macos.netinet_macos;
+import org.eclipse.jetty.quic.quiche.ffi.windows.netinet_windows;
 
 import static com.sun.jna.Platform.isLinux;
 import static com.sun.jna.Platform.isMac;
+import static com.sun.jna.Platform.isWindows;
 
 @Structure.FieldOrder({"opaque"})
 public class sockaddr extends Structure
@@ -40,6 +42,8 @@ public class sockaddr extends Structure
             return netinet_linux.to_sock_addr(socketAddress);
         if (isMac())
             return netinet_macos.to_sock_addr(socketAddress);
+        if (isWindows())
+            return netinet_windows.to_sock_addr(socketAddress);
         throw new UnsupportedOperationException("Unsupported OS: " + System.getProperty("os.name"));
     }
 
