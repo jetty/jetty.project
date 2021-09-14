@@ -55,6 +55,7 @@
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx4g -Xms2g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
 
     <!-- some maven plugins versions -->
+    <maven.invoker.version>3.2.2</maven.invoker.version>
     <maven.surefire.version>3.0.0-M5</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.2.0</maven.dependency.plugin.version>
@@ -533,7 +534,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-invoker-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>${maven.invoker.version}</version>
           <configuration>
             <mergeUserSettings>${invoker.mergeUserSettings}</mergeUserSettings>
             <writeJunitReport>true</writeJunitReport>
