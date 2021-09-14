@@ -37,19 +37,6 @@ pipeline {
           }
         }
 
-        // TODO: Remove once JDK17 (non-ea) has been released
-        stage("Build / Test - JDK16") {
-          agent { node { label 'linux' } }
-          steps {
-            container( 'jetty-build' ) {
-              timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk16", "clean install", "maven3")
-                recordIssues id: "jdk16", name: "Static Analysis jdk16", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
-              }
-            }
-          }
-        }
-
         stage("Build / Test - JDK17") {
           agent { node { label 'linux' } }
           steps {
