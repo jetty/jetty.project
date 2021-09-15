@@ -195,11 +195,4 @@ public class DefaultSessionCache extends AbstractSessionCache
     {
         return _sessions.replace(id, oldValue, newValue);
     }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        Objects.requireNonNull(_sessions, "Session Map may not be null");
-        super.doStart();
-    }
 }
