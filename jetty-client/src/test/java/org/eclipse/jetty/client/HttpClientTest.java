@@ -40,13 +40,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
-import javax.servlet.ServletException;
+import javax.servlet.AsyncContext;
+import javax.servlet.DispatcherType;
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -71,6 +73,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
@@ -87,7 +90,6 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -682,48 +684,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             });
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
-    }
-
-    @ParameterizedTest
-    @ArgumentsSource(ScenarioProvider.class)
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
-    public void testRequestIdleTimeout(Scenario scenario) throws Exception
-    {
-        long idleTimeout = 1000;
-        start(scenario, new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
-            {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    TimeUnit.MILLISECONDS.sleep(2 * idleTimeout);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new ServletException(x);
-                }
-            }
-        });
-
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        assertThrows(TimeoutException.class, () ->
-            client.newRequest(host, port)
-                .scheme(scenario.getScheme())
-                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
-                .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-                .send());
-
-        // Make another request without specifying the idle timeout, should not fail
-        ContentResponse response = client.newRequest(host, port)
-            .scheme(scenario.getScheme())
-            .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
-            .send();
-
-        assertNotNull(response);
-        assertEquals(200, response.getStatus());
     }
 
     @ParameterizedTest
@@ -1872,6 +1832,121 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             AbstractConnectionPool pool = (AbstractConnectionPool)destination.getConnectionPool();
             assertEquals(0, pool.getConnectionCount());
         }
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testHttpParserCloseWithAsyncReads(Scenario scenario) throws Exception
+    {
+        CountDownLatch serverOnErrorLatch = new CountDownLatch(1);
+
+        start(scenario, new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                jettyRequest.setHandled(true);
+                if (request.getDispatcherType() != DispatcherType.REQUEST)
+                    return;
+
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(2000); // allow async to timeout
+                ServletInputStream input = request.getInputStream();
+                input.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while (input.isReady())
+                        {
+                            int read = input.read();
+                            if (read < 0)
+                                break;
+                        }
+                    }
+
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        asyncContext.complete();
+                        serverOnErrorLatch.countDown();
+                    }
+                });
+                // Close the parser to cause the issue.
+                org.eclipse.jetty.server.HttpConnection.getCurrentConnection().getParser().close();
+            }
+        });
+        server.start();
+
+        int length = 16;
+        ByteBuffer chunk1 = ByteBuffer.allocate(length / 2);
+        AsyncRequestContent content = new AsyncRequestContent(chunk1)
+        {
+            @Override
+            public long getLength()
+            {
+                return length;
+            }
+        };
+        CountDownLatch clientResultLatch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .method(HttpMethod.POST)
+            .body(content)
+            .send(result -> clientResultLatch.countDown());
+
+        Thread.sleep(1000);
+
+        ByteBuffer chunk2 = ByteBuffer.allocate(length / 2);
+        content.offer(chunk2);
+        content.close();
+
+        assertTrue(clientResultLatch.await(5, TimeUnit.SECONDS), "clientResultLatch didn't finish");
+        assertTrue(serverOnErrorLatch.await(5, TimeUnit.SECONDS), "serverOnErrorLatch didn't finish");
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testBindAddress(Scenario scenario) throws Exception
+    {
+        String bindAddress = "127.0.0.2";
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                assertEquals(bindAddress, request.getRemoteAddr());
+            }
+        });
+
+        client.setBindAddress(new InetSocketAddress(bindAddress, 0));
+
+        CountDownLatch latch = new CountDownLatch(1);
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .path("/1")
+            .onRequestBegin(r ->
+            {
+                client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scenario.getScheme())
+                    .path("/2")
+                    .send(result ->
+                    {
+                        assertTrue(result.isSucceeded());
+                        assertEquals(HttpStatus.OK_200, result.getResponse().getStatus());
+                        latch.countDown();
+                    });
+            })
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
     }
 
     private void assertCopyRequest(Request original)

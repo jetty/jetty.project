@@ -329,6 +329,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
      */
     void parseAndFillForContent()
     {
+        // Defensive check to avoid an infinite select/wakeup/fillAndParseForContent/wait loop
+        // in case the parser was mistakenly closed and the connection was not aborted.
+        if (_parser.isTerminated())
+            throw new IllegalStateException("Parser is terminated: " + _parser);
+
         // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this method
         // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown().
 
@@ -888,8 +893,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         protected void onCompleteSuccess()
         {
+            boolean upgrading = _channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE) != null;
             release().succeeded();
-            if (_shutdownOut)
+            // If successfully upgraded it is responsibility of the next protocol to close the connection.
+            if (_shutdownOut && !upgrading)
                 getEndPoint().shutdownOutput();
         }
 

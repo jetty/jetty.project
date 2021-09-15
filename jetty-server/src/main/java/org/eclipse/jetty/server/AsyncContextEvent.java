@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;

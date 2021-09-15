@@ -44,8 +44,7 @@
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
-              <excludeScope>test</excludeScope>
-              <includeScope>runtime</includeScope>
+              <includeScope>compile</includeScope>
             </configuration>
           </execution>
         </executions>
@@ -123,7 +122,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

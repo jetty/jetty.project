@@ -11,35 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi.modules;
-
-import java.util.Arrays;
-
-public class UserInfo
+module org.eclipse.jetty.unixdomain.server
 {
-    private final String userName;
+    exports org.eclipse.jetty.unixdomain.server;
 
-    private char[] password;
-
-    public UserInfo(String userName, char[] password)
-    {
-        this.userName = userName;
-        this.password = password;
-    }
-
-    public String getUserName()
-    {
-        return userName;
-    }
-
-    public char[] getPassword()
-    {
-        return password;
-    }
-
-    public void clearPassword()
-    {
-        Arrays.fill(password, (char)0);
-        password = null;
-    }
+    requires transitive org.eclipse.jetty.server;
+    requires org.slf4j;
 }

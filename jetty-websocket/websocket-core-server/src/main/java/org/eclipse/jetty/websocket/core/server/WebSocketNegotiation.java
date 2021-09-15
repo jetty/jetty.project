@@ -31,10 +31,10 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 public abstract class WebSocketNegotiation
 {
-    private final Request baseRequest;
     private final HttpServletRequest request;
     private final HttpServletResponse response;
     private final WebSocketComponents components;
+    private Request baseRequest;
     private String version;
     private List<ExtensionConfig> offeredExtensions;
     private List<ExtensionConfig> negotiatedExtensions;
@@ -52,6 +52,11 @@ public abstract class WebSocketNegotiation
     public Request getBaseRequest()
     {
         return baseRequest;
+    }
+
+    public void upgrade()
+    {
+        this.baseRequest = null;
     }
 
     public HttpServletRequest getRequest()

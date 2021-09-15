@@ -144,6 +144,7 @@ public class JettyIncludeExtension implements ExtensionRegistry
                 .map(line -> redact(line, run.getConfig().getMavenLocalRepository(), "/path/to/maven.repository"))
                 .map(line -> redact(line, run.getConfig().getJettyHome().toString(), "/path/to/jetty.home"))
                 .map(line -> redact(line, run.getConfig().getJettyBase().toString(), "/path/to/jetty.base"))
+                .map(line -> regexpRedact(line, "(^| )[^ ]+/etc/jetty-halt\\.xml", ""))
                 .map(line -> redact(line, (String)document.getAttribute("project-version"), (String)document.getAttribute("version")));
             lines = replace(lines, (String)attributes.get("replace"));
             lines = delete(lines, (String)attributes.get("delete"));
@@ -157,6 +158,13 @@ public class JettyIncludeExtension implements ExtensionRegistry
         {
             if (target != null && replacement != null)
                 return line.replace(target, replacement);
+            return line;
+        }
+
+        private String regexpRedact(String line, String regexp, String replacement)
+        {
+            if (regexp != null && replacement != null)
+                return line.replaceAll(regexp, replacement);
             return line;
         }
 
@@ -178,8 +186,7 @@ public class JettyIncludeExtension implements ExtensionRegistry
             if (delete == null)
                 return lines;
             Pattern regExp = Pattern.compile(delete);
-            return lines.filter(line -> !regExp.matcher(line).find())
-                .filter(line -> !line.contains("jetty-halt.xml"));
+            return lines.filter(line -> !regExp.matcher(line).find());
         }
 
         private Stream<String> denoteLineStart(Stream<String> lines)

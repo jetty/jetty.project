@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.fcgi.FCGI;
 
 /**
- * <p>Parser for the BEGIN_REQUEST frame body.</p>
+ * <p>Parser for the BEGIN_REQUEST frame content.</p>
  * <pre>
  * struct begin_request_body {
  *     ushort role;

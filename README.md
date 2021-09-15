@@ -18,6 +18,24 @@ Jetty is a modern fully async web server that has a long history as a component 
 
 - [https://projects.eclipse.org/projects/rt.jetty](https://projects.eclipse.org/projects/rt.jetty)
 
+Webapp Example
+--------------
+```shell
+$ mkdir base && cd base
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,deploy
+$ cp ~/src/myproj/target/mywebapp.war webapps
+$ java -jar $JETTY_HOME/start.jar 
+```
+
+Embedded Example
+----------------
+```java
+Server server = new Server(port);
+ServletContextHandler context = new ServletContextHandler(server, "/");
+context.addServlet(MyServlet.class, "/*");
+server.start();
+```
+
 Documentation
 -------------
 

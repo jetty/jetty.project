@@ -68,21 +68,8 @@ public class ShutdownMonitorTest
         }
     }
 
-    @Disabled("Issue #2626")
     @Test
     public void testStartStopDifferentPortDifferentKey() throws Exception
-    {
-        testStartStop(false);
-    }
-
-    @Disabled("Issue #2626")
-    @Test
-    public void testStartStopSamePortDifferentKey() throws Exception
-    {
-        testStartStop(true);
-    }
-
-    private void testStartStop(boolean reusePort) throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
         // monitor.setDebug(true);
@@ -100,7 +87,7 @@ public class ShutdownMonitorTest
         assertTrue(!monitor.isAlive());
 
         // Should be able to change port and key because it is stopped.
-        monitor.setPort(reusePort ? port : 0);
+        monitor.setPort(0);
         String newKey = "foo";
         monitor.setKey(newKey);
         monitor.start();
@@ -150,7 +137,6 @@ public class ShutdownMonitorTest
     public void testOldStopCommandWithStopOnShutdownTrue() throws Exception
     {
         ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-        // monitor.setDebug(true);
         monitor.setPort(0);
         monitor.setExitVm(false);
         monitor.start();
@@ -211,7 +197,6 @@ public class ShutdownMonitorTest
 
     public void stop(String command, int port, String key, boolean check) throws Exception
     {
-        // System.out.printf("Attempting to send " + command + " to localhost:%d (%b)%n", port, check);
         try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), port))
         {
             // send stop command

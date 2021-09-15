@@ -32,7 +32,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEventType;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
@@ -363,7 +362,7 @@ public class PathWatcherTest
             capture.finishedLatch.await(LONG_TIME, TimeUnit.MILLISECONDS);
             long end = System.nanoTime();
             capture.assertEvents(expected);
-            assertThat(end - start, greaterThan(TimeUnit.MILLISECONDS.toNanos(2 * QUIET_TIME)));
+            assertThat(end - start, greaterThan(TimeUnit.MILLISECONDS.toNanos(2L * QUIET_TIME)));
             Thread.sleep(WAIT_TIME);
             capture.assertEvents(expected);
 

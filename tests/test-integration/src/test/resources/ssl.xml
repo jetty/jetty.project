@@ -1,22 +1,9 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
-  <Set name="KeyStorePath"><Property name="jetty.home" default="." />/<Property name="jetty.sslContext.keyStorePath" default="keystore.p12"/></Set>
+
+  <Set name="KeyStorePath"><Property name="jetty.sslContext.keyStorePath"/></Set>
   <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword"/></Set>
-  <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword"/></Set>
-  <Set name="TrustStorePath"><Property name="jetty.home" default="." />/<Property name="jetty.sslContext.trustStorePath" default="keystore.p12"/></Set>
-  <Set name="TrustStorePassword"><Property name="jetty.sslContext.trustStorePassword"/></Set>
-  <Set name="ExcludeCipherSuites">
-    <Array type="String">
-      <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
-      <Item>SSL_DHE_RSA_WITH_DES_CBC_SHA</Item>
-      <Item>SSL_DHE_DSS_WITH_DES_CBC_SHA</Item>
-      <Item>SSL_RSA_EXPORT_WITH_RC4_40_MD5</Item>
-      <Item>SSL_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
-      <Item>SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
-      <Item>SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA</Item>
-    </Array>
-  </Set>
 
   <!-- =========================================================== -->
   <!-- Create a TLS specific HttpConfiguration based on the        -->
@@ -27,7 +14,12 @@
   <New id="sslHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
     <Arg><Ref refid="httpConfig"/></Arg>
     <Call name="addCustomizer">
-      <Arg><New class="org.eclipse.jetty.server.SecureRequestCustomizer"/></Arg>
+      <Arg>
+        <New class="org.eclipse.jetty.server.SecureRequestCustomizer">
+          <Set name="sniRequired">false</Set>
+          <Set name="SniHostCheck">false</Set>
+        </New>
+      </Arg>
     </Call>
   </New>
 

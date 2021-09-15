@@ -20,7 +20,7 @@
           <dependency>
             <groupId>org.asciidoctor</groupId>
             <artifactId>asciidoctorj-diagram</artifactId>
-            <version>2.0.5</version>
+            <version>2.2.1</version>
           </dependency>
           <dependency>
             <groupId>org.eclipse.jetty.documentation</groupId>
@@ -30,7 +30,7 @@
           <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpcore</artifactId>
-            <version>4.4.13</version>
+            <version>4.4.14</version>
           </dependency>
           <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -164,7 +164,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -199,6 +198,11 @@
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>http2-http-client-transport</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-unixdomain-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

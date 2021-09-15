@@ -1,0 +1,77 @@
+version: 2
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    target-branch: "jetty-9.4.x"
+    schedule:
+      interval: "daily"
+    # Associate with milestone 9.4.x
+    milestone: 3
+    ignore:
+      # Restrict updates in this branch to jetty in the 9.4.x space
+      - dependency-name: "javax.servlet:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "javax.activation:*"
+        versions: [ ">=1.3.0" ]
+      - dependency-name: "javax.annotation:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "javax.el:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "javax.inject:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "javax.websocket:*"
+        versions: [ ">=1.1.0" ]
+
+  - package-ecosystem: "maven"
+    directory: "/"
+    target-branch: "jetty-10.0.x"
+    schedule:
+      interval: "daily"
+    # Associate with milestone 10.0.x
+    milestone: 6
+    ignore:
+      # Restrict updates in this branch to jetty in the 10.x.x space
+      - dependency-name: "jakarta.servlet:*"
+        versions: [ ">=5.0.0" ]
+      - dependency-name: "jakarta.activation:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.annotation:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.el:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "jakarta.inject:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.websocket:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.servlet.jsp.jstl:*"
+        versions: [ ">=2.0.0" ]
+      - dependency-name: "org.jboss.weld.servlet:*"
+        versions: [ ">=4.0.0" ]
+      - dependency-name: "com.sun.xml.ws:jaxws*"
+        versions: [ ">=3.0.0" ]
+      - dependency-name: "jakarta.transaction:*"
+        versions: [ ">=2.0.0" ]
+
+#  - package-ecosystem: "maven"
+#    directory: "/"
+#    target-branch: "jetty-11.0.x"
+#    schedule:
+#      interval: "weekly"
+#    # Associate with milestone 11.0.x
+#    milestone: 7
+#    ignore:
+#      # Restrict updates in this branch to jetty in the 11.x.x space
+#      - dependency-name: "jakarta.servlet:*"
+#        versions: [ ">=6.0.0" ]
+#      - dependency-name: "jakarta.activation:*"
+#        versions: [ ">=2.1.0" ]
+#      - dependency-name: "jakarta.annotation:*"
+#        versions: [ ">=3.0.0" ]
+#      - dependency-name: "jakarta.el:*"
+#        versions: [ ">=5.0.0" ]
+#      - dependency-name: "jakarta.inject:*"
+#        versions: [ ">=3.0.0" ]
+#      - dependency-name: "jakarta.websocket:*"
+#        versions: [ ">=3.0.0" ]
+#      - dependency-name: "jakarta.servlet.jsp.jstl:*"
+#        versions: [ ">=3.0.0" ]

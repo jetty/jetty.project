@@ -22,12 +22,12 @@ EXISTS|maindir/
 EXISTS|start.ini
 
 # Output Assertions [regex!] (order is irrelevant)
-OUTPUT|INFO  : create ..jetty.base./start.ini
-OUTPUT|INFO  : extra           initialized in ..jetty.base./start.ini
+OUTPUT|INFO  : create ..jetty.base.[/\\]start.ini
+OUTPUT|INFO  : extra           initialized in ..jetty.base.[/\\]start.ini
 OUTPUT|INFO  : main            transitively enabled, ini template available with --add-module=main
-OUTPUT|INFO  : optional        initialized in ..jetty.base./start.ini
+OUTPUT|INFO  : optional        initialized in ..jetty.base.[/\\]start.ini
 OUTPUT|INFO  : base            transitively enabled
-OUTPUT|INFO  : mkdir ..jetty.base./maindir
+OUTPUT|INFO  : mkdir ..jetty.base.[/\\]maindir
 OUTPUT|INFO  : Base directory was modified
 
 

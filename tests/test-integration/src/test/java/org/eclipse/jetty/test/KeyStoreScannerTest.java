@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.test;
 
+import java.io.IOException;
 import java.net.URL;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -35,22 +37,23 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.KeyStoreScanner;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 @ExtendWith(WorkDirExtension.class)
 public class KeyStoreScannerTest
@@ -107,7 +110,7 @@ public class KeyStoreScannerTest
     @AfterEach
     public void stop() throws Exception
     {
-        server.stop();
+        LifeCycle.stop(server);
     }
 
     @Test
@@ -176,9 +179,9 @@ public class KeyStoreScannerTest
     }
 
     @Test
-    @DisabledOnOs(WINDOWS) // does not support symbolic link
     public void testReloadChangingSymbolicLink() throws Exception
     {
+        assumeFileSystemSupportsSymlink();
         Path keystorePath = keystoreDir.resolve("symlinkKeystore");
         start(sslContextFactory ->
         {
@@ -203,9 +206,9 @@ public class KeyStoreScannerTest
     }
 
     @Test
-    @DisabledOnOs(WINDOWS) // does not support symbolic link
     public void testReloadChangingTargetOfSymbolicLink() throws Exception
     {
+        assumeFileSystemSupportsSymlink();
         Path keystoreLink = keystoreDir.resolve("symlinkKeystore");
         Path oldKeystoreSrc = MavenTestingUtils.getTestResourcePathFile("oldKeystore");
         Path newKeystoreSrc = MavenTestingUtils.getTestResourcePathFile("newKeystore");
@@ -271,6 +274,28 @@ public class KeyStoreScannerTest
 
         assertThat(certs.length, is(1));
         return (X509Certificate)certs[0];
+    }
+
+    private void assumeFileSystemSupportsSymlink() throws IOException
+    {
+        // Make symlink
+        Path dir = MavenTestingUtils.getTargetTestingPath("symlink-test");
+        FS.ensureEmpty(dir);
+
+        Path foo = dir.resolve("foo");
+        Path bar = dir.resolve("bar");
+
+        try
+        {
+            Files.createFile(foo);
+            Files.createSymbolicLink(bar, foo);
+        }
+        catch (UnsupportedOperationException | FileSystemException e)
+        {
+            // if unable to create symlink, no point testing the rest
+            // this is the path that Microsoft Windows takes.
+            assumeFalse(true, "Not supported");
+        }
     }
 
     private static class DefaultTrustManager implements X509TrustManager

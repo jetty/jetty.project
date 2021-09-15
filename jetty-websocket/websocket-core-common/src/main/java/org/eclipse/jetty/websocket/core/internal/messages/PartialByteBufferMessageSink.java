@@ -35,6 +35,7 @@ public class PartialByteBufferMessageSink extends AbstractMessageSink
                 methodHandle.invoke(frame.getPayload(), frame.isFin());
 
             callback.succeeded();
+            session.demand(1);
         }
         catch (Throwable t)
         {

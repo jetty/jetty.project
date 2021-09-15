@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -80,6 +81,8 @@ public class WelcomeFilterTest
         }
 
         WebAppContext context = new WebAppContext(server, directoryPath.toString(), "/");
+        // Turn off memory-mapped behavior in DefaultServlet for Windows testing reasons.
+        context.setInitParameter(DefaultServlet.CONTEXT_INIT + "useFileMappedBuffer", "false");
         server.setHandler(context);
         String concatPath = "/*";
 

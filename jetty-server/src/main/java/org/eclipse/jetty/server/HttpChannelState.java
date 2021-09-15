@@ -1286,6 +1286,10 @@ public class HttpChannelState
         return woken;
     }
 
+    /**
+     * Called to indicate that some content was produced and is
+     * ready for consumption.
+     */
     public void onContentAdded()
     {
         try (AutoLock l = lock())
@@ -1307,6 +1311,9 @@ public class HttpChannelState
         }
     }
 
+    /**
+     * Called to indicate that the content is being consumed.
+     */
     public void onReadIdle()
     {
         try (AutoLock l = lock())
@@ -1329,9 +1336,9 @@ public class HttpChannelState
     }
 
     /**
-     * Called to indicate that more content may be available,
-     * but that a handling thread may need to produce (fill/parse)
-     * it.  Typically called by the async read success callback.
+     * Called to indicate that no content is currently available,
+     * more content has been demanded and may be available, but
+     * that a handling thread may need to produce (fill/parse) it.
      */
     public void onReadUnready()
     {

@@ -10,7 +10,6 @@
   <name>Jetty Tests :: Sessions :: JDBC</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.jdbc</bundle-symbolic-name>
-    <mariadb.docker.version>10.3.6</mariadb.docker.version>
   </properties>
   <build>
     <plugins>
@@ -37,7 +36,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -91,7 +89,6 @@
     <dependency>
       <groupId>org.mariadb.jdbc</groupId>
       <artifactId>mariadb-java-client</artifactId>
-      <version>${maria.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

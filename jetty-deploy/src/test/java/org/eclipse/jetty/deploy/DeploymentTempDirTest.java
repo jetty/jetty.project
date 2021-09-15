@@ -33,41 +33,49 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class DeploymentTempDirTest
 {
-    private static final Logger LOG = Log.getLogger(DeploymentTempDirTest.class);
+    public WorkDir workDir;
 
-    private final WebAppProvider webAppProvider = new WebAppProvider();
-    private final ContextHandlerCollection contexts = new ContextHandlerCollection();
-    private final Path testDir = MavenTestingUtils.getTargetTestingPath(DeploymentTempDirTest.class.getSimpleName());
-    private final Path tmpDir = testDir.resolve("tmpDir");
-    private final Path webapps = testDir.resolve("webapps");
-    private final Server server = new Server();
+    private Path tmpDir;
+    private Path webapps;
+    private Server server;
+    private WebAppProvider webAppProvider;
+    private ContextHandlerCollection contexts;
     private final TestListener listener = new TestListener();
 
     @BeforeEach
     public void setup() throws Exception
     {
+        Path testDir = workDir.getEmptyPathDir();
+        tmpDir = testDir.resolve("tmpDir");
+        webapps = testDir.resolve("webapps");
+
+        FS.ensureDirExists(tmpDir);
+        FS.ensureDirExists(webapps);
+
+        server = new Server();
+
         ServerConnector connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        FS.ensureEmpty(testDir);
-        FS.ensureEmpty(tmpDir);
-        FS.ensureEmpty(webapps);
+        webAppProvider = new WebAppProvider();
 
         webAppProvider.setMonitoredDirName(webapps.toString());
         webAppProvider.setScanInterval(0);
@@ -75,6 +83,7 @@ public class DeploymentTempDirTest
         deploymentManager.addAppProvider(webAppProvider);
         server.addBean(deploymentManager);
 
+        contexts = new ContextHandlerCollection();
         HandlerCollection handlerCollection = new HandlerCollection();
         handlerCollection.addHandler(contexts);
         handlerCollection.addHandler(new DefaultHandler());

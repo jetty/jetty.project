@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tests.distribution;
+package org.eclipse.jetty.tests.distribution.session;
 
 import java.io.File;
 import java.io.OutputStream;
@@ -21,6 +21,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +29,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.tests.distribution.JettyHomeTester;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -42,112 +47,92 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HazelcastSessionDistributionTests extends AbstractJettyHomeTest
+public class HazelcastSessionDistributionTests extends AbstractSessionDistributionTests
 {
-    private static final Logger HAZELCAST_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.HazelcastLogs");
+    private static final Logger HAZELCAST_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.HazelcastLogs");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HazelcastSessionDistributionTests.class);
 
+    private GenericContainer<?> hazelcast;
 
-    /**
-     *  This simulate the onlyClient option which means the JVM running Jetty is only an Hazelcast client and not part
-     *  of the cluster
-     */
-    @Test
-    public void testHazelcastRemoteOnlyClient() throws Exception
+    private Path hazelcastJettyPath;
+
+    @BeforeEach
+    public void setupHazelcast()
     {
-        try (GenericContainer hazelcast =
-                            new GenericContainer("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.1"))
-                                    .withExposedPorts(5701)
-                            .waitingFor(Wait.forListeningPort())
-                            .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG)))
-        {
-            hazelcast.start();
-            String hazelcastHost = hazelcast.getContainerIpAddress();
-            int hazelcastPort = hazelcast.getMappedPort(5701);
-
-            LOGGER.info("hazelcast started on {}:{}", hazelcastHost, hazelcastPort);
-
-            Map<String, String> tokenValues = new HashMap<>();
-            tokenValues.put("hazelcast_ip", hazelcastHost);
-            tokenValues.put("hazelcast_port", Integer.toString(hazelcastPort));
-            Path hazelcastJettyPath = Paths.get("target/hazelcast-client.xml");
-            transformFileWithHostAndPort(Paths.get("src/test/resources/hazelcast-client.xml"),
-                                          hazelcastJettyPath,
-                                          tokenValues);
-
-            String jettyVersion = System.getProperty("jettyVersion");
-            JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                .build();
-
-            String[] args1 = {
-                "--create-startd",
-                "--approve-all-licenses",
-                "--add-to-start=resources,server,http,webapp,deploy,jmx,servlet,servlets,session-store-hazelcast-remote"
-            };
-            try (JettyHomeTester.Run run1 = distribution.start(args1))
-            {
-                assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
-                assertEquals(0, run1.getExitValue());
-
-                File war = distribution.resolveArtifact("org.eclipse.jetty.tests:test-simple-session-webapp:war:" + jettyVersion);
-                distribution.installWarFile(war, "test");
-
-                int port = distribution.freePort();
-                String[] argsStart = {
-                    "jetty.http.port=" + port,
-                    "jetty.session.hazelcast.configurationLocation=" + hazelcastJettyPath.toAbsolutePath(),
-                    "jetty.session.hazelcast.onlyClient=true"
-                };
-                try (JettyHomeTester.Run run2 = distribution.start(argsStart))
-                {
-                    assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
-
-                    startHttpClient();
-                    ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=CREATE");
-                    assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertThat(response.getContentAsString(), containsString("SESSION CREATED"));
-
-                    response = client.GET("http://localhost:" + port + "/test/session?action=READ");
-                    assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertThat(response.getContentAsString(), containsString("SESSION READ CHOCOLATE THE BEST:FRENCH"));
-                }
-
-                try (JettyHomeTester.Run run2 = distribution.start(argsStart))
-                {
-                    assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
-
-                    ContentResponse response = client.GET("http://localhost:" + port + "/test/session?action=READ");
-                    assertEquals(HttpStatus.OK_200, response.getStatus());
-                    assertThat(response.getContentAsString(), containsString("SESSION READ CHOCOLATE THE BEST:FRENCH"));
-                }
-            }
-
-        }
+        hazelcast = new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.1"))
+            .withExposedPorts(5701)
+            .waitingFor(Wait.forListeningPort())
+            .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG));
     }
 
-    @Disabled("not working see https://github.com/hazelcast/hazelcast/issues/18508")
+    @Override
+    public void startExternalSessionStorage() throws Exception
+    {
+        hazelcast.start();
+
+        String hazelcastHost = hazelcast.getContainerIpAddress();
+        int hazelcastPort = hazelcast.getMappedPort(5701);
+
+        LOGGER.info("hazelcast started on {}:{}", hazelcastHost, hazelcastPort);
+
+        Map<String, String> tokenValues = new HashMap<>();
+        tokenValues.put("hazelcast_ip", hazelcastHost);
+        tokenValues.put("hazelcast_port", Integer.toString(hazelcastPort));
+        this.hazelcastJettyPath = Paths.get("target/hazelcast-client.xml");
+        transformFileWithHostAndPort(Paths.get("src/test/resources/hazelcast-client.xml"),
+            hazelcastJettyPath,
+            tokenValues);
+    }
+
+    @Override
+    public void stopExternalSessionStorage()
+    {
+        hazelcast.stop();
+    }
+
+    @Override
+    public List<String> getFirstStartExtraArgs()
+    {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public String getFirstStartExtraModules()
+    {
+        return "session-store-hazelcast-remote";
+    }
+
+    @Override
+    public List<String> getSecondStartExtraArgs()
+    {
+        return Arrays.asList(
+            "jetty.session.hazelcast.configurationLocation=" + hazelcastJettyPath.toAbsolutePath(),
+            "jetty.session.hazelcast.onlyClient=true"
+        );
+    }
+
     /**
      * This test simulate Hazelcast instance within Jetty a cluster member with an external Hazelcast instance
      */
+    @Test
+    @Disabled("not working see https://github.com/hazelcast/hazelcast/issues/18508")
     public void testHazelcastRemoteAndPartOfCluster() throws Exception
     {
 
         Map<String, String> env = new HashMap<>();
         // -Dhazelcast.local.publicAddress=127.0.0.1:5701
         env.put("JAVA_OPTS", "-Dhazelcast.config=/opt/hazelcast/config_ext/hazelcast.xml");
-        try (GenericContainer hazelcast =
-                 new GenericContainer("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.1"))
+        try (GenericContainer<?> hazelcast =
+                 new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.1"))
                      .withExposedPorts(5701, 5705)
                      .withEnv(env)
                      .waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
                      //.withNetworkMode("host")
                      //.waitingFor(Wait.forListeningPort())
                      .withClasspathResourceMapping("hazelcast-server.xml",
-                                                   "/opt/hazelcast/config_ext/hazelcast.xml",
-                                                   BindMode.READ_ONLY)
+                         "/opt/hazelcast/config_ext/hazelcast.xml",
+                         BindMode.READ_ONLY)
                      .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG)))
         {
             hazelcast.start();
@@ -163,8 +148,8 @@ public class HazelcastSessionDistributionTests extends AbstractJettyHomeTest
 //            tokenValues.put("hazelcast_multicast_port", Integer.toString(hazelcastMultiCastPort));
             Path hazelcastJettyPath = Paths.get("target/hazelcast-jetty.xml");
             transformFileWithHostAndPort(Paths.get("src/test/resources/hazelcast-jetty.xml"),
-                                         hazelcastJettyPath,
-                                         tokenValues);
+                hazelcastJettyPath,
+                tokenValues);
 
             String jettyVersion = System.getProperty("jettyVersion");
             JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
@@ -217,7 +202,6 @@ public class HazelcastSessionDistributionTests extends AbstractJettyHomeTest
                     assertThat(response.getContentAsString(), containsString("SESSION READ CHOCOLATE THE BEST:FRENCH"));
                 }
             }
-
         }
     }
 
@@ -242,13 +226,11 @@ public class HazelcastSessionDistributionTests extends AbstractJettyHomeTest
                     newLine.setLength(0);
                     newLine.append(interpolated);
                 });
-                fileContent.append(newLine.toString());
+                fileContent.append(newLine);
                 fileContent.append(System.lineSeparator());
             });
-
 
             outputStream.write(fileContent.toString().getBytes(StandardCharsets.UTF_8));
         }
     }
-
 }

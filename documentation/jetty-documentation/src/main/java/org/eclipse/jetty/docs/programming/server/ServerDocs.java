@@ -14,6 +14,7 @@
 package org.eclipse.jetty.docs.programming.server;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -31,6 +32,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -55,6 +57,23 @@ public class ServerDocs
         server.addConnector(connector);
         server.start();
         // end::http[]
+    }
+
+    public void httpUnix() throws Exception
+    {
+        // tag::httpUnix[]
+        // Create the HTTP/1.1 ConnectionFactory.
+        HttpConnectionFactory http = new HttpConnectionFactory();
+
+        Server server = new Server();
+
+        // Create the connector with the ConnectionFactory.
+        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, http);
+        connector.setUnixDomainPath(Path.of("/tmp/jetty.sock"));
+
+        server.addConnector(connector);
+        server.start();
+        // end::httpUnix[]
     }
 
     public void tlsHttp() throws Exception

@@ -23,6 +23,7 @@ import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -66,9 +67,9 @@ import org.eclipse.jetty.util.thread.ExecutorThreadPool;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -265,10 +266,20 @@ public class HttpClientTLSTest
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
     }
 
-    // In JDK 11+, a mismatch on the client does not generate any bytes towards
-    // the server, while in previous JDKs the client sends to the server the close_notify.
-    // @EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
-    @Disabled("No longer viable, TLS protocol behavior changed in 8u272")
+    /**
+     * This tests the behavior of the Client side when you have an intentional
+     * mismatch of the TLS Protocol and TLS Ciphers on the client and attempt to
+     * initiate a connection.
+     * <p>
+     * In older versions of Java 8 (pre 8u272) the JDK client side logic
+     * would generate bytes and send it to the server along with a close_notify
+     * </p>
+     * <p>
+     * Starting in Java 8 (8u272) and Java 11.0.0, the client logic will not
+     * send any bytes to the server.
+     * </p>
+     */
+    @Test
     public void testMismatchBetweenTLSProtocolAndTLSCiphersOnClient() throws Exception
     {
         SslContextFactory.Server serverTLSFactory = createServerSslContextFactory();
@@ -285,10 +296,17 @@ public class HttpClientTLSTest
         });
 
         SslContextFactory.Client clientTLSFactory = createClientSslContextFactory();
-        // TLS 1.1 protocol, but only TLS 1.2 ciphers.
-        clientTLSFactory.setIncludeProtocols("TLSv1.1");
-        clientTLSFactory.setIncludeCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256");
+        // Use TLSv1.2 (as TLSv1.1 and older are now disabled in Java 8u292+ and Java 11+)
+        clientTLSFactory.setIncludeProtocols("TLSv1.2");
+        // Use only a cipher suite that exists for TLSv1.3 (this is the mismatch)
+        clientTLSFactory.setIncludeCipherSuites("TLS_AES_256_GCM_SHA384");
         startClient(clientTLSFactory);
+
+        // If this JVM has "TLSv1.3" present, then it's assumed that it also has the new logic
+        // to not send bytes to the server when a protocol and cipher suite mismatch occurs
+        // on the client side configuration.
+        List<String> supportedClientProtocols = Arrays.asList(clientTLSFactory.getSslContext().getSupportedSSLParameters().getProtocols());
+        boolean expectServerFailure = !(supportedClientProtocols.contains("TLSv1.3"));
 
         CountDownLatch clientLatch = new CountDownLatch(1);
         client.addBean(new SslHandshakeListener()
@@ -306,7 +324,8 @@ public class HttpClientTLSTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send());
 
-        assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
+        if (expectServerFailure)
+            assertTrue(serverLatch.await(1, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(1, TimeUnit.SECONDS));
     }
 
@@ -348,7 +367,7 @@ public class HttpClientTLSTest
 
     // Excluded in JDK 11+ because resumed sessions cannot be compared
     // using their session IDs even though they are resumed correctly.
-    @EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
+    @EnabledForJreRange(max = JRE.JAVA_10)
     @Test
     public void testHandshakeSucceededWithSessionResumption() throws Exception
     {
@@ -428,7 +447,7 @@ public class HttpClientTLSTest
 
     // Excluded in JDK 11+ because resumed sessions cannot be compared
     // using their session IDs even though they are resumed correctly.
-    @EnabledOnJre({JRE.JAVA_8, JRE.JAVA_9, JRE.JAVA_10})
+    @EnabledForJreRange(max = JRE.JAVA_10)
     @Test
     public void testClientRawCloseDoesNotInvalidateSession() throws Exception
     {
@@ -996,7 +1015,6 @@ public class HttpClientTLSTest
         // Force TLS-level hostName verification, as we want to receive the correspondent certificate.
         clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
         startClient(clientTLS);
-
         clientTLS.setSNIProvider(SslContextFactory.Client.SniProvider.NON_DOMAIN_SNI_PROVIDER);
 
         // Send a request with SNI "localhost", we should get the certificate at alias=localhost.
@@ -1010,16 +1028,40 @@ public class HttpClientTLSTest
             .scheme(HttpScheme.HTTPS.asString())
             .send();
         assertEquals(HttpStatus.OK_200, response2.getStatus());
+    }
 
-        if (Net.isIpv6InterfaceAvailable())
+    @Test
+    @EnabledForJreRange(max = JRE.JAVA_16, disabledReason = "Since Java 17, SNI host names can only have letter|digit|hyphen characters.")
+    public void testForcedNonDomainSNIWithIPv6() throws Exception
+    {
+        Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
+
+        SslContextFactory.Server serverTLS = new SslContextFactory.Server();
+        serverTLS.setKeyStorePath("src/test/resources/keystore_sni_non_domain.p12");
+        serverTLS.setKeyStorePassword("storepwd");
+        serverTLS.setSNISelector((keyType, issuers, session, sniHost, certificates) ->
         {
-            // Send a request with SNI "[::1]", we should get the certificate at alias=ip.
-            ContentResponse response3 = client.newRequest("[::1]", connector.getLocalPort())
-                .scheme(HttpScheme.HTTPS.asString())
-                .send();
+            // We have forced the client to send the non-domain SNI.
+            assertNotNull(sniHost);
+            return serverTLS.sniSelect(keyType, issuers, session, sniHost, certificates);
+        });
+        startServer(serverTLS, new EmptyServerHandler());
 
-            assertEquals(HttpStatus.OK_200, response3.getStatus());
-        }
+        SslContextFactory.Client clientTLS = new SslContextFactory.Client();
+        // Trust any certificate received by the server.
+        clientTLS.setTrustStorePath("src/test/resources/keystore_sni_non_domain.p12");
+        clientTLS.setTrustStorePassword("storepwd");
+        // Force TLS-level hostName verification, as we want to receive the correspondent certificate.
+        clientTLS.setEndpointIdentificationAlgorithm("HTTPS");
+        startClient(clientTLS);
+        clientTLS.setSNIProvider(SslContextFactory.Client.SniProvider.NON_DOMAIN_SNI_PROVIDER);
+
+        // Send a request with SNI "[::1]", we should get the certificate at alias=ip.
+        ContentResponse response3 = client.newRequest("[::1]", connector.getLocalPort())
+            .scheme(HttpScheme.HTTPS.asString())
+            .send();
+
+        assertEquals(HttpStatus.OK_200, response3.getStatus());
     }
 
     @Test

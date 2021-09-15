@@ -37,19 +37,6 @@ pipeline {
           }
         }
 
-        // TODO: Remove once JDK17 (non-ea) has been released
-        stage("Build / Test - JDK16") {
-          agent { node { label 'linux' } }
-          steps {
-            container( 'jetty-build' ) {
-              timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk16", "clean install", "maven3")
-                recordIssues id: "jdk16", name: "Static Analysis jdk16", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
-              }
-            }
-          }
-        }
-
         stage("Build / Test - JDK17") {
           agent { node { label 'linux' } }
           steps {
@@ -113,7 +100,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline -Dunix.socket.tmp=/tmp/unixsocket"
+          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline"
         }
       }
     }

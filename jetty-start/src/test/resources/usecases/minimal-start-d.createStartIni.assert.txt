@@ -17,7 +17,7 @@ PROP|optional.prop=value0
 EXISTS|maindir/
 EXISTS|start.ini
 
-OUTPUT|INFO  : copy ..jetty.base./start.d/main.ini into ..jetty.base./start.ini
-OUTPUT|INFO  : optional        initialized in ..jetty.base./start.ini
-OUTPUT|INFO  : mkdir ..jetty.base./maindir
+OUTPUT|INFO  : copy ..jetty.base.[/\\]start.d[/\\]main.ini into ..jetty.base.[/\\]start.ini
+OUTPUT|INFO  : optional        initialized in ..jetty.base.[/\\]start.ini
+OUTPUT|INFO  : mkdir ..jetty.base.[/\\]maindir
 OUTPUT|INFO  : Base directory was modified

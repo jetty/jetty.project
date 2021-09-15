@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.ArrayList;
@@ -28,40 +29,38 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.FS;
-import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Scanner.Notification;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
+@ExtendWith(WorkDirExtension.class)
 public class ScannerTest
 {
-    static File _directory;
-    static Scanner _scanner;
-    static BlockingQueue<Event> _queue = new LinkedBlockingQueue<>();
-    static BlockingQueue<Set<String>> _bulk = new LinkedBlockingQueue<>();
+    public WorkDir workDir;
+    private Path _directory;
+    private Scanner _scanner;
+    private BlockingQueue<Event> _queue = new LinkedBlockingQueue<>();
+    private BlockingQueue<Set<String>> _bulk = new LinkedBlockingQueue<>();
 
-    @BeforeAll
-    public static void setUpBeforeClass() throws Exception
+    @BeforeEach
+    public void setupScanner() throws Exception
     {
-        File testDir = MavenTestingUtils.getTargetTestingDir(ScannerTest.class.getSimpleName());
-        FS.ensureEmpty(testDir);
-
-        // Use full path, pointing to a real directory (for FileSystems that are case-insensitive, like Windows and OSX to use)
-        // This is only needed for the various comparisons below to make sense.
-        _directory = testDir.toPath().toRealPath().toFile();
-
+        _directory = workDir.getEmptyPathDir();
         _scanner = new Scanner();
-        _scanner.addDirectory(_directory.toPath());
+        _scanner.addDirectory(_directory);
         _scanner.setScanInterval(0);
         _scanner.setReportDirs(false);
         _scanner.setReportExistingFilesOnStartup(false);
@@ -94,11 +93,10 @@ public class ScannerTest
         assertTrue(_bulk.isEmpty());
     }
 
-    @AfterAll
-    public static void tearDownAfterClass() throws Exception
+    @AfterEach
+    public void cleanup() throws Exception
     {
-        _scanner.stop();
-        IO.delete(_directory);
+        LifeCycle.stop(_scanner);
     }
 
     static class Event
@@ -139,7 +137,7 @@ public class ScannerTest
     @Test
     public void testDepth() throws Exception
     {
-        File root = new File(_directory, "root");
+        File root = new File(_directory.toFile(), "root");
         FS.ensureDirExists(root);
         FS.touch(new File(root, "foo.foo"));
         FS.touch(new File(root, "foo2.foo"));
@@ -215,7 +213,7 @@ public class ScannerTest
     public void testPatterns() throws Exception
     {
         //test include and exclude patterns
-        File root = new File(_directory, "proot");
+        File root = new File(_directory.toFile(), "proot");
         FS.ensureDirExists(root);
 
         File ttt = new File(root, "ttt.txt");
@@ -288,7 +286,7 @@ public class ScannerTest
     }
 
     @Test
-    @DisabledOnOs(WINDOWS) // TODO: needs review
+    @Tag("Slow")
     public void testAddedChangeRemove() throws Exception
     {
         touch("a0");
@@ -299,7 +297,7 @@ public class ScannerTest
 
         Event event = _queue.poll(5, TimeUnit.SECONDS);
         assertNotNull(event, "Event should not be null");
-        assertEquals(_directory + "/a0", event._filename);
+        assertEquals(_directory.resolve("a0").toString(), event._filename);
         assertEquals(Notification.ADDED, event._notification);
 
         // add 3 more files
@@ -323,8 +321,8 @@ public class ScannerTest
         List<Event> actualEvents = new ArrayList<>();
         _queue.drainTo(actualEvents);
         assertEquals(2, actualEvents.size());
-        Event a1 = new Event(_directory + "/a1", Notification.ADDED);
-        Event a3 = new Event(_directory + "/a3", Notification.REMOVED);
+        Event a1 = new Event(_directory.resolve("a1").toString(), Notification.ADDED);
+        Event a3 = new Event(_directory.resolve("a3").toString(), Notification.REMOVED);
         assertThat(actualEvents, Matchers.containsInAnyOrder(a1, a3));
         assertTrue(_queue.isEmpty());
 
@@ -332,7 +330,7 @@ public class ScannerTest
         _scanner.scan();
         event = _queue.poll();
         assertNotNull(event);
-        assertEquals(_directory + "/a2", event._filename);
+        assertEquals(_directory.resolve("a2").toString(), event._filename);
         assertEquals(Notification.ADDED, event._notification);
         assertTrue(_queue.isEmpty());
 
@@ -353,7 +351,7 @@ public class ScannerTest
         _scanner.scan();
         event = _queue.poll();
         assertNotNull(event);
-        assertEquals(_directory + "/a1", event._filename);
+        assertEquals(_directory.resolve("a1").toString(), event._filename);
         assertEquals(Notification.CHANGED, event._notification);
         assertTrue(_queue.isEmpty());
 
@@ -361,7 +359,7 @@ public class ScannerTest
         _scanner.scan();
         event = _queue.poll();
         assertNotNull(event);
-        assertEquals(_directory + "/a2", event._filename);
+        assertEquals(_directory.resolve("a2").toString(), event._filename);
         assertEquals(Notification.CHANGED, event._notification);
         assertTrue(_queue.isEmpty());
 
@@ -371,8 +369,8 @@ public class ScannerTest
 
         //Immediate notification of deletes.
         _scanner.scan();
-        a1 = new Event(_directory + "/a1", Notification.REMOVED);
-        Event a2 = new Event(_directory + "/a2", Notification.REMOVED);
+        a1 = new Event(_directory.resolve("a1").toString(), Notification.REMOVED);
+        Event a2 = new Event(_directory.resolve("a2").toString(), Notification.REMOVED);
         actualEvents = new ArrayList<>();
         _queue.drainTo(actualEvents);
         assertEquals(2, actualEvents.size());
@@ -392,13 +390,12 @@ public class ScannerTest
         _scanner.scan();
         event = _queue.poll();
         assertNotNull(event);
-        assertEquals(_directory + "/a2", event._filename);
+        assertEquals(_directory.resolve("a2").toString(), event._filename);
         assertEquals(Notification.ADDED, event._notification);
         assertTrue(_queue.isEmpty());
     }
 
     @Test
-    @DisabledOnOs(WINDOWS) // TODO: needs review
     public void testSizeChange() throws Exception
     {
         touch("tsc0");
@@ -408,12 +405,12 @@ public class ScannerTest
         // takes 2 scans to notice tsc0 and check that it is stable.
         Event event = _queue.poll();
         assertNotNull(event);
-        assertEquals(_directory + "/tsc0", event._filename);
+        assertEquals(_directory.resolve("tsc0").toString(), event._filename);
         assertEquals(Notification.ADDED, event._notification);
 
         // Create a new file by writing to it.
         long now = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        File file = new File(_directory, "st");
+        File file = new File(_directory.toFile(), "st");
         try (OutputStream out = new FileOutputStream(file, true))
         {
             out.write('x');
@@ -439,7 +436,7 @@ public class ScannerTest
             _scanner.scan();
             event = _queue.poll();
             assertNotNull(event);
-            assertEquals(_directory + "/st", event._filename);
+            assertEquals(_directory.resolve("st").toString(), event._filename);
             assertEquals(Notification.ADDED, event._notification);
 
             // Modify size only
@@ -456,21 +453,20 @@ public class ScannerTest
             _scanner.scan();
             event = _queue.poll();
             assertNotNull(event);
-            assertEquals(_directory + "/st", event._filename);
+            assertEquals(_directory.resolve("st").toString(), event._filename);
             assertEquals(Notification.CHANGED, event._notification);
         }
     }
 
-    private void delete(String string)
+    private void delete(String string) throws IOException
     {
-        File file = new File(_directory, string);
-        if (file.exists())
-            IO.delete(file);
+        Path file = _directory.resolve(string);
+        Files.deleteIfExists(file);
     }
 
     private void touch(String string) throws IOException
     {
-        File file = new File(_directory, string);
+        File file = new File(_directory.toFile(), string);
         if (file.exists())
             file.setLastModified(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()));
         else

@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 
@@ -27,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * DefaultSessionCache
  *
- * A session store that keeps its sessions in memory in a hashmap
+ * A session store that keeps its sessions in memory within a concurrent map
  */
 @ManagedObject
 public class DefaultSessionCache extends AbstractSessionCache
@@ -35,9 +37,9 @@ public class DefaultSessionCache extends AbstractSessionCache
     private static final Logger LOG = LoggerFactory.getLogger(DefaultSessionCache.class);
 
     /**
-     * The cache of sessions in a hashmap
+     * The cache of sessions in a concurrent map
      */
-    protected ConcurrentHashMap<String, Session> _sessions = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Session> _sessions;
 
     private final CounterStatistic _stats = new CounterStatistic();
 
@@ -46,7 +48,17 @@ public class DefaultSessionCache extends AbstractSessionCache
      */
     public DefaultSessionCache(SessionHandler manager)
     {
+        this(manager, new ConcurrentHashMap<>());
+    }
+
+    /**
+     * @param manager The SessionHandler related to this SessionCache
+     * @param sessions The session map implementation to use
+     */
+    public DefaultSessionCache(SessionHandler manager, ConcurrentMap<String, Session> sessions)
+    {
         super(manager);
+        _sessions = Objects.requireNonNull(sessions, "Session Map may not be null");
     }
 
     /**

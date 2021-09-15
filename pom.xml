@@ -12,39 +12,42 @@
   <inceptionYear>1995</inceptionYear>
 
   <properties>
+    <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
     <compiler.source>11</compiler.source>
     <compiler.target>11</compiler.target>
     <compiler.release>11</compiler.release>
     <jetty.url>https://www.eclipse.org/jetty/</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>8.37</checkstyle.version>
-    <slf4j.version>2.0.0-alpha1</slf4j.version>
+    <checkstyle.version>9.0</checkstyle.version>
+    <slf4j.version>2.0.0-alpha5</slf4j.version>
     <log4j2.version>2.14.0</log4j2.version>
-    <logback.version>1.3.0-alpha5</logback.version>
+    <logback.version>1.3.0-alpha9</logback.version>
     <disruptor.version>3.4.2</disruptor.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <servlet.api.version>4.0.6</servlet.api.version>
     <websocket.api.version>1.1.2</websocket.api.version>
-    <jsp.version>9.0.48</jsp.version>
+    <jsp.version>9.0.52</jsp.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
-    <gson.version>2.8.6</gson.version>
+    <gson.version>2.8.8</gson.version>
+    <grpc.version>1.40.1</grpc.version>
+    <google.errorprone.version>2.9.0</google.errorprone.version>
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <hazelcast.version>4.1</hazelcast.version>
-    <conscrypt.version>2.5.1</conscrypt.version>
-    <asm.version>9.1</asm.version>
-    <jmh.version>1.26</jmh.version>
+    <hazelcast.version>4.2.2</hazelcast.version>
+    <conscrypt.version>2.5.2</conscrypt.version>
+    <asm.version>9.2</asm.version>
+    <jmh.version>1.33</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
-    <tycho-version>2.1.0</tycho-version>
-    <junit.version>5.7.2</junit.version>
-    <maven.version>3.6.3</maven.version>
-    <maven.resolver.version>1.6.1</maven.resolver.version>
+    <tycho.version>2.3.0</tycho.version>
+    <junit.version>5.8.0</junit.version>
+    <maven.version>3.8.2</maven.version>
+    <maven.resolver.version>1.7.2</maven.resolver.version>
     <weld.version>3.1.8.Final</weld.version>
+    <plexus-utils.version>3.4.1</plexus-utils.version>
     <jboss.logging.version>3.4.2.Final</jboss.logging.version>
-    <jetty.perf-helper.version>1.0.6</jetty.perf-helper.version>
-    <ant.version>1.10.9</ant.version>
-    <unix.socket.tmp></unix.socket.tmp>
+    <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
+    <ant.version>1.10.11</ant.version>
     <!-- OSGI import-package -->
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
 
@@ -53,21 +56,23 @@
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx4g -Xms2g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
 
     <!-- some maven plugins versions -->
+    <maven.invoker.version>3.2.2</maven.invoker.version>
     <maven.surefire.version>3.0.0-M5</maven.surefire.version>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
-    <maven.dependency.plugin.version>3.1.2</maven.dependency.plugin.version>
+    <maven.dependency.plugin.version>3.2.0</maven.dependency.plugin.version>
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
-    <maven.war.plugin.version>3.3.1</maven.war.plugin.version>
-    <maven.plugin-tools.version>3.6.0</maven.plugin-tools.version>
+    <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
+    <maven.plugin-tools.version>3.6.1</maven.plugin-tools.version>
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
     <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
     <maven.exec.plugin.version>3.0.0</maven.exec.plugin.version>
 
     <!-- testing -->
     <it.debug>false</it.debug>
-    <jetty.test.version>5.5</jetty.test.version>
+    <jetty.test.version>5.8</jetty.test.version>
     <hamcrest.version>2.2</hamcrest.version>
+    <mariadb.docker.version>10.3.6</mariadb.docker.version>
 
     <!-- springboot is only used for jetty-maven-plugin it test
     otherwise depending on Spring Boot might be chicken and egg issue :) -->
@@ -78,8 +83,9 @@
     <settingsPath>src/it/settings.xml</settingsPath>
     <invoker.mergeUserSettings>false</invoker.mergeUserSettings>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
-    <testcontainers.version>1.15.1</testcontainers.version>
-    <maria.version>2.7.0</maria.version>
+    <testcontainers.version>1.16.0</testcontainers.version>
+    <jna.version>5.9.0</jna.version>
+    <mariadb.version>2.7.4</mariadb.version>
   </properties>
 
   <licenses>
@@ -151,11 +157,13 @@
     <module>documentation</module>
     <module>jetty-keystore</module>
     <module>jetty-p2</module>
+    <module>jetty-unixdomain-server</module>
   </modules>
 
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
           <execution>
@@ -176,6 +184,8 @@
                     <exclude>jetty:servlet-api</exclude>
                     <exclude>jetty-servlet-api</exclude>
                     <exclude>javax.websocket</exclude>
+                    <exclude>javax.el:*</exclude>
+                    <exclude>javax.annotation:javax.annotation-api</exclude>
                   </excludes>
                   <searchTransitive>true</searchTransitive>
                 </bannedDependencies>
@@ -409,19 +419,11 @@
             </goals>
           </execution>
         </executions>
-        <!-- this has better support of gh token remove when with next release of jetty-version-maven-plugin -->
-        <dependencies>
-          <dependency>
-            <groupId>org.kohsuke</groupId>
-            <artifactId>github-api</artifactId>
-            <version>1.116</version>
-          </dependency>
-        </dependencies>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>3.1.1</version>
+        <version>3.1.2</version>
         <configuration>
           <configLocation>jetty-checkstyle.xml</configLocation>
           <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -524,7 +526,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0-M3</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -534,7 +536,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-invoker-plugin</artifactId>
-          <version>3.2.1</version>
+          <version>${maven.invoker.version}</version>
           <configuration>
             <mergeUserSettings>${invoker.mergeUserSettings}</mergeUserSettings>
             <writeJunitReport>true</writeJunitReport>
@@ -588,7 +590,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.3.1</version>
           <configuration>
             <verbose>true</verbose>
             <debug>true</debug>
@@ -610,17 +612,17 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jxr-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-plugin-plugin</artifactId>
-          <version>3.6.0</version>
+          <version>3.6.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-project-info-reports-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.1.2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -685,7 +687,7 @@
             <runOrder>alphabetical</runOrder>
             <systemPropertyVariables>
               <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
-              <unix.socket.tmp>${unix.socket.tmp}</unix.socket.tmp>
+              <jetty.unixdomain.dir>${jetty.unixdomain.dir}</jetty.unixdomain.dir>
               <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
               <jetty.testtracker.log>${jetty.testtracker.log}</jetty.testtracker.log>
             </systemPropertyVariables>
@@ -715,7 +717,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.6</version>
+          <version>0.8.7</version>
         </plugin>
         <plugin>
           <groupId>com.agilejava.docbkx</groupId>
@@ -725,12 +727,12 @@
         <plugin>
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
-          <version>3.0</version>
+          <version>4.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>5.1.1</version>
+          <version>5.1.2</version>
           <extensions>true</extensions>
           <configuration>
             <supportedProjectTypes>
@@ -763,12 +765,12 @@
         <plugin>
           <groupId>org.asciidoctor</groupId>
           <artifactId>asciidoctor-maven-plugin</artifactId>
-          <version>2.1.0</version>
+          <version>2.2.1</version>
           <dependencies>
             <dependency>
               <groupId>org.asciidoctor</groupId>
               <artifactId>asciidoctorj-diagram</artifactId>
-              <version>2.0.5</version>
+              <version>2.2.1</version>
             </dependency>
           </dependencies>
           <configuration>
@@ -980,7 +982,18 @@
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
           <artifactId>h2spec-maven-plugin</artifactId>
-          <version>1.0.5</version>
+          <version>1.0.7</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>versions-maven-plugin</artifactId>
+          <version>2.8.1</version>
+          <configuration>
+            <processDependencies>true</processDependencies>
+            <processDependencyManagement>true</processDependencyManagement>
+            <processPluginDependencies>true</processPluginDependencies>
+            <processPluginDependenciesInPluginManagement>true</processPluginDependenciesInPluginManagement>
+          </configuration>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -1001,6 +1014,26 @@
 
   <dependencyManagement>
     <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-io</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-http</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-plus</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-slf4j-impl</artifactId>
@@ -1078,7 +1111,18 @@
       <dependency>
         <groupId>jakarta.transaction</groupId>
         <artifactId>jakarta.transaction-api</artifactId>
-        <version>1.3.2</version>
+        <version>1.3.3</version>
+      </dependency>
+      <dependency>
+        <groupId>javax.enterprise</groupId>
+        <artifactId>cdi-api</artifactId>
+        <version>2.0</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.el</groupId>
+            <artifactId>javax.el-api</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <!-- maven deps -->
       <dependency>
@@ -1089,7 +1133,7 @@
       <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-utils</artifactId>
-        <version>3.3.0</version>
+        <version>${plexus-utils.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
@@ -1104,6 +1148,11 @@
       <dependency>
         <groupId>org.apache.maven</groupId>
         <artifactId>maven-core</artifactId>
+        <version>${maven.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-settings</artifactId>
         <version>${maven.version}</version>
       </dependency>
       <dependency>
@@ -1131,6 +1180,11 @@
         <version>${hamcrest.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>4.1.0</version>
+      </dependency>
+      <dependency>
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers-bom</artifactId>
         <version>${testcontainers.version}</version>
@@ -1138,9 +1192,49 @@
         <scope>import</scope>
       </dependency>
       <dependency>
+        <groupId>org.mariadb.jdbc</groupId>
+        <artifactId>mariadb-java-client</artifactId>
+        <version>${mariadb.version}</version>
+      </dependency>
+      <dependency>
         <groupId>net.java.dev.jna</groupId>
         <artifactId>jna</artifactId>
-        <version>5.6.0</version>
+        <version>${jna.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+        <version>30.1.1-jre</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.inject</groupId>
+        <artifactId>guice</artifactId>
+        <version>5.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.errorprone</groupId>
+        <artifactId>error_prone_annotations</artifactId>
+        <version>${google.errorprone.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.code.findbugs</groupId>
+        <artifactId>jsr305</artifactId>
+        <version>3.0.2</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>org.osgi.core</artifactId>
+        <version>6.0.0</version>
+      </dependency>
+      <dependency>
+        <groupId>org.osgi</groupId>
+        <artifactId>osgi.annotation</artifactId>
+        <version>8.0.0</version>
+      </dependency>
+      <dependency>
+        <groupId>biz.aQute.bnd</groupId>
+        <artifactId>biz.aQute.bndlib</artifactId>
+        <version>5.3.0</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
@@ -1192,33 +1286,33 @@
       <dependency>
         <groupId>org.asciidoctor</groupId>
         <artifactId>asciidoctorj</artifactId>
-        <version>2.4.2</version>
+        <version>2.5.2</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-constants</artifactId>
-        <version>0.10.0</version>
+        <version>0.10.2</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-enxio</artifactId>
-        <version>0.32.1</version>
+        <version>0.32.8</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-posix</artifactId>
-        <version>3.1.2</version>
+        <version>3.1.9</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
-        <version>0.38.3</version>
+        <version>0.38.10</version>
       </dependency>
       <!-- avoid depending on a range dependency from a transitive dependency -->
       <dependency>
         <groupId>io.grpc</groupId>
         <artifactId>grpc-core</artifactId>
-        <version>1.33.1</version>
+        <version>${grpc.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.ant</groupId>
@@ -1238,12 +1332,23 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.11</version>
+        <version>3.12.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
 
   <profiles>
+    <profile>
+      <id>unix-domain-windows</id>
+      <activation>
+        <os>
+          <family>Windows</family>
+        </os>
+      </activation>
+      <properties>
+        <jetty.unixdomain.dir>${user.home}</jetty.unixdomain.dir>
+      </properties>
+    </profile>
     <profile>
       <id>errorprone</id>
       <build>
@@ -1262,7 +1367,7 @@
                   <path>
                     <groupId>com.google.errorprone</groupId>
                     <artifactId>error_prone_core</artifactId>
-                    <version>2.5.1</version>
+                    <version>${google.errorprone.version}</version>
                   </path>
                 </annotationProcessorPaths>
               </configuration>
@@ -1278,7 +1383,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-project-info-reports-plugin</artifactId>
-            <version>3.1.1</version>
+            <version>3.1.2</version>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
@@ -1392,7 +1497,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-gpg-plugin</artifactId>
-            <version>1.6</version>
+            <version>3.0.1</version>
             <executions>
               <execution>
                 <id>sign-artifacts</id>
@@ -1428,7 +1533,7 @@
             <plugin>
               <groupId>com.github.spotbugs</groupId>
               <artifactId>spotbugs-maven-plugin</artifactId>
-              <version>4.1.4</version>
+              <version>4.3.0</version>
             </plugin>
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
@@ -1436,6 +1541,9 @@
               <version>${maven.surefire.version}</version>
               <configuration>
                 <excludedGroups>external, large-disk-resource</excludedGroups>
+                <systemPropertyVariables>
+                  <env>ci</env>
+                </systemPropertyVariables>
               </configuration>
             </plugin>
           </plugins>
@@ -1535,7 +1643,7 @@
           <plugin>
             <groupId>org.eclipse.tycho.extras</groupId>
             <artifactId>tycho-pack200a-plugin</artifactId>
-            <version>${tycho-version}</version>
+            <version>${tycho.version}</version>
             <executions>
               <execution>
                 <id>pack200-normalize</id>
@@ -1564,7 +1672,7 @@
           <plugin>
             <groupId>org.eclipse.tycho.extras</groupId>
             <artifactId>tycho-pack200b-plugin</artifactId>
-            <version>${tycho-version}</version>
+            <version>${tycho.version}</version>
             <executions>
               <execution>
                 <id>pack200-pack</id>

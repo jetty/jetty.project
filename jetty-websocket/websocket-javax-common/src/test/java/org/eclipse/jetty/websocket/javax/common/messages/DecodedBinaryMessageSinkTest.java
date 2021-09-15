@@ -56,11 +56,11 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
         data.put((byte)31);
         data.flip();
         sink.accept(new Frame(OpCode.BINARY).setPayload(data).setFin(true), finCallback);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
-        finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         Calendar decoded = copyFuture.get(1, TimeUnit.SECONDS);
-        assertThat("FinCallback.done", finCallback.isDone(), is(true));
         assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("12-31-1999"));
+        assertThat("FinCallback.done", finCallback.isDone(), is(true));
     }
 
     @Test
@@ -89,16 +89,18 @@ public class DecodedBinaryMessageSinkTest extends AbstractMessageSinkTest
         data3.flip();
 
         sink.accept(new Frame(OpCode.BINARY).setPayload(data1).setFin(false), callback1);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(data2).setFin(false), callback2);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
         sink.accept(new Frame(OpCode.CONTINUATION).setPayload(data3).setFin(true), finCallback);
+        coreSession.waitForDemand(1, TimeUnit.SECONDS);
 
         finCallback.get(1, TimeUnit.SECONDS); // wait for callback
         Calendar decoded = copyFuture.get(1, TimeUnit.SECONDS);
+        assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("01-01-2000"));
         assertThat("Callback1.done", callback1.isDone(), is(true));
         assertThat("Callback2.done", callback2.isDone(), is(true));
         assertThat("finCallback.done", finCallback.isDone(), is(true));
-
-        assertThat("Decoded.contents", format(decoded, "MM-dd-yyyy"), is("01-01-2000"));
     }
 
     private String format(Calendar cal, String formatPattern)

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi;
+package org.eclipse.jetty.security.jaspi.modules;
 
 import java.io.IOException;
 import java.util.Map;
@@ -22,46 +22,45 @@ import javax.security.auth.message.AuthException;
 import javax.security.auth.message.AuthStatus;
 import javax.security.auth.message.MessageInfo;
 import javax.security.auth.message.MessagePolicy;
+import javax.security.auth.message.module.ServerAuthModule;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.security.jaspi.modules.BaseAuthModule;
 import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BasicAuthModule extends BaseAuthModule
+/** 
+ * A {@link ServerAuthModule} implementation of HTTP Basic Authentication.  
+ */
+public class BasicAuthenticationAuthModule extends BaseAuthModule
 {
-    private static final Logger LOG = LoggerFactory.getLogger(BasicAuthModule.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BasicAuthenticationAuthModule.class);
 
     private String realmName;
 
     private static final String REALM_KEY = "org.eclipse.jetty.security.jaspi.modules.RealmName";
 
-    public BasicAuthModule()
+    public BasicAuthenticationAuthModule()
     {
     }
 
-    public BasicAuthModule(CallbackHandler callbackHandler, String realmName)
+    public BasicAuthenticationAuthModule(CallbackHandler callbackHandler, String realmName)
     {
         super(callbackHandler);
         this.realmName = realmName;
     }
 
     @Override
-    public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy,
-                           CallbackHandler handler, Map options)
-        throws AuthException
+    public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy, CallbackHandler callbackHandler, Map options) throws AuthException
     {
-        super.initialize(requestPolicy, responsePolicy, handler, options);
+        super.initialize(requestPolicy, responsePolicy, callbackHandler, options);
         realmName = (String)options.get(REALM_KEY);
     }
 
     @Override
-    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject,
-                                      Subject serviceSubject)
-        throws AuthException
+    public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
     {
         HttpServletRequest request = (HttpServletRequest)messageInfo.getRequestMessage();
         HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();
@@ -87,11 +86,7 @@ public class BasicAuthModule extends BaseAuthModule
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
             return AuthStatus.SEND_CONTINUE;
         }
-        catch (IOException e)
-        {
-            throw new AuthException(e.getMessage());
-        }
-        catch (UnsupportedCallbackException e)
+        catch (IOException | UnsupportedCallbackException e)
         {
             throw new AuthException(e.getMessage());
         }

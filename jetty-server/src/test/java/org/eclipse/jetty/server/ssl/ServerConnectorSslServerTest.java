@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
@@ -26,7 +25,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 import javax.servlet.ServletException;
@@ -46,10 +44,9 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,17 +56,16 @@ import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 /**
- * HttpServer Tester.
+ * HttpServer Tester for SSL based ServerConnector
  */
-public class SelectChannelServerSslTest extends HttpServerTestBase
+public class ServerConnectorSslServerTest extends HttpServerTestBase
 {
-    private static final Logger LOG = LoggerFactory.getLogger(SelectChannelServerSslTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServerConnectorSslServerTest.class);
     private SSLContext _sslContext;
 
-    public SelectChannelServerSslTest()
+    public ServerConnectorSslServerTest()
     {
         _scheme = "https";
     }
@@ -122,43 +118,6 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         socket.setSoTimeout(10000);
         socket.setTcpNoDelay(true);
         return socket;
-    }
-
-    @Override
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
-    public void testFullMethod() throws Exception
-    {
-        try
-        {
-            super.testFullMethod();
-        }
-        catch (SocketException e)
-        {
-            // TODO This needs to be investigated #2244
-            LOG.warn("Close overtook 400 response", e);
-        }
-        catch (SSLException e)
-        {
-            // TODO This needs to be investigated #2244
-            if (e.getCause() instanceof SocketException)
-                LOG.warn("Close overtook 400 response", e);
-            else
-                throw e;
-        }
-    }
-
-    @Override
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
-    public void testFullURI() throws Exception
-    {
-        try
-        {
-            super.testFullURI();
-        }
-        catch (SocketException e)
-        {
-            LOG.warn("Close overtook 400 response", e);
-        }
     }
 
     @Override
@@ -227,16 +186,15 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
 
     @Override
     @Test
-    @Disabled("Override and ignore this test as SSLSocket.shutdownOutput() is not supported, " +
-        "but shutdownOutput() is needed by the test.")
     public void testInterruptedRequest()
     {
+        Assumptions.assumeFalse(_serverURI.getScheme().equals("https"), "SSLSocket.shutdownOutput() is not supported, but shutdownOutput() is needed by the test");
     }
 
     @Override
-    @Disabled
     public void testAvailable() throws Exception
     {
+        Assumptions.assumeFalse(_serverURI.getScheme().equals("https"), "SSLSocket available() is not supported");
     }
 
     @Test

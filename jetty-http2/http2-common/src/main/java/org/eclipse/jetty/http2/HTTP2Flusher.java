@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +51,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     private final Collection<Entry> processedEntries = new ArrayList<>();
     private final HTTP2Session session;
     private final ByteBufferPool.Lease lease;
+    private InvocationType invocationType = InvocationType.NON_BLOCKING;
     private Throwable terminated;
     private Entry stalledEntry;
 
@@ -57,6 +59,12 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
     {
         this.session = session;
         this.lease = new ByteBufferPool.Lease(session.getGenerator().getByteBufferPool());
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return invocationType;
     }
 
     public void window(IStream stream, WindowUpdateFrame frame)
@@ -214,7 +222,10 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
                         // We use ArrayList contains() + add() instead of HashSet add()
                         // because that is faster for collections of size up to 250 entries.
                         if (!processedEntries.contains(entry))
+                        {
                             processedEntries.add(entry);
+                            invocationType = Invocable.combine(invocationType, Invocable.getInvocationType(entry.getCallback()));
+                        }
 
                         if (entry.getDataBytesRemaining() == 0)
                             pending.remove();
@@ -311,6 +322,7 @@ public class HTTP2Flusher extends IteratingCallback implements Dumpable
 
         processedEntries.forEach(Entry::succeeded);
         processedEntries.clear();
+        invocationType = InvocationType.NON_BLOCKING;
 
         if (stalledEntry != null)
         {
