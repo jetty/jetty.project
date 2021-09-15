@@ -985,7 +985,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-schemas</artifactId>
-        <version>3.1.2</version>
+        <version>5.2</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
