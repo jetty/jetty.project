@@ -40,7 +40,7 @@
     <maven.version>3.8.2</maven.version>
     <maven.resolver.version>1.7.2</maven.resolver.version>
     <javax.servlet.api.version>3.1.0</javax.servlet.api.version>
-    <weld.version>3.1.5.Final</weld.version>
+    <weld.version>4.0.2.Final</weld.version>
     <hazelcast.version>3.12.12</hazelcast.version>
     <jboss.logging.version>3.4.2.Final</jboss.logging.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
