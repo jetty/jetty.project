@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.pathmap.RegexPathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -223,17 +224,15 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
 
     public boolean upgrade(HttpServletRequest request, HttpServletResponse response, Configuration.Customizer defaultCustomizer) throws IOException
     {
-        // Since this may be a filter, we need to be smart about determining the target path.
-        // We should rely on the Container for stripping path parameters and its ilk before
-        // attempting to match a specific mapped websocket creator.
-        String target = request.getServletPath();
-        if (request.getPathInfo() != null)
-            target = target + request.getPathInfo();
+        // Since this may come from a filter, we need to be smart about determining the target path.
+        // We should rely on the Servlet API for stripping URI path
+        // parameters before attempting to match a specific mapping.
+        String target = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
 
         WebSocketNegotiator negotiator = getMatchedNegotiator(target, pathSpec ->
         {
-            // Store PathSpec resource mapping as request attribute, for WebSocketCreator
-            // implementors to use later if they wish
+            // Store PathSpec resource mapping as request attribute,
+            // for WebSocketCreator implementors to use later if they wish.
             request.setAttribute(PathSpec.class.getName(), pathSpec);
         });
 

@@ -143,7 +143,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     }
 
     private final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
-    private WebSocketMappings mapping;
+    private WebSocketMappings mappings;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
@@ -151,7 +151,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         HttpServletRequest httpreq = (HttpServletRequest)request;
         HttpServletResponse httpresp = (HttpServletResponse)response;
 
-        if (mapping.upgrade(httpreq, httpresp, defaultCustomizer))
+        if (mappings.upgrade(httpreq, httpresp, defaultCustomizer))
             return;
 
         // If we reach this point, it means we had an incoming request to upgrade
@@ -173,13 +173,13 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this, mapping);
+        Dumpable.dumpObjects(out, indent, this, mappings);
     }
 
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        mapping = WebSocketMappings.ensureMappings(config.getServletContext());
+        mappings = WebSocketMappings.ensureMappings(config.getServletContext());
 
         String max = config.getInitParameter("idleTimeout");
         if (max == null)
