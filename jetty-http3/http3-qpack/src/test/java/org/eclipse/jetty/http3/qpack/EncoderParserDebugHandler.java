@@ -25,6 +25,7 @@ public class EncoderParserDebugHandler implements EncoderInstructionParser.Handl
     public Queue<Integer> insertCountIncrements = new LinkedList<>();
 
     private final QpackEncoder _encoder;
+    private final QpackEncoder.InstructionHandler _instructionHandler;
 
     public EncoderParserDebugHandler()
     {
@@ -34,6 +35,7 @@ public class EncoderParserDebugHandler implements EncoderInstructionParser.Handl
     public EncoderParserDebugHandler(QpackEncoder encoder)
     {
         _encoder = encoder;
+        _instructionHandler = encoder == null ? null : encoder.getInstructionHandler();
     }
 
     @Override
@@ -41,7 +43,7 @@ public class EncoderParserDebugHandler implements EncoderInstructionParser.Handl
     {
         sectionAcknowledgements.add(streamId);
         if (_encoder != null)
-            _encoder.sectionAcknowledgement(streamId);
+            _instructionHandler.onSectionAcknowledgement(streamId);
     }
 
     @Override
@@ -49,7 +51,7 @@ public class EncoderParserDebugHandler implements EncoderInstructionParser.Handl
     {
         streamCancellations.add(streamId);
         if (_encoder != null)
-            _encoder.streamCancellation(streamId);
+            _instructionHandler.onStreamCancellation(streamId);
     }
 
     @Override
@@ -57,7 +59,7 @@ public class EncoderParserDebugHandler implements EncoderInstructionParser.Handl
     {
         insertCountIncrements.add(increment);
         if (_encoder != null)
-            _encoder.insertCountIncrement(increment);
+            _instructionHandler.onInsertCountIncrement(increment);
     }
 
     public boolean isEmpty()

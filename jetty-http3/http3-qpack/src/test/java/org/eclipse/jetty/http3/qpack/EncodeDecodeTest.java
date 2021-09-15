@@ -148,6 +148,6 @@ public class EncodeDecodeTest
         instruction = _encoderHandler.getInstruction();
         assertThat(instruction, instanceOf(LiteralNameEntryInstruction.class));
         assertThat(QpackTestUtil.toHexString(instruction), QpackTestUtil.equalsHex("4a63 7573 746f 6d2d 6b65 790c 6375 7374 6f6d 2d76 616c 7565"));
-        _encoder.insertCountIncrement(1);
+        _encoder.getInstructionHandler().onInsertCountIncrement(1);
     }
 }

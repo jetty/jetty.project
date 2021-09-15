@@ -48,6 +48,7 @@ public class QpackDecoder implements Dumpable
     private final DecoderInstructionParser _parser;
     private final List<EncodedFieldSection> _encodedFieldSections = new ArrayList<>();
     private final NBitIntegerParser _integerDecoder = new NBitIntegerParser();
+    private final InstructionHandler _instructionHandler = new InstructionHandler();
     private final int _maxHeaderSize;
 
     private static class MetaDataNotification
@@ -76,7 +77,7 @@ public class QpackDecoder implements Dumpable
     {
         _context = new QpackContext();
         _handler = handler;
-        _parser = new DecoderInstructionParser(new InstructionHandler());
+        _parser = new DecoderInstructionParser(_instructionHandler);
         _maxHeaderSize = maxHeaderSize;
     }
 
@@ -211,56 +212,6 @@ public class QpackDecoder implements Dumpable
         }
     }
 
-    void setCapacity(int capacity)
-    {
-        _context.getDynamicTable().setCapacity(capacity);
-    }
-
-    void insert(int index) throws QpackException
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Duplicate: index={}", index);
-
-        DynamicTable dynamicTable = _context.getDynamicTable();
-        Entry referencedEntry = dynamicTable.get(index);
-
-        // Add the new Entry to the DynamicTable.
-        Entry entry = new Entry(referencedEntry.getHttpField());
-        dynamicTable.add(entry);
-        _instructions.add(new InsertCountIncrementInstruction(1));
-        checkEncodedFieldSections();
-    }
-
-    void insert(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("InsertNameReference: nameIndex={}, dynamic={}, value={}", nameIndex, isDynamicTableIndex, value);
-
-        StaticTable staticTable = QpackContext.getStaticTable();
-        DynamicTable dynamicTable = _context.getDynamicTable();
-        Entry referencedEntry = isDynamicTableIndex ? dynamicTable.get(nameIndex) : staticTable.get(nameIndex);
-
-        // Add the new Entry to the DynamicTable.
-        Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));
-        dynamicTable.add(entry);
-        _instructions.add(new InsertCountIncrementInstruction(1));
-        checkEncodedFieldSections();
-    }
-
-    void insert(String name, String value) throws QpackException
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("InsertLiteralEntry: name={}, value={}", name, value);
-
-        Entry entry = new Entry(new HttpField(name, value));
-
-        // Add the new Entry to the DynamicTable.
-        DynamicTable dynamicTable = _context.getDynamicTable();
-        dynamicTable.add(entry);
-        _instructions.add(new InsertCountIncrementInstruction(1));
-        checkEncodedFieldSections();
-    }
-
     private static int decodeInsertCount(int encInsertCount, int totalNumInserts, int maxTableCapacity) throws QpackException
     {
         if (encInsertCount == 0)
@@ -319,6 +270,11 @@ public class QpackDecoder implements Dumpable
         _metaDataNotifications.clear();
     }
 
+    InstructionHandler getInstructionHandler()
+    {
+        return _instructionHandler;
+    }
+
     /**
      * This delivers notifications from the DecoderInstruction parser directly into the Decoder.
      */
@@ -327,25 +283,55 @@ public class QpackDecoder implements Dumpable
         @Override
         public void onSetDynamicTableCapacity(int capacity)
         {
-            setCapacity(capacity);
+            _context.getDynamicTable().setCapacity(capacity);
         }
 
         @Override
         public void onDuplicate(int index) throws QpackException
         {
-            insert(index);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Duplicate: index={}", index);
+
+            DynamicTable dynamicTable = _context.getDynamicTable();
+            Entry referencedEntry = dynamicTable.get(index);
+
+            // Add the new Entry to the DynamicTable.
+            Entry entry = new Entry(referencedEntry.getHttpField());
+            dynamicTable.add(entry);
+            _instructions.add(new InsertCountIncrementInstruction(1));
+            checkEncodedFieldSections();
         }
 
         @Override
         public void onInsertNameWithReference(int nameIndex, boolean isDynamicTableIndex, String value) throws QpackException
         {
-            insert(nameIndex, isDynamicTableIndex, value);
+            if (LOG.isDebugEnabled())
+                LOG.debug("InsertNameReference: nameIndex={}, dynamic={}, value={}", nameIndex, isDynamicTableIndex, value);
+
+            StaticTable staticTable = QpackContext.getStaticTable();
+            DynamicTable dynamicTable = _context.getDynamicTable();
+            Entry referencedEntry = isDynamicTableIndex ? dynamicTable.get(nameIndex) : staticTable.get(nameIndex);
+
+            // Add the new Entry to the DynamicTable.
+            Entry entry = new Entry(new HttpField(referencedEntry.getHttpField().getHeader(), referencedEntry.getHttpField().getName(), value));
+            dynamicTable.add(entry);
+            _instructions.add(new InsertCountIncrementInstruction(1));
+            checkEncodedFieldSections();
         }
 
         @Override
         public void onInsertWithLiteralName(String name, String value) throws QpackException
         {
-            insert(name, value);
+            if (LOG.isDebugEnabled())
+                LOG.debug("InsertLiteralEntry: name={}, value={}", name, value);
+
+            Entry entry = new Entry(new HttpField(name, value));
+
+            // Add the new Entry to the DynamicTable.
+            DynamicTable dynamicTable = _context.getDynamicTable();
+            dynamicTable.add(entry);
+            _instructions.add(new InsertCountIncrementInstruction(1));
+            checkEncodedFieldSections();
         }
     }
 }

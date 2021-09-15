@@ -92,6 +92,7 @@ public class QpackEncoder implements Dumpable
     private final int _maxBlockedStreams;
     private final Map<Long, StreamInfo> _streamInfoMap = new HashMap<>();
     private final EncoderInstructionParser _parser;
+    private final InstructionHandler _instructionHandler = new InstructionHandler();
     private int _knownInsertCount = 0;
     private int _blockedStreams = 0;
 
@@ -100,7 +101,7 @@ public class QpackEncoder implements Dumpable
         _handler = handler;
         _context = new QpackContext();
         _maxBlockedStreams = maxBlockedStreams;
-        _parser = new EncoderInstructionParser(new InstructionHandler());
+        _parser = new EncoderInstructionParser(_instructionHandler);
     }
 
     /**
@@ -361,52 +362,6 @@ public class QpackEncoder implements Dumpable
         }
     }
 
-    void insertCountIncrement(int increment) throws QpackException
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("InsertCountIncrement: increment={}", increment);
-
-        int insertCount = _context.getDynamicTable().getInsertCount();
-        if (_knownInsertCount + increment > insertCount)
-            throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "KnownInsertCount incremented over InsertCount");
-        _knownInsertCount += increment;
-    }
-
-    void sectionAcknowledgement(long streamId) throws QpackException
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("SectionAcknowledgement: streamId={}", streamId);
-
-        StreamInfo streamInfo = _streamInfoMap.get(streamId);
-        if (streamInfo == null)
-            throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "No StreamInfo for " + streamId);
-
-        // The KnownInsertCount should be updated to the earliest sent RequiredInsertCount on that stream.
-        StreamInfo.SectionInfo sectionInfo = streamInfo.acknowledge();
-        sectionInfo.release();
-        _knownInsertCount = Math.max(_knownInsertCount, sectionInfo.getRequiredInsertCount());
-
-        // If we have no more outstanding section acknowledgments remove the StreamInfo.
-        if (streamInfo.isEmpty())
-            _streamInfoMap.remove(streamId);
-    }
-
-    void streamCancellation(long streamId) throws QpackException
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("StreamCancellation: streamId={}", streamId);
-
-        StreamInfo streamInfo = _streamInfoMap.remove(streamId);
-        if (streamInfo == null)
-            throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "No StreamInfo for " + streamId);
-
-        // Release all referenced entries outstanding on the stream that was cancelled.
-        for (StreamInfo.SectionInfo sectionInfo : streamInfo)
-        {
-            sectionInfo.release();
-        }
-    }
-
     private boolean referenceEntry(Entry entry, StreamInfo streamInfo)
     {
         if (entry == null)
@@ -463,24 +418,60 @@ public class QpackEncoder implements Dumpable
         _instructions.clear();
     }
 
+    InstructionHandler getInstructionHandler()
+    {
+        return _instructionHandler;
+    }
+
     class InstructionHandler implements EncoderInstructionParser.Handler
     {
         @Override
         public void onSectionAcknowledgement(long streamId) throws QpackException
         {
-            sectionAcknowledgement(streamId);
+            if (LOG.isDebugEnabled())
+                LOG.debug("SectionAcknowledgement: streamId={}", streamId);
+
+            StreamInfo streamInfo = _streamInfoMap.get(streamId);
+            if (streamInfo == null)
+                throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "No StreamInfo for " + streamId);
+
+            // The KnownInsertCount should be updated to the earliest sent RequiredInsertCount on that stream.
+            StreamInfo.SectionInfo sectionInfo = streamInfo.acknowledge();
+            sectionInfo.release();
+            _knownInsertCount = Math.max(_knownInsertCount, sectionInfo.getRequiredInsertCount());
+
+            // If we have no more outstanding section acknowledgments remove the StreamInfo.
+            if (streamInfo.isEmpty())
+                _streamInfoMap.remove(streamId);
         }
 
         @Override
         public void onStreamCancellation(long streamId) throws QpackException
         {
-            streamCancellation(streamId);
+            if (LOG.isDebugEnabled())
+                LOG.debug("StreamCancellation: streamId={}", streamId);
+
+            StreamInfo streamInfo = _streamInfoMap.remove(streamId);
+            if (streamInfo == null)
+                throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "No StreamInfo for " + streamId);
+
+            // Release all referenced entries outstanding on the stream that was cancelled.
+            for (StreamInfo.SectionInfo sectionInfo : streamInfo)
+            {
+                sectionInfo.release();
+            }
         }
 
         @Override
         public void onInsertCountIncrement(int increment) throws QpackException
         {
-            insertCountIncrement(increment);
+            if (LOG.isDebugEnabled())
+                LOG.debug("InsertCountIncrement: increment={}", increment);
+
+            int insertCount = _context.getDynamicTable().getInsertCount();
+            if (_knownInsertCount + increment > insertCount)
+                throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "KnownInsertCount incremented over InsertCount");
+            _knownInsertCount += increment;
         }
     }
 

@@ -26,6 +26,7 @@ public class DecoderParserDebugHandler implements DecoderInstructionParser.Handl
     public Queue<ReferencedEntry> referencedNameEntries = new LinkedList<>();
 
     private final QpackDecoder _decoder;
+    private final DecoderInstructionParser.Handler _decoderHandler;
 
     public DecoderParserDebugHandler()
     {
@@ -35,6 +36,7 @@ public class DecoderParserDebugHandler implements DecoderInstructionParser.Handl
     public DecoderParserDebugHandler(QpackDecoder decoder)
     {
         _decoder = decoder;
+        _decoderHandler = decoder == null ? null : decoder.getInstructionHandler();
     }
 
     public static class LiteralEntry
@@ -64,11 +66,11 @@ public class DecoderParserDebugHandler implements DecoderInstructionParser.Handl
     }
 
     @Override
-    public void onSetDynamicTableCapacity(int capacity)
+    public void onSetDynamicTableCapacity(int capacity) throws QpackException
     {
         setCapacities.add(capacity);
         if (_decoder != null)
-            _decoder.setCapacity(capacity);
+            _decoderHandler.onSetDynamicTableCapacity(capacity);
     }
 
     @Override
@@ -76,7 +78,7 @@ public class DecoderParserDebugHandler implements DecoderInstructionParser.Handl
     {
         duplicates.add(index);
         if (_decoder != null)
-            _decoder.insert(index);
+            _decoderHandler.onDuplicate(index);
     }
 
     @Override
@@ -84,7 +86,7 @@ public class DecoderParserDebugHandler implements DecoderInstructionParser.Handl
     {
         referencedNameEntries.add(new ReferencedEntry(nameIndex, isDynamicTableIndex, value));
         if (_decoder != null)
-            _decoder.insert(nameIndex, isDynamicTableIndex, value);
+            _decoderHandler.onInsertNameWithReference(nameIndex, isDynamicTableIndex, value);
     }
 
     @Override
@@ -92,7 +94,7 @@ public class DecoderParserDebugHandler implements DecoderInstructionParser.Handl
     {
         literalNameEntries.add(new LiteralEntry(name, value));
         if (_decoder != null)
-            _decoder.insert(name, value);
+            _decoderHandler.onInsertWithLiteralName(name, value);
     }
 
     public boolean isEmpty()
