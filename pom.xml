@@ -39,7 +39,6 @@
     <asm.version>9.2</asm.version>
     <jmh.version>1.33</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
-    <tycho.version>2.3.0</tycho.version>
     <junit.version>5.8.0</junit.version>
     <maven.version>3.8.2</maven.version>
     <maven.resolver.version>1.7.2</maven.resolver.version>
@@ -1640,20 +1639,6 @@
       <build>
         <plugins>
           <plugin>
-            <groupId>org.eclipse.tycho.extras</groupId>
-            <artifactId>tycho-pack200a-plugin</artifactId>
-            <version>${tycho.version}</version>
-            <executions>
-              <execution>
-                <id>pack200-normalize</id>
-                <goals>
-                  <goal>normalize</goal>
-                </goals>
-                <phase>package</phase>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
             <!-- This plugin only exists on Eclipse CBI -->
             <groupId>org.eclipse.cbi.maven.plugins</groupId>
             <artifactId>eclipse-jarsigner-plugin</artifactId>
@@ -1665,20 +1650,6 @@
                 <goals>
                   <goal>sign</goal>
                 </goals>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.eclipse.tycho.extras</groupId>
-            <artifactId>tycho-pack200b-plugin</artifactId>
-            <version>${tycho.version}</version>
-            <executions>
-              <execution>
-                <id>pack200-pack</id>
-                <goals>
-                  <goal>pack</goal>
-                </goals>
-                <phase>package</phase>
               </execution>
             </executions>
           </plugin>
