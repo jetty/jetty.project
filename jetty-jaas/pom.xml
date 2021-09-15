@@ -11,7 +11,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
     <!-- 2.0.0.AM25 is breaking surefire -->
-    <apacheds.version>2.0.0-M24</apacheds.version>
+    <apacheds.version>2.0.0.AM26</apacheds.version>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.jaas.*</spotbugs.onlyAnalyze>
   </properties>
   <build>
