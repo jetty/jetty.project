@@ -39,7 +39,7 @@ import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_ENCODER_STREAM_
 
 public class QpackDecoder implements Dumpable
 {
-    public static final Logger LOG = LoggerFactory.getLogger(QpackDecoder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QpackDecoder.class);
 
     private final List<Instruction> _instructions = new ArrayList<>();
     private final List<MetaDataNotification> _metaDataNotifications = new ArrayList<>();
