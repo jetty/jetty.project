@@ -17,6 +17,7 @@ open module org.eclipse.jetty.quic.quiche
     exports org.eclipse.jetty.quic.quiche.ffi;
     exports org.eclipse.jetty.quic.quiche;
 
+    requires org.eclipse.jetty.util;
     requires org.slf4j;
     requires com.sun.jna;
 }
