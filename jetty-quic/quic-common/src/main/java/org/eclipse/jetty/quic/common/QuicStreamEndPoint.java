@@ -16,11 +16,13 @@ package org.eclipse.jetty.quic.common;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,19 +101,17 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     }
 
     @Override
-    public void onClose(Throwable failure)
+    protected void doClose()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("closing stream {}", streamId);
-        try
-        {
-            session.flushFinished(streamId);
-        }
-        catch (IOException e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("error closing stream {}", streamId, e);
-        }
+        doShutdownInput();
+        doShutdownOutput();
+    }
+
+    @Override
+    public void onClose(Throwable failure)
+    {
         super.onClose(failure);
         session.onClose(streamId);
     }
@@ -124,8 +124,6 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         int pos = BufferUtil.flipToFill(buffer);
         int drained = session.fill(streamId, buffer);
         BufferUtil.flipToFlush(buffer, pos);
-        if (drained < 0)
-            shutdownInput();
         return drained;
     }
 
@@ -149,6 +147,27 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         if (LOG.isDebugEnabled())
             LOG.debug("flushed stream {}", streamId);
         return true;
+    }
+
+    public void write(Callback callback, List<ByteBuffer> buffers, boolean last)
+    {
+        // TODO: writing the last flag after the buffers is inefficient,
+        //  but Quiche supports it, so we need to expose the Quiche API.
+        write(Callback.from(callback.getInvocationType(), () -> finishWrite(callback, last), callback::failed), buffers.toArray(ByteBuffer[]::new));
+    }
+
+    private void finishWrite(Callback callback, boolean last)
+    {
+        try
+        {
+            if (last)
+                session.flushFinished(streamId);
+            callback.succeeded();
+        }
+        catch (Throwable x)
+        {
+            callback.failed(x);
+        }
     }
 
     @Override

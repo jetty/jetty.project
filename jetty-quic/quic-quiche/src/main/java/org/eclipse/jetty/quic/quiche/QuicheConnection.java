@@ -610,7 +610,7 @@ public class QuicheConnection
             bool_pointer fin = new bool_pointer();
             int read = LibQuiche.INSTANCE.quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin).intValue();
             if (read == LibQuiche.quiche_error.QUICHE_ERR_DONE)
-                return fin.getValue() ? -1 : 0;
+                return isStreamFinished(streamId) ? -1 : 0;
             if (read < 0L)
                 throw new IOException("Quiche failed to read from stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(read));
             buffer.position(buffer.position() + read);
