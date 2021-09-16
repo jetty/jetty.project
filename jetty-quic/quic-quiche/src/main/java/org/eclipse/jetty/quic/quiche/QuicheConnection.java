@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.quic.quiche.ffi.LibQuiche;
+import org.eclipse.jetty.quic.quiche.ffi.SizedStructure;
 import org.eclipse.jetty.quic.quiche.ffi.bool_pointer;
 import org.eclipse.jetty.quic.quiche.ffi.char_pointer;
 import org.eclipse.jetty.quic.quiche.ffi.size_t;
@@ -70,8 +71,8 @@ public class QuicheConnection
         SECURE_RANDOM.nextBytes(scid);
         LibQuiche.quiche_config libQuicheConfig = buildConfig(quicheConfig);
 
-        sockaddr to = sockaddr.convert(peer);
-        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_connect(peer.getHostName(), scid, new size_t(scid.length), to, new size_t(to.size()), libQuicheConfig);
+        SizedStructure<sockaddr> s = sockaddr.convert(peer);
+        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_connect(peer.getHostName(), scid, new size_t(scid.length), s.getStructure(), s.getSize(), libQuicheConfig);
         return new QuicheConnection(quicheConn, libQuicheConfig);
     }
 
@@ -159,7 +160,7 @@ public class QuicheConnection
         byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcid_len = new size_t_pointer(dcid.length);
 
-        byte[] token = new byte[32];
+        byte[] token = new byte[48]; // TODO the token buffer size depends on the token minter.
         size_t_pointer token_len = new size_t_pointer(token.length);
 
         int rc = LibQuiche.INSTANCE.quiche_header_info(packet, new size_t(packet.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
@@ -191,7 +192,7 @@ public class QuicheConnection
         byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcid_len = new size_t_pointer(dcid.length);
 
-        byte[] token = new byte[32];
+        byte[] token = new byte[48]; // TODO the token buffer size depends on the token minter.
         size_t_pointer token_len = new size_t_pointer(token.length);
 
         LOG.debug("  getting header info...");
@@ -263,7 +264,7 @@ public class QuicheConnection
         byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcid_len = new size_t_pointer(dcid.length);
 
-        byte[] token = new byte[32];
+        byte[] token = new byte[48]; // TODO the token buffer size depends on the token minter.
         size_t_pointer token_len = new size_t_pointer(token.length);
 
         LOG.debug("  getting header info...");
@@ -303,8 +304,8 @@ public class QuicheConnection
         LOG.debug("  connection creation...");
         LibQuiche.quiche_config libQuicheConfig = buildConfig(quicheConfig);
 
-        sockaddr from = sockaddr.convert(peer);
-        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_accept(dcid, dcid_len.getPointee(), odcid, new size_t(odcid.length), from, new size_t(from.size()), libQuicheConfig);
+        SizedStructure<sockaddr> s = sockaddr.convert(peer);
+        LibQuiche.quiche_conn quicheConn = LibQuiche.INSTANCE.quiche_accept(dcid, dcid_len.getPointee(), odcid, new size_t(odcid.length), s.getStructure(), s.getSize(), libQuicheConfig);
 
         if (quicheConn == null)
         {
@@ -363,9 +364,9 @@ public class QuicheConnection
             throw new IOException("Cannot receive when not connected");
 
         LibQuiche.quiche_recv_info info = new LibQuiche.quiche_recv_info();
-        sockaddr from = sockaddr.convert(peer);
-        info.from = sockaddr.byReference(from);
-        info.from_len = new size_t(from.size());
+        SizedStructure<sockaddr> s = sockaddr.convert(peer);
+        info.from = s.getStructure().byReference();
+        info.from_len = s.getSize();
         int received = libQuiche().quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
         if (received < 0)
             throw new IOException("Quiche failed to receive packet; err=" + LibQuiche.quiche_error.errToString(received));
