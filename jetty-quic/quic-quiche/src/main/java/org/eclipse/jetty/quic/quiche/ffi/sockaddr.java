@@ -36,7 +36,7 @@ public class sockaddr extends Structure
         read();
     }
 
-    public static sockaddr convert(SocketAddress socketAddress)
+    public static SizedStructure<sockaddr> convert(SocketAddress socketAddress)
     {
         if (isLinux())
             return netinet_linux.to_sock_addr(socketAddress);
@@ -47,9 +47,9 @@ public class sockaddr extends Structure
         throw new UnsupportedOperationException("Unsupported OS: " + System.getProperty("os.name"));
     }
 
-    public static ByReference byReference(sockaddr sa)
+    public ByReference byReference()
     {
-        return new ByReference(sa.getPointer());
+        return new ByReference(getPointer());
     }
 
     public static class ByReference extends sockaddr implements Structure.ByReference

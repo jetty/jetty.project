@@ -21,6 +21,8 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 
 import com.sun.jna.Structure;
+import org.eclipse.jetty.quic.quiche.ffi.SizedStructure;
+import org.eclipse.jetty.quic.quiche.ffi.size_t;
 import org.eclipse.jetty.quic.quiche.ffi.sockaddr;
 import org.eclipse.jetty.quic.quiche.ffi.uint16_t;
 import org.eclipse.jetty.quic.quiche.ffi.uint32_t;
@@ -31,7 +33,7 @@ public interface netinet_macos
     uint8_t AF_INET = new uint8_t((byte)2);
     uint8_t AF_INET6 = new uint8_t((byte)30);
 
-    static sockaddr to_sock_addr(SocketAddress socketAddress)
+    static SizedStructure<sockaddr> to_sock_addr(SocketAddress socketAddress)
     {
         if (!(socketAddress instanceof InetSocketAddress))
             throw new IllegalArgumentException("Expected InetSocketAddress instance, got: " + socketAddress);
@@ -44,7 +46,7 @@ public interface netinet_macos
             sin.sin_family = AF_INET;
             sin.sin_addr = new uint32_t(ByteBuffer.wrap(address.getAddress()).getInt());
             sin.sin_port = new uint16_t(inetSocketAddress.getPort());
-            return sin.to_sockaddr();
+            return new SizedStructure<>(sin.to_sockaddr(), new size_t(sin.size()));
         }
         else if (address instanceof Inet6Address)
         {
@@ -55,7 +57,7 @@ public interface netinet_macos
             sin6.sin6_port = new uint16_t(inetSocketAddress.getPort());
             sin6.sin6_flowinfo = new uint32_t(0);
             sin6.sin6_scope_id = new uint32_t(0);
-            return sin6.to_sockaddr();
+            return new SizedStructure<>(sin6.to_sockaddr(), new size_t(sin6.size()));
         }
         else
         {

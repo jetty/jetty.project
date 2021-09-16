@@ -84,7 +84,7 @@ public class QuicheConnectionId
         byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcidLen = new size_t_pointer(dcid.length);
 
-        byte[] token = new byte[32];
+        byte[] token = new byte[48]; // TODO the token buffer size depends on the token minter.
         size_t_pointer tokenLen = new size_t_pointer(token.length);
 
         int rc = LibQuiche.INSTANCE.quiche_header_info(packet, new size_t(packet.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
