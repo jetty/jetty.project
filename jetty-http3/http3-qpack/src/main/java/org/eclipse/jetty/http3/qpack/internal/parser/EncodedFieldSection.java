@@ -130,7 +130,8 @@ public class EncodedFieldSection
 
     private EncodedField parseNameReference(ByteBuffer buffer) throws EncodingException
     {
-        LOG.info("parseLiteralFieldLineWithNameReference: " + BufferUtil.toDetailString(buffer));
+        if (LOG.isDebugEnabled())
+            LOG.debug("parseLiteralFieldLineWithNameReference: " + BufferUtil.toDetailString(buffer));
 
         byte firstByte = buffer.get(buffer.position());
         boolean allowEncoding = (firstByte & 0x20) != 0;

@@ -18,51 +18,55 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.generator.ControlGenerator;
 import org.eclipse.jetty.http3.internal.parser.ControlParser;
+import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class SettingsGenerateParseTest
 {
     @Test
-    public void testGenerateParseEmpty() throws Exception
+    public void testGenerateParseEmpty()
     {
         testGenerateParse(Map.of());
     }
 
     @Test
-    public void testGenerateParse() throws Exception
+    public void testGenerateParse()
     {
         testGenerateParse(Map.of(13L, 7L, 31L, 29L));
     }
 
-    private void testGenerateParse(Map<Long, Long> settings) throws Exception
+    private void testGenerateParse(Map<Long, Long> settings)
     {
         SettingsFrame input = new SettingsFrame(settings);
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
         new ControlGenerator().generate(lease, 0, input);
 
-        List<Frame> frames = new ArrayList<>();
-        ControlParser parser = new ControlParser();
+        List<SettingsFrame> frames = new ArrayList<>();
+        ControlParser parser = new ControlParser(new ParserListener()
+        {
+            @Override
+            public void onSettings(SettingsFrame frame)
+            {
+                frames.add(frame);
+            }
+        });
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
-            while (buffer.hasRemaining())
-            {
-                Frame frame = parser.parse(buffer);
-                if (frame != null)
-                    frames.add(frame);
-            }
+            parser.parse(buffer);
+            assertFalse(buffer.hasRemaining());
         }
 
         assertEquals(1, frames.size());
-        SettingsFrame output = (SettingsFrame)frames.get(0);
+        SettingsFrame output = frames.get(0);
 
         assertEquals(input.getSettings(), output.getSettings());
     }

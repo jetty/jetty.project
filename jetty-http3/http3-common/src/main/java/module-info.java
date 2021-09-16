@@ -22,9 +22,9 @@ module org.eclipse.jetty.http3.common
     exports org.eclipse.jetty.http3.internal;
 
     requires transitive org.eclipse.jetty.http;
-    requires org.eclipse.jetty.http3.qpack;
+    requires transitive org.eclipse.jetty.http3.qpack;
     requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.quic.common;
+    requires transitive org.eclipse.jetty.quic.common;
     requires org.eclipse.jetty.util;
     requires org.slf4j;
 }

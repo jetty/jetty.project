@@ -68,6 +68,11 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         return session.getRemoteAddress();
     }
 
+    public boolean isStreamFinished()
+    {
+        return session.isFinished(streamId);
+    }
+
     @Override
     protected void doShutdownInput()
     {
