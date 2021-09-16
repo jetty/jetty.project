@@ -14,9 +14,9 @@
 package org.eclipse.jetty.http3.internal.parser;
 
 import java.nio.ByteBuffer;
+import java.util.function.BooleanSupplier;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
-import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,12 +25,16 @@ public class DataBodyParser extends BodyParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(DataBodyParser.class);
 
+    private final long streamId;
+    private final BooleanSupplier isLast;
     private State state = State.INIT;
     private long length;
 
-    public DataBodyParser(long streamId, HeaderParser headerParser)
+    public DataBodyParser(HeaderParser headerParser, ParserListener listener, long streamId, BooleanSupplier isLast)
     {
-        super(streamId, headerParser);
+        super(headerParser, listener);
+        this.streamId = streamId;
+        this.isLast = isLast;
     }
 
     private void reset()
@@ -40,13 +44,13 @@ public class DataBodyParser extends BodyParser
     }
 
     @Override
-    protected Frame emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ByteBuffer buffer)
     {
-        return onData(BufferUtil.EMPTY_BUFFER, false);
+        onData(BufferUtil.EMPTY_BUFFER, false);
     }
 
     @Override
-    public Frame parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -72,12 +76,14 @@ public class DataBodyParser extends BodyParser
                     if (length == 0)
                     {
                         reset();
-                        return onData(slice, false);
+                        onData(slice, false);
+                        return true;
                     }
                     else
                     {
                         // We got partial data, simulate a smaller frame, and stay in DATA state.
-                        return onData(slice, true);
+                        onData(slice, true);
+                        break;
                     }
                 }
                 default:
@@ -86,15 +92,28 @@ public class DataBodyParser extends BodyParser
                 }
             }
         }
-        return null;
+        return false;
     }
 
-    private DataFrame onData(ByteBuffer buffer, boolean fragment)
+    private void onData(ByteBuffer buffer, boolean fragment)
     {
-        DataFrame frame = new DataFrame(buffer, true);
+        DataFrame frame = new DataFrame(buffer, isLast.getAsBoolean());
         if (LOG.isDebugEnabled())
-            LOG.debug("notifying synthetic={} {}#{}", fragment, frame, getStreamId());
-        return frame;
+            LOG.debug("notifying synthetic={} {}#{}", fragment, frame, streamId);
+        notifyData(frame);
+    }
+
+    private void notifyData(DataFrame frame)
+    {
+        ParserListener listener = getParserListener();
+        try
+        {
+            listener.onData(streamId, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure while notifying listener {}", listener, x);
+        }
     }
 
     private enum State

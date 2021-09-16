@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.internal.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.ErrorCode;
-import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,14 +34,14 @@ public class ControlParser
     private final BodyParser unknownBodyParser;
     private State state = State.HEADER;
 
-    public ControlParser()
+    public ControlParser(ParserListener listener)
     {
         this.headerParser = new HeaderParser();
-        this.bodyParsers[FrameType.CANCEL_PUSH.type()] = new CancelPushBodyParser(headerParser);
-        this.bodyParsers[FrameType.SETTINGS.type()] = new SettingsBodyParser(headerParser);
-        this.bodyParsers[FrameType.GOAWAY.type()] = new GoAwayBodyParser(headerParser);
-        this.bodyParsers[FrameType.MAX_PUSH_ID.type()] = new MaxPushIdBodyParser(headerParser);
-        this.unknownBodyParser = new UnknownBodyParser(headerParser);
+        this.bodyParsers[FrameType.CANCEL_PUSH.type()] = new CancelPushBodyParser(headerParser, listener);
+        this.bodyParsers[FrameType.SETTINGS.type()] = new SettingsBodyParser(headerParser, listener);
+        this.bodyParsers[FrameType.GOAWAY.type()] = new GoAwayBodyParser(headerParser, listener);
+        this.bodyParsers[FrameType.MAX_PUSH_ID.type()] = new MaxPushIdBodyParser(headerParser, listener);
+        this.unknownBodyParser = new UnknownBodyParser(headerParser, listener);
     }
 
     private void reset()
@@ -56,7 +55,7 @@ public class ControlParser
      *
      * @param buffer the buffer to parse
      */
-    public Frame parse(ByteBuffer buffer) throws ParseException
+    public void parse(ByteBuffer buffer)
     {
         try
         {
@@ -71,7 +70,7 @@ public class ControlParser
                             state = State.BODY;
                             break;
                         }
-                        return null;
+                        return;
                     }
                     case BODY:
                     {
@@ -85,25 +84,26 @@ public class ControlParser
                             // TODO: enforce only control frames, but ignore unknown.
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ignoring unknown frame type {}", Integer.toHexString(frameType));
-                            Frame frame = unknownBodyParser.parse(buffer);
-                            if (frame == null)
-                                return null;
+                            if (!unknownBodyParser.parse(buffer))
+                                return;
                             reset();
-                            break;
                         }
                         else
                         {
-                            Frame frame;
                             if (headerParser.getFrameLength() == 0)
-                                frame = bodyParser.emptyBody(buffer);
+                            {
+                                bodyParser.emptyBody(buffer);
+                            }
                             else
-                                frame = bodyParser.parse(buffer);
+                            {
+                                if (!bodyParser.parse(buffer))
+                                    return;
+                            }
                             if (LOG.isDebugEnabled())
                                 LOG.debug("parsed {} frame body from {}", FrameType.from(frameType), buffer);
-                            if (frame != null)
-                                reset();
-                            return frame;
+                            reset();
                         }
+                        break;
                     }
                     default:
                     {
@@ -112,20 +112,18 @@ public class ControlParser
                 }
             }
         }
-        catch (ParseException x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("parse failed", x);
-            buffer.clear();
-            throw x;
-        }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("parse failed", x);
             buffer.clear();
-            throw new ParseException(ErrorCode.INTERNAL_ERROR.code(), "parser_error", true, x);
+            connectionFailure(buffer, ErrorCode.INTERNAL_ERROR.code(), "parser_error");
         }
+    }
+
+    private void connectionFailure(ByteBuffer buffer, int error, String reason)
+    {
+        unknownBodyParser.sessionFailure(buffer, error, reason);
     }
 
     private enum State

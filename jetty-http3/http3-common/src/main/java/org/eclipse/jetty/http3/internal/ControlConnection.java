@@ -16,11 +16,7 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http3.frames.Frame;
-import org.eclipse.jetty.http3.frames.FrameType;
-import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.parser.ControlParser;
-import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -37,16 +33,14 @@ public class ControlConnection extends AbstractConnection implements Connection.
 
     private final ByteBufferPool byteBufferPool;
     private final ControlParser parser;
-    private final ParserListener listener;
     private boolean useInputDirectByteBuffers = true;
     private ByteBuffer buffer;
 
-    public ControlConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, ControlParser parser, ParserListener listener)
+    public ControlConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, ControlParser parser)
     {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
         this.parser = parser;
-        this.listener = listener;
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -90,13 +84,7 @@ public class ControlConnection extends AbstractConnection implements Connection.
             while (true)
             {
                 // Parse first in case of bytes from the upgrade.
-                while (buffer.hasRemaining())
-                {
-                    Frame frame = parser.parse(buffer);
-                    if (frame == null)
-                        break;
-                    notifyFrame(frame);
-                }
+                parser.parse(buffer);
 
                 // Then read from the EndPoint.
                 int filled = getEndPoint().fill(buffer);
@@ -126,35 +114,6 @@ public class ControlConnection extends AbstractConnection implements Connection.
             byteBufferPool.release(buffer);
             buffer = null;
             getEndPoint().close(x);
-        }
-    }
-
-    private void notifyFrame(Frame frame)
-    {
-        FrameType frameType = frame.getFrameType();
-        switch (frameType)
-        {
-            case SETTINGS:
-            {
-                notifySettings((SettingsFrame)frame);
-                break;
-            }
-            default:
-            {
-                throw new UnsupportedOperationException("unsupported frame type " + frameType);
-            }
-        }
-    }
-
-    private void notifySettings(SettingsFrame frame)
-    {
-        try
-        {
-            listener.onSettings(frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
         }
     }
 }

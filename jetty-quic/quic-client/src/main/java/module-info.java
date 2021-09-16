@@ -15,10 +15,10 @@ module org.eclipse.jetty.quic.client
 {
     exports org.eclipse.jetty.quic.client;
 
-    requires org.eclipse.jetty.quic.common;
+    requires transitive org.eclipse.jetty.quic.common;
     requires org.eclipse.jetty.quic.quiche;
     requires org.eclipse.jetty.client;
-    requires org.eclipse.jetty.io;
-    requires org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.io;
+    requires transitive org.eclipse.jetty.util;
     requires org.slf4j;
 }

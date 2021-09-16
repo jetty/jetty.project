@@ -16,7 +16,10 @@ package org.eclipse.jetty.http3.internal.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.ErrorCode;
-import org.eclipse.jetty.http3.frames.Frame;
+import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.util.BufferUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>The base parser for the frame body of HTTP/3 frames.</p>
@@ -27,18 +30,20 @@ import org.eclipse.jetty.http3.frames.Frame;
  */
 public abstract class BodyParser
 {
-    private final long streamId;
-    private final HeaderParser headerParser;
+    private static final Logger LOG = LoggerFactory.getLogger(BodyParser.class);
 
-    protected BodyParser(long streamId, HeaderParser headerParser)
+    private final HeaderParser headerParser;
+    private final ParserListener listener;
+
+    protected BodyParser(HeaderParser headerParser, ParserListener listener)
     {
-        this.streamId = streamId;
         this.headerParser = headerParser;
+        this.listener = listener;
     }
 
-    protected long getStreamId()
+    protected ParserListener getParserListener()
     {
-        return streamId;
+        return listener;
     }
 
     protected long getBodyLength()
@@ -47,18 +52,60 @@ public abstract class BodyParser
     }
 
     /**
-     * <p>Parses the frame body bytes in the given {@code buffer}, producing a {@link Frame}.</p>
-     * <p>Only the frame body bytes are consumed, therefore when this method returns, the buffer
-     * may contain unconsumed bytes, for example for other frames.</p>
+     * <p>Parses the frame body bytes in the given {@code buffer}.</p>
+     * <p>Only the frame body bytes are consumed, therefore when this method returns,
+     * the buffer may contain unconsumed bytes, for example for other frames.</p>
      *
      * @param buffer the buffer to parse
-     * @return the parsed frame if all the frame body bytes were parsed, or an error frame,
-     * or null if not enough frame body bytes were present in the buffer
+     * @return true if all the frame body bytes were parsed;
+     * false if not enough frame body bytes were present in the buffer
      */
-    public abstract Frame parse(ByteBuffer buffer) throws ParseException;
+    public abstract boolean parse(ByteBuffer buffer);
 
-    protected Frame emptyBody(ByteBuffer buffer) throws ParseException
+    protected void emptyBody(ByteBuffer buffer)
     {
-        throw new ParseException(ErrorCode.PROTOCOL_ERROR.code(), "invalid_frame");
+        sessionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code(), "invalid_frame");
+    }
+
+    protected void sessionFailure(ByteBuffer buffer, int error, String reason)
+    {
+        BufferUtil.clear(buffer);
+        notifySessionFailure(error, reason);
+    }
+
+    protected void notifySessionFailure(int error, String reason)
+    {
+        try
+        {
+            listener.onSessionFailure(error, reason);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    protected void notifyStreamFailure(long streamId, int error, String reason)
+    {
+        try
+        {
+            listener.onStreamFailure(streamId, error, reason);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    protected void notifySettings(SettingsFrame frame)
+    {
+        try
+        {
+            listener.onSettings(frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure while notifying listener {}", listener, x);
+        }
     }
 }

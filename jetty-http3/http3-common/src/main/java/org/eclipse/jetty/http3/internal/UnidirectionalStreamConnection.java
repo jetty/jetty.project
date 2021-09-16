@@ -127,8 +127,8 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         {
             case ControlConnection.STREAM_TYPE:
             {
-                ControlParser parser = new ControlParser();
-                ControlConnection newConnection = new ControlConnection(getEndPoint(), getExecutor(), byteBufferPool, parser, listener);
+                ControlParser parser = new ControlParser(listener);
+                ControlConnection newConnection = new ControlConnection(getEndPoint(), getExecutor(), byteBufferPool, parser);
                 newConnection.setInputBufferSize(getInputBufferSize());
                 newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
                 if (LOG.isDebugEnabled())

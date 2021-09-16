@@ -16,10 +16,10 @@ package org.eclipse.jetty.http3.internal.parser;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.ErrorCode;
-import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
@@ -32,14 +32,17 @@ public class HeadersBodyParser extends BodyParser
     private static final Logger LOG = LoggerFactory.getLogger(HeadersBodyParser.class);
 
     private final List<ByteBuffer> byteBuffers = new ArrayList<>();
+    private final long streamId;
+    private final BooleanSupplier isLast;
     private final QpackDecoder decoder;
     private State state = State.INIT;
     private long length;
-    private Frame frame;
 
-    public HeadersBodyParser(long streamId, HeaderParser headerParser, QpackDecoder decoder)
+    public HeadersBodyParser(HeaderParser headerParser, ParserListener listener, QpackDecoder decoder, long streamId, BooleanSupplier isLast)
     {
-        super(streamId, headerParser);
+        super(headerParser, listener);
+        this.streamId = streamId;
+        this.isLast = isLast;
         this.decoder = decoder;
     }
 
@@ -47,11 +50,10 @@ public class HeadersBodyParser extends BodyParser
     {
         state = State.INIT;
         length = 0;
-        frame = null;
     }
 
     @Override
-    public Frame parse(ByteBuffer buffer) throws ParseException
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -72,7 +74,7 @@ public class HeadersBodyParser extends BodyParser
                         length -= remaining;
                         ByteBuffer copy = BufferUtil.copy(buffer);
                         byteBuffers.add(copy);
-                        return null;
+                        return false;
                     }
                     else
                     {
@@ -106,45 +108,54 @@ public class HeadersBodyParser extends BodyParser
                 }
             }
         }
-        return null;
+        return false;
     }
 
-    private Frame decode(ByteBuffer encoded) throws ParseException
+    private boolean decode(ByteBuffer encoded)
     {
         try
         {
-            // TODO: do a proper reset when the lambda is notified asynchronously.
-            if (decoder.decode(getStreamId(), encoded, (streamId, metaData) -> this.frame = onHeaders(metaData)))
-            {
-                Frame frame = this.frame;
-                reset();
-                return frame;
-            }
-            return null;
+            return decoder.decode(streamId, encoded, (streamId, metaData) -> onHeaders(metaData));
         }
         catch (QpackException.StreamException x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            throw new ParseException(x.getErrorCode(), x.getMessage());
+            notifyStreamFailure(streamId, x.getErrorCode(), x.getMessage());
         }
         catch (QpackException.SessionException x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            throw new ParseException(x.getErrorCode(), x.getMessage(), true);
+            notifySessionFailure(x.getErrorCode(), x.getMessage());
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            throw new ParseException(ErrorCode.INTERNAL_ERROR.code(), "internal_error", true, x);
+            notifySessionFailure(ErrorCode.INTERNAL_ERROR.code(), "internal_error");
         }
+        return false;
     }
 
-    private Frame onHeaders(MetaData metaData)
+    private void onHeaders(MetaData metaData)
     {
-        return new HeadersFrame(metaData, false);
+        HeadersFrame frame = new HeadersFrame(metaData, isLast.getAsBoolean());
+        reset();
+        notifyHeaders(frame);
+    }
+
+    protected void notifyHeaders(HeadersFrame frame)
+    {
+        ParserListener listener = getParserListener();
+        try
+        {
+            listener.onHeaders(streamId, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure while notifying listener {}", listener, x);
+        }
     }
 
     private enum State

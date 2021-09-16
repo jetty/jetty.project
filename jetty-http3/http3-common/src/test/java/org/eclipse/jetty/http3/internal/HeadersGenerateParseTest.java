@@ -22,10 +22,10 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
+import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -33,11 +33,12 @@ import org.eclipse.jetty.io.NullByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class HeadersGenerateParseTest
 {
     @Test
-    public void testGenerateParse() throws Exception
+    public void testGenerateParse()
     {
         HttpURI uri = HttpURI.from("http://host:1234/path?a=b");
         HttpFields fields = HttpFields.build()
@@ -50,20 +51,23 @@ public class HeadersGenerateParseTest
         new MessageGenerator(encoder, 8192, true).generate(lease, 0, input);
 
         QpackDecoder decoder = new QpackDecoder(instructions -> {}, 8192);
-        List<Frame> frames = new ArrayList<>();
-        MessageParser parser = new MessageParser(0, decoder);
+        List<HeadersFrame> frames = new ArrayList<>();
+        MessageParser parser = new MessageParser(new ParserListener()
+        {
+            @Override
+            public void onHeaders(long streamId, HeadersFrame frame)
+            {
+                frames.add(frame);
+            }
+        }, decoder, 13, () -> true);
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
-            while (buffer.hasRemaining())
-            {
-                Frame frame = parser.parse(buffer);
-                if (frame != null)
-                    frames.add(frame);
-            }
+            parser.parse(buffer);
+            assertFalse(buffer.hasRemaining());
         }
 
         assertEquals(1, frames.size());
-        HeadersFrame output = (HeadersFrame)frames.get(0);
+        HeadersFrame output = frames.get(0);
 
         MetaData.Request inputMetaData = (MetaData.Request)input.getMetaData();
         MetaData.Request outputMetaData = (MetaData.Request)output.getMetaData();

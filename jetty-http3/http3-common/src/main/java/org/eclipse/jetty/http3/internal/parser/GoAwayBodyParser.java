@@ -15,17 +15,15 @@ package org.eclipse.jetty.http3.internal.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.frames.Frame;
-
 public class GoAwayBodyParser extends BodyParser
 {
-    public GoAwayBodyParser(HeaderParser headerParser)
+    public GoAwayBodyParser(HeaderParser headerParser, ParserListener listener)
     {
-        super(1, headerParser);
+        super(headerParser, listener);
     }
 
     @Override
-    public Frame parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         throw new UnsupportedOperationException();
     }
