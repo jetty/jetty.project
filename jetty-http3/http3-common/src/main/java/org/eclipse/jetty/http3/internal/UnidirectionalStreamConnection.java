@@ -18,6 +18,8 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http3.internal.parser.ControlParser;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
+import org.eclipse.jetty.http3.qpack.QpackDecoder;
+import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -25,20 +27,24 @@ import org.eclipse.jetty.io.EndPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StreamConnection extends AbstractConnection implements Connection.UpgradeFrom
+public class UnidirectionalStreamConnection extends AbstractConnection implements Connection.UpgradeFrom
 {
-    private static final Logger LOG = LoggerFactory.getLogger(StreamConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UnidirectionalStreamConnection.class);
 
     private final ByteBufferPool byteBufferPool;
+    private final QpackEncoder encoder;
+    private final QpackDecoder decoder;
     private final ParserListener listener;
     private final VarLenInt parser = new VarLenInt();
     private boolean useInputDirectByteBuffers = true;
     private ByteBuffer buffer;
 
-    public StreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, ParserListener listener)
+    public UnidirectionalStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
     {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
+        this.encoder = encoder;
+        this.decoder = decoder;
         this.listener = listener;
     }
 
@@ -121,8 +127,8 @@ public class StreamConnection extends AbstractConnection implements Connection.U
         {
             case ControlConnection.STREAM_TYPE:
             {
-                ControlParser parser = new ControlParser(listener);
-                ControlConnection newConnection = new ControlConnection(getEndPoint(), getExecutor(), byteBufferPool, parser);
+                ControlParser parser = new ControlParser();
+                ControlConnection newConnection = new ControlConnection(getEndPoint(), getExecutor(), byteBufferPool, parser, listener);
                 newConnection.setInputBufferSize(getInputBufferSize());
                 newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
                 if (LOG.isDebugEnabled())
@@ -132,7 +138,7 @@ public class StreamConnection extends AbstractConnection implements Connection.U
             }
             case EncoderConnection.STREAM_TYPE:
             {
-                EncoderConnection newConnection = new EncoderConnection(getEndPoint(), getExecutor());
+                EncoderConnection newConnection = new EncoderConnection(getEndPoint(), getExecutor(), byteBufferPool, decoder);
                 newConnection.setInputBufferSize(getInputBufferSize());
                 newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
                 if (LOG.isDebugEnabled())
@@ -142,7 +148,7 @@ public class StreamConnection extends AbstractConnection implements Connection.U
             }
             case DecoderConnection.STREAM_TYPE:
             {
-                DecoderConnection newConnection = new DecoderConnection(getEndPoint(), getExecutor());
+                DecoderConnection newConnection = new DecoderConnection(getEndPoint(), getExecutor(), byteBufferPool, encoder);
                 newConnection.setInputBufferSize(getInputBufferSize());
                 newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
                 if (LOG.isDebugEnabled())

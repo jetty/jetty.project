@@ -60,7 +60,7 @@ public abstract class ProtocolSession
         }
     }
 
-    protected QuicStreamEndPoint getStreamEndPoint(long streamId)
+    public QuicStreamEndPoint getStreamEndPoint(long streamId)
     {
         return session.getStreamEndPoint(streamId);
     }

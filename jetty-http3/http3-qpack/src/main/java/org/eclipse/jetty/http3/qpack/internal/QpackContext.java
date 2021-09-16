@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  */
 public class QpackContext
 {
-    public static final Logger LOG = LoggerFactory.getLogger(QpackContext.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QpackContext.class);
     private static final StaticTable __staticTable = new StaticTable();
     private final DynamicTable _dynamicTable;
 

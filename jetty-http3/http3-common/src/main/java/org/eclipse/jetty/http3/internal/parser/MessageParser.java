@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.internal.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.ErrorCode;
+import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.slf4j.Logger;
@@ -33,19 +34,15 @@ public class MessageParser
     private final HeaderParser headerParser;
     private final BodyParser[] bodyParsers = new BodyParser[FrameType.maxType() + 1];
     private final BodyParser unknownBodyParser;
-    private final long streamId;
-    private final ParserListener listener;
     private State state = State.HEADER;
 
-    public MessageParser(long streamId, QpackDecoder decoder, ParserListener listener)
+    public MessageParser(long streamId, QpackDecoder decoder)
     {
-        this.streamId = streamId;
         this.headerParser = new HeaderParser();
-        this.bodyParsers[FrameType.DATA.type()] = new DataBodyParser(streamId, headerParser, listener);
-        this.bodyParsers[FrameType.HEADERS.type()] = new HeadersBodyParser(streamId, headerParser, listener, decoder);
-        this.bodyParsers[FrameType.PUSH_PROMISE.type()] = new PushPromiseBodyParser(headerParser, listener);
-        this.unknownBodyParser = new UnknownBodyParser(headerParser, listener);
-        this.listener = listener;
+        this.bodyParsers[FrameType.DATA.type()] = new DataBodyParser(streamId, headerParser);
+        this.bodyParsers[FrameType.HEADERS.type()] = new HeadersBodyParser(streamId, headerParser, decoder);
+        this.bodyParsers[FrameType.PUSH_PROMISE.type()] = new PushPromiseBodyParser(headerParser);
+        this.unknownBodyParser = new UnknownBodyParser(headerParser);
     }
 
     private void reset()
@@ -55,11 +52,12 @@ public class MessageParser
     }
 
     /**
-     * <p>Parses the given {@code buffer} bytes and emit events to a {@link ParserListener}.</p>
+     * <p>Parses the given {@code buffer} bytes and returns parsed frames.</p>
      *
      * @param buffer the buffer to parse
+     * @return a parsed frame, or null if not enough bytes were provided to parse a frame
      */
-    public void parse(ByteBuffer buffer)
+    public Frame parse(ByteBuffer buffer) throws ParseException
     {
         try
         {
@@ -74,7 +72,7 @@ public class MessageParser
                             state = State.BODY;
                             break;
                         }
-                        return;
+                        return null;
                     }
                     case BODY:
                     {
@@ -88,26 +86,27 @@ public class MessageParser
                             // Unknown frame types must be ignored.
                             if (LOG.isDebugEnabled())
                                 LOG.debug("Ignoring unknown frame type {}", Integer.toHexString(frameType));
-                            if (!unknownBodyParser.parse(buffer))
-                                return;
+                            Frame frame = unknownBodyParser.parse(buffer);
+                            if (frame == null)
+                                return null;
                             reset();
+                            break;
                         }
                         else
                         {
+                            Frame frame;
                             if (headerParser.getFrameLength() == 0)
-                            {
-                                bodyParser.emptyBody(buffer);
-                            }
+                                frame = bodyParser.emptyBody(buffer);
                             else
+                                frame = bodyParser.parse(buffer);
+                            if (frame != null)
                             {
-                                if (!bodyParser.parse(buffer))
-                                    return;
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Parsed {} frame body from {}", FrameType.from(frameType), buffer);
+                                reset();
                             }
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Parsed {} frame body from {}", FrameType.from(frameType), buffer);
-                            reset();
+                            return frame;
                         }
-                        break;
                     }
                     default:
                     {
@@ -116,18 +115,20 @@ public class MessageParser
                 }
             }
         }
+        catch (ParseException x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("parse failed", x);
+            buffer.clear();
+            throw x;
+        }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Parse failed", x);
+                LOG.debug("parse failed", x);
             buffer.clear();
-            connectionFailure(buffer, ErrorCode.INTERNAL_ERROR.code(), "parser_error");
+            throw new ParseException(ErrorCode.INTERNAL_ERROR.code(), "parser_error", true, x);
         }
-    }
-
-    private void connectionFailure(ByteBuffer buffer, int error, String reason)
-    {
-        unknownBodyParser.sessionFailure(buffer, error, reason);
     }
 
     private enum State

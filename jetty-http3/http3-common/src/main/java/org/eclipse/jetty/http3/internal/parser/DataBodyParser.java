@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.internal.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
+import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +28,9 @@ public class DataBodyParser extends BodyParser
     private State state = State.INIT;
     private long length;
 
-    public DataBodyParser(long streamId, HeaderParser headerParser, ParserListener listener)
+    public DataBodyParser(long streamId, HeaderParser headerParser)
     {
-        super(streamId, headerParser, listener);
+        super(streamId, headerParser);
     }
 
     private void reset()
@@ -39,13 +40,13 @@ public class DataBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ByteBuffer buffer)
+    protected Frame emptyBody(ByteBuffer buffer)
     {
-        onData(BufferUtil.EMPTY_BUFFER, false);
+        return onData(BufferUtil.EMPTY_BUFFER, false);
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Frame parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -71,15 +72,13 @@ public class DataBodyParser extends BodyParser
                     if (length == 0)
                     {
                         reset();
-                        onData(slice, false);
-                        return true;
+                        return onData(slice, false);
                     }
                     else
                     {
                         // We got partial data, simulate a smaller frame, and stay in DATA state.
-                        onData(slice, true);
+                        return onData(slice, true);
                     }
-                    break;
                 }
                 default:
                 {
@@ -87,15 +86,15 @@ public class DataBodyParser extends BodyParser
                 }
             }
         }
-        return false;
+        return null;
     }
 
-    private void onData(ByteBuffer buffer, boolean fragment)
+    private DataFrame onData(ByteBuffer buffer, boolean fragment)
     {
-        DataFrame frame = new DataFrame(buffer);
+        DataFrame frame = new DataFrame(buffer, true);
         if (LOG.isDebugEnabled())
             LOG.debug("notifying synthetic={} {}#{}", fragment, frame, getStreamId());
-        notifyData(frame);
+        return frame;
     }
 
     private enum State

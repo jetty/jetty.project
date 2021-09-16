@@ -15,15 +15,17 @@ package org.eclipse.jetty.http3.internal.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http3.frames.Frame;
+
 public class MaxPushIdBodyParser extends BodyParser
 {
-    public MaxPushIdBodyParser(HeaderParser headerParser, ParserListener listener)
+    public MaxPushIdBodyParser(HeaderParser headerParser)
     {
-        super(1, headerParser, listener);
+        super(1, headerParser);
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Frame parse(ByteBuffer buffer)
     {
         throw new UnsupportedOperationException();
     }

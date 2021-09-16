@@ -22,6 +22,7 @@ import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class HeadersGenerator extends FrameGenerator
 {
@@ -45,11 +46,14 @@ public class HeadersGenerator extends FrameGenerator
 
     private int generateHeadersFrame(ByteBufferPool.Lease lease, long streamId, HeadersFrame frame)
     {
+        // TODO: 2 buffers are inefficient because they are sent in different datagrams.
+        //  We can allocate a max size N for the header, encode from position=N, then
+        //  write the H header bytes from N-H to N-1, so the buffer will start at position=N-H.
         try
         {
             ByteBuffer buffer = lease.acquire(maxLength, useDirectByteBuffers);
+            BufferUtil.clear(buffer);
             encoder.encode(buffer, streamId, frame.getMetaData());
-            buffer.flip();
             int dataLength = buffer.remaining();
             int headerLength = VarLenInt.length(FrameType.HEADERS.type()) + VarLenInt.length(dataLength);
             ByteBuffer header = ByteBuffer.allocate(headerLength);

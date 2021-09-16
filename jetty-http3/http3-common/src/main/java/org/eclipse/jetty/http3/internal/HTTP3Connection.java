@@ -16,10 +16,15 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http3.frames.DataFrame;
+import org.eclipse.jetty.http3.frames.Frame;
+import org.eclipse.jetty.http3.frames.FrameType;
+import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
+import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,14 +34,15 @@ public class HTTP3Connection extends AbstractConnection
 
     private final ByteBufferPool byteBufferPool;
     private final MessageParser parser;
+    private final ParserListener listener;
     private boolean useInputDirectByteBuffers = true;
-    private ByteBuffer buffer;
 
-    public HTTP3Connection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser)
+    public HTTP3Connection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser, ParserListener listener)
     {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
         this.parser = parser;
+        this.listener = listener;
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -59,10 +65,9 @@ public class HTTP3Connection extends AbstractConnection
     @Override
     public void onFillable()
     {
+        ByteBuffer buffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
         try
         {
-            if (buffer == null)
-                buffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             while (true)
             {
                 int filled = getEndPoint().fill(buffer);
@@ -71,7 +76,17 @@ public class HTTP3Connection extends AbstractConnection
 
                 if (filled > 0)
                 {
-                    parser.parse(buffer);
+                    while (buffer.hasRemaining())
+                    {
+                        Frame frame = parser.parse(buffer);
+                        if (frame == null)
+                            break;
+                        if (frame instanceof HeadersFrame)
+                            frame = ((HeadersFrame)frame).withLast(getEndPoint().isInputShutdown());
+                        else if (frame instanceof DataFrame)
+                            frame = ((DataFrame)frame).withLast(getEndPoint().isInputShutdown());
+                        notifyFrame(frame);
+                    }
                 }
                 else if (filled == 0)
                 {
@@ -82,7 +97,6 @@ public class HTTP3Connection extends AbstractConnection
                 else
                 {
                     byteBufferPool.release(buffer);
-                    buffer = null;
                     getEndPoint().close();
                     break;
                 }
@@ -93,8 +107,55 @@ public class HTTP3Connection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("could not process control stream {}", getEndPoint(), x);
             byteBufferPool.release(buffer);
-            buffer = null;
             getEndPoint().close(x);
+        }
+    }
+
+    private void notifyFrame(Frame frame)
+    {
+        FrameType frameType = frame.getFrameType();
+        switch (frameType)
+        {
+            case HEADERS:
+            {
+                notifyHeaders((HeadersFrame)frame);
+                break;
+            }
+            case DATA:
+            {
+                notifyData((DataFrame)frame);
+                break;
+            }
+            default:
+            {
+                throw new UnsupportedOperationException("unsupported frame type " + frameType);
+            }
+        }
+    }
+
+    private void notifyHeaders(HeadersFrame frame)
+    {
+        try
+        {
+            long streamId = ((QuicStreamEndPoint)getEndPoint()).getStreamId();
+            listener.onHeaders(streamId, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
+    }
+
+    private void notifyData(DataFrame frame)
+    {
+        try
+        {
+            long streamId = ((QuicStreamEndPoint)getEndPoint()).getStreamId();
+            listener.onData(streamId, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
         }
     }
 }

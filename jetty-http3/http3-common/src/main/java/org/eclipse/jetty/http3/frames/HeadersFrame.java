@@ -18,11 +18,13 @@ import org.eclipse.jetty.http.MetaData;
 public class HeadersFrame extends Frame
 {
     private final MetaData metaData;
+    private final boolean last;
 
-    public HeadersFrame(MetaData metaData)
+    public HeadersFrame(MetaData metaData, boolean last)
     {
         super(FrameType.HEADERS);
         this.metaData = metaData;
+        this.last = last;
     }
 
     public MetaData getMetaData()
@@ -30,9 +32,19 @@ public class HeadersFrame extends Frame
         return metaData;
     }
 
+    public boolean isLast()
+    {
+        return last;
+    }
+
     @Override
     public String toString()
     {
-        return String.format("%s[%s]", super.toString(), getMetaData());
+        return String.format("%s[last=%b,%s]", super.toString(), isLast(), getMetaData());
+    }
+
+    public HeadersFrame withLast(boolean last)
+    {
+        return new HeadersFrame(metaData, last);
     }
 }

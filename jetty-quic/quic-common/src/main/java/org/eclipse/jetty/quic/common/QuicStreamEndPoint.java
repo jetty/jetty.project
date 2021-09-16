@@ -124,7 +124,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         int pos = BufferUtil.flipToFill(buffer);
         int drained = session.fill(streamId, buffer);
         BufferUtil.flipToFlush(buffer, pos);
-        if (session.isFinished(streamId))
+        if (drained < 0)
             shutdownInput();
         return drained;
     }

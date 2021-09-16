@@ -13,42 +13,30 @@
 
 package org.eclipse.jetty.http3.internal;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.http3.qpack.QpackEncoder;
+import org.eclipse.jetty.http3.qpack.QpackException;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 
-public class DecoderConnection extends AbstractConnection
+public class DecoderConnection extends InstructionConnection
 {
     // SPEC: QPACK Encoder Stream Type.
     public static final int STREAM_TYPE = 0x03;
 
-    private boolean useInputDirectByteBuffers = true;
+    private final QpackEncoder encoder;
 
-    public DecoderConnection(EndPoint endPoint, Executor executor)
+    public DecoderConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, QpackEncoder encoder)
     {
-        super(endPoint, executor);
-    }
-
-    public boolean isUseInputDirectByteBuffers()
-    {
-        return useInputDirectByteBuffers;
-    }
-
-    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
-    {
-        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+        super(endPoint, executor, byteBufferPool);
+        this.encoder = encoder;
     }
 
     @Override
-    public void onOpen()
+    protected void parseInstruction(ByteBuffer buffer) throws QpackException
     {
-        super.onOpen();
-        fillInterested();
-    }
-
-    @Override
-    public void onFillable()
-    {
+        encoder.parseInstructionBuffer(buffer);
     }
 }

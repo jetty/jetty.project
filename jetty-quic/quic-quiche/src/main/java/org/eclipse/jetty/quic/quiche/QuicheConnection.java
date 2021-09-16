@@ -516,13 +516,13 @@ public class QuicheConnection
     public synchronized int drainClearTextForStream(long streamId, ByteBuffer buffer) throws IOException
     {
         bool_pointer fin = new bool_pointer();
-        int written = libQuiche().quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin).intValue();
-        if (written == LibQuiche.quiche_error.QUICHE_ERR_DONE)
-            return 0;
-        if (written < 0L)
-            throw new IOException("Quiche failed to read from stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(written));
-        buffer.position(buffer.position() + written);
-        return written;
+        int read = libQuiche().quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin).intValue();
+        if (read == LibQuiche.quiche_error.QUICHE_ERR_DONE)
+            return fin.getValue() ? -1 : 0;
+        if (read < 0L)
+            throw new IOException("Quiche failed to read from stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(read));
+        buffer.position(buffer.position() + read);
+        return read;
     }
 
     public synchronized boolean isStreamFinished(long streamId)

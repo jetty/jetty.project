@@ -25,6 +25,7 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.quic.common.ProtocolSession;
+import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,17 +49,18 @@ public abstract class HTTP3Session implements Session, ParserListener
         return session;
     }
 
-    protected HTTP3Stream createStream(long streamId)
+    protected HTTP3Stream createStream(QuicStreamEndPoint endPoint)
     {
-        HTTP3Stream stream = new HTTP3Stream(this, streamId);
+        long streamId = endPoint.getStreamId();
+        HTTP3Stream stream = new HTTP3Stream(this, endPoint);
         if (streams.put(streamId, stream) != null)
             throw new IllegalStateException("duplicate stream id " + streamId);
         return stream;
     }
 
-    protected HTTP3Stream getOrCreateStream(long streamId)
+    protected HTTP3Stream getOrCreateStream(QuicStreamEndPoint endPoint)
     {
-        return streams.computeIfAbsent(streamId, id -> new HTTP3Stream(this, streamId));
+        return streams.computeIfAbsent(endPoint.getStreamId(), id -> new HTTP3Stream(this, endPoint));
     }
 
     protected HTTP3Stream getStream(long streamId)
@@ -115,7 +117,8 @@ public abstract class HTTP3Session implements Session, ParserListener
         if (LOG.isDebugEnabled())
             LOG.debug("received {}#{} on {}", frame, streamId, this);
 
-        HTTP3Stream stream = getOrCreateStream(streamId);
+        QuicStreamEndPoint endPoint = session.getStreamEndPoint(streamId);
+        HTTP3Stream stream = getOrCreateStream(endPoint);
 
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest())
@@ -191,5 +194,11 @@ public abstract class HTTP3Session implements Session, ParserListener
     private void notifyData(HTTP3Stream stream, DataFrame frame, Callback callback)
     {
         stream.getListener().onData(stream, frame, callback);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 }
