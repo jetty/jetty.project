@@ -27,10 +27,22 @@ public interface Stream
     {
         public default void onResponse(Stream stream, HeadersFrame frame)
         {
+
         }
 
         public default void onData(Stream stream, DataFrame frame, Callback callback)
         {
+            // TODO: alternative API
+//            public void onDataAvailable(Stream s)
+//            {
+//                while (true)
+//                {
+//                    DataFrame frame = s.pollData();
+//                    if (frame == null)
+//                        return;
+//                    process(frame);
+//                }
+//            }
         }
 
         public default void onTrailer(Stream stream, HeadersFrame frame)

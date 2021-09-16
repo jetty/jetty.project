@@ -19,9 +19,9 @@ import java.util.List;
 import java.util.Random;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
+import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
-import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -29,50 +29,46 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class DataGenerateParseTest
 {
     @Test
-    public void testGenerateParseEmpty()
+    public void testGenerateParseEmpty() throws Exception
     {
         testGenerateParse(BufferUtil.EMPTY_BUFFER);
     }
 
     @Test
-    public void testGenerateParse()
+    public void testGenerateParse() throws Exception
     {
         byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
         testGenerateParse(ByteBuffer.wrap(bytes));
     }
 
-    private void testGenerateParse(ByteBuffer byteBuffer)
+    private void testGenerateParse(ByteBuffer byteBuffer) throws Exception
     {
         byte[] inputBytes = new byte[byteBuffer.remaining()];
         byteBuffer.get(inputBytes);
-        DataFrame input = new DataFrame(ByteBuffer.wrap(inputBytes));
+        DataFrame input = new DataFrame(ByteBuffer.wrap(inputBytes), true);
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
         new MessageGenerator(null, 8192, true).generate(lease, 0, input);
 
-        List<DataFrame> frames = new ArrayList<>();
-        MessageParser parser = new MessageParser(0, null, new ParserListener()
-        {
-            @Override
-            public void onData(long streamId, DataFrame frame)
-            {
-                frames.add(frame);
-            }
-        });
+        List<Frame> frames = new ArrayList<>();
+        MessageParser parser = new MessageParser(0, null);
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
-            parser.parse(buffer);
-            assertFalse(buffer.hasRemaining());
+            while (buffer.hasRemaining())
+            {
+                Frame frame = parser.parse(buffer);
+                if (frame != null)
+                    frames.add(frame);
+            }
         }
 
         assertEquals(1, frames.size());
-        DataFrame output = frames.get(0);
+        DataFrame output = (DataFrame)frames.get(0);
         byte[] outputBytes = new byte[output.getData().remaining()];
         output.getData().get(outputBytes);
         assertArrayEquals(inputBytes, outputBytes);

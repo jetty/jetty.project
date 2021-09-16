@@ -15,15 +15,17 @@ package org.eclipse.jetty.http3.internal.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http3.frames.Frame;
+
 public class UnknownBodyParser extends BodyParser
 {
-    public UnknownBodyParser(HeaderParser headerParser, ParserListener listener)
+    public UnknownBodyParser(HeaderParser headerParser)
     {
-        super(1, headerParser, listener);
+        super(1, headerParser);
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Frame parse(ByteBuffer buffer)
     {
         throw new UnsupportedOperationException();
     }

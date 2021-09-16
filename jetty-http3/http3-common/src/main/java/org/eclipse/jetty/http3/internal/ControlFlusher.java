@@ -99,7 +99,7 @@ public class ControlFlusher extends IteratingCallback
     public void succeeded()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("succeeded to flush {} on {}", entries, this);
+            LOG.debug("succeeded to write {} on {}", entries, this);
 
         lease.recycle();
 
@@ -115,7 +115,7 @@ public class ControlFlusher extends IteratingCallback
     protected void onCompleteFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed to flush {} on {}", entries, this, failure);
+            LOG.debug("failed to write {} on {}", entries, this, failure);
 
         lease.recycle();
 

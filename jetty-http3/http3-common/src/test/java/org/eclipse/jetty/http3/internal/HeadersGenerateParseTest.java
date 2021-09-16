@@ -22,10 +22,10 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
-import org.eclipse.jetty.http3.internal.parser.ParserListener;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -33,41 +33,37 @@ import org.eclipse.jetty.io.NullByteBufferPool;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class HeadersGenerateParseTest
 {
     @Test
-    public void testGenerateParse()
+    public void testGenerateParse() throws Exception
     {
         HttpURI uri = HttpURI.from("http://host:1234/path?a=b");
         HttpFields fields = HttpFields.build()
             .put("User-Agent", "Jetty")
             .put("Cookie", "c=d");
-        HeadersFrame input = new HeadersFrame(new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields));
+        HeadersFrame input = new HeadersFrame(new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, fields), true);
 
         QpackEncoder encoder = new QpackEncoder(instructions -> {}, 100);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
         new MessageGenerator(encoder, 8192, true).generate(lease, 0, input);
 
         QpackDecoder decoder = new QpackDecoder(instructions -> {}, 8192);
-        List<HeadersFrame> frames = new ArrayList<>();
-        MessageParser parser = new MessageParser(0, decoder, new ParserListener()
-        {
-            @Override
-            public void onHeaders(long streamId, HeadersFrame frame)
-            {
-                frames.add(frame);
-            }
-        });
+        List<Frame> frames = new ArrayList<>();
+        MessageParser parser = new MessageParser(0, decoder);
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
-            parser.parse(buffer);
-            assertFalse(buffer.hasRemaining());
+            while (buffer.hasRemaining())
+            {
+                Frame frame = parser.parse(buffer);
+                if (frame != null)
+                    frames.add(frame);
+            }
         }
 
         assertEquals(1, frames.size());
-        HeadersFrame output = frames.get(0);
+        HeadersFrame output = (HeadersFrame)frames.get(0);
 
         MetaData.Request inputMetaData = (MetaData.Request)input.getMetaData();
         MetaData.Request outputMetaData = (MetaData.Request)output.getMetaData();

@@ -18,6 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.http3.ErrorCode;
+import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.VarLenInt;
 
@@ -29,9 +30,9 @@ public class SettingsBodyParser extends BodyParser
     private long key;
     private Map<Long, Long> settings;
 
-    public SettingsBodyParser(HeaderParser headerParser, ParserListener listener)
+    public SettingsBodyParser(HeaderParser headerParser)
     {
-        super(1, headerParser, listener);
+        super(1, headerParser);
     }
 
     private void reset()
@@ -44,13 +45,13 @@ public class SettingsBodyParser extends BodyParser
     }
 
     @Override
-    protected void emptyBody(ByteBuffer buffer)
+    protected Frame emptyBody(ByteBuffer buffer)
     {
-        onSettings(Map.of());
+        return onSettings(Map.of());
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Frame parse(ByteBuffer buffer) throws ParseException
     {
         while (buffer.hasRemaining())
         {
@@ -72,27 +73,16 @@ public class SettingsBodyParser extends BodyParser
                     }))
                     {
                         if (settings.containsKey(key))
-                        {
-                            sessionFailure(buffer, ErrorCode.SETTINGS_ERROR.code(), "settings_duplicate");
-                            return true;
-                        }
+                            throw new ParseException(ErrorCode.SETTINGS_ERROR.code(), "settings_duplicate");
                         if (SettingsFrame.isReserved(key))
-                        {
-                            sessionFailure(buffer, ErrorCode.SETTINGS_ERROR.code(), "settings_reserved");
-                            return true;
-                        }
+                            throw new ParseException(ErrorCode.SETTINGS_ERROR.code(), "settings_reserved");
                         if (length > 0)
-                        {
                             state = State.VALUE;
-                        }
                         else
-                        {
-                            sessionFailure(buffer, ErrorCode.FRAME_ERROR.code(), "settings_invalid_format");
-                            return true;
-                        }
+                            throw new ParseException(ErrorCode.FRAME_ERROR.code(), "settings_invalid_format");
                         break;
                     }
-                    return false;
+                    return null;
                 }
                 case VALUE:
                 {
@@ -111,17 +101,15 @@ public class SettingsBodyParser extends BodyParser
                         {
                             Map<Long, Long> settings = this.settings;
                             reset();
-                            onSettings(settings);
-                            return true;
+                            return onSettings(settings);
                         }
                         else
                         {
-                            sessionFailure(buffer, ErrorCode.FRAME_ERROR.code(), "settings_invalid_format");
-                            return true;
+                            throw new ParseException(ErrorCode.FRAME_ERROR.code(), "settings_invalid_format");
                         }
                         break;
                     }
-                    return false;
+                    return null;
                 }
                 default:
                 {
@@ -129,13 +117,12 @@ public class SettingsBodyParser extends BodyParser
                 }
             }
         }
-        return false;
+        return null;
     }
 
-    private void onSettings(Map<Long, Long> settings)
+    private SettingsFrame onSettings(Map<Long, Long> settings)
     {
-        SettingsFrame frame = new SettingsFrame(settings);
-        notifySettings(frame);
+        return new SettingsFrame(settings);
     }
 
     private enum State

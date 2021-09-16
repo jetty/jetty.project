@@ -28,6 +28,10 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO: see QPACK spec "Avoiding Flow Control Deadlocks"
+//  We would need to check the flow control window before writing.
+//  However, if we do, then we need a mechanism to wakeup again this flusher
+//  when Quiche tells us that the stream is writable again (right now we only do completeWrite()).
 public class InstructionFlusher extends IteratingCallback
 {
     private static final Logger LOG = LoggerFactory.getLogger(InstructionFlusher.class);
@@ -36,12 +40,14 @@ public class InstructionFlusher extends IteratingCallback
     private final Queue<Instruction> queue = new ArrayDeque<>();
     private final ByteBufferPool.Lease lease;
     private final QuicStreamEndPoint endPoint;
+    private final int streamType;
     private boolean initialized;
 
-    public InstructionFlusher(QuicSession session, QuicStreamEndPoint endPoint)
+    public InstructionFlusher(QuicSession session, QuicStreamEndPoint endPoint, int streamType)
     {
         this.lease = new ByteBufferPool.Lease(session.getByteBufferPool());
         this.endPoint = endPoint;
+        this.streamType = streamType;
     }
 
     public void offer(List<Instruction> instructions)
@@ -72,8 +78,8 @@ public class InstructionFlusher extends IteratingCallback
         if (!initialized)
         {
             initialized = true;
-            ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(EncoderConnection.STREAM_TYPE));
-            VarLenInt.generate(buffer, EncoderConnection.STREAM_TYPE);
+            ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(streamType));
+            VarLenInt.generate(buffer, streamType);
             buffer.flip();
             lease.insert(0, buffer, false);
         }
@@ -88,8 +94,18 @@ public class InstructionFlusher extends IteratingCallback
     @Override
     public void succeeded()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("succeeded to write {} on {}", lease.getByteBuffers(), this);
         lease.recycle();
         super.succeeded();
+    }
+
+    @Override
+    protected void onCompleteFailure(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("failed to write {} on {}", lease.getByteBuffers(), this, failure);
+        // TODO
     }
 
     @Override

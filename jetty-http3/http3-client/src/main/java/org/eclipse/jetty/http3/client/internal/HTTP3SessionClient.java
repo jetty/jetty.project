@@ -21,6 +21,7 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
+import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -62,9 +63,12 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     {
         ClientHTTP3Session session = getProtocolSession();
         long streamId = session.getQuicSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);
+        QuicStreamEndPoint streamEndPoint = session.getOrCreateStreamEndPoint(streamId, session::configureProtocolEndPoint);
+        if (LOG.isDebugEnabled())
+            LOG.debug("created request/response stream #{} on {}", streamId, streamEndPoint);
 
         Promise.Completable<Stream> promise = new Promise.Completable<>();
-        HTTP3Stream stream = createStream(streamId);
+        HTTP3Stream stream = createStream(streamEndPoint);
         stream.setListener(listener);
         Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> promise.succeeded(stream), promise::failed);
 

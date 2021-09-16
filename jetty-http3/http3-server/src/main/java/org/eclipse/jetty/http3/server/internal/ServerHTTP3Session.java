@@ -19,10 +19,12 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.ControlFlusher;
+import org.eclipse.jetty.http3.internal.DecoderConnection;
+import org.eclipse.jetty.http3.internal.EncoderConnection;
 import org.eclipse.jetty.http3.internal.HTTP3Flusher;
 import org.eclipse.jetty.http3.internal.InstructionFlusher;
 import org.eclipse.jetty.http3.internal.InstructionHandler;
-import org.eclipse.jetty.http3.internal.StreamConnection;
+import org.eclipse.jetty.http3.internal.UnidirectionalStreamConnection;
 import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
@@ -52,21 +54,30 @@ public class ServerHTTP3Session extends ServerProtocolSession
         super(session);
         this.apiSession = new HTTP3SessionServer(this, listener);
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("initializing HTTP/3 streams");
+
         long encoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint encoderEndPoint = configureEncoderEndPoint(encoderStreamId);
-        this.encoderFlusher = new InstructionFlusher(session, encoderEndPoint);
+        this.encoderFlusher = new InstructionFlusher(session, encoderEndPoint, EncoderConnection.STREAM_TYPE);
         this.encoder = new QpackEncoder(new InstructionHandler(encoderFlusher), maxBlockedStreams);
+        if (LOG.isDebugEnabled())
+            LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
 
         long decoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint decoderEndPoint = configureDecoderEndPoint(decoderStreamId);
-        this.decoderFlusher = new InstructionFlusher(session, decoderEndPoint);
+        this.decoderFlusher = new InstructionFlusher(session, decoderEndPoint, DecoderConnection.STREAM_TYPE);
         this.decoder = new QpackDecoder(new InstructionHandler(decoderFlusher), maxRequestHeadersSize);
+        if (LOG.isDebugEnabled())
+            LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
 
         // TODO: make parameters configurable.
         this.generator = new MessageGenerator(encoder, 4096, true);
         long controlStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint controlEndPoint = configureControlEndPoint(controlStreamId);
         this.controlFlusher = new ControlFlusher(session, controlEndPoint);
+        if (LOG.isDebugEnabled())
+            LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
         // TODO: make parameters configurable.
         this.messageFlusher = new HTTP3Flusher(session.getByteBufferPool(), encoder, 4096, true);
@@ -119,21 +130,23 @@ public class ServerHTTP3Session extends ServerProtocolSession
         StreamType streamType = StreamType.from(readableStreamId);
         if (streamType == StreamType.CLIENT_BIDIRECTIONAL)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("stream #{} selected for read", readableStreamId);
             super.onReadable(readableStreamId);
         }
         else
         {
             // On the server, we need a get-or-create semantic in case of reads.
-            QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, this::configureStreamEndPoint);
+            QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, this::configureUnidirectionalStreamEndPoint);
             if (LOG.isDebugEnabled())
-                LOG.debug("stream {} selected endpoint for read: {}", readableStreamId, streamEndPoint);
+                LOG.debug("stream #{} selected for read: {}", readableStreamId, streamEndPoint);
             streamEndPoint.onReadable();
         }
     }
 
-    private void configureStreamEndPoint(QuicStreamEndPoint endPoint)
+    private void configureUnidirectionalStreamEndPoint(QuicStreamEndPoint endPoint)
     {
-        StreamConnection connection = new StreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), apiSession);
+        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), encoder, decoder, apiSession);
         endPoint.setConnection(connection);
         endPoint.onOpen();
         connection.onOpen();

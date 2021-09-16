@@ -34,7 +34,7 @@ import static org.eclipse.jetty.http3.qpack.QpackException.QPACK_DECOMPRESSION_F
 
 public class EncodedFieldSection
 {
-    public static final Logger LOG = LoggerFactory.getLogger(EncodedFieldSection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EncodedFieldSection.class);
 
     private final NBitIntegerParser _integerParser = new NBitIntegerParser();
     private final NBitStringParser _stringParser = new NBitStringParser();

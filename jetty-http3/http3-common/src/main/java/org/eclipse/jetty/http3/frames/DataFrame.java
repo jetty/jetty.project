@@ -18,11 +18,13 @@ import java.nio.ByteBuffer;
 public class DataFrame extends Frame
 {
     private final ByteBuffer data;
+    private final boolean last;
 
-    public DataFrame(ByteBuffer data)
+    public DataFrame(ByteBuffer data, boolean last)
     {
         super(FrameType.DATA);
         this.data = data;
+        this.last = last;
     }
 
     public ByteBuffer getData()
@@ -30,9 +32,19 @@ public class DataFrame extends Frame
         return data;
     }
 
+    public boolean isLast()
+    {
+        return last;
+    }
+
     @Override
     public String toString()
     {
-        return String.format("%s[length:%d]", super.toString(), getData().remaining());
+        return String.format("%s[last=%b,length=%d]", super.toString(), isLast(), getData().remaining());
+    }
+
+    public DataFrame withLast(boolean last)
+    {
+        return new DataFrame(data, last);
     }
 }

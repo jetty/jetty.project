@@ -44,7 +44,7 @@ public class ServerProtocolSession extends ProtocolSession
         // On the server, we need a get-or-create semantic in case of reads.
         QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, this::configureProtocolEndPoint);
         if (LOG.isDebugEnabled())
-            LOG.debug("stream {} selected endpoint for read: {}", readableStreamId, streamEndPoint);
+            LOG.debug("stream #{} selected for read: {}", readableStreamId, streamEndPoint);
         streamEndPoint.onReadable();
     }
 }

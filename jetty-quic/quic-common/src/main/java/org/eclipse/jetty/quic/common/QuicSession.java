@@ -212,7 +212,7 @@ public abstract class QuicSession
 
             // HTTP/3
             // client1
-            //        \                                                        /- ConnectionStream0 - ConnectionParser for SETTINGS frames, etc.
+            //        \                                                        /- ControlStream0 - ControlParser for SETTINGS frames, etc.
             //         dataEP - QuicConnection -* QuicSession -# H3QuicSession -* RequestStreamsEP - H3Connection - HEADERSParser -# HTTP Handler
             //        /                                                        `- InstructionStream - InstructionConnection/Parser
             // client2

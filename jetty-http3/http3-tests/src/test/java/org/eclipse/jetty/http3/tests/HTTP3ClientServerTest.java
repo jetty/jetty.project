@@ -127,7 +127,7 @@ public class HTTP3ClientServerTest
             {
                 serverRequestLatch.countDown();
                 // Send the response.
-                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY)));
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), true));
                 // Not interested in request data.
                 return null;
             }
@@ -140,7 +140,7 @@ public class HTTP3ClientServerTest
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
         MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame frame = new HeadersFrame(metaData);
+        HeadersFrame frame = new HeadersFrame(metaData, true);
         Stream stream = session.newRequest(frame, new Stream.Listener()
             {
                 @Override
@@ -149,10 +149,10 @@ public class HTTP3ClientServerTest
                     clientResponseLatch.countDown();
                 }
             })
-            .get(555, TimeUnit.SECONDS);
+            .get(5, TimeUnit.SECONDS);
         assertNotNull(stream);
 
-        assertTrue(serverRequestLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverRequestLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(clientResponseLatch.await(555, TimeUnit.SECONDS));
     }
 }

@@ -19,6 +19,7 @@ import java.util.List;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.ErrorCode;
+import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
@@ -34,10 +35,11 @@ public class HeadersBodyParser extends BodyParser
     private final QpackDecoder decoder;
     private State state = State.INIT;
     private long length;
+    private Frame frame;
 
-    public HeadersBodyParser(long streamId, HeaderParser headerParser, ParserListener listener, QpackDecoder decoder)
+    public HeadersBodyParser(long streamId, HeaderParser headerParser, QpackDecoder decoder)
     {
-        super(streamId, headerParser, listener);
+        super(streamId, headerParser);
         this.decoder = decoder;
     }
 
@@ -45,10 +47,11 @@ public class HeadersBodyParser extends BodyParser
     {
         state = State.INIT;
         length = 0;
+        frame = null;
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Frame parse(ByteBuffer buffer) throws ParseException
     {
         while (buffer.hasRemaining())
         {
@@ -69,7 +72,7 @@ public class HeadersBodyParser extends BodyParser
                         length -= remaining;
                         ByteBuffer copy = BufferUtil.copy(buffer);
                         byteBuffers.add(copy);
-                        return false;
+                        return null;
                     }
                     else
                     {
@@ -91,9 +94,10 @@ public class HeadersBodyParser extends BodyParser
                             byteBuffers.add(slice);
                             int capacity = byteBuffers.stream().mapToInt(ByteBuffer::remaining).sum();
                             encoded = byteBuffers.stream().reduce(ByteBuffer.allocate(capacity), ByteBuffer::put);
+                            byteBuffers.clear();
                         }
 
-                        return decode(buffer, encoded);
+                        return decode(encoded);
                     }
                 }
                 default:
@@ -102,50 +106,45 @@ public class HeadersBodyParser extends BodyParser
                 }
             }
         }
-        return false;
+        return null;
     }
 
-    private boolean decode(ByteBuffer buffer, ByteBuffer encoded)
+    private Frame decode(ByteBuffer encoded) throws ParseException
     {
         try
         {
-            return decoder.decode(getStreamId(), encoded, (streamId, metaData) ->
+            // TODO: do a proper reset when the lambda is notified asynchronously.
+            if (decoder.decode(getStreamId(), encoded, (streamId, metaData) -> this.frame = onHeaders(metaData)))
             {
+                Frame frame = this.frame;
                 reset();
-                onHeaders(metaData);
-            });
+                return frame;
+            }
+            return null;
         }
         catch (QpackException.StreamException x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            // TODO: exception should carry error code.
-            notifyStreamFailure(getStreamId(), ErrorCode.FRAME_ERROR.code(), "invalid_qpack");
-            return true;
+            throw new ParseException(x.getErrorCode(), x.getMessage());
         }
         catch (QpackException.SessionException x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            // TODO: exception should carry error code.
-            sessionFailure(buffer, ErrorCode.FRAME_ERROR.code(), "invalid_qpack");
-            return true;
+            throw new ParseException(x.getErrorCode(), x.getMessage(), true);
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            sessionFailure(buffer, ErrorCode.INTERNAL_ERROR.code(), "internal_error");
-            return true;
+            throw new ParseException(ErrorCode.INTERNAL_ERROR.code(), "internal_error", true, x);
         }
     }
 
-    private void onHeaders(MetaData metaData)
+    private Frame onHeaders(MetaData metaData)
     {
-        HeadersFrame frame = new HeadersFrame(metaData);
-        if (LOG.isDebugEnabled())
-            LOG.debug("notifying {}#{}", frame, getStreamId());
-        notifyHeaders(frame);
+        return new HeadersFrame(metaData, false);
     }
 
     private enum State
