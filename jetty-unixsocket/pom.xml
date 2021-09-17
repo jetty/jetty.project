@@ -11,6 +11,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.unixsocket</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.unixsocket.*</spotbugs.onlyAnalyze>
+    <jnr-unixsocket.version>0.38.10</jnr-unixsocket.version>
   </properties>
   <dependencies>
     <dependency>
@@ -21,6 +22,7 @@
     <dependency>
       <groupId>com.github.jnr</groupId>
       <artifactId>jnr-unixsocket</artifactId>
+      <version>${jnr-unixsocket.version}</version>
       <exclusions>
         <exclusion>
           <groupId>com.github.jnr</groupId>
