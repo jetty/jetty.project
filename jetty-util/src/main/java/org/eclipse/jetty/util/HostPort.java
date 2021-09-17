@@ -157,6 +157,24 @@ public class HostPort
     }
 
     /**
+     * Denormalizes IPv6 address as per https://tools.ietf.org/html/rfc2732
+     * and https://tools.ietf.org/html/rfc6874,
+     * removing square brackets if they are present.
+     *
+     * @param host a host name, IPv4 address, IPv6 address or IPv6 literal
+     * @return a host name or an IPv4 address or an IPv6 address
+     */
+    public static String denormalizeHost(String host)
+    {
+        // if it is normalized IPv6 or could not be IPv6, return
+        if (host.isEmpty() || host.charAt(0) != '[' || host.charAt(host.length() - 1) != ']')
+            return host;
+
+        // normalize with [ ]
+        return host.substring(1, host.length() - 2);
+    }
+
+    /**
      * Parse a string representing a port validating it is a valid port value.
      *
      * @param rawPort the port string.

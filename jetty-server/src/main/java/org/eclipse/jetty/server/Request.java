@@ -18,13 +18,20 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
+import org.eclipse.jetty.http.*;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.*;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
+import javax.servlet.*;
+import javax.servlet.http.*;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -32,68 +39,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.EventListener;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import javax.servlet.AsyncContext;
-import javax.servlet.AsyncListener;
-import javax.servlet.DispatcherType;
-import javax.servlet.MultipartConfigElement;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletRequestAttributeEvent;
-import javax.servlet.ServletRequestAttributeListener;
-import javax.servlet.ServletRequestWrapper;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpUpgradeHandler;
-import javax.servlet.http.Part;
-
-import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http.HttpCompliance;
-import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.server.session.Session;
-import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Jetty Request.
@@ -998,7 +946,7 @@ public class Request implements HttpServletRequest
                 String name = InetAddress.getLocalHost().getHostAddress();
                 if (StringUtil.ALL_INTERFACES.equals(name))
                     return null;
-                return HostPort.normalizeHost(name);
+                return formatAddrOrHost(name);
             }
             catch (UnknownHostException e)
             {
@@ -1014,7 +962,7 @@ public class Request implements HttpServletRequest
         String result = address == null
             ? local.getHostString()
             : address.getHostAddress();
-        return HostPort.normalizeHost(result);
+        return formatAddrOrHost(result);
     }
 
     /*
@@ -1027,7 +975,7 @@ public class Request implements HttpServletRequest
         {
             InetSocketAddress local = _channel.getLocalAddress();
             if (local != null)
-                return HostPort.normalizeHost(local.getHostString());
+                return formatAddrOrHost(local.getHostString());
         }
 
         try
@@ -1035,7 +983,7 @@ public class Request implements HttpServletRequest
             String name = InetAddress.getLocalHost().getHostName();
             if (StringUtil.ALL_INTERFACES.equals(name))
                 return null;
-            return HostPort.normalizeHost(name);
+            return formatAddrOrHost(name);
         }
         catch (UnknownHostException e)
         {
@@ -1247,8 +1195,7 @@ public class Request implements HttpServletRequest
      * @see javax.servlet.ServletRequest#getRemoteAddr()
      */
     @Override
-    public String getRemoteAddr()
-    {
+    public String getRemoteAddr() {
         InetSocketAddress remote = _remote;
         if (remote == null)
             remote = _channel.getRemoteAddress();
@@ -1257,12 +1204,10 @@ public class Request implements HttpServletRequest
 
         InetAddress address = remote.getAddress();
         String result = address == null
-            ? remote.getHostString()
-            : address.getHostAddress();
-        // Add IPv6 brackets if necessary, to be consistent
-        // with cases where _remote has been built from other
-        // sources such as forward headers or PROXY protocol.
-        return HostPort.normalizeHost(result);
+                ? remote.getHostString()
+                : address.getHostAddress();
+
+        return formatAddrOrHost(result);
     }
 
     /*
@@ -1276,8 +1221,9 @@ public class Request implements HttpServletRequest
             remote = _channel.getRemoteAddress();
         if (remote == null)
             return "";
+
         // We want the URI host, so add IPv6 brackets if necessary.
-        return HostPort.normalizeHost(remote.getHostString());
+        return formatAddrOrHost(remote.getHostString());
     }
 
     /*
@@ -1432,12 +1378,12 @@ public class Request implements HttpServletRequest
         // Return host from connection
         String name = getLocalName();
         if (name != null)
-            return HostPort.normalizeHost(name);
+            return formatAddrOrHost(name);
 
         // Return the local host
         try
         {
-            return HostPort.normalizeHost(InetAddress.getLocalHost().getHostAddress());
+            return formatAddrOrHost(InetAddress.getLocalHost().getHostAddress());
         }
         catch (UnknownHostException e)
         {
@@ -2603,5 +2549,22 @@ public class Request implements HttpServletRequest
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
         throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
+    }
+
+    private String formatAddrOrHost(String addr)
+    {
+        if (addr == null)
+            return addr;
+        if (getContext() == null || getContext().getContextHandler() == null)
+            return HostPort.normalizeHost(addr);
+        switch(getContext().getContextHandler().getIpv6Format())
+        {
+            case BRACKETED:
+                return HostPort.normalizeHost(addr);
+            case UNBRACKETED:
+                return HostPort.denormalizeHost(addr);
+            default:
+                return addr;
+        }
     }
 }
