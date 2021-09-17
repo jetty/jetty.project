@@ -18,22 +18,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.util.*;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.component.Graceful;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
-
-import javax.servlet.*;
-import javax.servlet.FilterRegistration.Dynamic;
-import javax.servlet.descriptor.JspConfigDescriptor;
-import javax.servlet.http.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,10 +27,68 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.EventListener;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterRegistration;
+import javax.servlet.FilterRegistration.Dynamic;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.Servlet;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletContextAttributeEvent;
+import javax.servlet.ServletContextAttributeListener;
+import javax.servlet.ServletContextEvent;
+import javax.servlet.ServletContextListener;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
+import javax.servlet.ServletRequestAttributeListener;
+import javax.servlet.ServletRequestEvent;
+import javax.servlet.ServletRequestListener;
+import javax.servlet.SessionCookieConfig;
+import javax.servlet.SessionTrackingMode;
+import javax.servlet.descriptor.JspConfigDescriptor;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSessionAttributeListener;
+import javax.servlet.http.HttpSessionIdListener;
+import javax.servlet.http.HttpSessionListener;
+
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.ClassLoaderDump;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HandlerContainer;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * ContextHandler.
@@ -147,12 +189,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         DESTROYED
     }
 
-    public enum IPV6_FORMAT
+    public enum IPV6Format
     {
         BRACKETED,
         UNBRACKETED,
         UNCHANGED
-    };
+    }
 
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     protected Context _scontext;
@@ -192,7 +234,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<EventListener> _durableListeners = new CopyOnWriteArrayList<>();
     private String[] _protectedTargets;
     private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
-    private IPV6_FORMAT _ipv6Format = IPV6_FORMAT.BRACKETED;
+    private IPV6Format _ipv6Format = IPV6Format.BRACKETED;
 
     public enum Availability
     {
@@ -259,12 +301,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     @ManagedAttribute("The format of IPv6 addresses return from the servlet API")
-    public IPV6_FORMAT getIpv6Format()
+    public IPV6Format getIpv6Format()
     {
         return _ipv6Format;
     }
 
-    public void setIpv6Format(IPV6_FORMAT ipv6Format)
+    public void setIpv6Format(IPV6Format ipv6Format)
     {
         _ipv6Format = _ipv6Format;
     }
