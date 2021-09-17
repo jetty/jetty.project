@@ -189,6 +189,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         DESTROYED
     }
 
+    /**
+     * The IPv6 Format to use in the servlet request API
+     */
     public enum IPV6Format
     {
         BRACKETED,
@@ -300,13 +303,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return _scontext;
     }
 
-    @ManagedAttribute("The format of IPv6 addresses return from the servlet API")
-    public IPV6Format getIpv6Format()
+    @ManagedAttribute("The format of IPv6 addresses returned from the servlet API")
+    public IPV6Format getIPv6Format()
     {
         return _ipv6Format;
     }
 
-    public void setIpv6Format(IPV6Format ipv6Format)
+    public void setIPv6Format(IPV6Format ipv6Format)
     {
         _ipv6Format = _ipv6Format;
     }

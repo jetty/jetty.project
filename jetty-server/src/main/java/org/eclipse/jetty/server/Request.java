@@ -2610,14 +2610,16 @@ public class Request implements HttpServletRequest
             return addr;
         if (getContext() == null || getContext().getContextHandler() == null)
             return HostPort.normalizeHost(addr);
-        switch (getContext().getContextHandler().getIpv6Format())
+        switch (getContext().getContextHandler().getIPv6Format())
         {
             case BRACKETED:
                 return HostPort.normalizeHost(addr);
             case UNBRACKETED:
                 return HostPort.denormalizeHost(addr);
-            default:
+            case UNCHANGED:
                 return addr;
+            default:
+                throw new IllegalStateException();
         }
     }
 }
