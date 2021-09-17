@@ -53,7 +53,7 @@
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jmh.version>1.33</jmh.version>
     <jna.version>5.9.0</jna.version>
-    <jnr-unixsocket.version>0.38.10</jnr-unixsocket.version>
+    <jnr-unixsocket.version>0.38.11</jnr-unixsocket.version>
     <jsp.version>8.5.70</jsp.version>
     <junit.version>5.8.0</junit.version>
     <log4j2.version>2.14.0</log4j2.version>
