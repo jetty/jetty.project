@@ -496,10 +496,16 @@ public class ClassMatcher extends AbstractSet<String>
     {
     }
 
-    public ClassMatcher(ClassMatcher patterns)
+    public ClassMatcher(ClassMatcher matcher)
     {
-        if (patterns != null)
-            setAll(patterns.getPatterns());
+        if (matcher != null)
+        {
+            _entries.putAll(matcher._entries);
+            _patterns.include(matcher._patterns.getIncluded().toArray(new Entry[0]));
+            _patterns.exclude(matcher._patterns.getExcluded().toArray(new Entry[0]));
+            _locations.include(matcher._locations.getIncluded().toArray(new Entry[0]));
+            _locations.exclude(matcher._locations.getExcluded().toArray(new Entry[0]));
+        }
     }
 
     public ClassMatcher(String... patterns)
@@ -676,7 +682,7 @@ public class ClassMatcher extends AbstractSet<String>
      */
     public String[] getPatterns()
     {
-        return toArray(new String[_entries.size()]);
+        return toArray(new String[0]);
     }
 
     /**
