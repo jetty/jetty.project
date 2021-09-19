@@ -171,7 +171,7 @@ public class HostPort
             return host;
 
         // normalize with [ ]
-        return host.substring(1, host.length() - 2);
+        return host.substring(1, host.length() - 1);
     }
 
     /**

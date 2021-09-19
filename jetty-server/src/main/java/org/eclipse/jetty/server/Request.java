@@ -1402,7 +1402,7 @@ public class Request implements HttpServletRequest
     public String getServerName()
     {
         MetaData.Request metadata = _metaData;
-        String name = metadata == null ? null : metadata.getURI().getHost();
+        String name = metadata == null ? null : formatAddrOrHost(metadata.getURI().getHost());
 
         // Return already determined host
         if (name != null)
@@ -1424,7 +1424,7 @@ public class Request implements HttpServletRequest
             {
                 HostPortHttpField authority = (HostPortHttpField)host;
                 metadata.getURI().setAuthority(authority.getHost(), authority.getPort());
-                return authority.getHost();
+                return formatAddrOrHost(authority.getHost());
             }
         }
 

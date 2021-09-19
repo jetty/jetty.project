@@ -26,6 +26,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -95,6 +98,7 @@ public class RequestTest
     public WorkDir workDir;
     private Server _server;
     private LocalConnector _connector;
+    private ContextHandler _context;
     private RequestHandler _handler;
 
     @BeforeEach
@@ -110,8 +114,10 @@ public class RequestTest
         _connector = new LocalConnector(_server, http);
         _server.addConnector(_connector);
         _connector.setIdleTimeout(500);
+        _context = new ContextHandler();
+        _server.setHandler(_context);
         _handler = new RequestHandler();
-        _server.setHandler(_handler);
+        _context.setHandler(_handler);
 
         ErrorHandler errors = new ErrorHandler();
         errors.setServer(_server);
@@ -933,6 +939,84 @@ public class RequestTest
         assertEquals("8888", results.get(i++));
     }
 
+
+    @Test
+    public void testIPv6() throws Exception
+    {
+        final ArrayList<String> results = new ArrayList<>();
+        final InetAddress local = Inet6Address.getByAddress("localIPv6", new byte[] {0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8});
+        final InetSocketAddress localAddr = new InetSocketAddress(local, 32768);
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request, HttpServletResponse response)
+            {
+                ((Request)request).setRemoteAddr(localAddr);
+                results.add(request.getRemoteAddr());
+                results.add(request.getRemoteHost());
+                results.add(Integer.toString(request.getRemotePort()));
+                results.add(request.getServerName());
+                results.add(Integer.toString(request.getServerPort()));
+                results.add(request.getLocalAddr());
+                results.add(Integer.toString(request.getLocalPort()));
+                return true;
+            }
+        };
+
+        _context.setIPv6Format(ContextHandler.IPV6Format.BRACKETED);
+        results.clear();
+        String response = _connector.getResponse(
+            "GET / HTTP/1.1\n" +
+                "Host: [::1]:8888\n" +
+                "Connection: close\n" +
+                "\n");
+        int i = 0;
+        assertThat(response, containsString("200 OK"));
+        assertEquals("[1:2:3:4:5:6:7:8]", results.get(i++));
+        assertEquals("localIPv6", results.get(i++));
+        assertEquals("32768", results.get(i++));
+        assertEquals("[::1]", results.get(i++));
+        assertEquals("8888", results.get(i++));
+        assertEquals("0.0.0.0", results.get(i++));
+        assertEquals("0", results.get(i++));
+
+        _context.setIPv6Format(ContextHandler.IPV6Format.UNBRACKETED);
+        results.clear();
+        response = _connector.getResponse(
+            "GET / HTTP/1.1\n" +
+                "Host: [::1]:8888\n" +
+                "Connection: close\n" +
+                "\n");
+        i = 0;
+        assertThat(response, containsString("200 OK"));
+        assertEquals("1:2:3:4:5:6:7:8", results.get(i++));
+        assertEquals("localIPv6", results.get(i++));
+        assertEquals("32768", results.get(i++));
+        assertEquals("::1", results.get(i++));
+        assertEquals("8888", results.get(i++));
+        assertEquals("0.0.0.0", results.get(i++));
+        assertEquals("0", results.get(i++));
+
+        _context.setIPv6Format(ContextHandler.IPV6Format.UNCHANGED);
+        results.clear();
+        response = _connector.getResponse(
+            "GET / HTTP/1.1\n" +
+                "Host: [::1]:8888\n" +
+                "Connection: close\n" +
+                "\n");
+        i = 0;
+        assertThat(response, containsString("200 OK"));
+        assertEquals("1:2:3:4:5:6:7:8", results.get(i++));
+        assertEquals("localIPv6", results.get(i++));
+        assertEquals("32768", results.get(i++));
+        assertEquals("[::1]", results.get(i++));
+        assertEquals("8888", results.get(i++));
+        assertEquals("0.0.0.0", results.get(i++));
+        assertEquals("0", results.get(i++));
+    }
+
+
+
     @Test
     public void testContent() throws Exception
     {
@@ -1686,6 +1770,8 @@ public class RequestTest
         try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             LOG.info("Expecting maxFormSize limit and too much data exceptions...");
+            _context.setMaxFormContentSize(3396);
+            _context.setMaxFormKeys(1000);
             _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize", 3396);
             _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys", 1000);
 

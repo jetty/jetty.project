@@ -311,7 +311,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     public void setIPv6Format(IPV6Format ipv6Format)
     {
-        _ipv6Format = _ipv6Format;
+        _ipv6Format = ipv6Format;
     }
 
     /**
