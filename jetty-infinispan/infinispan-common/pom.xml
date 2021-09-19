@@ -37,7 +37,6 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>${infinispan.version}</version>
       <optional>true</optional>
       <exclusions>
           <exclusion>
@@ -69,13 +68,11 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
-      <version>${infinispan.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-remote-query-client</artifactId>
-      <version>${infinispan.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

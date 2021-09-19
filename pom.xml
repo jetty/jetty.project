@@ -1234,6 +1234,13 @@
         <artifactId>biz.aQute.bndlib</artifactId>
         <version>5.3.0</version>
       </dependency>
+      <dependency>
+        <groupId>org.infinispan</groupId>
+        <artifactId>infinispan-bom</artifactId>
+        <version>${infinispan.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
       <!-- jboss deps.. -->
       <dependency>
         <groupId>org.jboss.logging</groupId>
