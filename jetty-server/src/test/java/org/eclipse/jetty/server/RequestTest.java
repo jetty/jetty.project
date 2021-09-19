@@ -939,12 +939,13 @@ public class RequestTest
         assertEquals("8888", results.get(i++));
     }
 
-
     @Test
     public void testIPv6() throws Exception
     {
         final ArrayList<String> results = new ArrayList<>();
-        final InetAddress local = Inet6Address.getByAddress("localIPv6", new byte[] {0,1,0,2,0,3,0,4,0,5,0,6,0,7,0,8});
+        final InetAddress local = Inet6Address.getByAddress("localIPv6", new byte[]{
+            0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8
+        });
         final InetSocketAddress localAddr = new InetSocketAddress(local, 32768);
         _handler._checker = new RequestTester()
         {
@@ -1014,8 +1015,6 @@ public class RequestTest
         assertEquals("0.0.0.0", results.get(i++));
         assertEquals("0", results.get(i++));
     }
-
-
 
     @Test
     public void testContent() throws Exception
