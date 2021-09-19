@@ -1234,6 +1234,32 @@
         <artifactId>biz.aQute.bndlib</artifactId>
         <version>5.3.0</version>
       </dependency>
+      <!-- jboss deps.. -->
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>${jboss.logging.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging-processor</artifactId>
+        <version>2.2.1.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging-annotations</artifactId>
+        <version>2.2.1.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logmanager</groupId>
+        <artifactId>jboss-logmanager</artifactId>
+        <version>2.1.15.Final</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.threads</groupId>
+        <artifactId>jboss-threads</artifactId>
+        <version>3.1.0.Final</version>
+      </dependency>
       <!-- Old Deps -->
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -1270,11 +1296,6 @@
         <artifactId>jul-to-slf4j</artifactId>
         <version>${slf4j.version}</version>
         <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.jboss.logging</groupId>
-        <artifactId>jboss-logging</artifactId>
-        <version>${jboss.logging.version}</version>
       </dependency>
       <dependency>
         <groupId>org.asciidoctor</groupId>
