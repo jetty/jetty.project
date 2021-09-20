@@ -376,7 +376,7 @@ public class ErrorHandler extends AbstractHandler
     protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message)
         throws IOException
     {
-        Charset charset = (Charset) request.getAttribute(ERROR_CHARSET);
+        Charset charset = (Charset)request.getAttribute(ERROR_CHARSET);
         if (charset != null)
         {
             writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=");
