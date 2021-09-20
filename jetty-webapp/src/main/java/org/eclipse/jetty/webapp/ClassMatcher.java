@@ -496,16 +496,11 @@ public class ClassMatcher extends AbstractSet<String>
     {
     }
 
-    public ClassMatcher(ClassMatcher matcher)
+    @SuppressWarnings("CopyConstructorMissesField")
+    public ClassMatcher(ClassMatcher patterns)
     {
-        if (matcher != null)
-        {
-            _entries.putAll(matcher._entries);
-            _patterns.include(matcher._patterns.getIncluded().toArray(new Entry[0]));
-            _patterns.exclude(matcher._patterns.getExcluded().toArray(new Entry[0]));
-            _locations.include(matcher._locations.getIncluded().toArray(new Entry[0]));
-            _locations.exclude(matcher._locations.getExcluded().toArray(new Entry[0]));
-        }
+        if (patterns != null)
+            setAll(patterns.getPatterns());
     }
 
     public ClassMatcher(String... patterns)
