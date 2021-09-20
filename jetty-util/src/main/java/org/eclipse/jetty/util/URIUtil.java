@@ -120,7 +120,7 @@ public class URIUtil
                         buf = new StringBuilder(path.length() * 2);
                         break loop;
                     default:
-                        if (c > 127)
+                        if (c < 20 || c > 127)
                         {
                             bytes = path.getBytes(URIUtil.__CHARSET);
                             buf = new StringBuilder(path.length() * 2);
@@ -193,7 +193,7 @@ public class URIUtil
                     continue;
 
                 default:
-                    if (c > 127)
+                    if (c < 20 || c > 127)
                     {
                         bytes = path.getBytes(URIUtil.__CHARSET);
                         break loop;
@@ -261,7 +261,7 @@ public class URIUtil
                         buf.append("%7D");
                         continue;
                     default:
-                        if (c < 0)
+                        if (c < 20)
                         {
                             buf.append('%');
                             TypeUtil.toHex(c, buf);

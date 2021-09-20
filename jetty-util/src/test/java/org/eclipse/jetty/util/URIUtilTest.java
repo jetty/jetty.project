@@ -69,6 +69,7 @@ public class URIUtilTest
     {
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         return Stream.of(
+            Arguments.of("/foo/\n/bar", "/foo/%0A/bar"),
             Arguments.of("/foo%23+;,:=/b a r/?info ", "/foo%2523+%3B,:=/b%20a%20r/%3Finfo%20"),
             Arguments.of("/context/'list'/\"me\"/;<script>window.alert('xss');</script>",
                 "/context/%27list%27/%22me%22/%3B%3Cscript%3Ewindow.alert(%27xss%27)%3B%3C/script%3E"),
