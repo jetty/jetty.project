@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quic.server.internal;
+package org.eclipse.jetty.quic.quiche;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,11 +31,11 @@ import java.util.Base64;
 
 public class SSLKeyPair
 {
-    private static final byte[] BEGIN_KEY = "-----BEGIN PRIVATE KEY-----".getBytes(StandardCharsets.UTF_8);
-    private static final byte[] END_KEY = "-----END PRIVATE KEY-----".getBytes(StandardCharsets.UTF_8);
-    private static final byte[] BEGIN_CERT = "-----BEGIN CERTIFICATE-----".getBytes(StandardCharsets.UTF_8);
-    private static final byte[] END_CERT = "-----END CERTIFICATE-----".getBytes(StandardCharsets.UTF_8);
-    private static final byte[] LINE_SEPARATOR = System.getProperty("line.separator").getBytes(StandardCharsets.UTF_8);
+    private static final byte[] BEGIN_KEY = "-----BEGIN PRIVATE KEY-----".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] END_KEY = "-----END PRIVATE KEY-----".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] BEGIN_CERT = "-----BEGIN CERTIFICATE-----".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] END_CERT = "-----END CERTIFICATE-----".getBytes(StandardCharsets.US_ASCII);
+    private static final byte[] LINE_SEPARATOR = System.getProperty("line.separator").getBytes(StandardCharsets.US_ASCII);
     private static final int LINE_LENGTH = 64;
 
     private final Base64.Encoder encoder = Base64.getMimeEncoder(LINE_LENGTH, LINE_SEPARATOR);
