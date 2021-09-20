@@ -55,6 +55,8 @@ import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpComplianceSection;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -100,12 +102,37 @@ public class RequestTest
     private LocalConnector _connector;
     private ContextHandler _context;
     private RequestHandler _handler;
+    private boolean _normalizeAddress = true;
 
     @BeforeEach
     public void init() throws Exception
     {
         _server = new Server();
-        HttpConnectionFactory http = new HttpConnectionFactory();
+        HttpConnectionFactory http = new HttpConnectionFactory()
+        {
+            @Override
+            public Connection newConnection(Connector connector, EndPoint endPoint)
+            {
+                HttpConnection conn = new HttpConnection(getHttpConfiguration(), connector, endPoint, getHttpCompliance(), isRecordHttpComplianceViolations())
+                {
+                    @Override
+                    protected HttpChannelOverHttp newHttpChannel()
+                    {
+                        return new HttpChannelOverHttp(this, getConnector(), getHttpConfiguration(), getEndPoint(), this)
+                        {
+                            @Override
+                            protected String formatAddrOrHost(String addr)
+                            {
+                                if (_normalizeAddress)
+                                    return super.formatAddrOrHost(addr);
+                                return addr;
+                            }
+                        };
+                    }
+                };
+                return configure(conn, connector, endPoint);
+            }
+        };
         http.setInputBufferSize(1024);
         http.getHttpConfiguration().setRequestHeaderSize(512);
         http.getHttpConfiguration().setResponseHeaderSize(512);
@@ -964,8 +991,7 @@ public class RequestTest
             }
         };
 
-        _context.setIPv6Format(ContextHandler.IPV6Format.BRACKETED);
-        results.clear();
+        _normalizeAddress = true;
         String response = _connector.getResponse(
             "GET / HTTP/1.1\n" +
                 "Host: [::1]:8888\n" +
@@ -979,26 +1005,9 @@ public class RequestTest
         assertEquals("[::1]", results.get(i++));
         assertEquals("8888", results.get(i++));
         assertEquals("0.0.0.0", results.get(i++));
-        assertEquals("0", results.get(i++));
+        assertEquals("0", results.get(i));
 
-        _context.setIPv6Format(ContextHandler.IPV6Format.UNBRACKETED);
-        results.clear();
-        response = _connector.getResponse(
-            "GET / HTTP/1.1\n" +
-                "Host: [::1]:8888\n" +
-                "Connection: close\n" +
-                "\n");
-        i = 0;
-        assertThat(response, containsString("200 OK"));
-        assertEquals("1:2:3:4:5:6:7:8", results.get(i++));
-        assertEquals("localIPv6", results.get(i++));
-        assertEquals("32768", results.get(i++));
-        assertEquals("::1", results.get(i++));
-        assertEquals("8888", results.get(i++));
-        assertEquals("0.0.0.0", results.get(i++));
-        assertEquals("0", results.get(i++));
-
-        _context.setIPv6Format(ContextHandler.IPV6Format.UNCHANGED);
+        _normalizeAddress = false;
         results.clear();
         response = _connector.getResponse(
             "GET / HTTP/1.1\n" +
@@ -1013,7 +1022,7 @@ public class RequestTest
         assertEquals("[::1]", results.get(i++));
         assertEquals("8888", results.get(i++));
         assertEquals("0.0.0.0", results.get(i++));
-        assertEquals("0", results.get(i++));
+        assertEquals("0", results.get(i));
     }
 
     @Test

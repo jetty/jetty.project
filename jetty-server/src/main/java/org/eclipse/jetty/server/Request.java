@@ -86,7 +86,6 @@ import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -998,7 +997,7 @@ public class Request implements HttpServletRequest
                 String name = InetAddress.getLocalHost().getHostAddress();
                 if (StringUtil.ALL_INTERFACES.equals(name))
                     return null;
-                return formatAddrOrHost(name);
+                return _channel.formatAddrOrHost(name);
             }
             catch (UnknownHostException e)
             {
@@ -1014,7 +1013,7 @@ public class Request implements HttpServletRequest
         String result = address == null
             ? local.getHostString()
             : address.getHostAddress();
-        return formatAddrOrHost(result);
+        return _channel.formatAddrOrHost(result);
     }
 
     /*
@@ -1027,7 +1026,7 @@ public class Request implements HttpServletRequest
         {
             InetSocketAddress local = _channel.getLocalAddress();
             if (local != null)
-                return formatAddrOrHost(local.getHostString());
+                return _channel.formatAddrOrHost(local.getHostString());
         }
 
         try
@@ -1035,7 +1034,7 @@ public class Request implements HttpServletRequest
             String name = InetAddress.getLocalHost().getHostName();
             if (StringUtil.ALL_INTERFACES.equals(name))
                 return null;
-            return formatAddrOrHost(name);
+            return _channel.formatAddrOrHost(name);
         }
         catch (UnknownHostException e)
         {
@@ -1260,7 +1259,7 @@ public class Request implements HttpServletRequest
                 ? remote.getHostString()
                 : address.getHostAddress();
 
-        return formatAddrOrHost(result);
+        return _channel.formatAddrOrHost(result);
     }
 
     /*
@@ -1276,7 +1275,7 @@ public class Request implements HttpServletRequest
             return "";
 
         // We want the URI host, so add IPv6 brackets if necessary.
-        return formatAddrOrHost(remote.getHostString());
+        return _channel.formatAddrOrHost(remote.getHostString());
     }
 
     /*
@@ -1402,7 +1401,7 @@ public class Request implements HttpServletRequest
     public String getServerName()
     {
         MetaData.Request metadata = _metaData;
-        String name = metadata == null ? null : formatAddrOrHost(metadata.getURI().getHost());
+        String name = metadata == null ? null : _channel.formatAddrOrHost(metadata.getURI().getHost());
 
         // Return already determined host
         if (name != null)
@@ -1424,19 +1423,19 @@ public class Request implements HttpServletRequest
             {
                 HostPortHttpField authority = (HostPortHttpField)host;
                 metadata.getURI().setAuthority(authority.getHost(), authority.getPort());
-                return formatAddrOrHost(authority.getHost());
+                return _channel.formatAddrOrHost(authority.getHost());
             }
         }
 
         // Return host from connection
         String name = getLocalName();
         if (name != null)
-            return formatAddrOrHost(name);
+            return _channel.formatAddrOrHost(name);
 
         // Return the local host
         try
         {
-            return formatAddrOrHost(InetAddress.getLocalHost().getHostAddress());
+            return _channel.formatAddrOrHost(InetAddress.getLocalHost().getHostAddress());
         }
         catch (UnknownHostException e)
         {
@@ -2602,24 +2601,5 @@ public class Request implements HttpServletRequest
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
         throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
-    }
-
-    private String formatAddrOrHost(String addr)
-    {
-        if (addr == null)
-            return addr;
-        if (getContext() == null || getContext().getContextHandler() == null)
-            return HostPort.normalizeHost(addr);
-        switch (getContext().getContextHandler().getIPv6Format())
-        {
-            case BRACKETED:
-                return HostPort.normalizeHost(addr);
-            case UNBRACKETED:
-                return HostPort.denormalizeHost(addr);
-            case UNCHANGED:
-                return addr;
-            default:
-                throw new IllegalStateException();
-        }
     }
 }
