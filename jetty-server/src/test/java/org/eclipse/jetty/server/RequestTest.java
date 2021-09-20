@@ -100,7 +100,6 @@ public class RequestTest
     public WorkDir workDir;
     private Server _server;
     private LocalConnector _connector;
-    private ContextHandler _context;
     private RequestHandler _handler;
     private boolean _normalizeAddress = true;
 
@@ -141,10 +140,8 @@ public class RequestTest
         _connector = new LocalConnector(_server, http);
         _server.addConnector(_connector);
         _connector.setIdleTimeout(500);
-        _context = new ContextHandler();
-        _server.setHandler(_context);
         _handler = new RequestHandler();
-        _context.setHandler(_handler);
+        _server.setHandler(_handler);
 
         ErrorHandler errors = new ErrorHandler();
         errors.setServer(_server);
@@ -1778,8 +1775,6 @@ public class RequestTest
         try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             LOG.info("Expecting maxFormSize limit and too much data exceptions...");
-            _context.setMaxFormContentSize(3396);
-            _context.setMaxFormKeys(1000);
             _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize", 3396);
             _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys", 1000);
 
