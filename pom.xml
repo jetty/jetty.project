@@ -39,6 +39,11 @@
     <asm.version>9.2</asm.version>
     <jmh.version>1.33</jmh.version>
     <jmhjar.name>benchmarks</jmhjar.name>
+    <jnr-constants.version>0.10.2</jnr-constants.version>
+    <jnr-enxio.version>0.32.9</jnr-enxio.version>
+    <jnr-ffi.version>2.2.7</jnr-ffi.version>
+    <jnr-posix.version>3.1.10</jnr-posix.version>
+    <jnr-unixsocket.version>0.38.11</jnr-unixsocket.version>
     <junit.version>5.8.0</junit.version>
     <maven.version>3.8.2</maven.version>
     <maven.resolver.version>1.7.2</maven.resolver.version>
@@ -1289,22 +1294,27 @@
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-constants</artifactId>
-        <version>0.10.2</version>
+        <version>${jnr-constants.version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-enxio</artifactId>
-        <version>0.32.8</version>
+        <version>${jnr-enxio.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-ffi</artifactId>
+        <version>${jnr-ffi.version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-posix</artifactId>
-        <version>3.1.9</version>
+        <version>${jnr-posix.version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
         <artifactId>jnr-unixsocket</artifactId>
-        <version>0.38.10</version>
+        <version>${jnr-unixsocket.version}</version>
       </dependency>
       <!-- avoid depending on a range dependency from a transitive dependency -->
       <dependency>
