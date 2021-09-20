@@ -741,6 +741,19 @@ public class SslConnection extends AbstractConnection
                                         throw new IllegalStateException("Unexpected unwrap result " + unwrapResultStatus);
 
                                     case BUFFER_UNDERFLOW:
+                                        // Continue if we can compact?
+                                        if (BufferUtil.compact(_encryptedInput))
+                                            break decryption; // to cause fill again.
+
+                                        // Are we out of space?
+                                        if (BufferUtil.space(_encryptedInput) == 0)
+                                        {
+                                            BufferUtil.clear(_encryptedInput);
+                                            throw new SSLHandshakeException("Encrypted buffer max length exceeded");
+                                        }
+
+                                        _underFlown = true;
+                                        // Fall through to OK case.
                                     case OK:
                                     {
                                         if (unwrapHandshakeStatus == HandshakeStatus.FINISHED)
