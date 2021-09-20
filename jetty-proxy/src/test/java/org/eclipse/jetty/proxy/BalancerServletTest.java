@@ -118,19 +118,15 @@ public class BalancerServletTest
 
     protected ContentResponse getBalancedResponse(String path) throws Exception
     {
-        ContentResponse response = client.newRequest("localhost", getServerPort(balancer))
+        return client.newRequest("localhost", getServerPort(balancer))
             .path(CONTEXT_PATH + SERVLET_PATH + path)
             .timeout(5, TimeUnit.SECONDS)
             .send();
-        return response;
     }
 
     protected byte[] sendRequestToBalancer(String path) throws Exception
     {
-        ContentResponse response = client.newRequest("localhost", getServerPort(balancer))
-            .path(CONTEXT_PATH + SERVLET_PATH + path)
-            .timeout(5, TimeUnit.SECONDS)
-            .send();
+        ContentResponse response = getBalancedResponse(path);
         return response.getContent();
     }
 
