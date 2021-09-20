@@ -144,6 +144,7 @@ public class HttpConfiguration implements Dumpable
         _responseCookieCompliance = config._responseCookieCompliance;
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
         _relativeRedirectAllowed = config._relativeRedirectAllowed;
+        _uriCompliance = config._uriCompliance;
     }
 
     /**
