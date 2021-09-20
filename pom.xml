@@ -53,7 +53,10 @@
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jmh.version>1.33</jmh.version>
     <jna.version>5.9.0</jna.version>
-    <jnr-unixsocket.version>0.38.10</jnr-unixsocket.version>
+    <jnr-enxio.version>0.32.9</jnr-enxio.version>
+    <jnr-ffi.version>2.2.7</jnr-ffi.version>
+    <jnr-posix.version>3.1.10</jnr-posix.version>
+    <jnr-unixsocket.version>0.38.11</jnr-unixsocket.version>
     <jsp.version>8.5.70</jsp.version>
     <junit.version>5.8.0</junit.version>
     <log4j2.version>2.14.0</log4j2.version>
@@ -1027,6 +1030,21 @@
         <groupId>org.jboss.logging</groupId>
         <artifactId>jboss-logging</artifactId>
         <version>${jboss.logging.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-enxio</artifactId>
+        <version>${jnr-enxio.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-ffi</artifactId>
+        <version>${jnr-ffi.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.jnr</groupId>
+        <artifactId>jnr-posix</artifactId>
+        <version>${jnr-posix.version}</version>
       </dependency>
       <dependency>
         <groupId>com.github.jnr</groupId>
