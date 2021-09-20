@@ -733,4 +733,25 @@ public class URIUtilTest
     {
         assertThat(URIUtil.addQueries(param1, param2), matcher);
     }
+
+    @Test
+    public void testEncodeDecodeVisibleOnly()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append('/');
+        for (char i = 0; i < 0x7FFF; i++)
+            builder.append(i);
+        String path = builder.toString();
+        String encoded = URIUtil.encodePath(path);
+        // Check endoded is visible
+        for (char c : encoded.toCharArray())
+        {
+            assertTrue(c > 0x20 && c < 0x80);
+            assertFalse(Character.isWhitespace(c));
+            assertFalse(Character.isISOControl(c));
+        }
+        // check decode to original
+        String decoded = URIUtil.decodePath(encoded);
+        assertEquals(path, decoded);
+    }
 }
