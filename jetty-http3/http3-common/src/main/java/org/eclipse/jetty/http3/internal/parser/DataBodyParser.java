@@ -50,7 +50,7 @@ public class DataBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -77,13 +77,13 @@ public class DataBodyParser extends BodyParser
                     {
                         reset();
                         onData(slice, false);
-                        return true;
+                        return Result.WHOLE_FRAME;
                     }
                     else
                     {
                         // We got partial data, simulate a smaller frame, and stay in DATA state.
                         onData(slice, true);
-                        break;
+                        return Result.FRAGMENT_FRAME;
                     }
                 }
                 default:
@@ -92,7 +92,7 @@ public class DataBodyParser extends BodyParser
                 }
             }
         }
-        return false;
+        return Result.NO_FRAME;
     }
 
     private void onData(ByteBuffer buffer, boolean fragment)

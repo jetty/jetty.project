@@ -19,8 +19,8 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.ControlFlusher;
-import org.eclipse.jetty.http3.internal.DecoderConnection;
-import org.eclipse.jetty.http3.internal.EncoderConnection;
+import org.eclipse.jetty.http3.internal.DecoderStreamConnection;
+import org.eclipse.jetty.http3.internal.EncoderStreamConnection;
 import org.eclipse.jetty.http3.internal.HTTP3Flusher;
 import org.eclipse.jetty.http3.internal.InstructionFlusher;
 import org.eclipse.jetty.http3.internal.InstructionHandler;
@@ -59,14 +59,14 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
         long encoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint encoderEndPoint = configureEncoderEndPoint(encoderStreamId);
-        this.encoderFlusher = new InstructionFlusher(session, encoderEndPoint, EncoderConnection.STREAM_TYPE);
+        this.encoderFlusher = new InstructionFlusher(session, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
         this.encoder = new QpackEncoder(new InstructionHandler(encoderFlusher), maxBlockedStreams);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
 
         long decoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint decoderEndPoint = configureDecoderEndPoint(decoderStreamId);
-        this.decoderFlusher = new InstructionFlusher(session, decoderEndPoint, DecoderConnection.STREAM_TYPE);
+        this.decoderFlusher = new InstructionFlusher(session, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
         this.decoder = new QpackDecoder(new InstructionHandler(decoderFlusher), maxRequestHeadersSize);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
@@ -125,22 +125,22 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
-    protected void onReadable(long readableStreamId)
+    protected boolean onReadable(long readableStreamId)
     {
         StreamType streamType = StreamType.from(readableStreamId);
         if (streamType == StreamType.CLIENT_BIDIRECTIONAL)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("stream #{} selected for read", readableStreamId);
-            super.onReadable(readableStreamId);
+                LOG.debug("bidirectional stream #{} selected for read", readableStreamId);
+            return super.onReadable(readableStreamId);
         }
         else
         {
             // On the server, we need a get-or-create semantic in case of reads.
             QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, this::configureUnidirectionalStreamEndPoint);
             if (LOG.isDebugEnabled())
-                LOG.debug("stream #{} selected for read: {}", readableStreamId, streamEndPoint);
-            streamEndPoint.onReadable();
+                LOG.debug("unidirectional stream #{} selected for read: {}", readableStreamId, streamEndPoint);
+            return streamEndPoint.onReadable();
         }
     }
 
@@ -157,5 +157,10 @@ public class ServerHTTP3Session extends ServerProtocolSession
         QuicStreamEndPoint endPoint = getOrCreateStreamEndPoint(streamId, this::configureProtocolEndPoint);
         messageFlusher.offer(endPoint, frame, callback);
         messageFlusher.iterate();
+    }
+
+    protected void onDataAvailable(long streamId)
+    {
+        apiSession.onDataAvailable(streamId);
     }
 }

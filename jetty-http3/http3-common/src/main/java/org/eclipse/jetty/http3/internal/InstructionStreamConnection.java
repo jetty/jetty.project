@@ -16,7 +16,7 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http3.internal.parser.ControlParser;
+import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -25,22 +25,17 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ControlConnection extends AbstractConnection implements Connection.UpgradeTo
+public abstract class InstructionStreamConnection extends AbstractConnection implements Connection.UpgradeTo
 {
-    // SPEC: Control Stream Type.
-    public static final int STREAM_TYPE = 0x00;
-    private static final Logger LOG = LoggerFactory.getLogger(ControlConnection.class);
-
+    private static final Logger LOG = LoggerFactory.getLogger(InstructionStreamConnection.class);
     private final ByteBufferPool byteBufferPool;
-    private final ControlParser parser;
     private boolean useInputDirectByteBuffers = true;
     private ByteBuffer buffer;
 
-    public ControlConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, ControlParser parser)
+    public InstructionStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool)
     {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
-        this.parser = parser;
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -84,7 +79,7 @@ public class ControlConnection extends AbstractConnection implements Connection.
             while (true)
             {
                 // Parse first in case of bytes from the upgrade.
-                parser.parse(buffer);
+                parseInstruction(buffer);
 
                 // Then read from the EndPoint.
                 int filled = getEndPoint().fill(buffer);
@@ -110,10 +105,12 @@ public class ControlConnection extends AbstractConnection implements Connection.
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("could not process control stream {}", getEndPoint(), x);
+                LOG.debug("could not process decoder stream {}", getEndPoint(), x);
             byteBufferPool.release(buffer);
             buffer = null;
             getEndPoint().close(x);
         }
     }
+
+    protected abstract void parseInstruction(ByteBuffer buffer) throws QpackException;
 }

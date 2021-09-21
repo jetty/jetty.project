@@ -186,6 +186,18 @@ public interface Callback extends Invocable
         };
     }
 
+    static Callback from(InvocationType invocationType, Runnable completed)
+    {
+        return new Completing(invocationType)
+        {
+            @Override
+            public void completed()
+            {
+                completed.run();
+            }
+        };
+    }
+
     /**
      * <p>Creates a Callback with the given {@code invocationType},
      * that runs the given {@code Runnable} when it succeeds or fails.</p>

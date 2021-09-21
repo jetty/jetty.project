@@ -125,7 +125,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     public int fill(ByteBuffer buffer) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("filling buffer from stream {}", streamId);
+            LOG.debug("filling buffer from stream {} finished={}", streamId, isStreamFinished());
         int pos = BufferUtil.flipToFill(buffer);
         int drained = session.fill(streamId, buffer);
         BufferUtil.flipToFlush(buffer, pos);
@@ -135,6 +135,8 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
+        // TODO: session.flush(streamId, buffer) feeds Quiche and then calls flush().
+        //  Can we call flush() only after the for loop below?
         if (LOG.isDebugEnabled())
             LOG.debug("flushing {} buffer(s) to stream {}", buffers.length, streamId);
         for (ByteBuffer buffer : buffers)
@@ -188,11 +190,12 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         getWriteFlusher().completeWrite();
     }
 
-    public void onReadable()
+    public boolean onReadable()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("stream {} is readable", streamId);
         getFillInterest().fillable();
+        return isFillInterested();
     }
 
     @Override

@@ -16,22 +16,27 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http3.internal.parser.MessageParser;
+import org.eclipse.jetty.http3.internal.parser.ControlParser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP3Connection extends AbstractConnection
+public class ControlStreamConnection extends AbstractConnection implements Connection.UpgradeTo
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HTTP3Connection.class);
+    // SPEC: Control Stream Type.
+    public static final int STREAM_TYPE = 0x00;
+    private static final Logger LOG = LoggerFactory.getLogger(ControlStreamConnection.class);
 
     private final ByteBufferPool byteBufferPool;
-    private final MessageParser parser;
+    private final ControlParser parser;
     private boolean useInputDirectByteBuffers = true;
+    private ByteBuffer buffer;
 
-    public HTTP3Connection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser)
+    public ControlStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, ControlParser parser)
     {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
@@ -49,37 +54,54 @@ public class HTTP3Connection extends AbstractConnection
     }
 
     @Override
+    public void onUpgradeTo(ByteBuffer upgrade)
+    {
+        int capacity = Math.max(upgrade.remaining(), getInputBufferSize());
+        buffer = byteBufferPool.acquire(capacity, isUseInputDirectByteBuffers());
+        int position = BufferUtil.flipToFill(buffer);
+        buffer.put(upgrade);
+        BufferUtil.flipToFlush(buffer, position);
+    }
+
+    @Override
     public void onOpen()
     {
         super.onOpen();
-        fillInterested();
+        if (BufferUtil.hasContent(buffer))
+            onFillable();
+        else
+            fillInterested();
     }
 
     @Override
     public void onFillable()
     {
-        ByteBuffer buffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
         try
         {
+            if (buffer == null)
+                buffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+
             while (true)
             {
+                // Parse first in case of bytes from the upgrade.
+                parser.parse(buffer);
+
+                // Then read from the EndPoint.
                 int filled = getEndPoint().fill(buffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled {} on {}", filled, this);
 
-                if (filled > 0)
-                {
-                    parser.parse(buffer);
-                }
-                else if (filled == 0)
+                if (filled == 0)
                 {
                     byteBufferPool.release(buffer);
+                    buffer = null;
                     fillInterested();
                     break;
                 }
-                else
+                else if (filled < 0)
                 {
                     byteBufferPool.release(buffer);
+                    buffer = null;
                     getEndPoint().close();
                     break;
                 }
@@ -90,6 +112,7 @@ public class HTTP3Connection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("could not process control stream {}", getEndPoint(), x);
             byteBufferPool.release(buffer);
+            buffer = null;
             getEndPoint().close(x);
         }
     }

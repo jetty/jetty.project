@@ -42,9 +42,4 @@ public class DataFrame extends Frame
     {
         return String.format("%s[last=%b,length=%d]", super.toString(), isLast(), getData().remaining());
     }
-
-    public DataFrame withLast(boolean last)
-    {
-        return new DataFrame(data, last);
-    }
 }

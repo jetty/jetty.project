@@ -21,14 +21,14 @@ import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 
-public class EncoderConnection extends InstructionConnection
+public class EncoderStreamConnection extends InstructionStreamConnection
 {
     // SPEC: QPACK Encoder Stream Type.
     public static final int STREAM_TYPE = 0x02;
 
     private final QpackDecoder decoder;
 
-    public EncoderConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, QpackDecoder decoder)
+    public EncoderStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, QpackDecoder decoder)
     {
         super(endPoint, executor, byteBufferPool);
         this.decoder = decoder;

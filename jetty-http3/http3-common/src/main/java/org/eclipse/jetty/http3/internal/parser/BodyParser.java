@@ -60,7 +60,7 @@ public abstract class BodyParser
      * @return true if all the frame body bytes were parsed;
      * false if not enough frame body bytes were present in the buffer
      */
-    public abstract boolean parse(ByteBuffer buffer);
+    public abstract Result parse(ByteBuffer buffer);
 
     protected void emptyBody(ByteBuffer buffer)
     {
@@ -107,5 +107,10 @@ public abstract class BodyParser
         {
             LOG.info("failure while notifying listener {}", listener, x);
         }
+    }
+
+    public enum Result
+    {
+        NO_FRAME, FRAGMENT_FRAME, WHOLE_FRAME
     }
 }

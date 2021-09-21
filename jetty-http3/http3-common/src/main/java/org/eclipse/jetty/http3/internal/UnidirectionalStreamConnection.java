@@ -125,10 +125,10 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
     {
         switch (streamType)
         {
-            case ControlConnection.STREAM_TYPE:
+            case ControlStreamConnection.STREAM_TYPE:
             {
                 ControlParser parser = new ControlParser(listener);
-                ControlConnection newConnection = new ControlConnection(getEndPoint(), getExecutor(), byteBufferPool, parser);
+                ControlStreamConnection newConnection = new ControlStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, parser);
                 newConnection.setInputBufferSize(getInputBufferSize());
                 newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
                 if (LOG.isDebugEnabled())
@@ -136,9 +136,9 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
                 getEndPoint().upgrade(newConnection);
                 break;
             }
-            case EncoderConnection.STREAM_TYPE:
+            case EncoderStreamConnection.STREAM_TYPE:
             {
-                EncoderConnection newConnection = new EncoderConnection(getEndPoint(), getExecutor(), byteBufferPool, decoder);
+                EncoderStreamConnection newConnection = new EncoderStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, decoder);
                 newConnection.setInputBufferSize(getInputBufferSize());
                 newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
                 if (LOG.isDebugEnabled())
@@ -146,9 +146,9 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
                 getEndPoint().upgrade(newConnection);
                 break;
             }
-            case DecoderConnection.STREAM_TYPE:
+            case DecoderStreamConnection.STREAM_TYPE:
             {
-                DecoderConnection newConnection = new DecoderConnection(getEndPoint(), getExecutor(), byteBufferPool, encoder);
+                DecoderStreamConnection newConnection = new DecoderStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, encoder);
                 newConnection.setInputBufferSize(getInputBufferSize());
                 newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
                 if (LOG.isDebugEnabled())

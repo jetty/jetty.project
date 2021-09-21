@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -60,6 +61,7 @@ public class HeadersGenerateParseTest
                 frames.add(frame);
             }
         }, decoder, 13, () -> true);
+        parser.init(UnaryOperator.identity());
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
             parser.parse(buffer);
