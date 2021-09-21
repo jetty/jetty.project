@@ -877,31 +877,6 @@
       <type>jar</type>
       <optional>true</optional>
     </dependency>
-    <!-- adding those dependencies to ensure they are resolved and even kick upgrade from dependabot -->
-    <dependency>
-      <groupId>io.hawt</groupId>
-      <artifactId>hawtio-default</artifactId>
-      <version>${hawtio.version}</version>
-      <type>war</type>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>com.jamonapi</groupId>
-      <artifactId>jamon</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>com.jamonapi</groupId>
-      <artifactId>jamon_war</artifactId>
-      <optional>true</optional>
-      <type>war</type>
-    </dependency>
-    <dependency>
-      <groupId>org.jolokia</groupId>
-      <artifactId>jolokia-war</artifactId>
-      <optional>true</optional>
-      <type>war</type>
-    </dependency>
     <dependency>
       <groupId>log4j</groupId>
       <artifactId>log4j</artifactId>
