@@ -17,9 +17,9 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.eclipse.jetty.http3.api.Session;
-import org.eclipse.jetty.http3.internal.HTTP3Connection;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
+import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.common.ProtocolSession;
@@ -98,7 +98,6 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
         long streamId = streamEndPoint.getStreamId();
         ServerHTTP3Session http3Session = (ServerHTTP3Session)streamEndPoint.getQuicSession().getProtocolSession();
         MessageParser parser = new MessageParser(http3Session.getSessionServer(), http3Session.getQpackDecoder(), streamId, streamEndPoint::isStreamFinished);
-        HTTP3Connection connection = new HTTP3Connection(streamEndPoint, connector.getExecutor(), connector.getByteBufferPool(), parser);
-        return connection;
+        return new ServerHTTP3StreamConnection(streamEndPoint, http3Session, parser);
     }
 }

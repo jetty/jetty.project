@@ -53,7 +53,7 @@ public class HeadersBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -74,7 +74,7 @@ public class HeadersBodyParser extends BodyParser
                         length -= remaining;
                         ByteBuffer copy = BufferUtil.copy(buffer);
                         byteBuffers.add(copy);
-                        return false;
+                        return Result.NO_FRAME;
                     }
                     else
                     {
@@ -99,7 +99,7 @@ public class HeadersBodyParser extends BodyParser
                             byteBuffers.clear();
                         }
 
-                        return decode(encoded);
+                        return decode(encoded) ? Result.WHOLE_FRAME : Result.NO_FRAME;
                     }
                 }
                 default:
@@ -108,7 +108,7 @@ public class HeadersBodyParser extends BodyParser
                 }
             }
         }
-        return false;
+        return Result.NO_FRAME;
     }
 
     private boolean decode(ByteBuffer encoded)

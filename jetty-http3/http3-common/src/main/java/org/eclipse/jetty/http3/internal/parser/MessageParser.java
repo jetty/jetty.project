@@ -15,10 +15,12 @@ package org.eclipse.jetty.http3.internal.parser;
 
 import java.nio.ByteBuffer;
 import java.util.function.BooleanSupplier;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.ErrorCode;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,14 +33,27 @@ public class MessageParser
 {
     private static final Logger LOG = LoggerFactory.getLogger(MessageParser.class);
 
-    private final HeaderParser headerParser;
+    private final HeaderParser headerParser = new HeaderParser();
     private final BodyParser[] bodyParsers = new BodyParser[FrameType.maxType() + 1];
-    private final BodyParser unknownBodyParser;
+    private final ParserListener listener;
+    private final QpackDecoder decoder;
+    private final long streamId;
+    private final BooleanSupplier isLast;
+    private BodyParser unknownBodyParser;
     private State state = State.HEADER;
+    protected boolean dataMode;
 
     public MessageParser(ParserListener listener, QpackDecoder decoder, long streamId, BooleanSupplier isLast)
     {
-        this.headerParser = new HeaderParser();
+        this.listener = listener;
+        this.decoder = decoder;
+        this.streamId = streamId;
+        this.isLast = isLast;
+    }
+
+    public void init(UnaryOperator<ParserListener> wrapper)
+    {
+        ParserListener listener = wrapper.apply(this.listener);
         this.bodyParsers[FrameType.DATA.type()] = new DataBodyParser(headerParser, listener, streamId, isLast);
         this.bodyParsers[FrameType.HEADERS.type()] = new HeadersBodyParser(headerParser, listener, decoder, streamId, isLast);
         this.bodyParsers[FrameType.PUSH_PROMISE.type()] = new PushPromiseBodyParser(headerParser, listener);
@@ -51,12 +66,20 @@ public class MessageParser
         state = State.HEADER;
     }
 
+    public void setDataMode(boolean enable)
+    {
+        this.dataMode = enable;
+    }
+
     /**
      * <p>Parses the given {@code buffer} bytes and emit events to a {@link ParserListener}.</p>
+     * <p>Only the bytes of one frame are consumed, therefore when this method returns,
+     * the buffer may contain unconsumed bytes, for example for other frames.</p>
      *
      * @param buffer the buffer to parse
+     * @return the result of the parsing
      */
-    public void parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer)
     {
         try
         {
@@ -69,9 +92,12 @@ public class MessageParser
                         if (headerParser.parse(buffer))
                         {
                             state = State.BODY;
+                            // If we are in data mode, but we did not parse a DATA frame, bail out.
+                            if (dataMode && headerParser.getFrameType() != FrameType.DATA.type())
+                                return Result.MODE_SWITCH;
                             break;
                         }
-                        return;
+                        return Result.NO_FRAME;
                     }
                     case BODY:
                     {
@@ -83,27 +109,37 @@ public class MessageParser
                         if (bodyParser == null)
                         {
                             // Unknown frame types must be ignored.
+                            BodyParser.Result result = unknownBodyParser.parse(buffer);
+                            if (result == BodyParser.Result.NO_FRAME)
+                                return Result.NO_FRAME;
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Ignoring unknown frame type {}", Integer.toHexString(frameType));
-                            if (!unknownBodyParser.parse(buffer))
-                                return;
+                                LOG.debug("Parsed unknown frame body for type {}", Integer.toHexString(frameType));
+                            if (result == BodyParser.Result.WHOLE_FRAME)
+                                reset();
+                            break;
                         }
                         else
                         {
                             if (headerParser.getFrameLength() == 0)
                             {
                                 bodyParser.emptyBody(buffer);
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Parsed {} empty frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+                                reset();
+                                return Result.FRAME;
                             }
                             else
                             {
-                                if (!bodyParser.parse(buffer))
-                                    return;
+                                BodyParser.Result result = bodyParser.parse(buffer);
+                                if (result == BodyParser.Result.NO_FRAME)
+                                    return Result.NO_FRAME;
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Parsed {} frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+                                if (result == BodyParser.Result.WHOLE_FRAME)
+                                    reset();
+                                return Result.FRAME;
                             }
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Parsed {} frame body from {}", FrameType.from(frameType), buffer);
                         }
-                        reset();
-                        break;
                     }
                     default:
                     {
@@ -118,12 +154,18 @@ public class MessageParser
                 LOG.debug("parse failed", x);
             buffer.clear();
             connectionFailure(buffer, ErrorCode.INTERNAL_ERROR.code(), "parser_error");
+            return Result.NO_FRAME;
         }
     }
 
     private void connectionFailure(ByteBuffer buffer, int error, String reason)
     {
         unknownBodyParser.sessionFailure(buffer, error, reason);
+    }
+
+    public enum Result
+    {
+        NO_FRAME, FRAME, MODE_SWITCH
     }
 
     private enum State

@@ -93,18 +93,19 @@ public abstract class ProtocolSession
         List<Long> readableStreamIds = session.getReadableStreamIds();
         if (LOG.isDebugEnabled())
             LOG.debug("readable stream ids: {}", readableStreamIds);
-        readableStreamIds.forEach(this::onReadable);
 
         // TODO: ExecutionStrategy plug-in point is here.
-        //  this::onReadable() just feeds the decoder and the instruction streams.
+        //  this.onReadable() just feeds the decoder and the instruction streams.
         //  Note that req/rsp streams never eat DATA frame, it's a noop because they pull data
         //  when they want to read data frames, either via Stream.readData() or ServletInputStream.read().
         //  Then here we ask decoder for tasks, and have the ExecutionStrategy process them.
 
-        return !readableStreamIds.isEmpty();
+        return readableStreamIds.stream()
+            .map(this::onReadable)
+            .reduce(false, (result, interested) -> result || interested);
     }
 
-    protected abstract void onReadable(long readableStreamId);
+    protected abstract boolean onReadable(long readableStreamId);
 
     public void configureProtocolEndPoint(QuicStreamEndPoint endPoint)
     {

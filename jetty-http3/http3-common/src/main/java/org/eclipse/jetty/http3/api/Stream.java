@@ -17,36 +17,73 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.util.Callback;
 
 public interface Stream
 {
     public CompletableFuture<Stream> respond(HeadersFrame frame);
 
+    public CompletableFuture<Stream> data(DataFrame dataFrame);
+
+    public Stream.Data readData();
+
+    public void demand(boolean enable);
+
+    public CompletableFuture<Stream> trailer(HeadersFrame frame);
+
     public interface Listener
     {
         public default void onResponse(Stream stream, HeadersFrame frame)
         {
-
         }
 
-        public default void onData(Stream stream, DataFrame frame, Callback callback)
+        public default void onDataAvailable(Stream stream)
         {
-            // TODO: alternative API
-//            public void onDataAvailable(Stream s)
-//            {
-//                while (true)
-//                {
-//                    DataFrame frame = s.pollData();
-//                    if (frame == null)
-//                        return;
-//                    process(frame);
-//                }
-//            }
         }
 
         public default void onTrailer(Stream stream, HeadersFrame frame)
         {
+        }
+    }
+
+    public static class Data
+    {
+        private final DataFrame frame;
+        private final CompletableFuture<Object> callback;
+
+        public Data(DataFrame frame, CompletableFuture<Object> callback)
+        {
+            this.frame = frame;
+            this.callback = callback;
+        }
+
+        public DataFrame frame()
+        {
+            return frame;
+        }
+
+        public CompletableFuture<Object> callback()
+        {
+            return callback;
+        }
+
+        public void complete(Object result, Throwable failure)
+        {
+            if (failure == null)
+                callback().complete(result);
+            else
+                callback().completeExceptionally(failure);
+        }
+
+        public void completeAndDemand(Stream stream, Throwable failure)
+        {
+            complete(stream, failure);
+            if (failure == null)
+                stream.demand(true);
+        }
+
+        public void succeed()
+        {
+            callback().complete(null);
         }
     }
 }

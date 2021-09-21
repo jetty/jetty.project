@@ -84,24 +84,31 @@ public class ControlParser
                             // TODO: enforce only control frames, but ignore unknown.
                             if (LOG.isDebugEnabled())
                                 LOG.debug("ignoring unknown frame type {}", Integer.toHexString(frameType));
-                            if (!unknownBodyParser.parse(buffer))
+                            BodyParser.Result result = unknownBodyParser.parse(buffer);
+                            if (result == BodyParser.Result.NO_FRAME)
                                 return;
-                            reset();
+                            if (result == BodyParser.Result.WHOLE_FRAME)
+                                reset();
                         }
                         else
                         {
                             if (headerParser.getFrameLength() == 0)
                             {
                                 bodyParser.emptyBody(buffer);
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), buffer);
+                                reset();
                             }
                             else
                             {
-                                if (!bodyParser.parse(buffer))
+                                BodyParser.Result result = bodyParser.parse(buffer);
+                                if (result == BodyParser.Result.NO_FRAME)
                                     return;
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("parsed {} frame body from {}", FrameType.from(frameType), buffer);
+                                if (result == BodyParser.Result.WHOLE_FRAME)
+                                    reset();
                             }
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("parsed {} frame body from {}", FrameType.from(frameType), buffer);
-                            reset();
                         }
                         break;
                     }

@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
@@ -65,6 +66,7 @@ public class DataGenerateParseTest
                 frames.add(frame);
             }
         }, null, 13, () -> true);
+        parser.init(UnaryOperator.identity());
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
             parser.parse(buffer);

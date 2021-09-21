@@ -114,24 +114,27 @@ public abstract class HTTP3Session implements Session, ParserListener
     @Override
     public void onHeaders(long streamId, HeadersFrame frame)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("received {}#{} on {}", frame, streamId, this);
-
         QuicStreamEndPoint endPoint = session.getStreamEndPoint(streamId);
         HTTP3Stream stream = getOrCreateStream(endPoint);
 
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("received request {}#{} on {}", frame, streamId, this);
             Stream.Listener streamListener = notifyRequest(stream, frame);
             stream.setListener(streamListener);
         }
         else if (metaData.isResponse())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("received response {}#{} on {}", frame, streamId, this);
             notifyResponse(stream, frame);
         }
         else
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("received trailer {}#{} on {}", frame, streamId, this);
             notifyTrailer(stream, frame);
         }
     }
@@ -153,7 +156,9 @@ public abstract class HTTP3Session implements Session, ParserListener
     {
         try
         {
-            stream.getListener().onResponse(stream, frame);
+            Stream.Listener listener = stream.getListener();
+            if (listener != null)
+                listener.onResponse(stream, frame);
         }
         catch (Throwable x)
         {
@@ -165,7 +170,9 @@ public abstract class HTTP3Session implements Session, ParserListener
     {
         try
         {
-            stream.getListener().onTrailer(stream, frame);
+            Stream.Listener listener = stream.getListener();
+            if (listener != null)
+                listener.onTrailer(stream, frame);
         }
         catch (Throwable x)
         {
@@ -178,22 +185,16 @@ public abstract class HTTP3Session implements Session, ParserListener
     {
         if (LOG.isDebugEnabled())
             LOG.debug("received {}#{} on {}", frame, streamId, this);
-
-        // The stream must already exist.
-        HTTP3Stream stream = getStream(streamId);
-        // TODO: handle null stream.
-
-        // TODO: implement demand mechanism like in HTTP2Stream
-        //  demand(n) should be on Stream, or on a LongConsumer parameter?
-
-        // TODO: the callback in HTTP2 was only to notify of data consumption for flow control.
-        //  Here, we don't have to do flow control, but what about retain()/release() for the network buffer?
-        notifyData(stream, frame, Callback.NOOP);
     }
 
-    private void notifyData(HTTP3Stream stream, DataFrame frame, Callback callback)
+    public void onDataAvailable(long streamId)
     {
-        stream.getListener().onData(stream, frame, callback);
+        if (LOG.isDebugEnabled())
+            LOG.debug("notifying data available for stream #{} on {}", streamId, this);
+        HTTP3Stream stream = getStream(streamId);
+        Stream.Listener listener = stream.getListener();
+        if (listener != null)
+            listener.onDataAvailable(stream);
     }
 
     @Override

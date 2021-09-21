@@ -14,9 +14,12 @@
 package org.eclipse.jetty.http3.tests;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -26,53 +29,17 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
-import org.eclipse.jetty.quic.server.ServerQuicConnector;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HTTP3ClientServerTest
+public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
 {
-    private Server server;
-    private ServerQuicConnector connector;
-    private HTTP3Client client;
-
-    private void startServer(Session.Server.Listener listener) throws Exception
-    {
-        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-        sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
-        sslContextFactory.setKeyStorePassword("storepwd");
-        QueuedThreadPool serverThreads = new QueuedThreadPool();
-        serverThreads.setName("server");
-        server = new Server(serverThreads);
-        connector = new ServerQuicConnector(server, sslContextFactory, new RawHTTP3ServerConnectionFactory(listener));
-        server.addConnector(connector);
-        server.start();
-    }
-
-    private void startClient() throws Exception
-    {
-        client = new HTTP3Client();
-        client.start();
-    }
-
-    @AfterEach
-    public void dispose()
-    {
-        LifeCycle.stop(client);
-        LifeCycle.stop(server);
-    }
-
     @Test
     public void testConnectTriggersSettingsFrame() throws Exception
     {
@@ -152,7 +119,155 @@ public class HTTP3ClientServerTest
             .get(5, TimeUnit.SECONDS);
         assertNotNull(stream);
 
-        assertTrue(serverRequestLatch.await(555, TimeUnit.SECONDS));
-        assertTrue(clientResponseLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(serverRequestLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testDiscardRequestContent() throws Exception
+    {
+        AtomicReference<CountDownLatch> serverLatch = new AtomicReference<>(new CountDownLatch(1));
+        startServer(new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            {
+                // Send the response.
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), false));
+                // Implicit demand, so onDataAvailable() will be called.
+                return new Stream.Listener()
+                {
+                    @Override
+                    public void onDataAvailable(Stream stream)
+                    {
+                        // FlowControl acknowledged already.
+                        Stream.Data data = stream.readData();
+                        if (data == null)
+                        {
+                            // Call me again when you have data.
+                            stream.demand(true);
+                            return;
+                        }
+                        // Recycle the ByteBuffer in data.frame.
+                        data.succeed();
+                        // Call me again immediately.
+                        stream.demand(true);
+                        if (data.frame().isLast())
+                            serverLatch.get().countDown();
+                    }
+                };
+            }
+        });
+        startClient();
+
+        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
+            .get(5, TimeUnit.SECONDS);
+
+        AtomicReference<CountDownLatch> clientLatch = new AtomicReference<>(new CountDownLatch(1));
+        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
+        MetaData.Request metaData = new MetaData.Request(HttpMethod.POST.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
+        HeadersFrame frame = new HeadersFrame(metaData, false);
+        Stream.Listener streamListener = new Stream.Listener()
+        {
+            @Override
+            public void onResponse(Stream stream, HeadersFrame frame)
+            {
+                clientLatch.get().countDown();
+            }
+        };
+        Stream stream1 = session.newRequest(frame, streamListener)
+            .get(5, TimeUnit.SECONDS);
+        stream1.data(new DataFrame(ByteBuffer.allocate(8192), true));
+
+        assertTrue(clientLatch.get().await(5, TimeUnit.SECONDS));
+        assertTrue(serverLatch.get().await(5, TimeUnit.SECONDS));
+
+        // Send another request, but with 2 chunks of data separated by some time.
+        serverLatch.set(new CountDownLatch(1));
+        clientLatch.set(new CountDownLatch(1));
+        Stream stream2 = session.newRequest(frame, streamListener).get(5, TimeUnit.SECONDS);
+        stream2.data(new DataFrame(ByteBuffer.allocate(3 * 1024), false));
+        // Wait some time before sending the second chunk.
+        Thread.sleep(500);
+        stream2.data(new DataFrame(ByteBuffer.allocate(5 * 1024), true));
+
+        assertTrue(clientLatch.get().await(555, TimeUnit.SECONDS));
+        assertTrue(serverLatch.get().await(555, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testEchoRequestContentAsResponseContent() throws Exception
+    {
+        startServer(new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            {
+                // Send the response headers.
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), false));
+                return new Stream.Listener()
+                {
+                    @Override
+                    public void onDataAvailable(Stream stream)
+                    {
+                        // Read data.
+                        Stream.Data data = stream.readData();
+                        if (data == null)
+                        {
+                            stream.demand(true);
+                            return;
+                        }
+                        // Echo it back, then demand only when the write is finished.
+                        stream.data(data.frame())
+                            .whenComplete(data::completeAndDemand);
+                    }
+                };
+            }
+        });
+        startClient();
+
+        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
+            .get(5, TimeUnit.SECONDS);
+
+        CountDownLatch clientResponseLatch = new CountDownLatch(1);
+        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
+        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
+        HeadersFrame frame = new HeadersFrame(metaData, false);
+        byte[] bytesSent = new byte[8192];
+        new Random().nextBytes(bytesSent);
+        byte[] bytesReceived = new byte[bytesSent.length];
+        ByteBuffer byteBuffer = ByteBuffer.wrap(bytesReceived);
+        CountDownLatch clientDataLatch = new CountDownLatch(1);
+        Stream stream = session.newRequest(frame, new Stream.Listener()
+            {
+                @Override
+                public void onResponse(Stream stream, HeadersFrame frame)
+                {
+                    clientResponseLatch.countDown();
+                }
+
+                @Override
+                public void onDataAvailable(Stream stream)
+                {
+                    // Read data.
+                    Stream.Data data = stream.readData();
+                    if (data != null)
+                    {
+                        // Consume data.
+                        byteBuffer.put(data.frame().getData());
+                        data.callback().complete(null);
+                        if (data.frame().isLast())
+                            clientDataLatch.countDown();
+                    }
+                    // Demand more data.
+                    stream.demand(true);
+                }
+            })
+            .get(5, TimeUnit.SECONDS);
+        stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true));
+
+        assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientDataLatch.await(5, TimeUnit.SECONDS));
+        assertArrayEquals(bytesSent, bytesReceived);
     }
 }

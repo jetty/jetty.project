@@ -587,11 +587,16 @@ public class QuicheConnection
 
     public int feedClearTextForStream(long streamId, ByteBuffer buffer) throws IOException
     {
+        return feedClearTextForStream(streamId, buffer, false);
+    }
+
+    public int feedClearTextForStream(long streamId, ByteBuffer buffer, boolean last) throws IOException
+    {
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
                 throw new IOException("Quiche connection was released");
-            int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), false).intValue();
+            int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), last).intValue();
             if (written == LibQuiche.quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)

@@ -38,4 +38,44 @@ public interface ParserListener
     public default void onSessionFailure(int error, String reason)
     {
     }
+
+    public static class Wrapper implements ParserListener
+    {
+        protected final ParserListener listener;
+
+        public Wrapper(ParserListener listener)
+        {
+            this.listener = listener;
+        }
+
+        @Override
+        public void onHeaders(long streamId, HeadersFrame frame)
+        {
+            listener.onHeaders(streamId, frame);
+        }
+
+        @Override
+        public void onData(long streamId, DataFrame frame)
+        {
+            listener.onData(streamId, frame);
+        }
+
+        @Override
+        public void onSettings(SettingsFrame frame)
+        {
+            listener.onSettings(frame);
+        }
+
+        @Override
+        public void onStreamFailure(long streamId, int error, String reason)
+        {
+            listener.onStreamFailure(streamId, error, reason);
+        }
+
+        @Override
+        public void onSessionFailure(int error, String reason)
+        {
+            listener.onSessionFailure(error, reason);
+        }
+    }
 }

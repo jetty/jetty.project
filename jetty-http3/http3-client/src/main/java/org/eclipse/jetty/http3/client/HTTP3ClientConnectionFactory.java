@@ -17,7 +17,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
-import org.eclipse.jetty.http3.internal.HTTP3Connection;
+import org.eclipse.jetty.http3.client.internal.ClientHTTP3StreamConnection;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
@@ -76,8 +76,7 @@ public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, Pr
         QuicStreamEndPoint streamEndPoint = (QuicStreamEndPoint)endPoint;
         long streamId = streamEndPoint.getStreamId();
         ClientHTTP3Session http3Session = (ClientHTTP3Session)streamEndPoint.getQuicSession().getProtocolSession();
-        // TODO: Parser may be created internally, if I pass the QuicStreamEndPoint and ClientHTTP3Session.
         MessageParser parser = new MessageParser(http3Session.getSessionClient(), http3Session.getQpackDecoder(), streamId, streamEndPoint::isStreamFinished);
-        return new HTTP3Connection(streamEndPoint, http3Session.getQuicSession().getExecutor(), http3Session.getQuicSession().getByteBufferPool(), parser);
+        return new ClientHTTP3StreamConnection(streamEndPoint, http3Session, parser);
     }
 }

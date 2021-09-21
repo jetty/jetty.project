@@ -50,7 +50,7 @@ public class SettingsBodyParser extends BodyParser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public Result parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -74,12 +74,12 @@ public class SettingsBodyParser extends BodyParser
                         if (settings.containsKey(key))
                         {
                             sessionFailure(buffer, ErrorCode.SETTINGS_ERROR.code(), "settings_duplicate");
-                            return true;
+                            return Result.NO_FRAME;
                         }
                         if (SettingsFrame.isReserved(key))
                         {
                             sessionFailure(buffer, ErrorCode.SETTINGS_ERROR.code(), "settings_reserved");
-                            return true;
+                            return Result.NO_FRAME;
                         }
                         if (length > 0)
                         {
@@ -88,11 +88,11 @@ public class SettingsBodyParser extends BodyParser
                         else
                         {
                             sessionFailure(buffer, ErrorCode.FRAME_ERROR.code(), "settings_invalid_format");
-                            return true;
+                            return Result.NO_FRAME;
                         }
                         break;
                     }
-                    return false;
+                    return Result.NO_FRAME;
                 }
                 case VALUE:
                 {
@@ -112,16 +112,16 @@ public class SettingsBodyParser extends BodyParser
                             Map<Long, Long> settings = this.settings;
                             reset();
                             onSettings(settings);
-                            return true;
+                            return Result.WHOLE_FRAME;
                         }
                         else
                         {
                             sessionFailure(buffer, ErrorCode.FRAME_ERROR.code(), "settings_invalid_format");
-                            return true;
+                            return Result.NO_FRAME;
                         }
                         break;
                     }
-                    return false;
+                    return Result.NO_FRAME;
                 }
                 default:
                 {
@@ -129,7 +129,7 @@ public class SettingsBodyParser extends BodyParser
                 }
             }
         }
-        return false;
+        return Result.NO_FRAME;
     }
 
     private void onSettings(Map<Long, Long> settings)

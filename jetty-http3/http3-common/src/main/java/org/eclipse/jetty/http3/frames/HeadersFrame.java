@@ -40,11 +40,6 @@ public class HeadersFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s[last=%b,%s]", super.toString(), isLast(), getMetaData());
-    }
-
-    public HeadersFrame withLast(boolean last)
-    {
-        return new HeadersFrame(metaData, last);
+        return String.format("%s[last=%b,{%s}]", super.toString(), isLast(), getMetaData());
     }
 }
