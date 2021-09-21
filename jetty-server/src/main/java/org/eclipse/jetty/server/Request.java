@@ -86,6 +86,7 @@ import org.eclipse.jetty.server.session.Session;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
@@ -2605,6 +2606,6 @@ public class Request implements HttpServletRequest
 
     private String formatAddrOrHost(String name)
     {
-        return _channel == null ? name : _channel.formatAddrOrHost(name);
+        return _channel == null ? HostPort.normalizeHost(name) : _channel.formatAddrOrHost(name);
     }
 }
