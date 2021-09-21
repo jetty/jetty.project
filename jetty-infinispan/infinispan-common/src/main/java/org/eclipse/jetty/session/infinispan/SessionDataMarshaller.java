@@ -14,10 +14,7 @@
 package org.eclipse.jetty.session.infinispan;
 
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 
-import org.infinispan.commons.marshall.Externalizer;
 import org.infinispan.protostream.FileDescriptorSource;
 import org.infinispan.protostream.MessageMarshaller;
 import org.infinispan.protostream.ProtobufUtil;
@@ -31,8 +28,7 @@ import org.infinispan.protostream.SerializationContext;
  * control to ensure that session attributes can be deserialized using either
  * the container class loader or the webapp classloader, as appropriate.
  */
-public class SessionDataMarshaller
-        implements MessageMarshaller<InfinispanSessionData>, Externalizer<InfinispanSessionData>
+public class SessionDataMarshaller implements MessageMarshaller<InfinispanSessionData>
 {
     /**
      * The version of the serializer.
@@ -68,39 +64,6 @@ public class SessionDataMarshaller
     }
 
     @Override
-    public InfinispanSessionData readObject(ObjectInput input) throws IOException, ClassNotFoundException
-    {
-        if (serializationContext == null)
-        {
-            initSerializationContext();
-        }
-
-        // invokes readFrom(ProtoStreamReader)
-        InfinispanSessionData data = ProtobufUtil.readFrom(serializationContext, new BoundDelegatingInputStream(input),
-                InfinispanSessionData.class);
-        if (data != null)
-        {
-            data.deserializeAttributes();
-        }
-        return data;
-    }
-
-    @Override
-    public void writeObject(ObjectOutput output, InfinispanSessionData object) throws IOException
-    {
-        if (serializationContext == null)
-        {
-            initSerializationContext();
-        }
-
-     // invokes writeTo(ProtoStreamWriter, InfinispanSessionData)
-        byte[] data = ProtobufUtil.toByteArray(serializationContext, object);
-        int length = data.length;
-        output.writeInt(length);
-        output.write(data);        
-    }
-
-    @Override
     public InfinispanSessionData readFrom(ProtoStreamReader in) throws IOException
     {
         final int version = in.readInt("version"); // version of serialized session
@@ -127,6 +90,9 @@ public class SessionDataMarshaller
         if (version == 0)
         {
             byte[] attributeArray = in.readBytes("attributes");
+            //only save the serialized bytes here, do NOT deserialize because
+            //infinispan has called this method with their own thread without
+            //the appropriate classloader being set
             sd.setSerializedAttributes(attributeArray);
             return sd;
         }
@@ -152,7 +118,9 @@ public class SessionDataMarshaller
         out.writeLong("expiry", sdata.getExpiry());
         out.writeLong("maxInactiveMs", sdata.getMaxInactiveMs());
 
-        sdata.serializeAttributes();
+        //the session data attributes MUST be previously serialized
+        //because this method is called from an infinispan thread that cannot
+        //have the appropriate classloader set on it
         out.writeBytes("attributes", sdata.getSerializedAttributes());
     }
 

@@ -10,6 +10,7 @@
        <Set name="infinispanIdleTimeoutSec" property="jetty.session.infinispan.idleTimeout.seconds"/>
        <Set name="gracePeriodSec" property="jetty.session.gracePeriod.seconds"/>
        <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
+       <Set name="serialization" property="jetty.session.infinispan.serialization"/>
     </New>
    </Arg>
   </Call>

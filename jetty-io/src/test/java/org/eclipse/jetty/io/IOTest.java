@@ -43,6 +43,8 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -544,5 +546,60 @@ public class IOTest
                 assertThat(selector.select(), is(0));
             }
         }
+    }
+
+    @Test
+    public void testSymbolicLink(TestInfo testInfo) throws Exception
+    {
+        File dir = MavenTestingUtils.getTargetTestingDir(testInfo.getDisplayName());
+        FS.ensureEmpty(dir);
+        File realFile = new File(dir, "real");
+        Path realPath = realFile.toPath();
+        FS.touch(realFile);
+
+        File linkFile = new File(dir, "link");
+        Path linkPath = linkFile.toPath();
+        Files.createSymbolicLink(linkPath, realPath);
+        Path targPath = linkPath.toRealPath();
+
+        System.err.printf("realPath = %s%n", realPath);
+        System.err.printf("linkPath = %s%n", linkPath);
+        System.err.printf("targPath = %s%n", targPath);
+
+        assertFalse(Files.isSymbolicLink(realPath));
+        assertTrue(Files.isSymbolicLink(linkPath));
+
+        Resource link = new PathResource(dir).addPath("link");
+        assertThat(link.isAlias(), is(true));
+    }
+
+    @Test
+    public void testSymbolicLinkDir(TestInfo testInfo) throws Exception
+    {
+        File dir = MavenTestingUtils.getTargetTestingDir(testInfo.getDisplayName());
+        FS.ensureEmpty(dir);
+
+        File realDirFile = new File(dir, "real");
+        Path realDirPath = realDirFile.toPath();
+        Files.createDirectories(realDirPath);
+
+        File linkDirFile = new File(dir, "link");
+        Path linkDirPath = linkDirFile.toPath();
+        Files.createSymbolicLink(linkDirPath, realDirPath);
+
+        File realFile = new File(realDirFile, "file");
+        Path realPath = realFile.toPath();
+        FS.touch(realFile);
+
+        File linkFile = new File(linkDirFile, "file");
+        Path linkPath = linkFile.toPath();
+        Path targPath = linkPath.toRealPath();
+
+        System.err.printf("realPath = %s%n", realPath);
+        System.err.printf("linkPath = %s%n", linkPath);
+        System.err.printf("targPath = %s%n", targPath);
+
+        assertFalse(Files.isSymbolicLink(realPath));
+        assertFalse(Files.isSymbolicLink(linkPath));
     }
 }

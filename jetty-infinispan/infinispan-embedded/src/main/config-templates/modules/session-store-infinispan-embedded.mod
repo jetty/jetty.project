@@ -20,5 +20,6 @@ infinispan.version?=@infinispan.version@
 
 [ini-template]
 #jetty.session.infinispan.idleTimeout.seconds=0
+#jetty.session.infinispan.serialization=false
 #jetty.session.gracePeriod.seconds=3600
 #jetty.session.savePeriod.seconds=0

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.tests.distribution.session;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -56,6 +57,12 @@ public class MongodbSessionDistributionTests extends AbstractSessionDistribution
         mongoDBContainer.stop();
     }
 
+    @Override
+    public void configureExternalSessionStorage(Path jettyBase) throws Exception
+    {
+        // no op
+    }
+    
     @Override
     public List<String> getFirstStartExtraArgs()
     {

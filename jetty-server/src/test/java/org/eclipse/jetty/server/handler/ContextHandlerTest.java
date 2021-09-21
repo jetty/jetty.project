@@ -643,7 +643,7 @@ public class ContextHandlerTest
     public void testProtected() throws Exception
     {
         ContextHandler handler = new ContextHandler();
-        String[] protectedTargets = {"/foo-inf", "/bar-inf"};
+        String[] protectedTargets = {"/FOO-INF", "/BAR-INF"};
         handler.setProtectedTargets(protectedTargets);
 
         assertTrue(handler.isProtectedTarget("/foo-inf"));
