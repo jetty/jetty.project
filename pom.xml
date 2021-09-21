@@ -36,6 +36,8 @@
     <hawtio.version>2.13.5</hawtio.version>
     <jamon.version>2.81</jamon.version>
     <jolokia.version>1.3.3</jolokia.version>
+    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
+    <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
     <google.errorprone.version>2.9.0</google.errorprone.version>
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <hazelcast.version>4.2.2</hazelcast.version>
@@ -1115,12 +1117,12 @@
       <dependency>
         <groupId>org.eclipse.jetty.orbit</groupId>
         <artifactId>javax.mail.glassfish</artifactId>
-        <version>1.4.1.v201005082020</version>
+        <version>${javax.mail.glassfish.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.transaction</groupId>
         <artifactId>jakarta.transaction-api</artifactId>
-        <version>1.3.3</version>
+        <version>${jakarta.transaction-api.version}</version>
       </dependency>
       <dependency>
         <groupId>javax.enterprise</groupId>
