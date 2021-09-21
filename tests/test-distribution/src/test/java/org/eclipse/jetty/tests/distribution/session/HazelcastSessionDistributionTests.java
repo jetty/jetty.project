@@ -92,6 +92,12 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
     }
 
     @Override
+    public void configureExternalSessionStorage(Path jettyBase) throws Exception
+    {
+        // no op
+    }
+    
+    @Override
     public List<String> getFirstStartExtraArgs()
     {
         return Collections.emptyList();

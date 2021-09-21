@@ -29,6 +29,7 @@ import org.eclipse.jetty.session.infinispan.RemoteQueryManager;
 import org.infinispan.client.hotrod.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
+import org.infinispan.query.dsl.QueryResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +51,11 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
 
     public static RemoteInfinispanTestSupport __testSupport;
 
+    public RemoteInfinispanSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
+    
     @BeforeEach
     public void setup() throws Exception
     {
@@ -75,7 +81,17 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     @Override
     public void persistSession(SessionData data) throws Exception
     {
-        __testSupport.createSession((InfinispanSessionData)data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            __testSupport.createSession((InfinispanSessionData)data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+        
     }
 
     @Override
@@ -87,7 +103,16 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     @Override
     public boolean checkSessionExists(SessionData data) throws Exception
     {
-        return __testSupport.checkSessionExists((InfinispanSessionData)data);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_contextClassLoader);
+        try
+        {
+            return __testSupport.checkSessionExists((InfinispanSessionData)data);
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 
     @Override
@@ -140,23 +165,29 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     {
         InfinispanSessionData sd1 = new InfinispanSessionData("sd1", "", "", 0, 0, 0, 1000);
         sd1.setLastNode("fred1");
+        sd1.serializeAttributes();
         __testSupport.getCache().put("session1", sd1);
 
         InfinispanSessionData sd2 = new InfinispanSessionData("sd2", "", "", 0, 0, 0, 2000);
         sd2.setLastNode("fred2");
+        sd2.serializeAttributes();
         __testSupport.getCache().put("session2", sd2);
 
         InfinispanSessionData sd3 = new InfinispanSessionData("sd3", "", "", 0, 0, 0, 3000);
         sd3.setLastNode("fred3");
+        sd3.serializeAttributes();
         __testSupport.getCache().put("session3", sd3);
 
         QueryFactory qf = Search.getQueryFactory(__testSupport.getCache());
+        Query<InfinispanSessionData> query = qf.create("from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " +
+            " expiry < :time");
 
         for (int i = 0; i <= 3; i++)
         {
             long now = System.currentTimeMillis();
-            Query q = qf.from(InfinispanSessionData.class).having("expiry").lt(now).build();
-            assertEquals(i, q.list().size());
+            query.setParameter("time", now);
+            QueryResult<InfinispanSessionData> result = query.execute();
+            assertEquals(i, result.list().size());
             Thread.sleep(1000);
         }
     }

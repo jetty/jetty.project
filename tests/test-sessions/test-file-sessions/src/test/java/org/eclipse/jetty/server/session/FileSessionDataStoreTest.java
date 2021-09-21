@@ -24,6 +24,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirExtension.class)
 public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+    public FileSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
+
     public WorkDir workDir;
     private FileTestHelper _helper;
 
