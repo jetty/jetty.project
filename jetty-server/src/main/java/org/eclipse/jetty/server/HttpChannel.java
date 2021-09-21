@@ -57,6 +57,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -130,6 +131,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public boolean isSendError()
     {
         return _state.isSendError();
+    }
+
+    /** Format the address or host returned from Request methods
+     * @param addr The address or host
+     * @return Default implementation returns {@link HostPort#normalizeHost(String)}
+     */
+    protected String formatAddrOrHost(String addr)
+    {
+        return HostPort.normalizeHost(addr);
     }
 
     protected HttpInput newHttpInput(HttpChannelState state)
