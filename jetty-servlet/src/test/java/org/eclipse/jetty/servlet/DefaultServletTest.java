@@ -900,6 +900,11 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.html"));
 
         createFile(inde, "<h1>Hello Inde</h1>");
+        rawResponse = connector.getResponse("GET /context/dir HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/"));
+
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
@@ -919,6 +924,46 @@ public class DefaultServletTest
                 assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
             }
         }
+    }
+
+    @Test
+    public void testRelativeRedirect() throws Exception
+    {
+        Path dir = docRoot.resolve("dir");
+        FS.ensureDirExists(dir);
+        Path index = dir.resolve("index.html");
+        createFile(index, "<h1>Hello Index</h1>");
+
+        context.addAliasCheck((p, r) -> true);
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setRelativeRedirectAllowed(true);
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "true");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
+
+        defholder.setInitParameter("maxCacheSize", "1024000");
+        defholder.setInitParameter("maxCachedFileSize", "512000");
+        defholder.setInitParameter("maxCachedFiles", "100");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("GET /context/dir HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, containsHeaderValue("Location", "/context/dir/"));
+
+        rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, containsHeaderValue("Location", "/context/dir/index.html"));
+
+        rawResponse = connector.getResponse("GET /context/dir/index.html/ HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, containsHeaderValue("Location", "/context/dir/index.html"));
     }
 
     /**
