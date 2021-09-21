@@ -77,6 +77,12 @@ public class JDBCSessionDistributionTests extends AbstractSessionDistributionTes
     {
         mariaDBContainer.stop();
     }
+    
+    @Override
+    public void configureExternalSessionStorage(Path jettyBase) throws Exception
+    {
+        // no op
+    }
 
     @Override
     public List<String> getFirstStartExtraArgs()

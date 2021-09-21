@@ -496,6 +496,7 @@ public class ClassMatcher extends AbstractSet<String>
     {
     }
 
+    @SuppressWarnings("CopyConstructorMissesField")
     public ClassMatcher(ClassMatcher patterns)
     {
         if (patterns != null)
@@ -676,7 +677,7 @@ public class ClassMatcher extends AbstractSet<String>
      */
     public String[] getPatterns()
     {
-        return toArray(new String[_entries.size()]);
+        return toArray(new String[0]);
     }
 
     /**
