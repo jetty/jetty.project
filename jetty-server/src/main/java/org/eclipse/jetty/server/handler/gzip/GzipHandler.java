@@ -204,6 +204,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _mimeTypes.exclude("application/x-xz");
         _mimeTypes.exclude("application/x-rar-compressed");
 
+        // It is possible to SSE with GzipHandler but you will need to set _synFlush to true which will impact performance.
+        _mimeTypes.exclude("text/event-stream");
+
         if (LOG.isDebugEnabled())
             LOG.debug("{} mime types {}", this, _mimeTypes);
 
