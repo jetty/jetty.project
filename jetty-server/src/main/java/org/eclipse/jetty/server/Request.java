@@ -985,7 +985,7 @@ public class Request implements HttpServletRequest
                 String name = InetAddress.getLocalHost().getHostAddress();
                 if (StringUtil.ALL_INTERFACES.equals(name))
                     return null;
-                return HostPort.normalizeHost(name);
+                return formatAddrOrHost(name);
             }
             catch (UnknownHostException e)
             {
@@ -1001,7 +1001,7 @@ public class Request implements HttpServletRequest
         String result = address == null
             ? local.getHostString()
             : address.getHostAddress();
-        return HostPort.normalizeHost(result);
+        return formatAddrOrHost(result);
     }
 
     @Override
@@ -1011,7 +1011,7 @@ public class Request implements HttpServletRequest
         {
             InetSocketAddress local = _channel.getLocalAddress();
             if (local != null)
-                return HostPort.normalizeHost(local.getHostString());
+                return formatAddrOrHost(local.getHostString());
         }
 
         try
@@ -1019,7 +1019,7 @@ public class Request implements HttpServletRequest
             String name = InetAddress.getLocalHost().getHostName();
             if (StringUtil.ALL_INTERFACES.equals(name))
                 return null;
-            return HostPort.normalizeHost(name);
+            return formatAddrOrHost(name);
         }
         catch (UnknownHostException e)
         {
@@ -1211,12 +1211,10 @@ public class Request implements HttpServletRequest
 
         InetAddress address = remote.getAddress();
         String result = address == null
-            ? remote.getHostString()
-            : address.getHostAddress();
-        // Add IPv6 brackets if necessary, to be consistent
-        // with cases where _remote has been built from other
-        // sources such as forward headers or PROXY protocol.
-        return HostPort.normalizeHost(result);
+                ? remote.getHostString()
+                : address.getHostAddress();
+
+        return formatAddrOrHost(result);
     }
 
     @Override
@@ -1227,8 +1225,9 @@ public class Request implements HttpServletRequest
             remote = _channel.getRemoteAddress();
         if (remote == null)
             return "";
+
         // We want the URI host, so add IPv6 brackets if necessary.
-        return HostPort.normalizeHost(remote.getHostString());
+        return formatAddrOrHost(remote.getHostString());
     }
 
     @Override
@@ -1322,7 +1321,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getServerName()
     {
-        return _uri == null ? findServerName() : _uri.getHost();
+        return _uri == null ? findServerName() : formatAddrOrHost(_uri.getHost());
     }
 
     private String findServerName()
@@ -1330,12 +1329,12 @@ public class Request implements HttpServletRequest
         // Return host from connection
         String name = getLocalName();
         if (name != null)
-            return HostPort.normalizeHost(name);
+            return formatAddrOrHost(name);
 
         // Return the local host
         try
         {
-            return HostPort.normalizeHost(InetAddress.getLocalHost().getHostAddress());
+            return formatAddrOrHost(InetAddress.getLocalHost().getHostAddress());
         }
         catch (UnknownHostException e)
         {
@@ -2540,5 +2539,10 @@ public class Request implements HttpServletRequest
         // INCLUDE dispatch, in which case this method returns the mapping of the source servlet,
         // which we recover from the IncludeAttributes wrapper.
         return findServletPathMapping();
+    }
+    
+    private String formatAddrOrHost(String name)
+    {
+        return _channel == null ? HostPort.normalizeHost(name) : _channel.formatAddrOrHost(name);
     }
 }
