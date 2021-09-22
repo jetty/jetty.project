@@ -33,6 +33,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class GCloudSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
 
+    public GCloudSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
+
     public static GCloudSessionTestSupport __testSupport;
 
     @BeforeAll

@@ -28,7 +28,6 @@ public class RemoteQueryManagerFactory implements QueryManagerFactory
     @Override
     public QueryManager getQueryManager(BasicCache<String, SessionData> cache)
     {
-        System.err.println(cache.getClass().getName());
         if (!RemoteCache.class.isAssignableFrom(cache.getClass()))
             throw new IllegalArgumentException("Argument is not of type RemoteCache");
 

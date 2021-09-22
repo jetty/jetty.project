@@ -151,6 +151,12 @@
       <type>war</type>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>infinispan-remote-query</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
       <scope>test</scope>
@@ -168,6 +174,9 @@
             <jettyVersion>${project.version}</jettyVersion>
             <hazelcast.version>${hazelcast.version}</hazelcast.version>
             <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
+            <home.start.timeout>${home.start.timeout}</home.start.timeout>
+            <mariadb.version>${mariadb.version}</mariadb.version>
+            <sessionLogLevel>${sessionLogLevel}</sessionLogLevel>
           </systemPropertyVariables>
         </configuration>
       </plugin>

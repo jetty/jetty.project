@@ -25,12 +25,15 @@ import java.util.HashSet;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.QueryManager;
 import org.eclipse.jetty.session.infinispan.RemoteQueryManager;
-import org.eclipse.jetty.session.infinispan.SessionDataMarshaller;
 import org.eclipse.jetty.util.IO;
 import org.hibernate.search.cfg.Environment;
 import org.hibernate.search.cfg.SearchMapping;
@@ -38,9 +41,8 @@ import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ClientIntelligence;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
-import org.infinispan.client.hotrod.marshall.ProtoStreamMarshaller;
-import org.infinispan.protostream.FileDescriptorSource;
-import org.infinispan.protostream.SerializationContext;
+import org.infinispan.commons.configuration.XMLStringConfiguration;
+import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,8 +53,6 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers(disabledWithoutDocker = true)
@@ -64,15 +64,21 @@ public class RemoteQueryManagerTest
 
     private static final Logger INFINISPAN_LOG =
         LoggerFactory.getLogger("org.eclipse.jetty.server.session.infinispan.infinispanLogs");
-
+    
+    private static final Random r = new Random();
+    private static final int NUM_SESSIONS = 10;
+    private static final int MAX_EXPIRY_TIME = 1000;
+    private static final String NODE_ID = "w0";
+    private static int count;
     private String host;
     private int port;
 
+    @SuppressWarnings("rawtypes")
     GenericContainer infinispan =
-        new GenericContainer(System.getProperty("infinispan.docker.image.name", "jboss/infinispan-server") +
-            ":" + System.getProperty("infinispan.docker.image.version", "9.4.8.Final"))
-            .withEnv("APP_USER", "theuser")
-            .withEnv("APP_PASS", "foobar")
+        new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
+            ":" + System.getProperty("infinispan.docker.image.version", "11.0.9.Final"))
+            .withEnv("USER", "theuser")
+            .withEnv("PASS", "foobar")
             .withEnv("MGMT_USER", "admin")
             .withEnv("MGMT_PASS", "admin")
             .waitingFor(new LogMessageWaitStrategy()
@@ -101,27 +107,27 @@ public class RemoteQueryManagerTest
     public void testQuery() throws Exception
     {
         SearchMapping mapping = new SearchMapping();
-        mapping.entity(SessionData.class).indexed().providedId().property("expiry", ElementType.FIELD).field();
+        mapping.entity(InfinispanSessionData.class).indexed().providedId()
+            .property("expiry", ElementType.METHOD).field();
 
         Properties properties = new Properties();
         properties.put(Environment.MODEL_MAPPING, mapping);
 
         ConfigurationBuilder clientBuilder = new ConfigurationBuilder();
-        clientBuilder.withProperties(properties).addServer()
-            .host(this.host).port(this.port)
-            .clientIntelligence(ClientIntelligence.BASIC)
-            .marshaller(new ProtoStreamMarshaller());
+        clientBuilder.withProperties(properties)
+        .addServer()
+        .host(this.host).port(this.port)
+        .clientIntelligence(ClientIntelligence.BASIC)
+        .marshaller(new ProtoStreamMarshaller())
+        .security()
+        .authentication()
+        .username("theuser").password("foobar");
 
+        clientBuilder.addContextInitializer(new InfinispanSerializationContextInitializer());
+        
         RemoteCacheManager remoteCacheManager = new RemoteCacheManager(clientBuilder.build());
-        remoteCacheManager.administration().getOrCreateCache("remote-session-test", (String)null);
 
-        FileDescriptorSource fds = new FileDescriptorSource();
-        fds.addProtoFiles("/session.proto");
-
-        SerializationContext serCtx = ProtoStreamMarshaller.getSerializationContext(remoteCacheManager);
-        serCtx.registerProtoFiles(fds);
-        serCtx.registerMarshaller(new SessionDataMarshaller());
-
+        //upload the session.proto serialization descriptor to the remote cache
         try (InputStream is = RemoteQueryManagerTest.class.getClassLoader().getResourceAsStream("session.proto");
              ByteArrayOutputStream baos = new ByteArrayOutputStream())
         {
@@ -129,45 +135,71 @@ public class RemoteQueryManagerTest
                 throw new IllegalStateException("inputstream is null");
             IO.copy(is, baos);
             String content = baos.toString("UTF-8");
-            remoteCacheManager.getCache("___protobuf_metadata").put("session.proto", content);
+            remoteCacheManager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
         }
+        
+        //make the remote cache encoded with protostream
+        String xml = String.format("<infinispan>"  + 
+            "<cache-container>" + "<distributed-cache name=\"%s\" mode=\"SYNC\">" +
+            "<encoding media-type=\"application/x-protostream\"/>" +
+            "</distributed-cache>" +
+            "</cache-container>" +
+            "</infinispan>", DEFAULT_CACHE_NAME);
+        XMLStringConfiguration xmlConfig = new XMLStringConfiguration(xml);
+        RemoteCache<String, SessionData> cache = remoteCacheManager.administration().getOrCreateCache(DEFAULT_CACHE_NAME, xmlConfig);
+        
+        //put some sessions into the cache for "foo" context
+        ContextHandler fooHandler = new ContextHandler();
+        fooHandler.setContextPath("/foo");
+        SessionContext fooSessionContext = new SessionContext(NODE_ID, fooHandler.getServletContext());
+        Set<SessionData> fooSessions = createSessions(cache, fooSessionContext);
+ 
+        //put some sessions into the cache for "bar" context
+        ContextHandler barHandler = new ContextHandler();
+        barHandler.setContextPath("/bar");
+        SessionContext barSessionContext = new SessionContext(NODE_ID, barHandler.getServletContext());
+        Set<SessionData> barSessions = createSessions(cache, barSessionContext);
 
-        RemoteCache<String, SessionData> cache = remoteCacheManager.getCache(DEFAULT_CACHE_NAME);
+        int time = 500;
+        
+        //run the query for "foo" context
+        checkResults(cache, fooSessionContext, time, fooSessions);
+        
+        //run the query for the "bar" context
+        checkResults(cache, barSessionContext, time, barSessions);
+    }
 
-        //put some sessions into the remote cache
-        int numSessions = 10;
-        long currentTime = 500;
-        int maxExpiryTime = 1000;
-        Set<String> expiredSessions = new HashSet<>();
-        Random r = new Random();
+    private Set<SessionData> createSessions(RemoteCache<String, SessionData> cache, SessionContext sessionContext) throws Exception
+    {
+        Set<SessionData> sessions = new HashSet<>();
 
-        for (int i = 0; i < numSessions; i++)
+        for (int i = 0; i < NUM_SESSIONS; i++)
         {
-            String id = "sd" + i;
             //create new sessiondata with random expiry time
-            long expiryTime = r.nextInt(maxExpiryTime);
-            InfinispanSessionData sd = new InfinispanSessionData(id, "", "", 0, 0, 0, 0);
-            sd.setLastNode("lastNode");
+            long expiryTime = r.nextInt(MAX_EXPIRY_TIME);
+            String id = "sd" + count;
+            count++;
+            InfinispanSessionData sd = new InfinispanSessionData(id, sessionContext.getCanonicalContextPath(), sessionContext.getVhost(), 0, 0, 0, 0);
+            sd.setLastNode(sessionContext.getWorkerName());
             sd.setExpiry(expiryTime);
-
-            //if this entry has expired add it to expiry list
-            if (expiryTime <= currentTime)
-                expiredSessions.add(id);
-
+            sd.serializeAttributes();
+            sessions.add(sd);
             //add to cache
             cache.put(id, sd);
-            assertNotNull(cache.get(id));
         }
+        return sessions;
+    }
 
-        //run the query
+    private void checkResults(RemoteCache<String, SessionData> cache, SessionContext sessionContext, int time, Set<SessionData> sessions)
+    {
         QueryManager qm = new RemoteQueryManager(cache);
-        Set<String> queryResult = qm.queryExpiredSessions(currentTime);
-
-        // Check that the result is correct
-        assertEquals(expiredSessions.size(), queryResult.size());
-        for (String s : expiredSessions)
+        Set<String> queryResult = qm.queryExpiredSessions(time);
+       
+        Set<SessionData> expected = sessions.stream().filter(s -> s.getExpiry() > 0 && s.getExpiry() <= time).collect(Collectors.toSet());
+        for (SessionData s : expected)
         {
-            assertTrue(queryResult.contains(s));
+            assertTrue(queryResult.remove(s.getId()));
         }
+
     }
 }

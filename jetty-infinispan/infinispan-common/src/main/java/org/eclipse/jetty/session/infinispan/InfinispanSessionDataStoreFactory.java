@@ -32,6 +32,7 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
     int _infinispanIdleTimeoutSec;
     BasicCache<String, SessionData> _cache;
     protected QueryManager _queryManager;
+    protected boolean _serialization;
 
     /**
      * @return the infinispanIdleTimeoutSec
@@ -61,6 +62,7 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
         store.setCache(getCache());
         store.setSavePeriodSec(getSavePeriodSec());
         store.setQueryManager(getQueryManager());
+        store.setSerialization(getSerialization());
         return store;
     }
 
@@ -92,5 +94,15 @@ public class InfinispanSessionDataStoreFactory extends AbstractSessionDataStoreF
     public void setQueryManager(QueryManager queryManager)
     {
         _queryManager = queryManager;
+    }
+    
+    public void setSerialization(boolean serialization)
+    {
+        _serialization = serialization;
+    }
+    
+    public boolean getSerialization()
+    {
+        return _serialization;
     }
 }

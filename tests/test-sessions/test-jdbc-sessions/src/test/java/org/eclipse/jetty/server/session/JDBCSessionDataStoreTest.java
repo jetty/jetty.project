@@ -28,6 +28,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers(disabledWithoutDocker = true)
 public class JDBCSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+    public JDBCSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
 
     @BeforeEach
     public void setUp() throws Exception
