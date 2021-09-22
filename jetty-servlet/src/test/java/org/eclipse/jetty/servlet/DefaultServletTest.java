@@ -1537,8 +1537,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "" + body.length()));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset="));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8"));
         assertThat(body, containsString("Extra Info"));
 
         rawResponse = connector.getResponse("GET /context/image.jpg HTTP/1.0\r\n\r\n");
@@ -1546,8 +1545,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "" + body.length()));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "image/jpeg"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset=utf-8"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "image/jpeg;charset=utf-8"));
         assertThat(body, containsString("Extra Info"));
 
         server.stop();
@@ -1561,7 +1559,6 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, not(containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset=")));
         assertThat(body, containsString("Extra Info"));
     }
 
