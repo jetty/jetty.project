@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.http.matchers;
 
-import java.util.Locale;
+import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -26,18 +26,18 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 
-public class HttpFieldsContainsHeaderValue extends TypeSafeMatcher<HttpFields>
+public class HttpFieldsHeaderValue extends TypeSafeMatcher<HttpFields>
 {
     private final String keyName;
     private final String value;
 
-    public HttpFieldsContainsHeaderValue(String keyName, String value)
+    public HttpFieldsHeaderValue(String keyName, String value)
     {
         this.keyName = keyName;
         this.value = value;
     }
 
-    public HttpFieldsContainsHeaderValue(HttpHeader header, String value)
+    public HttpFieldsHeaderValue(HttpHeader header, String value)
     {
         this(header.asString(), value);
     }
@@ -55,21 +55,6 @@ public class HttpFieldsContainsHeaderValue extends TypeSafeMatcher<HttpFields>
         if (field == null)
             return false;
 
-        // Use HttpField.contains() logic
-        if (field.contains(this.value))
-            return true;
-
-        // Simple equals
-        if (this.value == field.getValue())
-            return true;
-
-        // Try individual value logic
-        String lcValue = this.value.toLowerCase(Locale.ENGLISH);
-        for (String value : field.getValues())
-        {
-            if (value.toLowerCase(Locale.ENGLISH).contains(lcValue))
-                return true;
-        }
-        return false;
+        return Objects.equals(this.value, field.getValue());
     }
 }

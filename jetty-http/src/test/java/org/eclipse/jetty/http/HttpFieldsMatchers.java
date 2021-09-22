@@ -20,6 +20,7 @@ package org.eclipse.jetty.http;
 
 import org.eclipse.jetty.http.matchers.HttpFieldsContainsHeaderKey;
 import org.eclipse.jetty.http.matchers.HttpFieldsContainsHeaderValue;
+import org.eclipse.jetty.http.matchers.HttpFieldsHeaderValue;
 import org.hamcrest.Matcher;
 
 public class HttpFieldsMatchers
@@ -32,6 +33,11 @@ public class HttpFieldsMatchers
     public static Matcher<HttpFields> containsHeader(HttpHeader header)
     {
         return new HttpFieldsContainsHeaderKey(header);
+    }
+
+    public static Matcher<HttpFields> headerValue(String keyName, String value)
+    {
+        return new HttpFieldsHeaderValue(keyName, value);
     }
 
     public static Matcher<HttpFields> containsHeaderValue(String keyName, String value)
