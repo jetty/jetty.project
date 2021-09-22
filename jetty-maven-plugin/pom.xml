@@ -103,7 +103,7 @@
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
-            <servletApiVersion>${jakarta.servlet.api.version}</servletApiVersion>
+            <servletApiVersion>${jetty.servlet.api.version}</servletApiVersion>
           </scriptVariables>
           <goals>
             <goal>clean</goal>
