@@ -37,6 +37,6 @@ public class DecoderStreamConnection extends InstructionStreamConnection
     @Override
     protected void parseInstruction(ByteBuffer buffer) throws QpackException
     {
-        encoder.parseInstructionBuffer(buffer);
+        encoder.parseInstructions(buffer);
     }
 }

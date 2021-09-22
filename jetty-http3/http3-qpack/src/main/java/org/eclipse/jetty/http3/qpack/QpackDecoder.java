@@ -173,7 +173,7 @@ public class QpackDecoder implements Dumpable
      * @param buffer a buffer containing bytes from the Encoder stream.
      * @throws QpackException if there was an error parsing or handling the instructions.
      */
-    public void parseInstructionBuffer(ByteBuffer buffer) throws QpackException
+    public void parseInstructions(ByteBuffer buffer) throws QpackException
     {
         try
         {
