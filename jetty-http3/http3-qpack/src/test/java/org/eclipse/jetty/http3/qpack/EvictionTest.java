@@ -64,10 +64,10 @@ public class EvictionTest
             long streamId = getPositiveInt(10);
 
             _encoder.encode(encodedFields, streamId, new MetaData(HttpVersion.HTTP_3, httpFields));
-            _decoder.parseInstructionBuffer(_encoderHandler.getInstructionBuffer());
+            _decoder.parseInstructions(_encoderHandler.getInstructionBuffer());
 
             _decoder.decode(streamId, encodedFields, _decoderHandler);
-            _encoder.parseInstructionBuffer(_decoderHandler.getInstructionBuffer());
+            _encoder.parseInstructions(_decoderHandler.getInstructionBuffer());
 
             MetaData result = _decoderHandler.getMetaData();
             assertNotNull(result);
