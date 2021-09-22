@@ -134,7 +134,7 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
             {
                 // Send the response.
                 stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), false));
-                // Implicit demand, so onDataAvailable() will be called.
+                stream.demand();
                 return new Stream.Listener()
                 {
                     @Override
@@ -145,13 +145,13 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
                         if (data == null)
                         {
                             // Call me again when you have data.
-                            stream.demand(true);
+                            stream.demand();
                             return;
                         }
                         // Recycle the ByteBuffer in data.frame.
-                        data.succeed();
+                        data.complete();
                         // Call me again immediately.
-                        stream.demand(true);
+                        stream.demand();
                         if (data.frame().isLast())
                             serverLatch.get().countDown();
                     }
@@ -205,6 +205,7 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
             {
                 // Send the response headers.
                 stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), false));
+                stream.demand();
                 return new Stream.Listener()
                 {
                     @Override
@@ -214,12 +215,15 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
                         Stream.Data data = stream.readData();
                         if (data == null)
                         {
-                            stream.demand(true);
+                            stream.demand();
                             return;
                         }
                         // Echo it back, then demand only when the write is finished.
                         stream.data(data.frame())
-                            .whenComplete(data::completeAndDemand);
+                            // Always complete.
+                            .whenComplete((s, x) -> data.complete())
+                            // Demand only if successful.
+                            .thenRun(stream::demand);
                     }
                 };
             }
@@ -244,6 +248,7 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
                 public void onResponse(Stream stream, HeadersFrame frame)
                 {
                     clientResponseLatch.countDown();
+                    stream.demand();
                 }
 
                 @Override
@@ -255,12 +260,12 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
                     {
                         // Consume data.
                         byteBuffer.put(data.frame().getData());
-                        data.callback().complete(null);
+                        data.complete();
                         if (data.frame().isLast())
                             clientDataLatch.countDown();
                     }
                     // Demand more data.
-                    stream.demand(true);
+                    stream.demand();
                 }
             })
             .get(5, TimeUnit.SECONDS);
