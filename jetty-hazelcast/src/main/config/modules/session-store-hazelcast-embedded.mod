@@ -23,7 +23,7 @@ lib/jetty-hazelcast-${jetty.version}.jar
 lib/hazelcast/hazelcast-${hazelcast.version}.jar
 
 [ini]
-hazelcast.version?=4.2.2
+hazelcast.version?=@hazelcast.version@
 
 [license]
 Hazelcast is an open source project hosted on Github and released under the Apache 2.0 license.
