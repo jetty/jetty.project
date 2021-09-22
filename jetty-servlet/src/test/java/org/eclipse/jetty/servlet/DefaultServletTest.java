@@ -74,6 +74,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeader;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
+import static org.eclipse.jetty.http.HttpFieldsMatchers.headerValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
@@ -881,20 +882,25 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.html"));
 
         createFile(inde, "<h1>Hello Inde</h1>");
+        rawResponse = connector.getResponse("GET /context/dir HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/"));
+
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.html"));
 
         if (deleteFile(index))
         {
             rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-            assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.htm"));
+            assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.htm"));
 
             if (deleteFile(inde))
             {
@@ -903,6 +909,46 @@ public class DefaultServletTest
                 assertThat(response.toString(), response.getStatus(), is(HttpStatus.FORBIDDEN_403));
             }
         }
+    }
+
+    @Test
+    public void testRelativeRedirect() throws Exception
+    {
+        Path dir = docRoot.resolve("dir");
+        FS.ensureDirExists(dir);
+        Path index = dir.resolve("index.html");
+        createFile(index, "<h1>Hello Index</h1>");
+
+        context.addAliasCheck((p, r) -> true);
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setRelativeRedirectAllowed(true);
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "true");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
+
+        defholder.setInitParameter("maxCacheSize", "1024000");
+        defholder.setInitParameter("maxCachedFileSize", "512000");
+        defholder.setInitParameter("maxCachedFiles", "100");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("GET /context/dir HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, headerValue("Location", "/context/dir/"));
+
+        rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, headerValue("Location", "/context/dir/index.html"));
+
+        rawResponse = connector.getResponse("GET /context/dir/index.html/ HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, headerValue("Location", "/context/dir/index.html"));
     }
 
     /**
@@ -1477,8 +1523,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "" + body.length()));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset="));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8"));
         assertThat(body, containsString("Extra Info"));
 
         rawResponse = connector.getResponse("GET /context/image.jpg HTTP/1.0\r\n\r\n");
@@ -1486,8 +1531,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "" + body.length()));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "image/jpeg"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset=utf-8"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "image/jpeg;charset=utf-8"));
         assertThat(body, containsString("Extra Info"));
 
         server.stop();
@@ -1501,7 +1545,6 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, not(containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset=")));
         assertThat(body, containsString("Extra Info"));
     }
 
