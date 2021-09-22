@@ -8,9 +8,8 @@
   </parent>
 
   <artifactId>jetty-bom</artifactId>
-  <name>Jetty :: Bom</name>
+  <name>Jetty :: BOM</name>
   <description>Jetty BOM artifact</description>
-  <url>https://eclipse.org/jetty</url>
   <packaging>pom</packaging>
 
   <build>
