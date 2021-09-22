@@ -59,6 +59,7 @@ public class ErrorHandler extends AbstractHandler
     private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
     public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
+    public static final String ERROR_CHARSET = "org.eclipse.jetty.server.error_charset";
 
     boolean _showServlet = true;
     boolean _showStacks = true;
@@ -302,6 +303,7 @@ public class ErrorHandler extends AbstractHandler
                     case TEXT_HTML:
                         response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
                         response.setCharacterEncoding(charset.name());
+                        request.setAttribute(ERROR_CHARSET, charset);
                         handleErrorPage(request, writer, code, message);
                         break;
                     case TEXT_JSON:
@@ -363,7 +365,13 @@ public class ErrorHandler extends AbstractHandler
     protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message)
         throws IOException
     {
-        writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=utf-8\"/>\n");
+        Charset charset = (Charset)request.getAttribute(ERROR_CHARSET);
+        if (charset != null)
+        {
+            writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=");
+            writer.write(charset.name());
+            writer.write("\"/>\n");
+        }
         writer.write("<title>Error ");
         // TODO this code is duplicated in writeErrorPageMessage
         String status = Integer.toString(code);

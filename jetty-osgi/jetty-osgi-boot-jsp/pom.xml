@@ -59,7 +59,7 @@
                   <goal>parse-version</goal>
               </goals>
               <configuration>
-                  <versionString>${jsp.version}</versionString>
+                  <versionString>${jsp.impl.version}</versionString>
                   <propertyPrefix>jspImpl</propertyPrefix>
               </configuration>
           </execution>
@@ -85,12 +85,12 @@
               com.sun.el.parser;resolution:=optional,
               com.sun.el.util;resolution:=optional,
               jakarta.el;version="[4.0,5.0)",
-              jakarta.servlet;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
-              jakarta.servlet.resources;version="[$(version;==;${servlet.api.version}),$(version;+;${servlet.api.version}))",
-              jakarta.servlet.jsp.resources;version="[$(version;==;${jsp.api.version}),$(version;+;${jsp.api.version}))",
-              jakarta.servlet.jsp;version="[$(version;==;${jsp.api.version}),$(version;+;${jsp.api.version}))",
-              jakarta.servlet.jsp.el;version="[$(version;==;${jsp.api.version}),$(version;+;${jsp.api.version}))",
-              jakarta.servlet.jsp.tagext;version="[$(version;==;${jsp.api.version}),$(version;+;${jsp.api.version}))",
+              jakarta.servlet;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
+              jakarta.servlet.resources;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
+              jakarta.servlet.jsp.resources;version="[$(version;==;${jakarta.servlet.jsp.api.version}),$(version;+;${jakarta.servlet.jsp.api.version}))",
+              jakarta.servlet.jsp;version="[$(version;==;${jakarta.servlet.jsp.api.version}),$(version;+;${jakarta.servlet.jsp.api.version}))",
+              jakarta.servlet.jsp.el;version="[$(version;==;${jakarta.servlet.jsp.api.version}),$(version;+;${jakarta.servlet.jsp.api.version}))",
+              jakarta.servlet.jsp.tagext;version="[$(version;==;${jakarta.servlet.jsp.api.version}),$(version;+;${jakarta.servlet.jsp.api.version}))",
               jakarta.servlet.jsp.jstl.core;version="2.0";resolution:=optional,
               jakarta.servlet.jsp.jstl.fmt;version="2.0";resolution:=optional,
               jakarta.servlet.jsp.jstl.sql;version="2.0";resolution:=optional,

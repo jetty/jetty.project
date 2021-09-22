@@ -351,18 +351,18 @@ public class MavenWebAppContext extends WebAppContext
     }
 
     @Override
-    public Resource getResource(String uriInContext) throws MalformedURLException
+    public Resource getResource(String pathInContext) throws MalformedURLException
     {
         Resource resource = null;
         // Try to get regular resource
-        resource = super.getResource(uriInContext);
+        resource = super.getResource(pathInContext);
 
         // If no regular resource exists check for access to /WEB-INF/lib or
         // /WEB-INF/classes
-        if ((resource == null || !resource.exists()) && uriInContext != null && _classes != null)
+        if ((resource == null || !resource.exists()) && pathInContext != null && _classes != null)
         {
             // Canonicalize again to look for the resource inside /WEB-INF subdirectories.
-            String uri = URIUtil.canonicalPath(uriInContext);
+            String uri = URIUtil.canonicalPath(pathInContext);
             if (uri == null)
                 return null;
 

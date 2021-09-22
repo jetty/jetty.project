@@ -17,8 +17,8 @@ etc/jamon.xml
 
 [files]
 lib/jamon/
-maven://com.jamonapi/jamon/2.81|lib/jamon/jamon-2.81.jar
-maven://com.jamonapi/jamon_war/2.81/war|lib/jamon/jamon.war
+maven://com.jamonapi/jamon/${jamon.version}|lib/jamon/jamon-${jamon.version}.jar
+maven://com.jamonapi/jamon_war/${jamon.version}/war|lib/jamon/jamon.war
 basehome:modules/jamon/jamon.xml|etc/jamon.xml
 
 [lib]
@@ -28,6 +28,9 @@ lib/jamon/**.jar
 JAMon is a source forge hosted project released under a BSD derived license.
 http://jamonapi.sourceforge.net
 http://jamonapi.sourceforge.net/JAMonLicense.html
+
+[ini]
+jamon.version?=@jamon.version@
 
 [ini-template]
 ## Jamon Configuration

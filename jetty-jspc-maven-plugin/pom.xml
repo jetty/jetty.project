@@ -58,7 +58,7 @@
         <configuration>
           <addTestClassPath>true</addTestClassPath>
           <scriptVariables>
-            <maven.surefire.version>${maven.surefire.version}</maven.surefire.version>
+            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
           </scriptVariables>
           <goals>
             <goal>clean</goal>

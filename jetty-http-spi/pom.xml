@@ -47,12 +47,10 @@
     <dependency>
       <groupId>jakarta.ws.rs</groupId>
       <artifactId>jakarta.ws.rs-api</artifactId>
-      <version>3.0.0</version>
     </dependency>
     <dependency>
       <groupId>com.sun.xml.ws</groupId>
       <artifactId>jaxws-rt</artifactId>
-      <version>3.0.0-M5</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

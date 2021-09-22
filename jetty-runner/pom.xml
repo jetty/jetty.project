@@ -79,7 +79,7 @@
           <addTestClassPath>true</addTestClassPath>
           <scriptVariables>
             <maven.dependency.plugin.version>${maven.dependency.plugin.version}</maven.dependency.plugin.version>
-            <maven.surefire.version>${maven.surefire.version}</maven.surefire.version>
+            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
             <hamcrest.version>${hamcrest.version}</hamcrest.version>
           </scriptVariables>
           <goals>

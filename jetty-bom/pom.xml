@@ -1,10 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-bom</artifactId>
-  <name>Jetty :: Bom</name>
-  <description>Jetty BOM artifact</description>
-  <url>https://eclipse.org/jetty</url>
-  <packaging>pom</packaging>
 
   <parent>
     <groupId>org.eclipse.jetty</groupId>
@@ -12,12 +7,17 @@
     <version>11.0.7-SNAPSHOT</version>
   </parent>
 
+  <artifactId>jetty-bom</artifactId>
+  <name>Jetty :: BOM</name>
+  <description>Jetty BOM artifact</description>
+  <packaging>pom</packaging>
+
   <build>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>flatten-maven-plugin</artifactId>
-        <version>1.2.7</version>
+        <version>${flatten.maven.plugin.version}</version>
         <configuration>
           <outputDirectory>${project.build.directory}</outputDirectory>
           <flattenedPomFilename>flattened-pom.xml</flattenedPomFilename>

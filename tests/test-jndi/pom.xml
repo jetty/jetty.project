@@ -29,7 +29,6 @@
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>jakarta.mail</artifactId>
-      <version>${mail-api.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

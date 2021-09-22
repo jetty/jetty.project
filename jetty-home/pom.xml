@@ -33,9 +33,15 @@
               <useBuildFilters>false</useBuildFilters>
               <includeEmptyDirs>true</includeEmptyDirs>
               <outputDirectory>${assembly-directory}</outputDirectory>
+              <encoding>UTF-8</encoding>
+              <useDefaultDelimiters>false</useDefaultDelimiters>
+              <delimiters>
+                <delimiter>@</delimiter>
+              </delimiters>
               <resources>
                 <resource>
                   <directory>${basedir}/src/main/resources</directory>
+                  <filtering>true</filtering>
                 </resource>
               </resources>
             </configuration>
@@ -294,10 +300,10 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-jakarta-servlet-api</artifactId>
-                  <version>${servlet.api.version}</version>
+                  <version>${jetty.servlet.api.version}</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>jetty-jakarta-servlet-api-${servlet.api.version}.jar</destFileName>
+                  <destFileName>jetty-jakarta-servlet-api-${jetty.servlet.api.version}.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>
