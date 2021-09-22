@@ -55,24 +55,25 @@
     <infinispan.version>11.0.11.Final</infinispan.version>
     <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
     <jackson-databind.version>2.9.10.7</jackson-databind.version>
+    <jakarta.activation.api.version>1.2.2</jakarta.activation.api.version>
     <jakarta.annotation.api.version>1.3.5</jakarta.annotation.api.version>
+    <jakarta.enterprise.cdi.api.version>2.0.2</jakarta.enterprise.cdi.api.version>
     <jakarta.transaction-api.version>1.3.3</jakarta.transaction-api.version>
     <jakarta.servlet.api.version>4.0.4</jakarta.servlet.api.version>
     <jakarta.servlet.jsp.api.version>2.3.6</jakarta.servlet.jsp.api.version>
     <jakarta.servlet.jsp.jstl.api.version>1.2.7</jakarta.servlet.jsp.jstl.api.version>
     <jakarta.servlet.jsp.jstl.impl.version>1.2.0.v201105211821</jakarta.servlet.jsp.jstl.impl.version>
-    <jakarta.xml.jaxws.api.version>2.0EA3</jakarta.xml.jaxws.api.version>
+    <jakarta.xml.bind.api.version>2.3.3</jakarta.xml.bind.api.version>
+    <jakarta.xml.bind.impl.version>2.3.5</jakarta.xml.bind.impl.version>
+    <jakarta.xml.ws.api.version>2.3.3</jakarta.xml.ws.api.version>
     <jakarta.xml.jaxws.impl.version>2.3.5</jakarta.xml.jaxws.impl.version>
     <jakarta.websocket.api.version>1.1.2</jakarta.websocket.api.version>
     <jamon.version>2.81</jamon.version>
-    <javax.activation.api.version>1.2.0</javax.activation.api.version>
     <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
     <javax.cdi.api.version>2.0</javax.cdi.api.version>
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
     <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version>
     <javax.servlet.jsp.jstl.impl.version>1.2.5</javax.servlet.jsp.jstl.impl.version>
-    <javax.xml.jaxb.api.version>2.3.1</javax.xml.jaxb.api.version>
-    <javax.xml.jaxb.impl.version>2.3.5</javax.xml.jaxb.impl.version>
     <jboss.logging.version>3.4.2.Final</jboss.logging.version>
     <jboss-logging.version>2.2.1.Final</jboss-logging.version>
     <jboss-logmanager.version>2.1.15.Final</jboss-logmanager.version>
@@ -137,6 +138,7 @@
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
     <maven.dependency.plugin.version>3.2.0</maven.dependency.plugin.version>
     <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
+    <maven.eclipse.plugin.version>2.10</maven.eclipse.plugin.version>
     <maven.enforcer.plugin.version>3.0.0</maven.enforcer.plugin.version>
     <maven.exec.plugin.version>3.0.0</maven.exec.plugin.version>
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
@@ -290,18 +292,9 @@
                   <message>[ERROR] OLD JDK [${java.version}] in use. Jetty ${project.version} requires JDK 11 or newer</message>
                 </requireJavaVersion>
                 <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule" />
-                <!--
-                jetty 10 alpha version want to use '-' such 10.0.0-alpha0 so disable all those rules....
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
-
                 <versionRedhatRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireRedhatCompatibleVersionRule" />
                 <versionDebianRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireDebianCompatibleVersionRule" />
-                -->
-                <requireUpperBoundDeps>
-                  <excludes>
-                    <exclude>javax.enterprise:cdi-api</exclude>
-                  </excludes>
-                </requireUpperBoundDeps>
               </rules>
             </configuration>
           </execution>
@@ -917,6 +910,11 @@
             <processPluginDependenciesInPluginManagement>true</processPluginDependenciesInPluginManagement>
           </configuration>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-eclipse-plugin</artifactId>
+          <version>${maven.eclipse.plugin.version}</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -980,6 +978,11 @@
         <groupId>com.google.errorprone</groupId>
         <artifactId>error_prone_annotations</artifactId>
         <version>${google.errorprone.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.code.gson</groupId>
+        <artifactId>gson</artifactId>
+        <version>${gson.version}</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
@@ -1052,31 +1055,14 @@
         <type>war</type>
       </dependency>
       <dependency>
-        <groupId>javax.enterprise</groupId>
-        <artifactId>cdi-api</artifactId>
-        <version>${javax.cdi.api.version}</version>
-        <exclusions>
-          <!-- we are using the jakarta.* artifacts instead -->
-          <exclusion>
-            <groupId>javax.el</groupId>
-            <artifactId>javax.el-api</artifactId>
-          </exclusion>
-        </exclusions>
+        <groupId>jakarta.enterprise</groupId>
+        <artifactId>jakarta.enterprise.cdi-api</artifactId>
+        <version>${jakarta.enterprise.cdi.api.version}</version>
       </dependency>
       <dependency>
-        <groupId>javax.activation</groupId>
-        <artifactId>javax.activation-api</artifactId>
-        <version>${javax.activation.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>javax.xml</groupId>
-        <artifactId>jaxws-api</artifactId>
-        <version>${jakarta.xml.jaxws.api.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>javax.xml.bind</groupId>
-        <artifactId>jaxb-api</artifactId>
-        <version>${javax.xml.jaxb.api.version}</version>
+        <groupId>jakarta.activation</groupId>
+        <artifactId>jakarta.activation-api</artifactId>
+        <version>${jakarta.activation.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.annotation</groupId>
@@ -1107,6 +1093,16 @@
         <groupId>jakarta.transaction</groupId>
         <artifactId>jakarta.transaction-api</artifactId>
         <version>${jakarta.transaction-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.xml.bind</groupId>
+        <artifactId>jakarta.xml.bind-api</artifactId>
+        <version>${jakarta.xml.bind.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.xml.ws</groupId>
+        <artifactId>jakarta.xml.ws-api</artifactId>
+        <version>${jakarta.xml.ws.api.version}</version>
       </dependency>
       <dependency>
         <groupId>log4j</groupId>
@@ -1187,11 +1183,34 @@
         <groupId>org.apache.maven</groupId>
         <artifactId>maven-core</artifactId>
         <version>${maven.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
         <artifactId>maven-plugin-api</artifactId>
         <version>${maven.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.enterprise</groupId>
+            <artifactId>cdi-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-resolver-provider</artifactId>
+        <version>${maven.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>org.apache.maven</groupId>
@@ -1337,7 +1356,7 @@
       <dependency>
         <groupId>org.glassfish.jaxb</groupId>
         <artifactId>jaxb-runtime</artifactId>
-        <version>${javax.xml.jaxb.impl.version}</version>
+        <version>${jakarta.xml.bind.impl.version}</version>
       </dependency>
       <dependency>
         <groupId>org.glassfish.web</groupId>
