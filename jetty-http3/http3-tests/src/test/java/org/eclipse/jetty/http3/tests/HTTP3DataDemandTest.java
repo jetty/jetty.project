@@ -60,6 +60,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
             {
+                stream.demand();
                 return new Stream.Listener()
                 {
                     @Override
@@ -78,7 +79,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                             if (data != null && data.frame().isLast())
                                 serverDataLatch.countDown();
                             else
-                                stream.demand(true);
+                                stream.demand();
                         }
                     }
                 };
@@ -101,7 +102,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
         assertEquals(1, onDataAvailableCalls.get());
 
         // Resume processing of data, this should call onDataAvailable().
-        serverStreamRef.get().demand(true);
+        serverStreamRef.get().demand();
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
     }
@@ -118,6 +119,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
             {
+                stream.demand();
                 return new Stream.Listener()
                 {
                     @Override
@@ -139,7 +141,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                             if (data != null && data.frame().isLast())
                                 serverDataLatch.countDown();
                             else
-                                stream.demand(true);
+                                stream.demand();
                         }
                     }
                 };
@@ -162,9 +164,10 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
         assertEquals(1, onDataAvailableCalls.get());
 
         // Resume processing of data, this should call onDataAvailable(), but there is no data to read yet.
-        serverStreamRef.get().demand(true);
+        Stream serverStream = serverStreamRef.get();
+        serverStream.demand();
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> onDataAvailableCalls.get() == 2 && ((HTTP3Stream)stream).hasDemand());
+        await().atMost(1, TimeUnit.SECONDS).until(() -> onDataAvailableCalls.get() == 2 && ((HTTP3Stream)serverStream).hasDemand());
 
         stream.data(new DataFrame(ByteBuffer.allocate(32), true));
 
@@ -183,6 +186,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
             {
+                stream.demand();
                 return new Stream.Listener()
                 {
                     @Override
@@ -209,7 +213,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                             if (data != null && data.frame().isLast())
                                 serverDataLatch.countDown();
                             else
-                                stream.demand(true);
+                                stream.demand();
                         }
                     }
                 };
@@ -235,7 +239,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
         stream.data(new DataFrame(BufferUtil.EMPTY_BUFFER, true));
 
         // Resume processing of data, this should call onDataAvailable().
-        serverStreamRef.get().demand(true);
+        serverStreamRef.get().demand();
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
     }
@@ -251,6 +255,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
             {
+                stream.demand();
                 return new Stream.Listener()
                 {
                     @Override
@@ -261,7 +266,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                         Stream.Data data = stream.readData();
                         assertNull(data);
                         // It's typical to demand after null data.
-                        stream.demand(true);
+                        stream.demand();
                         serverDataLatch.countDown();
                     }
 
@@ -306,6 +311,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
             {
+                stream.demand();
                 return new Stream.Listener()
                 {
                     @Override
@@ -318,7 +324,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                             if (dataRead.addAndGet(data.frame().getData().remaining()) == dataLength)
                                 serverDataLatch.countDown();
                         }
-                        stream.demand(true);
+                        stream.demand();
                     }
 
                     @Override
@@ -363,6 +369,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
             {
+                stream.demand();
                 return new Stream.Listener()
                 {
                     @Override
@@ -373,7 +380,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                             Stream.Data data = stream.readData();
                             if (data == null)
                             {
-                                stream.demand(true);
+                                stream.demand();
                                 return;
                             }
                             // Store the Data away to be used later.
@@ -422,7 +429,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
             {
                 serverStreamRef.set(stream);
                 serverRequestLatch.countDown();
-                stream.demand(false);
+                // Do not demand here.
                 return new Stream.Listener()
                 {
                     @Override
@@ -432,7 +439,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                         Stream.Data data = stream.readData();
                         if (data != null && data.frame().isLast())
                             serverDataLatch.countDown();
-                        stream.demand(true);
+                        stream.demand();
                     }
                 };
             }
@@ -456,7 +463,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
         assertEquals(0, onDataAvailableCalls.get());
 
         // Resume processing of data.
-        serverStreamRef.get().demand(true);
+        serverStreamRef.get().demand();
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
     }

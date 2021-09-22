@@ -44,6 +44,10 @@ public abstract class HTTP3Session implements Session, ParserListener
         this.listener = listener;
     }
 
+    public void onOpen()
+    {
+    }
+
     public ProtocolSession getProtocolSession()
     {
         return session;

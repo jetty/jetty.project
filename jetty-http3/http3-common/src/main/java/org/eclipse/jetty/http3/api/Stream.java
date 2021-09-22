@@ -26,7 +26,7 @@ public interface Stream
 
     public Stream.Data readData();
 
-    public void demand(boolean enable);
+    public void demand();
 
     public CompletableFuture<Stream> trailer(HeadersFrame frame);
 
@@ -48,12 +48,12 @@ public interface Stream
     public static class Data
     {
         private final DataFrame frame;
-        private final CompletableFuture<Object> callback;
+        private final Runnable complete;
 
-        public Data(DataFrame frame, CompletableFuture<Object> callback)
+        public Data(DataFrame frame, Runnable complete)
         {
             this.frame = frame;
-            this.callback = callback;
+            this.complete = complete;
         }
 
         public DataFrame frame()
@@ -61,29 +61,15 @@ public interface Stream
             return frame;
         }
 
-        public CompletableFuture<Object> callback()
+        public void complete()
         {
-            return callback;
+            complete.run();
         }
 
-        public void complete(Object result, Throwable failure)
+        @Override
+        public String toString()
         {
-            if (failure == null)
-                callback().complete(result);
-            else
-                callback().completeExceptionally(failure);
-        }
-
-        public void completeAndDemand(Stream stream, Throwable failure)
-        {
-            complete(stream, failure);
-            if (failure == null)
-                stream.demand(true);
-        }
-
-        public void succeed()
-        {
-            callback().complete(null);
+            return String.format("%s[%s]", getClass().getSimpleName(), frame);
         }
     }
 }

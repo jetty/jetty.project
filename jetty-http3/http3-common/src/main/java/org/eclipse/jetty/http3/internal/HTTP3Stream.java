@@ -66,10 +66,10 @@ public class HTTP3Stream implements Stream
     }
 
     @Override
-    public void demand(boolean enable)
+    public void demand()
     {
         HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
-        connection.demand(enable);
+        connection.demand();
     }
 
     @Override

@@ -16,7 +16,6 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http.MetaData;
@@ -58,8 +57,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         this.buffers = RetainableByteBufferPool.findOrAdapt(null, byteBufferPool);
         this.parser = parser;
         parser.init(MessageListener::new);
-        // By default, invoke onDataAvailable() after onRequest()/onResponse().
-        this.dataDemand = true;
     }
 
     @Override
@@ -146,9 +143,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
                 buffer.retain();
 
-                CompletableFuture<Object> completable = new CompletableFuture<>()
-                    .whenComplete((r, x) -> buffer.release());
-                return new Stream.Data(frame, completable);
+                return new Stream.Data(frame, buffer::release);
             }
             case MODE_SWITCH:
             {
@@ -170,12 +165,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
     }
 
-    public void demand(boolean enable)
+    public void demand()
     {
         boolean process = false;
         try (AutoLock l = lock.lock())
         {
-            dataDemand = enable;
+            dataDemand = true;
             if (dataStalled)
             {
                 dataStalled = false;

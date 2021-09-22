@@ -25,7 +25,6 @@ import org.eclipse.jetty.http3.internal.HTTP3Flusher;
 import org.eclipse.jetty.http3.internal.InstructionFlusher;
 import org.eclipse.jetty.http3.internal.InstructionHandler;
 import org.eclipse.jetty.http3.internal.UnidirectionalStreamConnection;
-import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
@@ -42,37 +41,32 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
     private final QpackEncoder encoder;
     private final QpackDecoder decoder;
-    private final HTTP3SessionServer apiSession;
-    private final InstructionFlusher encoderFlusher;
-    private final InstructionFlusher decoderFlusher;
+    private final HTTP3SessionServer applicationSession;
     private final ControlFlusher controlFlusher;
-    private final MessageGenerator generator;
     private final HTTP3Flusher messageFlusher;
 
     public ServerHTTP3Session(ServerQuicSession session, Session.Server.Listener listener, int maxBlockedStreams, int maxRequestHeadersSize)
     {
         super(session);
-        this.apiSession = new HTTP3SessionServer(this, listener);
+        this.applicationSession = new HTTP3SessionServer(this, listener);
 
         if (LOG.isDebugEnabled())
             LOG.debug("initializing HTTP/3 streams");
 
         long encoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
-        QuicStreamEndPoint encoderEndPoint = configureEncoderEndPoint(encoderStreamId);
-        this.encoderFlusher = new InstructionFlusher(session, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
-        this.encoder = new QpackEncoder(new InstructionHandler(encoderFlusher), maxBlockedStreams);
+        QuicStreamEndPoint encoderEndPoint = configureInstructionEndPoint(encoderStreamId);
+        InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(session, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
+        this.encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher), maxBlockedStreams);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
 
         long decoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
-        QuicStreamEndPoint decoderEndPoint = configureDecoderEndPoint(decoderStreamId);
-        this.decoderFlusher = new InstructionFlusher(session, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
-        this.decoder = new QpackDecoder(new InstructionHandler(decoderFlusher), maxRequestHeadersSize);
+        QuicStreamEndPoint decoderEndPoint = configureInstructionEndPoint(decoderStreamId);
+        InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(session, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
+        this.decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher), maxRequestHeadersSize);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
 
-        // TODO: make parameters configurable.
-        this.generator = new MessageGenerator(encoder, 4096, true);
         long controlStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint controlEndPoint = configureControlEndPoint(controlStreamId);
         this.controlFlusher = new ControlFlusher(session, controlEndPoint);
@@ -90,29 +84,25 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
     public HTTP3SessionServer getSessionServer()
     {
-        return apiSession;
+        return applicationSession;
     }
 
     @Override
     public void onOpen()
     {
         // Queue the mandatory SETTINGS frame.
-        Map<Long, Long> settings = apiSession.onPreface();
+        Map<Long, Long> settings = applicationSession.onPreface();
         if (settings == null)
             settings = Map.of();
         // TODO: add default settings.
         SettingsFrame frame = new SettingsFrame(settings);
         controlFlusher.offer(frame, Callback.NOOP);
         controlFlusher.iterate();
+
+        applicationSession.onOpen();
     }
 
-    private QuicStreamEndPoint configureEncoderEndPoint(long streamId)
-    {
-        // This is a write-only stream, so no need to link a Connection.
-        return getOrCreateStreamEndPoint(streamId, QuicStreamEndPoint::onOpen);
-    }
-
-    private QuicStreamEndPoint configureDecoderEndPoint(long streamId)
+    private QuicStreamEndPoint configureInstructionEndPoint(long streamId)
     {
         // This is a write-only stream, so no need to link a Connection.
         return getOrCreateStreamEndPoint(streamId, QuicStreamEndPoint::onOpen);
@@ -136,7 +126,6 @@ public class ServerHTTP3Session extends ServerProtocolSession
         }
         else
         {
-            // On the server, we need a get-or-create semantic in case of reads.
             QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, this::configureUnidirectionalStreamEndPoint);
             if (LOG.isDebugEnabled())
                 LOG.debug("unidirectional stream #{} selected for read: {}", readableStreamId, streamEndPoint);
@@ -146,7 +135,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
     private void configureUnidirectionalStreamEndPoint(QuicStreamEndPoint endPoint)
     {
-        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), encoder, decoder, apiSession);
+        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), encoder, decoder, applicationSession);
         endPoint.setConnection(connection);
         endPoint.onOpen();
         connection.onOpen();
@@ -161,6 +150,12 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
     protected void onDataAvailable(long streamId)
     {
-        apiSession.onDataAvailable(streamId);
+        applicationSession.onDataAvailable(streamId);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 }

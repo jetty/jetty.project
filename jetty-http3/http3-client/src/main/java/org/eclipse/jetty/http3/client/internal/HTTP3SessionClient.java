@@ -53,6 +53,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         getProtocolSession().writeFrame(streamId, frame, callback);
     }
 
+    @Override
     public void onOpen()
     {
         promise.succeeded(this);
