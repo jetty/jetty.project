@@ -102,8 +102,8 @@
           <scriptVariables>
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
-            <maven.surefire.version>${maven.surefire.version}</maven.surefire.version>
-            <servletApiVersion>${servlet.api.version}</servletApiVersion>
+            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
+            <servletApiVersion>${jakarta.servlet.api.version}</servletApiVersion>
           </scriptVariables>
           <goals>
             <goal>clean</goal>
@@ -123,7 +123,7 @@
     <dependency>
       <groupId>org.apache.maven.shared</groupId>
       <artifactId>maven-artifact-transfer</artifactId>
-      <version>0.13.1</version>
+      <version>${maven-artifact-transfer.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>

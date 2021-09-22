@@ -65,19 +65,16 @@
     <dependency>
       <groupId>javax.xml.bind</groupId>
       <artifactId>jaxb-api</artifactId>
-      <version>2.3.1</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.glassfish.jaxb</groupId>
       <artifactId>jaxb-runtime</artifactId>
-      <version>2.3.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>javax.activation</groupId>
       <artifactId>javax.activation-api</artifactId>
-      <version>1.2.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
