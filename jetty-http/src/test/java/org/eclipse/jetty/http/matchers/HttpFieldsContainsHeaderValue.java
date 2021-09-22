@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.http.matchers;
 
-import java.util.Locale;
+import java.util.Objects;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -55,21 +55,7 @@ public class HttpFieldsContainsHeaderValue extends TypeSafeMatcher<HttpFields>
         if (field == null)
             return false;
 
-        // Use HttpField.contains() logic
-        if (field.contains(this.value))
-            return true;
-
-        // Simple equals
-        if (this.value == field.getValue())
-            return true;
-
-        // Try individual value logic
-        String lcValue = this.value.toLowerCase(Locale.ENGLISH);
-        for (String value : field.getValues())
-        {
-            if (value.toLowerCase(Locale.ENGLISH).contains(lcValue))
-                return true;
-        }
-        return false;
+        // exact match or HttpField.contains match (which is not just a simple substring).
+        return Objects.equals(this.value, field.getValue()) || field.contains(this.value);
     }
 }
