@@ -27,6 +27,7 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Supplier;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletResponse;
@@ -1228,6 +1229,40 @@ public class Response implements HttpServletResponse
         return _trailers;
     }
 
+    /**
+     * Gets a supplier for trailer values.
+     *
+     * <p>Not marked as {@code @Override} to keep servlet 3.x support, this was
+     * added in servlet 4.0.</p>
+     *
+     * @return a supplier of trailers to write to the response.
+     */
+    public Supplier<Map<String, String>> getTrailerFields()
+    {
+        if (_trailers instanceof HttpFieldsSupplier)
+            return ((HttpFieldsSupplier)_trailers).getSupplier();
+        return null;
+    }
+
+    /**
+     * Sets a supplier of trailer values.
+     *
+     * <p>Not marked as {@code @Override} to keep servlet 3.x support, this was
+     * added in servlet 4.0.</p>
+     *
+     * @param trailers the supplier of trailer headers
+     * @throws IllegalStateException if the response is already submitted, or
+     * if the http version is less than 1.0.
+     */
+    public void setTrailerFields(Supplier<Map<String, String>> trailers)
+    {
+        if (isCommitted())
+            throw new IllegalStateException("Committed");
+        if (getHttpChannel().getRequest().getHttpVersion().ordinal() <= HttpVersion.HTTP_1_0.ordinal())
+            throw new IllegalStateException("Trailers not supported");
+        this._trailers = new HttpFieldsSupplier(trailers);
+    }
+
     protected MetaData.Response newResponseMetaData()
     {
         MetaData.Response info = new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
@@ -1409,5 +1444,34 @@ public class Response implements HttpServletResponse
             return unwrap(((ServletResponseWrapper)servletResponse).getResponse());
         }
         return (HttpServletResponse)servletResponse;
+    }
+
+    private static class HttpFieldsSupplier implements Supplier<HttpFields>
+    {
+        private final Supplier<Map<String, String>> _supplier;
+
+        public HttpFieldsSupplier(Supplier<Map<String, String>> trailers)
+        {
+            _supplier = trailers;
+        }
+
+        @Override
+        public HttpFields get()
+        {
+            Map<String, String> t = _supplier.get();
+            if (t == null)
+                return null;
+            HttpFields fields = new HttpFields();
+            for (Map.Entry<String, String> e : t.entrySet())
+            {
+                fields.add(e.getKey(), e.getValue());
+            }
+            return fields;
+        }
+
+        public Supplier<Map<String, String>> getSupplier()
+        {
+            return _supplier;
+        }
     }
 }
