@@ -384,7 +384,6 @@
     <dependency>
       <groupId>com.sun.mail</groupId>
       <artifactId>jakarta.mail</artifactId>
-      <version>${mail-api.version}</version>
       <scope>provided</scope>
     </dependency>
     <!-- === Maven Plugin Deps == -->
@@ -417,7 +416,6 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-core</artifactId>
-      <version>${infinispan.version}</version>
       <scope>provided</scope>
        <exclusions>
            <exclusion>
@@ -430,20 +428,17 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
-      <version>${infinispan.version}</version>
       <scope>provided</scope>
     </dependency>
     <!-- to make infinispan-common source sane -->
     <dependency>
       <groupId>org.infinispan.protostream</groupId>
       <artifactId>protostream</artifactId>
-      <version>${infinispan.protostream.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>com.sun.activation</groupId>
-      <artifactId>jakarta.activation</artifactId>
-      <version>2.0.1</version>
+      <groupId>jakarta.activation</groupId>
+      <artifactId>jakarta.activation-api</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>
