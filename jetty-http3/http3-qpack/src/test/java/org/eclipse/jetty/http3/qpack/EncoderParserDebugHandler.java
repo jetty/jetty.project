@@ -47,7 +47,7 @@ public class EncoderParserDebugHandler implements EncoderInstructionParser.Handl
     }
 
     @Override
-    public void onStreamCancellation(long streamId) throws QpackException
+    public void onStreamCancellation(long streamId)
     {
         streamCancellations.add(streamId);
         if (_encoder != null)

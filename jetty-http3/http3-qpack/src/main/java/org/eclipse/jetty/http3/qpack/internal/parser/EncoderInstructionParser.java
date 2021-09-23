@@ -43,7 +43,7 @@ public class EncoderInstructionParser
     {
         void onSectionAcknowledgement(long streamId) throws QpackException;
 
-        void onStreamCancellation(long streamId) throws QpackException;
+        void onStreamCancellation(long streamId);
 
         void onInsertCountIncrement(int increment) throws QpackException;
     }
