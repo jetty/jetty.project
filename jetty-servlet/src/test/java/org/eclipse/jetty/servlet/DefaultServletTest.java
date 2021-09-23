@@ -74,6 +74,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeader;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
+import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
@@ -881,25 +882,25 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.html"));
 
         createFile(inde, "<h1>Hello Inde</h1>");
         rawResponse = connector.getResponse("GET /context/dir HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/"));
+        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/"));
 
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.html"));
 
         if (deleteFile(index))
         {
             rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-            assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.htm"));
+            assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.htm"));
 
             if (deleteFile(inde))
             {
@@ -937,20 +938,17 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/dir HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "/context/dir/"));
-        assertThat(response, not(containsHeaderValue("Location", "http://")));
+        assertThat(response, headerValue("Location", "/context/dir/"));
 
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "/context/dir/index.html"));
-        assertThat(response, not(containsHeaderValue("Location", "http://")));
+        assertThat(response, headerValue("Location", "/context/dir/index.html"));
 
         rawResponse = connector.getResponse("GET /context/dir/index.html/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "/context/dir/index.html"));
-        assertThat(response, not(containsHeaderValue("Location", "http://")));
+        assertThat(response, headerValue("Location", "/context/dir/index.html"));
     }
 
     /**

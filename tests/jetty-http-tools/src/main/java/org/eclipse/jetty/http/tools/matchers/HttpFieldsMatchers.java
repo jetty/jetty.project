@@ -29,6 +29,11 @@ public class HttpFieldsMatchers
         return new HttpFieldsContainsHeaderKey(header);
     }
 
+    public static Matcher<HttpFields> headerValue(String keyName, String value)
+    {
+        return new HttpFieldsHeaderValue(keyName, value);
+    }
+
     public static Matcher<HttpFields> containsHeaderValue(String keyName, String value)
     {
         return new HttpFieldsContainsHeaderValue(keyName, value);
