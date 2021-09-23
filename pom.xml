@@ -1299,7 +1299,7 @@
       <id>config-template</id>
       <activation>
         <file>
-          <exists>src/main/config-templates</exists>
+          <exists>src/main/config-template</exists>
         </file>
       </activation>
       <build>
