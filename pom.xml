@@ -82,7 +82,7 @@
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.servlet.api.version>4.0.6</jetty.servlet.api.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
-    <jetty.test.version>5.8</jetty.test.version>
+    <jetty.test.version>5.9</jetty.test.version>
     <jmh.version>1.33</jmh.version>
     <jna.version>5.9.0</jna.version>
     <jnr-constants.version>0.10.2</jnr-constants.version>
