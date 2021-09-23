@@ -1267,7 +1267,7 @@
                       <directory>src/main/config</directory>
                       <filtering>true</filtering>
                       <excludes>
-                        <exclude>**/*.p12</exclude>
+                        <exclude>**/*keystore</exclude>
                       </excludes>
                     </resource>
                   </resources>
