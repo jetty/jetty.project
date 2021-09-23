@@ -37,9 +37,11 @@
     <gson.version>2.8.8</gson.version>
     <guava.version>30.1.1-jre</guava.version>
     <guice.version>5.0.1</guice.version>
+    <hawtio.version>2.13.5</hawtio.version>
     <hazelcast.version>3.12.12</hazelcast.version>
     <infinispan.version>9.4.8.Final</infinispan.version>
     <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
+    <jamon.version>2.81</jamon.version>
     <javax.activation.version>1.1.0.v201105071233</javax.activation.version>
     <javax.annotation.api.version>1.3.2</javax.annotation.api.version>
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
@@ -57,6 +59,7 @@
     <jnr-ffi.version>2.2.7</jnr-ffi.version>
     <jnr-posix.version>3.1.10</jnr-posix.version>
     <jnr-unixsocket.version>0.38.11</jnr-unixsocket.version>
+    <jolokia.version>1.3.3</jolokia.version>
     <jsp.version>8.5.70</jsp.version>
     <junit.version>5.8.0</junit.version>
     <log4j2.version>2.14.0</log4j2.version>
@@ -64,6 +67,7 @@
     <maven.version>3.8.2</maven.version>
     <maven.plugin-tools.version>3.6.1</maven.plugin-tools.version>
     <maven.resolver.version>1.7.2</maven.resolver.version>
+    <mongodb.version>2.13.2</mongodb.version>
     <osgi.annotation.version>8.0.0</osgi.annotation.version>
     <osgi.core.version>6.0.0</osgi.core.version>
     <plexus-container.version>2.1.0</plexus-container.version>
@@ -72,6 +76,7 @@
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <weld.version>3.1.5.Final</weld.version>
+    <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
     <asciidoctor.plugin.version>2.2.1</asciidoctor.plugin.version>
@@ -508,7 +513,7 @@
             <dependency>
               <groupId>org.eclipse.jetty.toolchain</groupId>
               <artifactId>jetty-assembly-descriptors</artifactId>
-              <version>1.0</version>
+              <version>1.1</version>
             </dependency>
           </dependencies>
         </plugin>
@@ -1102,6 +1107,42 @@
         <artifactId>ant-launcher</artifactId>
         <version>${ant.version}</version>
       </dependency>
+      <!-- some modules use those artifacts so we can manage version from here -->
+      <dependency>
+        <groupId>io.hawt</groupId>
+        <artifactId>hawtio-default</artifactId>
+        <version>${hawtio.version}</version>
+        <type>war</type>
+      </dependency>
+      <dependency>
+        <groupId>com.jamonapi</groupId>
+        <artifactId>jamon</artifactId>
+        <version>${jamon.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.jamonapi</groupId>
+        <artifactId>jamon_war</artifactId>
+        <version>${jamon.version}</version>
+        <type>war</type>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.jolokia</groupId>
+        <artifactId>jolokia-war</artifactId>
+        <version>${jolokia.version}</version>
+        <type>war</type>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -1206,6 +1247,36 @@
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-resources</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <encoding>UTF-8</encoding>
+                  <useDefaultDelimiters>false</useDefaultDelimiters>
+                  <delimiters>
+                    <delimiter>@</delimiter>
+                  </delimiters>
+                  <outputDirectory>${project.build.directory}/jetty-config-files</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>src/main/config</directory>
+                      <filtering>true</filtering>
+                      <excludes>
+                        <exclude>**/*.p12</exclude>
+                      </excludes>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>
             <executions>
               <execution>
@@ -1217,6 +1288,65 @@
                   <descriptorRefs>
                     <descriptorRef>config</descriptorRef>
                   </descriptorRefs>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>config-template</id>
+      <activation>
+        <file>
+          <exists>src/main/config-template</exists>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-resources</id>
+                <phase>process-resources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <encoding>UTF-8</encoding>
+                  <useDefaultDelimiters>false</useDefaultDelimiters>
+                  <delimiters>
+                    <delimiter>@</delimiter>
+                  </delimiters>
+                  <outputDirectory>${project.build.directory}/jetty-config-files</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>src/main/config-template</directory>
+                      <filtering>true</filtering>
+                      <excludes>
+                        <exclude>**/*.p12</exclude>
+                      </excludes>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <descriptors>
+                    <descriptor>src/main/assembly/config.xml</descriptor>
+                  </descriptors>
                 </configuration>
               </execution>
             </executions>
