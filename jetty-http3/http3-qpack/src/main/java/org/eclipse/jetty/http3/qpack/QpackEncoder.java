@@ -283,6 +283,18 @@ public class QpackEncoder implements Dumpable
         return true;
     }
 
+    /**
+     * Tells the {@link QpackEncoder} that a particular stream has been cancelled. Any state stored for this stream
+     * will be discarded. The encoder may also receive a stream cancellation instruction from the remote Decoder to
+     * cancel the stream which will be a noop if this method was called on the local encoder first.
+     * @param streamId the streamId of the stream that was cancelled.
+     */
+    public void streamCancellation(long streamId)
+    {
+        _instructionHandler.onStreamCancellation(streamId);
+        notifyInstructionHandler();
+    }
+
     protected boolean shouldIndex(HttpField httpField)
     {
         return !DO_NOT_INDEX.contains(httpField.getHeader());
@@ -446,14 +458,14 @@ public class QpackEncoder implements Dumpable
         }
 
         @Override
-        public void onStreamCancellation(long streamId) throws QpackException
+        public void onStreamCancellation(long streamId)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("StreamCancellation: streamId={}", streamId);
 
             StreamInfo streamInfo = _streamInfoMap.remove(streamId);
             if (streamInfo == null)
-                throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, "No StreamInfo for " + streamId);
+                return;
 
             // Release all referenced entries outstanding on the stream that was cancelled.
             for (StreamInfo.SectionInfo sectionInfo : streamInfo)

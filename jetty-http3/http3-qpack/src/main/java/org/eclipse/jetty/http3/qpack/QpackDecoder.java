@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.qpack.internal.QpackContext;
 import org.eclipse.jetty.http3.qpack.internal.instruction.InsertCountIncrementInstruction;
 import org.eclipse.jetty.http3.qpack.internal.instruction.SectionAcknowledgmentInstruction;
+import org.eclipse.jetty.http3.qpack.internal.instruction.StreamCancellationInstruction;
 import org.eclipse.jetty.http3.qpack.internal.parser.DecoderInstructionParser;
 import org.eclipse.jetty.http3.qpack.internal.parser.EncodedFieldSection;
 import org.eclipse.jetty.http3.qpack.internal.table.DynamicTable;
@@ -192,6 +193,19 @@ public class QpackDecoder implements Dumpable
         {
             throw new QpackException.SessionException(QPACK_ENCODER_STREAM_ERROR, t.getMessage(), t);
         }
+    }
+
+    /**
+     * Tells the {@link QpackDecoder} that a particular stream has been cancelled. Any encoded field sections for this stream
+     * will be discarded and a stream cancellation instruction will be sent to the remote Encoder.
+     * @param streamId the streamId of the stream that was cancelled.
+     */
+    public void streamCancellation(long streamId)
+    {
+        _encodedFieldSections.removeIf(encodedFieldSection -> encodedFieldSection.getStreamId() == streamId);
+        _metaDataNotifications.removeIf(notification -> notification._streamId == streamId);
+        _instructions.add(new StreamCancellationInstruction(streamId));
+        notifyInstructionHandler();
     }
 
     private void checkEncodedFieldSections() throws QpackException

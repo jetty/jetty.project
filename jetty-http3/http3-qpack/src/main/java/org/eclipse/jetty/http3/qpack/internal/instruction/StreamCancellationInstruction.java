@@ -22,9 +22,9 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class StreamCancellationInstruction implements Instruction
 {
-    private final int _streamId;
+    private final long _streamId;
 
-    public StreamCancellationInstruction(int streamId)
+    public StreamCancellationInstruction(long streamId)
     {
         _streamId = streamId;
     }
