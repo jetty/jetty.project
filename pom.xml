@@ -58,7 +58,7 @@
     <jnr-posix.version>3.1.10</jnr-posix.version>
     <jnr-unixsocket.version>0.38.11</jnr-unixsocket.version>
     <jsp.version>8.5.70</jsp.version>
-    <junit.version>5.8.0</junit.version>
+    <junit.version>5.8.1</junit.version>
     <log4j2.version>2.14.0</log4j2.version>
     <logback.version>1.2.6</logback.version>
     <maven.version>3.8.2</maven.version>
