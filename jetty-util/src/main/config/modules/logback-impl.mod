@@ -36,5 +36,5 @@ or (per the licensee's choosing) under
     http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
 
 [ini]
-logback.version?=1.2.3
+logback.version?=@logback.version@
 jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/logback/
