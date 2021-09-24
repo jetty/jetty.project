@@ -46,7 +46,7 @@ public class DataBodyParser extends BodyParser
     @Override
     protected void emptyBody(ByteBuffer buffer)
     {
-        onData(BufferUtil.EMPTY_BUFFER, false);
+        onData(BufferUtil.EMPTY_BUFFER, isLast.getAsBoolean(), false);
     }
 
     @Override
@@ -72,17 +72,21 @@ public class DataBodyParser extends BodyParser
                     buffer.limit(limit);
                     buffer.position(position + size);
 
+                    // If the buffer contains another frame that
+                    // needs to be parsed, then it's not the last frame.
+                    boolean last = isLast.getAsBoolean() && !buffer.hasRemaining();
+
                     length -= size;
                     if (length == 0)
                     {
                         reset();
-                        onData(slice, false);
+                        onData(slice, last, false);
                         return Result.WHOLE_FRAME;
                     }
                     else
                     {
                         // We got partial data, simulate a smaller frame, and stay in DATA state.
-                        onData(slice, true);
+                        onData(slice, last, true);
                         return Result.FRAGMENT_FRAME;
                     }
                 }
@@ -95,9 +99,9 @@ public class DataBodyParser extends BodyParser
         return Result.NO_FRAME;
     }
 
-    private void onData(ByteBuffer buffer, boolean fragment)
+    private void onData(ByteBuffer buffer, boolean last, boolean fragment)
     {
-        DataFrame frame = new DataFrame(buffer, isLast.getAsBoolean());
+        DataFrame frame = new DataFrame(buffer, last);
         if (LOG.isDebugEnabled())
             LOG.debug("notifying fragment={} {}#{} remaining={}", fragment, frame, streamId, length);
         notifyData(frame);
