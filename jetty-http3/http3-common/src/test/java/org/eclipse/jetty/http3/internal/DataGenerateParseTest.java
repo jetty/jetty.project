@@ -75,8 +75,8 @@ public class DataGenerateParseTest
 
         assertEquals(1, frames.size());
         DataFrame output = frames.get(0);
-        byte[] outputBytes = new byte[output.getData().remaining()];
-        output.getData().get(outputBytes);
+        byte[] outputBytes = new byte[output.getByteBuffer().remaining()];
+        output.getByteBuffer().get(outputBytes);
         assertArrayEquals(inputBytes, outputBytes);
     }
 }

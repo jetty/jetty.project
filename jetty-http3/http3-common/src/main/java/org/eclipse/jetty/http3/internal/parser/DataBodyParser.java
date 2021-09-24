@@ -99,7 +99,7 @@ public class DataBodyParser extends BodyParser
     {
         DataFrame frame = new DataFrame(buffer, isLast.getAsBoolean());
         if (LOG.isDebugEnabled())
-            LOG.debug("notifying synthetic={} {}#{}", fragment, frame, streamId);
+            LOG.debug("notifying fragment={} {}#{} remaining={}", fragment, frame, streamId, length);
         notifyData(frame);
     }
 

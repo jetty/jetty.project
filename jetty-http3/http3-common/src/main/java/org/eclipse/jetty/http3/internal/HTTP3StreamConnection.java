@@ -177,6 +177,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 process = true;
             }
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("demand, wasStalled={} on {}", process, this);
         if (process)
             processDataDemand();
     }
@@ -201,31 +203,30 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         while (true)
         {
-            boolean demand;
+            boolean process = true;
             try (AutoLock l = lock.lock())
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("processing demand={}, last={} fillInterested={} on {}", dataDemand, dataLast, isFillInterested(), this);
                 if (dataDemand)
                 {
-                    demand = !dataLast;
+                    // Do not process if the last frame was already
+                    // notified, or if there is demand but no data.
+                    if (dataLast || isFillInterested())
+                        process = false;
+                    else
+                        dataDemand = false;
                 }
                 else
                 {
                     dataStalled = true;
-                    demand = false;
+                    process = false;
                 }
             }
-            if (LOG.isDebugEnabled())
-                LOG.debug("processing demand={} fillInterested={} on {}", demand, isFillInterested(), this);
 
-            // Exit if there is no demand, or there is demand but no data.
-            if (!demand || isFillInterested())
+            if (!process)
                 return;
 
-            // We have demand, notify the application.
-            try (AutoLock l = lock.lock())
-            {
-                dataDemand = false;
-            }
             onDataAvailable(getEndPoint().getStreamId());
         }
     }
@@ -244,6 +245,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             {
                 ByteBuffer byteBuffer = buffer.getBuffer();
                 MessageParser.Result result = parser.parse(byteBuffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("parsed {} on {} with buffer {}", result, this, buffer);
                 if (result == MessageParser.Result.FRAME || result == MessageParser.Result.MODE_SWITCH)
                     return result;
 

@@ -42,7 +42,6 @@ import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -76,7 +75,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                         {
                             // When resumed, demand all content until the last.
                             Stream.Data data = stream.readData();
-                            if (data != null && data.frame().isLast())
+                            if (data != null && data.isLast())
                                 serverDataLatch.countDown();
                             else
                                 stream.demand();
@@ -128,17 +127,16 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                         onDataAvailableCalls.incrementAndGet();
                         if (serverStreamRef.compareAndSet(null, stream))
                         {
-                            serverStreamLatch.countDown();
                             // Read only one chunk of data.
-                            Stream.Data data = stream.readData();
-                            assertNotNull(data);
+                            await().atMost(1, TimeUnit.SECONDS).until(() -> stream.readData() != null);
+                            serverStreamLatch.countDown();
                             // Don't demand, just exit.
                         }
                         else
                         {
                             // When resumed, demand all content until the last.
                             Stream.Data data = stream.readData();
-                            if (data != null && data.frame().isLast())
+                            if (data != null && data.isLast())
                                 serverDataLatch.countDown();
                             else
                                 stream.demand();
@@ -210,7 +208,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                         {
                             // When resumed, demand all content until the last.
                             Stream.Data data = stream.readData();
-                            if (data != null && data.frame().isLast())
+                            if (data != null && data.isLast())
                                 serverDataLatch.countDown();
                             else
                                 stream.demand();
@@ -321,7 +319,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                         Stream.Data data = stream.readData();
                         if (data != null)
                         {
-                            if (dataRead.addAndGet(data.frame().getData().remaining()) == dataLength)
+                            if (dataRead.addAndGet(data.getByteBuffer().remaining()) == dataLength)
                                 serverDataLatch.countDown();
                         }
                         stream.demand();
@@ -385,7 +383,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                             }
                             // Store the Data away to be used later.
                             datas.add(data);
-                            if (data.frame().isLast())
+                            if (data.isLast())
                                 serverDataLatch.countDown();
                         }
                     }
@@ -408,10 +406,10 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
 
-        assertEquals(bytesSent.length, datas.stream().mapToInt(d -> d.frame().getData().remaining()).sum());
+        assertEquals(bytesSent.length, datas.stream().mapToInt(d -> d.getByteBuffer().remaining()).sum());
         byte[] bytesReceived = new byte[bytesSent.length];
         ByteBuffer buffer = ByteBuffer.wrap(bytesReceived);
-        datas.forEach(d -> buffer.put(d.frame().getData()));
+        datas.forEach(d -> buffer.put(d.getByteBuffer()));
         assertArrayEquals(bytesSent, bytesReceived);
     }
 
@@ -437,7 +435,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                     {
                         onDataAvailableCalls.incrementAndGet();
                         Stream.Data data = stream.readData();
-                        if (data != null && data.frame().isLast())
+                        if (data != null && data.isLast())
                             serverDataLatch.countDown();
                         stream.demand();
                     }

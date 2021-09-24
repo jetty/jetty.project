@@ -32,6 +32,7 @@ import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.quic.server.ServerProtocolSession;
 import org.eclipse.jetty.quic.server.ServerQuicSession;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,10 +97,13 @@ public class ServerHTTP3Session extends ServerProtocolSession
             settings = Map.of();
         // TODO: add default settings.
         SettingsFrame frame = new SettingsFrame(settings);
-        controlFlusher.offer(frame, Callback.NOOP);
+        controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, applicationSession::onOpen, this::fail));
         controlFlusher.iterate();
+    }
 
-        applicationSession.onOpen();
+    private void fail(Throwable failure)
+    {
+        // TODO: must close the connection.
     }
 
     private QuicStreamEndPoint configureInstructionEndPoint(long streamId)

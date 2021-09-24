@@ -113,7 +113,7 @@ public class MessageParser
                             if (result == BodyParser.Result.NO_FRAME)
                                 return Result.NO_FRAME;
                             if (LOG.isDebugEnabled())
-                                LOG.debug("Parsed unknown frame body for type {}", Integer.toHexString(frameType));
+                                LOG.debug("parsed unknown frame body for type {}", Integer.toHexString(frameType));
                             if (result == BodyParser.Result.WHOLE_FRAME)
                                 reset();
                             break;
@@ -124,7 +124,7 @@ public class MessageParser
                             {
                                 bodyParser.emptyBody(buffer);
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("Parsed {} empty frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+                                    LOG.debug("parsed {} empty frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
                                 reset();
                                 return Result.FRAME;
                             }
@@ -134,7 +134,7 @@ public class MessageParser
                                 if (result == BodyParser.Result.NO_FRAME)
                                     return Result.NO_FRAME;
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("Parsed {} frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
+                                    LOG.debug("parsed {} frame body from {}", FrameType.from(frameType), BufferUtil.toDetailString(buffer));
                                 if (result == BodyParser.Result.WHOLE_FRAME)
                                     reset();
                                 return Result.FRAME;
