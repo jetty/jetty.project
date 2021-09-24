@@ -32,7 +32,7 @@ public class DataGenerator extends FrameGenerator
 
     private int generateDataFrame(ByteBufferPool.Lease lease, DataFrame frame)
     {
-        ByteBuffer data = frame.getData();
+        ByteBuffer data = frame.getByteBuffer();
         int dataLength = data.remaining();
         int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
         ByteBuffer header = ByteBuffer.allocate(headerLength);

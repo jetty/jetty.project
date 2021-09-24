@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.client.internal;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.Frame;
@@ -48,15 +49,41 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     }
 
     @Override
-    protected void writeFrame(long streamId, Frame frame, Callback callback)
-    {
-        getProtocolSession().writeFrame(streamId, frame, callback);
-    }
-
-    @Override
     public void onOpen()
     {
         promise.succeeded(this);
+    }
+
+    @Override
+    public void onHeaders(long streamId, HeadersFrame frame)
+    {
+        QuicStreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
+        HTTP3Stream stream = getOrCreateStream(endPoint);
+        MetaData metaData = frame.getMetaData();
+        if (metaData.isResponse())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("received response {}#{} on {}", frame, streamId, this);
+            notifyResponse(stream, frame);
+        }
+        else
+        {
+            super.onHeaders(streamId, frame);
+        }
+    }
+
+    private void notifyResponse(HTTP3Stream stream, HeadersFrame frame)
+    {
+        Stream.Listener listener = stream.getListener();
+        try
+        {
+            if (listener != null)
+                listener.onResponse(stream, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
     }
 
     @Override
@@ -75,5 +102,11 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
 
         session.writeFrame(streamId, frame, callback);
         return promise;
+    }
+
+    @Override
+    protected void writeFrame(long streamId, Frame frame, Callback callback)
+    {
+        getProtocolSession().writeFrame(streamId, frame, callback);
     }
 }

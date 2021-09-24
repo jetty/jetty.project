@@ -27,7 +27,7 @@ public class DataFrame extends Frame
         this.last = last;
     }
 
-    public ByteBuffer getData()
+    public ByteBuffer getByteBuffer()
     {
         return data;
     }
@@ -40,6 +40,6 @@ public class DataFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s[last=%b,length=%d]", super.toString(), isLast(), getData().remaining());
+        return String.format("%s[last=%b,length=%d]", super.toString(), isLast(), getByteBuffer().remaining());
     }
 }

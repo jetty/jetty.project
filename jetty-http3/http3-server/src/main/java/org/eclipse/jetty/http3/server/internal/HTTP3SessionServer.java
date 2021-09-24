@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
+import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.Frame;
+import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
+import org.eclipse.jetty.http3.internal.HTTP3Stream;
+import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,14 +35,73 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     }
 
     @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        notifyAccept();
+    }
+
+    @Override
     public ServerHTTP3Session getProtocolSession()
     {
         return (ServerHTTP3Session)super.getProtocolSession();
     }
 
     @Override
+    public Session.Server.Listener getListener()
+    {
+        return (Session.Server.Listener)super.getListener();
+    }
+
+    @Override
+    public void onHeaders(long streamId, HeadersFrame frame)
+    {
+        QuicStreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
+        HTTP3Stream stream = getOrCreateStream(endPoint);
+        MetaData metaData = frame.getMetaData();
+        if (metaData.isRequest())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("received request {}#{} on {}", frame, streamId, this);
+            Stream.Listener streamListener = notifyRequest(stream, frame);
+            stream.setListener(streamListener);
+        }
+        else
+        {
+            super.onHeaders(streamId, frame);
+        }
+    }
+
+    private Stream.Listener notifyRequest(HTTP3Stream stream, HeadersFrame frame)
+    {
+        Server.Listener listener = getListener();
+        try
+        {
+            return listener.onRequest(stream, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+            return null;
+        }
+    }
+
+    @Override
     protected void writeFrame(long streamId, Frame frame, Callback callback)
     {
         getProtocolSession().writeFrame(streamId, frame, callback);
+    }
+
+    private void notifyAccept()
+    {
+        Server.Listener listener = getListener();
+        try
+        {
+            listener.onAccept(this);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
     }
 }

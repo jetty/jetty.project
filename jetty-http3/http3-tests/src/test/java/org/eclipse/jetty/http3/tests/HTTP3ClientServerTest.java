@@ -152,7 +152,7 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
                         data.complete();
                         // Call me again immediately.
                         stream.demand();
-                        if (data.frame().isLast())
+                        if (data.isLast())
                             serverLatch.get().countDown();
                     }
                 };
@@ -219,7 +219,7 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
                             return;
                         }
                         // Echo it back, then demand only when the write is finished.
-                        stream.data(data.frame())
+                        stream.data(new DataFrame(data.getByteBuffer(), data.isLast()))
                             // Always complete.
                             .whenComplete((s, x) -> data.complete())
                             // Demand only if successful.
@@ -259,9 +259,9 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
                     if (data != null)
                     {
                         // Consume data.
-                        byteBuffer.put(data.frame().getData());
+                        byteBuffer.put(data.getByteBuffer());
                         data.complete();
-                        if (data.frame().isLast())
+                        if (data.isLast())
                             clientDataLatch.countDown();
                     }
                     // Demand more data.

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.internal;
 
+import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,13 +45,30 @@ public abstract class HTTP3Session implements Session, ParserListener
         this.listener = listener;
     }
 
+    public ProtocolSession getProtocolSession()
+    {
+        return session;
+    }
+
+    public Listener getListener()
+    {
+        return listener;
+    }
+
     public void onOpen()
     {
     }
 
-    public ProtocolSession getProtocolSession()
+    @Override
+    public SocketAddress getLocalSocketAddress()
     {
-        return session;
+        return getProtocolSession().getQuicSession().getLocalAddress();
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return getProtocolSession().getQuicSession().getRemoteAddress();
     }
 
     protected HTTP3Stream createStream(QuicStreamEndPoint endPoint)
@@ -120,53 +138,16 @@ public abstract class HTTP3Session implements Session, ParserListener
     {
         QuicStreamEndPoint endPoint = session.getStreamEndPoint(streamId);
         HTTP3Stream stream = getOrCreateStream(endPoint);
-
         MetaData metaData = frame.getMetaData();
-        if (metaData.isRequest())
+        if (metaData.isRequest() || metaData.isResponse())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("received request {}#{} on {}", frame, streamId, this);
-            Stream.Listener streamListener = notifyRequest(stream, frame);
-            stream.setListener(streamListener);
-        }
-        else if (metaData.isResponse())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("received response {}#{} on {}", frame, streamId, this);
-            notifyResponse(stream, frame);
+            throw new IllegalStateException("invalid metadata");
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("received trailer {}#{} on {}", frame, streamId, this);
             notifyTrailer(stream, frame);
-        }
-    }
-
-    private Stream.Listener notifyRequest(HTTP3Stream stream, HeadersFrame frame)
-    {
-        try
-        {
-            return listener.onRequest(stream, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-            return null;
-        }
-    }
-
-    private void notifyResponse(HTTP3Stream stream, HeadersFrame frame)
-    {
-        try
-        {
-            Stream.Listener listener = stream.getListener();
-            if (listener != null)
-                listener.onResponse(stream, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
         }
     }
 
