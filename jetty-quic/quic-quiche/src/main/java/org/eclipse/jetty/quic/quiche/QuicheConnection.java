@@ -476,24 +476,6 @@ public class QuicheConnection
         }
     }
 
-    public String statistics()
-    {
-        try (AutoLock ignore = lock.lock())
-        {
-            if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
-            LibQuiche.quiche_stats stats = new LibQuiche.quiche_stats();
-            LibQuiche.INSTANCE.quiche_conn_stats(quicheConn, stats);
-            return "[recv: " + stats.recv +
-                " sent: " + stats.sent +
-                " lost: " + stats.lost +
-                " rtt: " + stats.rtt +
-                " rate: " + stats.delivery_rate +
-                " window: " + stats.cwnd +
-                "]";
-        }
-    }
-
     public boolean close() throws IOException
     {
         try (AutoLock ignore = lock.lock())

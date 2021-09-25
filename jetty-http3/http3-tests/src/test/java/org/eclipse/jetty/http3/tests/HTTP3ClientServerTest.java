@@ -33,6 +33,8 @@ import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -81,6 +83,9 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
             })
             .get(5, TimeUnit.SECONDS);
         assertNotNull(session);
+
+        assertTrue(serverSettingsLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -191,12 +196,13 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
         Thread.sleep(500);
         stream2.data(new DataFrame(ByteBuffer.allocate(5 * 1024), true));
 
-        assertTrue(clientLatch.get().await(555, TimeUnit.SECONDS));
-        assertTrue(serverLatch.get().await(555, TimeUnit.SECONDS));
+        assertTrue(clientLatch.get().await(5, TimeUnit.SECONDS));
+        assertTrue(serverLatch.get().await(5, TimeUnit.SECONDS));
     }
 
-    @Test
-    public void testEchoRequestContentAsResponseContent() throws Exception
+    @ParameterizedTest
+    @ValueSource(ints = {1024, 128 * 1024, 1024 * 1024})
+    public void testEchoRequestContentAsResponseContent(int length) throws Exception
     {
         startServer(new Session.Server.Listener()
         {
@@ -237,7 +243,7 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
         HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
         MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
         HeadersFrame frame = new HeadersFrame(metaData, false);
-        byte[] bytesSent = new byte[8192];
+        byte[] bytesSent = new byte[length];
         new Random().nextBytes(bytesSent);
         byte[] bytesReceived = new byte[bytesSent.length];
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytesReceived);

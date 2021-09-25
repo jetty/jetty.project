@@ -103,7 +103,7 @@ public class DataBodyParser extends BodyParser
     {
         DataFrame frame = new DataFrame(buffer, last);
         if (LOG.isDebugEnabled())
-            LOG.debug("notifying fragment={} {}#{} remaining={}", fragment, frame, streamId, length);
+            LOG.debug("notifying fragment={} {}#{} left={}", fragment, frame, streamId, length);
         notifyData(frame);
     }
 
