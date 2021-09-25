@@ -130,7 +130,9 @@ public abstract class QuicSession
 
     public int fill(long streamId, ByteBuffer buffer) throws IOException
     {
-        return quicheConnection.drainClearTextForStream(streamId, buffer);
+        int drained = quicheConnection.drainClearTextForStream(streamId, buffer);
+        flush();
+        return drained;
     }
 
     public int flush(long streamId, ByteBuffer buffer) throws IOException
@@ -377,7 +379,7 @@ public abstract class QuicSession
                 boolean connectionClosed = quicheConnection.isConnectionClosed();
                 Action action = connectionClosed ? Action.SUCCEEDED : Action.IDLE;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("connection is closed? {} -> action = {}", connectionClosed, action);
+                    LOG.debug("connection closed={}, action={}", connectionClosed, action);
                 return action;
             }
             BufferUtil.flipToFlush(cipherBuffer, pos);

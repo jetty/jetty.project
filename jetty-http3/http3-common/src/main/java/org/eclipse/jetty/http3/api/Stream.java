@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.api;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 
@@ -26,6 +27,13 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
  * <p>Like {@link Session}, {@link Stream} is the active part and by calling its API applications
  * can generate events on the stream; conversely, {@link Stream.Listener} is the passive part, and
  * its callbacks are invoked when events happen on the stream.</p>
+ * <p>The client initiates a stream by sending a HEADERS frame containing the HTTP/3 request URI
+ * and request headers, and zero or more DATA frames containing request content.</p>
+ * <p>Similarly, the server responds by sending a HEADERS frame containing the HTTP/3 response
+ * status code and response headers, and zero or more DATA frames containing response content.</p>
+ * <p>Both client and server can end their side of the stream by sending a final frame with
+ * the {@code last} flag set to {@code true}, see {@link HeadersFrame#HeadersFrame(MetaData, boolean)}
+ * and {@link DataFrame#DataFrame(ByteBuffer, boolean)}.</p>
  *
  * @see Stream.Listener
  */
@@ -64,15 +72,14 @@ public interface Stream
      *   stream.</li>
      * </ul>
      * <p>When the returned {@link Stream.Data} object is not {@code null},
-     * applications <em>should</em> call {@link Stream.Data#complete()} to
-     * notify the implementation that the bytes have been processed.
-     * This allows the implementation to perform better, for example by
-     * recycling the {@link Stream.Data} object's {@link ByteBuffer}.</p>
+     * applications <em>must</em> call {@link Stream.Data#complete()} to
+     * notify the implementation that the bytes have been processed.</p>
      * <p>{@link Stream.Data} objects may be stored away for later, asynchronous,
      * processing (for example, to process them only when all of them have been
      * received).</p>
      *
-     * @return a {@link Stream.Data} object containing the request bytes or the response bytes
+     * @return a {@link Stream.Data} object containing the request bytes or
+     * the response bytes, or null if no bytes are available
      * @see Stream.Listener#onDataAvailable(Stream)
      */
     public Stream.Data readData();
@@ -195,8 +202,12 @@ public interface Stream
     }
 
     /**
-     *      *  <p>The returned {@link Stream.Data} object associates the
-     *      *  {@link ByteBuffer} containing the bytes with a completion </p>
+     * <p>A {@link Stream.Data} instance associates a {@link ByteBuffer}
+     * containing request bytes or response bytes with a completion event
+     * that applications <em>must</em> trigger when the bytes have been
+     * processed.</p>
+     *
+     * @see Stream#readData()
      */
     public static class Data
     {
@@ -209,16 +220,27 @@ public interface Stream
             this.complete = complete;
         }
 
+        /**
+         * @return the {@link ByteBuffer} containing the bytes
+         */
         public ByteBuffer getByteBuffer()
         {
             return frame.getByteBuffer();
         }
 
+        /**
+         * @return whether this is the instance that ends
+         * the stream of bytes received from the remote peer
+         */
         public boolean isLast()
         {
             return frame.isLast();
         }
 
+        /**
+         * <p>The method that applications <em>must</em> invoke to
+         * signal that the bytes have been processed.</p>
+         */
         public void complete()
         {
             complete.run();

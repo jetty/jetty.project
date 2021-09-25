@@ -28,7 +28,7 @@ public interface LibQuiche extends Library
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    String EXPECTED_QUICHE_VERSION = "0.9.0";
+    String EXPECTED_QUICHE_VERSION = "0.10.0";
 
     // load the native lib
     LibQuiche INSTANCE = Native.load("quiche", LibQuiche.class);
@@ -109,6 +109,12 @@ public interface LibQuiche extends Library
         // The peer violated the local stream limits.
         QUICHE_ERR_STREAM_LIMIT = -12,
 
+        // The specified stream was stopped by the peer.
+        QUICHE_ERR_STREAM_STOPPED = -15,
+
+        // The specified stream was reset by the peer.
+        QUICHE_ERR_STREAM_RESET = -16,
+
         // The received data exceeds the stream's final size.
         QUICHE_ERR_FINAL_SIZE = -13,
 
@@ -145,6 +151,10 @@ public interface LibQuiche extends Library
                 return "QUICHE_ERR_FINAL_SIZE";
             if (err == QUICHE_ERR_CONGESTION_CONTROL)
                 return "QUICHE_ERR_CONGESTION_CONTROL";
+            if (err == QUICHE_ERR_STREAM_STOPPED)
+                return "QUICHE_ERR_STREAM_STOPPED";
+            if (err == QUICHE_ERR_STREAM_RESET)
+                return "QUICHE_ERR_STREAM_RESET";
             return "?? " + err;
         }
     }
@@ -220,7 +230,13 @@ public interface LibQuiche extends Library
         public byte dummy;
     }
 
-    @Structure.FieldOrder({"recv", "sent", "lost", "rtt", "cwnd", "delivery_rate"})
+    @Structure.FieldOrder({"recv", "sent", "lost", "retrans", "rtt", "cwnd", "sent_bytes", "recv_bytes", "lost_bytes",
+                           "stream_retrans_bytes", "pmtu", "delivery_rate", "peer_max_idle_timeout",
+                           "peer_max_udp_payload_size", "peer_initial_max_data", "peer_initial_max_stream_data_bidi_local",
+                           "peer_initial_max_stream_data_bidi_remote", "peer_initial_max_stream_data_uni",
+                           "peer_initial_max_streams_bidi", "peer_initial_max_streams_uni", "peer_ack_delay_exponent",
+                           "peer_ack_delay_exponent", "peer_max_ack_delay", "peer_disable_active_migration",
+                           "peer_active_conn_id_limit", "peer_max_datagram_frame_size"})
     class quiche_stats extends Structure
     {
         // The number of QUIC packets received on this connection.
@@ -232,14 +248,71 @@ public interface LibQuiche extends Library
         // The number of QUIC packets that were lost.
         public size_t lost;
 
+        // The number of sent QUIC packets with retranmitted data.
+        public size_t retrans;
+
         // The estimated round-trip time of the connection (in nanoseconds).
         public uint64_t rtt;
 
         // The size of the connection's congestion window in bytes.
         public size_t cwnd;
 
-        // The estimated data delivery rate in bytes/s.
+        // The number of sent bytes.
+        public uint64_t sent_bytes;
+
+        // The number of recevied bytes.
+        public uint64_t recv_bytes;
+
+        // The number of bytes lost.
+        public uint64_t lost_bytes;
+
+        // The number of stream bytes retransmitted.
+        public uint64_t stream_retrans_bytes;
+
+        // The current PMTU for the connection.
+        public size_t pmtu;
+
+        // The most recent data delivery rate estimate in bytes/s.
         public uint64_t delivery_rate;
+
+        // The maximum idle timeout.
+        public uint64_t peer_max_idle_timeout;
+
+        // The maximum UDP payload size.
+        public uint64_t peer_max_udp_payload_size;
+
+        // The initial flow control maximum data for the connection.
+        public uint64_t peer_initial_max_data;
+
+        // The initial flow control maximum data for local bidirectional streams.
+        public uint64_t peer_initial_max_stream_data_bidi_local;
+
+        // The initial flow control maximum data for remote bidirectional streams.
+        public uint64_t peer_initial_max_stream_data_bidi_remote;
+
+        // The initial flow control maximum data for unidirectional streams.
+        public uint64_t peer_initial_max_stream_data_uni;
+
+        // The initial maximum bidirectional streams.
+        public uint64_t peer_initial_max_streams_bidi;
+
+        // The initial maximum unidirectional streams.
+        public uint64_t peer_initial_max_streams_uni;
+
+        // The ACK delay exponent.
+        public uint64_t peer_ack_delay_exponent;
+
+        // The max ACK delay.
+        public uint64_t peer_max_ack_delay;
+
+        // Whether active migration is disabled.
+        public boolean peer_disable_active_migration;
+
+        // The active connection ID limit.
+        public uint64_t peer_active_conn_id_limit;
+
+        // DATAGRAM frame extension parameter, if any.
+        public ssize_t peer_max_datagram_frame_size;
     }
 
     interface LoggingCallback extends Callback
@@ -351,6 +424,25 @@ public interface LibQuiche extends Library
 
     // Returns true if the connection is closed.
     boolean quiche_conn_is_closed(quiche_conn conn);
+
+    // Returns true if the connection was closed due to the idle timeout.
+    boolean quiche_conn_is_timed_out(quiche_conn conn);
+
+    // Returns true if a connection error was received, and updates the provided
+    // parameters accordingly.
+    boolean quiche_conn_peer_error(quiche_conn conn,
+                                   bool_pointer is_app,
+                                   uint64_t_pointer error_code,
+                                   Pointer/*const uint8_t ***/ reason,
+                                   size_t_pointer reason_len);
+
+    // Returns true if a connection error was queued or sent, and updates the provided
+    // parameters accordingly.
+    boolean quiche_conn_local_error(quiche_conn conn,
+                                    bool_pointer is_app,
+                                    uint64_t_pointer error_code,
+                                    Pointer/*const uint8_t ***/ reason,
+                                    size_t_pointer reason_len);
 
     // Closes the connection with the given error and reason.
     int quiche_conn_close(quiche_conn conn, boolean app, uint64_t err,
