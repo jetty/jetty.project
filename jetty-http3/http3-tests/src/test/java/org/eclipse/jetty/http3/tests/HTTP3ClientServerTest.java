@@ -201,7 +201,7 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1024, 128 * 1024, 1024 * 1024})
+    @ValueSource(ints = {1024, 10 * 1024, 100 * 1024, 1000 * 1024})
     public void testEchoRequestContentAsResponseContent(int length) throws Exception
     {
         startServer(new Session.Server.Listener()

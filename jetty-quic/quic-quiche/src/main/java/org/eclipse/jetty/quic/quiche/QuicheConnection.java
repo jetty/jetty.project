@@ -36,6 +36,7 @@ import org.eclipse.jetty.quic.quiche.ffi.uint32_t_pointer;
 import org.eclipse.jetty.quic.quiche.ffi.uint64_t;
 import org.eclipse.jetty.quic.quiche.ffi.uint64_t_pointer;
 import org.eclipse.jetty.quic.quiche.ffi.uint8_t_pointer;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -559,7 +560,7 @@ public class QuicheConnection
         {
             if (quicheConn == null)
                 throw new IOException("Quiche connection was released");
-            int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), null, new size_t(0), true).intValue();
+            int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), BufferUtil.EMPTY_BUFFER, new size_t(0), true).intValue();
             if (written == LibQuiche.quiche_error.QUICHE_ERR_DONE)
                 return;
             if (written < 0L)

@@ -19,12 +19,14 @@ public class DataFrame extends Frame
 {
     private final ByteBuffer data;
     private final boolean last;
+    private final int length;
 
     public DataFrame(ByteBuffer data, boolean last)
     {
         super(FrameType.DATA);
         this.data = data;
         this.last = last;
+        this.length = data.remaining();
     }
 
     public ByteBuffer getByteBuffer()
@@ -40,6 +42,6 @@ public class DataFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s[last=%b,length=%d]", super.toString(), isLast(), getByteBuffer().remaining());
+        return String.format("%s[last=%b,length=%d]", super.toString(), isLast(), length);
     }
 }
