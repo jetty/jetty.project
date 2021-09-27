@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http3;
+package org.eclipse.jetty.http3.internal;
 
 public enum ErrorCode
 {

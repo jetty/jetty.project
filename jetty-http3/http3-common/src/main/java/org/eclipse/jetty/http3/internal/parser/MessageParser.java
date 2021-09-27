@@ -17,8 +17,8 @@ import java.nio.ByteBuffer;
 import java.util.function.BooleanSupplier;
 import java.util.function.UnaryOperator;
 
-import org.eclipse.jetty.http3.ErrorCode;
 import org.eclipse.jetty.http3.frames.FrameType;
+import org.eclipse.jetty.http3.internal.ErrorCode;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;

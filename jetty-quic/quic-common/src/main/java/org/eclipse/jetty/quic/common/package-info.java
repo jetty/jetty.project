@@ -14,30 +14,39 @@
 /**
  * <p>This module contains the main abstractions for the QUIC protocol.</p>
  * <p>A {@link org.eclipse.jetty.quic.common.QuicConnection} is a {@link org.eclipse.jetty.io.Connection}
- * that receives and sends bytes from its underlying datagram {@link org.eclipse.jetty.io.EndPoint}.</p>
+ * that receives and sends bytes from its underlying {@link org.eclipse.jetty.io.DatagramChannelEndPoint}.</p>
  * <p>A {@link org.eclipse.jetty.quic.common.QuicConnection} manages many {@link org.eclipse.jetty.quic.common.QuicSession}s,
  * one for each QUIC connection ID.</p>
  * <p>A {@link org.eclipse.jetty.quic.common.QuicSession} manages many QUIC streams, identified by a
- * stream ID and represented by an {@link org.eclipse.jetty.io.EndPoint} subclass, namely
- * {@link org.eclipse.jetty.quic.common.QuicStreamEndPoint}.</p>
+ * stream ID and represented by {@link org.eclipse.jetty.quic.common.QuicStreamEndPoint}.</p>
+ * <p>A {@link org.eclipse.jetty.quic.common.QuicSession} delegates I/O processing to a protocol-specific
+ * {@link org.eclipse.jetty.quic.common.ProtocolSession}, whose responsibility is to use QUIC streams
+ * to implement the protocol-specific I/O processing.</p>
  * <p>The {@link org.eclipse.jetty.io.Connection} associated with each {@link org.eclipse.jetty.quic.common.QuicStreamEndPoint}
- * parses the bytes received on that QUIC stream, and generates the bytes to send on that QUIC stream.</p>
- * <p>For example, on the server side, the layout of the components in case of HTTP/1.1 could be the following:</p>
+ * parses the bytes received on the QUIC stream represented by the {@link org.eclipse.jetty.quic.common.QuicStreamEndPoint},
+ * and generates the bytes to send on that QUIC stream.</p>
+ * <p>On the client side, the layout of the components in case of HTTP/1.1 could be the following:</p>
+ * <pre>
+ * DatagramChannelEndPoint -- QuicConnection -- QuicSession -- ProtocolSession -- QuicStreamEndPoint -- HttpConnectionOverHTTP
+ * </pre>
+ * <p>The client-specific {@link org.eclipse.jetty.quic.common.ProtocolSession} creates a bidirectional QUIC stream
+ * that represent the same transport as a TCP stream, over which HTTP/1.1 bytes are exchanged by the two peers.</p>
+ * <p>On the server side, the layout of the components in case of HTTP/1.1 could be the following:</p>
  * <pre>
  * CLIENT  |  SERVER
  *
- * clientA                                                     ServerQuicSessionA
- *         \                                                 /
- *           DatagramChannelEndPoint -- ServerQuicConnection
- *         /                                                 \
- * clientB                                                     ServerQuicSessionB -- QuicStreamEndPointB1 -- HttpConnection
+ * clientA                                              QuicSessionA -- ProtocolSessionA -- QuicStreamEndPointA -- HttpConnection
+ *         \                                           /
+ *           DatagramChannelEndPoint -- QuicConnection
+ *         /                                           \
+ * clientB                                              QuicSessionB -- ProtocolSessionB -- QuicStreamEndPointB -- HttpConnection
  * </pre>
  * <p>The {@code DatagramChannelEndPoint} receives UDP datagrams from clients.</p>
- * <p>{@code ServerQuicConnection} processes the incoming datagram bytes creating a {@code ServerQuicSession} for every
+ * <p>{@code QuicConnection} processes the incoming datagram bytes creating a {@code QuicSession} for every
  * QUIC connection ID sent by the clients.</p>
- * <p>{@code clientB} has created a single QUIC stream to send a single HTTP/1.1 request, which results in
- * {@code ServerQuicSessionB} to create a single {@code QuicStreamEndPointB1} with its associated {@code HttpConnection}.</p>
- * <p>Note that the path {@code DatagramChannelEndPoint - ServerQuicConnection - ServerQuicSessionB - QuicStreamEndPointB1}
+ * <p>The clients have created a single QUIC stream to send HTTP/1.1 requests, which results in the
+ * {@code QuicSession}s to create a correspondent {@code QuicStreamEndPoint} with its associated {@code HttpConnection}.</p>
+ * <p>The path {@code DatagramChannelEndPoint - QuicConnection - QuicSession - QuicStreamEndPoint}
  * behaves exactly like a TCP {@link org.eclipse.jetty.io.SocketChannelEndPoint} for the associated
  * {@code HttpConnection}.</p>
  */

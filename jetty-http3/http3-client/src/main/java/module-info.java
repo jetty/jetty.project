@@ -14,7 +14,6 @@
 module org.eclipse.jetty.http3.client
 {
     exports org.eclipse.jetty.http3.client;
-    exports org.eclipse.jetty.http3.client.internal;
 
     requires transitive org.eclipse.jetty.http3.common;
     requires transitive org.eclipse.jetty.http3.qpack;
