@@ -1,3 +1,5 @@
+jetty-9.4.45-SNAPSHOT
+
 jetty-9.4.44.v20210927 - 27 September 2021
  + 3514 Use interpolation of versions from pom in mod files
  + 6369 Increment default jetty.http2.rateControl.maxEventsPerSecond
