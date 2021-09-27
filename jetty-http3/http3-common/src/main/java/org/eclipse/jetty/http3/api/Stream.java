@@ -40,6 +40,16 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 public interface Stream
 {
     /**
+     * @return the stream id
+     */
+    public long getId();
+
+    /**
+     * @return the session this stream is associated to
+     */
+    public Session getSession();
+
+    /**
      * <p>Responds to a request performed via {@link Session.Client#newRequest(HeadersFrame, Listener)},
      * sending the given HEADERS frame containing the response status code and response headers.</p>
      *

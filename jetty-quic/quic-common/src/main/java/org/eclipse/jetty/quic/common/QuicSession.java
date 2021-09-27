@@ -135,9 +135,9 @@ public abstract class QuicSession
         return drained;
     }
 
-    public int flush(long streamId, ByteBuffer buffer) throws IOException
+    public int flush(long streamId, ByteBuffer buffer, boolean last) throws IOException
     {
-        int flushed = quicheConnection.feedClearTextForStream(streamId, buffer);
+        int flushed = quicheConnection.feedClearTextForStream(streamId, buffer, last);
         flush();
         return flushed;
     }
@@ -151,6 +151,16 @@ public abstract class QuicSession
     public boolean isFinished(long streamId)
     {
         return quicheConnection.isStreamFinished(streamId);
+    }
+
+    public long getWindowCapacity()
+    {
+        return quicheConnection.windowCapacity();
+    }
+
+    public long getWindowCapacity(long streamId) throws IOException
+    {
+        return quicheConnection.windowCapacity(streamId);
     }
 
     public void shutdownInput(long streamId) throws IOException
@@ -194,7 +204,12 @@ public abstract class QuicSession
         // the remote address may change so store it again.
         this.remoteAddress = remoteAddress;
 
-        quicheConnection.feedCipherText(cipherBufferIn, remoteAddress);
+        int remaining = cipherBufferIn.remaining();
+        int accepted = quicheConnection.feedCipherText(cipherBufferIn, remoteAddress);
+        if (LOG.isDebugEnabled())
+            LOG.debug("feeding {}/{} cipher bytes to cid={}", accepted, remaining, quicheConnectionId);
+        if (accepted != remaining)
+            throw new IllegalStateException();
 
         if (quicheConnection.isConnectionEstablished())
         {

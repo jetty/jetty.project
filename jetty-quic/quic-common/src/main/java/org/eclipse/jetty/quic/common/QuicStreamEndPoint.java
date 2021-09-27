@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.Connection;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
 public class QuicStreamEndPoint extends AbstractEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicStreamEndPoint.class);
+    private static final ByteBuffer LAST_FLAG = ByteBuffer.allocate(0);
 
     private final QuicSession session;
     private final long streamId;
@@ -137,13 +139,19 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     {
         // TODO: session.flush(streamId, buffer) feeds Quiche and then calls flush().
         //  Can we call flush() only after the for loop below?
+
+        int length = buffers.length;
+        boolean last = buffers[length - 1] == LAST_FLAG;
+        if (last)
+            --length;
         if (LOG.isDebugEnabled())
-            LOG.debug("flushing {} buffer(s) to stream {}", buffers.length, streamId);
-        for (ByteBuffer buffer : buffers)
+            LOG.debug("flushing {} buffer(s) to stream {}", length, streamId);
+        for (int i = 0; i < length; ++i)
         {
-            int flushed = session.flush(streamId, buffer);
+            ByteBuffer buffer = buffers[i];
+            int flushed = session.flush(streamId, buffer, (i == length - 1) && last);
             if (LOG.isDebugEnabled())
-                LOG.debug("flushed {} bytes to stream {}", flushed, streamId);
+                LOG.debug("flushed {} bytes to stream {} window={}/{}", flushed, streamId, session.getWindowCapacity(streamId), session.getWindowCapacity());
             if (buffer.hasRemaining())
             {
                 if (LOG.isDebugEnabled())
@@ -158,23 +166,19 @@ public class QuicStreamEndPoint extends AbstractEndPoint
 
     public void write(Callback callback, List<ByteBuffer> buffers, boolean last)
     {
-        // TODO: writing the last flag after the buffers is inefficient,
-        //  but Quiche supports it, so we need to expose the Quiche API.
-        write(Callback.from(callback.getInvocationType(), () -> finishWrite(callback, last), callback::failed), buffers.toArray(ByteBuffer[]::new));
-    }
-
-    private void finishWrite(Callback callback, boolean last)
-    {
-        try
+        ByteBuffer[] array;
+        if (last)
         {
-            if (last)
-                session.flushFinished(streamId);
-            callback.succeeded();
+            int size = buffers.size();
+            array = new ByteBuffer[size + 1];
+            IntStream.range(0, size).forEach(i -> array[i] = buffers.get(i));
+            array[size] = LAST_FLAG;
         }
-        catch (Throwable x)
+        else
         {
-            callback.failed(x);
+            array = buffers.toArray(ByteBuffer[]::new);
         }
+        write(callback, array);
     }
 
     @Override
