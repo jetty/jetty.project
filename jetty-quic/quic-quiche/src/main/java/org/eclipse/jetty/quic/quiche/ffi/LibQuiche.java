@@ -235,8 +235,8 @@ public interface LibQuiche extends Library
                            "peer_max_udp_payload_size", "peer_initial_max_data", "peer_initial_max_stream_data_bidi_local",
                            "peer_initial_max_stream_data_bidi_remote", "peer_initial_max_stream_data_uni",
                            "peer_initial_max_streams_bidi", "peer_initial_max_streams_uni", "peer_ack_delay_exponent",
-                           "peer_ack_delay_exponent", "peer_max_ack_delay", "peer_disable_active_migration",
-                           "peer_active_conn_id_limit", "peer_max_datagram_frame_size"})
+                           "peer_max_ack_delay", "peer_disable_active_migration", "peer_active_conn_id_limit",
+                           "peer_max_datagram_frame_size"})
     class quiche_stats extends Structure
     {
         // The number of QUIC packets received on this connection.
