@@ -15,8 +15,8 @@ package org.eclipse.jetty.http3.internal.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http3.ErrorCode;
 import org.eclipse.jetty.http3.frames.FrameType;
+import org.eclipse.jetty.http3.internal.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

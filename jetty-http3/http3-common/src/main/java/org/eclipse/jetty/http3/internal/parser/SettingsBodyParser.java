@@ -17,8 +17,8 @@ import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.http3.ErrorCode;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.http3.internal.ErrorCode;
 import org.eclipse.jetty.http3.internal.VarLenInt;
 
 public class SettingsBodyParser extends BodyParser

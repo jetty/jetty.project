@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.function.BooleanSupplier;
 
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http3.ErrorCode;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.internal.ErrorCode;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.util.BufferUtil;
