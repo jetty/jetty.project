@@ -2,7 +2,7 @@
   <parent>
     <artifactId>tests-parent</artifactId>
     <groupId>org.eclipse.jetty.tests</groupId>
-    <version>9.4.44-SNAPSHOT</version>
+    <version>9.4.44.v20210927</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
 
