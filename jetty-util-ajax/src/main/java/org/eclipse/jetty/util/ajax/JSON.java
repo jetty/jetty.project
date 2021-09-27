@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
@@ -97,7 +98,7 @@ public class JSON
 
     private final Map<String, Convertor> _convertors = new ConcurrentHashMap<>();
     private int _stringBufferSize = 1024;
-    private Function<List<?>, Object> _arrayConverter = List::toArray;
+    private Function<List<?>, Object> _arrayConverter = this::defaultArrayConverter;
 
     public JSON()
     {
@@ -1068,6 +1069,14 @@ public class JSON
         }
 
         return map;
+    }
+
+    private Object defaultArrayConverter(List<?> list)
+    {
+        // Call newArray() to keep backward compatibility.
+        Object[] objects = newArray(list.size());
+        IntStream.range(0, list.size()).forEach(i -> objects[i] = list.get(i));
+        return objects;
     }
 
     protected Object parseArray(Source source)
