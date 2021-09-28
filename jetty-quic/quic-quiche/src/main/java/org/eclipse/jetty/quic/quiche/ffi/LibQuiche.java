@@ -14,6 +14,9 @@
 package org.eclipse.jetty.quic.quiche.ffi;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.sun.jna.Callback;
@@ -31,7 +34,8 @@ public interface LibQuiche extends Library
     String EXPECTED_QUICHE_VERSION = "0.10.0";
 
     // load the native lib
-    LibQuiche INSTANCE = Native.load("quiche", LibQuiche.class);
+    Charset CHARSET = StandardCharsets.UTF_8;
+    LibQuiche INSTANCE = Native.load("quiche", LibQuiche.class, Map.of(Library.OPTION_STRING_ENCODING, CHARSET.name()));
 
     class Logging
     {
@@ -433,7 +437,7 @@ public interface LibQuiche extends Library
     boolean quiche_conn_peer_error(quiche_conn conn,
                                    bool_pointer is_app,
                                    uint64_t_pointer error_code,
-                                   Pointer/*const uint8_t ***/ reason,
+                                   char_pointer/*const uint8_t ***/ reason,
                                    size_t_pointer reason_len);
 
     // Returns true if a connection error was queued or sent, and updates the provided

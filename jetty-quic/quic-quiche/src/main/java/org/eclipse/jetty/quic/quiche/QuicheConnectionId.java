@@ -53,7 +53,7 @@ public class QuicheConnectionId
             hexChars[j * 2] = HEX_ARRAY[v >>> 4];
             hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
         }
-        return new String(hexChars, StandardCharsets.UTF_8);
+        return new String(hexChars, StandardCharsets.US_ASCII);
     }
 
     public static QuicheConnectionId fromCid(byte[] cid)
