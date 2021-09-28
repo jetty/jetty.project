@@ -13,18 +13,21 @@
 
 module org.eclipse.jetty.servlet
 {
-    exports org.eclipse.jetty.servlet;
-    exports org.eclipse.jetty.servlet.jmx to org.eclipse.jetty.jmx;
-    exports org.eclipse.jetty.servlet.listener;
-
-    requires transitive org.eclipse.jetty.security;
     requires org.slf4j;
 
-    // Only required if using StatisticsServlet.
-    requires static java.management;
-    requires static org.eclipse.jetty.util.ajax;
+    requires transitive org.eclipse.jetty.security;
+
     // Only required if using IntrospectorCleaner.
     requires static java.desktop;
+    // Only required if using StatisticsServlet.
+    requires static java.management;
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
+    requires static org.eclipse.jetty.util.ajax;
+
+    exports org.eclipse.jetty.servlet;
+    exports org.eclipse.jetty.servlet.listener;
+
+    exports org.eclipse.jetty.servlet.jmx to
+         org.eclipse.jetty.jmx;
 }

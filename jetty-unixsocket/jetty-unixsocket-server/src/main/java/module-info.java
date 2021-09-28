@@ -13,11 +13,12 @@
 
 module org.eclipse.jetty.unixsocket.server
 {
-    exports org.eclipse.jetty.unixsocket.server;
+    requires org.slf4j;
 
-    requires transitive org.jnrproject.enxio;
-    requires transitive org.jnrproject.unixsocket;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.unixsocket.common;
-    requires org.slf4j;
+    requires transitive org.jnrproject.enxio;
+    requires transitive org.jnrproject.unixsocket;
+
+    exports org.eclipse.jetty.unixsocket.server;
 }

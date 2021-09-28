@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.websocket.core.Extension;
-import org.eclipse.jetty.websocket.core.internal.FragmentExtension;
-import org.eclipse.jetty.websocket.core.internal.IdentityExtension;
-import org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension;
-import org.eclipse.jetty.websocket.core.internal.ValidationExtension;
-
 module org.eclipse.jetty.websocket.core.common
 {
+    requires org.eclipse.jetty.http;
+    requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.io;
+    requires transitive org.eclipse.jetty.util;
+
     exports org.eclipse.jetty.websocket.core;
     exports org.eclipse.jetty.websocket.core.exception;
 
@@ -44,16 +44,11 @@ module org.eclipse.jetty.websocket.core.common
         org.eclipse.jetty.websocket.jakarta.client,
         org.eclipse.jetty.websocket.jakarta.server;
 
-    requires org.eclipse.jetty.http;
-    requires transitive org.eclipse.jetty.io;
-    requires transitive org.eclipse.jetty.util;
-    requires org.slf4j;
-
-    uses Extension;
-
-    provides Extension with
-        FragmentExtension,
-        IdentityExtension,
-        PerMessageDeflateExtension,
-        ValidationExtension;
+    uses org.eclipse.jetty.websocket.core.Extension;
+    
+    provides org.eclipse.jetty.websocket.core.Extension with
+        org.eclipse.jetty.websocket.core.internal.FragmentExtension,
+        org.eclipse.jetty.websocket.core.internal.IdentityExtension,
+        org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension,
+        org.eclipse.jetty.websocket.core.internal.ValidationExtension;
 }

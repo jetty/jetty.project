@@ -11,10 +11,21 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.util.security.CredentialProvider;
-
 module org.eclipse.jetty.util
 {
+    // Standard Jetty Logging now.
+    requires org.slf4j;
+
+    // Required by SSL code (for X509).
+    requires transitive java.naming;
+
+    // Only required if using AppContextLeakPreventer/AWTLeakPreventer.
+    requires static java.desktop;
+    // Only required if using JavaUtilLog.
+    requires static java.logging;
+    // Only required if using DriverManagerLeakPreventer.
+    requires static java.sql;
+
     exports org.eclipse.jetty.util;
     exports org.eclipse.jetty.util.annotation;
     exports org.eclipse.jetty.util.component;
@@ -28,17 +39,5 @@ module org.eclipse.jetty.util
     exports org.eclipse.jetty.util.thread;
     exports org.eclipse.jetty.util.thread.strategy;
 
-    // Required by SSL code (for X509).
-    requires transitive java.naming;
-
-    // Standard Jetty Logging now.
-    requires org.slf4j;
-    // Only required if using DriverManagerLeakPreventer.
-    requires static java.sql;
-    // Only required if using AppContextLeakPreventer/AWTLeakPreventer.
-    requires static java.desktop;
-    // Only required if using JavaUtilLog.
-    requires static java.logging;
-
-    uses CredentialProvider;
+    uses org.eclipse.jetty.util.security.CredentialProvider;
 }
