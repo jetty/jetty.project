@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ public class LowLevelQuicheTest
 
     private InetSocketAddress clientSocketAddress;
     private InetSocketAddress serverSocketAddress;
-    private QuicheConfig quicheClientConfig;
+    private QuicheConfig clientQuicheConfig;
     private QuicheConfig serverQuicheConfig;
     private QuicheConnection.TokenMinter tokenMinter;
     private QuicheConnection.TokenValidator tokenValidator;
@@ -52,18 +53,18 @@ public class LowLevelQuicheTest
         clientSocketAddress = new InetSocketAddress("localhost", 9999);
         serverSocketAddress = new InetSocketAddress("localhost", 8888);
 
-        quicheClientConfig = new QuicheConfig();
-        quicheClientConfig.setApplicationProtos("http/0.9");
-        quicheClientConfig.setDisableActiveMigration(true);
-        quicheClientConfig.setVerifyPeer(false);
-        quicheClientConfig.setMaxIdleTimeout(1_000L);
-        quicheClientConfig.setInitialMaxData(10_000_000L);
-        quicheClientConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
-        quicheClientConfig.setInitialMaxStreamDataBidiRemote(10_000_000L);
-        quicheClientConfig.setInitialMaxStreamDataUni(10_000_000L);
-        quicheClientConfig.setInitialMaxStreamsUni(100L);
-        quicheClientConfig.setInitialMaxStreamsBidi(100L);
-        quicheClientConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
+        clientQuicheConfig = new QuicheConfig();
+        clientQuicheConfig.setApplicationProtos("http/0.9");
+        clientQuicheConfig.setDisableActiveMigration(true);
+        clientQuicheConfig.setVerifyPeer(false);
+        clientQuicheConfig.setMaxIdleTimeout(1_000L);
+        clientQuicheConfig.setInitialMaxData(10_000_000L);
+        clientQuicheConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
+        clientQuicheConfig.setInitialMaxStreamDataBidiRemote(10_000_000L);
+        clientQuicheConfig.setInitialMaxStreamDataUni(10_000_000L);
+        clientQuicheConfig.setInitialMaxStreamsUni(100L);
+        clientQuicheConfig.setInitialMaxStreamsBidi(100L);
+        clientQuicheConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
 
         SSLKeyPair serverKeyPair = new SSLKeyPair(Paths.get(Objects.requireNonNull(getClass().getResource("/keystore.p12")).toURI()).toFile(), "PKCS12", "storepwd".toCharArray(), "mykey", "storepwd".toCharArray());
         File[] pemFiles = serverKeyPair.export(new File(System.getProperty("java.io.tmpdir")));
@@ -165,6 +166,21 @@ public class LowLevelQuicheTest
         assertThat(serverQuicheConnection.isStreamFinished(0), is(true));
     }
 
+    @Test
+    public void testApplicationProtocol() throws Exception
+    {
+        serverQuicheConfig.setApplicationProtos("€");
+        clientQuicheConfig.setApplicationProtos("€");
+
+        // establish connection
+        Map.Entry<QuicheConnection, QuicheConnection> entry = connectClientToServer();
+        QuicheConnection clientQuicheConnection = entry.getKey();
+        QuicheConnection serverQuicheConnection = entry.getValue();
+
+        assertThat(clientQuicheConnection.getNegotiatedProtocol(), is("€"));
+        assertThat(serverQuicheConnection.getNegotiatedProtocol(), is("€"));
+    }
+
     private void drainServerToFeedClient(Map.Entry<QuicheConnection, QuicheConnection> entry, int expectedSize) throws IOException
     {
         QuicheConnection clientQuicheConnection = entry.getKey();
@@ -196,7 +212,7 @@ public class LowLevelQuicheTest
         ByteBuffer buffer = ByteBuffer.allocate(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN);
         ByteBuffer buffer2 = ByteBuffer.allocate(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN);
 
-        QuicheConnection clientQuicheConnection = QuicheConnection.connect(quicheClientConfig, serverSocketAddress);
+        QuicheConnection clientQuicheConnection = QuicheConnection.connect(clientQuicheConfig, serverSocketAddress);
         connectionsToDisposeOf.add(clientQuicheConnection);
 
         int drained = clientQuicheConnection.drainCipherText(buffer);
@@ -234,7 +250,12 @@ public class LowLevelQuicheTest
 
         AbstractMap.SimpleImmutableEntry<QuicheConnection, QuicheConnection> entry = new AbstractMap.SimpleImmutableEntry<>(clientQuicheConnection, serverQuicheConnection);
 
-        drainServerToFeedClient(entry, 309);
+        StringBuilder sb = new StringBuilder();
+        for (String proto : clientQuicheConfig.getApplicationProtos())
+            sb.append((char)proto.getBytes(StandardCharsets.UTF_8).length).append(proto);
+        int protosLen = sb.toString().getBytes(StandardCharsets.UTF_8).length;
+
+        drainServerToFeedClient(entry, 300 + protosLen);
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));
         assertThat(clientQuicheConnection.isConnectionEstablished(), is(true));
 
