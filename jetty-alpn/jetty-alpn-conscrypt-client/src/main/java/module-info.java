@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.alpn.conscrypt.client.ConscryptClientALPNProcessor;
-import org.eclipse.jetty.io.ssl.ALPNProcessor;
-
 module org.eclipse.jetty.alpn.conscrypt.client
 {
     requires org.conscrypt;
-    requires transitive org.eclipse.jetty.alpn.client;
     requires org.slf4j;
 
-    provides ALPNProcessor.Client with ConscryptClientALPNProcessor;
+    requires transitive org.eclipse.jetty.alpn.client;
+
+    provides org.eclipse.jetty.io.ssl.ALPNProcessor.Client with
+        org.eclipse.jetty.alpn.conscrypt.client.ConscryptClientALPNProcessor;
 }

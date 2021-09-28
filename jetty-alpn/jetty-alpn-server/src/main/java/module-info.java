@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.io.ssl.ALPNProcessor;
-
 module org.eclipse.jetty.alpn.server
 {
-    exports org.eclipse.jetty.alpn.server;
-
-    requires transitive org.eclipse.jetty.server;
     requires org.slf4j;
 
-    uses ALPNProcessor.Server;
+    requires transitive org.eclipse.jetty.server;
+
+    exports org.eclipse.jetty.alpn.server;
+
+    uses org.eclipse.jetty.io.ssl.ALPNProcessor.Server;
 }

@@ -13,20 +13,23 @@
 
 module org.eclipse.jetty.client
 {
+    requires org.eclipse.jetty.alpn.client;
+    requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.http;
+
+    // Only required if using JMX.
+    requires static java.management;
+    // Only required if using SPNEGO.
+    requires static java.security.jgss;
+    requires static org.eclipse.jetty.jmx;
+
     exports org.eclipse.jetty.client;
     exports org.eclipse.jetty.client.api;
     exports org.eclipse.jetty.client.dynamic;
     exports org.eclipse.jetty.client.http;
-    exports org.eclipse.jetty.client.jmx to org.eclipse.jetty.jmx;
     exports org.eclipse.jetty.client.util;
 
-    requires org.eclipse.jetty.alpn.client;
-    requires transitive org.eclipse.jetty.http;
-    requires org.slf4j;
-
-    // Only required if using SPNEGO.
-    requires static java.security.jgss;
-    // Only required if using JMX.
-    requires static java.management;
-    requires static org.eclipse.jetty.jmx;
+    exports org.eclipse.jetty.client.jmx to
+        org.eclipse.jetty.jmx;
 }

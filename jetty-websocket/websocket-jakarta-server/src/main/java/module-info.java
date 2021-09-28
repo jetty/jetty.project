@@ -11,25 +11,24 @@
 // ========================================================================
 //
 
-import jakarta.servlet.ServletContainerInitializer;
-import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.websocket.jakarta.server.config.ContainerDefaultConfigurator;
-import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
-import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-
 module org.eclipse.jetty.websocket.jakarta.server
 {
-    exports org.eclipse.jetty.websocket.jakarta.server.config;
-
     requires org.eclipse.jetty.websocket.core.server;
     requires org.eclipse.jetty.websocket.jakarta.common;
     requires org.eclipse.jetty.websocket.servlet;
     requires org.slf4j;
+
     requires transitive org.eclipse.jetty.webapp;
     requires transitive org.eclipse.jetty.websocket.jakarta.client;
 
-    provides Configuration with JakartaWebSocketConfiguration;
-    provides ServerEndpointConfig.Configurator with ContainerDefaultConfigurator;
-    provides ServletContainerInitializer with JakartaWebSocketServletContainerInitializer;
+    exports org.eclipse.jetty.websocket.jakarta.server.config;
+
+    provides jakarta.servlet.ServletContainerInitializer with
+        org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+
+    provides jakarta.websocket.server.ServerEndpointConfig.Configurator with
+        org.eclipse.jetty.websocket.jakarta.server.config.ContainerDefaultConfigurator;
+
+    provides  org.eclipse.jetty.webapp.Configuration with
+        org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketConfiguration;
 }

@@ -13,12 +13,13 @@
 
 module org.eclipse.jetty.websocket.jakarta.common
 {
+    requires org.slf4j;
+
+    requires transitive jetty.websocket.api;
+    requires transitive org.eclipse.jetty.websocket.core.client;
+
     exports org.eclipse.jetty.websocket.jakarta.common;
     exports org.eclipse.jetty.websocket.jakarta.common.decoders;
     exports org.eclipse.jetty.websocket.jakarta.common.encoders;
     exports org.eclipse.jetty.websocket.jakarta.common.messages;
-
-    requires org.slf4j;
-    requires transitive jetty.websocket.api;
-    requires transitive org.eclipse.jetty.websocket.core.client;
 }

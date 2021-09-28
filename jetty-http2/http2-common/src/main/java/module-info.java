@@ -13,13 +13,14 @@
 
 module org.eclipse.jetty.http2.common
 {
+    requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.http2.hpack;
+
     exports org.eclipse.jetty.http2;
     exports org.eclipse.jetty.http2.api;
     exports org.eclipse.jetty.http2.api.server;
     exports org.eclipse.jetty.http2.frames;
     exports org.eclipse.jetty.http2.generator;
     exports org.eclipse.jetty.http2.parser;
-
-    requires transitive org.eclipse.jetty.http2.hpack;
-    requires org.slf4j;
 }

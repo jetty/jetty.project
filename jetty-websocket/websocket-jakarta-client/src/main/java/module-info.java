@@ -11,20 +11,22 @@
 // ========================================================================
 //
 
-import jakarta.websocket.ContainerProvider;
-import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
-
 module org.eclipse.jetty.websocket.jakarta.client
 {
-    exports org.eclipse.jetty.websocket.jakarta.client;
-    exports org.eclipse.jetty.websocket.jakarta.client.internal to org.eclipse.jetty.websocket.jakarta.server;
-
-    requires static jetty.servlet.api;
-    requires org.slf4j;
     requires org.eclipse.jetty.websocket.core.client;
     requires org.eclipse.jetty.websocket.jakarta.common;
-    requires transitive org.eclipse.jetty.client;
-    requires transitive jetty.websocket.api;
+    requires org.slf4j;
 
-    provides ContainerProvider with JakartaWebSocketClientContainerProvider;
+    requires transitive jetty.websocket.api;
+    requires transitive org.eclipse.jetty.client;
+
+    requires static jetty.servlet.api;
+
+    exports org.eclipse.jetty.websocket.jakarta.client;
+
+    exports org.eclipse.jetty.websocket.jakarta.client.internal to
+        org.eclipse.jetty.websocket.jakarta.server;
+
+    provides jakarta.websocket.ContainerProvider with
+        org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
 }

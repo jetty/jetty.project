@@ -11,15 +11,13 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.logging.JettyLoggingServiceProvider;
-import org.slf4j.spi.SLF4JServiceProvider;
-
 module org.eclipse.jetty.logging
 {
-    exports org.eclipse.jetty.logging;
-
     requires transitive java.management;
     requires transitive org.slf4j;
 
-    provides SLF4JServiceProvider with JettyLoggingServiceProvider;
+    exports org.eclipse.jetty.logging;
+
+    provides org.slf4j.spi.SLF4JServiceProvider with
+        org.eclipse.jetty.logging.JettyLoggingServiceProvider;
 }

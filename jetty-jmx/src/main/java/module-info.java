@@ -13,14 +13,15 @@
 
 module org.eclipse.jetty.jmx
 {
-    exports org.eclipse.jetty.jmx;
+    requires org.slf4j;
 
     // Applications that use ObjectMBean must use JMX classes too.
     requires transitive java.management;
     requires transitive org.eclipse.jetty.util;
-    requires org.slf4j;
 
     // Only required if using ConnectorServer.
     requires static java.management.rmi;
     requires static java.rmi;
+
+    exports org.eclipse.jetty.jmx;
 }
