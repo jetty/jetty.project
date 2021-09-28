@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -45,6 +46,7 @@ public class QuicheConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicheConnection.class);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final Charset APPLICATION_PROTOCOL_CHARSET = StandardCharsets.UTF_8;
 
     static
     {
@@ -103,9 +105,9 @@ public class QuicheConnection
         {
             StringBuilder sb = new StringBuilder();
             for (String proto : applicationProtos)
-                sb.append((char)proto.length()).append(proto);
+                sb.append((char)proto.getBytes(APPLICATION_PROTOCOL_CHARSET).length).append(proto);
             String theProtos = sb.toString();
-            LibQuiche.INSTANCE.quiche_config_set_application_protos(quicheConfig, theProtos, new size_t(theProtos.length()));
+            LibQuiche.INSTANCE.quiche_config_set_application_protos(quicheConfig, theProtos, new size_t(theProtos.getBytes(APPLICATION_PROTOCOL_CHARSET).length));
         }
 
         QuicheConfig.CongestionControl cc = config.getCongestionControl();
@@ -473,7 +475,7 @@ public class QuicheConnection
             char_pointer out = new char_pointer();
             size_t_pointer outLen = new size_t_pointer();
             LibQuiche.INSTANCE.quiche_conn_application_proto(quicheConn, out, outLen);
-            return out.getValueAsString((int)outLen.getValue(), StandardCharsets.UTF_8);
+            return out.getValueAsString((int)outLen.getValue(), APPLICATION_PROTOCOL_CHARSET);
         }
     }
 
