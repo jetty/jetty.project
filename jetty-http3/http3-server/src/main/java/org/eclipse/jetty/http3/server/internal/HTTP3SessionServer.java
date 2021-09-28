@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.server.internal;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
-import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
@@ -63,8 +62,7 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("received request {}#{} on {}", frame, streamId, this);
-            Stream.Listener streamListener = notifyRequest(stream, frame);
-            stream.setListener(streamListener);
+            stream.processRequest(frame);
         }
         else
         {
@@ -72,22 +70,8 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         }
     }
 
-    private Stream.Listener notifyRequest(HTTP3Stream stream, HeadersFrame frame)
-    {
-        Server.Listener listener = getListener();
-        try
-        {
-            return listener.onRequest(stream, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-            return null;
-        }
-    }
-
     @Override
-    protected void writeFrame(long streamId, Frame frame, Callback callback)
+    public void writeFrame(long streamId, Frame frame, Callback callback)
     {
         getProtocolSession().writeFrame(streamId, frame, callback);
     }

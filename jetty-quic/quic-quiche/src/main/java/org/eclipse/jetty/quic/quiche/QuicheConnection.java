@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicStampedReference;
 
 import org.eclipse.jetty.quic.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.quic.quiche.ffi.SizedStructure;
@@ -324,7 +325,7 @@ public class QuicheConnection
         LOG.debug("accepted, immediately receiving the same packet - remaining in buffer: {}", packetRead.remaining());
         while (packetRead.hasRemaining())
         {
-            quicheConnection.feedCipherText(packetRead, peer);
+            quicheConnection.feedCipherBytes(packetRead, peer);
         }
         return quicheConnection;
     }
@@ -370,7 +371,7 @@ public class QuicheConnection
      * @return how many bytes were consumed.
      * @throws IOException
      */
-    public int feedCipherText(ByteBuffer buffer, SocketAddress peer) throws IOException
+    public int feedCipherBytes(ByteBuffer buffer, SocketAddress peer) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -395,7 +396,7 @@ public class QuicheConnection
      * @return how many bytes were added to the buffer.
      * @throws IOException
      */
-    public int drainCipherText(ByteBuffer buffer) throws IOException
+    public int drainCipherBytes(ByteBuffer buffer) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -479,18 +480,24 @@ public class QuicheConnection
         }
     }
 
-    public boolean close() throws IOException
+    public boolean close(int error, String reason)
     {
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IOException("Quiche connection was released");
-            int rc = LibQuiche.INSTANCE.quiche_conn_close(quicheConn, true, new uint64_t(0), null, new size_t(0));
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("connection was released");
+                return false;
+            }
+            int rc = LibQuiche.INSTANCE.quiche_conn_close(quicheConn, true, new uint64_t(error), reason, new size_t(reason == null ? 0 : reason.length()));
             if (rc == 0)
                 return true;
             if (rc == LibQuiche.quiche_error.QUICHE_ERR_DONE)
                 return false;
-            throw new IOException("failed to close connection: " + LibQuiche.quiche_error.errToString(rc));
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not close connection: {}", LibQuiche.quiche_error.errToString(rc));
+            return false;
         }
     }
 
@@ -570,12 +577,12 @@ public class QuicheConnection
         }
     }
 
-    public int feedClearTextForStream(long streamId, ByteBuffer buffer) throws IOException
+    public int feedClearBytesForStream(long streamId, ByteBuffer buffer) throws IOException
     {
-        return feedClearTextForStream(streamId, buffer, false);
+        return feedClearBytesForStream(streamId, buffer, false);
     }
 
-    public int feedClearTextForStream(long streamId, ByteBuffer buffer, boolean last) throws IOException
+    public int feedClearBytesForStream(long streamId, ByteBuffer buffer, boolean last) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -591,7 +598,7 @@ public class QuicheConnection
         }
     }
 
-    public int drainClearTextForStream(long streamId, ByteBuffer buffer) throws IOException
+    public int drainClearBytesForStream(long streamId, ByteBuffer buffer) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -615,6 +622,22 @@ public class QuicheConnection
             if (quicheConn == null)
                 throw new IllegalStateException("Quiche connection was released");
             return LibQuiche.INSTANCE.quiche_conn_stream_finished(quicheConn, new uint64_t(streamId));
+        }
+    }
+
+    public AtomicStampedReference<String> getRemoteCloseInfo()
+    {
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("Quiche connection was released");
+            bool_pointer app = new bool_pointer();
+            uint64_t_pointer error = new uint64_t_pointer();
+            char_pointer reason = new char_pointer();
+            size_t_pointer reasonLength = new size_t_pointer();
+            if (LibQuiche.INSTANCE.quiche_conn_peer_error(quicheConn, app, error, reason.getPointer(), reasonLength))
+                return new AtomicStampedReference<>(reason.getValueAsString((int)reasonLength.getValue(), StandardCharsets.UTF_8), (int)error.getValue());
+            return null;
         }
     }
 
