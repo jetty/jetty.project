@@ -38,6 +38,7 @@ public abstract class HTTP3Session implements Session, ParserListener
     private final Map<Long, HTTP3Stream> streams = new ConcurrentHashMap<>();
     private final ProtocolSession session;
     private final Listener listener;
+    private CloseState closeState = CloseState.CLOSED;
 
     public HTTP3Session(ProtocolSession session, Listener listener)
     {
@@ -57,6 +58,7 @@ public abstract class HTTP3Session implements Session, ParserListener
 
     public void onOpen()
     {
+        closeState = CloseState.NOT_CLOSED;
     }
 
     @Override
@@ -69,6 +71,17 @@ public abstract class HTTP3Session implements Session, ParserListener
     public SocketAddress getRemoteSocketAddress()
     {
         return getProtocolSession().getQuicSession().getRemoteAddress();
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return closeState != CloseState.NOT_CLOSED;
+    }
+
+    public void close(int error, String reason)
+    {
+        getProtocolSession().close(error, reason);
     }
 
     protected HTTP3Stream createStream(QuicStreamEndPoint endPoint)
@@ -90,7 +103,7 @@ public abstract class HTTP3Session implements Session, ParserListener
         return streams.get(streamId);
     }
 
-    protected abstract void writeFrame(long streamId, Frame frame, Callback callback);
+    public abstract void writeFrame(long streamId, Frame frame, Callback callback);
 
     public Map<Long, Long> onPreface()
     {
@@ -147,21 +160,7 @@ public abstract class HTTP3Session implements Session, ParserListener
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("received trailer {}#{} on {}", frame, streamId, this);
-            notifyTrailer(stream, frame);
-        }
-    }
-
-    private void notifyTrailer(HTTP3Stream stream, HeadersFrame frame)
-    {
-        try
-        {
-            Stream.Listener listener = stream.getListener();
-            if (listener != null)
-                listener.onTrailer(stream, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
+            stream.processTrailer(frame);
         }
     }
 
@@ -170,6 +169,11 @@ public abstract class HTTP3Session implements Session, ParserListener
     {
         if (LOG.isDebugEnabled())
             LOG.debug("received {}#{} on {}", frame, streamId, this);
+        HTTP3Stream stream = getStream(streamId);
+        if (stream != null)
+            stream.processData(frame);
+        else
+            closeAndNotifyFailure(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
     }
 
     public void onDataAvailable(long streamId)
@@ -177,14 +181,49 @@ public abstract class HTTP3Session implements Session, ParserListener
         if (LOG.isDebugEnabled())
             LOG.debug("notifying data available for stream #{} on {}", streamId, this);
         HTTP3Stream stream = getStream(streamId);
+        notifyDataAvailable(stream);
+    }
+
+    private void notifyDataAvailable(HTTP3Stream stream)
+    {
         Stream.Listener listener = stream.getListener();
-        if (listener != null)
-            listener.onDataAvailable(stream);
+        try
+        {
+            if (listener != null)
+                listener.onDataAvailable(stream);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
+    }
+
+    void closeAndNotifyFailure(int error, String reason)
+    {
+        close(error, reason);
+        notifySessionFailure(error, reason);
+    }
+
+    public void notifySessionFailure(int error, String reason)
+    {
+        try
+        {
+            listener.onSessionFailure(this, error, reason);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
     }
 
     @Override
     public String toString()
     {
         return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+    }
+
+    private enum CloseState
+    {
+        NOT_CLOSED, CLOSED
     }
 }

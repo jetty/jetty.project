@@ -102,7 +102,7 @@ public class LowLevelQuicheTest
         QuicheConnection serverQuicheConnection = entry.getValue();
 
         // client sends 16 bytes of payload over stream 0
-        assertThat(clientQuicheConnection.feedClearTextForStream(0, ByteBuffer.allocate(16)
+        assertThat(clientQuicheConnection.feedClearBytesForStream(0, ByteBuffer.allocate(16)
             .putInt(0xdeadbeef)
             .putInt(0xcafebabe)
             .putInt(0xdeadc0de)
@@ -116,7 +116,7 @@ public class LowLevelQuicheTest
         assertThat(readableStreamIds.get(0), is(0L));
 
         // server reads 16 bytes from stream 0
-        assertThat(serverQuicheConnection.drainClearTextForStream(0, ByteBuffer.allocate(1000)), is(16));
+        assertThat(serverQuicheConnection.drainClearBytesForStream(0, ByteBuffer.allocate(1000)), is(16));
 
         // assert that stream 0 is not finished on server
         assertThat(serverQuicheConnection.isStreamFinished(0), is(false));
@@ -142,7 +142,7 @@ public class LowLevelQuicheTest
         QuicheConnection serverQuicheConnection = entry.getValue();
 
         // client sends 16 bytes of payload over stream 0 and finish it
-        assertThat(clientQuicheConnection.feedClearTextForStream(0, ByteBuffer.allocate(16)
+        assertThat(clientQuicheConnection.feedClearBytesForStream(0, ByteBuffer.allocate(16)
             .putInt(0xdeadbeef)
             .putInt(0xcafebabe)
             .putInt(0xdeadc0de)
@@ -160,7 +160,7 @@ public class LowLevelQuicheTest
         assertThat(serverQuicheConnection.isStreamFinished(0), is(false));
 
         // server reads 16 bytes from stream 0
-        assertThat(serverQuicheConnection.drainClearTextForStream(0, ByteBuffer.allocate(1000)), is(16));
+        assertThat(serverQuicheConnection.drainClearBytesForStream(0, ByteBuffer.allocate(1000)), is(16));
 
         // assert that stream 0 is finished on server
         assertThat(serverQuicheConnection.isStreamFinished(0), is(true));
@@ -187,10 +187,10 @@ public class LowLevelQuicheTest
         QuicheConnection serverQuicheConnection = entry.getValue();
         ByteBuffer buffer = ByteBuffer.allocate(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN);
 
-        int drained = serverQuicheConnection.drainCipherText(buffer);
+        int drained = serverQuicheConnection.drainCipherBytes(buffer);
         assertThat(drained, is(expectedSize));
         buffer.flip();
-        int fed = clientQuicheConnection.feedCipherText(buffer, serverSocketAddress);
+        int fed = clientQuicheConnection.feedCipherBytes(buffer, serverSocketAddress);
         assertThat(fed, is(expectedSize));
     }
 
@@ -200,10 +200,10 @@ public class LowLevelQuicheTest
         QuicheConnection serverQuicheConnection = entry.getValue();
         ByteBuffer buffer = ByteBuffer.allocate(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN);
 
-        int drained = clientQuicheConnection.drainCipherText(buffer);
+        int drained = clientQuicheConnection.drainCipherBytes(buffer);
         assertThat(drained, is(expectedSize));
         buffer.flip();
-        int fed = serverQuicheConnection.feedCipherText(buffer, clientSocketAddress);
+        int fed = serverQuicheConnection.feedCipherBytes(buffer, clientSocketAddress);
         assertThat(fed, is(expectedSize));
     }
 
@@ -215,7 +215,7 @@ public class LowLevelQuicheTest
         QuicheConnection clientQuicheConnection = QuicheConnection.connect(clientQuicheConfig, serverSocketAddress);
         connectionsToDisposeOf.add(clientQuicheConnection);
 
-        int drained = clientQuicheConnection.drainCipherText(buffer);
+        int drained = clientQuicheConnection.drainCipherBytes(buffer);
         assertThat(drained, is(1200));
         buffer.flip();
 
@@ -225,11 +225,11 @@ public class LowLevelQuicheTest
         assertThat(negotiated, is(true));
         buffer2.flip();
 
-        int fed = clientQuicheConnection.feedCipherText(buffer2, serverSocketAddress);
+        int fed = clientQuicheConnection.feedCipherBytes(buffer2, serverSocketAddress);
         assertThat(fed, is(79));
 
         buffer.clear();
-        drained = clientQuicheConnection.drainCipherText(buffer);
+        drained = clientQuicheConnection.drainCipherBytes(buffer);
         assertThat(drained, is(1200));
         buffer.flip();
 
@@ -238,11 +238,11 @@ public class LowLevelQuicheTest
         connectionsToDisposeOf.add(serverQuicheConnection);
 
         buffer.clear();
-        drained = serverQuicheConnection.drainCipherText(buffer);
+        drained = serverQuicheConnection.drainCipherBytes(buffer);
         assertThat(drained, is(1200));
         buffer.flip();
 
-        fed = clientQuicheConnection.feedCipherText(buffer, serverSocketAddress);
+        fed = clientQuicheConnection.feedCipherBytes(buffer, serverSocketAddress);
         assertThat(fed, is(1200));
 
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));

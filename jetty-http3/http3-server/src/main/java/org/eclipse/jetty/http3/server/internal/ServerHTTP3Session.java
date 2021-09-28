@@ -27,6 +27,7 @@ import org.eclipse.jetty.http3.internal.InstructionHandler;
 import org.eclipse.jetty.http3.internal.UnidirectionalStreamConnection;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
+import org.eclipse.jetty.quic.common.CloseInfo;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.quic.server.ServerProtocolSession;
@@ -137,6 +138,14 @@ public class ServerHTTP3Session extends ServerProtocolSession
         }
     }
 
+    @Override
+    protected void onClosed(CloseInfo closeInfo)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("session closed remotely {} {}", closeInfo, this);
+        notifySessionFailure(closeInfo);
+    }
+
     private void configureUnidirectionalStreamEndPoint(QuicStreamEndPoint endPoint)
     {
         UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), encoder, decoder, applicationSession);
@@ -157,9 +166,16 @@ public class ServerHTTP3Session extends ServerProtocolSession
         applicationSession.onDataAvailable(streamId);
     }
 
-    @Override
-    public String toString()
+    private void notifySessionFailure(CloseInfo closeInfo)
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        Session.Listener listener = applicationSession.getListener();
+        try
+        {
+            listener.onSessionFailure(applicationSession, closeInfo.error(), closeInfo.reason());
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
     }
 }

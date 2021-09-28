@@ -50,6 +50,14 @@ public interface Session
     }
 
     /**
+     * @return whether this session is not open
+     */
+    public default boolean isClosed()
+    {
+        return false;
+    }
+
+    /**
      * <p>The client-side HTTP/3 API representing a connection with a server.</p>
      * <p>Once a {@link Session} has been obtained, it can be used to make HTTP/3 requests:</p>
      * <pre>
@@ -68,7 +76,7 @@ public interface Session
      * @see Stream
      * @see Stream.Listener
      */
-    public interface Client
+    public interface Client extends Session
     {
         /**
          * <p>Makes a request by creating a HTTP/3 stream and sending the given HEADERS frame.</p>
@@ -91,7 +99,7 @@ public interface Session
      * <p>The server-side HTTP/3 API representing a connection with a client.</p>
      * <p>To receive HTTP/3 request events, see {@link Session.Server.Listener#onRequest(Stream, HeadersFrame)}.</p>
      */
-    public interface Server
+    public interface Server extends Session
     {
         /**
          * <p>The server-side specific {@link Session.Listener}.</p>
@@ -105,36 +113,6 @@ public interface Session
              */
             public default void onAccept(Session session)
             {
-            }
-
-            /**
-             * <p>Callback method invoked when a request is received.</p>
-             * <p>Applications should implement this method to process HTTP/3 requests,
-             * typically providing an HTTP/3 response via {@link Stream#respond(HeadersFrame)}:</p>
-             * <pre>
-             * class MyServer implements Session.Server.Listener
-             * {
-             *     &#64;Override
-             *     public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
-             *     {
-             *         // Send a response.
-             *         var response = new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY);
-             *         stream.respond(new HeadersFrame(response, true));
-             *     }
-             * }
-             * </pre>
-             * <p>To read request content, applications should call
-             * {@link Stream#demand()} and return a {@link Stream.Listener} that overrides
-             * {@link Stream.Listener#onDataAvailable(Stream)}.</p>
-             *
-             * @param stream the stream associated with the request
-             * @param frame the HEADERS frame containing the request headers
-             * @return a {@link Stream.Listener} that will be notified of stream events
-             * @see Stream.Listener#onDataAvailable(Stream)
-             */
-            public default Stream.Listener onRequest(Stream stream, HeadersFrame frame)
-            {
-                return null;
             }
         }
     }
@@ -168,6 +146,47 @@ public interface Session
          * @param frame the SETTINGS frame received
          */
         public default void onSettings(Session session, SettingsFrame frame)
+        {
+        }
+
+        /**
+         * <p>Callback method invoked when a request is received.</p>
+         * <p>Applications should implement this method to process HTTP/3 requests,
+         * typically providing an HTTP/3 response via {@link Stream#respond(HeadersFrame)}:</p>
+         * <pre>
+         * class MyServer implements Session.Server.Listener
+         * {
+         *     &#64;Override
+         *     public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+         *     {
+         *         // Send a response.
+         *         var response = new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY);
+         *         stream.respond(new HeadersFrame(response, true));
+         *     }
+         * }
+         * </pre>
+         * <p>To read request content, applications should call
+         * {@link Stream#demand()} and return a {@link Stream.Listener} that overrides
+         * {@link Stream.Listener#onDataAvailable(Stream)}.</p>
+         *
+         * @param stream the stream associated with the request
+         * @param frame the HEADERS frame containing the request headers
+         * @return a {@link Stream.Listener} that will be notified of stream events
+         * @see Stream.Listener#onDataAvailable(Stream)
+         */
+        public default Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+        {
+            return null;
+        }
+
+        /**
+         * <p>Callback method invoked when a failure has been detected for this session.</p>
+         *
+         * @param session the session
+         * @param error the error code
+         * @param reason the error reason
+         */
+        public default void onSessionFailure(Session session, int error, String reason)
         {
         }
     }

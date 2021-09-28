@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.client;
 
+import org.eclipse.jetty.quic.common.CloseInfo;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
@@ -53,5 +54,13 @@ public class ClientProtocolSession extends ProtocolSession
         if (streamEndPoint != null)
             return streamEndPoint.onReadable();
         return false;
+    }
+
+    @Override
+    protected void onClosed(CloseInfo closeInfo)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("session closed remotely {} {}", closeInfo, this);
+        // TODO: should probably close the stream.
     }
 }

@@ -52,6 +52,11 @@ public abstract class ProtocolSession
                     processWritableStreams();
                     if (processReadableStreams())
                         continue;
+
+                    CloseInfo closeInfo = session.getRemoteCloseInfo();
+                    if (closeInfo != null)
+                        onClosed(closeInfo);
+
                     // Exit if did not process any stream and we are idle.
                     if (active.decrementAndGet() == 0)
                         break;
@@ -113,6 +118,19 @@ public abstract class ProtocolSession
         endPoint.setConnection(connection);
         endPoint.onOpen();
         connection.onOpen();
+    }
+
+    public boolean close(int error, String reason)
+    {
+        return getQuicSession().close(error, reason);
+    }
+
+    protected abstract void onClosed(CloseInfo closeInfo);
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), getQuicSession());
     }
 
     public interface Factory

@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicStampedReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -92,6 +93,14 @@ public abstract class QuicSession
         return executor;
     }
 
+    public CloseInfo getRemoteCloseInfo()
+    {
+        AtomicStampedReference<String> info = quicheConnection.getRemoteCloseInfo();
+        if (info != null)
+            return new CloseInfo(info.getStamp(), info.getReference());
+        return null;
+    }
+
     public Scheduler getScheduler()
     {
         return scheduler;
@@ -130,14 +139,14 @@ public abstract class QuicSession
 
     public int fill(long streamId, ByteBuffer buffer) throws IOException
     {
-        int drained = quicheConnection.drainClearTextForStream(streamId, buffer);
+        int drained = quicheConnection.drainClearBytesForStream(streamId, buffer);
         flush();
         return drained;
     }
 
     public int flush(long streamId, ByteBuffer buffer, boolean last) throws IOException
     {
-        int flushed = quicheConnection.feedClearTextForStream(streamId, buffer, last);
+        int flushed = quicheConnection.feedClearBytesForStream(streamId, buffer, last);
         flush();
         return flushed;
     }
@@ -205,9 +214,9 @@ public abstract class QuicSession
         this.remoteAddress = remoteAddress;
 
         int remaining = cipherBufferIn.remaining();
-        int accepted = quicheConnection.feedCipherText(cipherBufferIn, remoteAddress);
         if (LOG.isDebugEnabled())
-            LOG.debug("feeding {}/{} cipher bytes to cid={}", accepted, remaining, quicheConnectionId);
+            LOG.debug("feeding {} cipher bytes to {}", remaining, this);
+        int accepted = quicheConnection.feedCipherBytes(cipherBufferIn, remoteAddress);
         if (accepted != remaining)
             throw new IllegalStateException();
 
@@ -281,25 +290,25 @@ public abstract class QuicSession
     public void flush()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("flushing session cid={}", quicheConnectionId);
+            LOG.debug("flushing {}", this);
         flusher.iterate();
     }
 
     public QuicStreamEndPoint getOrCreateStreamEndPoint(long streamId, Consumer<QuicStreamEndPoint> consumer)
     {
-        QuicStreamEndPoint endPoint = endpoints.compute(streamId, (sid, quicStreamEndPoint) ->
+        QuicStreamEndPoint endPoint = endpoints.compute(streamId, (id, quicStreamEndPoint) ->
         {
             if (quicStreamEndPoint == null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("creating endpoint for stream {}", sid);
+                    LOG.debug("creating endpoint for stream {} for {}", id, this);
                 quicStreamEndPoint = newQuicStreamEndPoint(streamId);
                 consumer.accept(quicStreamEndPoint);
             }
             return quicStreamEndPoint;
         });
         if (LOG.isDebugEnabled())
-            LOG.debug("returning endpoint for stream {}", streamId);
+            LOG.debug("returning endpoint for stream {} for {}", streamId, this);
         return endPoint;
     }
 
@@ -311,15 +320,15 @@ public abstract class QuicSession
     public void close()
     {
         if (quicheConnectionId == null)
-            close(new IOException("Quic connection refused"));
+            close(new IOException("connection refused"));
         else
-            close(new IOException("Quic connection closed"));
+            close(new IOException("connection closed"));
     }
 
     private void close(Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("closing Quic session cid={}", quicheConnectionId);
+            LOG.debug("closing {}", this);
         try
         {
             endpoints.values().forEach(QuicStreamEndPoint::close);
@@ -334,13 +343,18 @@ public abstract class QuicSession
             quicheConnection.dispose();
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("closed Quic session cid={}", quicheConnectionId);
+            LOG.debug("closed {}", this);
+    }
+
+    public boolean close(int error, String reason)
+    {
+        return quicheConnection.close(error, reason);
     }
 
     @Override
     public String toString()
     {
-        return getClass().getSimpleName() + " id=" + quicheConnectionId;
+        return String.format("%s@%x[id=%s]", getClass().getSimpleName(), hashCode(), quicheConnectionId);
     }
 
     private class Flusher extends IteratingCallback
@@ -379,9 +393,9 @@ public abstract class QuicSession
             // TODO make the buffer size configurable
             cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
             int pos = BufferUtil.flipToFill(cipherBuffer);
-            int drained = quicheConnection.drainCipherText(cipherBuffer);
+            int drained = quicheConnection.drainCipherBytes(cipherBuffer);
             if (LOG.isDebugEnabled())
-                LOG.debug("drained {} byte(s) of cipher text from quiche", drained);
+                LOG.debug("drained {} byte(s) of cipher text from {}", drained, this);
             long nextTimeoutInMs = quicheConnection.nextTimeout();
             if (LOG.isDebugEnabled())
                 LOG.debug("next quiche timeout: {} ms", nextTimeoutInMs);

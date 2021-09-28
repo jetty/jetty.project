@@ -64,25 +64,11 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("received response {}#{} on {}", frame, streamId, this);
-            notifyResponse(stream, frame);
+            stream.processResponse(frame);
         }
         else
         {
             super.onHeaders(streamId, frame);
-        }
-    }
-
-    private void notifyResponse(HTTP3Stream stream, HeadersFrame frame)
-    {
-        Stream.Listener listener = stream.getListener();
-        try
-        {
-            if (listener != null)
-                listener.onResponse(stream, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
         }
     }
 
@@ -105,7 +91,7 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     }
 
     @Override
-    protected void writeFrame(long streamId, Frame frame, Callback callback)
+    public void writeFrame(long streamId, Frame frame, Callback callback)
     {
         getProtocolSession().writeFrame(streamId, frame, callback);
     }
