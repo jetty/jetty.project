@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -252,8 +251,8 @@ public class LowLevelQuicheTest
 
         StringBuilder sb = new StringBuilder();
         for (String proto : clientQuicheConfig.getApplicationProtos())
-            sb.append((char)proto.getBytes(StandardCharsets.UTF_8).length).append(proto);
-        int protosLen = sb.toString().getBytes(StandardCharsets.UTF_8).length;
+            sb.append((char)proto.getBytes(LibQuiche.CHARSET).length).append(proto);
+        int protosLen = sb.toString().getBytes(LibQuiche.CHARSET).length;
 
         drainServerToFeedClient(entry, 300 + protosLen);
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));

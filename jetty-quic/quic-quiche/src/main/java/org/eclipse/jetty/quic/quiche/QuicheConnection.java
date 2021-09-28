@@ -17,8 +17,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +45,6 @@ public class QuicheConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicheConnection.class);
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    private static final Charset APPLICATION_PROTOCOL_CHARSET = StandardCharsets.UTF_8;
 
     static
     {
@@ -106,9 +103,9 @@ public class QuicheConnection
         {
             StringBuilder sb = new StringBuilder();
             for (String proto : applicationProtos)
-                sb.append((char)proto.getBytes(APPLICATION_PROTOCOL_CHARSET).length).append(proto);
+                sb.append((char)proto.getBytes(LibQuiche.CHARSET).length).append(proto);
             String theProtos = sb.toString();
-            LibQuiche.INSTANCE.quiche_config_set_application_protos(quicheConfig, theProtos, new size_t(theProtos.getBytes(APPLICATION_PROTOCOL_CHARSET).length));
+            LibQuiche.INSTANCE.quiche_config_set_application_protos(quicheConfig, theProtos, new size_t(theProtos.getBytes(LibQuiche.CHARSET).length));
         }
 
         QuicheConfig.CongestionControl cc = config.getCongestionControl();
@@ -476,7 +473,7 @@ public class QuicheConnection
             char_pointer out = new char_pointer();
             size_t_pointer outLen = new size_t_pointer();
             LibQuiche.INSTANCE.quiche_conn_application_proto(quicheConn, out, outLen);
-            return out.getValueAsString((int)outLen.getValue(), APPLICATION_PROTOCOL_CHARSET);
+            return out.getValueAsString((int)outLen.getValue(), LibQuiche.CHARSET);
         }
     }
 
@@ -490,7 +487,8 @@ public class QuicheConnection
                     LOG.debug("connection was released");
                 return false;
             }
-            int rc = LibQuiche.INSTANCE.quiche_conn_close(quicheConn, true, new uint64_t(error), reason, new size_t(reason == null ? 0 : reason.length()));
+            int length = reason == null ? 0 : reason.getBytes(LibQuiche.CHARSET).length;
+            int rc = LibQuiche.INSTANCE.quiche_conn_close(quicheConn, true, new uint64_t(error), reason, new size_t(length));
             if (rc == 0)
                 return true;
             if (rc == LibQuiche.quiche_error.QUICHE_ERR_DONE)
@@ -635,8 +633,8 @@ public class QuicheConnection
             uint64_t_pointer error = new uint64_t_pointer();
             char_pointer reason = new char_pointer();
             size_t_pointer reasonLength = new size_t_pointer();
-            if (LibQuiche.INSTANCE.quiche_conn_peer_error(quicheConn, app, error, reason.getPointer(), reasonLength))
-                return new AtomicStampedReference<>(reason.getValueAsString((int)reasonLength.getValue(), StandardCharsets.UTF_8), (int)error.getValue());
+            if (LibQuiche.INSTANCE.quiche_conn_peer_error(quicheConn, app, error, reason, reasonLength))
+                return new AtomicStampedReference<>(reason.getValueAsString((int)reasonLength.getValue(), LibQuiche.CHARSET), (int)error.getValue());
             return null;
         }
     }
