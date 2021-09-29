@@ -99,7 +99,11 @@ public class HeadersBodyParser extends BodyParser
                             byteBuffers.clear();
                         }
 
-                        return decode(encoded) ? Result.WHOLE_FRAME : Result.NO_FRAME;
+                        // If the buffer contains another frame that
+                        // needs to be parsed, then it's not the last frame.
+                        boolean last = isLast.getAsBoolean() && !buffer.hasRemaining();
+
+                        return decode(encoded, last) ? Result.WHOLE_FRAME : Result.NO_FRAME;
                     }
                 }
                 default:
@@ -111,11 +115,11 @@ public class HeadersBodyParser extends BodyParser
         return Result.NO_FRAME;
     }
 
-    private boolean decode(ByteBuffer encoded)
+    private boolean decode(ByteBuffer encoded, boolean last)
     {
         try
         {
-            return decoder.decode(streamId, encoded, (streamId, metaData) -> onHeaders(metaData));
+            return decoder.decode(streamId, encoded, (streamId, metaData) -> onHeaders(metaData, last));
         }
         catch (QpackException.StreamException x)
         {
@@ -138,9 +142,9 @@ public class HeadersBodyParser extends BodyParser
         return false;
     }
 
-    private void onHeaders(MetaData metaData)
+    private void onHeaders(MetaData metaData, boolean last)
     {
-        HeadersFrame frame = new HeadersFrame(metaData, isLast.getAsBoolean());
+        HeadersFrame frame = new HeadersFrame(metaData, last);
         reset();
         notifyHeaders(frame);
     }
