@@ -47,25 +47,13 @@ public class QuicheConnectionId
     private static String bytesToHex(byte[] bytes)
     {
         byte[] hexChars = new byte[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++)
+        for (int i = 0; i < bytes.length; i++)
         {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
-            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+            int c = bytes[i] & 0xFF;
+            hexChars[i * 2] = HEX_ARRAY[c >>> 4];
+            hexChars[i * 2 + 1] = HEX_ARRAY[c & 0x0F];
         }
         return new String(hexChars, StandardCharsets.US_ASCII);
-    }
-
-    public static QuicheConnectionId fromCid(byte[] cid)
-    {
-        byte[] sizedDcid = resizeIfNeeded(cid, cid.length);
-        return new QuicheConnectionId(sizedDcid);
-    }
-
-    static QuicheConnectionId fromCid(byte[] dcid, size_t_pointer dcidLen)
-    {
-        byte[] sizedDcid = resizeIfNeeded(dcid, (int)dcidLen.getValue());
-        return new QuicheConnectionId(sizedDcid);
     }
 
     /**
@@ -94,7 +82,8 @@ public class QuicheConnectionId
             token, tokenLen);
         if (rc < 0)
             return null;
-        return fromCid(dcid, dcidLen);
+        byte[] sizedDcid = resizeIfNeeded(dcid, (int)dcidLen.getValue());
+        return new QuicheConnectionId(sizedDcid);
     }
 
     private static byte[] resizeIfNeeded(byte[] buffer, int length)

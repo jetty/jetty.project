@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.quic.quiche;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -101,11 +102,15 @@ public class QuicheConnection
         String[] applicationProtos = config.getApplicationProtos();
         if (applicationProtos != null)
         {
-            StringBuilder sb = new StringBuilder();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
             for (String proto : applicationProtos)
-                sb.append((char)proto.getBytes(LibQuiche.CHARSET).length).append(proto);
-            String theProtos = sb.toString();
-            LibQuiche.INSTANCE.quiche_config_set_application_protos(quicheConfig, theProtos, new size_t(theProtos.getBytes(LibQuiche.CHARSET).length));
+            {
+                byte[] bytes = proto.getBytes(LibQuiche.CHARSET);
+                baos.write(bytes.length);
+                baos.write(bytes);
+            }
+            byte[] bytes = baos.toByteArray();
+            LibQuiche.INSTANCE.quiche_config_set_application_protos(quicheConfig, bytes, new size_t(bytes.length));
         }
 
         QuicheConfig.CongestionControl cc = config.getCongestionControl();
@@ -222,7 +227,7 @@ public class QuicheConnection
             ssize_t generated = LibQuiche.INSTANCE.quiche_negotiate_version(scid, scid_len.getPointee(), dcid, dcid_len.getPointee(), packetToSend, new size_t(packetToSend.remaining()));
             packetToSend.position(packetToSend.position() + generated.intValue());
             if (generated.intValue() < 0)
-                throw new IOException("failed to create vneg packet : " + generated);
+                throw new IOException("failed to create vneg packet : " + LibQuiche.quiche_error.errToString(generated.intValue()));
             return true;
         }
 
