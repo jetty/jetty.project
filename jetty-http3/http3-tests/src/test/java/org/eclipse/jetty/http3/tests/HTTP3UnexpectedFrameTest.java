@@ -58,7 +58,7 @@ public class HTTP3UnexpectedFrameTest extends AbstractHTTP3ClientServerTest
             })
             .get(5, TimeUnit.SECONDS);
 
-        ((HTTP3Session)session).writeFrame(0, new DataFrame(ByteBuffer.allocate(128), true), Callback.NOOP);
+        ((HTTP3Session)session).writeFrame(0, new DataFrame(ByteBuffer.allocate(128), false), Callback.NOOP);
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));

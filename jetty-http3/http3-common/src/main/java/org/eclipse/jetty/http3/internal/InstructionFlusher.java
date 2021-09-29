@@ -40,10 +40,10 @@ public class InstructionFlusher extends IteratingCallback
     private final Queue<Instruction> queue = new ArrayDeque<>();
     private final ByteBufferPool.Lease lease;
     private final QuicStreamEndPoint endPoint;
-    private final int streamType;
+    private final long streamType;
     private boolean initialized;
 
-    public InstructionFlusher(QuicSession session, QuicStreamEndPoint endPoint, int streamType)
+    public InstructionFlusher(QuicSession session, QuicStreamEndPoint endPoint, long streamType)
     {
         this.lease = new ByteBufferPool.Lease(session.getByteBufferPool());
         this.endPoint = endPoint;

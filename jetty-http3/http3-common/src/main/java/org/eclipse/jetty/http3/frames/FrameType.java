@@ -26,9 +26,24 @@ public enum FrameType
     GOAWAY(0x7),
     MAX_PUSH_ID(0xD);
 
-    public static FrameType from(int type)
+    public static FrameType from(long type)
     {
         return Types.types.get(type);
+    }
+
+    public static boolean isControl(long frameType)
+    {
+        return frameType == CANCEL_PUSH.type() ||
+            frameType == SETTINGS.type() ||
+            frameType == GOAWAY.type() ||
+            frameType == MAX_PUSH_ID.type();
+    }
+
+    public static boolean isMessage(long frameType)
+    {
+        return frameType == DATA.type() ||
+            frameType == HEADERS.type() ||
+            frameType == PUSH_PROMISE.type();
     }
 
     public static int maxType()
@@ -41,7 +56,7 @@ public enum FrameType
     private FrameType(int type)
     {
         this.type = type;
-        Types.types.put(type, this);
+        Types.types.put((long)type, this);
     }
 
     public int type()
@@ -51,6 +66,6 @@ public enum FrameType
 
     private static class Types
     {
-        private static final Map<Integer, FrameType> types = new HashMap<>();
+        private static final Map<Long, FrameType> types = new HashMap<>();
     }
 }

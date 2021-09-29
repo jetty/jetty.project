@@ -39,6 +39,12 @@ public enum StreamType
         return (streamId & 0b01) == 0b00;
     }
 
+    public static boolean isReserved(long streamType)
+    {
+        // SPEC: reserved stream types follow the formula: 0x1F * N + 0x21.
+        return (streamType - 0x21) % 0x1F == 0;
+    }
+
     private final int type;
 
     private StreamType(int type)

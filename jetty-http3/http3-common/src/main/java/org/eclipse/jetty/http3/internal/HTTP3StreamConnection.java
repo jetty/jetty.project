@@ -111,6 +111,19 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         {
             if (parseAndFill() == MessageParser.Result.NO_FRAME)
                 break;
+
+            // TODO: we should also exit if the connection was closed due to errors.
+            //  There is not yet a isClosed() primitive though.
+            if (remotelyClosed)
+            {
+                // We have detected the end of the stream,
+                // do not loop around to fill & parse again.
+                // However, the last frame may have
+                // caused a write that we need to flush.
+                getEndPoint().getQuicSession().flush();
+                break;
+            }
+
             if (dataMode)
             {
                 if (LOG.isDebugEnabled())

@@ -239,7 +239,9 @@ public interface Stream
         }
 
         /**
-         * @return the {@link ByteBuffer} containing the bytes
+         * @return the {@link ByteBuffer} containing the data bytes
+         *
+         * @see #complete()
          */
         public ByteBuffer getByteBuffer()
         {
@@ -257,7 +259,9 @@ public interface Stream
 
         /**
          * <p>The method that applications <em>must</em> invoke to
-         * signal that the bytes have been processed.</p>
+         * signal that the data bytes have been processed.</p>
+         *
+         * @see #getByteBuffer()
          */
         public void complete()
         {

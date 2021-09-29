@@ -552,18 +552,23 @@ public class QuicheConnection
         }
     }
 
-    public void shutdownStream(long streamId, boolean writeSide) throws IOException
+    public void shutdownStream(long streamId, boolean writeSide, long error) throws IOException
     {
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
                 throw new IOException("Quiche connection was released");
             int direction = writeSide ? LibQuiche.quiche_shutdown.QUICHE_SHUTDOWN_WRITE : LibQuiche.quiche_shutdown.QUICHE_SHUTDOWN_READ;
-            int rc = LibQuiche.INSTANCE.quiche_conn_stream_shutdown(quicheConn, new uint64_t(streamId), direction, new uint64_t(0));
+            int rc = LibQuiche.INSTANCE.quiche_conn_stream_shutdown(quicheConn, new uint64_t(streamId), direction, new uint64_t(error));
             if (rc == 0 || rc == LibQuiche.quiche_error.QUICHE_ERR_DONE)
                 return;
             throw new IOException("failed to shutdown stream " + streamId + ": " + LibQuiche.quiche_error.errToString(rc));
         }
+    }
+
+    public void resetStream(long streamId, long error) throws IOException
+    {
+        shutdownStream(streamId, true, error);
     }
 
     public void feedFinForStream(long streamId) throws IOException

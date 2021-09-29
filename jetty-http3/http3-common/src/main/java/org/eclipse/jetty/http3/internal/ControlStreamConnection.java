@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 public class ControlStreamConnection extends AbstractConnection implements Connection.UpgradeTo
 {
     // SPEC: Control Stream Type.
-    public static final int STREAM_TYPE = 0x00;
+    public static final long STREAM_TYPE = 0x00;
     private static final Logger LOG = LoggerFactory.getLogger(ControlStreamConnection.class);
 
     private final ByteBufferPool byteBufferPool;

@@ -23,7 +23,9 @@ import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.quic.common.StreamType;
+import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,13 +41,19 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
     private boolean useInputDirectByteBuffers = true;
     private ByteBuffer buffer;
 
-    public UnidirectionalStreamConnection(EndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
+    public UnidirectionalStreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, QpackEncoder encoder, QpackDecoder decoder, ParserListener listener)
     {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
         this.encoder = encoder;
         this.decoder = decoder;
         this.listener = listener;
+    }
+
+    @Override
+    public QuicStreamEndPoint getEndPoint()
+    {
+        return (QuicStreamEndPoint)super.getEndPoint();
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -89,11 +97,11 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
             {
                 int filled = getEndPoint().fill(buffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("filled {} on {}", filled, this);
+                    LOG.debug("filled {} on {}: {}", filled, this, BufferUtil.toDetailString(buffer));
 
                 if (filled > 0)
                 {
-                    if (parser.parseInt(buffer, this::detectAndUpgrade))
+                    if (parser.parseLong(buffer, this::detectAndUpgrade))
                         break;
                 }
                 else if (filled == 0)
@@ -121,44 +129,49 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
         }
     }
 
-    private void detectAndUpgrade(int streamType)
+    private void detectAndUpgrade(long streamType)
     {
-        switch (streamType)
+        if (streamType == ControlStreamConnection.STREAM_TYPE)
         {
-            case ControlStreamConnection.STREAM_TYPE:
+            ControlParser parser = new ControlParser(listener);
+            ControlStreamConnection newConnection = new ControlStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, parser);
+            newConnection.setInputBufferSize(getInputBufferSize());
+            newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+            if (LOG.isDebugEnabled())
+                LOG.debug("upgrading to {}", newConnection);
+            getEndPoint().upgrade(newConnection);
+        }
+        else if (streamType == EncoderStreamConnection.STREAM_TYPE)
+        {
+            EncoderStreamConnection newConnection = new EncoderStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, decoder);
+            newConnection.setInputBufferSize(getInputBufferSize());
+            newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+            if (LOG.isDebugEnabled())
+                LOG.debug("upgrading to {}", newConnection);
+            getEndPoint().upgrade(newConnection);
+        }
+        else if (streamType == DecoderStreamConnection.STREAM_TYPE)
+        {
+            DecoderStreamConnection newConnection = new DecoderStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, encoder);
+            newConnection.setInputBufferSize(getInputBufferSize());
+            newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+            if (LOG.isDebugEnabled())
+                LOG.debug("upgrading to {}", newConnection);
+            getEndPoint().upgrade(newConnection);
+        }
+        else
+        {
+            if (StreamType.isReserved(streamType))
             {
-                ControlParser parser = new ControlParser(listener);
-                ControlStreamConnection newConnection = new ControlStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, parser);
-                newConnection.setInputBufferSize(getInputBufferSize());
-                newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("upgrading to {}", newConnection);
-                getEndPoint().upgrade(newConnection);
-                break;
+                    LOG.debug("reserved stream type {}, resetting on {}", Long.toHexString(streamType), this);
+                getEndPoint().reset(ErrorCode.randomReservedCode());
             }
-            case EncoderStreamConnection.STREAM_TYPE:
+            else
             {
-                EncoderStreamConnection newConnection = new EncoderStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, decoder);
-                newConnection.setInputBufferSize(getInputBufferSize());
-                newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
                 if (LOG.isDebugEnabled())
-                    LOG.debug("upgrading to {}", newConnection);
-                getEndPoint().upgrade(newConnection);
-                break;
-            }
-            case DecoderStreamConnection.STREAM_TYPE:
-            {
-                DecoderStreamConnection newConnection = new DecoderStreamConnection(getEndPoint(), getExecutor(), byteBufferPool, encoder);
-                newConnection.setInputBufferSize(getInputBufferSize());
-                newConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
-                if (LOG.isDebugEnabled())
-                    LOG.debug("upgrading to {}", newConnection);
-                getEndPoint().upgrade(newConnection);
-                break;
-            }
-            default:
-            {
-                throw new IllegalStateException("unexpected stream type " + Integer.toHexString(streamType));
+                    LOG.debug("unsupported stream type {}, resetting on {}", Long.toHexString(streamType), this);
+                getEndPoint().reset(ErrorCode.STREAM_CREATION_ERROR.code());
             }
         }
     }
