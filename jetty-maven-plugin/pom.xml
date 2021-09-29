@@ -149,12 +149,10 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <groupId>javax.servlet</groupId>
@@ -165,12 +163,10 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-quickstart</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jaas</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -179,7 +175,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jndi</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -188,12 +183,10 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -206,37 +199,30 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-javax-server</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jetty-server</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>apache-jsp</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>apache-jstl</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
     </dependency>
     <dependency>
       <groupId>jakarta.transaction</groupId>
@@ -251,7 +237,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-home</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
       <type>zip</type>
       <exclusions>

@@ -202,12 +202,10 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>demo-web-fragment</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>demo-container-initializer</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <!-- deliberately old version to test classloading -->

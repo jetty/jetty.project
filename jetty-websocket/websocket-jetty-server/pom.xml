@@ -18,17 +18,14 @@
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jetty-api</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jetty-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-servlet</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -37,17 +34,14 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-servlet</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
-      <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>

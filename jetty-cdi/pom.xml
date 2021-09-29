@@ -16,19 +16,16 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
-      <version>${project.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -57,30 +54,13 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
-        <version>3.0.0-M5</version>
+        <version>${maven.surefire.plugin.version}</version>
         <configuration>
           <!--<argLine>
             @{argLine} ${jetty.surefire.argLine} &#45;&#45;add-opens=org.eclipse.jetty.cdi/org.eclipse.jetty.cdi=ALL-UNNAMED
           </argLine>-->
           <additionalClasspathElements />
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptorRefs>
-                <descriptorRef>config</descriptorRef>
-              </descriptorRefs>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>

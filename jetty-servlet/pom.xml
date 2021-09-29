@@ -34,7 +34,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-security</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -43,13 +42,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
-      <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jmx</artifactId>
-      <version>${project.version}</version>
       <optional>true</optional>
     </dependency>
 
@@ -66,13 +63,11 @@
     <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>jetty-http-tools</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
