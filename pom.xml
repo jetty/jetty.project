@@ -30,6 +30,28 @@
     <tycho-version>1.2.0</tycho-version>
     <cbi-plugins.version>1.1.5</cbi-plugins.version>
     <argLine></argLine>
+
+    <build-helper.maven.plugin.version>3.2.0</build-helper.maven.plugin.version>
+    <buildnumber.maven.plugin.version>1.4</buildnumber.maven.plugin.version>
+    <findbugs.maven.plugin.version>3.0.5</findbugs.maven.plugin.version>
+    <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
+    <license.maven.plugin.version>3.0</license.maven.plugin.version>
+    <maven.assembly.plugin.version>3.3.0</maven.assembly.plugin.version>
+    <maven.bundle.plugin.version>3.0.1</maven.bundle.plugin.version>
+    <maven.compiler.plugin.version>3.8.2</maven.compiler.plugin.version>
+    <maven.dependency.plugin.version>3.2.0</maven.dependency.plugin.version>
+    <maven.deploy.plugin.version>3.0.0-M1</maven.deploy.plugin.version>
+    <maven.enforcer.plugin.version>3.0.0</maven.enforcer.plugin.version>
+    <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
+    <maven.jar.plugin.version>3.2.0</maven.jar.plugin.version>
+    <maven.javadoc.plugin.version>3.3.1</maven.javadoc.plugin.version>
+    <maven.jxr.plugin.version>3.3.1</maven.jxr.plugin.version>
+    <maven.pmd.plugin.version>3.7</maven.pmd.plugin.version>
+    <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
+    <maven.remote-resources.plugin.version>1.7.0</maven.remote-resources.plugin.version>
+    <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
+    <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
+    <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
   </properties>
 
   <licenses>
@@ -55,14 +77,20 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <version>2.5.3</version>
+        <version>${maven.release.plugin.version}</version>
         <configuration>
           <autoVersionSubmodules>true</autoVersionSubmodules>
+          <useReleaseProfile>false</useReleaseProfile>
+          <goals>deploy</goals>
+          <arguments>-Peclipse-release</arguments>
+          <preparationGoals>clean install</preparationGoals>
+          <mavenExecutorId>forked-path</mavenExecutorId>
         </configuration>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-remote-resources-plugin</artifactId>
+        <version>${maven.remote-resources.plugin.version}</version>
         <executions>
           <execution>
             <phase>generate-resources</phase>
@@ -82,6 +110,7 @@
         <inherited>true</inherited>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
+        <version>${maven.source.plugin.version}</version>
         <executions>
           <execution>
             <id>attach-sources</id>
@@ -108,6 +137,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
+        <version>${build-helper.maven.plugin.version}</version>
         <executions>
           <execution>
             <id>set-osgi-version</id>
@@ -121,6 +151,7 @@
       <plugin>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-version-maven-plugin</artifactId>
+        <version>${jetty-version.maven.plugin.version}</version>
         <executions>
           <execution>
             <id>attach-version</id>
@@ -135,6 +166,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${maven.enforcer.plugin.version}</version>
         <executions>
           <execution>
             <id>enforce-java</id>
@@ -187,6 +219,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-pmd-plugin</artifactId>
+        <version>${maven.pmd.plugin.version}</version>
         <executions>
           <execution>
             <id>named-logging-enforcement</id>
@@ -217,7 +250,7 @@
         <inherited>false</inherited>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
-        <version>3.0</version>
+        <version>${license.maven.plugin.version}</version>
         <configuration>
           <failIfMissing>true</failIfMissing>
           <aggregate>true</aggregate>
@@ -297,7 +330,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>${maven.assembly.plugin.version}</version>
           <dependencies>
             <dependency>
               <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -309,21 +342,21 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.6.2</version>
+          <version>${maven.compiler.plugin.version}</version>
           <configuration>
-            <source>1.8</source>
-            <target>1.8</target>
+            <source>8</source>
+            <target>8</target>
           </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>${maven.dependency.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>2.8.2</version>
+          <version>${maven.deploy.plugin.version}</version>
           <configuration>
             <retryFailedDeploymentCount>10</retryFailedDeploymentCount>
           </configuration>
@@ -331,12 +364,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>3.0.0-M1</version>
+          <version>${maven.enforcer.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.0.2</version>
+          <version>${maven.jar.plugin.version}</version>
           <configuration>
             <archive>
               <manifestEntries>
@@ -350,7 +383,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>${maven.javadoc.plugin.version}</version>
           <configuration>
             <source>8</source>
             <charset>UTF-8</charset>
@@ -426,22 +459,22 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jxr-plugin</artifactId>
-          <version>2.5</version>
+          <version>${maven.jxr.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-pmd-plugin</artifactId>
-          <version>3.7</version>
+          <version>${maven.pmd.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-source-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>${maven.source.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.2</version>
+          <version>${maven.surefire.plugin.version}</version>
           <configuration>
             <trimStackTrace>false</trimStackTrace>
             <argLine>@{argLine} -Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
@@ -459,17 +492,17 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
-          <version>3.0.0</version>
+          <version>${maven.war.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
-          <version>2.7</version>
+          <version>${jetty-version.maven.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.felix</groupId>
           <artifactId>maven-bundle-plugin</artifactId>
-          <version>3.0.1</version>
+          <version>${maven.bundle.plugin.version}</version>
           <extensions>true</extensions>
           <configuration>
             <supportedProjectTypes>
@@ -492,6 +525,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>findbugs-maven-plugin</artifactId>
+          <version>${findbugs.maven.plugin.version}</version>
           <configuration>
             <findbugsXmlOutput>true</findbugsXmlOutput>
             <xmlOutput>true</xmlOutput>
@@ -502,127 +536,21 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>2.10</version>
+          <version>${maven.dependency.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jxr-plugin</artifactId>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <configuration>
-            <charset>UTF-8</charset>
-            <docencoding>UTF-8</docencoding>
-            <encoding>UTF-8</encoding>
-            <docfilessubdirs>true</docfilessubdirs>
-            <detectLinks>false</detectLinks>
-            <detectJavaApiLink>false</detectJavaApiLink>
-            <show>protected</show>
-            <excludePackageNames>com.acme.*;org.slf4j.*;org.mortbay.*</excludePackageNames>
-            <links>
-              <link>http://docs.oracle.com/javase/8/docs/api/</link>
-            </links>
-            <tags>
-              <tag>
-                <name>org.apache.xbean.XBean</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>phase</name>
-                <placement>t</placement>
-                <head>Phase:</head>
-              </tag>
-              <tag>
-                <name>goal</name>
-                <placement>t</placement>
-                <head>Goal:</head>
-              </tag>
-              <tag>
-                <name>description</name>
-                <placement>a</placement>
-                <head>Description:</head>
-              </tag>
-              <tag>
-                <name>parameter</name>
-                <placement>f</placement>
-                <head>Parameter:</head>
-              </tag>
-              <tag>
-                <name>required</name>
-                <placement>f</placement>
-                <head>Required:</head>
-              </tag>
-              <tag>
-                <name>readonly</name>
-                <placement>f</placement>
-                <head>Read-Only:</head>
-              </tag>
-              <tag>
-                <name>execute</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>requiresDependencyResolution</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>requiresProject</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-              <tag>
-                <name>threadSafe</name>
-                <placement>X</placement>
-                <head />
-              </tag>
-            </tags>
-          </configuration>
+          <version>${maven.jxr.plugin.version}</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>buildnumber-maven-plugin</artifactId>
-          <version>1.4</version>
+          <version>${buildnumber.maven.plugin.version}</version>
         </plugin>
       </plugins>
     </pluginManagement>
   </build>
-
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jxr-plugin</artifactId>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-javadoc-plugin</artifactId>
-        <configuration>
-          <maxmemory>512m</maxmemory>
-          <docfilessubdirs>true</docfilessubdirs>
-          <detectLinks>true</detectLinks>
-          <detectJavaApiLink>true</detectJavaApiLink>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-pmd-plugin</artifactId>
-        <configuration>
-          <targetJdk>1.7</targetJdk>
-          <rulesets>
-            <ruleset>jetty/pmd_ruleset.xml</ruleset>
-          </rulesets>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </reporting>
 
   <modules>
     <module>jetty-ant</module>
@@ -856,6 +784,46 @@
       <modules>
         <module>aggregates/jetty-all</module>
       </modules>
+      <build>
+        <plugins>
+          <plugin>
+            <inherited>true</inherited>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-deploy-plugin</artifactId>
+            <version>${maven.deploy.plugin.version}</version>
+            <configuration>
+              <updateReleaseInfo>true</updateReleaseInfo>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>${maven.javadoc.plugin.version}</version>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>${maven.gpg.plugin.version}</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <profile>
       <id>ci</id>
