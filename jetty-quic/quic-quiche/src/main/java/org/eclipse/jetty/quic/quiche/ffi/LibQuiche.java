@@ -33,8 +33,10 @@ public interface LibQuiche extends Library
     // It needs to be reviewed each time the native lib version changes.
     String EXPECTED_QUICHE_VERSION = "0.10.0";
 
-    // load the native lib
+    // The charset used to convert java.lang.String to char * and vice versa.
     Charset CHARSET = StandardCharsets.UTF_8;
+
+    // Load the native lib.
     LibQuiche INSTANCE = Native.load("quiche", LibQuiche.class, Map.of(Library.OPTION_STRING_ENCODING, CHARSET.name()));
 
     class Logging
@@ -189,7 +191,7 @@ public interface LibQuiche extends Library
     void quiche_config_verify_peer(quiche_config config, boolean v);
 
     // Configures the list of supported application protocols.
-    int quiche_config_set_application_protos(quiche_config config, String protos, size_t protos_len);
+    int quiche_config_set_application_protos(quiche_config config, byte[] protos, size_t protos_len);
 
     // Sets the `max_idle_timeout` transport parameter.
     void quiche_config_set_max_idle_timeout(quiche_config config, uint64_t v);
@@ -437,7 +439,7 @@ public interface LibQuiche extends Library
     boolean quiche_conn_peer_error(quiche_conn conn,
                                    bool_pointer is_app,
                                    uint64_t_pointer error_code,
-                                   char_pointer/*const uint8_t ***/ reason,
+                                   char_pointer reason,
                                    size_t_pointer reason_len);
 
     // Returns true if a connection error was queued or sent, and updates the provided
@@ -445,7 +447,7 @@ public interface LibQuiche extends Library
     boolean quiche_conn_local_error(quiche_conn conn,
                                     bool_pointer is_app,
                                     uint64_t_pointer error_code,
-                                    Pointer/*const uint8_t ***/ reason,
+                                    char_pointer reason,
                                     size_t_pointer reason_len);
 
     // Closes the connection with the given error and reason.

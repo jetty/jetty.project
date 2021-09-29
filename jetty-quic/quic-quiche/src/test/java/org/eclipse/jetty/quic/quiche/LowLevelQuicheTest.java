@@ -249,10 +249,9 @@ public class LowLevelQuicheTest
 
         AbstractMap.SimpleImmutableEntry<QuicheConnection, QuicheConnection> entry = new AbstractMap.SimpleImmutableEntry<>(clientQuicheConnection, serverQuicheConnection);
 
-        StringBuilder sb = new StringBuilder();
+        int protosLen = 0;
         for (String proto : clientQuicheConfig.getApplicationProtos())
-            sb.append((char)proto.getBytes(LibQuiche.CHARSET).length).append(proto);
-        int protosLen = sb.toString().getBytes(LibQuiche.CHARSET).length;
+            protosLen += 1 + proto.getBytes(LibQuiche.CHARSET).length;
 
         drainServerToFeedClient(entry, 300 + protosLen);
         assertThat(serverQuicheConnection.isConnectionEstablished(), is(false));
