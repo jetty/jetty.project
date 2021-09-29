@@ -1947,13 +1947,14 @@ public class RequestTest
     @Test
     public void testAmbiguousPaths() throws Exception
     {
+        // TODO this is a poor test as it is not very exhaustive.  See HttpURITest for better tests.
         _handler._checker = (request, response) ->
         {
             response.getOutputStream().println("servletPath=" + request.getServletPath());
             response.getOutputStream().println("pathInfo=" + request.getPathInfo());
             return true;
         };
-        String request = "GET /unnormal/.././path/ambiguous%2f%2e%2e/%2e;/info HTTP/1.0\r\n" +
+        String request = "GET /unnormal/.././path/ambiguous%2f%2e%2e/info HTTP/1.0\r\n" +
             "Host: whatever\r\n" +
             "\r\n";
 
@@ -1962,7 +1963,7 @@ public class RequestTest
             startsWith("HTTP/1.1 200"),
             containsString("pathInfo=/path/info")));
 
-        setComplianceModes(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEGMENTS);
+        setComplianceModes(HttpComplianceSection.NO_AMBIGUOUS_PATH_SEPARATORS);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
     }
 
