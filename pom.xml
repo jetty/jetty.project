@@ -1,22 +1,25 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <parent>
-    <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-parent</artifactId>
-    <version>25</version>
-  </parent>
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-project</artifactId>
   <version>9.3.30-SNAPSHOT</version>
   <name>Jetty :: Project</name>
-  <url>http://www.eclipse.org/jetty</url>
+  <description>The Eclipse Jetty Project</description>
   <packaging>pom</packaging>
+  <url>https://eclipse.org/jetty</url>
+  <inceptionYear>1995</inceptionYear>
 
   <properties>
-    <jetty.url>http://www.eclipse.org/jetty</jetty.url>
+    <!-- build -->
+    <maven.compiler.source>8</maven.compiler.source>
+    <maven.compiler.target>8</maven.compiler.target>
+    <jetty.url>https://eclipse.org/jetty</jetty.url>
+    <jmhjar.name>benchmarks</jmhjar.name>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
     <build-support-version>1.4</build-support-version>
     <slf4j-version>1.6.6</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
@@ -29,6 +32,17 @@
     <argLine></argLine>
   </properties>
 
+  <licenses>
+    <license>
+      <name>Apache Software License - Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+    <license>
+      <name>Eclipse Public License - Version 1.0</name>
+      <url>https://www.eclipse.org/org/documents/epl-v10.php</url>
+    </license>
+  </licenses>
+
   <scm>
     <connection>scm:git:https://github.com/eclipse/jetty.project.git</connection>
     <developerConnection>scm:git:git@github.com:eclipse/jetty.project.git</developerConnection>
@@ -39,8 +53,9 @@
     <defaultGoal>install</defaultGoal>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-release-plugin</artifactId>
-        <version>2.5</version>
+        <version>2.5.3</version>
         <configuration>
           <autoVersionSubmodules>true</autoVersionSubmodules>
         </configuration>
@@ -1683,6 +1698,126 @@
       </build>
     </profile>
   </profiles>
+
+  <issueManagement>
+    <system>github</system>
+    <url>https://github.com/eclipse/jetty.project/issues</url>
+  </issueManagement>
+
+  <mailingLists>
+    <mailingList>
+      <name>Jetty Developer Mailing List</name>
+      <archive>https://dev.eclipse.org/mhonarc/lists/jetty-dev/maillist.html</archive>
+      <subscribe>https://dev.eclipse.org/mailman/listinfo/jetty-dev</subscribe>
+      <unsubscribe>https://dev.eclipse.org/mailman/listinfo/jetty-dev</unsubscribe>
+    </mailingList>
+    <mailingList>
+      <name>Jetty Commit Mailing List</name>
+      <archive>https://dev.eclipse.org/mhonarc/lists/jetty-commit/maillist.html</archive>
+      <subscribe>https://dev.eclipse.org/mailman/listinfo/jetty-commit</subscribe>
+      <unsubscribe>https://dev.eclipse.org/mailman/listinfo/jetty-commit</unsubscribe>
+    </mailingList>
+    <mailingList>
+      <name>Jetty Users Mailing List</name>
+      <archive>https://dev.eclipse.org/mhonarc/lists/jetty-users/maillist.html</archive>
+      <subscribe>https://dev.eclipse.org/mailman/listinfo/jetty-users</subscribe>
+      <unsubscribe>https://dev.eclipse.org/mailman/listinfo/jetty-users</unsubscribe>
+    </mailingList>
+    <mailingList>
+      <name>Jetty Announce Mailing List</name>
+      <archive>https://dev.eclipse.org/mhonarc/lists/jetty-announce/maillist.html</archive>
+      <subscribe>https://dev.eclipse.org/mailman/listinfo/jetty-announce</subscribe>
+      <unsubscribe>https://dev.eclipse.org/mailman/listinfo/jetty-announce</unsubscribe>
+    </mailingList>
+  </mailingLists>
+
+  <developers>
+    <developer>
+      <id>gregw</id>
+      <name>Greg Wilkins</name>
+      <email>gregw@webtide.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>10</timezone>
+    </developer>
+    <developer>
+      <id>janb</id>
+      <name>Jan Bartel</name>
+      <email>janb@webtide.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>10</timezone>
+    </developer>
+    <developer>
+      <id>jesse</id>
+      <name>Jesse McConnell</name>
+      <email>jesse.mcconnell@gmail.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>-6</timezone>
+    </developer>
+    <developer>
+      <id>joakime</id>
+      <name>Joakim Erdfelt</name>
+      <email>joakim.erdfelt@gmail.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>-7</timezone>
+    </developer>
+    <developer>
+      <id>sbordet</id>
+      <name>Simone Bordet</name>
+      <email>simone.bordet@gmail.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>1</timezone>
+    </developer>
+    <developer>
+      <id>djencks</id>
+      <name>David Jencks</name>
+      <email>david.a.jencks@gmail.com</email>
+      <organization>IBM</organization>
+      <timezone>-8</timezone>
+    </developer>
+    <developer>
+      <id>olamy</id>
+      <name>Olivier Lamy</name>
+      <email>oliver.lamy@gmail.com</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>Australia/Brisbane</timezone>
+    </developer>
+    <developer>
+      <id>lorban</id>
+      <name>Ludovic Orban</name>
+      <email>lorban@bitronix.be</email>
+      <organization>Webtide, LLC</organization>
+      <organizationUrl>https://webtide.com</organizationUrl>
+      <timezone>1</timezone>
+    </developer>
+  </developers>
+
+  <organization>
+    <name>Webtide</name>
+    <url>https://webtide.com</url>
+  </organization>
+
+  <distributionManagement>
+    <repository>
+      <id>oss.sonatype.org</id>
+      <name>Jetty Staging Repository</name>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+    <snapshotRepository>
+      <id>oss.sonatype.org</id>
+      <name>Jetty Snapshot Repository</name>
+      <url>https://oss.sonatype.org/content/repositories/jetty-snapshots/</url>
+    </snapshotRepository>
+    <site>
+      <id>jetty.eclipse.website</id>
+      <url>scp://build.eclipse.org:/home/data/httpd/download.eclipse.org/jetty/${project.version}/</url>
+    </site>
+  </distributionManagement>
 
   <pluginRepositories>
     <pluginRepository>
