@@ -131,6 +131,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         if (LOG.isDebugEnabled())
             LOG.debug("reading data on {}", this);
 
+        if (hasDemand())
+            throw new IllegalStateException("invalid call to readData(): outstanding demand");
+
         switch (parseAndFill())
         {
             case FRAME:

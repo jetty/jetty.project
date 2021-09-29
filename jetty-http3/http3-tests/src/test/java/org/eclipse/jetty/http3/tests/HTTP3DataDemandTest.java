@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -464,5 +465,85 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
         serverStreamRef.get().demand();
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testBlockingReadInADifferentThread() throws Exception
+    {
+        CountDownLatch blockLatch = new CountDownLatch(1);
+        CountDownLatch dataLatch = new CountDownLatch(1);
+        startServer(new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            {
+                stream.demand();
+
+                // Simulate a thread dispatched to read the request content with blocking I/O.
+                Semaphore semaphore = new Semaphore(0);
+                new Thread(() ->
+                {
+                    try
+                    {
+                        // Wait for onDataAvailable() to be called before start reading.
+                        semaphore.acquire();
+                        while (true)
+                        {
+                            Stream.Data data = stream.readData();
+                            if (data != null)
+                            {
+                                // Consume the data.
+                                data.complete();
+                                if (data.isLast())
+                                {
+                                    dataLatch.countDown();
+                                    return;
+                                }
+                            }
+                            else
+                            {
+                                // Demand and block.
+                                stream.demand();
+                                blockLatch.countDown();
+                                semaphore.acquire();
+                            }
+                        }
+                    }
+                    catch (InterruptedException x)
+                    {
+                        x.printStackTrace();
+                    }
+                }).start();
+
+                return new Stream.Listener()
+                {
+                    @Override
+                    public void onDataAvailable(Stream stream)
+                    {
+                        semaphore.release();
+                    }
+                };
+            }
+        });
+        startClient();
+
+        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
+            .get(5, TimeUnit.SECONDS);
+
+        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
+        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
+        HeadersFrame request = new HeadersFrame(metaData, false);
+        Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+
+        // Send a first chunk of data.
+        stream.data(new DataFrame(ByteBuffer.allocate(16 * 1024), false));
+
+        // Wait some time until the server reads no data after the first chunk.
+        assertTrue(blockLatch.await(5, TimeUnit.SECONDS));
+
+        // Send the last chunk of data.
+        stream.data(new DataFrame(ByteBuffer.allocate(32 * 1024), true));
+
+        assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 }
