@@ -123,6 +123,11 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         session.onClose(streamId);
     }
 
+    public void reset(long error)
+    {
+        session.resetStream(streamId, error);
+    }
+
     @Override
     public int fill(ByteBuffer buffer) throws IOException
     {

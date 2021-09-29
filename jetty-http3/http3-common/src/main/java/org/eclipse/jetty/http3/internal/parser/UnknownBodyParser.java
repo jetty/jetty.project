@@ -17,6 +17,8 @@ import java.nio.ByteBuffer;
 
 public class UnknownBodyParser extends BodyParser
 {
+    private long length = -1;
+
     public UnknownBodyParser(HeaderParser headerParser, ParserListener listener)
     {
         super(headerParser, listener);
@@ -25,6 +27,20 @@ public class UnknownBodyParser extends BodyParser
     @Override
     public Result parse(ByteBuffer buffer)
     {
-        throw new UnsupportedOperationException();
+        if (length < 0)
+            length = getBodyLength();
+        int remaining = buffer.remaining();
+        if (remaining >= length)
+        {
+            buffer.position(buffer.position() + (int)length);
+            length = -1;
+            return Result.WHOLE_FRAME;
+        }
+        else
+        {
+            buffer.position(buffer.limit());
+            length -= remaining;
+            return Result.NO_FRAME;
+        }
     }
 }

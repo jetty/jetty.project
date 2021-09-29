@@ -75,15 +75,24 @@ public class ControlParser
                     case BODY:
                     {
                         BodyParser bodyParser = null;
-                        int frameType = headerParser.getFrameType();
+                        long frameType = headerParser.getFrameType();
                         if (frameType >= 0 && frameType < bodyParsers.length)
-                            bodyParser = bodyParsers[frameType];
+                            bodyParser = bodyParsers[(int)frameType];
 
                         if (bodyParser == null)
                         {
-                            // TODO: enforce only control frames, but ignore unknown.
+                            if (FrameType.isMessage(frameType))
+                            {
+                                // SPEC: message frames on the control stream are invalid.
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("invalid message frame type {} on control stream", Long.toHexString(frameType));
+                                sessionFailure(buffer, ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type");
+                                return;
+                            }
+
                             if (LOG.isDebugEnabled())
-                                LOG.debug("ignoring unknown frame type {}", Integer.toHexString(frameType));
+                                LOG.debug("ignoring unknown frame type {}", Long.toHexString(frameType));
+
                             BodyParser.Result result = unknownBodyParser.parse(buffer);
                             if (result == BodyParser.Result.NO_FRAME)
                                 return;
@@ -123,12 +132,11 @@ public class ControlParser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("parse failed", x);
-            buffer.clear();
-            connectionFailure(buffer, ErrorCode.INTERNAL_ERROR.code(), "parser_error");
+            sessionFailure(buffer, ErrorCode.INTERNAL_ERROR.code(), "parser_error");
         }
     }
 
-    private void connectionFailure(ByteBuffer buffer, int error, String reason)
+    private void sessionFailure(ByteBuffer buffer, int error, String reason)
     {
         unknownBodyParser.sessionFailure(buffer, error, reason);
     }

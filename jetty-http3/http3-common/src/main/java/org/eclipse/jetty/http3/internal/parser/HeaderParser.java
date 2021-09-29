@@ -27,7 +27,7 @@ public class HeaderParser
     // TODO: RateControl?
     private final VarLenInt varLenInt = new VarLenInt();
     private State state = State.TYPE;
-    private int type;
+    private long type;
     private long length;
 
     public void reset()
@@ -55,7 +55,7 @@ public class HeaderParser
             {
                 case TYPE:
                 {
-                    if (varLenInt.parseInt(buffer, v -> type = v))
+                    if (varLenInt.parseLong(buffer, v -> type = v))
                     {
                         state = State.LENGTH;
                         break;
@@ -80,7 +80,7 @@ public class HeaderParser
         return false;
     }
 
-    public int getFrameType()
+    public long getFrameType()
     {
         return type;
     }
