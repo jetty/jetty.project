@@ -27,6 +27,7 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import org.eclipse.jetty.util.URIUtil;
 
 /* ------------------------------------------------------------ */
 /** Welcome Filter
@@ -42,7 +43,8 @@ import javax.servlet.http.HttpServletRequest;
  *
  * Requests to "/some/directory" will be redirected to "/some/directory/".
  */
-public  class WelcomeFilter implements Filter
+@Deprecated
+public class WelcomeFilter implements Filter
 {
     private String welcome;
 
@@ -59,11 +61,16 @@ public  class WelcomeFilter implements Filter
                          FilterChain chain)
         throws IOException, ServletException
     {
-        String path=((HttpServletRequest)request).getServletPath();
-        if (welcome!=null && path.endsWith("/"))
-            request.getRequestDispatcher(path+welcome).forward(request,response);
+        String path = ((HttpServletRequest)request).getServletPath();
+        if (welcome != null && path.endsWith("/"))
+        {
+            String uriInContext = URIUtil.encodePath(URIUtil.addPaths(path, welcome));
+            request.getRequestDispatcher(uriInContext).forward(request, response);
+        }
         else
+	{
             chain.doFilter(request, response);
+	}
     }
 
     public void destroy() {}
