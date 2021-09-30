@@ -11,15 +11,13 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.http.HttpFieldPreEncoder;
-import org.eclipse.jetty.http3.qpack.QpackFieldPreEncoder;
-
 module org.eclipse.jetty.http3.qpack
 {
-    exports org.eclipse.jetty.http3.qpack;
-
-    requires transitive org.eclipse.jetty.http;
     requires org.slf4j;
 
-    provides HttpFieldPreEncoder with QpackFieldPreEncoder;
+    requires transitive org.eclipse.jetty.http;
+
+    exports org.eclipse.jetty.http3.qpack;
+
+    provides org.eclipse.jetty.http.HttpFieldPreEncoder with org.eclipse.jetty.http3.qpack.QpackFieldPreEncoder;
 }

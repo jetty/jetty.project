@@ -13,11 +13,11 @@
 
 module org.eclipse.jetty.http3.server
 {
-    exports org.eclipse.jetty.http3.server;
-
     requires transitive org.eclipse.jetty.http3.common;
     requires transitive org.eclipse.jetty.http3.qpack;
     requires transitive org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.quic.server;
     requires transitive org.eclipse.jetty.server;
+
+    exports org.eclipse.jetty.http3.server;
 }
