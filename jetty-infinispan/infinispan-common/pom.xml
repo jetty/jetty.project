@@ -48,7 +48,6 @@
     <dependency>
       <groupId>org.infinispan.protostream</groupId>
       <artifactId>protostream</artifactId>
-      <version>${infinispan.protostream.version}</version>
       <optional>true</optional>
       <scope>provided</scope>
     </dependency>
