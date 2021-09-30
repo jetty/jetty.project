@@ -76,7 +76,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>infinispan-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
@@ -91,7 +90,6 @@
     <dependency>
       <groupId>org.infinispan.protostream</groupId>
       <artifactId>protostream</artifactId>
-      <version>${infinispan.protostream.version}</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
