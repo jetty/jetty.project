@@ -17,6 +17,6 @@
  */
 module org.eclipse.jetty.websocket.core.tests
 {
-    requires org.eclipse.jetty.websocket.core.server;
     requires org.eclipse.jetty.websocket.core.client;
+    requires org.eclipse.jetty.websocket.core.server;
 }

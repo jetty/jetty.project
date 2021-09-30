@@ -11,20 +11,19 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.jaspi.JaspiAuthenticatorFactory;
-
 module org.eclipse.jetty.security.jaspi
 {
+    requires jetty.servlet.api;
+    requires org.slf4j;
+
+    requires transitive javax.security.auth.message;
+    requires transitive org.eclipse.jetty.security;
+
     exports org.eclipse.jetty.security.jaspi;
     exports org.eclipse.jetty.security.jaspi.callback;
     exports org.eclipse.jetty.security.jaspi.modules;
     exports org.eclipse.jetty.security.jaspi.provider;
 
-    requires transitive javax.security.auth.message;
-    requires jetty.servlet.api;
-    requires transitive org.eclipse.jetty.security;
-    requires org.slf4j;
-
-    provides Authenticator.Factory with JaspiAuthenticatorFactory;
+    provides org.eclipse.jetty.security.Authenticator.Factory with
+        org.eclipse.jetty.security.jaspi.JaspiAuthenticatorFactory;
 }

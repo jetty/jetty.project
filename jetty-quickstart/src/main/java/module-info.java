@@ -13,9 +13,10 @@
 
 module org.eclipse.jetty.quickstart
 {
-    exports org.eclipse.jetty.quickstart;
-
     requires jetty.servlet.api;
-    requires transitive org.eclipse.jetty.annotations;
     requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.annotations;
+
+    exports org.eclipse.jetty.quickstart;
 }

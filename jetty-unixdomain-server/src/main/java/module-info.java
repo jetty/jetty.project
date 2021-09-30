@@ -13,8 +13,9 @@
 
 module org.eclipse.jetty.unixdomain.server
 {
-    exports org.eclipse.jetty.unixdomain.server;
+    requires org.slf4j;
 
     requires transitive org.eclipse.jetty.server;
-    requires org.slf4j;
+
+    exports org.eclipse.jetty.unixdomain.server;
 }

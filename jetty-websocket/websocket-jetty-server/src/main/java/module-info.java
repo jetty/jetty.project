@@ -11,28 +11,26 @@
 // ========================================================================
 //
 
-import javax.servlet.ServletContainerInitializer;
-
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-
 module org.eclipse.jetty.websocket.jetty.server
 {
-    exports org.eclipse.jetty.websocket.server;
-    exports org.eclipse.jetty.websocket.server.config;
-
     requires jetty.servlet.api;
     requires org.eclipse.jetty.websocket.core.server;
     requires org.eclipse.jetty.websocket.jetty.common;
     requires org.eclipse.jetty.websocket.servlet;
     requires org.slf4j;
+
     requires transitive org.eclipse.jetty.webapp;
     requires transitive org.eclipse.jetty.websocket.jetty.api;
 
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 
-    provides ServletContainerInitializer with JettyWebSocketServletContainerInitializer;
-    provides Configuration with JettyWebSocketConfiguration;
+    exports org.eclipse.jetty.websocket.server;
+    exports org.eclipse.jetty.websocket.server.config;
+
+    provides javax.servlet.ServletContainerInitializer with
+        org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+
+    provides org.eclipse.jetty.webapp.Configuration with
+        org.eclipse.jetty.websocket.server.config.JettyWebSocketConfiguration;
 }

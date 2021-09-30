@@ -11,20 +11,12 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.webapp.Configuration;
-
 module org.eclipse.jetty.plus
 {
-    exports org.eclipse.jetty.plus.annotation;
-    exports org.eclipse.jetty.plus.jndi;
-    exports org.eclipse.jetty.plus.security;
-    exports org.eclipse.jetty.plus.webapp;
-
     requires org.eclipse.jetty.jndi;
-    requires transitive org.eclipse.jetty.webapp;
     requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.webapp;
 
     // Only required if using DataSourceLoginService.
     requires static java.sql;
@@ -33,5 +25,12 @@ module org.eclipse.jetty.plus
     // Only required if using RunAs.
     requires static org.eclipse.jetty.servlet;
 
-    provides Configuration with EnvConfiguration, PlusConfiguration;
+    exports org.eclipse.jetty.plus.annotation;
+    exports org.eclipse.jetty.plus.jndi;
+    exports org.eclipse.jetty.plus.security;
+    exports org.eclipse.jetty.plus.webapp;
+
+    provides org.eclipse.jetty.webapp.Configuration with
+        org.eclipse.jetty.plus.webapp.EnvConfiguration,
+        org.eclipse.jetty.plus.webapp.PlusConfiguration;
 }

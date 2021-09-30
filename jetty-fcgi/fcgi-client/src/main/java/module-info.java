@@ -13,11 +13,12 @@
 
 module org.eclipse.jetty.fcgi.client
 {
+    requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.client;
+
     exports org.eclipse.jetty.fcgi;
     exports org.eclipse.jetty.fcgi.client.http;
     exports org.eclipse.jetty.fcgi.generator;
     exports org.eclipse.jetty.fcgi.parser;
-
-    requires transitive org.eclipse.jetty.client;
-    requires org.slf4j;
 }
