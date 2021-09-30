@@ -11,15 +11,14 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.xml.ConfigurationProcessorFactory;
-
 module org.eclipse.jetty.xml
 {
-    exports org.eclipse.jetty.xml;
+    requires org.slf4j;
 
     requires transitive java.xml;
     requires transitive org.eclipse.jetty.util;
-    requires org.slf4j;
 
-    uses ConfigurationProcessorFactory;
+    exports org.eclipse.jetty.xml;
+
+    uses org.eclipse.jetty.xml.ConfigurationProcessorFactory;
 }

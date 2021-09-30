@@ -11,18 +11,17 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.http.Http1FieldPreEncoder;
-import org.eclipse.jetty.http.HttpFieldPreEncoder;
-
 module org.eclipse.jetty.http
 {
+    requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.io;
+
     exports org.eclipse.jetty.http;
     exports org.eclipse.jetty.http.pathmap;
 
-    requires transitive org.eclipse.jetty.io;
-    requires org.slf4j;
+    uses org.eclipse.jetty.http.HttpFieldPreEncoder;
 
-    uses HttpFieldPreEncoder;
-
-    provides HttpFieldPreEncoder with Http1FieldPreEncoder;
+    provides org.eclipse.jetty.http.HttpFieldPreEncoder with
+        org.eclipse.jetty.http.Http1FieldPreEncoder;
 }

@@ -11,8 +11,6 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.websocket.api.ExtensionConfig;
-
 module org.eclipse.jetty.websocket.jetty.api
 {
     exports org.eclipse.jetty.websocket.api;
@@ -20,5 +18,5 @@ module org.eclipse.jetty.websocket.jetty.api
     exports org.eclipse.jetty.websocket.api.exceptions;
     exports org.eclipse.jetty.websocket.api.util;
 
-    uses ExtensionConfig.Parser;
+    uses org.eclipse.jetty.websocket.api.ExtensionConfig.Parser;
 }

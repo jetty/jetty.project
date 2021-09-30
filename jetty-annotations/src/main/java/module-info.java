@@ -11,22 +11,19 @@
 // ========================================================================
 //
 
-import javax.servlet.ServletContainerInitializer;
-
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.webapp.Configuration;
-
 module org.eclipse.jetty.annotations
 {
-    exports org.eclipse.jetty.annotations;
-
     requires java.annotation;
     requires java.naming;
-    requires transitive org.eclipse.jetty.plus;
-    requires transitive org.objectweb.asm;
     requires org.slf4j;
 
-    uses ServletContainerInitializer;
+    requires transitive org.eclipse.jetty.plus;
+    requires transitive org.objectweb.asm;
 
-    provides Configuration with AnnotationConfiguration;
+    exports org.eclipse.jetty.annotations;
+
+    uses javax.servlet.ServletContainerInitializer;
+
+    provides org.eclipse.jetty.webapp.Configuration with
+        org.eclipse.jetty.annotations.AnnotationConfiguration;
 }

@@ -13,18 +13,19 @@
 
 module org.eclipse.jetty.jndi
 {
+    requires org.slf4j;
+
+    requires transitive java.naming;
+    requires transitive org.eclipse.jetty.server;
+
+    // Only required if using MailSessionReference.
+    requires static javax.mail.glassfish;
+    // Only required if using DataSourceCloser.
+    requires static java.sql;
+    requires static org.eclipse.jetty.security;
+
     exports org.eclipse.jetty.jndi;
     exports org.eclipse.jetty.jndi.factories;
     exports org.eclipse.jetty.jndi.java;
     exports org.eclipse.jetty.jndi.local;
-
-    requires transitive java.naming;
-    requires transitive org.eclipse.jetty.server;
-    requires org.slf4j;
-
-    // Only required if using DataSourceCloser.
-    requires static java.sql;
-    // Only required if using MailSessionReference.
-    requires static javax.mail.glassfish;
-    requires static org.eclipse.jetty.security;
 }

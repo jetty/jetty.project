@@ -13,9 +13,10 @@
 
 module org.eclipse.jetty.http2.server
 {
-    exports org.eclipse.jetty.http2.server;
+    requires org.slf4j;
 
     requires transitive org.eclipse.jetty.http2.common;
     requires transitive org.eclipse.jetty.server;
-    requires org.slf4j;
+
+    exports org.eclipse.jetty.http2.server;
 }

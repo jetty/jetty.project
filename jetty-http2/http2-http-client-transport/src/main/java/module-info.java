@@ -13,10 +13,11 @@
 
 module org.eclipse.jetty.http2.http.client.transport
 {
-    exports org.eclipse.jetty.http2.client.http;
-
     requires org.eclipse.jetty.alpn.client;
+    requires org.slf4j;
+
     requires transitive org.eclipse.jetty.client;
     requires transitive org.eclipse.jetty.http2.client;
-    requires org.slf4j;
+
+    exports org.eclipse.jetty.http2.client.http;
 }

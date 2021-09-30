@@ -13,9 +13,10 @@
 
 module org.eclipse.jetty.websocket.servlet
 {
-    exports org.eclipse.jetty.websocket.servlet;
-
-    requires transitive org.eclipse.jetty.servlet;
     requires org.eclipse.jetty.websocket.core.server;
     requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.servlet;
+
+    exports org.eclipse.jetty.websocket.servlet;
 }

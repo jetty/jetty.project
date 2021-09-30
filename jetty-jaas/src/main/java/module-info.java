@@ -13,14 +13,15 @@
 
 module org.eclipse.jetty.jaas
 {
-    exports org.eclipse.jetty.jaas;
-    exports org.eclipse.jetty.jaas.callback;
-    exports org.eclipse.jetty.jaas.spi;
+    requires org.slf4j;
+    requires org.eclipse.jetty.util;
 
     requires transitive org.eclipse.jetty.security;
-    requires org.slf4j;
 
     // Only required if using JDBCLoginModule.
     requires static java.sql;
-    requires org.eclipse.jetty.util;
+
+    exports org.eclipse.jetty.jaas;
+    exports org.eclipse.jetty.jaas.callback;
+    exports org.eclipse.jetty.jaas.spi;
 }

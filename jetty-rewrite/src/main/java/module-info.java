@@ -13,10 +13,11 @@
 
 module org.eclipse.jetty.rewrite
 {
+    requires jetty.servlet.api;
+    requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.server;
+
     exports org.eclipse.jetty.rewrite;
     exports org.eclipse.jetty.rewrite.handler;
-
-    requires jetty.servlet.api;
-    requires transitive org.eclipse.jetty.server;
-    requires org.slf4j;
 }

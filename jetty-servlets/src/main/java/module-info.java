@@ -16,10 +16,9 @@
 // but other utility classes that depend on some Jetty module.
 module org.eclipse.jetty.servlets
 {
-    exports org.eclipse.jetty.servlets;
+    requires org.slf4j;
 
     requires transitive jetty.servlet.api;
-    requires org.slf4j;
 
     // Only required if using CloseableDoSFilter.
     requires static org.eclipse.jetty.io;
@@ -28,4 +27,6 @@ module org.eclipse.jetty.servlets
     requires static org.eclipse.jetty.server;
     // Only required if using CrossOriginFilter, DoSFilter, etc.
     requires static org.eclipse.jetty.util;
+
+    exports org.eclipse.jetty.servlets;
 }
