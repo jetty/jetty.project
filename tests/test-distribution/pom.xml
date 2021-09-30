@@ -19,7 +19,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -32,7 +31,6 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-resolver-provider</artifactId>
-      <version>${maven.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.resolver</groupId>
@@ -73,26 +71,22 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-home</artifactId>
-      <version>${project.version}</version>
       <type>zip</type>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>http2-http-client-transport</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>demo-simple-webapp</artifactId>
-      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
@@ -113,7 +107,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.demos</groupId>
       <artifactId>demo-jetty-webapp</artifactId>
-      <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
@@ -128,31 +121,26 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-unixsocket-server</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-unixsocket-client</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jetty-client</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util-ajax</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jetty-api</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -217,6 +205,7 @@
             <distribution.debug.port>$(distribution.debug.port}</distribution.debug.port>
             <home.start.timeout>${home.start.timeout}</home.start.timeout>
             <mariadb.version>${mariadb.version}</mariadb.version>
+            <sessionLogLevel>${sessionLogLevel}</sessionLogLevel>
           </systemPropertyVariables>
         </configuration>
       </plugin>

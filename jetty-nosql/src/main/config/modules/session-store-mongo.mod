@@ -14,7 +14,7 @@ sessions
 sessions/mongo/${connection-type}
 
 [files]
-maven://org.mongodb/mongo-java-driver/2.13.2|lib/nosql/mongo-java-driver-2.13.2.jar
+maven://org.mongodb/mongo-java-driver/${mongodb.version}|lib/nosql/mongo-java-driver-${mongodb.version}.jar
 
 [lib]
 lib/jetty-nosql-${jetty.version}.jar
@@ -28,6 +28,7 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 
 [ini]
 connection-type?=address
+mongodb.version?=@mongodb.version@
 
 [ini-template]
 #jetty.session.mongo.dbName=HttpSessions

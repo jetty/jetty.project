@@ -58,7 +58,7 @@
         <configuration>
           <addTestClassPath>true</addTestClassPath>
           <scriptVariables>
-            <maven.surefire.version>${maven.surefire.version}</maven.surefire.version>
+            <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
           </scriptVariables>
           <goals>
             <goal>clean</goal>
@@ -71,7 +71,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>

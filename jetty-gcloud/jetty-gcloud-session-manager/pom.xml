@@ -10,6 +10,10 @@
   <artifactId>jetty-gcloud-session-manager</artifactId>
   <name>Jetty :: GCloud :: Session Manager</name>
 
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.session</bundle-symbolic-name>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -41,19 +45,16 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-servlet</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jetty-server</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -67,10 +68,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <properties>
-    <bundle-symbolic-name>${project.groupId}.session</bundle-symbolic-name>
-  </properties>
 
   <build>
     <plugins>
@@ -140,27 +137,10 @@
             <configuration>
               <target>
                 <concat destfile="${project.build.directory}/gcloud-datastore.mod">
-                  <fileset file="src/main/config-template/modules/gcloud-datastore.mod" />
+                  <fileset file="${project.build.directory}/jetty-config-files/modules/gcloud-datastore.mod" />
                   <fileset file="${project.build.directory}/deps.txt" />
                 </concat>
               </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/config.xml</descriptor>
-              </descriptors>
             </configuration>
           </execution>
         </executions>

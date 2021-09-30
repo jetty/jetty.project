@@ -144,7 +144,7 @@ public class HostPort
     public static String normalizeHost(String host)
     {
         // if it is normalized IPv6 or could not be IPv6, return
-        if (host.isEmpty() || host.charAt(0) == '[' || host.indexOf(':') < 0)
+        if (host == null || host.isEmpty() || host.charAt(0) == '[' || host.indexOf(':') < 0)
             return host;
 
         // normalize with [ ]

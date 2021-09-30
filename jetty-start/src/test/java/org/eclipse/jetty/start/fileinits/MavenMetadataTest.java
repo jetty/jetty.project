@@ -79,7 +79,7 @@ public class MavenMetadataTest
     @Test
     public void testIsExpiredTimestampYesterday()
     {
-        LocalDateTime yesterday = LocalDateTime.now().minusDays(1);
+        LocalDateTime yesterday = LocalDateTime.now(ZoneId.of("UTC")).minusDays(1);
         String timestamp = getTimestampFormatter().format(yesterday);
         assertTrue(MavenMetadata.isExpiredTimestamp(timestamp), "Timestamp should be stale: " + timestamp);
     }

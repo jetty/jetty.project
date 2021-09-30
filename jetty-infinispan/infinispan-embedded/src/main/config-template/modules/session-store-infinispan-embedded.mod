@@ -16,9 +16,10 @@ sessions/infinispan/embedded/infinispan-embedded-libs
 basehome:modules/sessions/infinispan/embedded/infinispan.xml|etc/infinispan.xml
 
 [ini]
-infinispan.version?=9.4.8.Final
+infinispan.version?=@infinispan.version@
 
 [ini-template]
 #jetty.session.infinispan.idleTimeout.seconds=0
+#jetty.session.infinispan.serialization=false
 #jetty.session.gracePeriod.seconds=3600
 #jetty.session.savePeriod.seconds=0

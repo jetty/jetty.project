@@ -9,7 +9,7 @@
   <name>Jetty :: Infinispan Session Manager Remote with Querying</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.infinispan.remote.query</bundle-symbolic-name>
-    <infinispan.docker.image.version>9.4.8.Final</infinispan.docker.image.version>
+    <infinispan.docker.image.version>11.0.9.Final</infinispan.docker.image.version>
   </properties>
   <build>
     <plugins>
@@ -61,27 +61,10 @@
             <configuration>
               <target>
                 <concat destfile="${project.build.directory}/infinispan-remote-query-libs.mod">
-                  <fileset file="src/main/config-template/modules/sessions/infinispan/remote/infinispan-remote-query-libs.mod" />
+                  <fileset file="${project.build.directory}/jetty-config-files/modules/sessions/infinispan/remote/infinispan-remote-query-libs.mod" />
                   <fileset file="${project.build.directory}/deps.txt" />
                 </concat>
               </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/config.xml</descriptor>
-              </descriptors>
             </configuration>
           </execution>
         </executions>
@@ -101,7 +84,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>infinispan-common</artifactId>
-      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.infinispan</groupId>
@@ -116,17 +98,18 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-query</artifactId>
-      <version>${infinispan.version}</version>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-client-hotrod</artifactId>
-      <version>${infinispan.version}</version>
     </dependency>
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-remote-query-client</artifactId>
-      <version>${infinispan.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

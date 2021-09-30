@@ -60,27 +60,10 @@
             <configuration>
               <target>
                 <concat destfile="${project.build.directory}/infinispan-embedded-query-libs.mod">
-                  <fileset file="src/main/config-template/modules/sessions/infinispan/embedded/infinispan-embedded-query-libs.mod" />
+                  <fileset file="${project.build.directory}/jetty-config-files/modules/sessions/infinispan/embedded/infinispan-embedded-query-libs.mod" />
                   <fileset file="${project.build.directory}/deps.txt" />
                 </concat>
               </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/config.xml</descriptor>
-              </descriptors>
             </configuration>
           </execution>
         </executions>
@@ -91,7 +74,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>infinispan-common</artifactId>
-      <version>${project.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.infinispan</groupId>
@@ -106,7 +88,6 @@
     <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-query</artifactId>
-      <version>${infinispan.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>

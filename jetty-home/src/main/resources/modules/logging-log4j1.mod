@@ -25,7 +25,7 @@ lib/logging/slf4j-log4j12-${slf4j.version}.jar
 lib/logging/log4j-${log4j.version}.jar
 
 [ini]
-log4j.version?=1.2.17
+log4j.version?=@log4j.version@
 jetty.webapp.addServerClasses+=,org.apache.log4j.
 
 
