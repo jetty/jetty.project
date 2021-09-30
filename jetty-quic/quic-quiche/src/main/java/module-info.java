@@ -14,10 +14,11 @@
 // The module must be open to allow JNA to find the native lib.
 open module org.eclipse.jetty.quic.quiche
 {
-    exports org.eclipse.jetty.quic.quiche.ffi;
-    exports org.eclipse.jetty.quic.quiche;
-
     requires org.eclipse.jetty.util;
     requires org.slf4j;
-    requires com.sun.jna;
+
+    requires transitive com.sun.jna;
+
+    exports org.eclipse.jetty.quic.quiche.ffi;
+    exports org.eclipse.jetty.quic.quiche;
 }

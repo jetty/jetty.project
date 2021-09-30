@@ -13,16 +13,24 @@
 
 module org.eclipse.jetty.http3.common
 {
-    exports org.eclipse.jetty.http3.api;
-    exports org.eclipse.jetty.http3.frames;
-    exports org.eclipse.jetty.http3.internal to org.eclipse.jetty.http3.client, org.eclipse.jetty.http3.server;
-    exports org.eclipse.jetty.http3.internal.generator to org.eclipse.jetty.http3.client, org.eclipse.jetty.http3.server;
-    exports org.eclipse.jetty.http3.internal.parser to org.eclipse.jetty.http3.client, org.eclipse.jetty.http3.server;
+    requires org.eclipse.jetty.io;
+    requires org.eclipse.jetty.util;
+    requires org.slf4j;
 
     requires transitive org.eclipse.jetty.http;
     requires transitive org.eclipse.jetty.http3.qpack;
-    requires org.eclipse.jetty.io;
     requires transitive org.eclipse.jetty.quic.common;
-    requires org.eclipse.jetty.util;
-    requires org.slf4j;
+
+    exports org.eclipse.jetty.http3.api;
+    exports org.eclipse.jetty.http3.frames;
+
+    exports org.eclipse.jetty.http3.internal to
+        org.eclipse.jetty.http3.client,
+        org.eclipse.jetty.http3.server;
+    exports org.eclipse.jetty.http3.internal.generator to
+        org.eclipse.jetty.http3.client,
+        org.eclipse.jetty.http3.server;
+    exports org.eclipse.jetty.http3.internal.parser to
+        org.eclipse.jetty.http3.client,
+        org.eclipse.jetty.http3.server;
 }
