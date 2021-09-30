@@ -742,7 +742,7 @@ public class ClasspathPattern extends AbstractSet<String>
         Boolean byName = names.isIncludedAndNotExcluded(name);
 
         // If we excluded by name, then no match
-        if (Boolean.FALSE == byName)
+        if (Boolean.FALSE.equals(byName))
             return false;
 
         // check the location set
@@ -750,12 +750,12 @@ public class ClasspathPattern extends AbstractSet<String>
         Boolean byLocation = uri == null ? null : locations.isIncludedAndNotExcluded(uri);
 
         // If we excluded by location or couldn't check location exclusion, then no match
-        if (Boolean.FALSE == byLocation || (locations.hasExcludes() && uri == null))
+        if (Boolean.FALSE.equals(byLocation) || (locations.hasExcludes() && uri == null))
             return false;
 
         // If there are includes, then we must be included to match.
         if (names.hasIncludes() || locations.hasIncludes())
-            return byName == Boolean.TRUE || byLocation == Boolean.TRUE;
+            return Boolean.TRUE.equals(byName) || Boolean.TRUE.equals(byLocation);
 
         // Otherwise there are no includes and it was not excluded, so match
         return true;

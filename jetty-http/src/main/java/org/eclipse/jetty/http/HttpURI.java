@@ -785,7 +785,7 @@ public class HttpURI
         if (ambiguous != null)
         {
             // Is the segment intrinsically ambiguous
-            if (ambiguous == Boolean.TRUE)
+            if (Boolean.TRUE.equals(ambiguous))
                 _violations.add(Violation.SEGMENT);
             // Is the segment ambiguous with a parameter?
             if (param)
