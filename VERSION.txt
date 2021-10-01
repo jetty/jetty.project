@@ -1,3 +1,8 @@
+jetty-9.3.30.v20211001 - 01 October 2021
+ + 6072 High CPU usage when TLS client sends TLS Record data exceeding length 17408
+ + 6263 Review URI encoding in ConcatServlet & WelcomeFilter
+ + 6277 Better handle exceptions thrown from session destroy listener
+
 jetty-9.3.29.v20201019 - 19 October 2020
  + 4217 SslConnection.DecryptedEnpoint.flush eternal busy loop
  + 4443 Track backport of ALPN APIs to Java 8
