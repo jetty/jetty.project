@@ -66,6 +66,11 @@ public class MessageParser
         state = State.HEADER;
     }
 
+    public ParserListener getListener()
+    {
+        return listener;
+    }
+
     public void setDataMode(boolean enable)
     {
         this.dataMode = enable;
@@ -167,7 +172,7 @@ public class MessageParser
         }
     }
 
-    private void sessionFailure(ByteBuffer buffer, int error, String reason)
+    private void sessionFailure(ByteBuffer buffer, long error, String reason)
     {
         unknownBodyParser.sessionFailure(buffer, error, reason);
     }

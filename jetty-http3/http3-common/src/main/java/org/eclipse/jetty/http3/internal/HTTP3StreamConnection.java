@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http3.internal;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -83,6 +85,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     }
 
     @Override
+    protected boolean onReadTimeout(Throwable timeout)
+    {
+        // Idle timeouts are handled by HTTP3Stream.
+        return false;
+    }
+
+    @Override
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
@@ -107,33 +116,43 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private void processNonDataFrames()
     {
-        while (true)
+        try
         {
-            if (parseAndFill() == MessageParser.Result.NO_FRAME)
-                break;
-
-            // TODO: we should also exit if the connection was closed due to errors.
-            //  There is not yet a isClosed() primitive though.
-            if (remotelyClosed)
+            while (true)
             {
-                // We have detected the end of the stream,
-                // do not loop around to fill & parse again.
-                // However, the last frame may have
-                // caused a write that we need to flush.
-                getEndPoint().getQuicSession().flush();
-                break;
-            }
+                if (parseAndFill() == MessageParser.Result.NO_FRAME)
+                    break;
 
-            if (dataMode)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("switching to dataMode=true on {}", this);
-                if (buffer.hasRemaining())
-                    processDataFrames();
-                else
-                    fillInterested();
-                break;
+                // TODO: we should also exit if the connection was closed due to errors.
+                //  There is not yet a isClosed() primitive though.
+                if (remotelyClosed)
+                {
+                    // We have detected the end of the stream,
+                    // do not loop around to fill & parse again.
+                    // However, the last frame may have
+                    // caused a write that we need to flush.
+                    getEndPoint().getQuicSession().flush();
+                    break;
+                }
+
+                if (dataMode)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("switching to dataMode=true on {}", this);
+                    if (buffer.hasRemaining())
+                        processDataFrames();
+                    else
+                        fillInterested();
+                    break;
+                }
             }
+        }
+        catch (Throwable x)
+        {
+            long error = ErrorCode.REQUEST_CANCELLED_ERROR.code();
+            getEndPoint().close(error, x);
+            // Notify the application that a failure happened.
+            parser.getListener().onStreamFailure(getEndPoint().getStreamId(), error, x);
         }
     }
 
@@ -141,43 +160,52 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     public Stream.Data readData()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("reading data on {}", this);
-
-        if (hasDemand())
-            throw new IllegalStateException("invalid call to readData(): outstanding demand");
-
-        switch (parseAndFill())
+        try
         {
-            case FRAME:
+            if (LOG.isDebugEnabled())
+                LOG.debug("reading data on {}", this);
+
+            if (hasDemand())
+                throw new IllegalStateException("invalid call to readData(): outstanding demand");
+
+            switch (parseAndFill())
             {
-                DataFrame frame = dataFrames.poll();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("read data {} on {}", frame, this);
-                if (frame == null)
+                case FRAME:
+                {
+                    DataFrame frame = dataFrames.poll();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("read data {} on {}", frame, this);
+                    if (frame == null)
+                        return null;
+
+                    buffer.retain();
+
+                    return new Stream.Data(frame, buffer::release);
+                }
+                case MODE_SWITCH:
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("switching to dataMode=false on {}", this);
+                    dataLast = true;
+                    dataMode = false;
+                    parser.setDataMode(false);
                     return null;
-
-                buffer.retain();
-
-                return new Stream.Data(frame, buffer::release);
+                }
+                case NO_FRAME:
+                {
+                    return null;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
             }
-            case MODE_SWITCH:
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("switching to dataMode=false on {}", this);
-                dataLast = true;
-                dataMode = false;
-                parser.setDataMode(false);
-                return null;
-            }
-            case NO_FRAME:
-            {
-                return null;
-            }
-            default:
-            {
-                throw new IllegalStateException();
-            }
+        }
+        catch (Throwable x)
+        {
+            getEndPoint().close(ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+            // Rethrow so the application has a chance to handle it.
+            throw x;
         }
     }
 
@@ -273,7 +301,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     byteBuffer = buffer.getBuffer();
                 }
 
-                int filled = getEndPoint().fill(byteBuffer);
+                int filled = fill(byteBuffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled {} on {} with buffer {}", filled, this, buffer);
 
@@ -307,12 +335,23 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("could not process control stream {}", getEndPoint(), x);
+                LOG.debug("parse+fill failure on {}", this, x);
             if (buffer != null)
                 buffer.release();
             buffer = null;
-            getEndPoint().close(x);
-            return MessageParser.Result.NO_FRAME;
+            throw x;
+        }
+    }
+
+    private int fill(ByteBuffer byteBuffer)
+    {
+        try
+        {
+            return getEndPoint().fill(byteBuffer);
+        }
+        catch (IOException x)
+        {
+            throw new UncheckedIOException(x);
         }
     }
 

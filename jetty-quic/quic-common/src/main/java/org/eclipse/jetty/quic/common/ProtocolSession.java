@@ -120,7 +120,7 @@ public abstract class ProtocolSession
         connection.onOpen();
     }
 
-    public boolean close(int error, String reason)
+    public boolean close(long error, String reason)
     {
         return getQuicSession().close(error, reason);
     }

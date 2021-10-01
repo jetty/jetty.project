@@ -37,7 +37,8 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
     private final Session.Server.Listener listener;
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
-    private int maxBlockedStreams;
+    private int maxBlockedStreams = 0;
+    private long streamIdleTimeout = 30000;
 
     public AbstractHTTP3ServerConnectionFactory(HttpConfiguration httpConfiguration, Session.Server.Listener listener)
     {
@@ -74,6 +75,7 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
         return httpConfiguration;
     }
 
+    @ManagedAttribute("The max number of streams blocked in QPACK encoding")
     public int getMaxBlockedStreams()
     {
         return maxBlockedStreams;
@@ -84,10 +86,23 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
         this.maxBlockedStreams = maxBlockedStreams;
     }
 
+    @ManagedAttribute("The stream idle timeout in milliseconds")
+    public long getStreamIdleTimeout()
+    {
+        return streamIdleTimeout;
+    }
+
+    public void setStreamIdleTimeout(long streamIdleTimeout)
+    {
+        this.streamIdleTimeout = streamIdleTimeout;
+    }
+
     @Override
     public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
     {
-        return new ServerHTTP3Session((ServerQuicSession)quicSession, listener, getMaxBlockedStreams(), getHttpConfiguration().getRequestHeaderSize());
+        ServerHTTP3Session session = new ServerHTTP3Session((ServerQuicSession)quicSession, listener, getMaxBlockedStreams(), getHttpConfiguration().getRequestHeaderSize());
+        session.setStreamIdleTimeout(getStreamIdleTimeout());
+        return session;
     }
 
     @Override

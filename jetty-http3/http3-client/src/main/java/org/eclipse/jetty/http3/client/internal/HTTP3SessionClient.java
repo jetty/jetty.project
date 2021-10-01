@@ -20,6 +20,7 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.internal.ErrorCode;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
@@ -77,14 +78,20 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     {
         ClientHTTP3Session session = getProtocolSession();
         long streamId = session.getQuicSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);
-        QuicStreamEndPoint streamEndPoint = session.getOrCreateStreamEndPoint(streamId, session::configureProtocolEndPoint);
+        QuicStreamEndPoint endPoint = session.getOrCreateStreamEndPoint(streamId, session::configureProtocolEndPoint);
         if (LOG.isDebugEnabled())
-            LOG.debug("created request/response stream #{} on {}", streamId, streamEndPoint);
+            LOG.debug("created request/response stream #{} on {}", streamId, endPoint);
 
         Promise.Completable<Stream> promise = new Promise.Completable<>();
-        HTTP3Stream stream = createStream(streamEndPoint);
+        HTTP3Stream stream = createStream(endPoint);
         stream.setListener(listener);
-        Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> promise.succeeded(stream), promise::failed);
+
+        Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () ->
+        {
+            if (listener == null)
+                endPoint.shutdownInput(ErrorCode.NO_ERROR.code());
+            promise.succeeded(stream);
+        }, promise::failed);
 
         session.writeFrame(streamId, frame, callback);
         return promise;

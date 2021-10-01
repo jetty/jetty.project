@@ -217,6 +217,32 @@ public interface Stream
         public default void onTrailer(Stream stream, HeadersFrame frame)
         {
         }
+
+        /**
+         * <p>Callback method invoked when the stream idle timeout elapses.</p>
+         *
+         * @param stream the stream
+         * @param failure the timeout failure
+         * @return true to reset the stream, false to ignore the idle timeout
+         */
+        public default boolean onIdleTimeout(Stream stream, Throwable failure)
+        {
+            return true;
+        }
+
+        /**
+         * <p>Callback method invoked when a stream failure occurred.</p>
+         * <p>Typical stream failures, among others, are failures to
+         * decode a HEADERS frame, or failures to read bytes because
+         * the stream has been reset.</p>
+         *
+         * @param error the error code
+         * @param failure a short description of the failure,
+         * or {@code null} if no short description is available
+         */
+        public default void onFailure(long error, Throwable failure)
+        {
+        }
     }
 
     /**

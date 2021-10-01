@@ -89,6 +89,16 @@ public class ServerHTTP3Session extends ServerProtocolSession
         return applicationSession;
     }
 
+    public long getStreamIdleTimeout()
+    {
+        return applicationSession.getStreamIdleTimeout();
+    }
+
+    public void setStreamIdleTimeout(long streamIdleTimeout)
+    {
+        applicationSession.setStreamIdleTimeout(streamIdleTimeout);
+    }
+
     @Override
     public void onOpen()
     {
