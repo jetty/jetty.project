@@ -14,13 +14,16 @@
 package org.eclipse.jetty.http3.internal;
 
 import java.net.SocketAddress;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
+import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
@@ -86,6 +89,12 @@ public abstract class HTTP3Session implements Session, ParserListener
         return closeState != CloseState.NOT_CLOSED;
     }
 
+    @Override
+    public Collection<Stream> getStreams()
+    {
+        return List.copyOf(streams.values());
+    }
+
     public void close(long error, String reason)
     {
         getProtocolSession().close(error, reason);
@@ -109,10 +118,12 @@ public abstract class HTTP3Session implements Session, ParserListener
     protected HTTP3Stream createStream(QuicStreamEndPoint endPoint)
     {
         long streamId = endPoint.getStreamId();
-        HTTP3Stream stream = newHTTP3Stream(endPoint);
-        if (streams.put(streamId, stream) != null)
-            throw new IllegalStateException("duplicate stream id " + streamId);
-        return stream;
+        return streams.compute(streamId, (id, stream) ->
+        {
+            if (stream != null)
+                throw new IllegalStateException("duplicate stream id " + streamId);
+            return newHTTP3Stream(endPoint);
+        });
     }
 
     protected HTTP3Stream getOrCreateStream(QuicStreamEndPoint endPoint)
@@ -130,12 +141,24 @@ public abstract class HTTP3Session implements Session, ParserListener
             if (idleTimeout > 0)
                 stream.setIdleTimeout(idleTimeout);
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug("created {} on {}", stream, this);
         return stream;
     }
 
     protected HTTP3Stream getStream(long streamId)
     {
         return streams.get(streamId);
+    }
+
+    public void removeStream(HTTP3Stream stream)
+    {
+        boolean removed = streams.remove(stream.getId()) != null;
+        if (removed)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("destroyed {} on {}", stream, this);
+        }
     }
 
     public abstract void writeFrame(long streamId, Frame frame, Callback callback);
@@ -196,6 +219,7 @@ public abstract class HTTP3Session implements Session, ParserListener
             if (LOG.isDebugEnabled())
                 LOG.debug("received trailer {}#{} on {}", frame, streamId, this);
             stream.processTrailer(frame);
+            removeStream(stream);
         }
     }
 
@@ -232,7 +256,10 @@ public abstract class HTTP3Session implements Session, ParserListener
             LOG.debug("stream failure {}/{} for stream #{} on {}", error, failure, streamId, this, failure);
         HTTP3Stream stream = getStream(streamId);
         if (stream != null)
+        {
             stream.processFailure(error, failure);
+            removeStream(stream);
+        }
     }
 
     @Override
@@ -282,7 +309,9 @@ public abstract class HTTP3Session implements Session, ParserListener
         @Override
         protected boolean onExpired(HTTP3Stream stream)
         {
-            stream.processIdleTimeout(new TimeoutException("idle timeout " + stream.getIdleTimeout() + " ms elapsed"));
+            if (stream.processIdleTimeout(new TimeoutException("idle timeout " + stream.getIdleTimeout() + " ms elapsed")))
+                removeStream(stream);
+            // The iterator returned from the method above does not support removal.
             return false;
         }
     }

@@ -66,6 +66,8 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
             if (LOG.isDebugEnabled())
                 LOG.debug("received response {}#{} on {}", frame, streamId, this);
             stream.processResponse(frame);
+            if (frame.isLast())
+                removeStream(stream);
         }
         else
         {

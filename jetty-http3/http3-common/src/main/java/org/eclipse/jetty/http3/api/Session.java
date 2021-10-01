@@ -14,6 +14,8 @@
 package org.eclipse.jetty.http3.api;
 
 import java.net.SocketAddress;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -55,6 +57,14 @@ public interface Session
     public default boolean isClosed()
     {
         return false;
+    }
+
+    /**
+     * @return a snapshot of all the streams currently belonging to this session
+     */
+    public default Collection<Stream> getStreams()
+    {
+        return Collections.emptyList();
     }
 
     /**
