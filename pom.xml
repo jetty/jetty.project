@@ -241,6 +241,7 @@
     <module>jetty-bom</module>
     <module>documentation</module>
     <module>jetty-keystore</module>
+    <module>jetty-p2</module>
     <module>jetty-unixdomain-server</module>
   </modules>
 
