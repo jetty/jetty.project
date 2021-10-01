@@ -60,13 +60,15 @@ public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, Pr
     @Override
     public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
     {
+        HTTP3Client client = (HTTP3Client)context.get(HTTP3Client.CLIENT_CONTEXT_KEY);
         Session.Client.Listener listener = (Session.Client.Listener)context.get(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
         Promise<Session.Client> promise = (Promise<Session.Client>)context.get(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY);
-        ClientHTTP3Session protocolSession = new ClientHTTP3Session((ClientQuicSession)quicSession, listener, promise, getMaxBlockedStreams(), getMaxResponseHeadersSize());
+        ClientHTTP3Session session = new ClientHTTP3Session((ClientQuicSession)quicSession, listener, promise, getMaxBlockedStreams(), getMaxResponseHeadersSize());
+        session.setStreamIdleTimeout(client.getStreamIdleTimeout());
         if (LOG.isDebugEnabled())
-            LOG.debug("created protocol-specific {}", protocolSession);
-        return protocolSession;
+            LOG.debug("created protocol-specific {}", session);
+        return session;
     }
 
     @Override

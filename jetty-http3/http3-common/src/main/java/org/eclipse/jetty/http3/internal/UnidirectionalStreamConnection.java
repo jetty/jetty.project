@@ -164,14 +164,14 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
             if (StreamType.isReserved(streamType))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("reserved stream type {}, resetting on {}", Long.toHexString(streamType), this);
-                getEndPoint().reset(ErrorCode.randomReservedCode());
+                    LOG.debug("reserved stream type {}, closing {}", Long.toHexString(streamType), this);
+                getEndPoint().close(ErrorCode.randomReservedCode(), null);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("unsupported stream type {}, resetting on {}", Long.toHexString(streamType), this);
-                getEndPoint().reset(ErrorCode.STREAM_CREATION_ERROR.code());
+                    LOG.debug("unsupported stream type {}, closing {}", Long.toHexString(streamType), this);
+                getEndPoint().close(ErrorCode.STREAM_CREATION_ERROR.code(), null);
             }
         }
     }

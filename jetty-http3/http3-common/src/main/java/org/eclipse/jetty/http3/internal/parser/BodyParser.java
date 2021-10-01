@@ -67,13 +67,13 @@ public abstract class BodyParser
         sessionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code(), "invalid_frame");
     }
 
-    protected void sessionFailure(ByteBuffer buffer, int error, String reason)
+    protected void sessionFailure(ByteBuffer buffer, long error, String reason)
     {
         BufferUtil.clear(buffer);
         notifySessionFailure(error, reason);
     }
 
-    protected void notifySessionFailure(int error, String reason)
+    protected void notifySessionFailure(long error, String reason)
     {
         try
         {
@@ -85,11 +85,11 @@ public abstract class BodyParser
         }
     }
 
-    protected void notifyStreamFailure(long streamId, int error, String reason)
+    protected void notifyStreamFailure(long streamId, int error, Throwable failure)
     {
         try
         {
-            listener.onStreamFailure(streamId, error, reason);
+            listener.onStreamFailure(streamId, error, failure);
         }
         catch (Throwable x)
         {

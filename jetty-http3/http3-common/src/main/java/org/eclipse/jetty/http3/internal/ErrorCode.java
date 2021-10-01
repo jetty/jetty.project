@@ -35,9 +35,9 @@ public enum ErrorCode
     HTTP_CONNECT_ERROR(0x10F),
     VERSION_FALLBACK_ERROR(0x110);
 
-    private final int code;
+    private final long code;
 
-    ErrorCode(int code)
+    ErrorCode(long code)
     {
         this.code = code;
     }
@@ -50,7 +50,7 @@ public enum ErrorCode
         return 0x1F * n + 0x21;
     }
 
-    public int code()
+    public long code()
     {
         return code;
     }

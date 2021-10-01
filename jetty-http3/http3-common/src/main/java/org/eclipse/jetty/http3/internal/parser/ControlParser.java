@@ -136,7 +136,7 @@ public class ControlParser
         }
     }
 
-    private void sessionFailure(ByteBuffer buffer, int error, String reason)
+    private void sessionFailure(ByteBuffer buffer, long error, String reason)
     {
         unknownBodyParser.sessionFailure(buffer, error, reason);
     }

@@ -22,6 +22,8 @@ import java.util.stream.IntStream;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.FillInterest;
+import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -75,57 +77,63 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         return session.isFinished(streamId);
     }
 
-    @Override
-    protected void doShutdownInput()
+    public void shutdownInput(long error)
     {
         try
         {
+            shutdownInput();
             if (LOG.isDebugEnabled())
-                LOG.debug("shutting down input of stream {}", streamId);
-            session.shutdownInput(streamId);
+                LOG.debug("shutting down input of stream #{} with error 0x{}", streamId, Long.toHexString(error));
+            session.shutdownInput(streamId, error);
         }
         catch (IOException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("error shutting down output of stream {}", streamId, x);
+                LOG.debug("error shutting down input of stream #{} with error 0x{}", streamId, Long.toHexString(error), x);
         }
     }
 
-    @Override
-    protected void doShutdownOutput()
+    public void shutdownOutput(long error)
     {
         try
         {
+            shutdownOutput();
             if (LOG.isDebugEnabled())
-                LOG.debug("shutting down output of stream {}", streamId);
-            session.shutdownOutput(streamId);
+                LOG.debug("shutting down output of stream #{} with error 0x{}", streamId, Long.toHexString(error));
+            session.shutdownOutput(streamId, error);
         }
         catch (IOException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("error shutting down output of stream {}", streamId, x);
+                LOG.debug("error shutting down output of stream #{} with error 0x{}", streamId, Long.toHexString(error), x);
         }
     }
 
-    @Override
-    protected void doClose()
+    public void close(long error, Throwable failure)
     {
+        shutdownInput(error);
+        FillInterest fillInterest = getFillInterest();
+        if (failure == null)
+            fillInterest.onClose();
+        else
+            fillInterest.onFail(failure);
+
+        shutdownOutput(error);
+        WriteFlusher writeFlusher = getWriteFlusher();
+        if (failure == null)
+            writeFlusher.onClose();
+        else
+            writeFlusher.onFail(failure);
+
         if (LOG.isDebugEnabled())
-            LOG.debug("closing stream {}", streamId);
-        doShutdownInput();
-        doShutdownOutput();
+            LOG.debug("closed stream #{} with error 0x{}", streamId, Long.toHexString(error), failure);
     }
 
     @Override
     public void onClose(Throwable failure)
     {
-        super.onClose(failure);
-        session.onClose(streamId);
-    }
-
-    public void reset(long error)
-    {
-        session.resetStream(streamId, error);
+        // Implemented empty because we want to disable the standard
+        // EndPoint close mechanism, since QUIC uses error codes.
     }
 
     @Override

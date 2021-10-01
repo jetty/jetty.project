@@ -38,7 +38,7 @@ public class HTTP3UnexpectedFrameTest extends AbstractHTTP3ClientServerTest
         startServer(new Session.Server.Listener()
         {
             @Override
-            public void onSessionFailure(Session session, int error, String reason)
+            public void onSessionFailure(Session session, long error, String reason)
             {
                 assertEquals(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), error);
                 serverLatch.countDown();
@@ -50,7 +50,7 @@ public class HTTP3UnexpectedFrameTest extends AbstractHTTP3ClientServerTest
         Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener()
             {
                 @Override
-                public void onSessionFailure(Session session, int error, String reason)
+                public void onSessionFailure(Session session, long error, String reason)
                 {
                     assertEquals(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), error);
                     clientLatch.countDown();

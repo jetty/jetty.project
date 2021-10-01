@@ -18,9 +18,7 @@ import java.util.ArrayDeque;
 import java.util.List;
 import java.util.Queue;
 
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
-import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.generator.MessageGenerator;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -69,16 +67,21 @@ public class HTTP3Flusher extends IteratingCallback
             LOG.debug("flushing {} on {}", entry, this);
 
         Frame frame = entry.frame;
+
+        if (frame instanceof FlushFrame)
+        {
+            succeeded();
+            return Action.SCHEDULED;
+        }
+
         generator.generate(lease, entry.endPoint.getStreamId(), frame);
-        boolean last = frame instanceof HeadersFrame && ((HeadersFrame)frame).isLast() ||
-            frame instanceof DataFrame && ((DataFrame)frame).isLast();
 
         QuicStreamEndPoint endPoint = entry.endPoint;
         List<ByteBuffer> buffers = lease.getByteBuffers();
         if (LOG.isDebugEnabled())
             LOG.debug("writing {} buffers ({} bytes) for stream #{} on {}", buffers.size(), lease.getTotalLength(), endPoint.getStreamId(), this);
 
-        endPoint.write(this, buffers, last);
+        endPoint.write(this, buffers, Frame.isLast(frame));
         return Action.SCHEDULED;
     }
 
@@ -86,7 +89,7 @@ public class HTTP3Flusher extends IteratingCallback
     public void succeeded()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("succeeded to write {} on {}", entry, this);
+            LOG.debug("succeeded to flush {} on {}", entry, this);
         lease.recycle();
         entry.callback.succeeded();
         entry = null;
@@ -97,7 +100,7 @@ public class HTTP3Flusher extends IteratingCallback
     protected void onCompleteFailure(Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed to write {} on {}", entry, this, failure);
+            LOG.debug("failed to flush {} on {}", entry, this, failure);
         // TODO
     }
 
@@ -124,6 +127,14 @@ public class HTTP3Flusher extends IteratingCallback
         public String toString()
         {
             return String.format("%s#%d", frame, endPoint.getStreamId());
+        }
+    }
+
+    public static class FlushFrame extends Frame
+    {
+        public FlushFrame()
+        {
+            super(null);
         }
     }
 }

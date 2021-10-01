@@ -482,7 +482,7 @@ public class QuicheConnection
         }
     }
 
-    public boolean close(int error, String reason)
+    public boolean close(long error, String reason)
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -564,11 +564,6 @@ public class QuicheConnection
                 return;
             throw new IOException("failed to shutdown stream " + streamId + ": " + LibQuiche.quiche_error.errToString(rc));
         }
-    }
-
-    public void resetStream(long streamId, long error) throws IOException
-    {
-        shutdownStream(streamId, true, error);
     }
 
     public void feedFinForStream(long streamId) throws IOException

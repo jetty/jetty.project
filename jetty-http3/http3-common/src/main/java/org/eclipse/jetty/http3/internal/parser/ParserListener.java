@@ -31,11 +31,11 @@ public interface ParserListener
     {
     }
 
-    public default void onStreamFailure(long streamId, int error, String reason)
+    public default void onStreamFailure(long streamId, long error, Throwable failure)
     {
     }
 
-    public default void onSessionFailure(int error, String reason)
+    public default void onSessionFailure(long error, String reason)
     {
     }
 
@@ -67,13 +67,13 @@ public interface ParserListener
         }
 
         @Override
-        public void onStreamFailure(long streamId, int error, String reason)
+        public void onStreamFailure(long streamId, long error, Throwable failure)
         {
-            listener.onStreamFailure(streamId, error, reason);
+            listener.onStreamFailure(streamId, error, failure);
         }
 
         @Override
-        public void onSessionFailure(int error, String reason)
+        public void onSessionFailure(long error, String reason)
         {
             listener.onSessionFailure(error, reason);
         }

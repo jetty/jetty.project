@@ -46,6 +46,7 @@ public class HTTP3Client extends ContainerLifeCycle
 
     private final ClientConnector connector;
     private List<String> protocols = List.of("h3");
+    private long streamIdleTimeout = 30000;
 
     public HTTP3Client()
     {
@@ -62,6 +63,17 @@ public class HTTP3Client extends ContainerLifeCycle
     public void setProtocols(List<String> protocols)
     {
         this.protocols = protocols;
+    }
+
+    @ManagedAttribute("The stream idle timeout in milliseconds")
+    public long getStreamIdleTimeout()
+    {
+        return streamIdleTimeout;
+    }
+
+    public void setStreamIdleTimeout(long streamIdleTimeout)
+    {
+        this.streamIdleTimeout = streamIdleTimeout;
     }
 
     public CompletableFuture<Session.Client> connect(SocketAddress address, Session.Client.Listener listener)

@@ -172,32 +172,21 @@ public abstract class QuicSession
         return quicheConnection.windowCapacity(streamId);
     }
 
-    public void shutdownInput(long streamId) throws IOException
+    public void shutdownInput(long streamId, long error) throws IOException
     {
-        quicheConnection.shutdownStream(streamId, false, 0);
+        quicheConnection.shutdownStream(streamId, false, error);
+        flush();
     }
 
-    public void shutdownOutput(long streamId) throws IOException
+    public void shutdownOutput(long streamId, long error) throws IOException
     {
-        quicheConnection.shutdownStream(streamId, true, 0);
+        quicheConnection.shutdownStream(streamId, true, error);
+        flush();
     }
 
     public void onClose(long streamId)
     {
         endpoints.remove(streamId);
-    }
-
-    public void resetStream(long streamId, long error)
-    {
-        try
-        {
-            quicheConnection.resetStream(streamId, error);
-        }
-        catch (IOException x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("could not reset stream #{} with error {}", streamId, error, x);
-        }
     }
 
     public SocketAddress getLocalAddress()
@@ -359,7 +348,7 @@ public abstract class QuicSession
             LOG.debug("closed {}", this);
     }
 
-    public boolean close(int error, String reason)
+    public boolean close(long error, String reason)
     {
         return quicheConnection.close(error, reason);
     }

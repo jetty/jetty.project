@@ -162,12 +162,21 @@ public interface Session
          *         // Send a response.
          *         var response = new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY);
          *         stream.respond(new HeadersFrame(response, true));
+         *         if (!frame.isLast())
+         *             stream.demand();
+         *         return null;
          *     }
          * }
          * </pre>
-         * <p>To read request content, applications should call
-         * {@link Stream#demand()} and return a {@link Stream.Listener} that overrides
-         * {@link Stream.Listener#onDataAvailable(Stream)}.</p>
+         * <p>If there is request content (indicated by the fact that the HEADERS frame
+         * is not the last in the stream), then applications either:</p>
+         * <ul>
+         *     <li>return {@code null} to indicate that they are not interested in
+         *     reading the content</li>
+         *     <li><em>must</em> call {@link Stream#demand()} and return a {@link Stream.Listener}
+         *     that overrides {@link Stream.Listener#onDataAvailable(Stream)} that reads
+         *     and consumes the content.</li>
+         * </ul>
          *
          * @param stream the stream associated with the request
          * @param frame the HEADERS frame containing the request headers
@@ -186,7 +195,7 @@ public interface Session
          * @param error the error code
          * @param reason the error reason
          */
-        public default void onSessionFailure(Session session, int error, String reason)
+        public default void onSessionFailure(Session session, long error, String reason)
         {
         }
     }
