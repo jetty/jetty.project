@@ -14,13 +14,6 @@
   <properties>
     <tycho-version>2.5.0</tycho-version>
   </properties>
-  <pluginRepositories>
-  <!-- TODO just until next release for testing latest changes -->
-    <pluginRepository>
-        <id>tycho-snapshots</id>
-        <url>https://repo.eclipse.org/content/repositories/tycho-snapshots/</url>
-     </pluginRepository>
-  </pluginRepositories>
   <build>
     <plugins>
       <plugin>
