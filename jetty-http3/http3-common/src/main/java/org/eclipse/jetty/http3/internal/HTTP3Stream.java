@@ -97,12 +97,14 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
             expireNanoTime = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
     }
 
-    void processIdleTimeout(TimeoutException timeout)
+    boolean processIdleTimeout(TimeoutException timeout)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout {} ms expired on {}", getIdleTimeout(), this);
-        if (notifyIdleTimeout(timeout))
+        boolean close = notifyIdleTimeout(timeout);
+        if (close)
             endPoint.close(ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout);
+        return close;
     }
 
     @Override
@@ -120,8 +122,16 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
     @Override
     public Data readData()
     {
-        HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
-        return connection.readData();
+        try
+        {
+            HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
+            return connection.readData();
+        }
+        catch (Throwable x)
+        {
+            session.removeStream(this);
+            throw x;
+        }
     }
 
     @Override
