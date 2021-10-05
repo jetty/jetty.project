@@ -27,7 +27,6 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
-import org.eclipse.jetty.quic.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -37,11 +36,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>A {@link Connection} implementation that receives and sends datagram packets via its associated datagram {@link EndPoint}.</p>
+ * <p>A {@link Connection} implementation that receives and sends datagram packets via its associated {@link DatagramChannelEndPoint}.</p>
  * <p>The received bytes are peeked to obtain the QUIC connection ID; each QUIC connection ID has an associated
  * {@link QuicSession}, and the received bytes are then passed to the {@link QuicSession} for processing.</p>
- * <p>On the receive side, a QuicConnection <em>fans-out</em> to multiple {@link QuicSession}s.</p>
- * <p>On the send side, many {@link QuicSession}s <em>fan-in</em> to a QuicConnection.</p>
+ * <p>On the receive side, one QuicConnection <em>fans-out</em> to multiple {@link QuicSession}s.</p>
+ * <p>On the send side, many {@link QuicSession}s <em>fan-in</em> to one QuicConnection.</p>
  */
 public abstract class QuicConnection extends AbstractConnection
 {
@@ -51,6 +50,9 @@ public abstract class QuicConnection extends AbstractConnection
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final Flusher flusher = new Flusher();
+    private int outputBufferSize;
+    private boolean useInputDirectByteBuffers;
+    private boolean useOutputDirectByteBuffers;
 
     protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint)
     {
@@ -69,10 +71,40 @@ public abstract class QuicConnection extends AbstractConnection
         return byteBufferPool;
     }
 
+    public int getOutputBufferSize()
+    {
+        return outputBufferSize;
+    }
+
+    public void setOutputBufferSize(int outputBufferSize)
+    {
+        this.outputBufferSize = outputBufferSize;
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+    }
+
     protected void closeSession(QuicheConnectionId quicheConnectionId, QuicSession session, Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("closing session of type {} cid={}", getClass().getSimpleName(), quicheConnectionId);
+            LOG.debug("closing session cid={} {}", quicheConnectionId, this);
         if (quicheConnectionId != null)
             sessions.remove(quicheConnectionId);
     }
@@ -81,12 +113,12 @@ public abstract class QuicConnection extends AbstractConnection
     public void close()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("closing connection of type {}", getClass().getSimpleName());
+            LOG.debug("closing connection {}", this);
         sessions.values().forEach(QuicSession::close);
         sessions.clear();
         super.close();
         if (LOG.isDebugEnabled())
-            LOG.debug("closed connection of type {}", getClass().getSimpleName());
+            LOG.debug("closed connection {}", this);
     }
 
     @Override
@@ -94,8 +126,7 @@ public abstract class QuicConnection extends AbstractConnection
     {
         try
         {
-            // TODO make the buffer size configurable
-            ByteBuffer cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
+            ByteBuffer cipherBuffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             while (true)
             {
                 BufferUtil.clear(cipherBuffer);
@@ -182,7 +213,7 @@ public abstract class QuicConnection extends AbstractConnection
             {
                 queue.offer(new Entry(callback, address, buffers));
             }
-            flusher.iterate();
+            iterate();
         }
 
         @Override

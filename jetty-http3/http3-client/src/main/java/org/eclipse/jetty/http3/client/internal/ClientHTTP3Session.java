@@ -44,14 +44,14 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
     private final QpackEncoder encoder;
     private final QpackDecoder decoder;
-    private final HTTP3SessionClient applicationSession;
+    private final HTTP3SessionClient session;
     private final ControlFlusher controlFlusher;
     private final HTTP3Flusher messageFlusher;
 
     public ClientHTTP3Session(ClientQuicSession session, Session.Client.Listener listener, Promise<Session.Client> promise, int maxBlockedStreams, int maxResponseHeadersSize)
     {
         super(session);
-        this.applicationSession = new HTTP3SessionClient(this, listener, promise);
+        this.session = new HTTP3SessionClient(this, listener, promise);
 
         if (LOG.isDebugEnabled())
             LOG.debug("initializing HTTP/3 streams");
@@ -87,29 +87,29 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
     public HTTP3SessionClient getSessionClient()
     {
-        return applicationSession;
+        return session;
     }
 
     public long getStreamIdleTimeout()
     {
-        return applicationSession.getStreamIdleTimeout();
+        return session.getStreamIdleTimeout();
     }
 
     public void setStreamIdleTimeout(long streamIdleTimeout)
     {
-        applicationSession.setStreamIdleTimeout(streamIdleTimeout);
+        session.setStreamIdleTimeout(streamIdleTimeout);
     }
 
     @Override
     public void onOpen()
     {
         // Queue the mandatory SETTINGS frame.
-        Map<Long, Long> settings = applicationSession.onPreface();
+        Map<Long, Long> settings = session.onPreface();
         if (settings == null)
             settings = Map.of();
         // TODO: add default settings.
         SettingsFrame frame = new SettingsFrame(settings);
-        controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, applicationSession::onOpen, this::fail));
+        controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, session::onOpen, this::fail));
         controlFlusher.iterate();
     }
 
@@ -154,12 +154,12 @@ public class ClientHTTP3Session extends ClientProtocolSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("session closed remotely {} {}", closeInfo, this);
-        applicationSession.notifySessionFailure(closeInfo.error(), closeInfo.reason());
+        session.notifySessionFailure(closeInfo.error(), closeInfo.reason());
     }
 
     private void configureUnidirectionalStreamEndPoint(QuicStreamEndPoint endPoint)
     {
-        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), encoder, decoder, applicationSession);
+        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), encoder, decoder, session);
         endPoint.setConnection(connection);
         endPoint.onOpen();
         connection.onOpen();
@@ -174,6 +174,6 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
     public void onDataAvailable(long streamId)
     {
-        applicationSession.onDataAvailable(streamId);
+        session.onDataAvailable(streamId);
     }
 }
