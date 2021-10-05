@@ -19,6 +19,7 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
@@ -28,6 +29,8 @@ import org.eclipse.jetty.io.ManagedSelector;
 
 public class QuicClientConnectorConfigurator extends ClientConnector.Configurator
 {
+    public static final String CONNECTION_CONFIGURATOR_CONTEXT_KEY = QuicClientConnectorConfigurator.class.getSimpleName() + ".connectionConfigurator";
+
     @Override
     public boolean isIntrinsicallySecure(ClientConnector clientConnector, SocketAddress address)
     {
@@ -50,6 +53,10 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     @Override
     public Connection newConnection(ClientConnector clientConnector, SocketAddress address, EndPoint endPoint, Map<String, Object> context)
     {
-        return new ClientQuicConnection(clientConnector.getExecutor(), clientConnector.getScheduler(), clientConnector.getByteBufferPool(), endPoint, context);
+        @SuppressWarnings("unchecked")
+        UnaryOperator<Connection> configurator = (UnaryOperator<Connection>)context.get(CONNECTION_CONFIGURATOR_CONTEXT_KEY);
+        if (configurator == null)
+            configurator = UnaryOperator.identity();
+        return configurator.apply(new ClientQuicConnection(clientConnector.getExecutor(), clientConnector.getScheduler(), clientConnector.getByteBufferPool(), endPoint, context));
     }
 }

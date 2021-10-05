@@ -43,14 +43,14 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
     private final QpackEncoder encoder;
     private final QpackDecoder decoder;
-    private final HTTP3SessionServer applicationSession;
+    private final HTTP3SessionServer session;
     private final ControlFlusher controlFlusher;
     private final HTTP3Flusher messageFlusher;
 
     public ServerHTTP3Session(ServerQuicSession session, Session.Server.Listener listener, int maxBlockedStreams, int maxRequestHeadersSize)
     {
         super(session);
-        this.applicationSession = new HTTP3SessionServer(this, listener);
+        this.session = new HTTP3SessionServer(this, listener);
 
         if (LOG.isDebugEnabled())
             LOG.debug("initializing HTTP/3 streams");
@@ -86,29 +86,29 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
     public HTTP3SessionServer getSessionServer()
     {
-        return applicationSession;
+        return session;
     }
 
     public long getStreamIdleTimeout()
     {
-        return applicationSession.getStreamIdleTimeout();
+        return session.getStreamIdleTimeout();
     }
 
     public void setStreamIdleTimeout(long streamIdleTimeout)
     {
-        applicationSession.setStreamIdleTimeout(streamIdleTimeout);
+        session.setStreamIdleTimeout(streamIdleTimeout);
     }
 
     @Override
     public void onOpen()
     {
         // Queue the mandatory SETTINGS frame.
-        Map<Long, Long> settings = applicationSession.onPreface();
+        Map<Long, Long> settings = session.onPreface();
         if (settings == null)
             settings = Map.of();
         // TODO: add default settings.
         SettingsFrame frame = new SettingsFrame(settings);
-        controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, applicationSession::onOpen, this::fail));
+        controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, session::onOpen, this::fail));
         controlFlusher.iterate();
     }
 
@@ -158,7 +158,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
     private void configureUnidirectionalStreamEndPoint(QuicStreamEndPoint endPoint)
     {
-        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), encoder, decoder, applicationSession);
+        UnidirectionalStreamConnection connection = new UnidirectionalStreamConnection(endPoint, getQuicSession().getExecutor(), getQuicSession().getByteBufferPool(), encoder, decoder, session);
         endPoint.setConnection(connection);
         endPoint.onOpen();
         connection.onOpen();
@@ -173,15 +173,15 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
     protected void onDataAvailable(long streamId)
     {
-        applicationSession.onDataAvailable(streamId);
+        session.onDataAvailable(streamId);
     }
 
     private void notifySessionFailure(CloseInfo closeInfo)
     {
-        Session.Listener listener = applicationSession.getListener();
+        Session.Listener listener = session.getListener();
         try
         {
-            listener.onSessionFailure(applicationSession, closeInfo.error(), closeInfo.reason());
+            listener.onSessionFailure(session, closeInfo.error(), closeInfo.reason());
         }
         catch (Throwable x)
         {

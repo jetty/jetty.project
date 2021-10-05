@@ -34,7 +34,6 @@ import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
-import org.eclipse.jetty.quic.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -392,8 +391,7 @@ public abstract class QuicSession
         @Override
         protected Action process() throws IOException
         {
-            // TODO make the buffer size configurable
-            cipherBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
+            cipherBuffer = byteBufferPool.acquire(connection.getOutputBufferSize(), connection.isUseOutputDirectByteBuffers());
             int pos = BufferUtil.flipToFill(cipherBuffer);
             int drained = quicheConnection.drainCipherBytes(cipherBuffer);
             if (LOG.isDebugEnabled())

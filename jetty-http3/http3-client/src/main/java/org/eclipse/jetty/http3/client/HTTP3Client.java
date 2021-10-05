@@ -18,12 +18,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.client.ClientQuicConnection;
 import org.eclipse.jetty.quic.client.QuicClientConnectorConfigurator;
+import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -47,11 +50,55 @@ public class HTTP3Client extends ContainerLifeCycle
     private final ClientConnector connector;
     private List<String> protocols = List.of("h3");
     private long streamIdleTimeout = 30000;
+    private int inputBufferSize = 2048;
+    private int outputBufferSize = 2048;
+    private boolean useInputDirectByteBuffers = true;
+    private boolean useOutputDirectByteBuffers = true;
 
     public HTTP3Client()
     {
         this.connector = new ClientConnector(new QuicClientConnectorConfigurator());
         addBean(connector);
+    }
+
+    public int getInputBufferSize()
+    {
+        return inputBufferSize;
+    }
+
+    public void setInputBufferSize(int inputBufferSize)
+    {
+        this.inputBufferSize = inputBufferSize;
+    }
+
+    public int getOutputBufferSize()
+    {
+        return outputBufferSize;
+    }
+
+    public void setOutputBufferSize(int outputBufferSize)
+    {
+        this.outputBufferSize = outputBufferSize;
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     @ManagedAttribute("The ALPN protocol list")
@@ -87,11 +134,25 @@ public class HTTP3Client extends ContainerLifeCycle
         context.put(ClientQuicConnection.APPLICATION_PROTOCOLS, getProtocols());
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, factory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, completable::failed));
+        context.put(QuicClientConnectorConfigurator.CONNECTION_CONFIGURATOR_CONTEXT_KEY, (UnaryOperator<Connection>)this::configureConnection);
 
         if (LOG.isDebugEnabled())
             LOG.debug("connecting to {}", address);
 
         connector.connect(address, context);
         return completable;
+    }
+
+    private Connection configureConnection(Connection connection)
+    {
+        if (connection instanceof QuicConnection)
+        {
+            QuicConnection quicConnection = (QuicConnection)connection;
+            quicConnection.setInputBufferSize(getInputBufferSize());
+            quicConnection.setOutputBufferSize(getOutputBufferSize());
+            quicConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+            quicConnection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
+        }
+        return connection;
     }
 }
