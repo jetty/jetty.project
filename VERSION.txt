@@ -1,3 +1,5 @@
+jetty-11.0.8-SNAPSHOT
+
 jetty-11.0.7 - 06 October 2021
  + 3514 Use interpolation of versions from pom in mod files
  + 6043 Reimplement UnixSocket support based on Java 16
