@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.4.44-SNAPSHOT</version>
+    <version>9.4.45-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-nosql</artifactId>
@@ -34,7 +34,7 @@
     <dependency>
       <groupId>org.mongodb</groupId>
       <artifactId>mongo-java-driver</artifactId>
-      <version>2.13.2</version>
+      <version>${mongodb.version}</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>

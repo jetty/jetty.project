@@ -25,7 +25,7 @@ lib/hazelcast/hazelcast-${hazelcast.version}.jar
 lib/hazelcast/hazelcast-client-${hazelcast.version}.jar
 
 [ini]
-hazelcast.version?=3.12.12
+hazelcast.version?=@hazelcast.version@
 jetty.webapp.addSystemClasses+=,org.eclipse.jetty.hazelcast.
 jetty.webapp.addServerClasses+=,-org.eclipse.jetty.hazelcast.
 

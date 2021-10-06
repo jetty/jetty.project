@@ -188,7 +188,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         INITIALIZED,
         DESTROYED
     }
-    
+
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     protected Context _scontext;
     private final AttributesMap _attributes;

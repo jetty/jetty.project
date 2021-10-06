@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.memcached</groupId>
     <artifactId>memcached-parent</artifactId>
-    <version>9.4.44-SNAPSHOT</version>
+    <version>9.4.45-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -19,7 +19,7 @@
     <dependency>
       <groupId>com.googlecode.xmemcached</groupId>
       <artifactId>xmemcached</artifactId>
-      <version>2.4.7</version>
+      <version>${xmemcached.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

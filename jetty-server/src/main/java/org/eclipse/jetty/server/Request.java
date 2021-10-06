@@ -998,7 +998,7 @@ public class Request implements HttpServletRequest
                 String name = InetAddress.getLocalHost().getHostAddress();
                 if (StringUtil.ALL_INTERFACES.equals(name))
                     return null;
-                return HostPort.normalizeHost(name);
+                return formatAddrOrHost(name);
             }
             catch (UnknownHostException e)
             {
@@ -1014,7 +1014,7 @@ public class Request implements HttpServletRequest
         String result = address == null
             ? local.getHostString()
             : address.getHostAddress();
-        return HostPort.normalizeHost(result);
+        return formatAddrOrHost(result);
     }
 
     /*
@@ -1027,7 +1027,7 @@ public class Request implements HttpServletRequest
         {
             InetSocketAddress local = _channel.getLocalAddress();
             if (local != null)
-                return HostPort.normalizeHost(local.getHostString());
+                return formatAddrOrHost(local.getHostString());
         }
 
         try
@@ -1035,7 +1035,7 @@ public class Request implements HttpServletRequest
             String name = InetAddress.getLocalHost().getHostName();
             if (StringUtil.ALL_INTERFACES.equals(name))
                 return null;
-            return HostPort.normalizeHost(name);
+            return formatAddrOrHost(name);
         }
         catch (UnknownHostException e)
         {
@@ -1257,12 +1257,10 @@ public class Request implements HttpServletRequest
 
         InetAddress address = remote.getAddress();
         String result = address == null
-            ? remote.getHostString()
-            : address.getHostAddress();
-        // Add IPv6 brackets if necessary, to be consistent
-        // with cases where _remote has been built from other
-        // sources such as forward headers or PROXY protocol.
-        return HostPort.normalizeHost(result);
+                ? remote.getHostString()
+                : address.getHostAddress();
+
+        return formatAddrOrHost(result);
     }
 
     /*
@@ -1276,8 +1274,9 @@ public class Request implements HttpServletRequest
             remote = _channel.getRemoteAddress();
         if (remote == null)
             return "";
+
         // We want the URI host, so add IPv6 brackets if necessary.
-        return HostPort.normalizeHost(remote.getHostString());
+        return formatAddrOrHost(remote.getHostString());
     }
 
     /*
@@ -1403,7 +1402,7 @@ public class Request implements HttpServletRequest
     public String getServerName()
     {
         MetaData.Request metadata = _metaData;
-        String name = metadata == null ? null : metadata.getURI().getHost();
+        String name = metadata == null ? null : formatAddrOrHost(metadata.getURI().getHost());
 
         // Return already determined host
         if (name != null)
@@ -1425,19 +1424,19 @@ public class Request implements HttpServletRequest
             {
                 HostPortHttpField authority = (HostPortHttpField)host;
                 metadata.getURI().setAuthority(authority.getHost(), authority.getPort());
-                return authority.getHost();
+                return formatAddrOrHost(authority.getHost());
             }
         }
 
         // Return host from connection
         String name = getLocalName();
         if (name != null)
-            return HostPort.normalizeHost(name);
+            return formatAddrOrHost(name);
 
         // Return the local host
         try
         {
-            return HostPort.normalizeHost(InetAddress.getLocalHost().getHostAddress());
+            return formatAddrOrHost(InetAddress.getLocalHost().getHostAddress());
         }
         catch (UnknownHostException e)
         {
@@ -2603,5 +2602,10 @@ public class Request implements HttpServletRequest
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
         throw new ServletException("HttpServletRequest.upgrade() not supported in Jetty");
+    }
+
+    private String formatAddrOrHost(String name)
+    {
+        return _channel == null ? HostPort.normalizeHost(name) : _channel.formatAddrOrHost(name);
     }
 }

@@ -16,8 +16,7 @@ sessions/infinispan/remote/infinispan-remote-libs
 basehome:modules/sessions/infinispan/remote/resources/hotrod-client.properties|resources/hotrod-client.properties
 
 [ini]
-infinispan.version?=11.0.11.Final
-
+infinispan.version?=@infinispan.version@
 
 [license]
 Infinispan is an open source project hosted on Github and released under the Apache 2.0 license.

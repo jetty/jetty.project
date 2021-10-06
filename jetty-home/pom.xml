@@ -3,7 +3,7 @@
   <parent>
     <artifactId>jetty-project</artifactId>
     <groupId>org.eclipse.jetty</groupId>
-    <version>9.4.44-SNAPSHOT</version>
+    <version>9.4.45-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-home</artifactId>
@@ -33,9 +33,15 @@
               <useBuildFilters>false</useBuildFilters>
               <includeEmptyDirs>true</includeEmptyDirs>
               <outputDirectory>${assembly-directory}</outputDirectory>
+              <encoding>UTF-8</encoding>
+              <useDefaultDelimiters>false</useDefaultDelimiters>
+              <delimiters>
+                <delimiter>@</delimiter>
+              </delimiters>
               <resources>
                 <resource>
                   <directory>${basedir}/src/main/resources</directory>
+                  <filtering>true</filtering>
                 </resource>
               </resources>
             </configuration>
