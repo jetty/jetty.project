@@ -1,4 +1,59 @@
-jetty-10.0.7-SNAPSHOT
+jetty-10.0.7 - 06 October 2021
+ + 3514 Use interpolation of versions from pom in mod files
+ + 6043 Reimplement UnixSocket support based on Java 16
+ + 6322 Use `RetainableByteBuffer` in `HttpConnection`
+ + 6369 Increment default jetty.http2.rateControl.maxEventsPerSecond
+ + 6372 Review socket options configuration
+ + 6403 Deploy a maven based p2-updatesite
+ + 6406 Jetty Jaspi module not compatible with Jakarta EE 9 (Jakarta
+   Authentication)
+ + 6476 Show message if JVM args are present but new JVM is spawned based on
+   active modules
+ + 6487 Expose ServletHolder getter in ServletHandler$ChainEnd for auditing
+   libraries to use
+ + 6489 Some URI valid compliance modes cannot be set in .ini file.
+ + 6491 onDataAvailable() not called when HttpParser is closed prematurely
+ + 6497 Replace SameFileAliasChecker
+ + 6520 Error page has HTML error when writePoweredBy is enabled.
+ + 6544 Using jetty.gzip.excludedMimeTypeList property results in an error
+ + 6545 image/webp MIME type support
+ + 6552 FileBufferedInterceptor.dispose not working due to locked file
+ + 6553 Review usage of Authentication.UNAUTHENTICATED in SecurityHandler
+ + 6554 Allow creation of DefaultIdentityService without realmName.
+ + 6556 MemcachedSessionDataMap needs to set the context classloader before
+   serialization/deseriazliation.
+ + 6558 Allow to configure return type in JSON array parsing
+ + 6562 HttpOutput.write(ByteBuffer buffer)
+ + 6565 Improve deployment of symlinked webapplications
+ + 6566 High CPU use due to new thread created on every websocket message in
+   DispatchedMessageSink
+ + 6601 jetty-websocket-core not usable standalone, only with
+   websocket-javax-server or websocket-jetty-server
+ + 6602 SessionTracker memory leak on WebSockets that close immediately
+ + 6603 HTTP/2 max local stream count exceeded
+ + 6617 Add basic auth support for OpenId token endpoint (client_secret_basic)
+ + 6618 ID token `azp` claim should not be required if `aud` is single value
+   array
+ + 6642 WebSocket handling of Connection: upgrade,close.
+ + 6646 Deadlock in HTTP2Flusher when using a small thread pool due to
+   incorrect InvocableType
+ + 6652 Improve ReservedThreadExecutor dump
+ + 6654 ServerUpgradeRequest.getCookies() can throws NullPointerException
+ + 6661 Some SocketOptions not supported on Windows
+ + 6677 Update to apache jasper 9.0.52
+ + 6687 Upgrade Infinispan in all active Jetty branches
+ + 6693 FastCGI review
+ + 6696 High WebSocket memory usage in Jetty 10
+ + 6752 DefaultSessionCache more extensible using ConcurrentMap
+ + 6772 Update to asm 9.2
+ + 6853 Remove pack200 plugins
+ + 6860 IPv6 format
+ + 6868 _uriCompliance attribute has been forgotten in the HttpConfiguration
+   constructor from another configuration
+ + 6869 Correct Content-Type within HTML error pages
+ + 6870 Encode control characters in URIUtil.encodePath
+ + 6883 Welcome file redirects do not honor the relativeRedirectAllowed option
+ + 6938 module-info.java file do not use the canonical order for the elements
 
 jetty-10.0.6 - 29 June 2021
  + 6375 Always check XML `Set` elements with `property` attribute
@@ -72,7 +127,8 @@ jetty-10.0.3 - 20 May 2021
  + 6263 Review URI encoding in ConcatServlet & WelcomeFilter (Resolved
    CVE-2021-28169)
  + 6272 Reduce allocation in HttpClient when notifying content listeners
- + 6277 Better handle exceptions thrown from session destroy listener (Resolved CVE-2021-34428)
+ + 6277 Better handle exceptions thrown from session destroy listener (Resolved
+   CVE-2021-34428)
  + 6280 Copy ServletHolder class/instance properly during startWebapp
  + 6287 Class loading broken for WebSocketClient used inside webapp
 
