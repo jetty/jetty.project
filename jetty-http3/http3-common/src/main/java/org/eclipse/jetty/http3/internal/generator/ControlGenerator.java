@@ -21,11 +21,11 @@ public class ControlGenerator
 {
     private final FrameGenerator[] generators = new FrameGenerator[FrameType.maxType() + 1];
 
-    public ControlGenerator()
+    public ControlGenerator(boolean useDirectByteBuffers)
     {
         generators[FrameType.CANCEL_PUSH.type()] = new CancelPushGenerator();
-        generators[FrameType.SETTINGS.type()] = new SettingsGenerator();
-        generators[FrameType.GOAWAY.type()] = new GoAwayGenerator();
+        generators[FrameType.SETTINGS.type()] = new SettingsGenerator(useDirectByteBuffers);
+        generators[FrameType.GOAWAY.type()] = new GoAwayGenerator(useDirectByteBuffers);
         generators[FrameType.MAX_PUSH_ID.type()] = new MaxPushIdGenerator();
     }
 

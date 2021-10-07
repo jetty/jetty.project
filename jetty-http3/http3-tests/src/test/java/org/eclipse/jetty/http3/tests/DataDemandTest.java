@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.tests;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,8 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
@@ -46,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
+public class DataDemandTest extends AbstractClientServerTest
 {
     @Test
     public void testOnDataAvailableThenExit() throws Exception
@@ -55,7 +52,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
         CountDownLatch serverStreamLatch = new CountDownLatch(1);
         CountDownLatch serverDataLatch = new CountDownLatch(1);
         AtomicLong onDataAvailableCalls = new AtomicLong();
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
@@ -85,14 +82,10 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                 };
             }
         });
-        startClient();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = newSession(new Session.Client.Listener() {});
 
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame request = new HeadersFrame(metaData, false);
+        HeadersFrame request = new HeadersFrame(newRequest("/"), false);
         Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(ByteBuffer.allocate(8192), true));
 
@@ -114,7 +107,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
         CountDownLatch serverStreamLatch = new CountDownLatch(1);
         CountDownLatch serverDataLatch = new CountDownLatch(1);
         AtomicLong onDataAvailableCalls = new AtomicLong();
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
@@ -146,14 +139,10 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                 };
             }
         });
-        startClient();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = newSession(new Session.Client.Listener() {});
 
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame request = new HeadersFrame(metaData, false);
+        HeadersFrame request = new HeadersFrame(newRequest("/"), false);
         Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(ByteBuffer.allocate(16), false));
 
@@ -180,7 +169,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
         CountDownLatch serverStreamLatch = new CountDownLatch(1);
         CountDownLatch serverDataLatch = new CountDownLatch(1);
         AtomicLong onDataAvailableCalls = new AtomicLong();
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
@@ -218,14 +207,10 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                 };
             }
         });
-        startClient();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = newSession(new Session.Client.Listener() {});
 
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame request = new HeadersFrame(metaData, false);
+        HeadersFrame request = new HeadersFrame(newRequest("/"), false);
         Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(ByteBuffer.allocate(16), false));
 
@@ -249,7 +234,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
         CountDownLatch serverDataLatch = new CountDownLatch(1);
         CountDownLatch serverTrailerLatch = new CountDownLatch(1);
         AtomicLong onDataAvailableCalls = new AtomicLong();
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
@@ -277,14 +262,10 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                 };
             }
         });
-        startClient();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = newSession(new Session.Client.Listener() {});
 
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame request = new HeadersFrame(metaData, false);
+        HeadersFrame request = new HeadersFrame(newRequest("/"), false);
         Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
         stream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true)).get(5, TimeUnit.SECONDS);
 
@@ -305,7 +286,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
         CountDownLatch serverDataLatch = new CountDownLatch(1);
         CountDownLatch serverTrailerLatch = new CountDownLatch(1);
         AtomicLong onDataAvailableCalls = new AtomicLong();
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
@@ -334,14 +315,10 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                 };
             }
         });
-        startClient();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = newSession(new Session.Client.Listener() {});
 
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame request = new HeadersFrame(metaData, false);
+        HeadersFrame request = new HeadersFrame(newRequest("/"), false);
         Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
 
         stream.data(new DataFrame(ByteBuffer.allocate(dataLength), false));
@@ -363,7 +340,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
     {
         CountDownLatch serverDataLatch = new CountDownLatch(1);
         List<Stream.Data> datas = new ArrayList<>();
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
@@ -391,14 +368,10 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                 };
             }
         });
-        startClient();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = newSession(new Session.Client.Listener() {});
 
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame request = new HeadersFrame(metaData, false);
+        HeadersFrame request = new HeadersFrame(newRequest("/"), false);
         Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
 
         byte[] bytesSent = new byte[16384];
@@ -421,7 +394,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
         CountDownLatch serverRequestLatch = new CountDownLatch(1);
         CountDownLatch serverDataLatch = new CountDownLatch(1);
         AtomicLong onDataAvailableCalls = new AtomicLong();
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
@@ -443,14 +416,10 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                 };
             }
         });
-        startClient();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = newSession(new Session.Client.Listener() {});
 
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame request = new HeadersFrame(metaData, false);
+        HeadersFrame request = new HeadersFrame(newRequest("/"), false);
         Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
 
         stream.data(new DataFrame(ByteBuffer.allocate(4096), true));
@@ -472,7 +441,7 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
     {
         CountDownLatch blockLatch = new CountDownLatch(1);
         CountDownLatch dataLatch = new CountDownLatch(1);
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
@@ -525,14 +494,10 @@ public class HTTP3DataDemandTest extends AbstractHTTP3ClientServerTest
                 };
             }
         });
-        startClient();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = newSession(new Session.Client.Listener() {});
 
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame request = new HeadersFrame(metaData, false);
+        HeadersFrame request = new HeadersFrame(newRequest("/"), false);
         Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
 
         // Send a first chunk of data.

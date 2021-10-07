@@ -15,8 +15,13 @@ package org.eclipse.jetty.http3.internal.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http3.frames.GoAwayFrame;
+import org.eclipse.jetty.http3.internal.VarLenInt;
+
 public class GoAwayBodyParser extends BodyParser
 {
+    private final VarLenInt varLenInt = new VarLenInt();
+
     public GoAwayBodyParser(HeaderParser headerParser, ParserListener listener)
     {
         super(headerParser, listener);
@@ -25,6 +30,14 @@ public class GoAwayBodyParser extends BodyParser
     @Override
     public Result parse(ByteBuffer buffer)
     {
-        throw new UnsupportedOperationException();
+        if (varLenInt.parseLong(buffer, this::onGoAway))
+            return Result.WHOLE_FRAME;
+        return Result.NO_FRAME;
+    }
+
+    private void onGoAway(long id)
+    {
+        GoAwayFrame frame = new GoAwayFrame(id);
+        notifyGoAway(frame);
     }
 }

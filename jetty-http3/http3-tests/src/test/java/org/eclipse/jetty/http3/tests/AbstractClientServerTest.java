@@ -13,6 +13,14 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
@@ -25,7 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-public class AbstractHTTP3ClientServerTest
+public class AbstractClientServerTest
 {
     @RegisterExtension
     final BeforeTestExecutionCallback printMethodName = context ->
@@ -33,6 +41,12 @@ public class AbstractHTTP3ClientServerTest
     protected ServerQuicConnector connector;
     protected HTTP3Client client;
     protected Server server;
+
+    protected void start(Session.Server.Listener listener) throws Exception
+    {
+        startServer(listener);
+        startClient();
+    }
 
     protected void startServer(Session.Server.Listener listener) throws Exception
     {
@@ -51,6 +65,28 @@ public class AbstractHTTP3ClientServerTest
     {
         client = new HTTP3Client();
         client.start();
+    }
+
+    protected Session.Client newSession(Session.Client.Listener listener) throws Exception
+    {
+        InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
+        return client.connect(address, listener).get(5, TimeUnit.SECONDS);
+    }
+
+    protected MetaData.Request newRequest(String path)
+    {
+        return newRequest(HttpMethod.GET, path);
+    }
+
+    protected MetaData.Request newRequest(HttpMethod method, String path)
+    {
+        return newRequest(method, path, HttpFields.EMPTY);
+    }
+
+    protected MetaData.Request newRequest(HttpMethod method, String path, HttpFields fields)
+    {
+        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + (path == null ? "/" : path));
+        return new MetaData.Request(method.asString(), uri, HttpVersion.HTTP_3, fields);
     }
 
     @AfterEach

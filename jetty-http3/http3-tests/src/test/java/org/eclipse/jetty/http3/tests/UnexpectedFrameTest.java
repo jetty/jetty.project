@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.tests;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -29,13 +28,13 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HTTP3UnexpectedFrameTest extends AbstractHTTP3ClientServerTest
+public class UnexpectedFrameTest extends AbstractClientServerTest
 {
     @Test
     public void testDataBeforeHeaders() throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public void onSessionFailure(Session session, long error, String reason)
@@ -44,10 +43,9 @@ public class HTTP3UnexpectedFrameTest extends AbstractHTTP3ClientServerTest
                 serverLatch.countDown();
             }
         });
-        startClient();
 
         CountDownLatch clientLatch = new CountDownLatch(1);
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener()
+        HTTP3Session session = (HTTP3Session)newSession(new Session.Client.Listener()
             {
                 @Override
                 public void onSessionFailure(Session session, long error, String reason)
@@ -55,10 +53,9 @@ public class HTTP3UnexpectedFrameTest extends AbstractHTTP3ClientServerTest
                     assertEquals(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), error);
                     clientLatch.countDown();
                 }
-            })
-            .get(5, TimeUnit.SECONDS);
+            });
 
-        ((HTTP3Session)session).writeFrame(0, new DataFrame(ByteBuffer.allocate(128), false), Callback.NOOP);
+        session.writeMessageFrame(0, new DataFrame(ByteBuffer.allocate(128), false), Callback.NOOP);
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));

@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.server.internal;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
+import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
@@ -62,9 +63,8 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("received request {}#{} on {}", frame, streamId, this);
-            stream.processRequest(frame);
-            if (frame.isLast())
-                removeStream(stream);
+            updateLastId(streamId);
+            stream.onRequest(frame);
         }
         else
         {
@@ -73,9 +73,23 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     }
 
     @Override
-    public void writeFrame(long streamId, Frame frame, Callback callback)
+    public void writeControlFrame(Frame frame, Callback callback)
     {
-        getProtocolSession().writeFrame(streamId, frame, callback);
+        getProtocolSession().writeControlFrame(frame, callback);
+    }
+
+    @Override
+    public void writeMessageFrame(long streamId, Frame frame, Callback callback)
+    {
+        getProtocolSession().writeMessageFrame(streamId, frame, callback);
+    }
+
+    @Override
+    protected GoAwayFrame newGoAwayFrame(boolean graceful)
+    {
+        if (graceful)
+            return GoAwayFrame.SERVER_GRACEFUL;
+        return super.newGoAwayFrame(graceful);
     }
 
     private void notifyAccept()

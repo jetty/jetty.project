@@ -15,7 +15,7 @@ package org.eclipse.jetty.quic.common;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.Connection;
@@ -26,7 +26,7 @@ public abstract class ProtocolSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolSession.class);
 
-    private final AtomicLong active = new AtomicLong();
+    private final AtomicInteger active = new AtomicInteger();
     private final QuicSession session;
 
     public ProtocolSession(QuicSession session)
@@ -43,25 +43,35 @@ public abstract class ProtocolSession
 
     public void process()
     {
-        if (active.getAndIncrement() == 0)
+        // This method is called by the network thread and
+        // dispatches to one, per-session, processing thread.
+
+        // The active counter counts up to 2, with the meanings:
+        // 0=idle, 1=process, 2=re-process, where re-process is
+        // necessary to close race between the processing thread
+        // seeing active=1 and about to exit, and the network
+        // thread also seeing active=1 and not dispatching,
+        // leaving unprocessed data in the session.
+        if (active.getAndUpdate(count -> count <= 1 ? count + 1 : count) == 0)
+            session.getExecutor().execute(this::processSession);
+    }
+
+    private void processSession()
+    {
+        while (true)
         {
-            session.getExecutor().execute(() ->
+            processWritableStreams();
+            if (processReadableStreams())
+                continue;
+
+            // Exit if did not process any stream and we are idle.
+            if (active.decrementAndGet() == 0)
             {
-                while (true)
-                {
-                    processWritableStreams();
-                    if (processReadableStreams())
-                        continue;
-
-                    CloseInfo closeInfo = session.getRemoteCloseInfo();
-                    if (closeInfo != null)
-                        onClosed(closeInfo);
-
-                    // Exit if did not process any stream and we are idle.
-                    if (active.decrementAndGet() == 0)
-                        break;
-                }
-            });
+                CloseInfo closeInfo = session.getRemoteCloseInfo();
+                if (closeInfo != null)
+                    onClose(closeInfo);
+                break;
+            }
         }
     }
 
@@ -125,7 +135,7 @@ public abstract class ProtocolSession
         return getQuicSession().close(error, reason);
     }
 
-    protected abstract void onClosed(CloseInfo closeInfo);
+    protected abstract void onClose(CloseInfo closeInfo);
 
     @Override
     public String toString()

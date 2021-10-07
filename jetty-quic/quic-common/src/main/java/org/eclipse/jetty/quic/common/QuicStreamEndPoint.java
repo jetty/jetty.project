@@ -125,6 +125,8 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         else
             writeFlusher.onFail(failure);
 
+        session.onClose(streamId);
+
         if (LOG.isDebugEnabled())
             LOG.debug("closed stream #{} with error 0x{}", streamId, Long.toHexString(error), failure);
     }

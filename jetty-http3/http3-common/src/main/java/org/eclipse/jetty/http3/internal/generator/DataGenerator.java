@@ -23,6 +23,13 @@ import org.eclipse.jetty.io.ByteBufferPool;
 
 public class DataGenerator extends FrameGenerator
 {
+    private final boolean useDirectByteBuffers;
+
+    public DataGenerator(boolean useDirectByteBuffers)
+    {
+        this.useDirectByteBuffers = useDirectByteBuffers;
+    }
+
     @Override
     public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
     {
@@ -35,11 +42,11 @@ public class DataGenerator extends FrameGenerator
         ByteBuffer data = frame.getByteBuffer();
         int dataLength = data.remaining();
         int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
-        ByteBuffer header = ByteBuffer.allocate(headerLength);
+        ByteBuffer header = lease.acquire(headerLength, useDirectByteBuffers);
         VarLenInt.generate(header, FrameType.DATA.type());
         VarLenInt.generate(header, dataLength);
         header.flip();
-        lease.append(header, false);
+        lease.append(header, true);
         lease.append(data, false);
         return headerLength + dataLength;
     }

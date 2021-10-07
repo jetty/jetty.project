@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.internal.parser;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
+import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 
@@ -28,6 +29,10 @@ public interface ParserListener
     }
 
     public default void onSettings(SettingsFrame frame)
+    {
+    }
+
+    public default void onGoAway(GoAwayFrame frame)
     {
     }
 

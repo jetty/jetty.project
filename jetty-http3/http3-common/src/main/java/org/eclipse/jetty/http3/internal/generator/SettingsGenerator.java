@@ -24,6 +24,13 @@ import org.eclipse.jetty.util.BufferUtil;
 
 public class SettingsGenerator extends FrameGenerator
 {
+    private final boolean useDirectByteBuffers;
+
+    public SettingsGenerator(boolean useDirectByteBuffers)
+    {
+        this.useDirectByteBuffers = useDirectByteBuffers;
+    }
+
     @Override
     public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
     {
@@ -40,8 +47,7 @@ public class SettingsGenerator extends FrameGenerator
             length += VarLenInt.length(e.getKey()) + VarLenInt.length(e.getValue());
         }
         int capacity = VarLenInt.length(frame.getFrameType().type()) + VarLenInt.length(length) + length;
-        // TODO: configure buffer directness.
-        ByteBuffer buffer = lease.acquire(capacity, true);
+        ByteBuffer buffer = lease.acquire(capacity, useDirectByteBuffers);
         VarLenInt.generate(buffer, frame.getFrameType().type());
         VarLenInt.generate(buffer, length);
         for (Map.Entry<Long, Long> e : settings.entrySet())

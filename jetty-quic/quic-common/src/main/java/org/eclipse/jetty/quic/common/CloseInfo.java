@@ -37,6 +37,6 @@ public class CloseInfo
     @Override
     public String toString()
     {
-        return String.format("%s@%x[error=%d,reason=%s]", getClass().getSimpleName(), hashCode(), error(), reason());
+        return String.format("%s@%x[error=0x%s,reason=%s]", getClass().getSimpleName(), hashCode(), Long.toHexString(error()), reason());
     }
 }
