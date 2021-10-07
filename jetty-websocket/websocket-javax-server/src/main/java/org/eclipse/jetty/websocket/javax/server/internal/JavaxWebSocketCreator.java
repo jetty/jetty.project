@@ -24,7 +24,6 @@ import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
@@ -139,14 +138,24 @@ public class JavaxWebSocketCreator implements WebSocketCreator
         resp.setExtensions(configs);
 
         // [JSR] Step 4: build out new ServerEndpointConfig
-        PathSpec pathSpec = jsrHandshakeRequest.getRequestPathSpec();
-        if (pathSpec instanceof UriTemplatePathSpec)
+        Object pathSpecObject = jsrHandshakeRequest.getRequestPathSpec();
+        if (pathSpecObject instanceof UriTemplatePathSpec)
         {
-            // We have a PathParam path spec
-            UriTemplatePathSpec wspathSpec = (UriTemplatePathSpec)pathSpec;
-            String requestPath = req.getRequestPath();
-            // Wrap the config with the path spec information
-            config = new PathParamServerEndpointConfig(config, wspathSpec, requestPath);
+            // We can get path params from PathSpec and Request Path.
+            UriTemplatePathSpec pathSpec = (UriTemplatePathSpec)pathSpecObject;
+            Map<String, String> pathParams = pathSpec.getPathParams(req.getRequestPath());
+
+            // Wrap the config with the path spec information.
+            config = new PathParamServerEndpointConfig(config, pathParams);
+        }
+        else
+        {
+            Map<String, String> pathParams = jsrHandshakeRequest.getPathParams();
+            if (pathParams != null)
+            {
+                // Wrap the config with the path spec information.
+                config = new PathParamServerEndpointConfig(config, pathParams);
+            }
         }
 
         // [JSR] Step 5: Call modifyHandshake

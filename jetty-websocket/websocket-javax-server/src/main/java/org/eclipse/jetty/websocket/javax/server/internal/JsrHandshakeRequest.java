@@ -60,6 +60,12 @@ public class JsrHandshakeRequest implements HandshakeRequest
         return (PathSpec)delegate.getServletAttribute(PathSpec.class.getName());
     }
 
+    @SuppressWarnings("unchecked")
+    public Map<String, String> getPathParams()
+    {
+        return (Map<String, String>)delegate.getServletAttribute(JavaxWebSocketServerContainer.PATH_PARAM_ATTRIBUTE);
+    }
+
     @Override
     public URI getRequestURI()
     {
