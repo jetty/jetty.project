@@ -39,10 +39,10 @@
       <artifactId>infinispan-core</artifactId>
       <optional>true</optional>
       <exclusions>
-          <exclusion>
-              <groupId>org.wildfly.common</groupId>
-              <artifactId>wildfly-common</artifactId>
-          </exclusion>
+        <exclusion>
+          <groupId>org.wildfly.common</groupId>
+          <artifactId>wildfly-common</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>

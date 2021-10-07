@@ -75,7 +75,7 @@ public class RemoteInfinispanTestSupport
                 .withEnv("MGMT_USER", "admin")
                 .withEnv("MGMT_PASS", "admin")
                 .waitingFor(new LogMessageWaitStrategy()
-                    .withRegEx(".*Infinispan Server.*started in.*\\s"))
+                .withRegEx(".*Infinispan Server.*started in.*\\s"))
                 .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
                 .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
             infinispan.start();
