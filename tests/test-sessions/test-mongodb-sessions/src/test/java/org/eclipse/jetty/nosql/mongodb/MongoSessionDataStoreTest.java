@@ -44,6 +44,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Testcontainers(disabledWithoutDocker = true)
 public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+    public MongoSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
 
     @BeforeEach
     public void beforeEach() throws Exception

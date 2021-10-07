@@ -37,6 +37,10 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+    public HazelcastSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
 
     HazelcastTestHelper _testHelper;
 

@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.session.infinispan;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -27,6 +26,9 @@ import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
+import org.infinispan.query.dsl.QueryResult;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * RemoteQueryManager
@@ -36,26 +38,25 @@ import org.infinispan.query.dsl.QueryFactory;
 public class RemoteQueryManager implements QueryManager
 {
     private RemoteCache<String, SessionData> _cache;
+    private QueryFactory _factory;
 
     public RemoteQueryManager(RemoteCache<String, SessionData> cache)
     {
         _cache = cache;
+        _factory = Search.getQueryFactory(_cache);
     }
 
     @Override
     public Set<String> queryExpiredSessions(long time)
     {
-        // TODO can the QueryFactory be created only once
-        QueryFactory qf = Search.getQueryFactory(_cache);
-        Query q = qf.from(InfinispanSessionData.class).select("id").having("expiry").lte(time).build();
-
-        List<Object[]> list = q.list();
-        Set<String> ids = new HashSet<>();
-        for (Object[] sl : list)
-        {
-            ids.add((String)sl[0]);
-        }
-
+        Query<InfinispanSessionData> expiredQuery = _factory.create("select id from org_eclipse_jetty_session_infinispan.InfinispanSessionData where " +
+            "expiry <= :expiry and expiry > 0");
+        expiredQuery.setParameter("expiry", time);
+        
+        @SuppressWarnings("rawtypes")
+        QueryResult result = expiredQuery.execute();
+        List<Object[]> list = result.list();
+        Set<String> ids = list.stream().map(a -> (String)a[0]).collect(toSet());
         return ids;
     }
 

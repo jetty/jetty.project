@@ -82,6 +82,7 @@ public class SessionData implements Serializable
             Class<?> clazz = entry.getValue().getClass();
             ClassLoader loader = clazz.getClassLoader();
             ClassLoader contextLoader = Thread.currentThread().getContextClassLoader();
+            
             boolean isContextLoader;
 
             if (loader == contextLoader) //is it the context classloader?
@@ -109,7 +110,7 @@ public class SessionData implements Serializable
                     isContextLoader = false; //TCCL can't see the class
                 }
             }
-
+            
             if (LOG.isDebugEnabled())
                 LOG.debug("Attribute {} class={} isServerLoader={}", entry.getKey(), clazz.getName(), (!isContextLoader));
             out.writeBoolean(!isContextLoader);

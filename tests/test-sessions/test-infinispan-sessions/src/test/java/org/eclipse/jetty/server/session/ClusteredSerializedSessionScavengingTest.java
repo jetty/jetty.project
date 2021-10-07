@@ -66,6 +66,7 @@ public class ClusteredSerializedSessionScavengingTest extends AbstractClusteredS
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
+        factory.setSerialization(true);
         factory.setCache(testSupport.getCache());
         return factory;
     }
