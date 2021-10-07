@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.internal.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.ErrorCode;
 import org.eclipse.jetty.util.BufferUtil;
@@ -102,6 +103,18 @@ public abstract class BodyParser
         try
         {
             listener.onSettings(frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure while notifying listener {}", listener, x);
+        }
+    }
+
+    protected void notifyGoAway(GoAwayFrame frame)
+    {
+        try
+        {
+            listener.onGoAway(frame);
         }
         catch (Throwable x)
         {

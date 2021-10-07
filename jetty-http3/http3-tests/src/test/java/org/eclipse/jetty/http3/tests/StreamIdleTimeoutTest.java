@@ -19,9 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
@@ -36,14 +34,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class StreamIdleTimeoutTest extends AbstractHTTP3ClientServerTest
+public class StreamIdleTimeoutTest extends AbstractClientServerTest
 {
     @Test
     public void testClientStreamIdleTimeout() throws Exception
     {
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverLatch = new CountDownLatch(1);
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public void onAccept(Session session)
@@ -97,18 +95,14 @@ public class StreamIdleTimeoutTest extends AbstractHTTP3ClientServerTest
                 }
             }
         });
-        startClient();
 
         long streamIdleTimeout = 1000;
         client.setStreamIdleTimeout(streamIdleTimeout);
 
-        Session.Client clientSession = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
         CountDownLatch clientIdleLatch = new CountDownLatch(1);
-        HttpURI uri1 = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/idle");
-        MetaData.Request request1 = new MetaData.Request(HttpMethod.GET.asString(), uri1, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        clientSession.newRequest(new HeadersFrame(request1, false), new Stream.Listener()
+        clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Listener()
         {
             @Override
             public boolean onIdleTimeout(Stream stream, Throwable failure)
@@ -128,9 +122,7 @@ public class StreamIdleTimeoutTest extends AbstractHTTP3ClientServerTest
 
         // The session should still be open, verify by sending another request.
         CountDownLatch clientLatch = new CountDownLatch(1);
-        HttpURI uri2 = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request request2 = new MetaData.Request(HttpMethod.GET.asString(), uri2, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        clientSession.newRequest(new HeadersFrame(request2, true), new Stream.Listener()
+        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Listener()
         {
             @Override
             public void onResponse(Stream stream, HeadersFrame frame)
@@ -151,7 +143,7 @@ public class StreamIdleTimeoutTest extends AbstractHTTP3ClientServerTest
         AtomicReference<Session> serverSessionRef = new AtomicReference<>();
         long idleTimeout = 1000;
         CountDownLatch serverIdleLatch = new CountDownLatch(1);
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public void onAccept(Session session)
@@ -186,18 +178,15 @@ public class StreamIdleTimeoutTest extends AbstractHTTP3ClientServerTest
         AbstractHTTP3ServerConnectionFactory h3 = server.getConnectors()[0].getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
         assertNotNull(h3);
         h3.setStreamIdleTimeout(idleTimeout);
-        startClient();
 
         Session.Client clientSession = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
             .get(5, TimeUnit.SECONDS);
 
         CountDownLatch clientFailureLatch = new CountDownLatch(1);
-        HttpURI uri1 = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/idle");
-        MetaData.Request request1 = new MetaData.Request(HttpMethod.GET.asString(), uri1, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        clientSession.newRequest(new HeadersFrame(request1, false), new Stream.Listener()
+        clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Listener()
         {
             @Override
-            public void onFailure(long error, Throwable failure)
+            public void onFailure(Stream stream, long error, Throwable failure)
             {
                 // The server idle times out, but did not send any data back.
                 // However, the stream is readable, but an attempt to read it
@@ -214,9 +203,7 @@ public class StreamIdleTimeoutTest extends AbstractHTTP3ClientServerTest
 
         // The session should still be open, verify by sending another request.
         CountDownLatch clientLatch = new CountDownLatch(1);
-        HttpURI uri2 = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request request2 = new MetaData.Request(HttpMethod.GET.asString(), uri2, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        clientSession.newRequest(new HeadersFrame(request2, true), new Stream.Listener()
+        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Listener()
         {
             @Override
             public void onResponse(Stream stream, HeadersFrame frame)

@@ -349,7 +349,9 @@ public abstract class QuicSession
 
     public boolean close(long error, String reason)
     {
-        return quicheConnection.close(error, reason);
+        boolean closed = quicheConnection.close(error, reason);
+        flush();
+        return closed;
     }
 
     @Override

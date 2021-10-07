@@ -57,7 +57,7 @@ public class ClientProtocolSession extends ProtocolSession
     }
 
     @Override
-    protected void onClosed(CloseInfo closeInfo)
+    protected void onClose(CloseInfo closeInfo)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("session closed remotely {} {}", closeInfo, this);

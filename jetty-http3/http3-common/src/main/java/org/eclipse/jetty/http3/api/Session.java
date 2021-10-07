@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 
@@ -52,19 +53,22 @@ public interface Session
     }
 
     /**
-     * @return whether this session is not open
-     */
-    public default boolean isClosed()
-    {
-        return false;
-    }
-
-    /**
      * @return a snapshot of all the streams currently belonging to this session
      */
     public default Collection<Stream> getStreams()
     {
         return Collections.emptyList();
+    }
+
+    /**
+     * <p>Initiates the shutdown of this session by sending a GOAWAY frame to the other peer.</p>
+     *
+     * @param graceful whether the shutdown should be graceful
+     * @return the {@link CompletableFuture} that gets notified when the frame has been sent
+     */
+    public default CompletableFuture<Void> goAway(boolean graceful)
+    {
+        return CompletableFuture.completedFuture(null);
     }
 
     /**
@@ -156,6 +160,25 @@ public interface Session
          * @param frame the SETTINGS frame received
          */
         public default void onSettings(Session session, SettingsFrame frame)
+        {
+        }
+
+        /**
+         * <p>Callback method invoked when a GOAWAY frame has been received.</p>
+         *
+         * @param session the session
+         * @param frame the GOAWAY frame received
+         */
+        public default void onGoAway(Session session, GoAwayFrame frame)
+        {
+        }
+
+        /**
+         * <p>Callback method invoked when a the underlying transport has been closed.</p>
+         *
+         * @param session the session
+         */
+        public default void onTerminate(Session session)
         {
         }
 

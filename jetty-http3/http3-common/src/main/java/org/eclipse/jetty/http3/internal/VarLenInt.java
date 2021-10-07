@@ -36,15 +36,15 @@ public class VarLenInt
 
     public boolean parseInt(ByteBuffer buffer, IntConsumer consumer)
     {
-        return parseInt(buffer, consumer, null);
+        return parse(buffer, consumer, null);
     }
 
     public boolean parseLong(ByteBuffer buffer, LongConsumer consumer)
     {
-        return parseInt(buffer, null, consumer);
+        return parse(buffer, null, consumer);
     }
 
-    private boolean parseInt(ByteBuffer buffer, IntConsumer intConsumer, LongConsumer longConsumer)
+    private boolean parse(ByteBuffer buffer, IntConsumer intConsumer, LongConsumer longConsumer)
     {
         while (buffer.hasRemaining())
         {

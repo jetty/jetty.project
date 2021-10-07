@@ -37,15 +37,18 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
 
     private final HTTP3Session session;
     private final QuicStreamEndPoint endPoint;
+    private final boolean local;
+    private CloseState closeState = CloseState.NOT_CLOSED;
     private Listener listener;
     private FrameState frameState = FrameState.INITIAL;
     private long idleTimeout;
     private long expireNanoTime;
 
-    public HTTP3Stream(HTTP3Session session, QuicStreamEndPoint endPoint)
+    public HTTP3Stream(HTTP3Session session, QuicStreamEndPoint endPoint, boolean local)
     {
         this.session = session;
         this.endPoint = endPoint;
+        this.local = local;
     }
 
     @Override
@@ -58,6 +61,11 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
     public Session getSession()
     {
         return session;
+    }
+
+    public boolean isLocal()
+    {
+        return local;
     }
 
     public Listener getListener()
@@ -110,13 +118,17 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
     @Override
     public CompletableFuture<Stream> respond(HeadersFrame frame)
     {
-        return writeFrame(frame);
+        Promise.Completable<Stream> completable = writeFrame(frame);
+        updateClose(frame.isLast(), true);
+        return completable;
     }
 
     @Override
     public CompletableFuture<Stream> data(DataFrame frame)
     {
-        return writeFrame(frame);
+        Promise.Completable<Stream> completable = writeFrame(frame);
+        updateClose(frame.isLast(), true);
+        return completable;
     }
 
     @Override
@@ -125,11 +137,13 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
         try
         {
             HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
-            return connection.readData();
+            Data data = connection.readData();
+            updateClose(data.isLast(), false);
+            return data;
         }
         catch (Throwable x)
         {
-            session.removeStream(this);
+            updateClose(true, false);
             throw x;
         }
     }
@@ -155,7 +169,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
         return connection.hasDemand();
     }
 
-    public void processRequest(HeadersFrame frame)
+    public void onRequest(HeadersFrame frame)
     {
         if (validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.HEADER))
         {
@@ -165,8 +179,9 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
             if (listener == null)
             {
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> endPoint.shutdownInput(ErrorCode.NO_ERROR.code()));
-                session.writeFrame(getId(), new HTTP3Flusher.FlushFrame(), callback);
+                session.writeMessageFrame(getId(), new HTTP3Flusher.FlushFrame(), callback);
             }
+            updateClose(frame.isLast(), false);
         }
     }
 
@@ -184,12 +199,13 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
         }
     }
 
-    public void processResponse(HeadersFrame frame)
+    public void onResponse(HeadersFrame frame)
     {
         if (validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.HEADER))
         {
             notIdle();
             notifyResponse(frame);
+            updateClose(frame.isLast(), false);
         }
     }
 
@@ -207,13 +223,13 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
         }
     }
 
-    public void processData(DataFrame frame)
+    public void onData(DataFrame frame)
     {
         if (validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.DATA))
             notIdle();
     }
 
-    public void processDataAvailable()
+    public void onDataAvailable()
     {
         notifyDataAvailable();
     }
@@ -232,12 +248,13 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
         }
     }
 
-    public void processTrailer(HeadersFrame frame)
+    public void onTrailer(HeadersFrame frame)
     {
         if (validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.TRAILER))
         {
             notIdle();
             notifyTrailer(frame);
+            updateClose(frame.isLast(), false);
         }
     }
 
@@ -271,7 +288,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
         }
     }
 
-    public void processFailure(long error, Throwable failure)
+    public void onFailure(long error, Throwable failure)
     {
         notifyFailure(error, failure);
     }
@@ -282,7 +299,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
         try
         {
             if (listener != null)
-                listener.onFailure(error, failure);
+                listener.onFailure(this, error, failure);
         }
         catch (Throwable x)
         {
@@ -313,8 +330,56 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
     {
         notIdle();
         Promise.Completable<Stream> completable = new Promise.Completable<>();
-        session.writeFrame(endPoint.getStreamId(), frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> completable.succeeded(this), completable::failed));
+        session.writeMessageFrame(endPoint.getStreamId(), frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> completable.succeeded(this), completable::failed));
         return completable;
+    }
+
+    private void updateClose(boolean update, boolean local)
+    {
+        if (update)
+        {
+            switch (closeState)
+            {
+                case NOT_CLOSED:
+                {
+                    closeState = local ? CloseState.LOCALLY_CLOSED : CloseState.REMOTELY_CLOSED;
+                    break;
+                }
+                case LOCALLY_CLOSED:
+                {
+                    if (!local)
+                    {
+                        closeState = CloseState.CLOSED;
+                        session.removeStream(this);
+                    }
+                    break;
+                }
+                case REMOTELY_CLOSED:
+                {
+                    if (local)
+                    {
+                        closeState = CloseState.CLOSED;
+                        session.removeStream(this);
+                    }
+                    break;
+                }
+                case CLOSED:
+                {
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        }
+    }
+
+    public void close(long error, Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("closing {} with error 0x{} {}", this, Long.toHexString(error), failure.toString());
+        endPoint.close(error, failure);
     }
 
     @Override
@@ -332,5 +397,10 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
     private enum FrameState
     {
         INITIAL, HEADER, DATA, TRAILER, FAILED
+    }
+
+    private enum CloseState
+    {
+        NOT_CLOSED, LOCALLY_CLOSED, REMOTELY_CLOSED, CLOSED
     }
 }

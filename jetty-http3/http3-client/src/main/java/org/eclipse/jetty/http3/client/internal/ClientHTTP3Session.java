@@ -72,7 +72,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
         long controlStreamId = getQuicSession().newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint controlEndPoint = configureControlEndPoint(controlStreamId);
-        this.controlFlusher = new ControlFlusher(session, controlEndPoint);
+        this.controlFlusher = new ControlFlusher(session, controlEndPoint, true);
         if (LOG.isDebugEnabled())
             LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
@@ -150,7 +150,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
     }
 
     @Override
-    protected void onClosed(CloseInfo closeInfo)
+    protected void onClose(CloseInfo closeInfo)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("session closed remotely {} {}", closeInfo, this);
@@ -165,7 +165,13 @@ public class ClientHTTP3Session extends ClientProtocolSession
         connection.onOpen();
     }
 
-    void writeFrame(long streamId, Frame frame, Callback callback)
+    void writeControlFrame(Frame frame, Callback callback)
+    {
+        controlFlusher.offer(frame, callback);
+        controlFlusher.iterate();
+    }
+
+    void writeMessageFrame(long streamId, Frame frame, Callback callback)
     {
         QuicStreamEndPoint endPoint = getOrCreateStreamEndPoint(streamId, this::configureProtocolEndPoint);
         messageFlusher.offer(endPoint, frame, callback);

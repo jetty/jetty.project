@@ -44,11 +44,11 @@ public class ControlFlusher extends IteratingCallback
     private List<Entry> entries;
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
 
-    public ControlFlusher(QuicSession session, QuicStreamEndPoint endPoint)
+    public ControlFlusher(QuicSession session, QuicStreamEndPoint endPoint, boolean useDirectByteBuffers)
     {
         this.lease = new ByteBufferPool.Lease(session.getByteBufferPool());
         this.endPoint = endPoint;
-        this.generator = new ControlGenerator();
+        this.generator = new ControlGenerator(useDirectByteBuffers);
     }
 
     public void offer(Frame frame, Callback callback)

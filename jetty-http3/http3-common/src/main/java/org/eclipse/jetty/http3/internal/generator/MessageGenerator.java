@@ -24,7 +24,7 @@ public class MessageGenerator
 
     public MessageGenerator(QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
     {
-        generators[FrameType.DATA.type()] = new DataGenerator();
+        generators[FrameType.DATA.type()] = new DataGenerator(useDirectByteBuffers);
         generators[FrameType.HEADERS.type()] = new HeadersGenerator(encoder, maxHeadersLength, useDirectByteBuffers);
         generators[FrameType.PUSH_PROMISE.type()] = new PushPromiseGenerator();
     }

@@ -236,11 +236,11 @@ public interface Stream
          * decode a HEADERS frame, or failures to read bytes because
          * the stream has been reset.</p>
          *
+         * @param stream the stream
          * @param error the error code
-         * @param failure a short description of the failure,
-         * or {@code null} if no short description is available
+         * @param failure the cause of the failure
          */
-        public default void onFailure(long error, Throwable failure)
+        public default void onFailure(Stream stream, long error, Throwable failure)
         {
         }
     }

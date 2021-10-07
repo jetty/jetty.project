@@ -13,14 +13,41 @@
 
 package org.eclipse.jetty.http3.internal.generator;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.http3.frames.Frame;
+import org.eclipse.jetty.http3.frames.FrameType;
+import org.eclipse.jetty.http3.frames.GoAwayFrame;
+import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.io.ByteBufferPool;
 
 public class GoAwayGenerator extends FrameGenerator
 {
+    private final boolean useDirectByteBuffers;
+
+    public GoAwayGenerator(boolean useDirectByteBuffers)
+    {
+        this.useDirectByteBuffers = useDirectByteBuffers;
+    }
+
     @Override
     public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
     {
-        return 0;
+        GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
+        return generateGoAwayFrame(lease, goAwayFrame);
+    }
+
+    private int generateGoAwayFrame(ByteBufferPool.Lease lease, GoAwayFrame frame)
+    {
+        long lastId = frame.getLastId();
+        int lastIdLength = VarLenInt.length(lastId);
+        int length = VarLenInt.length(FrameType.GOAWAY.type()) + VarLenInt.length(lastIdLength) + lastIdLength;
+        ByteBuffer buffer = lease.acquire(length, useDirectByteBuffers);
+        VarLenInt.generate(buffer, FrameType.GOAWAY.type());
+        VarLenInt.generate(buffer, lastIdLength);
+        VarLenInt.generate(buffer, lastId);
+        buffer.flip();
+        lease.append(buffer, true);
+        return length;
     }
 }

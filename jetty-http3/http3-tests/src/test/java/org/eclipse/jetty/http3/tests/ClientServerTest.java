@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.tests;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.Random;
@@ -24,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
@@ -40,14 +38,14 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
+public class ClientServerTest extends AbstractClientServerTest
 {
     @Test
     public void testConnectTriggersSettingsFrame() throws Exception
     {
         CountDownLatch serverPrefaceLatch = new CountDownLatch(1);
         CountDownLatch serverSettingsLatch = new CountDownLatch(1);
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Map<Long, Long> onPreface(Session session)
@@ -62,26 +60,24 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
                 serverSettingsLatch.countDown();
             }
         });
-        startClient();
 
         CountDownLatch clientPrefaceLatch = new CountDownLatch(1);
         CountDownLatch clientSettingsLatch = new CountDownLatch(1);
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener()
+        Session.Client session = newSession(new Session.Client.Listener()
+        {
+            @Override
+            public Map<Long, Long> onPreface(Session session)
             {
-                @Override
-                public Map<Long, Long> onPreface(Session session)
-                {
-                    clientPrefaceLatch.countDown();
-                    return Map.of();
-                }
+                clientPrefaceLatch.countDown();
+                return Map.of();
+            }
 
-                @Override
-                public void onSettings(Session session, SettingsFrame frame)
-                {
-                    clientSettingsLatch.countDown();
-                }
-            })
-            .get(5, TimeUnit.SECONDS);
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                clientSettingsLatch.countDown();
+            }
+        });
         assertNotNull(session);
 
         assertTrue(serverSettingsLatch.await(5, TimeUnit.SECONDS));
@@ -92,7 +88,7 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
     public void testGETThenResponseWithoutContent() throws Exception
     {
         CountDownLatch serverRequestLatch = new CountDownLatch(1);
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
@@ -104,15 +100,11 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
                 return null;
             }
         });
-        startClient();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = newSession(new Session.Client.Listener() {});
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame frame = new HeadersFrame(metaData, true);
+        HeadersFrame frame = new HeadersFrame(newRequest("/"), true);
         Stream stream = session.newRequest(frame, new Stream.Listener()
             {
                 @Override
@@ -132,7 +124,7 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
     public void testDiscardRequestContent() throws Exception
     {
         AtomicReference<CountDownLatch> serverLatch = new AtomicReference<>(new CountDownLatch(1));
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
@@ -163,15 +155,11 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
                 };
             }
         });
-        startClient();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = newSession(new Session.Client.Listener() {});
 
         AtomicReference<CountDownLatch> clientLatch = new AtomicReference<>(new CountDownLatch(1));
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.POST.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame frame = new HeadersFrame(metaData, false);
+        HeadersFrame frame = new HeadersFrame(newRequest(HttpMethod.POST, "/"), false);
         Stream.Listener streamListener = new Stream.Listener()
         {
             @Override
@@ -204,7 +192,7 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
     @ValueSource(ints = {1024, 10 * 1024, 100 * 1024, 1000 * 1024})
     public void testEchoRequestContentAsResponseContent(int length) throws Exception
     {
-        startServer(new Session.Server.Listener()
+        start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
@@ -234,15 +222,11 @@ public class HTTP3ClientServerTest extends AbstractHTTP3ClientServerTest
                 };
             }
         });
-        startClient();
 
-        Session.Client session = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
-            .get(5, TimeUnit.SECONDS);
+        Session.Client session = newSession(new Session.Client.Listener() {});
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
-        HttpURI uri = HttpURI.from("https://localhost:" + connector.getLocalPort() + "/");
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-        HeadersFrame frame = new HeadersFrame(metaData, false);
+        HeadersFrame frame = new HeadersFrame(newRequest("/"), false);
         byte[] bytesSent = new byte[length];
         new Random().nextBytes(bytesSent);
         byte[] bytesReceived = new byte[bytesSent.length];

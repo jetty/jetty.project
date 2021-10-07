@@ -16,9 +16,8 @@ package org.eclipse.jetty.http3.internal;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.internal.generator.ControlGenerator;
 import org.eclipse.jetty.http3.internal.parser.ControlParser;
 import org.eclipse.jetty.http3.internal.parser.ParserListener;
@@ -29,32 +28,21 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class SettingsGenerateParseTest
+public class GoAwayGenerateParseTest
 {
-    @Test
-    public void testGenerateParseEmpty()
-    {
-        testGenerateParse(Map.of());
-    }
-
     @Test
     public void testGenerateParse()
     {
-        testGenerateParse(Map.of(13L, 7L, 31L, 29L));
-    }
-
-    private void testGenerateParse(Map<Long, Long> settings)
-    {
-        SettingsFrame input = new SettingsFrame(settings);
+        GoAwayFrame input = GoAwayFrame.CLIENT_GRACEFUL;
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
         new ControlGenerator(true).generate(lease, 0, input);
 
-        List<SettingsFrame> frames = new ArrayList<>();
+        List<GoAwayFrame> frames = new ArrayList<>();
         ControlParser parser = new ControlParser(new ParserListener()
         {
             @Override
-            public void onSettings(SettingsFrame frame)
+            public void onGoAway(GoAwayFrame frame)
             {
                 frames.add(frame);
             }
@@ -66,8 +54,8 @@ public class SettingsGenerateParseTest
         }
 
         assertEquals(1, frames.size());
-        SettingsFrame output = frames.get(0);
+        GoAwayFrame output = frames.get(0);
 
-        assertEquals(input.getSettings(), output.getSettings());
+        assertEquals(input.getLastId(), output.getLastId());
     }
 }

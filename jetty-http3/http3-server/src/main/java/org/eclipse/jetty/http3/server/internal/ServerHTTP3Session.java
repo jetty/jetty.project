@@ -71,7 +71,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
         long controlStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint controlEndPoint = configureControlEndPoint(controlStreamId);
-        this.controlFlusher = new ControlFlusher(session, controlEndPoint);
+        this.controlFlusher = new ControlFlusher(session, controlEndPoint, true);
         if (LOG.isDebugEnabled())
             LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
@@ -149,11 +149,11 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
-    protected void onClosed(CloseInfo closeInfo)
+    protected void onClose(CloseInfo closeInfo)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("session closed remotely {} {}", closeInfo, this);
-        notifySessionFailure(closeInfo);
+        session.onClose(closeInfo.error(), closeInfo.reason());
     }
 
     private void configureUnidirectionalStreamEndPoint(QuicStreamEndPoint endPoint)
@@ -164,7 +164,13 @@ public class ServerHTTP3Session extends ServerProtocolSession
         connection.onOpen();
     }
 
-    void writeFrame(long streamId, Frame frame, Callback callback)
+    void writeControlFrame(Frame frame, Callback callback)
+    {
+        controlFlusher.offer(frame, callback);
+        controlFlusher.iterate();
+    }
+
+    void writeMessageFrame(long streamId, Frame frame, Callback callback)
     {
         QuicStreamEndPoint endPoint = getOrCreateStreamEndPoint(streamId, this::configureProtocolEndPoint);
         messageFlusher.offer(endPoint, frame, callback);
@@ -174,18 +180,5 @@ public class ServerHTTP3Session extends ServerProtocolSession
     protected void onDataAvailable(long streamId)
     {
         session.onDataAvailable(streamId);
-    }
-
-    private void notifySessionFailure(CloseInfo closeInfo)
-    {
-        Session.Listener listener = session.getListener();
-        try
-        {
-            listener.onSessionFailure(session, closeInfo.error(), closeInfo.reason());
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-        }
     }
 }
