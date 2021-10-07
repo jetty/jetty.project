@@ -32,6 +32,12 @@ public class PathParamServerEndpointConfig extends BasicServerEndpointConfig imp
 {
     private final Map<String, String> pathParamMap;
 
+    public PathParamServerEndpointConfig(WebSocketContainerScope containerScope, ServerEndpointConfig config, Map<String, String> pathParameters)
+    {
+        super(containerScope, config);
+        pathParamMap = new HashMap<>(pathParameters);
+    }
+
     public PathParamServerEndpointConfig(WebSocketContainerScope containerScope, ServerEndpointConfig config, UriTemplatePathSpec pathSpec, String requestPath)
     {
         super(containerScope, config);

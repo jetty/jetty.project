@@ -18,9 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
 import javax.websocket.WebSocketContainer;
@@ -70,6 +74,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         return (javax.websocket.WebSocketContainer)handler.getServletContext().getAttribute("javax.websocket.server.ServerContainer");
     }
 
+    public static final String PATH_PARAM_ATTRIBUTE = "javax.websocket.server.pathParams";
     private final NativeWebSocketConfiguration configuration;
     private List<Class<?>> deferredEndpointClasses;
     private List<ServerEndpointConfig> deferredEndpointConfigs;
@@ -299,6 +304,46 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     public WebSocketServerFactory getWebSocketServerFactory()
     {
         return this.configuration.getFactory();
+    }
+
+    public void upgradeHttpToWebSocket(Object httpServletRequest, Object httpServletResponse, ServerEndpointConfig sec,
+                                       Map<String, String> pathParameters) throws IOException, DeploymentException
+    {
+        WebSocketServerFactory factory = configuration.getFactory();
+
+        HttpServletRequest httpreq = (HttpServletRequest)httpServletRequest;
+        HttpServletResponse httpresp = (HttpServletResponse)httpServletResponse;
+
+        if (!factory.isUpgradeRequest(httpreq, httpresp))
+            throw new DeploymentException("Request is not a WebSocket upgrade request");
+
+        // Since this is a filter, we need to be smart about determining the target path.
+        // We should rely on the Container for stripping path parameters and its ilk before
+        // attempting to match a specific mapped websocket creator.
+        String target = httpreq.getServletPath();
+        if (httpreq.getPathInfo() != null)
+        {
+            target = target + httpreq.getPathInfo();
+        }
+
+        ServerEndpointMetadata metadata = getServerEndpointMetadata(sec.getEndpointClass(), sec);
+        JsrCreator creator = new JsrCreator(this, metadata, this.configuration.getFactory().getExtensionFactory());
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("WebSocket Upgrade detected on {} for endpoint {}", target, creator);
+
+        // Store PathSpec resource mapping as request attribute
+        httpreq.setAttribute(PATH_PARAM_ATTRIBUTE, pathParameters);
+
+        // We have an upgrade request
+        if (factory.acceptWebSocket(creator, httpreq, httpresp))
+            return;
+
+        // If we reach this point, it means we had an incoming request to upgrade
+        // but it was either not a proper websocket upgrade, or it was possibly rejected
+        // due to incoming request constraints (controlled by WebSocketCreator)
+        if (httpresp.isCommitted())
+            throw new DeploymentException("Response committed");
     }
 
     @Override
