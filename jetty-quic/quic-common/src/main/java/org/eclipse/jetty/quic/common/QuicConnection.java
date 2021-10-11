@@ -54,9 +54,9 @@ public abstract class QuicConnection extends AbstractConnection
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final Flusher flusher = new Flusher();
-    private int outputBufferSize;
-    private boolean useInputDirectByteBuffers;
-    private boolean useOutputDirectByteBuffers;
+    private int outputBufferSize = 2048;
+    private boolean useInputDirectByteBuffers = true;
+    private boolean useOutputDirectByteBuffers = true;
 
     protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint)
     {
