@@ -45,7 +45,7 @@ public class ServerQuicConnectorTest
         config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
         HttpConnectionFactory connectionFactory = new HttpConnectionFactory(config);
 
-        ServerQuicConnector connector = new ServerQuicConnector(server, sslContextFactory, connectionFactory);
+        QuicServerConnector connector = new QuicServerConnector(server, sslContextFactory, connectionFactory);
         connector.setPort(8443);
         server.addConnector(connector);
 
@@ -86,7 +86,7 @@ public class ServerQuicConnectorTest
         config.setHttpCompliance(HttpCompliance.LEGACY); // enable HTTP/0.9
         HttpConnectionFactory connectionFactory = new HttpConnectionFactory(config);
 
-        ServerQuicConnector connector = new ServerQuicConnector(server, sslContextFactory, connectionFactory);
+        QuicServerConnector connector = new QuicServerConnector(server, sslContextFactory, connectionFactory);
         connector.setPort(8443);
         server.addConnector(connector);
 

@@ -57,7 +57,7 @@ public abstract class HTTP3Session implements Session, ParserListener
     private final Map<Long, HTTP3Stream> streams = new ConcurrentHashMap<>();
     private final ProtocolSession session;
     private final Listener listener;
-    private final AtomicInteger remoteStreamCount = new AtomicInteger();
+    private final AtomicInteger streamCount = new AtomicInteger();
     private final StreamTimeouts streamTimeouts;
     private long streamIdleTimeout;
     private CloseState closeState = CloseState.CLOSED;
@@ -115,8 +115,9 @@ public abstract class HTTP3Session implements Session, ParserListener
     private CompletableFuture<Void> goAway(GoAwayFrame frame)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("goaway with {} on {}", frame, this);
+            LOG.debug("goAway with {} on {}", frame, this);
 
+        boolean failStreams = false;
         boolean sendGoAway = false;
         Callback.Completable callback = null;
         try (AutoLock l = lock.lock())
@@ -153,8 +154,8 @@ public abstract class HTTP3Session implements Session, ParserListener
                         }
                         else
                         {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("already sent {} on {}", goAwaySent, this);
+                            closeState = CloseState.CLOSED;
+                            failStreams = true;
                         }
                     }
                     break;
@@ -179,7 +180,7 @@ public abstract class HTTP3Session implements Session, ParserListener
                         else
                         {
                             closeState = CloseState.CLOSING;
-                            zeroStreamsAction = this::terminate;
+                            zeroStreamsAction = () -> terminate("go_away");
                         }
                     }
                     break;
@@ -215,6 +216,8 @@ public abstract class HTTP3Session implements Session, ParserListener
         }
         else
         {
+            if (failStreams)
+                failStreams(stream -> true, "go_away", true);
             return CompletableFuture.completedFuture(null);
         }
     }
@@ -229,18 +232,11 @@ public abstract class HTTP3Session implements Session, ParserListener
         Atomics.updateMax(lastId, id);
     }
 
-    public void close(long error, String reason)
+    public void outwardClose(long error, String reason)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
-        try (AutoLock l = lock.lock())
-        {
-            closeState = CloseState.CLOSED;
-            zeroStreamsAction = null;
-            // TODO: what about field shutdown?
-        }
-        failStreams(stream -> true, false);
-        getProtocolSession().close(error, reason);
+            LOG.debug("outward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
+        getProtocolSession().outwardClose(error, reason);
     }
 
     public long getStreamIdleTimeout()
@@ -260,6 +256,9 @@ public abstract class HTTP3Session implements Session, ParserListener
 
     protected CompletableFuture<Stream> newRequest(long streamId, HeadersFrame frame, Stream.Listener listener)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("new request stream #{} with {} on {}", streamId, frame, this);
+
         QuicStreamEndPoint endPoint = session.getOrCreateStreamEndPoint(streamId, session::configureProtocolEndPoint);
 
         Promise.Completable<Stream> promise = new Promise.Completable<>();
@@ -272,19 +271,24 @@ public abstract class HTTP3Session implements Session, ParserListener
         if (stream == null)
             return promise;
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("created request/response stream {}", stream);
-
         stream.setListener(listener);
 
-        Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () ->
-        {
-            if (listener == null)
-                endPoint.shutdownInput(ErrorCode.NO_ERROR.code());
-            promise.succeeded(stream);
-        }, promise::failed);
+        stream.writeFrame(frame)
+            .whenComplete((r, x) ->
+            {
+                if (x == null)
+                {
+                    if (listener == null)
+                        endPoint.shutdownInput(ErrorCode.NO_ERROR.code());
+                    promise.succeeded(stream);
+                }
+                else
+                {
+                    promise.failed(x);
+                }
+            });
+        stream.updateClose(frame.isLast(), true);
 
-        writeMessageFrame(streamId, frame, callback);
         return promise;
     }
 
@@ -301,6 +305,8 @@ public abstract class HTTP3Session implements Session, ParserListener
 
     protected HTTP3Stream getOrCreateStream(QuicStreamEndPoint endPoint)
     {
+        if (endPoint == null)
+            return null;
         return streams.computeIfAbsent(endPoint.getStreamId(), id -> newHTTP3Stream(endPoint, null, false));
     }
 
@@ -310,14 +316,9 @@ public abstract class HTTP3Session implements Session, ParserListener
         try (AutoLock l = lock.lock())
         {
             if (closeState == CloseState.NOT_CLOSED)
-            {
-                if (!local)
-                    remoteStreamCount.incrementAndGet();
-            }
+                streamCount.incrementAndGet();
             else
-            {
                 failure = new IllegalStateException("session_closed");
-            }
         }
 
         if (failure == null)
@@ -327,7 +328,7 @@ public abstract class HTTP3Session implements Session, ParserListener
             if (idleTimeout > 0)
                 stream.setIdleTimeout(idleTimeout);
             if (LOG.isDebugEnabled())
-                LOG.debug("created {} on {}", stream, this);
+                LOG.debug("created {}", stream);
             return stream;
         }
         else
@@ -351,13 +352,10 @@ public abstract class HTTP3Session implements Session, ParserListener
         if (removed)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("destroyed {} on {}", stream, this);
+                LOG.debug("destroyed {}", stream);
 
-            if (!stream.isLocal())
-            {
-                if (remoteStreamCount.decrementAndGet() == 0)
-                    tryRunZeroStreamsAction();
-            }
+            if (streamCount.decrementAndGet() == 0)
+                tryRunZeroStreamsAction();
         }
     }
 
@@ -418,11 +416,22 @@ public abstract class HTTP3Session implements Session, ParserListener
         }
     }
 
+    private boolean notifyIdleTimeout()
+    {
+        try
+        {
+            return listener.onIdleTimeout(this);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+            return true;
+        }
+    }
+
     @Override
     public void onHeaders(long streamId, HeadersFrame frame)
     {
-        QuicStreamEndPoint endPoint = session.getStreamEndPoint(streamId);
-        HTTP3Stream stream = getOrCreateStream(endPoint);
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest() || metaData.isResponse())
         {
@@ -430,36 +439,44 @@ public abstract class HTTP3Session implements Session, ParserListener
         }
         else
         {
+            QuicStreamEndPoint endPoint = session.getStreamEndPoint(streamId);
+            HTTP3Stream stream = getOrCreateStream(endPoint);
             if (LOG.isDebugEnabled())
-                LOG.debug("received trailer {}#{} on {}", frame, streamId, this);
-            stream.onTrailer(frame);
+                LOG.debug("received trailer {} on {}", frame, stream);
+            if (stream != null)
+                stream.onTrailer(frame);
         }
     }
 
     @Override
     public void onData(long streamId, DataFrame frame)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("received {}#{} on {}", frame, streamId, this);
         HTTP3Stream stream = getStream(streamId);
+        if (LOG.isDebugEnabled())
+            LOG.debug("received {} on {}", frame, stream);
         if (stream != null)
             stream.onData(frame);
         else
-            closeAndNotifyFailure(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
+            fail(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
     }
 
     public void onDataAvailable(long streamId)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("notifying data available for stream #{} on {}", streamId, this);
         HTTP3Stream stream = getStream(streamId);
+        if (LOG.isDebugEnabled())
+            LOG.debug("notifying data available on {}", stream);
         stream.onDataAvailable();
     }
 
-    void closeAndNotifyFailure(long error, String reason)
+    void fail(long error, String reason)
     {
-        close(error, reason);
-        notifySessionFailure(error, reason);
+        // Hard failure, no need to send a GOAWAY.
+        try (AutoLock l = lock.lock())
+        {
+            closeState = CloseState.CLOSED;
+        }
+        outwardClose(error, reason);
+        notifyFailure(new IOException(String.format("%d/%s", error, reason)));
     }
 
     @Override
@@ -487,7 +504,7 @@ public abstract class HTTP3Session implements Session, ParserListener
                         goAwaySent = newGoAwayFrame(false);
                         closeState = CloseState.CLOSING;
                         GoAwayFrame goAwayFrame = goAwaySent;
-                        zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(this::terminate));
+                        zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(() -> terminate("go_away")));
                         failStreams = true;
                     }
                     break;
@@ -507,11 +524,11 @@ public abstract class HTTP3Session implements Session, ParserListener
                         {
                             goAwaySent = newGoAwayFrame(false);
                             GoAwayFrame goAwayFrame = goAwaySent;
-                            zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(this::terminate));
+                            zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(() -> terminate("go_away")));
                         }
                         else
                         {
-                            zeroStreamsAction = this::terminate;
+                            zeroStreamsAction = () -> terminate("go_away");
                             failStreams = true;
                         }
                     }
@@ -532,11 +549,11 @@ public abstract class HTTP3Session implements Session, ParserListener
                         {
                             goAwaySent = newGoAwayFrame(false);
                             GoAwayFrame goAwayFrame = goAwaySent;
-                            zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(this::terminate));
+                            zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(() -> terminate("go_away")));
                         }
                         else
                         {
-                            zeroStreamsAction = this::terminate;
+                            zeroStreamsAction = () -> terminate("go_away");
                         }
                         failStreams = true;
                     }
@@ -563,38 +580,114 @@ public abstract class HTTP3Session implements Session, ParserListener
             // The other peer sent us a GOAWAY with the last processed streamId,
             // so we must fail the streams that have a bigger streamId.
             Predicate<HTTP3Stream> predicate = stream -> stream.isLocal() && stream.getId() > frame.getLastId();
-            failStreams(predicate, true);
+            failStreams(predicate, "go_away", true);
         }
 
         tryRunZeroStreamsAction();
     }
 
-    private void failStreams(Predicate<HTTP3Stream> predicate, boolean close)
+    public boolean onIdleTimeout()
+    {
+        boolean notify = false;
+        try (AutoLock l = lock.lock())
+        {
+            switch (closeState)
+            {
+                case NOT_CLOSED:
+                {
+                    notify = true;
+                    break;
+                }
+                case LOCALLY_CLOSED:
+                case REMOTELY_CLOSED:
+                {
+                    break;
+                }
+                case CLOSING:
+                case CLOSED:
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("already closed, ignored idle timeout for {}", this);
+                    return false;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        }
+
+        boolean confirmed = true;
+        if (notify)
+            confirmed = notifyIdleTimeout();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("idle timeout {} for {}", confirmed ? "confirmed" : "ignored", this);
+
+        if (!confirmed)
+            return false;
+
+        GoAwayFrame goAwayFrame = null;
+        try (AutoLock l = lock.lock())
+        {
+            switch (closeState)
+            {
+                case NOT_CLOSED:
+                case LOCALLY_CLOSED:
+                case REMOTELY_CLOSED:
+                case CLOSING:
+                {
+                    if (goAwaySent == null || goAwaySent.isGraceful())
+                        goAwaySent = goAwayFrame = newGoAwayFrame(false);
+                    closeState = CloseState.CLOSED;
+                    break;
+                }
+                case CLOSED:
+                {
+                    return false;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        }
+
+        failStreams(stream -> true, "session_idle_timeout", true);
+
+        if (goAwayFrame != null)
+            writeControlFrame(goAwayFrame, Callback.from(() -> terminate("idle_timeout")));
+        else
+            terminate("idle_timeout");
+
+        return false;
+    }
+
+    private void failStreams(Predicate<HTTP3Stream> predicate, String reason, boolean close)
     {
         long error = ErrorCode.REQUEST_CANCELLED_ERROR.code();
-        Throwable failure = new IOException("request_cancelled");
+        Throwable failure = new IOException(reason);
         streams.values().stream()
             .filter(predicate)
             .forEach(stream ->
             {
                 if (close)
-                    stream.close(error, failure);
+                    stream.reset(error, failure);
                 // Since the stream failure was generated
                 // by a GOAWAY, notify the application.
-                stream.onFailure(error, failure);
-                removeStream(stream);
+                stream.onFailure(failure);
             });
     }
 
-    private void terminate()
+    private void terminate(String reason)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("terminating {}", this);
+            LOG.debug("terminating reason={} for {}", reason, this);
         streamTimeouts.destroy();
-        close(ErrorCode.NO_ERROR.code(), "terminate");
+        outwardClose(ErrorCode.NO_ERROR.code(), reason);
         // Since the close() above is called by the
         // implementation, notify the application.
-        notifyTerminate();
+        notifyDisconnect();
     }
 
     private void tryRunZeroStreamsAction()
@@ -603,7 +696,7 @@ public abstract class HTTP3Session implements Session, ParserListener
         CompletableFuture<Void> completable;
         try (AutoLock l = lock.lock())
         {
-            long count = remoteStreamCount.get();
+            long count = streamCount.get();
             if (count > 0)
             {
                 if (LOG.isDebugEnabled())
@@ -663,25 +756,36 @@ public abstract class HTTP3Session implements Session, ParserListener
             completable.complete(null);
     }
 
-    public void onClose(int error, String reason)
+    public void onClose(long error, String reason)
     {
-        // A close at the QUIC level does not allow
-        // any data to be sent, just update the state.
+        if (LOG.isDebugEnabled())
+            LOG.debug("session closed remotely 0x{}/{} {}", Long.toHexString(error), reason, this);
+
+        // A close at the QUIC level does not allow any
+        // data to be sent, update the state and notify.
+        boolean notifyFailure;
         try (AutoLock l = lock.lock())
         {
+            notifyFailure = closeState == CloseState.NOT_CLOSED;
             closeState = CloseState.CLOSED;
             zeroStreamsAction = null;
             // TODO: what about field shutdown?
         }
-        failStreams(stream -> true, false);
-        notifyTerminate();
+
+        // No point in closing the streams, as QUIC frames cannot be sent.
+        failStreams(stream -> true, "remote_close", false);
+
+        if (notifyFailure)
+            fail(error, reason);
+
+        notifyDisconnect();
     }
 
-    private void notifyTerminate()
+    private void notifyDisconnect()
     {
         try
         {
-            listener.onTerminate(this);
+            listener.onDisconnect(this);
         }
         catch (Throwable x)
         {
@@ -693,11 +797,11 @@ public abstract class HTTP3Session implements Session, ParserListener
     public void onStreamFailure(long streamId, long error, Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("stream failure {}/{} for stream #{} on {}", error, failure, streamId, this, failure);
+            LOG.debug("stream failure 0x{}/{} for stream #{} on {}", Long.toHexString(error), failure.getMessage(), streamId, this);
         HTTP3Stream stream = getStream(streamId);
         if (stream != null)
         {
-            stream.onFailure(error, failure);
+            stream.onFailure(failure);
             removeStream(stream);
         }
     }
@@ -708,11 +812,11 @@ public abstract class HTTP3Session implements Session, ParserListener
         // TODO
     }
 
-    public void notifySessionFailure(long error, String reason)
+    public void notifyFailure(Throwable failure)
     {
         try
         {
-            listener.onSessionFailure(this, error, reason);
+            listener.onFailure(this, failure);
         }
         catch (Throwable x)
         {
@@ -728,7 +832,7 @@ public abstract class HTTP3Session implements Session, ParserListener
     @Override
     public String toString()
     {
-        return String.format("%s@%x[streams=%d,%s]", getClass().getSimpleName(), hashCode(), remoteStreamCount.get(), closeState);
+        return String.format("%s@%x[streams=%d,%s]", getClass().getSimpleName(), hashCode(), streamCount.get(), closeState);
     }
 
     private enum CloseState
@@ -754,7 +858,7 @@ public abstract class HTTP3Session implements Session, ParserListener
         @Override
         protected boolean onExpired(HTTP3Stream stream)
         {
-            if (stream.processIdleTimeout(new TimeoutException("idle timeout " + stream.getIdleTimeout() + " ms elapsed")))
+            if (stream.onIdleTimeout(new TimeoutException("idle timeout " + stream.getIdleTimeout() + " ms elapsed")))
                 removeStream(stream);
             // The iterator returned from the method above does not support removal.
             return false;

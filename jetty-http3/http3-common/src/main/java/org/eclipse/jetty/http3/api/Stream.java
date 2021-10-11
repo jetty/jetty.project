@@ -124,12 +124,20 @@ public interface Stream
     public void demand();
 
     /**
-     * <p> Sends the given HEADERS frame containing the trailer headers.</p>
+     * <p>Sends the given HEADERS frame containing the trailer headers.</p>
      *
      * @param frame the HEADERS frame containing the trailer headers
      * @return the {@link CompletableFuture} that gets notified when the frame has been sent
      */
     public CompletableFuture<Stream> trailer(HeadersFrame frame);
+
+    /**
+     * <p>Abruptly terminates this stream with the given error.</p>
+     *
+     * @param error the error code
+     * @param failure the failure that caused the reset of the stream
+     */
+    public void reset(long error, Throwable failure);
 
     /**
      * <p>A {@link Stream.Listener} is the passive counterpart of a {@link Stream} and receives
@@ -237,10 +245,9 @@ public interface Stream
          * the stream has been reset.</p>
          *
          * @param stream the stream
-         * @param error the error code
          * @param failure the cause of the failure
          */
-        public default void onFailure(Stream stream, long error, Throwable failure)
+        public default void onFailure(Stream stream, Throwable failure)
         {
         }
     }

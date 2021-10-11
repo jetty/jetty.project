@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
@@ -35,13 +34,6 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     }
 
     @Override
-    public void onOpen()
-    {
-        super.onOpen();
-        notifyAccept();
-    }
-
-    @Override
     public ServerHTTP3Session getProtocolSession()
     {
         return (ServerHTTP3Session)super.getProtocolSession();
@@ -54,17 +46,26 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     }
 
     @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        notifyAccept();
+    }
+
+    @Override
     public void onHeaders(long streamId, HeadersFrame frame)
     {
-        QuicStreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
-        HTTP3Stream stream = getOrCreateStream(endPoint);
-        MetaData metaData = frame.getMetaData();
-        if (metaData.isRequest())
+        if (frame.getMetaData().isRequest())
         {
+            QuicStreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
+            HTTP3Stream stream = getOrCreateStream(endPoint);
             if (LOG.isDebugEnabled())
-                LOG.debug("received request {}#{} on {}", frame, streamId, this);
-            updateLastId(streamId);
-            stream.onRequest(frame);
+                LOG.debug("received request {} on {}", frame, stream);
+            if (stream != null)
+            {
+                updateLastId(streamId);
+                stream.onRequest(frame);
+            }
         }
         else
         {

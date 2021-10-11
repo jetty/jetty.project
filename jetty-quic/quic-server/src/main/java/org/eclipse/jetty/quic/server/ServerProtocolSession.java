@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.quic.server;
 
-import org.eclipse.jetty.quic.common.CloseInfo;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.slf4j.Logger;
@@ -50,10 +49,10 @@ public class ServerProtocolSession extends ProtocolSession
     }
 
     @Override
-    protected void onClose(CloseInfo closeInfo)
+    protected void onClose(long error, String reason)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("session closed remotely {} {}", closeInfo, this);
+            LOG.debug("session closed remotely 0x{}/{} {}", Long.toHexString(error), reason, this);
         // TODO: should probably reset the stream if it exists.
     }
 }
