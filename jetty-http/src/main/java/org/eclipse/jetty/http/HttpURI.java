@@ -108,7 +108,7 @@ public class HttpURI
          */
         SEPARATOR("Ambiguous path separator"),
         /**
-         * Ambiguous path parameters within a URI segment e.g. {@code /foo/..;/bar}
+         * Ambiguous path parameters within a URI segment e.g. {@code /foo/..;/bar} or {@code /foo/%2e%2e;param/bar}
          */
         PARAM("Ambiguous path parameters"),
         /**
@@ -782,15 +782,14 @@ public class HttpURI
 
         // Look for segment in the ambiguous segment index.
         Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
-        if (ambiguous == Boolean.TRUE)
+        if (ambiguous != null)
         {
-            // The segment is always ambiguous.
-            _violations.add(Violation.SEGMENT);
-        }
-        else if (param && ambiguous == Boolean.FALSE)
-        {
-            // The segment is ambiguous only when followed by a parameter.
-            _violations.add(Violation.PARAM);
+            // Is the segment intrinsically ambiguous
+            if (Boolean.TRUE.equals(ambiguous))
+                _violations.add(Violation.SEGMENT);
+            // Is the segment ambiguous with a parameter?
+            if (param)
+                _violations.add(Violation.PARAM);
         }
     }
 

@@ -670,7 +670,7 @@ public class HttpGenerator
                                 close = true;
                                 _persistent = false;
                             }
-                            if (keepAlive && _persistent == Boolean.FALSE)
+                            if (keepAlive && Boolean.FALSE.equals(_persistent))
                             {
                                 field = new HttpField(HttpHeader.CONNECTION,
                                     Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))

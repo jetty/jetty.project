@@ -259,12 +259,12 @@ public class IncludeExcludeSet<T, P> implements Predicate<P>
         Boolean match2 = set2.isIncludedAndNotExcluded(item2);
 
         // if we are excluded from either set, then we do not match
-        if (match1 == Boolean.FALSE || match2 == Boolean.FALSE)
+        if (Boolean.FALSE.equals(match1) || Boolean.FALSE.equals(match2))
             return false;
 
         // If either set has any includes, then we must be included by one of them
         if (set1.hasIncludes() || set2.hasIncludes())
-            return match1 == Boolean.TRUE || match2 == Boolean.TRUE;
+            return Boolean.TRUE.equals(match1) || Boolean.TRUE.equals(match2);
 
         // If not excluded and no includes, then we match
         return true;
