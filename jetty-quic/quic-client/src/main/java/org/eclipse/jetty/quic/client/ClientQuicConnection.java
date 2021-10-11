@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,7 +34,6 @@ import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
-import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ public class ClientQuicConnection extends QuicConnection
     public static final String APPLICATION_PROTOCOLS = "org.eclipse.jetty.quic.application.protocols";
     private static final Logger LOG = LoggerFactory.getLogger(ClientQuicConnection.class);
 
-    private final Map<SocketAddress, QuicSession> pendingSessions = new ConcurrentHashMap<>();
+    private final Map<SocketAddress, ClientQuicSession> pendingSessions = new ConcurrentHashMap<>();
     private final Map<String, Object> context;
 
     public ClientQuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint, Map<String, Object> context)
@@ -82,7 +82,8 @@ public class ClientQuicConnection extends QuicConnection
             quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
             quicheConfig.setDisableActiveMigration(true);
             quicheConfig.setVerifyPeer(false);
-            quicheConfig.setMaxIdleTimeout(getEndPoint().getIdleTimeout());
+            // Idle timeouts must not be managed by Quiche.
+            quicheConfig.setMaxIdleTimeout(0L);
             quicheConfig.setInitialMaxData(10_000_000L);
             quicheConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
             quicheConfig.setInitialMaxStreamDataBidiRemote(10000000L);
@@ -97,7 +98,7 @@ public class ClientQuicConnection extends QuicConnection
                 LOG.debug("connecting to {} with protocols {}", remoteAddress, protocols);
 
             QuicheConnection quicheConnection = QuicheConnection.connect(quicheConfig, remoteAddress);
-            QuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
+            ClientQuicSession session = new ClientQuicSession(getExecutor(), getScheduler(), getByteBufferPool(), quicheConnection, this, remoteAddress, context);
             pendingSessions.put(remoteAddress, session);
             session.flush(); // send the response packet(s) that connect generated.
             if (LOG.isDebugEnabled())
@@ -128,16 +129,34 @@ public class ClientQuicConnection extends QuicConnection
     }
 
     @Override
-    protected void closeSession(QuicheConnectionId quicheConnectionId, QuicSession session, Throwable x)
+    public boolean onIdleExpired()
     {
-        super.closeSession(quicheConnectionId, session, x);
-
-        SocketAddress remoteAddress = session.getRemoteAddress();
-        if (pendingSessions.remove(remoteAddress) != null)
+        boolean idle = isFillInterested();
+        long idleTimeout = getEndPoint().getIdleTimeout();
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} elapsed idle timeout {} ms", idle ? "processing" : "ignoring", idleTimeout);
+        if (idle)
         {
-            Promise<?> promise = (Promise<?>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
-            if (promise != null)
-                promise.failed(x);
+            Collection<QuicSession> sessions = getQuicSessions();
+            sessions.forEach(QuicSession::onIdleTimeout);
         }
+        return false;
+    }
+
+    @Override
+    public void outwardClose(QuicSession session, Throwable failure)
+    {
+        super.outwardClose(session, failure);
+        SocketAddress remoteAddress = session.getRemoteAddress();
+        if (remoteAddress != null)
+        {
+            if (pendingSessions.remove(remoteAddress) != null)
+            {
+                Promise<?> promise = (Promise<?>)context.get(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY);
+                if (promise != null)
+                    promise.failed(failure);
+            }
+        }
+        getEndPoint().close(failure);
     }
 }

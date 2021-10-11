@@ -18,6 +18,7 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,7 +62,7 @@ public abstract class QuicSession
     private final AtomicLong[] ids = new AtomicLong[StreamType.values().length];
     private final AutoLock strategyQueueLock = new AutoLock();
     private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
-    private final ConcurrentMap<Long, QuicStreamEndPoint> endpoints = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, QuicStreamEndPoint> endPoints = new ConcurrentHashMap<>();
     private final Executor executor;
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
@@ -72,6 +73,7 @@ public abstract class QuicSession
     private SocketAddress remoteAddress;
     private ProtocolSession protocolSession;
     private QuicheConnectionId quicheConnectionId;
+    private long idleTimeout;
 
     protected QuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, SocketAddress remoteAddress)
     {
@@ -90,14 +92,6 @@ public abstract class QuicSession
     public Executor getExecutor()
     {
         return executor;
-    }
-
-    public CloseInfo getRemoteCloseInfo()
-    {
-        AtomicStampedReference<String> info = quicheConnection.getRemoteCloseInfo();
-        if (info != null)
-            return new CloseInfo(info.getStamp(), info.getReference());
-        return null;
     }
 
     public Scheduler getScheduler()
@@ -120,6 +114,46 @@ public abstract class QuicSession
         return quicheConnection.getNegotiatedProtocol();
     }
 
+    public QuicConnection getQuicConnection()
+    {
+        return connection;
+    }
+
+    public Collection<QuicStreamEndPoint> getQuicStreamEndPoints()
+    {
+        return List.copyOf(endPoints.values());
+    }
+
+    public CloseInfo getRemoteCloseInfo()
+    {
+        AtomicStampedReference<String> info = quicheConnection.getRemoteCloseInfo();
+        if (info != null)
+            return new CloseInfo(info.getStamp(), info.getReference());
+        return null;
+    }
+
+    public long getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    public void setIdleTimeout(long idleTimeout)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("setting idle timeout {} ms for {}", idleTimeout, this);
+        this.idleTimeout = idleTimeout;
+    }
+
+    public boolean onIdleTimeout()
+    {
+        return protocolSession.onIdleTimeout();
+    }
+
+    public void onOpen()
+    {
+        protocolSession.onOpen();
+    }
+
     /**
      * @param streamType the stream type
      * @return a new stream ID for the given type
@@ -129,11 +163,6 @@ public abstract class QuicSession
         int type = streamType.type();
         long id = ids[type].getAndIncrement();
         return (id << 2) + type;
-    }
-
-    public void onOpen()
-    {
-        protocolSession.onOpen();
     }
 
     public int fill(long streamId, ByteBuffer buffer) throws IOException
@@ -185,7 +214,7 @@ public abstract class QuicSession
 
     public void onClose(long streamId)
     {
-        endpoints.remove(streamId);
+        endPoints.remove(streamId);
     }
 
     public SocketAddress getLocalAddress()
@@ -201,6 +230,11 @@ public abstract class QuicSession
     public boolean isConnectionEstablished()
     {
         return quicheConnection.isConnectionEstablished();
+    }
+
+    public QuicheConnectionId getConnectionId()
+    {
+        return quicheConnectionId;
     }
 
     public void setConnectionId(QuicheConnectionId quicheConnectionId)
@@ -274,7 +308,7 @@ public abstract class QuicSession
 
     QuicStreamEndPoint getStreamEndPoint(long streamId)
     {
-        return endpoints.get(streamId);
+        return endPoints.get(streamId);
     }
 
     public abstract Connection newConnection(QuicStreamEndPoint endPoint);
@@ -297,7 +331,7 @@ public abstract class QuicSession
 
     public QuicStreamEndPoint getOrCreateStreamEndPoint(long streamId, Consumer<QuicStreamEndPoint> consumer)
     {
-        QuicStreamEndPoint endPoint = endpoints.compute(streamId, (id, quicStreamEndPoint) ->
+        QuicStreamEndPoint endPoint = endPoints.compute(streamId, (id, quicStreamEndPoint) ->
         {
             if (quicStreamEndPoint == null)
             {
@@ -318,40 +352,35 @@ public abstract class QuicSession
         return new QuicStreamEndPoint(getScheduler(), this, streamId);
     }
 
-    public void close()
+    public void inwardClose(long error, String reason)
     {
-        if (quicheConnectionId == null)
-            close(new IOException("connection refused"));
-        else
-            close(new IOException("connection closed"));
+        protocolSession.inwardClose(error, reason);
     }
 
-    private void close(Throwable x)
+    public void outwardClose(long error, String reason)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("closing {}", this);
+            LOG.debug("outward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
+        quicheConnection.close(error, reason);
+        // Flushing will eventually forward
+        // the outward close to the connection.
+        flush();
+    }
+
+    private void finishOutwardClose(Throwable failure)
+    {
         try
         {
-            endpoints.values().forEach(QuicStreamEndPoint::close);
-            endpoints.clear();
-            flusher.close();
-            connection.closeSession(quicheConnectionId, this, x);
+            endPoints.clear();
             LifeCycle.stop(strategy);
+            flusher.close();
+            getQuicConnection().outwardClose(this, failure);
         }
         finally
         {
             // This call frees malloc'ed memory so make sure it always happens.
             quicheConnection.dispose();
         }
-        if (LOG.isDebugEnabled())
-            LOG.debug("closed {}", this);
-    }
-
-    public boolean close(long error, String reason)
-    {
-        boolean closed = quicheConnection.close(error, reason);
-        flush();
-        return closed;
     }
 
     @Override
@@ -410,7 +439,7 @@ public abstract class QuicSession
                 boolean connectionClosed = quicheConnection.isConnectionClosed();
                 Action action = connectionClosed ? Action.SUCCEEDED : Action.IDLE;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("connection closed={}, action={} on {}", connectionClosed, action, QuicSession.this);
+                    LOG.debug("connection draining={} closed={}, action={} on {}", quicheConnection.isDraining(), connectionClosed, action, QuicSession.this);
                 return action;
             }
             BufferUtil.flipToFlush(cipherBuffer, pos);
@@ -440,16 +469,17 @@ public abstract class QuicSession
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("connection closed {}", QuicSession.this);
-            QuicSession.this.close();
+            byteBufferPool.release(cipherBuffer);
+            finishOutwardClose(null);
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        protected void onCompleteFailure(Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("failed to write cipher bytes, closing session on {}", QuicSession.this, cause);
+                LOG.debug("failed to write cipher bytes, closing session on {}", QuicSession.this, failure);
             byteBufferPool.release(cipherBuffer);
-            QuicSession.this.close(cause);
+            finishOutwardClose(failure);
         }
     }
 

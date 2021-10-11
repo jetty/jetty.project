@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class ServerQuicConnector extends AbstractNetworkConnector
+public class QuicServerConnector extends AbstractNetworkConnector
 {
     private final ServerDatagramSelectorManager _manager;
     private final SslContextFactory.Server _sslContextFactory;
@@ -46,12 +46,12 @@ public class ServerQuicConnector extends AbstractNetworkConnector
     private volatile DatagramChannel _datagramChannel;
     private volatile int _localPort = -1;
 
-    public ServerQuicConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    public QuicServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
         this(server, null, null, null, sslContextFactory, factories);
     }
 
-    public ServerQuicConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
+    public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, 0, factories);
         _manager = new ServerDatagramSelectorManager(getExecutor(), getScheduler(), 1);
@@ -97,7 +97,8 @@ public class ServerQuicConnector extends AbstractNetworkConnector
         _quicheConfig.setPrivKeyPemPath(pemFiles[0].getPath());
         _quicheConfig.setCertChainPemPath(pemFiles[1].getPath());
         _quicheConfig.setVerifyPeer(false);
-        _quicheConfig.setMaxIdleTimeout(getIdleTimeout());
+        // Idle timeouts must not be managed by Quiche.
+        _quicheConfig.setMaxIdleTimeout(0L);
         _quicheConfig.setInitialMaxData(10000000L);
         _quicheConfig.setInitialMaxStreamDataBidiLocal(10000000L);
         _quicheConfig.setInitialMaxStreamDataBidiRemote(10000000L);
@@ -139,6 +140,13 @@ public class ServerQuicConnector extends AbstractNetworkConnector
             throw new IOException("Failed to bind to " + bindAddress, e);
         }
         return datagramChannel;
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeout)
+    {
+        super.setIdleTimeout(idleTimeout);
+        _manager.setIdleTimeout(idleTimeout);
     }
 
     @Override
@@ -193,7 +201,26 @@ public class ServerQuicConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
-            return new ServerQuicConnection(ServerQuicConnector.this, endpoint, _quicheConfig);
+            return new ServerQuicConnection(QuicServerConnector.this, endpoint, _quicheConfig);
+        }
+
+        @Override
+        protected void endPointOpened(EndPoint endpoint)
+        {
+            super.endPointOpened(endpoint);
+            onEndPointOpened(endpoint);
+        }
+
+        @Override
+        protected void endPointClosed(EndPoint endpoint)
+        {
+            onEndPointClosed(endpoint);
+            super.endPointClosed(endpoint);
+        }
+
+        private void setIdleTimeout(long idleTimeout)
+        {
+            getConnectedEndPoints().forEach(endPoint -> endPoint.setIdleTimeout(idleTimeout));
         }
     }
 }

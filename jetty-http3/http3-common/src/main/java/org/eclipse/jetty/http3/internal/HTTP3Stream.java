@@ -105,7 +105,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
             expireNanoTime = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
     }
 
-    boolean processIdleTimeout(TimeoutException timeout)
+    boolean onIdleTimeout(TimeoutException timeout)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout {} ms expired on {}", getIdleTimeout(), this);
@@ -138,12 +138,14 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
         {
             HTTP3StreamConnection connection = (HTTP3StreamConnection)endPoint.getConnection();
             Data data = connection.readData();
-            updateClose(data.isLast(), false);
+            if (data != null)
+                updateClose(data.isLast(), false);
             return data;
         }
         catch (Throwable x)
         {
-            updateClose(true, false);
+            reset(ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+            // Rethrow to the application, so don't notify onFailure().
             throw x;
         }
     }
@@ -288,18 +290,19 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
         }
     }
 
-    public void onFailure(long error, Throwable failure)
+    public void onFailure(Throwable failure)
     {
-        notifyFailure(error, failure);
+        notifyFailure(failure);
+        session.removeStream(this);
     }
 
-    private void notifyFailure(long error, Throwable failure)
+    private void notifyFailure(Throwable failure)
     {
         Listener listener = getListener();
         try
         {
             if (listener != null)
-                listener.onFailure(this, error, failure);
+                listener.onFailure(this, failure);
         }
         catch (Throwable x)
         {
@@ -321,12 +324,12 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
             if (frameState == FrameState.FAILED)
                 return false;
             frameState = FrameState.FAILED;
-            session.closeAndNotifyFailure(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
+            session.fail(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
             return false;
         }
     }
 
-    private Promise.Completable<Stream> writeFrame(Frame frame)
+    Promise.Completable<Stream> writeFrame(Frame frame)
     {
         notIdle();
         Promise.Completable<Stream> completable = new Promise.Completable<>();
@@ -334,7 +337,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
         return completable;
     }
 
-    private void updateClose(boolean update, boolean local)
+    void updateClose(boolean update, boolean local)
     {
         if (update)
         {
@@ -375,22 +378,26 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
         }
     }
 
-    public void close(long error, Throwable failure)
+    @Override
+    public void reset(long error, Throwable failure)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("closing {} with error 0x{} {}", this, Long.toHexString(error), failure.toString());
+            LOG.debug("resetting {} with error 0x{} {}", this, Long.toHexString(error), failure.toString());
+        closeState = CloseState.CLOSED;
+        session.removeStream(this);
         endPoint.close(error, failure);
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x#%d[demand=%b,idle=%d]",
+        return String.format("%s@%x#%d[demand=%b,idle=%d,session=%s]",
             getClass().getSimpleName(),
             hashCode(),
             getId(),
             hasDemand(),
-            TimeUnit.NANOSECONDS.toMillis(expireNanoTime - System.nanoTime())
+            TimeUnit.NANOSECONDS.toMillis(expireNanoTime - System.nanoTime()),
+            getSession()
         );
     }
 

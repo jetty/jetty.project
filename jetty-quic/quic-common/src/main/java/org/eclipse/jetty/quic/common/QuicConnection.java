@@ -17,9 +17,12 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -47,6 +50,7 @@ public abstract class QuicConnection extends AbstractConnection
     private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
 
     private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
     private final Flusher flusher = new Flusher();
@@ -101,24 +105,35 @@ public abstract class QuicConnection extends AbstractConnection
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
-    protected void closeSession(QuicheConnectionId quicheConnectionId, QuicSession session, Throwable x)
+    public Collection<QuicSession> getQuicSessions()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("closing session cid={} {}", quicheConnectionId, this);
-        if (quicheConnectionId != null)
-            sessions.remove(quicheConnectionId);
+        return List.copyOf(sessions.values());
     }
+
+    @Override
+    public abstract boolean onIdleExpired();
 
     @Override
     public void close()
     {
+        // This method should only be called when the client or the server are stopped.
+        if (closed.compareAndSet(false, true))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("closing connection {}", this);
+            long error = 0x00; // QUIC error code for NO_ERROR.
+            // Propagate the close inward to the protocol-specific session.
+            sessions.values().forEach(session -> session.inwardClose(error, "stop"));
+        }
+    }
+
+    public void outwardClose(QuicSession session, Throwable failure)
+    {
         if (LOG.isDebugEnabled())
-            LOG.debug("closing connection {}", this);
-        sessions.values().forEach(QuicSession::close);
-        sessions.clear();
-        super.close();
-        if (LOG.isDebugEnabled())
-            LOG.debug("closed connection {}", this);
+            LOG.debug("outward close {} on {}", session, this);
+        QuicheConnectionId connectionId = session.getConnectionId();
+        if (connectionId != null)
+            sessions.remove(connectionId);
     }
 
     @Override
@@ -172,6 +187,7 @@ public abstract class QuicConnection extends AbstractConnection
                         if (LOG.isDebugEnabled())
                             LOG.debug("session created");
                         session.setConnectionId(quicheConnectionId);
+                        session.setIdleTimeout(getEndPoint().getIdleTimeout());
                         sessions.put(quicheConnectionId, session);
                     }
                     else

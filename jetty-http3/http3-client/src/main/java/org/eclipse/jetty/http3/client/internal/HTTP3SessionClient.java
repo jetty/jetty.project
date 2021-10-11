@@ -15,7 +15,6 @@ package org.eclipse.jetty.http3.client.internal;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.Frame;
@@ -58,14 +57,14 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     @Override
     public void onHeaders(long streamId, HeadersFrame frame)
     {
-        QuicStreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
-        HTTP3Stream stream = getOrCreateStream(endPoint);
-        MetaData metaData = frame.getMetaData();
-        if (metaData.isResponse())
+        if (frame.getMetaData().isResponse())
         {
+            QuicStreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
+            HTTP3Stream stream = getOrCreateStream(endPoint);
             if (LOG.isDebugEnabled())
-                LOG.debug("received response {}#{} on {}", frame, streamId, this);
-            stream.onResponse(frame);
+                LOG.debug("received response {} on {}", frame, stream);
+            if (stream != null)
+                stream.onResponse(frame);
         }
         else
         {

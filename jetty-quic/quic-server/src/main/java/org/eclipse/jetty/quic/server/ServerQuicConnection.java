@@ -17,8 +17,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
@@ -30,6 +32,7 @@ import org.eclipse.jetty.quic.server.internal.SimpleTokenValidator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,12 +45,14 @@ public class ServerQuicConnection extends QuicConnection
 
     private final QuicheConfig quicheConfig;
     private final Connector connector;
+    private final SessionTimeouts sessionTimeouts;
 
     protected ServerQuicConnection(Connector connector, EndPoint endPoint, QuicheConfig quicheConfig)
     {
         super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.quicheConfig = quicheConfig;
         this.connector = connector;
+        this.sessionTimeouts = new SessionTimeouts(connector.getScheduler());
     }
 
     @Override
@@ -89,6 +94,50 @@ public class ServerQuicConnection extends QuicConnection
             // Send the response packet(s) that tryAccept() generated.
             session.flush();
             return session;
+        }
+    }
+
+    public void schedule(ServerQuicSession session)
+    {
+        sessionTimeouts.schedule(session);
+    }
+
+    @Override
+    public boolean onIdleExpired()
+    {
+        // The current server architecture only has one listening
+        // DatagramChannelEndPoint, so we ignore idle timeouts.
+        return false;
+    }
+
+    @Override
+    public void outwardClose(QuicSession session, Throwable failure)
+    {
+        super.outwardClose(session, failure);
+        // Do nothing else, as the current architecture only has one
+        // listening DatagramChannelEndPoint, so it must not be closed.
+    }
+
+    private class SessionTimeouts extends CyclicTimeouts<ServerQuicSession>
+    {
+        private SessionTimeouts(Scheduler scheduler)
+        {
+            super(scheduler);
+        }
+
+        @Override
+        protected Iterator<ServerQuicSession> iterator()
+        {
+            return getQuicSessions().stream()
+                .map(ServerQuicSession.class::cast)
+                .iterator();
+        }
+
+        @Override
+        protected boolean onExpired(ServerQuicSession session)
+        {
+            session.onIdleTimeout();
+            return false;
         }
     }
 }

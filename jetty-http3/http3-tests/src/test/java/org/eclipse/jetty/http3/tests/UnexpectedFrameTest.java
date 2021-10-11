@@ -19,13 +19,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.DataFrame;
-import org.eclipse.jetty.http3.internal.ErrorCode;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UnexpectedFrameTest extends AbstractClientServerTest
@@ -37,29 +35,27 @@ public class UnexpectedFrameTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public void onSessionFailure(Session session, long error, String reason)
+            public void onFailure(Session session, Throwable failure)
             {
-                assertEquals(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), error);
                 serverLatch.countDown();
             }
         });
 
         CountDownLatch clientLatch = new CountDownLatch(1);
-        HTTP3Session session = (HTTP3Session)newSession(new Session.Client.Listener()
+        HTTP3Session clientSession = (HTTP3Session)newSession(new Session.Client.Listener()
             {
                 @Override
-                public void onSessionFailure(Session session, long error, String reason)
+                public void onFailure(Session session, Throwable failure)
                 {
-                    assertEquals(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), error);
                     clientLatch.countDown();
                 }
             });
 
-        session.writeMessageFrame(0, new DataFrame(ByteBuffer.allocate(128), false), Callback.NOOP);
+        clientSession.writeMessageFrame(0, new DataFrame(ByteBuffer.allocate(128), false), Callback.NOOP);
 
         assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
 
-        await().atMost(1, TimeUnit.SECONDS).until(session::isClosed);
+        await().atMost(1, TimeUnit.SECONDS).until(clientSession::isClosed);
     }
 }

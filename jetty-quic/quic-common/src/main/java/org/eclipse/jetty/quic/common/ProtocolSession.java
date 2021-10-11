@@ -69,7 +69,7 @@ public abstract class ProtocolSession
             {
                 CloseInfo closeInfo = session.getRemoteCloseInfo();
                 if (closeInfo != null)
-                    onClose(closeInfo);
+                    onClose(closeInfo.error(), closeInfo.reason());
                 break;
             }
         }
@@ -130,12 +130,22 @@ public abstract class ProtocolSession
         connection.onOpen();
     }
 
-    public boolean close(long error, String reason)
+    protected boolean onIdleTimeout()
     {
-        return getQuicSession().close(error, reason);
+        return true;
     }
 
-    protected abstract void onClose(CloseInfo closeInfo);
+    public void inwardClose(long error, String reason)
+    {
+        getQuicSession().outwardClose(error, reason);
+    }
+
+    public void outwardClose(long error, String reason)
+    {
+        getQuicSession().outwardClose(error, reason);
+    }
+
+    protected abstract void onClose(long error, String reason);
 
     @Override
     public String toString()

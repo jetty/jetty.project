@@ -174,11 +174,22 @@ public interface Session
         }
 
         /**
-         * <p>Callback method invoked when a the underlying transport has been closed.</p>
+         * <p>Callback method invoked when the idle timeout has expired.</p>
+         *
+         * @param session the session
+         * @return true to confirm the idle timeout, false to ignore the idle timeout
+         */
+        public default boolean onIdleTimeout(Session session)
+        {
+            return true;
+        }
+
+        /**
+         * <p>Callback method invoked when the underlying transport has been disconnected.</p>
          *
          * @param session the session
          */
-        public default void onTerminate(Session session)
+        public default void onDisconnect(Session session)
         {
         }
 
@@ -225,10 +236,9 @@ public interface Session
          * <p>Callback method invoked when a failure has been detected for this session.</p>
          *
          * @param session the session
-         * @param error the error code
-         * @param reason the error reason
+         * @param failure the cause of the failure
          */
-        public default void onSessionFailure(Session session, long error, String reason)
+        public default void onFailure(Session session, Throwable failure)
         {
         }
     }

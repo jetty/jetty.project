@@ -27,7 +27,6 @@ import org.eclipse.jetty.http3.internal.InstructionHandler;
 import org.eclipse.jetty.http3.internal.UnidirectionalStreamConnection;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
-import org.eclipse.jetty.quic.common.CloseInfo;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.quic.server.ServerProtocolSession;
@@ -149,11 +148,28 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
-    protected void onClose(CloseInfo closeInfo)
+    protected boolean onIdleTimeout()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("session closed remotely {} {}", closeInfo, this);
-        session.onClose(closeInfo.error(), closeInfo.reason());
+            LOG.debug("idle timeout {} ms expired for {}", getQuicSession().getIdleTimeout(), this);
+        return session.onIdleTimeout();
+    }
+
+    @Override
+    public void inwardClose(long error, String reason)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("inward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
+        // TODO: maybe we should be harsher here... like halt() see onIdleTimeout()
+        session.goAway(false);
+    }
+
+    @Override
+    protected void onClose(long error, String reason)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("session closed remotely 0x{}/{} {}", Long.toHexString(error), reason, this);
+        session.onClose(error, reason);
     }
 
     private void configureUnidirectionalStreamEndPoint(QuicStreamEndPoint endPoint)
@@ -177,7 +193,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
         messageFlusher.iterate();
     }
 
-    protected void onDataAvailable(long streamId)
+    public void onDataAvailable(long streamId)
     {
         session.onDataAvailable(streamId);
     }

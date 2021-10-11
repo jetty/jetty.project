@@ -29,7 +29,7 @@ import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
-import org.eclipse.jetty.quic.server.ServerQuicConnector;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -47,7 +47,7 @@ import static org.hamcrest.core.Is.is;
 public class End2EndClientTest
 {
     private Server server;
-    private ServerQuicConnector connector;
+    private QuicServerConnector connector;
     private HttpClient client;
     private final String responseContent = "" +
         "<html>\n" +
@@ -68,7 +68,7 @@ public class End2EndClientTest
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         HttpConnectionFactory http1 = new HttpConnectionFactory(httpConfiguration);
         HTTP2ServerConnectionFactory http2 = new HTTP2ServerConnectionFactory(httpConfiguration);
-        connector = new ServerQuicConnector(server, sslContextFactory, http1, http2);
+        connector = new QuicServerConnector(server, sslContextFactory, http1, http2);
         server.addConnector(connector);
 
         server.setHandler(new AbstractHandler()

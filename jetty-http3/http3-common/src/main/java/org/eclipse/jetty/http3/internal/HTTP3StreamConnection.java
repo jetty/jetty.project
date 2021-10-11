@@ -351,7 +351,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         catch (IOException x)
         {
-            throw new UncheckedIOException(x);
+            throw new UncheckedIOException(x.getMessage(), x);
         }
     }
 

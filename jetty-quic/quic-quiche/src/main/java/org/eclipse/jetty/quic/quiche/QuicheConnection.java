@@ -347,7 +347,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
+                throw new IllegalStateException("connection was released");
 
             LibQuiche.quiche_stream_iter quiche_stream_iter;
             if (write)
@@ -386,7 +386,7 @@ public class QuicheConnection
             info.from_len = s.getSize();
             int received = LibQuiche.INSTANCE.quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
             if (received < 0)
-                throw new IOException("Quiche failed to receive packet; err=" + LibQuiche.quiche_error.errToString(received));
+                throw new IOException("failed to receive packet; err=" + LibQuiche.quiche_error.errToString(received));
             buffer.position(buffer.position() + received);
             return received;
         }
@@ -412,7 +412,7 @@ public class QuicheConnection
             if (written == LibQuiche.quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("Quiche failed to send packet; err=" + LibQuiche.quiche_error.errToString(written));
+                throw new IOException("failed to send packet; err=" + LibQuiche.quiche_error.errToString(written));
             int prevPosition = buffer.position();
             buffer.position(prevPosition + written);
             return written;
@@ -424,7 +424,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
+                throw new IllegalStateException("connection was released");
             return LibQuiche.INSTANCE.quiche_conn_is_closed(quicheConn);
         }
     }
@@ -434,7 +434,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
+                throw new IllegalStateException("connection was released");
             return LibQuiche.INSTANCE.quiche_conn_is_established(quicheConn);
         }
     }
@@ -444,7 +444,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
+                throw new IllegalStateException("connection was released");
             return LibQuiche.INSTANCE.quiche_conn_is_in_early_data(quicheConn);
         }
     }
@@ -454,7 +454,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
+                throw new IllegalStateException("connection was released");
             return LibQuiche.INSTANCE.quiche_conn_timeout_as_millis(quicheConn).longValue();
         }
     }
@@ -464,7 +464,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
+                throw new IllegalStateException("connection was released");
             LibQuiche.INSTANCE.quiche_conn_on_timeout(quicheConn);
         }
     }
@@ -474,7 +474,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
+                throw new IllegalStateException("connection was released");
             char_pointer out = new char_pointer();
             size_t_pointer outLen = new size_t_pointer();
             LibQuiche.INSTANCE.quiche_conn_application_proto(quicheConn, out, outLen);
@@ -522,7 +522,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
+                throw new IllegalStateException("connection was released");
             return LibQuiche.INSTANCE.quiche_conn_is_draining(quicheConn);
         }
     }
@@ -532,7 +532,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
+                throw new IllegalStateException("connection was released");
             LibQuiche.quiche_stats stats = new LibQuiche.quiche_stats();
             LibQuiche.INSTANCE.quiche_conn_stats(quicheConn, stats);
             return stats.cwnd.longValue();
@@ -544,10 +544,10 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IOException("Quiche connection was released");
+                throw new IOException("connection was released");
             long value = LibQuiche.INSTANCE.quiche_conn_stream_capacity(quicheConn, new uint64_t(streamId)).longValue();
             if (value < 0)
-                throw new IOException("Quiche failed to read capacity of stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(value));
+                throw new IOException(" failed to read capacity of stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(value));
             return value;
         }
     }
@@ -557,7 +557,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IOException("Quiche connection was released");
+                throw new IOException("connection was released");
             int direction = writeSide ? LibQuiche.quiche_shutdown.QUICHE_SHUTDOWN_WRITE : LibQuiche.quiche_shutdown.QUICHE_SHUTDOWN_READ;
             int rc = LibQuiche.INSTANCE.quiche_conn_stream_shutdown(quicheConn, new uint64_t(streamId), direction, new uint64_t(error));
             if (rc == 0 || rc == LibQuiche.quiche_error.QUICHE_ERR_DONE)
@@ -571,12 +571,12 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IOException("Quiche connection was released");
+                throw new IOException("connection was released");
             int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), BufferUtil.EMPTY_BUFFER, new size_t(0), true).intValue();
             if (written == LibQuiche.quiche_error.QUICHE_ERR_DONE)
                 return;
             if (written < 0L)
-                throw new IOException("Quiche failed to write FIN to stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(written));
+                throw new IOException(" failed to write FIN to stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(written));
         }
     }
 
@@ -590,12 +590,12 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IOException("Quiche connection was released");
+                throw new IOException("connection was released");
             int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), last).intValue();
             if (written == LibQuiche.quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("Quiche failed to write to stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(written));
+                throw new IOException("failed to write to stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(written));
             buffer.position(buffer.position() + written);
             return written;
         }
@@ -606,13 +606,13 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IOException("Quiche connection was released");
+                throw new IOException("connection was released");
             bool_pointer fin = new bool_pointer();
             int read = LibQuiche.INSTANCE.quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin).intValue();
             if (read == LibQuiche.quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
             if (read < 0L)
-                throw new IOException("Quiche failed to read from stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(read));
+                throw new IOException("failed to read from stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(read));
             buffer.position(buffer.position() + read);
             return read;
         }
@@ -623,7 +623,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
+                throw new IllegalStateException("connection was released");
             return LibQuiche.INSTANCE.quiche_conn_stream_finished(quicheConn, new uint64_t(streamId));
         }
     }
@@ -633,7 +633,7 @@ public class QuicheConnection
         try (AutoLock ignore = lock.lock())
         {
             if (quicheConn == null)
-                throw new IllegalStateException("Quiche connection was released");
+                throw new IllegalStateException("connection was released");
             bool_pointer app = new bool_pointer();
             uint64_t_pointer error = new uint64_t_pointer();
             char_pointer reason = new char_pointer();
