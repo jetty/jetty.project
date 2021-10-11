@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -57,7 +56,7 @@ public class HTTP3Client extends ContainerLifeCycle
 
     public HTTP3Client()
     {
-        this.connector = new ClientConnector(new QuicClientConnectorConfigurator());
+        this.connector = new ClientConnector(new QuicClientConnectorConfigurator(this::configureConnection));
         addBean(connector);
     }
 
@@ -134,7 +133,6 @@ public class HTTP3Client extends ContainerLifeCycle
         context.put(ClientQuicConnection.APPLICATION_PROTOCOLS, getProtocols());
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, factory);
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, completable::failed));
-        context.put(QuicClientConnectorConfigurator.CONNECTION_CONFIGURATOR_CONTEXT_KEY, (UnaryOperator<Connection>)this::configureConnection);
 
         if (LOG.isDebugEnabled())
             LOG.debug("connecting to {}", address);

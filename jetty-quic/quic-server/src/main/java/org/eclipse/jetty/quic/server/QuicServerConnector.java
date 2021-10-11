@@ -40,11 +40,15 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public class QuicServerConnector extends AbstractNetworkConnector
 {
-    private final ServerDatagramSelectorManager _manager;
-    private final SslContextFactory.Server _sslContextFactory;
-    private final QuicheConfig _quicheConfig = new QuicheConfig();
-    private volatile DatagramChannel _datagramChannel;
-    private volatile int _localPort = -1;
+    private final ServerDatagramSelectorManager selectorManager;
+    private final SslContextFactory.Server sslContextFactory;
+    private final QuicheConfig quicheConfig = new QuicheConfig();
+    private volatile DatagramChannel datagramChannel;
+    private volatile int localPort = -1;
+    private int inputBufferSize = 2048;
+    private int outputBufferSize = 2048;
+    private boolean useInputDirectByteBuffers = true;
+    private boolean useOutputDirectByteBuffers = true;
 
     public QuicServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
@@ -54,22 +58,62 @@ public class QuicServerConnector extends AbstractNetworkConnector
     public QuicServerConnector(Server server, Executor executor, Scheduler scheduler, ByteBufferPool bufferPool, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
         super(server, executor, scheduler, bufferPool, 0, factories);
-        _manager = new ServerDatagramSelectorManager(getExecutor(), getScheduler(), 1);
-        addBean(_manager);
-        _sslContextFactory = sslContextFactory;
-        addBean(_sslContextFactory);
+        this.selectorManager = new ServerDatagramSelectorManager(getExecutor(), getScheduler(), 1);
+        addBean(this.selectorManager);
+        this.sslContextFactory = sslContextFactory;
+        addBean(this.sslContextFactory);
     }
 
     @Override
     public int getLocalPort()
     {
-        return _localPort;
+        return localPort;
+    }
+
+    public int getInputBufferSize()
+    {
+        return inputBufferSize;
+    }
+
+    public void setInputBufferSize(int inputBufferSize)
+    {
+        this.inputBufferSize = inputBufferSize;
+    }
+
+    public int getOutputBufferSize()
+    {
+        return outputBufferSize;
+    }
+
+    public void setOutputBufferSize(int outputBufferSize)
+    {
+        this.outputBufferSize = outputBufferSize;
+    }
+
+    public boolean isUseInputDirectByteBuffers()
+    {
+        return useInputDirectByteBuffers;
+    }
+
+    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
+    {
+        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
+    }
+
+    public boolean isUseOutputDirectByteBuffers()
+    {
+        return useOutputDirectByteBuffers;
+    }
+
+    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
+    {
+        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
     @Override
     public boolean isOpen()
     {
-        DatagramChannel channel = _datagramChannel;
+        DatagramChannel channel = datagramChannel;
         return channel != null && channel.isOpen();
     }
 
@@ -77,16 +121,16 @@ public class QuicServerConnector extends AbstractNetworkConnector
     protected void doStart() throws Exception
     {
         for (EventListener l : getBeans(SelectorManager.SelectorManagerListener.class))
-            _manager.addEventListener(l);
+            selectorManager.addEventListener(l);
         super.doStart();
-        _manager.accept(_datagramChannel);
+        selectorManager.accept(datagramChannel);
 
-        String alias = _sslContextFactory.getCertAlias();
-        char[] keyStorePassword = _sslContextFactory.getKeyStorePassword().toCharArray();
-        String keyManagerPassword = _sslContextFactory.getKeyManagerPassword();
+        String alias = sslContextFactory.getCertAlias();
+        char[] keyStorePassword = sslContextFactory.getKeyStorePassword().toCharArray();
+        String keyManagerPassword = sslContextFactory.getKeyManagerPassword();
         SSLKeyPair keyPair = new SSLKeyPair(
-            _sslContextFactory.getKeyStoreResource().getFile(),
-            _sslContextFactory.getKeyStoreType(),
+            sslContextFactory.getKeyStoreResource().getFile(),
+            sslContextFactory.getKeyStoreType(),
             keyStorePassword,
             alias == null ? "mykey" : alias,
             keyManagerPassword == null ? keyStorePassword : keyManagerPassword.toCharArray()
@@ -94,35 +138,35 @@ public class QuicServerConnector extends AbstractNetworkConnector
         File[] pemFiles = keyPair.export(new File(System.getProperty("java.io.tmpdir")));
 
         // TODO: make the QuicheConfig configurable.
-        _quicheConfig.setPrivKeyPemPath(pemFiles[0].getPath());
-        _quicheConfig.setCertChainPemPath(pemFiles[1].getPath());
-        _quicheConfig.setVerifyPeer(false);
+        quicheConfig.setPrivKeyPemPath(pemFiles[0].getPath());
+        quicheConfig.setCertChainPemPath(pemFiles[1].getPath());
+        quicheConfig.setVerifyPeer(false);
         // Idle timeouts must not be managed by Quiche.
-        _quicheConfig.setMaxIdleTimeout(0L);
-        _quicheConfig.setInitialMaxData(10000000L);
-        _quicheConfig.setInitialMaxStreamDataBidiLocal(10000000L);
-        _quicheConfig.setInitialMaxStreamDataBidiRemote(10000000L);
-        _quicheConfig.setInitialMaxStreamDataUni(10000000L);
-        _quicheConfig.setInitialMaxStreamsUni(100L);
-        _quicheConfig.setInitialMaxStreamsBidi(100L);
-        _quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
+        quicheConfig.setMaxIdleTimeout(0L);
+        quicheConfig.setInitialMaxData(10000000L);
+        quicheConfig.setInitialMaxStreamDataBidiLocal(10000000L);
+        quicheConfig.setInitialMaxStreamDataBidiRemote(10000000L);
+        quicheConfig.setInitialMaxStreamDataUni(10000000L);
+        quicheConfig.setInitialMaxStreamsUni(100L);
+        quicheConfig.setInitialMaxStreamsBidi(100L);
+        quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
         List<String> protocols = getProtocols();
         // This is only needed for Quiche example clients.
         protocols.add(0, "http/0.9");
-        _quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
+        quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
     }
 
     @Override
     public void open() throws IOException
     {
-        if (_datagramChannel == null)
+        if (datagramChannel == null)
         {
-            _datagramChannel = openDatagramChannel();
-            _datagramChannel.configureBlocking(false);
-            _localPort = _datagramChannel.socket().getLocalPort();
-            if (_localPort <= 0)
+            datagramChannel = openDatagramChannel();
+            datagramChannel.configureBlocking(false);
+            localPort = datagramChannel.socket().getLocalPort();
+            if (localPort <= 0)
                 throw new IOException("DatagramChannel not bound");
-            addBean(_datagramChannel);
+            addBean(datagramChannel);
         }
     }
 
@@ -146,7 +190,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
     public void setIdleTimeout(long idleTimeout)
     {
         super.setIdleTimeout(idleTimeout);
-        _manager.setIdleTimeout(idleTimeout);
+        selectorManager.setIdleTimeout(idleTimeout);
     }
 
     @Override
@@ -154,27 +198,27 @@ public class QuicServerConnector extends AbstractNetworkConnector
     {
         super.doStop();
         for (EventListener l : getBeans(EventListener.class))
-            _manager.removeEventListener(l);
+            selectorManager.removeEventListener(l);
     }
 
     @Override
     public void close()
     {
         super.close();
-        DatagramChannel datagramChannel = _datagramChannel;
-        _datagramChannel = null;
+        DatagramChannel datagramChannel = this.datagramChannel;
+        this.datagramChannel = null;
         if (datagramChannel != null)
         {
             removeBean(datagramChannel);
             IO.close(datagramChannel);
         }
-        _localPort = -2;
+        localPort = -2;
     }
 
     @Override
     public Object getTransport()
     {
-        return _datagramChannel;
+        return datagramChannel;
     }
 
     @Override
@@ -201,7 +245,12 @@ public class QuicServerConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
-            return new ServerQuicConnection(QuicServerConnector.this, endpoint, _quicheConfig);
+            ServerQuicConnection connection = new ServerQuicConnection(QuicServerConnector.this, endpoint, quicheConfig);
+            connection.setInputBufferSize(getInputBufferSize());
+            connection.setOutputBufferSize(getOutputBufferSize());
+            connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+            connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
+            return connection;
         }
 
         @Override

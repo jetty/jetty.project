@@ -19,6 +19,7 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.io.ClientConnector;
@@ -31,6 +32,18 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
 {
     public static final String CONNECTION_CONFIGURATOR_CONTEXT_KEY = QuicClientConnectorConfigurator.class.getSimpleName() + ".connectionConfigurator";
 
+    private final UnaryOperator<Connection> connectionConfigurator;
+
+    public QuicClientConnectorConfigurator()
+    {
+        this(UnaryOperator.identity());
+    }
+
+    public QuicClientConnectorConfigurator(UnaryOperator<Connection> connectionConfigurator)
+    {
+        this.connectionConfigurator = Objects.requireNonNull(connectionConfigurator);
+    }
+
     @Override
     public boolean isIntrinsicallySecure(ClientConnector clientConnector, SocketAddress address)
     {
@@ -40,6 +53,7 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     @Override
     public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
     {
+        context.putIfAbsent(CONNECTION_CONFIGURATOR_CONTEXT_KEY, connectionConfigurator);
         DatagramChannel channel = DatagramChannel.open();
         return new ChannelWithAddress(channel, address);
     }
