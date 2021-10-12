@@ -19,6 +19,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.EventListener;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,7 +38,8 @@ import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
-import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -55,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * <p>On the receive side, a QuicSession <em>fans-out</em> to multiple {@link QuicStreamEndPoint}s.</p>
  * <p>On the send side, many {@link QuicStreamEndPoint}s <em>fan-in</em> to a QuicSession.</p>
  */
-public abstract class QuicSession
+public abstract class QuicSession extends ContainerLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
@@ -83,10 +85,55 @@ public abstract class QuicSession
         this.quicheConnection = quicheConnection;
         this.connection = connection;
         this.flusher = new Flusher(scheduler);
+        addBean(flusher);
         this.strategy = new AdaptiveExecutionStrategy(new Producer(), executor);
+        addBean(strategy);
         this.remoteAddress = remoteAddress;
-        LifeCycle.start(strategy);
         Arrays.setAll(ids, i -> new AtomicLong());
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        getEventListeners().stream()
+            .filter(Listener.class::isInstance)
+            .map(Listener.class::cast)
+            .forEach(this::notifyOpened);
+    }
+
+    private void notifyOpened(Listener listener)
+    {
+        try
+        {
+            listener.onOpened(this);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        getEventListeners().stream()
+            .filter(Listener.class::isInstance)
+            .map(Listener.class::cast)
+            .forEach(this::notifyClosed);
+    }
+
+    private void notifyClosed(Listener listener)
+    {
+        try
+        {
+            listener.onClosed(this);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("failure notifying listener {}", listener, x);
+        }
     }
 
     public Executor getExecutor()
@@ -147,11 +194,6 @@ public abstract class QuicSession
     public boolean onIdleTimeout()
     {
         return protocolSession.onIdleTimeout();
-    }
-
-    public void onOpen()
-    {
-        protocolSession.onOpen();
     }
 
     /**
@@ -284,7 +326,7 @@ public abstract class QuicSession
             if (protocolSession == null)
             {
                 protocolSession = createProtocolSession();
-                onOpen();
+                addManaged(protocolSession);
             }
             protocolSession.process();
         }
@@ -372,7 +414,6 @@ public abstract class QuicSession
         try
         {
             endPoints.clear();
-            LifeCycle.stop(strategy);
             flusher.close();
             getQuicConnection().outwardClose(this, failure);
         }
@@ -381,6 +422,12 @@ public abstract class QuicSession
             // This call frees malloc'ed memory so make sure it always happens.
             quicheConnection.dispose();
         }
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpObjects(out, indent, new DumpableCollection("endPoints", getQuicStreamEndPoints()));
     }
 
     @Override
@@ -492,6 +539,17 @@ public abstract class QuicSession
             {
                 return strategyQueue.poll();
             }
+        }
+    }
+
+    public interface Listener extends EventListener
+    {
+        public default void onOpened(QuicSession session)
+        {
+        }
+
+        public default void onClosed(QuicSession session)
+        {
         }
     }
 }

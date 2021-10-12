@@ -36,6 +36,7 @@ import org.eclipse.jetty.quic.client.ClientQuicSession;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.server.ServerQuicSession;
 import org.eclipse.jetty.util.BufferUtil;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;

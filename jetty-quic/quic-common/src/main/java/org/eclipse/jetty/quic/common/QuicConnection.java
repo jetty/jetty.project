@@ -18,9 +18,11 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -33,6 +35,7 @@ import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -49,6 +52,7 @@ public abstract class QuicConnection extends AbstractConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicConnection.class);
 
+    private final List<QuicSession.Listener> listeners = new CopyOnWriteArrayList<>();
     private final ConcurrentMap<QuicheConnectionId, QuicSession> sessions = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Scheduler scheduler;
@@ -111,6 +115,22 @@ public abstract class QuicConnection extends AbstractConnection
     }
 
     @Override
+    public void addEventListener(EventListener listener)
+    {
+        super.addEventListener(listener);
+        if (listener instanceof QuicSession.Listener)
+            listeners.add((QuicSession.Listener)listener);
+    }
+
+    @Override
+    public void removeEventListener(EventListener listener)
+    {
+        super.removeEventListener(listener);
+        if (listener instanceof QuicSession.Listener)
+            listeners.remove((QuicSession.Listener)listener);
+    }
+
+    @Override
     public abstract boolean onIdleExpired();
 
     @Override
@@ -133,7 +153,10 @@ public abstract class QuicConnection extends AbstractConnection
             LOG.debug("outward close {} on {}", session, this);
         QuicheConnectionId connectionId = session.getConnectionId();
         if (connectionId != null)
+        {
             sessions.remove(connectionId);
+            LifeCycle.stop(session);
+        }
     }
 
     @Override
@@ -189,6 +212,8 @@ public abstract class QuicConnection extends AbstractConnection
                         session.setConnectionId(quicheConnectionId);
                         session.setIdleTimeout(getEndPoint().getIdleTimeout());
                         sessions.put(quicheConnectionId, session);
+                        listeners.forEach(session::addEventListener);
+                        LifeCycle.start(session);
                     }
                     else
                     {

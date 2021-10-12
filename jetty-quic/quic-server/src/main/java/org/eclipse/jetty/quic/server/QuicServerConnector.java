@@ -29,6 +29,7 @@ import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.quic.common.QuicSessionContainer;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.SSLKeyPair;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public class QuicServerConnector extends AbstractNetworkConnector
 {
+    private final QuicSessionContainer container = new QuicSessionContainer();
     private final ServerDatagramSelectorManager selectorManager;
     private final SslContextFactory.Server sslContextFactory;
     private final QuicheConfig quicheConfig = new QuicheConfig();
@@ -62,6 +64,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         addBean(this.selectorManager);
         this.sslContextFactory = sslContextFactory;
         addBean(this.sslContextFactory);
+        addBean(container);
     }
 
     @Override
@@ -246,6 +249,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
             ServerQuicConnection connection = new ServerQuicConnection(QuicServerConnector.this, endpoint, quicheConfig);
+            connection.addEventListener(container);
             connection.setInputBufferSize(getInputBufferSize());
             connection.setOutputBufferSize(getOutputBufferSize());
             connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());

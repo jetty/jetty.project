@@ -34,11 +34,6 @@ public class ServerProtocolSession extends ProtocolSession
     }
 
     @Override
-    public void onOpen()
-    {
-    }
-
-    @Override
     protected boolean onReadable(long readableStreamId)
     {
         // On the server, we need a get-or-create semantic in case of reads.

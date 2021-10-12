@@ -47,36 +47,41 @@ public class ClientHTTP3Session extends ClientProtocolSession
     private final ControlFlusher controlFlusher;
     private final HTTP3Flusher messageFlusher;
 
-    public ClientHTTP3Session(ClientQuicSession session, Session.Client.Listener listener, Promise<Session.Client> promise, int maxBlockedStreams, int maxResponseHeadersSize)
+    public ClientHTTP3Session(ClientQuicSession quicSession, Session.Client.Listener listener, Promise<Session.Client> promise, int maxBlockedStreams, int maxResponseHeadersSize)
     {
-        super(session);
+        super(quicSession);
         this.session = new HTTP3SessionClient(this, listener, promise);
+        addBean(session);
 
         if (LOG.isDebugEnabled())
             LOG.debug("initializing HTTP/3 streams");
 
         long encoderStreamId = getQuicSession().newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint encoderEndPoint = configureInstructionEndPoint(encoderStreamId);
-        InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(session, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
+        InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(quicSession, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
         this.encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher), maxBlockedStreams);
+        addBean(encoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
 
         long decoderStreamId = getQuicSession().newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint decoderEndPoint = configureInstructionEndPoint(decoderStreamId);
-        InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(session, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
+        InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(quicSession, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
         this.decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher), maxResponseHeadersSize);
+        addBean(decoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
 
         long controlStreamId = getQuicSession().newStreamId(StreamType.CLIENT_UNIDIRECTIONAL);
         QuicStreamEndPoint controlEndPoint = configureControlEndPoint(controlStreamId);
-        this.controlFlusher = new ControlFlusher(session, controlEndPoint, true);
+        this.controlFlusher = new ControlFlusher(quicSession, controlEndPoint, true);
+        addBean(controlFlusher);
         if (LOG.isDebugEnabled())
             LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
         // TODO: make parameters configurable.
-        this.messageFlusher = new HTTP3Flusher(session.getByteBufferPool(), encoder, 4096, true);
+        this.messageFlusher = new HTTP3Flusher(quicSession.getByteBufferPool(), encoder, 4096, true);
+        addBean(messageFlusher);
     }
 
     public QpackDecoder getQpackDecoder()
@@ -100,8 +105,9 @@ public class ClientHTTP3Session extends ClientProtocolSession
     }
 
     @Override
-    public void onOpen()
+    protected void doStart() throws Exception
     {
+        super.doStart();
         // Queue the mandatory SETTINGS frame.
         Map<Long, Long> settings = session.onPreface();
         if (settings == null)

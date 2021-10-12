@@ -34,7 +34,6 @@ import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.quic.server.ServerProtocolSession;
 import org.eclipse.jetty.quic.server.ServerQuicSession;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
@@ -53,39 +52,44 @@ public class ServerHTTP3Session extends ServerProtocolSession
     private final AdaptiveExecutionStrategy strategy;
     private final HTTP3Producer producer = new HTTP3Producer();
 
-    public ServerHTTP3Session(ServerQuicSession session, Session.Server.Listener listener, int maxBlockedStreams, int maxRequestHeadersSize)
+    public ServerHTTP3Session(ServerQuicSession quicSession, Session.Server.Listener listener, int maxBlockedStreams, int maxRequestHeadersSize)
     {
-        super(session);
+        super(quicSession);
         this.session = new HTTP3SessionServer(this, listener);
+        addBean(session);
 
         if (LOG.isDebugEnabled())
             LOG.debug("initializing HTTP/3 streams");
 
         long encoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint encoderEndPoint = configureInstructionEndPoint(encoderStreamId);
-        InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(session, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
+        InstructionFlusher encoderInstructionFlusher = new InstructionFlusher(quicSession, encoderEndPoint, EncoderStreamConnection.STREAM_TYPE);
         this.encoder = new QpackEncoder(new InstructionHandler(encoderInstructionFlusher), maxBlockedStreams);
+        addBean(encoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created encoder stream #{} on {}", encoderStreamId, encoderEndPoint);
 
         long decoderStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint decoderEndPoint = configureInstructionEndPoint(decoderStreamId);
-        InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(session, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
+        InstructionFlusher decoderInstructionFlusher = new InstructionFlusher(quicSession, decoderEndPoint, DecoderStreamConnection.STREAM_TYPE);
         this.decoder = new QpackDecoder(new InstructionHandler(decoderInstructionFlusher), maxRequestHeadersSize);
+        addBean(decoder);
         if (LOG.isDebugEnabled())
             LOG.debug("created decoder stream #{} on {}", decoderStreamId, decoderEndPoint);
 
         long controlStreamId = getQuicSession().newStreamId(StreamType.SERVER_UNIDIRECTIONAL);
         QuicStreamEndPoint controlEndPoint = configureControlEndPoint(controlStreamId);
-        this.controlFlusher = new ControlFlusher(session, controlEndPoint, true);
+        this.controlFlusher = new ControlFlusher(quicSession, controlEndPoint, true);
+        addBean(controlFlusher);
         if (LOG.isDebugEnabled())
             LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
         // TODO: make parameters configurable.
-        this.messageFlusher = new HTTP3Flusher(session.getByteBufferPool(), encoder, 4096, true);
+        this.messageFlusher = new HTTP3Flusher(quicSession.getByteBufferPool(), encoder, 4096, true);
+        addBean(messageFlusher);
+
         this.strategy = new AdaptiveExecutionStrategy(producer, getQuicSession().getExecutor());
-        // TODO: call addBean instead
-        LifeCycle.start(strategy);
+        addBean(strategy);
     }
 
     public QpackDecoder getQpackDecoder()
@@ -127,8 +131,9 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
-    public void onOpen()
+    protected void doStart() throws Exception
     {
+        super.doStart();
         // Queue the mandatory SETTINGS frame.
         Map<Long, Long> settings = session.onPreface();
         if (settings == null)
