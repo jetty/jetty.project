@@ -25,13 +25,14 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.util.Attachable;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
+public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Stream.class);
 
@@ -43,12 +44,30 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable
     private FrameState frameState = FrameState.INITIAL;
     private long idleTimeout;
     private long expireNanoTime;
+    private Object attachment;
 
     public HTTP3Stream(HTTP3Session session, QuicStreamEndPoint endPoint, boolean local)
     {
         this.session = session;
         this.endPoint = endPoint;
         this.local = local;
+    }
+
+    public QuicStreamEndPoint getEndPoint()
+    {
+        return endPoint;
+    }
+
+    @Override
+    public Object getAttachment()
+    {
+        return attachment;
+    }
+
+    @Override
+    public void setAttachment(Object attachment)
+    {
+        this.attachment = attachment;
     }
 
     @Override
