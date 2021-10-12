@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.client.ClientQuicConnection;
 import org.eclipse.jetty.quic.client.QuicClientConnectorConfigurator;
 import org.eclipse.jetty.quic.common.QuicConnection;
+import org.eclipse.jetty.quic.common.QuicSessionContainer;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -46,6 +47,7 @@ public class HTTP3Client extends ContainerLifeCycle
     public static final String SESSION_PROMISE_CONTEXT_KEY = CLIENT_CONTEXT_KEY + ".promise";
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Client.class);
 
+    private final QuicSessionContainer container = new QuicSessionContainer();
     private final ClientConnector connector;
     private List<String> protocols = List.of("h3");
     private long streamIdleTimeout = 30000;
@@ -58,6 +60,12 @@ public class HTTP3Client extends ContainerLifeCycle
     {
         this.connector = new ClientConnector(new QuicClientConnectorConfigurator(this::configureConnection));
         addBean(connector);
+        addBean(container);
+    }
+
+    public ClientConnector getClientConnector()
+    {
+        return connector;
     }
 
     public int getInputBufferSize()
@@ -146,6 +154,7 @@ public class HTTP3Client extends ContainerLifeCycle
         if (connection instanceof QuicConnection)
         {
             QuicConnection quicConnection = (QuicConnection)connection;
+            quicConnection.addEventListener(container);
             quicConnection.setInputBufferSize(getInputBufferSize());
             quicConnection.setOutputBufferSize(getOutputBufferSize());
             quicConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());

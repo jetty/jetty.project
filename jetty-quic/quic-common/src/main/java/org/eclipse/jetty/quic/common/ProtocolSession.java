@@ -19,10 +19,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class ProtocolSession
+public abstract class ProtocolSession extends ContainerLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolSession.class);
 
@@ -38,8 +39,6 @@ public abstract class ProtocolSession
     {
         return session;
     }
-
-    public abstract void onOpen();
 
     public void process()
     {

@@ -42,13 +42,15 @@ import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class HTTP3Session implements Session, ParserListener
+public abstract class HTTP3Session extends ContainerLifeCycle implements Session, ParserListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Session.class);
 
@@ -56,7 +58,7 @@ public abstract class HTTP3Session implements Session, ParserListener
     private final AtomicLong lastId = new AtomicLong();
     private final Map<Long, HTTP3Stream> streams = new ConcurrentHashMap<>();
     private final ProtocolSession session;
-    private final Listener listener;
+    private final Session.Listener listener;
     private final AtomicInteger streamCount = new AtomicInteger();
     private final StreamTimeouts streamTimeouts;
     private long streamIdleTimeout;
@@ -66,7 +68,7 @@ public abstract class HTTP3Session implements Session, ParserListener
     private Runnable zeroStreamsAction;
     private Callback.Completable shutdown;
 
-    public HTTP3Session(ProtocolSession session, Listener listener)
+    public HTTP3Session(ProtocolSession session, Session.Listener listener)
     {
         this.session = session;
         this.listener = listener;
@@ -78,7 +80,7 @@ public abstract class HTTP3Session implements Session, ParserListener
         return session;
     }
 
-    public Listener getListener()
+    public Session.Listener getListener()
     {
         return listener;
     }
@@ -827,6 +829,12 @@ public abstract class HTTP3Session implements Session, ParserListener
     public boolean isClosed()
     {
         return closeState == CloseState.CLOSED;
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpObjects(out, indent, new DumpableCollection("streams", getStreams()));
     }
 
     @Override

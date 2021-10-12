@@ -113,7 +113,6 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        // TODO: can the downcasts be removed?
         QuicStreamEndPoint streamEndPoint = (QuicStreamEndPoint)endPoint;
         long streamId = streamEndPoint.getStreamId();
         ServerHTTP3Session http3Session = (ServerHTTP3Session)streamEndPoint.getQuicSession().getProtocolSession();

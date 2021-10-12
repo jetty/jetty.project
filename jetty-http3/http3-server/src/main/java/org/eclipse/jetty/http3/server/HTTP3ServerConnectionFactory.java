@@ -21,7 +21,6 @@ import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.server.HttpConfiguration;
 
 public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionFactory

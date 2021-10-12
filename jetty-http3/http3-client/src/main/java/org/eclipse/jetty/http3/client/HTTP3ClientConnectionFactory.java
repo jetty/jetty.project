@@ -74,7 +74,6 @@ public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, Pr
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
-        // TODO: can the downcasts be removed?
         QuicStreamEndPoint streamEndPoint = (QuicStreamEndPoint)endPoint;
         long streamId = streamEndPoint.getStreamId();
         ClientHTTP3Session http3Session = (ClientHTTP3Session)streamEndPoint.getQuicSession().getProtocolSession();
