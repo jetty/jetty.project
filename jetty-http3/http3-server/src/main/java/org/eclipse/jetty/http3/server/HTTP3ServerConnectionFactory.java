@@ -16,9 +16,12 @@ package org.eclipse.jetty.http3.server;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
+import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.server.HttpConfiguration;
 
 public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionFactory
@@ -38,9 +41,14 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         @Override
         public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
         {
-            HTTP3StreamListener listener = new HTTP3StreamListener(((HTTP3Stream)stream).getEndPoint());
-            listener.onRequest(stream, frame);
-            // TODO get a runnable to feed EWYK? See ProtocolSession.processReadableStreams()
+            HTTP3Stream http3Stream = (HTTP3Stream)stream;
+            HTTP3StreamListener listener = new HTTP3StreamListener(http3Stream.getEndPoint());
+            Runnable runnable = listener.onRequest(stream, frame);
+            if (runnable != null)
+            {
+                ServerHTTP3Session protocolSession = (ServerHTTP3Session)((HTTP3Session)http3Stream.getSession()).getProtocolSession();
+                protocolSession.offer(runnable);
+            }
             return listener;
         }
     }
@@ -59,9 +67,9 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
             return (ServerHTTP3StreamConnection)endPoint.getConnection();
         }
 
-        public void onRequest(Stream stream, HeadersFrame frame)
+        public Runnable onRequest(Stream stream, HeadersFrame frame)
         {
-            getConnection().onRequest((HTTP3Stream)stream, frame);
+            return getConnection().onRequest((HTTP3Stream)stream, frame);
         }
 
         @Override

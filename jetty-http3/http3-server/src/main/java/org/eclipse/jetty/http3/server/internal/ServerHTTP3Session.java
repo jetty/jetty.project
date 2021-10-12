@@ -13,7 +13,9 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import java.util.ArrayDeque;
 import java.util.Map;
+import java.util.Queue;
 
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
@@ -32,7 +34,10 @@ import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.quic.server.ServerProtocolSession;
 import org.eclipse.jetty.quic.server.ServerQuicSession;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +50,8 @@ public class ServerHTTP3Session extends ServerProtocolSession
     private final HTTP3SessionServer session;
     private final ControlFlusher controlFlusher;
     private final HTTP3Flusher messageFlusher;
+    private final AdaptiveExecutionStrategy strategy;
+    private final HTTP3Producer producer = new HTTP3Producer();
 
     public ServerHTTP3Session(ServerQuicSession session, Session.Server.Listener listener, int maxBlockedStreams, int maxRequestHeadersSize)
     {
@@ -76,6 +83,9 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
         // TODO: make parameters configurable.
         this.messageFlusher = new HTTP3Flusher(session.getByteBufferPool(), encoder, 4096, true);
+        this.strategy = new AdaptiveExecutionStrategy(producer, getQuicSession().getExecutor());
+        // TODO: call addBean instead
+        LifeCycle.start(strategy);
     }
 
     public QpackDecoder getQpackDecoder()
@@ -91,6 +101,24 @@ public class ServerHTTP3Session extends ServerProtocolSession
     public long getStreamIdleTimeout()
     {
         return session.getStreamIdleTimeout();
+    }
+
+    public void offer(Runnable task)
+    {
+        producer.offer(task);
+    }
+
+    @Override
+    protected boolean processReadableStreams()
+    {
+        // Calling super.processReadableStreams() is going to fill and parse HEADERS frames on the current thread,
+        // so the QPACK decoder is not accessed concurrently.
+        // The processing of HEADERS frames will produce Runnable tasks and offer them to this instance (via calls
+        // to offer(Runnable)) so that the execution strategy can consume them.
+
+        boolean result = super.processReadableStreams();
+        strategy.produce();
+        return result;
     }
 
     public void setStreamIdleTimeout(long streamIdleTimeout)
@@ -196,5 +224,26 @@ public class ServerHTTP3Session extends ServerProtocolSession
     public void onDataAvailable(long streamId)
     {
         session.onDataAvailable(streamId);
+    }
+
+    private class HTTP3Producer implements ExecutionStrategy.Producer
+    {
+        private final Queue<Runnable> tasks = new ArrayDeque<>();
+
+        public void offer(Runnable task)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("enqueuing task {} on {}", task, ServerHTTP3Session.this);
+            tasks.offer(task);
+        }
+
+        @Override
+        public Runnable produce()
+        {
+            Runnable task = tasks.poll();
+            if (LOG.isDebugEnabled())
+                LOG.debug("dequeued task {} on {}", task, ServerHTTP3Session.this);
+            return task;
+        }
     }
 }

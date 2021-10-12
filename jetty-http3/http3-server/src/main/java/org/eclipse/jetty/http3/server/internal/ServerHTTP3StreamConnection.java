@@ -44,14 +44,13 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
         http3Session.onDataAvailable(streamId);
     }
 
-    public void onRequest(HTTP3Stream stream, HeadersFrame frame)
+    public Runnable onRequest(HTTP3Stream stream, HeadersFrame frame)
     {
         HttpTransport transport = new HttpTransportOverHTTP3(stream);
         HttpChannel channel = new HttpChannelOverHTTP3(connector, httpConfiguration, getEndPoint(), transport, stream, this);
         stream.setAttachment(channel);
-        // TODO create a Runnable and feed EWYK
         channel.onRequest(((MetaData.Request)frame.getMetaData()));
-        channel.handle();
+        return channel;
     }
 
     public void onDataAvailable(HTTP3Stream stream)
