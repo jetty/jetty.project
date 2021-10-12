@@ -115,6 +115,9 @@ public class ContextHandlerGetResourceTest
         context.addAliasCheck(new ContextHandler.AliasCheck()
         {
             final SymlinkAllowedResourceAliasChecker symlinkcheck = new SymlinkAllowedResourceAliasChecker(context);
+            {
+                context.addBean(symlinkcheck);
+            }
 
             @Override
             public boolean check(String path, Resource resource)
