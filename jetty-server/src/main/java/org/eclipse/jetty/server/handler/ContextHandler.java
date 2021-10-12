@@ -68,6 +68,7 @@ import javax.servlet.http.HttpSessionListener;
 
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Dispatcher;
@@ -75,6 +76,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.FutureCallback;
@@ -86,6 +88,7 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -108,8 +111,8 @@ import org.eclipse.jetty.util.resource.Resource;
  * The executor is made available via a context attributed {@code org.eclipse.jetty.server.Executor}.
  * </p>
  * <p>
- * By default, the context is created with alias checkers for {@link AllowSymLinkAliasChecker} (unix only) and {@link ApproveNonExistentDirectoryAliases}. If
- * these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
+ * By default, the context is created with the {@link AllowedResourceAliasChecker} which is configured to allow symlinks. If
+ * this alias checker is not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  * </p>
  */
 @ManagedObject("URI Context")
@@ -264,9 +267,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _scontext = context == null ? new Context() : context;
         _attributes = new AttributesMap();
         _initParams = new HashMap<>();
-        addAliasCheck(new ApproveNonExistentDirectoryAliases());
         if (File.separatorChar == '/')
-            addAliasCheck(new AllowSymLinkAliasChecker());
+            addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
 
         if (contextPath != null)
             setContextPath(contextPath);
@@ -2083,6 +2085,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void addAliasCheck(AliasCheck check)
     {
         getAliasChecks().add(check);
+        if (check instanceof LifeCycle)
+            addManaged((LifeCycle)check);
+        else
+            addBean(check);
     }
 
     /**
@@ -2098,7 +2104,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setAliasChecks(List<AliasCheck> checks)
     {
-        getAliasChecks().clear();
+        clearAliasChecks();
         getAliasChecks().addAll(checks);
     }
 
@@ -2107,7 +2113,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void clearAliasChecks()
     {
-        getAliasChecks().clear();
+        List<AliasCheck> aliasChecks = getAliasChecks();
+        aliasChecks.forEach(this::removeBean);
+        aliasChecks.clear();
     }
 
     /**
@@ -2971,6 +2979,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * Approve all aliases.
      */
+    @Deprecated
     public static class ApproveAliases implements AliasCheck
     {
         @Override
@@ -2983,6 +2992,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * Approve Aliases of a non existent directory. If a directory "/foobar/" does not exist, then the resource is aliased to "/foobar". Accept such aliases.
      */
+    @Deprecated
     public static class ApproveNonExistentDirectoryAliases implements AliasCheck
     {
         @Override
