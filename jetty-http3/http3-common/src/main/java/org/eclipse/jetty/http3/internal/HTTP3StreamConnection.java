@@ -275,7 +275,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
     }
 
-    private MessageParser.Result parseAndFill()
+    public MessageParser.Result parseAndFill()
     {
         try
         {
@@ -353,6 +353,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         {
             throw new UncheckedIOException(x.getMessage(), x);
         }
+    }
+
+    public DataFrame pollContent()
+    {
+        return dataFrames.poll();
     }
 
     @Override

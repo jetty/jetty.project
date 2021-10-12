@@ -23,8 +23,11 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -42,6 +45,14 @@ public class AbstractClientServerTest
     protected HTTP3Client client;
     protected Server server;
 
+    protected void start(Handler handler) throws Exception
+    {
+        prepareServer(new HTTP3ServerConnectionFactory());
+        server.setHandler(handler);
+        server.start();
+        startClient();
+    }
+
     protected void start(Session.Server.Listener listener) throws Exception
     {
         startServer(listener);
@@ -50,15 +61,20 @@ public class AbstractClientServerTest
 
     protected void startServer(Session.Server.Listener listener) throws Exception
     {
+        prepareServer(new RawHTTP3ServerConnectionFactory(listener));
+        server.start();
+    }
+
+    private void prepareServer(ConnectionFactory serverConnectionFactory)
+    {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePassword("storepwd");
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        connector = new QuicServerConnector(server, sslContextFactory, new RawHTTP3ServerConnectionFactory(listener));
+        connector = new QuicServerConnector(server, sslContextFactory, serverConnectionFactory);
         server.addConnector(connector);
-        server.start();
     }
 
     protected void startClient() throws Exception
