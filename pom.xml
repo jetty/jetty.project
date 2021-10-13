@@ -1027,7 +1027,7 @@
       <dependency>
         <groupId>org.jboss.logmanager</groupId>
         <artifactId>jboss-logmanager</artifactId>
-        <version>2.1.15.Final</version>
+        <version>2.1.18.Final</version>
       </dependency>
       <dependency>
         <groupId>org.jboss.threads</groupId>
