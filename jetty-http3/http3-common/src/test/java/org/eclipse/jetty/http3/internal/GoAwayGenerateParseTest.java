@@ -36,7 +36,7 @@ public class GoAwayGenerateParseTest
         GoAwayFrame input = GoAwayFrame.CLIENT_GRACEFUL;
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
-        new ControlGenerator(true).generate(lease, 0, input);
+        new ControlGenerator(true).generate(lease, 0, input, null);
 
         List<GoAwayFrame> frames = new ArrayList<>();
         ControlParser parser = new ControlParser(new ParserListener()

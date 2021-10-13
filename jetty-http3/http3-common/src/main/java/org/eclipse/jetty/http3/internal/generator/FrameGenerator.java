@@ -13,10 +13,12 @@
 
 package org.eclipse.jetty.http3.internal.generator;
 
+import java.util.function.Consumer;
+
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.io.ByteBufferPool;
 
 public abstract class FrameGenerator
 {
-    public abstract int generate(ByteBufferPool.Lease lease, long streamId, Frame frame);
+    public abstract int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail);
 }

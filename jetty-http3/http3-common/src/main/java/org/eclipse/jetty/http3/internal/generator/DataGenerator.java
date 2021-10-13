@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.internal.generator;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
@@ -31,7 +32,7 @@ public class DataGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         DataFrame dataFrame = (DataFrame)frame;
         return generateDataFrame(lease, dataFrame);

@@ -287,6 +287,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                 }
                 else
                 {
+                    removeStream(stream);
                     promise.failed(x);
                 }
             });

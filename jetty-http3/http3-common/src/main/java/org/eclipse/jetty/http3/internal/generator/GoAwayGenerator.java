@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.internal.generator;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
@@ -31,7 +32,7 @@ public class GoAwayGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
         return generateGoAwayFrame(lease, goAwayFrame);

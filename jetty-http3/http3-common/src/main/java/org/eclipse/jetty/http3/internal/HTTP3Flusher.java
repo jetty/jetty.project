@@ -74,7 +74,9 @@ public class HTTP3Flusher extends IteratingCallback
             return Action.SCHEDULED;
         }
 
-        generator.generate(lease, entry.endPoint.getStreamId(), frame);
+        int generated = generator.generate(lease, entry.endPoint.getStreamId(), frame, this::fail);
+        if (generated < 0)
+            return Action.SCHEDULED;
 
         QuicStreamEndPoint endPoint = entry.endPoint;
         List<ByteBuffer> buffers = lease.getByteBuffers();
@@ -93,6 +95,17 @@ public class HTTP3Flusher extends IteratingCallback
         lease.recycle();
         entry.callback.succeeded();
         entry = null;
+        super.succeeded();
+    }
+
+    private void fail(Throwable x)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("failed to flush {} on {}", entry, this);
+        lease.recycle();
+        entry.callback.failed(x);
+        entry = null;
+        // Continue the iteration.
         super.succeeded();
     }
 

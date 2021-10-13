@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http3.internal.generator;
 
+import java.util.function.Consumer;
+
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
@@ -29,8 +31,8 @@ public class MessageGenerator
         generators[FrameType.PUSH_PROMISE.type()] = new PushPromiseGenerator();
     }
 
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail)
     {
-        return generators[frame.getFrameType().type()].generate(lease, streamId, frame);
+        return generators[frame.getFrameType().type()].generate(lease, streamId, frame, fail);
     }
 }

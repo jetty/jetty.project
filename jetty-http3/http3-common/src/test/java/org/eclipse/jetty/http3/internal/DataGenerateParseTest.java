@@ -55,7 +55,7 @@ public class DataGenerateParseTest
         DataFrame input = new DataFrame(ByteBuffer.wrap(inputBytes), true);
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
-        new MessageGenerator(null, 8192, true).generate(lease, 0, input);
+        new MessageGenerator(null, 8192, true).generate(lease, 0, input, null);
 
         List<DataFrame> frames = new ArrayList<>();
         MessageParser parser = new MessageParser(new ParserListener()

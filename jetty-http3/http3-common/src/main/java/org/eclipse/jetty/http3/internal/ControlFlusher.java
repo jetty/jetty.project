@@ -75,7 +75,7 @@ public class ControlFlusher extends IteratingCallback
 
         for (Entry entry : entries)
         {
-            generator.generate(lease, endPoint.getStreamId(), entry.frame);
+            generator.generate(lease, endPoint.getStreamId(), entry.frame, null);
             invocationType = Invocable.combine(invocationType, entry.callback.getInvocationType());
         }
 

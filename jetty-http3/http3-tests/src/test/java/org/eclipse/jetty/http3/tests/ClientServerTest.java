@@ -30,6 +30,8 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -264,5 +266,123 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientDataLatch.await(5, TimeUnit.SECONDS));
         assertArrayEquals(bytesSent, bytesReceived);
+    }
+
+    @Test
+    public void testRequestHeadersTooLarge() throws Exception
+    {
+        start(new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            {
+                stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), true));
+                return null;
+            }
+        });
+
+        int maxRequestHeadersSize = 128;
+        client.getConfiguration().setMaxRequestHeadersSize(maxRequestHeadersSize);
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        CountDownLatch requestFailureLatch = new CountDownLatch(1);
+        HttpFields largeHeaders = HttpFields.build().put("too-large", "x".repeat(2 * maxRequestHeadersSize));
+        clientSession.newRequest(new HeadersFrame(newRequest(HttpMethod.GET, "/", largeHeaders), true), new Stream.Listener() {})
+            .whenComplete((s, x) ->
+            {
+                // The HTTP3Stream was created, but the application cannot access
+                // it, so the implementation must remove it from the HTTP3Session.
+                // See below the difference with the server.
+                if (x != null)
+                    requestFailureLatch.countDown();
+            });
+
+        assertTrue(requestFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientSession.getStreams().isEmpty());
+
+        // Verify that the connection is still good.
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Listener()
+        {
+            @Override
+            public void onResponse(Stream stream, HeadersFrame frame)
+            {
+                responseLatch.countDown();
+            }
+        });
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testResponseHeadersTooLarge() throws Exception
+    {
+        int maxResponseHeadersSize = 128;
+        AtomicReference<Session> serverSessionRef = new AtomicReference<>();
+        CountDownLatch responseFailureLatch = new CountDownLatch(1);
+        start(new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            {
+                serverSessionRef.set(stream.getSession());
+                MetaData.Request request = (MetaData.Request)frame.getMetaData();
+                if ("/large".equals(request.getURI().getPath()))
+                {
+                    HttpFields largeHeaders = HttpFields.build().put("too-large", "x".repeat(2 * maxResponseHeadersSize));
+                    stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, largeHeaders), true))
+                        .whenComplete((s, x) ->
+                        {
+                            // The response could not be generated, but the stream is still valid.
+                            // Applications may try to send a smaller response here,
+                            // so the implementation must not remove the stream.
+                            if (x != null)
+                            {
+                                // In this test, we give up if there is an error.
+                                stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                                responseFailureLatch.countDown();
+                            }
+                        });
+                }
+                else
+                {
+                    stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), true));
+                }
+                return null;
+            }
+        });
+        AbstractHTTP3ServerConnectionFactory h3 = connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
+        assertNotNull(h3);
+        h3.getConfiguration().setMaxResponseHeadersSize(maxResponseHeadersSize);
+
+        Session.Client clientSession = newSession(new Session.Client.Listener() {});
+
+        CountDownLatch streamFailureLatch = new CountDownLatch(1);
+        clientSession.newRequest(new HeadersFrame(newRequest("/large"), true), new Stream.Listener()
+            {
+                @Override
+                public void onFailure(Stream stream, Throwable failure)
+                {
+                    streamFailureLatch.countDown();
+                }
+            });
+
+        assertTrue(responseFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(streamFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverSessionRef.get().getStreams().isEmpty());
+        assertTrue(clientSession.getStreams().isEmpty());
+
+        // Verify that the connection is still good.
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Listener()
+        {
+            @Override
+            public void onResponse(Stream stream, HeadersFrame frame)
+            {
+                responseLatch.countDown();
+            }
+        });
+
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 }

@@ -48,7 +48,7 @@ public class SettingsGenerateParseTest
         SettingsFrame input = new SettingsFrame(settings);
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
-        new ControlGenerator(true).generate(lease, 0, input);
+        new ControlGenerator(true).generate(lease, 0, input, null);
 
         List<SettingsFrame> frames = new ArrayList<>();
         ControlParser parser = new ControlParser(new ParserListener()
