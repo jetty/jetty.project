@@ -79,7 +79,7 @@ public class InstructionFlusher extends IteratingCallback
         {
             initialized = true;
             ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(streamType));
-            VarLenInt.generate(buffer, streamType);
+            VarLenInt.encode(buffer, streamType);
             buffer.flip();
             lease.insert(0, buffer, false);
         }

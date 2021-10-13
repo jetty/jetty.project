@@ -30,11 +30,11 @@ public class VarLenIntTest
     public void testGenerateParse(long value)
     {
         ByteBuffer buffer = ByteBuffer.allocate(8);
-        VarLenInt.generate(buffer, value);
+        VarLenInt.encode(buffer, value);
         buffer.flip();
 
         AtomicLong result = new AtomicLong();
-        boolean parsed = new VarLenInt().parseLong(buffer, result::set);
+        boolean parsed = new VarLenInt().decode(buffer, result::set);
         assertTrue(parsed);
         assertEquals(value, result.get());
     }

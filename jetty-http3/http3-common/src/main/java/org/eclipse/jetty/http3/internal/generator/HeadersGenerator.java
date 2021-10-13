@@ -22,7 +22,6 @@ import org.eclipse.jetty.http3.internal.VarLenInt;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.BufferUtil;
 
 public class HeadersGenerator extends FrameGenerator
 {
@@ -46,21 +45,24 @@ public class HeadersGenerator extends FrameGenerator
 
     private int generateHeadersFrame(ByteBufferPool.Lease lease, long streamId, HeadersFrame frame)
     {
-        // TODO: 2 buffers are inefficient because they are sent in different datagrams.
-        //  We can allocate a max size N for the header, encode from position=N, then
-        //  write the H header bytes from N-H to N-1, so the buffer will start at position=N-H.
         try
         {
-            ByteBuffer buffer = lease.acquire(maxLength, useDirectByteBuffers);
-            BufferUtil.clear(buffer);
+            // Reserve initial bytes for the frame header bytes.
+            int frameTypeLength = VarLenInt.length(FrameType.HEADERS.type());
+            int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
+            ByteBuffer buffer = lease.acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
+            buffer.position(maxHeaderLength);
+            // Encode after the maxHeaderLength.
             encoder.encode(buffer, streamId, frame.getMetaData());
+            buffer.flip();
+            buffer.position(maxHeaderLength);
             int dataLength = buffer.remaining();
-            int headerLength = VarLenInt.length(FrameType.HEADERS.type()) + VarLenInt.length(dataLength);
-            ByteBuffer header = ByteBuffer.allocate(headerLength);
-            VarLenInt.generate(header, FrameType.HEADERS.type());
-            VarLenInt.generate(header, dataLength);
-            header.flip();
-            lease.append(header, false);
+            int headerLength = frameTypeLength + VarLenInt.length(dataLength);
+            int position = buffer.position() - headerLength;
+            buffer.position(position);
+            VarLenInt.encode(buffer, FrameType.HEADERS.type());
+            VarLenInt.encode(buffer, dataLength);
+            buffer.position(position);
             lease.append(buffer, true);
             return headerLength + dataLength;
         }
