@@ -165,13 +165,13 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("reserved stream type {}, closing {}", Long.toHexString(streamType), this);
-                getEndPoint().close(ErrorCode.randomReservedCode(), null);
+                getEndPoint().close(HTTP3ErrorCode.randomReservedCode(), null);
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("unsupported stream type {}, closing {}", Long.toHexString(streamType), this);
-                getEndPoint().close(ErrorCode.STREAM_CREATION_ERROR.code(), null);
+                getEndPoint().close(HTTP3ErrorCode.STREAM_CREATION_ERROR.code(), null);
             }
         }
     }

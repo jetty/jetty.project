@@ -18,7 +18,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.internal.ErrorCode;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.internal.VarLenInt;
 
 public class SettingsBodyParser extends BodyParser
@@ -73,12 +73,12 @@ public class SettingsBodyParser extends BodyParser
                     {
                         if (settings.containsKey(key))
                         {
-                            sessionFailure(buffer, ErrorCode.SETTINGS_ERROR.code(), "settings_duplicate");
+                            sessionFailure(buffer, HTTP3ErrorCode.SETTINGS_ERROR.code(), "settings_duplicate");
                             return Result.NO_FRAME;
                         }
                         if (SettingsFrame.isReserved(key))
                         {
-                            sessionFailure(buffer, ErrorCode.SETTINGS_ERROR.code(), "settings_reserved");
+                            sessionFailure(buffer, HTTP3ErrorCode.SETTINGS_ERROR.code(), "settings_reserved");
                             return Result.NO_FRAME;
                         }
                         if (length > 0)
@@ -87,7 +87,7 @@ public class SettingsBodyParser extends BodyParser
                         }
                         else
                         {
-                            sessionFailure(buffer, ErrorCode.FRAME_ERROR.code(), "settings_invalid_format");
+                            sessionFailure(buffer, HTTP3ErrorCode.FRAME_ERROR.code(), "settings_invalid_format");
                             return Result.NO_FRAME;
                         }
                         break;
@@ -116,7 +116,7 @@ public class SettingsBodyParser extends BodyParser
                         }
                         else
                         {
-                            sessionFailure(buffer, ErrorCode.FRAME_ERROR.code(), "settings_invalid_format");
+                            sessionFailure(buffer, HTTP3ErrorCode.FRAME_ERROR.code(), "settings_invalid_format");
                             return Result.NO_FRAME;
                         }
                         break;

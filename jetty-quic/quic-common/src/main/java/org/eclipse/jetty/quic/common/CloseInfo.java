@@ -15,16 +15,16 @@ package org.eclipse.jetty.quic.common;
 
 public class CloseInfo
 {
-    private final int error;
+    private final long error;
     private final String reason;
 
-    public CloseInfo(int error, String reason)
+    public CloseInfo(long error, String reason)
     {
         this.error = error;
         this.reason = reason;
     }
 
-    public int error()
+    public long error()
     {
         return error;
     }

@@ -130,7 +130,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
             LOG.debug("idle timeout {} ms expired on {}", getIdleTimeout(), this);
         boolean close = notifyIdleTimeout(timeout);
         if (close)
-            endPoint.close(ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout);
+            endPoint.close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), timeout);
         return close;
     }
 
@@ -163,7 +163,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         }
         catch (Throwable x)
         {
-            reset(ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+            reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
             // Rethrow to the application, so don't notify onFailure().
             throw x;
         }
@@ -199,7 +199,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
             setListener(listener);
             if (listener == null)
             {
-                Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> endPoint.shutdownInput(ErrorCode.NO_ERROR.code()));
+                Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> endPoint.shutdownInput(HTTP3ErrorCode.NO_ERROR.code()));
                 session.writeMessageFrame(getId(), new HTTP3Flusher.FlushFrame(), callback);
             }
             updateClose(frame.isLast(), false);
@@ -343,7 +343,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
             if (frameState == FrameState.FAILED)
                 return false;
             frameState = FrameState.FAILED;
-            session.fail(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
+            session.fail(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
             return false;
         }
     }

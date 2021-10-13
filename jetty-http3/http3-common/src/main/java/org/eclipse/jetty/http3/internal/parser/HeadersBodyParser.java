@@ -20,7 +20,7 @@ import java.util.function.BooleanSupplier;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
-import org.eclipse.jetty.http3.internal.ErrorCode;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
 import org.eclipse.jetty.util.BufferUtil;
@@ -137,7 +137,7 @@ public class HeadersBodyParser extends BodyParser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            notifySessionFailure(ErrorCode.INTERNAL_ERROR.code(), "internal_error");
+            notifySessionFailure(HTTP3ErrorCode.INTERNAL_ERROR.code(), "internal_error");
         }
         return false;
     }

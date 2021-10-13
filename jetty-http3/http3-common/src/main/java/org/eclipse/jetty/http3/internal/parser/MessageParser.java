@@ -18,7 +18,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.http3.frames.FrameType;
-import org.eclipse.jetty.http3.internal.ErrorCode;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
@@ -118,7 +118,7 @@ public class MessageParser
                                 // SPEC: control frames on a message stream are invalid.
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("invalid control frame type {} on message stream", Long.toHexString(frameType));
-                                sessionFailure(buffer, ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type");
+                                sessionFailure(buffer, HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type");
                                 return Result.NO_FRAME;
                             }
 
@@ -167,7 +167,7 @@ public class MessageParser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("parse failed", x);
-            sessionFailure(buffer, ErrorCode.INTERNAL_ERROR.code(), "parser_error");
+            sessionFailure(buffer, HTTP3ErrorCode.INTERNAL_ERROR.code(), "parser_error");
             return Result.NO_FRAME;
         }
     }

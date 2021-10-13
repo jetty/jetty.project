@@ -149,7 +149,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
-            long error = ErrorCode.REQUEST_CANCELLED_ERROR.code();
+            long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
             getEndPoint().close(error, x);
             // Notify the application that a failure happened.
             parser.getListener().onStreamFailure(getEndPoint().getStreamId(), error, x);
@@ -203,7 +203,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
-            getEndPoint().close(ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+            getEndPoint().close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
             // Rethrow so the application has a chance to handle it.
             throw x;
         }

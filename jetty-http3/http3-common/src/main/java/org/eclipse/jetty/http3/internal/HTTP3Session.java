@@ -268,7 +268,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         promise.whenComplete((s, x) ->
         {
             if (x != null)
-                endPoint.close(ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                endPoint.close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
         });
         HTTP3Stream stream = createStream(endPoint, promise::failed);
         if (stream == null)
@@ -282,7 +282,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                 if (x == null)
                 {
                     if (listener == null)
-                        endPoint.shutdownInput(ErrorCode.NO_ERROR.code());
+                        endPoint.shutdownInput(HTTP3ErrorCode.NO_ERROR.code());
                     promise.succeeded(stream);
                 }
                 else
@@ -460,7 +460,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (stream != null)
             stream.onData(frame);
         else
-            fail(ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
+            fail(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
     }
 
     public void onDataAvailable(long streamId)
@@ -673,7 +673,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
     private void failStreams(Predicate<HTTP3Stream> predicate, String reason, boolean close)
     {
-        long error = ErrorCode.REQUEST_CANCELLED_ERROR.code();
+        long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
         Throwable failure = new IOException(reason);
         streams.values().stream()
             .filter(predicate)
@@ -692,7 +692,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (LOG.isDebugEnabled())
             LOG.debug("terminating reason={} for {}", reason, this);
         streamTimeouts.destroy();
-        outwardClose(ErrorCode.NO_ERROR.code(), reason);
+        outwardClose(HTTP3ErrorCode.NO_ERROR.code(), reason);
         // Since the close() above is called by the
         // implementation, notify the application.
         notifyDisconnect();

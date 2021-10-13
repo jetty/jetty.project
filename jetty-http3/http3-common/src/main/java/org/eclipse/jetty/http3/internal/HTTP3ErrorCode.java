@@ -15,7 +15,7 @@ package org.eclipse.jetty.http3.internal;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-public enum ErrorCode
+public enum HTTP3ErrorCode
 {
     NO_ERROR(0x100),
     PROTOCOL_ERROR(0x101),
@@ -37,7 +37,7 @@ public enum ErrorCode
 
     private final long code;
 
-    ErrorCode(long code)
+    HTTP3ErrorCode(long code)
     {
         this.code = code;
     }
