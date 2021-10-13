@@ -162,4 +162,9 @@ public class HTTP3Client extends ContainerLifeCycle
         }
         return connection;
     }
+
+    public CompletableFuture<Void> shutdown()
+    {
+        return container.shutdown();
+    }
 }

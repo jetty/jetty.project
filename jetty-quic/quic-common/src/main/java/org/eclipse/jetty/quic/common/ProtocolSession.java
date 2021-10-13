@@ -15,6 +15,7 @@ package org.eclipse.jetty.quic.common;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -130,12 +131,18 @@ public abstract class ProtocolSession extends ContainerLifeCycle
 
     public void inwardClose(long error, String reason)
     {
-        getQuicSession().outwardClose(error, reason);
+        outwardClose(error, reason);
     }
 
     public void outwardClose(long error, String reason)
     {
         getQuicSession().outwardClose(error, reason);
+    }
+
+    public CompletableFuture<Void> shutdown()
+    {
+        outwardClose(0x0, "shutdown");
+        return CompletableFuture.completedFuture(null);
     }
 
     protected abstract void onClose(long error, String reason);

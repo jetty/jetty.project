@@ -21,6 +21,7 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.util.EventListener;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -199,23 +200,21 @@ public class QuicServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStop() throws Exception
     {
+        // We want the DatagramChannel to be stopped by the SelectorManager.
         super.doStop();
+
+        removeBean(datagramChannel);
+        datagramChannel = null;
+        localPort = -2;
+
         for (EventListener l : getBeans(EventListener.class))
             selectorManager.removeEventListener(l);
     }
 
     @Override
-    public void close()
+    public CompletableFuture<Void> shutdown()
     {
-        super.close();
-        DatagramChannel datagramChannel = this.datagramChannel;
-        this.datagramChannel = null;
-        if (datagramChannel != null)
-        {
-            removeBean(datagramChannel);
-            IO.close(datagramChannel);
-        }
-        localPort = -2;
+        return container.shutdown();
     }
 
     @Override

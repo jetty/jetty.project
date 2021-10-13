@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.server.internal;
 import java.util.ArrayDeque;
 import java.util.Map;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
@@ -193,8 +194,13 @@ public class ServerHTTP3Session extends ServerProtocolSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("inward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
-        // TODO: maybe we should be harsher here... like halt() see onIdleTimeout()
-        session.goAway(false);
+        session.disconnect(reason);
+    }
+
+    @Override
+    public CompletableFuture<Void> shutdown()
+    {
+        return session.shutdown();
     }
 
     @Override
