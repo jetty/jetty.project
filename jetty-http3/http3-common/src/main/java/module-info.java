@@ -21,6 +21,7 @@ module org.eclipse.jetty.http3.common
     requires transitive org.eclipse.jetty.http3.qpack;
     requires transitive org.eclipse.jetty.quic.common;
 
+    exports org.eclipse.jetty.http3;
     exports org.eclipse.jetty.http3.api;
     exports org.eclipse.jetty.http3.frames;
 

@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.internal.generator;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
@@ -32,7 +33,7 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         return generateSettings(lease, settingsFrame);

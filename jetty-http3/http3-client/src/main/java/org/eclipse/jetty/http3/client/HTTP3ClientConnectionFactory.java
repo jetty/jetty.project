@@ -34,29 +34,6 @@ public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, Pr
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3ClientConnectionFactory.class);
 
-    private int maxBlockedStreams;
-    private int maxResponseHeadersSize = 8192;
-
-    public int getMaxBlockedStreams()
-    {
-        return maxBlockedStreams;
-    }
-
-    public void setMaxBlockedStreams(int maxBlockedStreams)
-    {
-        this.maxBlockedStreams = maxBlockedStreams;
-    }
-
-    public int getMaxResponseHeadersSize()
-    {
-        return maxResponseHeadersSize;
-    }
-
-    public void setMaxResponseHeadersSize(int maxResponseHeadersSize)
-    {
-        this.maxResponseHeadersSize = maxResponseHeadersSize;
-    }
-
     @Override
     public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
     {
@@ -64,8 +41,8 @@ public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, Pr
         Session.Client.Listener listener = (Session.Client.Listener)context.get(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
         Promise<Session.Client> promise = (Promise<Session.Client>)context.get(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY);
-        ClientHTTP3Session session = new ClientHTTP3Session((ClientQuicSession)quicSession, listener, promise, getMaxBlockedStreams(), getMaxResponseHeadersSize());
-        session.setStreamIdleTimeout(client.getStreamIdleTimeout());
+        ClientHTTP3Session session = new ClientHTTP3Session(client.getConfiguration(), (ClientQuicSession)quicSession, listener, promise);
+        session.setStreamIdleTimeout(client.getConfiguration().getStreamIdleTimeout());
         if (LOG.isDebugEnabled())
             LOG.debug("created protocol-specific {}", session);
         return session;

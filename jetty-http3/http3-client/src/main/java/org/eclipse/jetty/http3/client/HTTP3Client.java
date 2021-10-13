@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -48,18 +49,15 @@ public class HTTP3Client extends ContainerLifeCycle
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Client.class);
 
     private final QuicSessionContainer container = new QuicSessionContainer();
+    private final HTTP3Configuration configuration = new HTTP3Configuration();
     private final ClientConnector connector;
     private List<String> protocols = List.of("h3");
-    private long streamIdleTimeout = 30000;
-    private int inputBufferSize = 2048;
-    private int outputBufferSize = 2048;
-    private boolean useInputDirectByteBuffers = true;
-    private boolean useOutputDirectByteBuffers = true;
 
     public HTTP3Client()
     {
         this.connector = new ClientConnector(new QuicClientConnectorConfigurator(this::configureConnection));
         addBean(connector);
+        addBean(configuration);
         addBean(container);
     }
 
@@ -68,44 +66,9 @@ public class HTTP3Client extends ContainerLifeCycle
         return connector;
     }
 
-    public int getInputBufferSize()
+    public HTTP3Configuration getConfiguration()
     {
-        return inputBufferSize;
-    }
-
-    public void setInputBufferSize(int inputBufferSize)
-    {
-        this.inputBufferSize = inputBufferSize;
-    }
-
-    public int getOutputBufferSize()
-    {
-        return outputBufferSize;
-    }
-
-    public void setOutputBufferSize(int outputBufferSize)
-    {
-        this.outputBufferSize = outputBufferSize;
-    }
-
-    public boolean isUseInputDirectByteBuffers()
-    {
-        return useInputDirectByteBuffers;
-    }
-
-    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
-    {
-        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
-    }
-
-    public boolean isUseOutputDirectByteBuffers()
-    {
-        return useOutputDirectByteBuffers;
-    }
-
-    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
-    {
-        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+        return configuration;
     }
 
     @ManagedAttribute("The ALPN protocol list")
@@ -117,17 +80,6 @@ public class HTTP3Client extends ContainerLifeCycle
     public void setProtocols(List<String> protocols)
     {
         this.protocols = protocols;
-    }
-
-    @ManagedAttribute("The stream idle timeout in milliseconds")
-    public long getStreamIdleTimeout()
-    {
-        return streamIdleTimeout;
-    }
-
-    public void setStreamIdleTimeout(long streamIdleTimeout)
-    {
-        this.streamIdleTimeout = streamIdleTimeout;
     }
 
     public CompletableFuture<Session.Client> connect(SocketAddress address, Session.Client.Listener listener)
@@ -155,10 +107,10 @@ public class HTTP3Client extends ContainerLifeCycle
         {
             QuicConnection quicConnection = (QuicConnection)connection;
             quicConnection.addEventListener(container);
-            quicConnection.setInputBufferSize(getInputBufferSize());
-            quicConnection.setOutputBufferSize(getOutputBufferSize());
-            quicConnection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
-            quicConnection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
+            quicConnection.setInputBufferSize(getConfiguration().getInputBufferSize());
+            quicConnection.setOutputBufferSize(getConfiguration().getOutputBufferSize());
+            quicConnection.setUseInputDirectByteBuffers(getConfiguration().isUseInputDirectByteBuffers());
+            quicConnection.setUseOutputDirectByteBuffers(getConfiguration().isUseOutputDirectByteBuffers());
         }
         return connection;
     }

@@ -97,7 +97,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         });
 
         long streamIdleTimeout = 1000;
-        client.setStreamIdleTimeout(streamIdleTimeout);
+        client.getConfiguration().setStreamIdleTimeout(streamIdleTimeout);
 
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
@@ -175,9 +175,9 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
                 }
             }
         });
-        AbstractHTTP3ServerConnectionFactory h3 = server.getConnectors()[0].getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
+        AbstractHTTP3ServerConnectionFactory h3 = connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
         assertNotNull(h3);
-        h3.setStreamIdleTimeout(idleTimeout);
+        h3.getConfiguration().setStreamIdleTimeout(idleTimeout);
 
         Session.Client clientSession = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
             .get(5, TimeUnit.SECONDS);

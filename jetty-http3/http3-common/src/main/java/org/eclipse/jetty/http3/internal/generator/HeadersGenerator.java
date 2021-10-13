@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.internal.generator;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.FrameType;
@@ -37,21 +38,23 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame)
+    public int generate(ByteBufferPool.Lease lease, long streamId, Frame frame, Consumer<Throwable> fail)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
-        return generateHeadersFrame(lease, streamId, headersFrame);
+        return generateHeadersFrame(lease, streamId, headersFrame, fail);
     }
 
-    private int generateHeadersFrame(ByteBufferPool.Lease lease, long streamId, HeadersFrame frame)
+    private int generateHeadersFrame(ByteBufferPool.Lease lease, long streamId, HeadersFrame frame, Consumer<Throwable> fail)
     {
         try
         {
             // Reserve initial bytes for the frame header bytes.
             int frameTypeLength = VarLenInt.length(FrameType.HEADERS.type());
             int maxHeaderLength = frameTypeLength + VarLenInt.MAX_LENGTH;
+            // The capacity of the buffer is larger than maxLength, but we need to enforce at most maxLength.
             ByteBuffer buffer = lease.acquire(maxHeaderLength + maxLength, useDirectByteBuffers);
             buffer.position(maxHeaderLength);
+            buffer.limit(buffer.position() + maxLength);
             // Encode after the maxHeaderLength.
             encoder.encode(buffer, streamId, frame.getMetaData());
             buffer.flip();
@@ -66,11 +69,11 @@ public class HeadersGenerator extends FrameGenerator
             lease.append(buffer, true);
             return headerLength + dataLength;
         }
-        catch (QpackException e)
+        catch (QpackException x)
         {
-            // TODO
-            e.printStackTrace();
-            return 0;
+            if (fail != null)
+                fail.accept(x);
+            return -1;
         }
     }
 }

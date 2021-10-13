@@ -49,7 +49,7 @@ public class HeadersGenerateParseTest
 
         QpackEncoder encoder = new QpackEncoder(instructions -> {}, 100);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(new NullByteBufferPool());
-        new MessageGenerator(encoder, 8192, true).generate(lease, 0, input);
+        new MessageGenerator(encoder, 8192, true).generate(lease, 0, input, null);
 
         QpackDecoder decoder = new QpackDecoder(instructions -> {}, 8192);
         List<HeadersFrame> frames = new ArrayList<>();

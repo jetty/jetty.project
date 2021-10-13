@@ -16,6 +16,7 @@ package org.eclipse.jetty.http3.server;
 import java.util.Map;
 import java.util.Objects;
 
+import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
@@ -29,50 +30,24 @@ import org.eclipse.jetty.quic.server.ServerQuicSession;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
 public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConnectionFactory implements ProtocolSession.Factory
 {
+    private final HTTP3Configuration configuration = new HTTP3Configuration();
     private final HttpConfiguration httpConfiguration;
     private final Session.Server.Listener listener;
-    private boolean useInputDirectByteBuffers = true;
-    private boolean useOutputDirectByteBuffers = true;
-    private int maxBlockedStreams = 0;
-    private long streamIdleTimeout = 30000;
 
     public AbstractHTTP3ServerConnectionFactory(HttpConfiguration httpConfiguration, Session.Server.Listener listener)
     {
         super("h3");
+        addBean(configuration);
         this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
         addBean(httpConfiguration);
         this.listener = listener;
-    }
-
-    protected Session.Server.Listener getListener()
-    {
-        return listener;
-    }
-
-    @ManagedAttribute("Whether to use direct ByteBuffers for reading")
-    public boolean isUseInputDirectByteBuffers()
-    {
-        return useInputDirectByteBuffers;
-    }
-
-    public void setUseInputDirectByteBuffers(boolean useInputDirectByteBuffers)
-    {
-        this.useInputDirectByteBuffers = useInputDirectByteBuffers;
-    }
-
-    @ManagedAttribute("Whether to use direct ByteBuffers for writing")
-    public boolean isUseOutputDirectByteBuffers()
-    {
-        return useOutputDirectByteBuffers;
-    }
-
-    public void setUseOutputDirectByteBuffers(boolean useOutputDirectByteBuffers)
-    {
-        this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
+        configuration.setUseInputDirectByteBuffers(httpConfiguration.isUseInputDirectByteBuffers());
+        configuration.setUseOutputDirectByteBuffers(httpConfiguration.isUseOutputDirectByteBuffers());
+        configuration.setMaxRequestHeadersSize(httpConfiguration.getRequestHeaderSize());
+        configuration.setMaxResponseHeadersSize(httpConfiguration.getResponseHeaderSize());
     }
 
     public HttpConfiguration getHttpConfiguration()
@@ -80,33 +55,16 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
         return httpConfiguration;
     }
 
-    @ManagedAttribute("The max number of streams blocked in QPACK encoding")
-    public int getMaxBlockedStreams()
+    public HTTP3Configuration getConfiguration()
     {
-        return maxBlockedStreams;
-    }
-
-    public void setMaxBlockedStreams(int maxBlockedStreams)
-    {
-        this.maxBlockedStreams = maxBlockedStreams;
-    }
-
-    @ManagedAttribute("The stream idle timeout in milliseconds")
-    public long getStreamIdleTimeout()
-    {
-        return streamIdleTimeout;
-    }
-
-    public void setStreamIdleTimeout(long streamIdleTimeout)
-    {
-        this.streamIdleTimeout = streamIdleTimeout;
+        return configuration;
     }
 
     @Override
     public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
     {
-        ServerHTTP3Session session = new ServerHTTP3Session((ServerQuicSession)quicSession, listener, getMaxBlockedStreams(), getHttpConfiguration().getRequestHeaderSize());
-        session.setStreamIdleTimeout(getStreamIdleTimeout());
+        ServerHTTP3Session session = new ServerHTTP3Session(getConfiguration(), (ServerQuicSession)quicSession, listener);
+        session.setStreamIdleTimeout(getConfiguration().getStreamIdleTimeout());
         return session;
     }
 
