@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.internal.ErrorCode;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +65,7 @@ public abstract class BodyParser
 
     protected void emptyBody(ByteBuffer buffer)
     {
-        sessionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code(), "invalid_frame");
+        sessionFailure(buffer, HTTP3ErrorCode.PROTOCOL_ERROR.code(), "invalid_frame");
     }
 
     protected void sessionFailure(ByteBuffer buffer, long error, String reason)

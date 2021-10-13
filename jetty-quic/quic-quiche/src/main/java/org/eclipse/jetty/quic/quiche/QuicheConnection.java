@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicStampedReference;
 
 import org.eclipse.jetty.quic.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.quic.quiche.ffi.SizedStructure;
@@ -273,10 +272,10 @@ public class QuicheConnection
         byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcid_len = new size_t_pointer(dcid.length);
 
-        byte[] token = new byte[48]; // TODO the token buffer size depends on the token minter.
+        byte[] token = new byte[512]; // TODO the token buffer size depends on the token minter.
         size_t_pointer token_len = new size_t_pointer(token.length);
 
-        LOG.debug("  getting header info...");
+        LOG.debug("getting header info...");
         int rc = LibQuiche.INSTANCE.quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
             version, type,
             scid, scid_len,
@@ -628,7 +627,7 @@ public class QuicheConnection
         }
     }
 
-    public AtomicStampedReference<String> getRemoteCloseInfo()
+    public CloseInfo getRemoteCloseInfo()
     {
         try (AutoLock ignore = lock.lock())
         {
@@ -639,8 +638,30 @@ public class QuicheConnection
             char_pointer reason = new char_pointer();
             size_t_pointer reasonLength = new size_t_pointer();
             if (LibQuiche.INSTANCE.quiche_conn_peer_error(quicheConn, app, error, reason, reasonLength))
-                return new AtomicStampedReference<>(reason.getValueAsString((int)reasonLength.getValue(), LibQuiche.CHARSET), (int)error.getValue());
+                return new CloseInfo(error.getValue(), reason.getValueAsString((int)reasonLength.getValue(), LibQuiche.CHARSET));
             return null;
+        }
+    }
+
+    public static class CloseInfo
+    {
+        private final long error;
+        private final String reason;
+
+        private CloseInfo(long error, String reason)
+        {
+            this.error = error;
+            this.reason = reason;
+        }
+
+        public long error()
+        {
+            return error;
+        }
+
+        public String reason()
+        {
+            return reason;
         }
     }
 

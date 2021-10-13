@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.common.internal.QuicErrorCode;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -141,9 +142,8 @@ public abstract class QuicConnection extends AbstractConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("closing connection {}", this);
-            long error = 0x00; // QUIC error code for NO_ERROR.
             // Propagate the close inward to the protocol-specific session.
-            sessions.values().forEach(session -> session.inwardClose(error, "stop"));
+            sessions.values().forEach(session -> session.inwardClose(QuicErrorCode.NO_ERROR.code(), "stop"));
         }
     }
 

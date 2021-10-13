@@ -26,7 +26,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicStampedReference;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -172,9 +171,9 @@ public abstract class QuicSession extends ContainerLifeCycle
 
     public CloseInfo getRemoteCloseInfo()
     {
-        AtomicStampedReference<String> info = quicheConnection.getRemoteCloseInfo();
+        QuicheConnection.CloseInfo info = quicheConnection.getRemoteCloseInfo();
         if (info != null)
-            return new CloseInfo(info.getStamp(), info.getReference());
+            return new CloseInfo(info.error(), info.reason());
         return null;
     }
 
