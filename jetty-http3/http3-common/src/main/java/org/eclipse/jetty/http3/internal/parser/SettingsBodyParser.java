@@ -65,7 +65,7 @@ public class SettingsBodyParser extends BodyParser
                 }
                 case KEY:
                 {
-                    if (varLenInt.parseLong(buffer, v ->
+                    if (varLenInt.decode(buffer, v ->
                     {
                         key = v;
                         length -= VarLenInt.length(v);
@@ -96,7 +96,7 @@ public class SettingsBodyParser extends BodyParser
                 }
                 case VALUE:
                 {
-                    if (varLenInt.parseLong(buffer, v ->
+                    if (varLenInt.decode(buffer, v ->
                     {
                         settings.put(key, v);
                         length -= VarLenInt.length(v);

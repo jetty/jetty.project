@@ -43,8 +43,8 @@ public class DataGenerator extends FrameGenerator
         int dataLength = data.remaining();
         int headerLength = VarLenInt.length(FrameType.DATA.type()) + VarLenInt.length(dataLength);
         ByteBuffer header = lease.acquire(headerLength, useDirectByteBuffers);
-        VarLenInt.generate(header, FrameType.DATA.type());
-        VarLenInt.generate(header, dataLength);
+        VarLenInt.encode(header, FrameType.DATA.type());
+        VarLenInt.encode(header, dataLength);
         header.flip();
         lease.append(header, true);
         lease.append(data, false);

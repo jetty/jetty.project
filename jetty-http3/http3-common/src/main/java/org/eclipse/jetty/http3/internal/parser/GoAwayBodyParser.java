@@ -30,7 +30,7 @@ public class GoAwayBodyParser extends BodyParser
     @Override
     public Result parse(ByteBuffer buffer)
     {
-        if (varLenInt.parseLong(buffer, this::onGoAway))
+        if (varLenInt.decode(buffer, this::onGoAway))
             return Result.WHOLE_FRAME;
         return Result.NO_FRAME;
     }

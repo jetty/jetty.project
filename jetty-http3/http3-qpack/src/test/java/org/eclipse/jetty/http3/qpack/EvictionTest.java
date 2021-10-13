@@ -20,7 +20,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.util.BufferUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -56,7 +55,7 @@ public class EvictionTest
     public void test() throws Exception
     {
         _encoder.setCapacity(1024);
-        ByteBuffer encodedFields = BufferUtil.allocate(1024);
+        ByteBuffer encodedFields = ByteBuffer.allocate(1024);
 
         for (int i = 0; i < 10000; i++)
         {
@@ -66,6 +65,7 @@ public class EvictionTest
             _encoder.encode(encodedFields, streamId, new MetaData(HttpVersion.HTTP_3, httpFields));
             _decoder.parseInstructions(_encoderHandler.getInstructionBuffer());
 
+            encodedFields.flip();
             _decoder.decode(streamId, encodedFields, _decoderHandler);
             _encoder.parseInstructions(_decoderHandler.getInstructionBuffer());
 
@@ -82,7 +82,7 @@ public class EvictionTest
 //            System.err.println();
 
             assertTrue(result.getFields().isEqualTo(httpFields));
-            BufferUtil.clear(encodedFields);
+            encodedFields.clear();
         }
     }
 

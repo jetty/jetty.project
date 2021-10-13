@@ -43,9 +43,9 @@ public class GoAwayGenerator extends FrameGenerator
         int lastIdLength = VarLenInt.length(lastId);
         int length = VarLenInt.length(FrameType.GOAWAY.type()) + VarLenInt.length(lastIdLength) + lastIdLength;
         ByteBuffer buffer = lease.acquire(length, useDirectByteBuffers);
-        VarLenInt.generate(buffer, FrameType.GOAWAY.type());
-        VarLenInt.generate(buffer, lastIdLength);
-        VarLenInt.generate(buffer, lastId);
+        VarLenInt.encode(buffer, FrameType.GOAWAY.type());
+        VarLenInt.encode(buffer, lastIdLength);
+        VarLenInt.encode(buffer, lastId);
         buffer.flip();
         lease.append(buffer, true);
         return length;

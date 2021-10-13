@@ -83,7 +83,7 @@ public class ControlFlusher extends IteratingCallback
         {
             initialized = true;
             ByteBuffer buffer = ByteBuffer.allocate(VarLenInt.length(ControlStreamConnection.STREAM_TYPE));
-            VarLenInt.generate(buffer, ControlStreamConnection.STREAM_TYPE);
+            VarLenInt.encode(buffer, ControlStreamConnection.STREAM_TYPE);
             buffer.flip();
             lease.insert(0, buffer, false);
         }

@@ -55,7 +55,7 @@ public class HeaderParser
             {
                 case TYPE:
                 {
-                    if (varLenInt.parseLong(buffer, v -> type = v))
+                    if (varLenInt.decode(buffer, v -> type = v))
                     {
                         state = State.LENGTH;
                         break;
@@ -64,7 +64,7 @@ public class HeaderParser
                 }
                 case LENGTH:
                 {
-                    if (varLenInt.parseLong(buffer, v -> length = v))
+                    if (varLenInt.decode(buffer, v -> length = v))
                     {
                         state = State.TYPE;
                         return true;

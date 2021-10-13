@@ -101,7 +101,7 @@ public class UnidirectionalStreamConnection extends AbstractConnection implement
 
                 if (filled > 0)
                 {
-                    if (parser.parseLong(buffer, this::detectAndUpgrade))
+                    if (parser.decode(buffer, this::detectAndUpgrade))
                         break;
                 }
                 else if (filled == 0)

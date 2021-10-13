@@ -48,12 +48,12 @@ public class SettingsGenerator extends FrameGenerator
         }
         int capacity = VarLenInt.length(frame.getFrameType().type()) + VarLenInt.length(length) + length;
         ByteBuffer buffer = lease.acquire(capacity, useDirectByteBuffers);
-        VarLenInt.generate(buffer, frame.getFrameType().type());
-        VarLenInt.generate(buffer, length);
+        VarLenInt.encode(buffer, frame.getFrameType().type());
+        VarLenInt.encode(buffer, length);
         for (Map.Entry<Long, Long> e : settings.entrySet())
         {
-            VarLenInt.generate(buffer, e.getKey());
-            VarLenInt.generate(buffer, e.getValue());
+            VarLenInt.encode(buffer, e.getKey());
+            VarLenInt.encode(buffer, e.getValue());
         }
         BufferUtil.flipToFlush(buffer, 0);
         lease.append(buffer, true);

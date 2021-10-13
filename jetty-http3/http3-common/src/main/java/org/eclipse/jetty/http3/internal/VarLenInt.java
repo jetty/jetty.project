@@ -14,12 +14,15 @@
 package org.eclipse.jetty.http3.internal;
 
 import java.nio.ByteBuffer;
-import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
 
+/**
+ * <p>Encodes and decodes {@code long} values as specified by
+ * <a href="https://datatracker.ietf.org/doc/html/rfc9000#section-16">QUIC</a>.</p>
+ */
 public class VarLenInt
 {
-    public static final long MAX_VALUE = (1L << 62) - 1;
+    public static final int MAX_LENGTH = 8;
     private static final int ENCODING_MASK = 0b11_00_00_00;
     private static final int VALUE_MASK = 0b00_11_11_11;
 
@@ -34,17 +37,7 @@ public class VarLenInt
         value = 0;
     }
 
-    public boolean parseInt(ByteBuffer buffer, IntConsumer consumer)
-    {
-        return parse(buffer, consumer, null);
-    }
-
-    public boolean parseLong(ByteBuffer buffer, LongConsumer consumer)
-    {
-        return parse(buffer, null, consumer);
-    }
-
-    private boolean parse(ByteBuffer buffer, IntConsumer intConsumer, LongConsumer longConsumer)
+    public boolean decode(ByteBuffer buffer, LongConsumer consumer)
     {
         while (buffer.hasRemaining())
         {
@@ -54,13 +47,11 @@ public class VarLenInt
                 // one that holds the encoding in the 2 most significant bits.
                 byte hiByte = buffer.get(buffer.position());
                 encoding = (hiByte & ENCODING_MASK) >>> 6;
-                if (intConsumer != null && encoding == 3)
-                    throw new InvalidException("invalid_variable_length_integer");
                 // Start with the decoded hi byte.
                 length = 1 << encoding;
                 value = buffer.get() & VALUE_MASK;
                 if (--length == 0)
-                    return result(intConsumer, longConsumer);
+                    return result(consumer);
             }
             else
             {
@@ -69,7 +60,7 @@ public class VarLenInt
                     // Shift the value to the left for every byte.
                     value = (value << 8) + (buffer.get() & 0xFF);
                     if (--length == 0)
-                        return result(intConsumer, longConsumer);
+                        return result(consumer);
                 }
                 else
                 {
@@ -80,17 +71,14 @@ public class VarLenInt
         return false;
     }
 
-    private boolean result(IntConsumer intConsumer, LongConsumer longConsumer)
+    private boolean result(LongConsumer consumer)
     {
-        if (intConsumer != null)
-            intConsumer.accept((int)value);
-        else
-            longConsumer.accept(value);
+        consumer.accept(value);
         reset();
         return true;
     }
 
-    public static void generate(ByteBuffer buffer, long value)
+    public static void encode(ByteBuffer buffer, long value)
     {
         int length = length(value);
         int encoding = 31 - Integer.numberOfLeadingZeros(length);
