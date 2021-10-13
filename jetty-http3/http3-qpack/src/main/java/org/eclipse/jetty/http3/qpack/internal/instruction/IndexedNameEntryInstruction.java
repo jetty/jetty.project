@@ -78,4 +78,10 @@ public class IndexedNameEntryInstruction implements Instruction
         BufferUtil.flipToFlush(buffer, 0);
         lease.append(buffer, true);
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+    }
 }
