@@ -16,12 +16,11 @@ package org.eclipse.jetty.quic.common;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EventListener;
 import java.util.List;
-import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -40,10 +39,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,8 +58,6 @@ public abstract class QuicSession extends ContainerLifeCycle
     private static final Logger LOG = LoggerFactory.getLogger(QuicSession.class);
 
     private final AtomicLong[] ids = new AtomicLong[StreamType.values().length];
-    private final AutoLock strategyQueueLock = new AutoLock();
-    private final Queue<Runnable> strategyQueue = new ArrayDeque<>();
     private final ConcurrentMap<Long, QuicStreamEndPoint> endPoints = new ConcurrentHashMap<>();
     private final Executor executor;
     private final Scheduler scheduler;
@@ -71,9 +65,8 @@ public abstract class QuicSession extends ContainerLifeCycle
     private final QuicheConnection quicheConnection;
     private final QuicConnection connection;
     private final Flusher flusher;
-    private final ExecutionStrategy strategy;
     private SocketAddress remoteAddress;
-    private ProtocolSession protocolSession;
+    private volatile ProtocolSession protocolSession;
     private QuicheConnectionId quicheConnectionId;
     private long idleTimeout;
 
@@ -86,8 +79,6 @@ public abstract class QuicSession extends ContainerLifeCycle
         this.connection = connection;
         this.flusher = new Flusher(scheduler);
         addBean(flusher);
-        this.strategy = new AdaptiveExecutionStrategy(new Producer(), executor);
-        addBean(strategy);
         this.remoteAddress = remoteAddress;
         Arrays.setAll(ids, i -> new AtomicLong());
     }
@@ -134,6 +125,14 @@ public abstract class QuicSession extends ContainerLifeCycle
         {
             LOG.info("failure notifying listener {}", listener, x);
         }
+    }
+
+    public CompletableFuture<Void> shutdown()
+    {
+        ProtocolSession session = this.protocolSession;
+        if (session != null)
+            return session.shutdown();
+        return CompletableFuture.completedFuture(null);
     }
 
     public Executor getExecutor()
@@ -323,12 +322,13 @@ public abstract class QuicSession extends ContainerLifeCycle
             // H3ProtoSession - QpackDecoder
             // H3ProtoSession -* request streams
 
-            if (protocolSession == null)
+            ProtocolSession session = protocolSession;
+            if (session == null)
             {
-                protocolSession = createProtocolSession();
-                addManaged(protocolSession);
+                protocolSession = session = createProtocolSession();
+                addManaged(session);
             }
-            protocolSession.process();
+            session.process();
         }
         else
         {
@@ -354,15 +354,6 @@ public abstract class QuicSession extends ContainerLifeCycle
     }
 
     public abstract Connection newConnection(QuicStreamEndPoint endPoint);
-
-    private void dispatch(Runnable runnable)
-    {
-        try (AutoLock l = strategyQueueLock.lock())
-        {
-            strategyQueue.offer(runnable);
-        }
-        strategy.dispatch();
-    }
 
     public void flush()
     {
@@ -397,6 +388,7 @@ public abstract class QuicSession extends ContainerLifeCycle
     public void inwardClose(long error, String reason)
     {
         protocolSession.inwardClose(error, reason);
+        flush();
     }
 
     public void outwardClose(long error, String reason)
@@ -404,8 +396,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         if (LOG.isDebugEnabled())
             LOG.debug("outward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
         quicheConnection.close(error, reason);
-        // Flushing will eventually forward
-        // the outward close to the connection.
+        // Flushing will eventually forward the outward close to the connection.
         flush();
     }
 
@@ -454,7 +445,7 @@ public abstract class QuicSession extends ContainerLifeCycle
                     if (LOG.isDebugEnabled())
                         LOG.debug("re-iterating after quiche timeout {}", QuicSession.this);
                     // Do not use the timer thread to iterate.
-                    dispatch(() -> iterate());
+                    getExecutor().execute(() -> iterate());
                 }
             };
         }
@@ -527,18 +518,6 @@ public abstract class QuicSession extends ContainerLifeCycle
                 LOG.debug("failed to write cipher bytes, closing session on {}", QuicSession.this, failure);
             byteBufferPool.release(cipherBuffer);
             finishOutwardClose(failure);
-        }
-    }
-
-    private class Producer implements ExecutionStrategy.Producer
-    {
-        @Override
-        public Runnable produce()
-        {
-            try (AutoLock l = strategyQueueLock.lock())
-            {
-                return strategyQueue.poll();
-            }
         }
     }
 

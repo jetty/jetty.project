@@ -15,15 +15,19 @@ package org.eclipse.jetty.quic.common;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.Graceful;
 
-public class QuicSessionContainer extends AbstractLifeCycle implements QuicSession.Listener, Dumpable
+public class QuicSessionContainer extends AbstractLifeCycle implements QuicSession.Listener, Graceful, Dumpable
 {
     private final Set<QuicSession> sessions = ConcurrentHashMap.newKeySet();
+    private final AtomicReference<CompletableFuture<Void>> shutdown = new AtomicReference<>();
 
     @Override
     public void onOpened(QuicSession session)
@@ -35,6 +39,35 @@ public class QuicSessionContainer extends AbstractLifeCycle implements QuicSessi
     public void onClosed(QuicSession session)
     {
         sessions.remove(session);
+    }
+
+    @Override
+    public CompletableFuture<Void> shutdown()
+    {
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        CompletableFuture<Void> existing = shutdown.compareAndExchange(null, result);
+        if (existing == null)
+        {
+            CompletableFuture.allOf(sessions.stream().map(QuicSession::shutdown).toArray(CompletableFuture[]::new))
+                .whenComplete((v, x) ->
+                {
+                    if (x == null)
+                        result.complete(v);
+                    else
+                        result.completeExceptionally(x);
+                });
+            return result;
+        }
+        else
+        {
+            return existing;
+        }
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return shutdown.get() != null;
     }
 
     @Override

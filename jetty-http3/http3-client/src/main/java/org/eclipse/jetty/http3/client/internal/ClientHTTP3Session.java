@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.client.internal;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.Frame;
@@ -167,8 +168,13 @@ public class ClientHTTP3Session extends ClientProtocolSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("inward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
-        // TODO: maybe we should be harsher here... see onIdleTimeout()
-        session.goAway(false);
+        session.disconnect(reason);
+    }
+
+    @Override
+    public CompletableFuture<Void> shutdown()
+    {
+        return session.shutdown();
     }
 
     @Override

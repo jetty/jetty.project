@@ -45,7 +45,6 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +65,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     private GoAwayFrame goAwaySent;
     private GoAwayFrame goAwayRecv;
     private Runnable zeroStreamsAction;
-    private Callback.Completable shutdown;
+    private CompletableFuture<Void> shutdown;
 
     public HTTP3Session(ProtocolSession session, Session.Listener listener)
     {
@@ -121,7 +120,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
         boolean failStreams = false;
         boolean sendGoAway = false;
-        Callback.Completable callback = null;
         try (AutoLock l = lock.lock())
         {
             switch (closeState)
@@ -135,7 +133,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                     {
                         // Send the non-graceful GOAWAY when the last stream is destroyed.
                         zeroStreamsAction = () -> goAway(false);
-                        shutdown = callback = new Callback.Completable();
                     }
                     break;
                 }
@@ -170,7 +167,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                     {
                         // Send the non-graceful GOAWAY when the last stream is destroyed.
                         zeroStreamsAction = () -> goAway(false);
-                        shutdown = callback = new Callback.Completable();
                     }
                     else
                     {
@@ -203,18 +199,10 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
         if (sendGoAway)
         {
-            if (callback == null)
-            {
-                callback = new Callback.Completable();
-                callback.thenRun(this::tryRunZeroStreamsAction);
-                writeControlFrame(frame, callback);
-            }
-            else
-            {
-                Callback writeCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, this::tryRunZeroStreamsAction, callback::failed);
-                writeControlFrame(frame, writeCallback);
-            }
-            return callback;
+            Callback.Completable result = new Callback.Completable();
+            result.thenRun(this::tryRunZeroStreamsAction);
+            writeControlFrame(frame, result);
+            return result;
         }
         else
         {
@@ -227,6 +215,19 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     protected GoAwayFrame newGoAwayFrame(boolean graceful)
     {
         return new GoAwayFrame(lastId.get());
+    }
+
+    public CompletableFuture<Void> shutdown()
+    {
+        CompletableFuture<Void> result;
+        try (AutoLock l = lock.lock())
+        {
+            if (shutdown != null)
+                return shutdown;
+            shutdown = result = new Callback.Completable();
+        }
+        goAway(true);
+        return result;
     }
 
     protected void updateLastId(long id)
@@ -629,6 +630,13 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (!confirmed)
             return false;
 
+        disconnect("idle_timeout");
+
+        return false;
+    }
+
+    public void disconnect(String reason)
+    {
         GoAwayFrame goAwayFrame = null;
         try (AutoLock l = lock.lock())
         {
@@ -646,7 +654,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                 }
                 case CLOSED:
                 {
-                    return false;
+                    return;
                 }
                 default:
                 {
@@ -655,14 +663,12 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             }
         }
 
-        failStreams(stream -> true, "session_idle_timeout", true);
+        failStreams(stream -> true, reason, true);
 
         if (goAwayFrame != null)
-            writeControlFrame(goAwayFrame, Callback.from(() -> terminate("idle_timeout")));
+            writeControlFrame(goAwayFrame, Callback.from(() -> terminate(reason)));
         else
-            terminate("idle_timeout");
-
-        return false;
+            terminate(reason);
     }
 
     private void failStreams(Predicate<HTTP3Stream> predicate, String reason, boolean close)
@@ -690,12 +696,19 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         // Since the close() above is called by the
         // implementation, notify the application.
         notifyDisconnect();
+        // Notify the shutdown completable.
+        CompletableFuture<Void> shutdown;
+        try (AutoLock l = lock.lock())
+        {
+            shutdown = this.shutdown;
+        }
+        if (shutdown != null)
+            shutdown.complete(null);
     }
 
     private void tryRunZeroStreamsAction()
     {
         Runnable action = null;
-        CompletableFuture<Void> completable;
         try (AutoLock l = lock.lock())
         {
             long count = streamCount.get();
@@ -705,8 +718,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                     LOG.debug("deferring closing action, {} pending streams on {}", count, this);
                 return;
             }
-
-            completable = shutdown;
 
             switch (closeState)
             {
@@ -753,9 +764,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                 LOG.debug("executing zero streams action on {}", this);
             action.run();
         }
-
-        if (completable != null)
-            completable.complete(null);
     }
 
     public void onClose(long error, String reason)
