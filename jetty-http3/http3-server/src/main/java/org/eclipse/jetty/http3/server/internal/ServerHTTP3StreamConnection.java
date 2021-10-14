@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.http3.internal.HTTP3StreamConnection;
@@ -47,22 +46,32 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
     public Runnable onRequest(HTTP3Stream stream, HeadersFrame frame)
     {
         HttpTransport transport = new HttpTransportOverHTTP3(stream);
-        HttpChannel channel = new HttpChannelOverHTTP3(connector, httpConfiguration, getEndPoint(), transport, stream, this);
+        HttpChannelOverHTTP3 channel = new HttpChannelOverHTTP3(connector, httpConfiguration, getEndPoint(), transport, stream, this);
         stream.setAttachment(channel);
-        channel.onRequest(((MetaData.Request)frame.getMetaData()));
-        return channel;
+        return channel.onRequest(frame);
     }
 
-    public void onDataAvailable(HTTP3Stream stream)
+    public Runnable onDataAvailable(HTTP3Stream stream)
     {
-        HttpChannel channel = (HttpChannel)stream.getAttachment();
-        if (channel.getRequest().getHttpInput().onContentProducible())
-            channel.handle();
+        HttpChannelOverHTTP3 channel = (HttpChannelOverHTTP3)stream.getAttachment();
+        return channel.onDataAvailable();
     }
 
-    public void onTrailer(HTTP3Stream stream, HeadersFrame frame)
+    public Runnable onTrailer(HTTP3Stream stream, HeadersFrame frame)
     {
-        HttpChannel channel = (HttpChannel)stream.getAttachment();
-        channel.onTrailers(frame.getMetaData().getFields());
+        HttpChannelOverHTTP3 channel = (HttpChannelOverHTTP3)stream.getAttachment();
+        return channel.onTrailer(frame);
+    }
+
+    public boolean onIdleTimeout(HTTP3Stream stream, Throwable failure)
+    {
+        HttpChannelOverHTTP3 channel = (HttpChannelOverHTTP3)stream.getAttachment();
+        return channel.onIdleTimeout(failure, null); // TODO
+    }
+
+    public void onFailure(HTTP3Stream stream, Throwable failure)
+    {
+        HttpChannelOverHTTP3 channel = (HttpChannelOverHTTP3)stream.getAttachment();
+        channel.onFailure(failure);
     }
 }
