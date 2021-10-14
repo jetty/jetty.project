@@ -153,7 +153,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         quicheConfig.setInitialMaxStreamDataUni(10000000L);
         quicheConfig.setInitialMaxStreamsUni(100L);
         quicheConfig.setInitialMaxStreamsBidi(100L);
-        quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
+        quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
         List<String> protocols = getProtocols();
         // This is only needed for Quiche example clients.
         protocols.add(0, "http/0.9");

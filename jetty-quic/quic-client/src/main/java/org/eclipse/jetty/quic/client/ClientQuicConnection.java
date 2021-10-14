@@ -90,7 +90,7 @@ public class ClientQuicConnection extends QuicConnection
             quicheConfig.setInitialMaxStreamDataUni(10_000_000L);
             quicheConfig.setInitialMaxStreamsUni(100L);
             quicheConfig.setInitialMaxStreamsBidi(100L);
-            quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
+            quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
 
             InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
 
