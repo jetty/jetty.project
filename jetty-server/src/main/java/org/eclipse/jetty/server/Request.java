@@ -1413,6 +1413,20 @@ public class Request implements HttpServletRequest
         return session.getId();
     }
 
+    protected void onRequestLog()
+    {
+        // Don't allow pulling more parameters
+        _contentParamsExtracted = true;
+
+        // Reset the status code to what was committed
+        MetaData.Response committedResponse = getResponse().getCommittedMetaData();
+        if (committedResponse != null)
+        {
+            getResponse().setStatus(committedResponse.getStatus());
+            // TODO: Reset the headers code to what was committed
+        }
+    }
+
     /**
      * Called when the request is fully finished being handled.
      * For every session in any context that the session has
