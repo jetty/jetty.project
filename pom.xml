@@ -1032,7 +1032,7 @@
       <dependency>
         <groupId>org.jboss.threads</groupId>
         <artifactId>jboss-threads</artifactId>
-        <version>3.1.0.Final</version>
+        <version>3.4.2.Final</version>
       </dependency>
       <!-- Old Deps -->
       <dependency>
