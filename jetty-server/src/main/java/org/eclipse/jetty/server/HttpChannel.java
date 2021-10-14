@@ -873,7 +873,10 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
             LOG.debug("onCompleted for {} written={}", getRequest().getRequestURI(), getBytesWritten());
 
         if (_requestLog != null)
+        {
+            _request.onRequestLog();
             _requestLog.log(_request, _response);
+        }
 
         long idleTO = _configuration.getIdleTimeout();
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
