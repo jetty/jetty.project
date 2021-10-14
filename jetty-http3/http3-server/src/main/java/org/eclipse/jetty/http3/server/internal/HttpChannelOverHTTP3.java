@@ -132,64 +132,18 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
     public Runnable onDataAvailable()
     {
-        Stream.Data data = stream.readData();
-        if (data == null)
-        {
-            stream.demand();
-            return null;
-        }
-
-        ByteBuffer buffer = data.getByteBuffer();
-        int length = buffer.remaining();
-        HttpInput.Content content = new HttpInput.Content(buffer)
-        {
-            @Override
-            public boolean isEof()
-            {
-                return data.isLast();
-            }
-
-            @Override
-            public void succeeded()
-            {
-                data.complete();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                data.complete();
-            }
-        };
-
-        this.content = content;
-        boolean handle = onContent(content);
-
-        boolean isLast = data.isLast();
-        if (isLast)
-        {
-            boolean handleContent = onContentComplete();
-            // This will generate EOF -> must happen before onContentProducible.
-            boolean handleRequest = onRequestComplete();
-            handle |= handleContent | handleRequest;
-        }
-
         boolean woken = getRequest().getHttpInput().onContentProducible();
-        handle |= woken;
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP3 Request #{}/{}: {} bytes of {} content, woken: {}, handle: {}",
+            LOG.debug("HTTP3 Request #{}/{} woken: {}",
                 stream.getId(),
                 Integer.toHexString(stream.getSession().hashCode()),
-                length,
-                isLast ? "last" : "some",
-                woken,
-                handle);
+                woken);
         }
 
         boolean wasDelayed = delayedUntilContent;
         delayedUntilContent = false;
-        return handle || wasDelayed ? this : null;
+        return wasDelayed ? this : null;
     }
 
     public Runnable onTrailer(HeadersFrame frame)
@@ -266,31 +220,57 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         if (content != null)
             return true;
 
-        MessageParser.Result result = connection.parseAndFill();
-        if (result == MessageParser.Result.FRAME)
-        {
-            DataFrame dataFrame = connection.pollContent();
-            content = new HttpInput.Content(dataFrame.getByteBuffer())
-            {
-                @Override
-                public boolean isEof()
-                {
-                    return dataFrame.isLast();
-                }
-            };
-            return true;
-        }
-        else
-        {
-            stream.demand();
-            return false;
-        }
+        stream.demand();
+        return false;
     }
 
     @Override
     public HttpInput.Content produceContent()
     {
-        HttpInput.Content result = content;
+        if (content != null)
+        {
+            HttpInput.Content result = content;
+            if (!content.isSpecial())
+                content = null;
+            return result;
+        }
+
+        Stream.Data data = stream.readData();
+        if (data == null)
+            return null;
+
+        content = new HttpInput.Content(data.getByteBuffer())
+        {
+            @Override
+            public boolean isEof()
+            {
+                return data.isLast();
+            }
+
+            @Override
+            public void succeeded()
+            {
+                data.complete();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                data.complete();
+            }
+        };
+        boolean handle = onContent(content);
+
+        boolean isLast = data.isLast();
+        if (isLast)
+        {
+            boolean handleContent = onContentComplete();
+            // This will generate EOF -> must happen before onContentProducible.
+            boolean handleRequest = onRequestComplete();
+            handle |= handleContent | handleRequest;
+        }
+
+        HttpInput.Content result = this.content;
         if (result != null && !result.isSpecial())
             content = result.isEof() ? new HttpInput.EofContent() : null;
         return result;

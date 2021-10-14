@@ -63,7 +63,7 @@ public class LowLevelQuicheTest
         clientQuicheConfig.setInitialMaxStreamDataUni(10_000_000L);
         clientQuicheConfig.setInitialMaxStreamsUni(100L);
         clientQuicheConfig.setInitialMaxStreamsBidi(100L);
-        clientQuicheConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
+        clientQuicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
 
         SSLKeyPair serverKeyPair = new SSLKeyPair(Paths.get(Objects.requireNonNull(getClass().getResource("/keystore.p12")).toURI()).toFile(), "PKCS12", "storepwd".toCharArray(), "mykey", "storepwd".toCharArray());
         File[] pemFiles = serverKeyPair.export(new File(System.getProperty("java.io.tmpdir")));
@@ -79,7 +79,7 @@ public class LowLevelQuicheTest
         serverQuicheConfig.setInitialMaxStreamDataUni(10_000_000L);
         serverQuicheConfig.setInitialMaxStreamsUni(100L);
         serverQuicheConfig.setInitialMaxStreamsBidi(100L);
-        serverQuicheConfig.setCongestionControl(QuicheConfig.CongestionControl.RENO);
+        serverQuicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
 
         tokenMinter = new TestTokenMinter();
         tokenValidator = new TestTokenValidator();
