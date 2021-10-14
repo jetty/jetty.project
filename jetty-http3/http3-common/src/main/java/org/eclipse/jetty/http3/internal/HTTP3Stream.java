@@ -77,7 +77,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
     }
 
     @Override
-    public Session getSession()
+    public HTTP3Session getSession()
     {
         return session;
     }
@@ -354,6 +354,11 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         Promise.Completable<Stream> completable = new Promise.Completable<>();
         session.writeMessageFrame(endPoint.getStreamId(), frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> completable.succeeded(this), completable::failed));
         return completable;
+    }
+
+    public boolean isClosed()
+    {
+        return closeState == CloseState.CLOSED;
     }
 
     void updateClose(boolean update, boolean local)
