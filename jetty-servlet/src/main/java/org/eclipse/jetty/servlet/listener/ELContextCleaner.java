@@ -52,6 +52,8 @@ public class ELContextCleaner implements ServletContextListener
             //Get a reference via reflection to the properties field which is holding class references
             Field field = getField(beanELResolver);
 
+            field.setAccessible(true);
+
             //Get rid of references
             purgeEntries(field);
 
