@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicSessionContainer;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.SSLKeyPair;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public class QuicServerConnector extends AbstractNetworkConnector
 {
+    private final QuicConfiguration quicConfiguration = new QuicConfiguration();
     private final QuicSessionContainer container = new QuicSessionContainer();
     private final ServerDatagramSelectorManager selectorManager;
     private final SslContextFactory.Server sslContextFactory;
@@ -65,7 +67,19 @@ public class QuicServerConnector extends AbstractNetworkConnector
         addBean(this.selectorManager);
         this.sslContextFactory = sslContextFactory;
         addBean(this.sslContextFactory);
+        addBean(quicConfiguration);
         addBean(container);
+        // Initialize to sane defaults for a server.
+        quicConfiguration.setSessionRecvWindow(4 * 1024 * 1024);
+        quicConfiguration.setBidirectionalStreamRecvWindow(2 * 1024 * 1024);
+        // One bidirectional stream to simulate the TCP stream, and no unidirectional streams.
+        quicConfiguration.setMaxBidirectionalRemoteStreams(1);
+        quicConfiguration.setMaxUnidirectionalRemoteStreams(0);
+    }
+
+    public QuicConfiguration getQuicConfiguration()
+    {
+        return quicConfiguration;
     }
 
     @Override
@@ -141,18 +155,17 @@ public class QuicServerConnector extends AbstractNetworkConnector
         );
         File[] pemFiles = keyPair.export(new File(System.getProperty("java.io.tmpdir")));
 
-        // TODO: make the QuicheConfig configurable.
         quicheConfig.setPrivKeyPemPath(pemFiles[0].getPath());
         quicheConfig.setCertChainPemPath(pemFiles[1].getPath());
         quicheConfig.setVerifyPeer(false);
         // Idle timeouts must not be managed by Quiche.
         quicheConfig.setMaxIdleTimeout(0L);
-        quicheConfig.setInitialMaxData(10000000L);
-        quicheConfig.setInitialMaxStreamDataBidiLocal(10000000L);
-        quicheConfig.setInitialMaxStreamDataBidiRemote(10000000L);
-        quicheConfig.setInitialMaxStreamDataUni(10000000L);
-        quicheConfig.setInitialMaxStreamsUni(100L);
-        quicheConfig.setInitialMaxStreamsBidi(100L);
+        quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());
+        quicheConfig.setInitialMaxStreamDataBidiLocal((long)quicConfiguration.getBidirectionalStreamRecvWindow());
+        quicheConfig.setInitialMaxStreamDataBidiRemote((long)quicConfiguration.getBidirectionalStreamRecvWindow());
+        quicheConfig.setInitialMaxStreamDataUni((long)quicConfiguration.getUnidirectionalStreamRecvWindow());
+        quicheConfig.setInitialMaxStreamsUni((long)quicConfiguration.getMaxUnidirectionalRemoteStreams());
+        quicheConfig.setInitialMaxStreamsBidi((long)quicConfiguration.getMaxBidirectionalRemoteStreams());
         quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
         List<String> protocols = getProtocols();
         // This is only needed for Quiche example clients.

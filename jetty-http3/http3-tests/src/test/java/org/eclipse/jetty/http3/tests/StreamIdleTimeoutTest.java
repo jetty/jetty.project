@@ -97,7 +97,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         });
 
         long streamIdleTimeout = 1000;
-        client.getConfiguration().setStreamIdleTimeout(streamIdleTimeout);
+        client.getHTTP3Configuration().setStreamIdleTimeout(streamIdleTimeout);
 
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 

@@ -21,15 +21,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
-import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.quic.client.ClientQuicConnection;
 import org.eclipse.jetty.quic.client.QuicClientConnectorConfigurator;
+import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSessionContainer;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,17 +46,24 @@ public class HTTP3Client extends ContainerLifeCycle
     public static final String SESSION_PROMISE_CONTEXT_KEY = CLIENT_CONTEXT_KEY + ".promise";
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Client.class);
 
+    private final HTTP3Configuration http3Configuration = new HTTP3Configuration();
     private final QuicSessionContainer container = new QuicSessionContainer();
-    private final HTTP3Configuration configuration = new HTTP3Configuration();
     private final ClientConnector connector;
-    private List<String> protocols = List.of("h3");
+    private final QuicConfiguration quicConfiguration;
 
     public HTTP3Client()
     {
-        this.connector = new ClientConnector(new QuicClientConnectorConfigurator(this::configureConnection));
+        QuicClientConnectorConfigurator configurator = new QuicClientConnectorConfigurator(this::configureConnection);
+        this.connector = new ClientConnector(configurator);
+        this.quicConfiguration = configurator.getQuicConfiguration();
         addBean(connector);
-        addBean(configuration);
+        addBean(quicConfiguration);
+        addBean(http3Configuration);
         addBean(container);
+        // Allow the mandatory unidirectional streams, plus pushed streams.
+        quicConfiguration.setMaxUnidirectionalRemoteStreams(48);
+        quicConfiguration.setUnidirectionalStreamRecvWindow(4 * 1024 * 1024);
+        quicConfiguration.setProtocols(List.of("h3"));
     }
 
     public ClientConnector getClientConnector()
@@ -66,32 +71,29 @@ public class HTTP3Client extends ContainerLifeCycle
         return connector;
     }
 
-    public HTTP3Configuration getConfiguration()
+    public QuicConfiguration getQuicConfiguration()
     {
-        return configuration;
+        return quicConfiguration;
     }
 
-    @ManagedAttribute("The ALPN protocol list")
-    public List<String> getProtocols()
+    public HTTP3Configuration getHTTP3Configuration()
     {
-        return protocols;
-    }
-
-    public void setProtocols(List<String> protocols)
-    {
-        this.protocols = protocols;
+        return http3Configuration;
     }
 
     public CompletableFuture<Session.Client> connect(SocketAddress address, Session.Client.Listener listener)
     {
         Map<String, Object> context = new ConcurrentHashMap<>();
+        return connect(address, listener, context);
+    }
+
+    public CompletableFuture<Session.Client> connect(SocketAddress address, Session.Client.Listener listener, Map<String, Object> context)
+    {
         Promise.Completable<Session.Client> completable = new Promise.Completable<>();
-        ClientConnectionFactory factory = new HTTP3ClientConnectionFactory();
         context.put(CLIENT_CONTEXT_KEY, this);
         context.put(SESSION_LISTENER_CONTEXT_KEY, listener);
         context.put(SESSION_PROMISE_CONTEXT_KEY, completable);
-        context.put(ClientQuicConnection.APPLICATION_PROTOCOLS, getProtocols());
-        context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, factory);
+        context.computeIfAbsent(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, key -> new HTTP3ClientConnectionFactory());
         context.put(ClientConnector.CONNECTION_PROMISE_CONTEXT_KEY, Promise.from(ioConnection -> {}, completable::failed));
 
         if (LOG.isDebugEnabled())
@@ -107,10 +109,10 @@ public class HTTP3Client extends ContainerLifeCycle
         {
             QuicConnection quicConnection = (QuicConnection)connection;
             quicConnection.addEventListener(container);
-            quicConnection.setInputBufferSize(getConfiguration().getInputBufferSize());
-            quicConnection.setOutputBufferSize(getConfiguration().getOutputBufferSize());
-            quicConnection.setUseInputDirectByteBuffers(getConfiguration().isUseInputDirectByteBuffers());
-            quicConnection.setUseOutputDirectByteBuffers(getConfiguration().isUseOutputDirectByteBuffers());
+            quicConnection.setInputBufferSize(getHTTP3Configuration().getInputBufferSize());
+            quicConnection.setOutputBufferSize(getHTTP3Configuration().getOutputBufferSize());
+            quicConnection.setUseInputDirectByteBuffers(getHTTP3Configuration().isUseInputDirectByteBuffers());
+            quicConnection.setUseOutputDirectByteBuffers(getHTTP3Configuration().isUseOutputDirectByteBuffers());
         }
         return connection;
     }

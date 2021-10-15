@@ -59,6 +59,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
         super(quicSession);
         this.session = new HTTP3SessionServer(this, listener);
         addBean(session);
+        session.setStreamIdleTimeout(configuration.getStreamIdleTimeout());
 
         if (LOG.isDebugEnabled())
             LOG.debug("initializing HTTP/3 streams");
@@ -103,11 +104,6 @@ public class ServerHTTP3Session extends ServerProtocolSession
         return session;
     }
 
-    public long getStreamIdleTimeout()
-    {
-        return session.getStreamIdleTimeout();
-    }
-
     public void offer(Runnable task)
     {
         producer.offer(task);
@@ -124,11 +120,6 @@ public class ServerHTTP3Session extends ServerProtocolSession
         boolean result = super.processReadableStreams();
         strategy.produce();
         return result;
-    }
-
-    public void setStreamIdleTimeout(long streamIdleTimeout)
-    {
-        session.setStreamIdleTimeout(streamIdleTimeout);
     }
 
     @Override

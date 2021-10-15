@@ -30,6 +30,7 @@ import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
@@ -47,7 +48,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ClientQuicConnection extends QuicConnection
 {
-    public static final String APPLICATION_PROTOCOLS = "org.eclipse.jetty.quic.application.protocols";
     private static final Logger LOG = LoggerFactory.getLogger(ClientQuicConnection.class);
 
     private final Map<SocketAddress, ClientQuicSession> pendingSessions = new ConcurrentHashMap<>();
@@ -66,9 +66,10 @@ public class ClientQuicConnection extends QuicConnection
         {
             super.onOpen();
 
-            @SuppressWarnings("unchecked")
-            List<String> protocols = (List<String>)context.get(APPLICATION_PROTOCOLS);
-            if (protocols == null)
+            QuicConfiguration quicConfiguration = (QuicConfiguration)context.get(QuicConfiguration.CONTEXT_KEY);
+
+            List<String> protocols = quicConfiguration.getProtocols();
+            if (protocols == null || protocols.isEmpty())
             {
                 HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
                 if (destination != null)
@@ -77,19 +78,18 @@ public class ClientQuicConnection extends QuicConnection
                     throw new IllegalStateException("Missing ALPN protocols");
             }
 
-            // TODO: pull the config settings from somewhere else TBD (context?)
             QuicheConfig quicheConfig = new QuicheConfig();
             quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
             quicheConfig.setDisableActiveMigration(true);
             quicheConfig.setVerifyPeer(false);
             // Idle timeouts must not be managed by Quiche.
             quicheConfig.setMaxIdleTimeout(0L);
-            quicheConfig.setInitialMaxData(10_000_000L);
-            quicheConfig.setInitialMaxStreamDataBidiLocal(10_000_000L);
-            quicheConfig.setInitialMaxStreamDataBidiRemote(10000000L);
-            quicheConfig.setInitialMaxStreamDataUni(10_000_000L);
-            quicheConfig.setInitialMaxStreamsUni(100L);
-            quicheConfig.setInitialMaxStreamsBidi(100L);
+            quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());
+            quicheConfig.setInitialMaxStreamDataBidiLocal((long)quicConfiguration.getBidirectionalStreamRecvWindow());
+            quicheConfig.setInitialMaxStreamDataBidiRemote((long)quicConfiguration.getBidirectionalStreamRecvWindow());
+            quicheConfig.setInitialMaxStreamDataUni((long)quicConfiguration.getUnidirectionalStreamRecvWindow());
+            quicheConfig.setInitialMaxStreamsUni((long)quicConfiguration.getMaxUnidirectionalRemoteStreams());
+            quicheConfig.setInitialMaxStreamsBidi((long)quicConfiguration.getMaxBidirectionalRemoteStreams());
             quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
 
             InetSocketAddress remoteAddress = (InetSocketAddress)context.get(ClientConnector.REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);

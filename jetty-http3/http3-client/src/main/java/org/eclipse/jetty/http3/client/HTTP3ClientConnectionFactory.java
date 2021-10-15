@@ -41,8 +41,7 @@ public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, Pr
         Session.Client.Listener listener = (Session.Client.Listener)context.get(HTTP3Client.SESSION_LISTENER_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
         Promise<Session.Client> promise = (Promise<Session.Client>)context.get(HTTP3Client.SESSION_PROMISE_CONTEXT_KEY);
-        ClientHTTP3Session session = new ClientHTTP3Session(client.getConfiguration(), (ClientQuicSession)quicSession, listener, promise);
-        session.setStreamIdleTimeout(client.getConfiguration().getStreamIdleTimeout());
+        ClientHTTP3Session session = new ClientHTTP3Session(client.getHTTP3Configuration(), (ClientQuicSession)quicSession, listener, promise);
         if (LOG.isDebugEnabled())
             LOG.debug("created protocol-specific {}", session);
         return session;

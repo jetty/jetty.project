@@ -39,9 +39,16 @@ public interface Callback extends Invocable
         }
     };
 
-    default void completeWith(CompletableFuture<?> cf)
+    /**
+     * <p>Completes this callback with the given {@link CompletableFuture}.</p>
+     * <p>When the CompletableFuture completes normally, this callback is succeeded;
+     * when the CompletableFuture completes exceptionally, this callback is failed.</p>
+     *
+     * @param completable the CompletableFuture that completes this callback
+     */
+    default void completeWith(CompletableFuture<?> completable)
     {
-        cf.whenComplete((o, x) ->
+        completable.whenComplete((o, x) ->
         {
             if (x == null)
                 succeeded();
