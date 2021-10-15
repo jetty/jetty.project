@@ -47,7 +47,7 @@ public class ELContextCleaner implements ServletContextListener
         try
         {
             //Check that the BeanELResolver class is on the classpath
-            Class<?> beanELResolver = Loader.loadClass("javax.el.BeanELResolver");
+            Class<?> beanELResolver = Loader.loadClass("jakarta.el.BeanELResolver");
 
             //Get a reference via reflection to the properties field which is holding class references
             Field field = getField(beanELResolver);
