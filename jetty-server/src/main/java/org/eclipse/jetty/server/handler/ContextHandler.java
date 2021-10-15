@@ -3041,6 +3041,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Deprecated
     public static class ApproveAliases implements AliasCheck
     {
+        public ApproveAliases()
+        {
+            LOG.warn("ApproveAliases is deprecated");
+        }
+
         @Override
         public boolean check(String pathInContext, Resource resource)
         {
