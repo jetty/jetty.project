@@ -27,21 +27,29 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.quic.common.QuicConfiguration;
 
 public class QuicClientConnectorConfigurator extends ClientConnector.Configurator
 {
-    public static final String CONNECTION_CONFIGURATOR_CONTEXT_KEY = QuicClientConnectorConfigurator.class.getSimpleName() + ".connectionConfigurator";
-
-    private final UnaryOperator<Connection> connectionConfigurator;
+    private final QuicConfiguration configuration = new QuicConfiguration();
+    private final UnaryOperator<Connection> configurator;
 
     public QuicClientConnectorConfigurator()
     {
         this(UnaryOperator.identity());
     }
 
-    public QuicClientConnectorConfigurator(UnaryOperator<Connection> connectionConfigurator)
+    public QuicClientConnectorConfigurator(UnaryOperator<Connection> configurator)
     {
-        this.connectionConfigurator = Objects.requireNonNull(connectionConfigurator);
+        this.configurator = Objects.requireNonNull(configurator);
+        // Initialize to sane defaults for a client.
+        configuration.setSessionRecvWindow(16 * 1024 * 1024);
+        configuration.setBidirectionalStreamRecvWindow(8 * 1024 * 1024);
+    }
+
+    public QuicConfiguration getQuicConfiguration()
+    {
+        return configuration;
     }
 
     @Override
@@ -53,7 +61,7 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     @Override
     public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
     {
-        context.putIfAbsent(CONNECTION_CONFIGURATOR_CONTEXT_KEY, connectionConfigurator);
+        context.put(QuicConfiguration.CONTEXT_KEY, configuration);
         DatagramChannel channel = DatagramChannel.open();
         return new ChannelWithAddress(channel, address);
     }
@@ -67,10 +75,6 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     @Override
     public Connection newConnection(ClientConnector clientConnector, SocketAddress address, EndPoint endPoint, Map<String, Object> context)
     {
-        @SuppressWarnings("unchecked")
-        UnaryOperator<Connection> configurator = (UnaryOperator<Connection>)context.get(CONNECTION_CONFIGURATOR_CONTEXT_KEY);
-        if (configurator == null)
-            configurator = UnaryOperator.identity();
         return configurator.apply(new ClientQuicConnection(clientConnector.getExecutor(), clientConnector.getScheduler(), clientConnector.getByteBufferPool(), endPoint, context));
     }
 }

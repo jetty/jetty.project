@@ -86,7 +86,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         return session.getOrCreateStreamEndPoint(streamId, consumer);
     }
 
-    private void processWritableStreams()
+    protected void processWritableStreams()
     {
         List<Long> writableStreamIds = session.getWritableStreamIds();
         if (LOG.isDebugEnabled())

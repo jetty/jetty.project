@@ -63,9 +63,7 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
     @Override
     public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
     {
-        ServerHTTP3Session session = new ServerHTTP3Session(getConfiguration(), (ServerQuicSession)quicSession, listener);
-        session.setStreamIdleTimeout(getConfiguration().getStreamIdleTimeout());
-        return session;
+        return new ServerHTTP3Session(getConfiguration(), (ServerQuicSession)quicSession, listener);
     }
 
     @Override

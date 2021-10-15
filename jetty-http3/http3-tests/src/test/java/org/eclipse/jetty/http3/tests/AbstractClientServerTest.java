@@ -24,8 +24,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
-import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -41,7 +41,7 @@ public class AbstractClientServerTest
     @RegisterExtension
     final BeforeTestExecutionCallback printMethodName = context ->
         System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
-    protected QuicServerConnector connector;
+    protected HTTP3ServerConnector connector;
     protected HTTP3Client client;
     protected Server server;
 
@@ -73,7 +73,7 @@ public class AbstractClientServerTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        connector = new QuicServerConnector(server, sslContextFactory, serverConnectionFactory);
+        connector = new HTTP3ServerConnector(server, sslContextFactory, serverConnectionFactory);
         server.addConnector(connector);
     }
 

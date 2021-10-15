@@ -54,6 +54,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         super(quicSession);
         this.session = new HTTP3SessionClient(this, listener, promise);
         addBean(session);
+        session.setStreamIdleTimeout(configuration.getStreamIdleTimeout());
 
         if (LOG.isDebugEnabled())
             LOG.debug("initializing HTTP/3 streams");
@@ -93,16 +94,6 @@ public class ClientHTTP3Session extends ClientProtocolSession
     public HTTP3SessionClient getSessionClient()
     {
         return session;
-    }
-
-    public long getStreamIdleTimeout()
-    {
-        return session.getStreamIdleTimeout();
-    }
-
-    public void setStreamIdleTimeout(long streamIdleTimeout)
-    {
-        session.setStreamIdleTimeout(streamIdleTimeout);
     }
 
     @Override
