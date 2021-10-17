@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,9 +47,18 @@ public class SameFileAliasChecker implements AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(SameFileAliasChecker.class);
 
+    public SameFileAliasChecker()
+    {
+        LOG.warn("SameFileAliasChecker is deprecated");
+    }
+
     @Override
     public boolean check(String pathInContext, Resource resource)
     {
+        // Do not allow any file separation characters in the URI.
+        if (File.separatorChar != '/' && pathInContext.indexOf(File.separatorChar) >= 0)
+            return false;
+
         // Only support PathResource alias checking
         if (!(resource instanceof PathResource))
             return false;

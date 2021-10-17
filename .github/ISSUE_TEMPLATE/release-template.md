@@ -53,6 +53,7 @@ This release process will produce releases:
 - [ ] Prepare release announcement for mailing lists.
 - [ ] Publish any [security advisories](https://github.com/eclipse/jetty.project/security/advisories).
   + [ ] Edit `VERSION.txt` to include any actual CVE number next to correspondent issue.
+  + [ ] Edit any issues for CVEs in github with their CVE number
 - [ ] Notify downstream maintainers.
   + [ ] Eclipse p2 maintainer.
   + [ ] Docker maintainer.
