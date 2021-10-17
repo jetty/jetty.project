@@ -92,7 +92,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
     public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
 
-    private static final String[] DEFAULT_PROTECTED_TARGETS = {"/web-inf", "/meta-inf"};
+    private static final String[] DEFAULT_PROTECTED_TARGETS = {"/WEB-INF", "/META-INF"};
 
     public static final String[] DEFAULT_CONFIGURATION_CLASSES =
         {
