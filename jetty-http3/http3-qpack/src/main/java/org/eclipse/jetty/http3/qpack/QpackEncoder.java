@@ -106,6 +106,7 @@ public class QpackEncoder implements Dumpable
 
     /**
      * Set the capacity of the DynamicTable and send a instruction to set the capacity on the remote Decoder.
+     *
      * @param capacity the new capacity.
      */
     public void setCapacity(int capacity)
@@ -118,6 +119,9 @@ public class QpackEncoder implements Dumpable
     /**
      * <p>Encodes a {@link MetaData} object into the supplied {@link ByteBuffer} for a specific HTTP/s stream.</p>
      * <p>This method may generate instructions to be sent back over the Encoder stream to the remote Decoder.</p>
+     * <p>The given {@code buffer} is filled starting from its current position {@code p} with N encoded bytes
+     * and upon return its position will be {@code p + N}.</p>
+     *
      * @param buffer the buffer to take the bytes of the encoded {@link MetaData}.
      * @param streamId the stream ID corresponding to this headers frame.
      * @param metadata the {@link MetaData} to encode into the buffer.
@@ -131,7 +135,7 @@ public class QpackEncoder implements Dumpable
         // Verify that we can encode without errors.
         if (metadata.getFields() != null)
         {
-            for (HttpField field :  metadata.getFields())
+            for (HttpField field : metadata.getFields())
             {
                 String name = field.getName();
                 char firstChar = name.charAt(0);
@@ -209,6 +213,7 @@ public class QpackEncoder implements Dumpable
      * Parse instructions from the Decoder stream. The Decoder stream carries an unframed sequence of instructions from
      * the Decoder to the Encoder. This method will fully consume the supplied {@link ByteBuffer} and produce instructions
      * to update the state of the Encoder and its Dynamic Table.
+     *
      * @param buffer a buffer containing bytes from the Decoder stream.
      * @throws QpackException if there was an error parsing or handling the instructions.
      */
@@ -235,6 +240,7 @@ public class QpackEncoder implements Dumpable
     /**
      * A speculative insert of a Header into the Encoders Dynamic Table. This will also generate
      * an instruction to be sent over the Encoder stream to the remote Decoder.
+     *
      * @param field the field to insert into the Dynamic Table.
      * @return true if the field was successfully inserted into the Dynamic Table.
      */
@@ -283,6 +289,7 @@ public class QpackEncoder implements Dumpable
      * Tells the {@link QpackEncoder} that a particular stream has been cancelled. Any state stored for this stream
      * will be discarded. The encoder may also receive a stream cancellation instruction from the remote Decoder to
      * cancel the stream which will be a noop if this method was called on the local encoder first.
+     *
      * @param streamId the streamId of the stream that was cancelled.
      */
     public void streamCancellation(long streamId)
