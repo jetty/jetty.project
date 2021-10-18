@@ -131,6 +131,8 @@ public abstract class QuicConnection extends AbstractConnection
             listeners.remove((QuicSession.Listener)listener);
     }
 
+    public abstract void onFillable();
+
     @Override
     public abstract boolean onIdleExpired();
 
@@ -159,8 +161,14 @@ public abstract class QuicConnection extends AbstractConnection
         }
     }
 
-    @Override
-    public void onFillable()
+    protected abstract QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException;
+
+    public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)
+    {
+        flusher.offer(callback, remoteAddress, buffers);
+    }
+
+    protected Runnable receiveAndProcess()
     {
         try
         {
@@ -172,18 +180,18 @@ public abstract class QuicConnection extends AbstractConnection
                 int fill = remoteAddress == DatagramChannelEndPoint.EOF ? -1 : cipherBuffer.remaining();
                 if (LOG.isDebugEnabled())
                     LOG.debug("filled cipher buffer with {} byte(s)", fill);
-                // ServerDatagramEndPoint will only return -1 if input is shut down.
+                // DatagramChannelEndPoint will only return -1 if input is shut down.
                 if (fill < 0)
                 {
                     byteBufferPool.release(cipherBuffer);
                     getEndPoint().shutdownOutput();
-                    return;
+                    return null;
                 }
                 if (fill == 0)
                 {
                     byteBufferPool.release(cipherBuffer);
                     fillInterested();
-                    return;
+                    return null;
                 }
 
                 if (LOG.isDebugEnabled())
@@ -224,22 +232,21 @@ public abstract class QuicConnection extends AbstractConnection
                 }
 
                 if (LOG.isDebugEnabled())
-                    LOG.debug("packet is for existing session with connection ID {}, processing it ({} byte(s))", quicheConnectionId, cipherBuffer.remaining());
-                session.process(remoteAddress, cipherBuffer);
+                    LOG.debug("packet is for existing session {}, processing {} bytes", session, cipherBuffer.remaining());
+                Runnable task = session.process(remoteAddress, cipherBuffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("processing session {} produced task {}", session, task);
+                if (task != null)
+                    return task;
             }
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("caught exception in onFillable loop", x);
+                LOG.debug("exception in receiveAndProcess()", x);
+            // TODO: close?
+            return null;
         }
-    }
-
-    protected abstract QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException;
-
-    public void write(Callback callback, SocketAddress remoteAddress, ByteBuffer... buffers)
-    {
-        flusher.offer(callback, remoteAddress, buffers);
     }
 
     private class Flusher extends IteratingCallback

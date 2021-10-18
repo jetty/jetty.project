@@ -128,21 +128,21 @@ public class ClientHTTP3Session extends ClientProtocolSession
     }
 
     @Override
-    protected boolean onReadable(long readableStreamId)
+    protected void onReadable(long readableStreamId)
     {
         StreamType streamType = StreamType.from(readableStreamId);
         if (streamType == StreamType.CLIENT_BIDIRECTIONAL)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("bidirectional stream #{} selected for read", readableStreamId);
-            return super.onReadable(readableStreamId);
+            super.onReadable(readableStreamId);
         }
         else
         {
             QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, this::configureUnidirectionalStreamEndPoint);
             if (LOG.isDebugEnabled())
                 LOG.debug("unidirectional stream #{} selected for read: {}", readableStreamId, streamEndPoint);
-            return streamEndPoint.onReadable();
+            streamEndPoint.onReadable();
         }
     }
 

@@ -13,9 +13,7 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
-import java.util.ArrayDeque;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http3.HTTP3Configuration;
@@ -36,9 +34,7 @@ import org.eclipse.jetty.quic.common.StreamType;
 import org.eclipse.jetty.quic.server.ServerProtocolSession;
 import org.eclipse.jetty.quic.server.ServerQuicSession;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,8 +47,6 @@ public class ServerHTTP3Session extends ServerProtocolSession
     private final HTTP3SessionServer session;
     private final ControlFlusher controlFlusher;
     private final HTTP3Flusher messageFlusher;
-    private final AdaptiveExecutionStrategy strategy;
-    private final HTTP3Producer producer = new HTTP3Producer();
 
     public ServerHTTP3Session(HTTP3Configuration configuration, ServerQuicSession quicSession, Session.Server.Listener listener)
     {
@@ -89,9 +83,6 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
         this.messageFlusher = new HTTP3Flusher(quicSession.getByteBufferPool(), encoder, configuration.getMaxResponseHeadersSize(), configuration.isUseOutputDirectByteBuffers());
         addBean(messageFlusher);
-
-        this.strategy = new AdaptiveExecutionStrategy(producer, getQuicSession().getExecutor());
-        addBean(strategy);
     }
 
     public QpackDecoder getQpackDecoder()
@@ -102,24 +93,6 @@ public class ServerHTTP3Session extends ServerProtocolSession
     public HTTP3SessionServer getSessionServer()
     {
         return session;
-    }
-
-    public void offer(Runnable task)
-    {
-        producer.offer(task);
-    }
-
-    @Override
-    protected boolean processReadableStreams()
-    {
-        // Calling super.processReadableStreams() is going to fill and parse HEADERS frames on the current thread,
-        // so the QPACK decoder is not accessed concurrently.
-        // The processing of HEADERS frames will produce Runnable tasks and offer them to this instance (via calls
-        // to offer(Runnable)) so that the execution strategy can consume them.
-
-        boolean result = super.processReadableStreams();
-        strategy.produce();
-        return result;
     }
 
     @Override
@@ -154,21 +127,21 @@ public class ServerHTTP3Session extends ServerProtocolSession
     }
 
     @Override
-    protected boolean onReadable(long readableStreamId)
+    protected void onReadable(long readableStreamId)
     {
         StreamType streamType = StreamType.from(readableStreamId);
         if (streamType == StreamType.CLIENT_BIDIRECTIONAL)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("bidirectional stream #{} selected for read", readableStreamId);
-            return super.onReadable(readableStreamId);
+            super.onReadable(readableStreamId);
         }
         else
         {
             QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, this::configureUnidirectionalStreamEndPoint);
             if (LOG.isDebugEnabled())
                 LOG.debug("unidirectional stream #{} selected for read: {}", readableStreamId, streamEndPoint);
-            return streamEndPoint.onReadable();
+            streamEndPoint.onReadable();
         }
     }
 
@@ -226,26 +199,5 @@ public class ServerHTTP3Session extends ServerProtocolSession
     public void onDataAvailable(long streamId)
     {
         session.onDataAvailable(streamId);
-    }
-
-    private class HTTP3Producer implements ExecutionStrategy.Producer
-    {
-        private final Queue<Runnable> tasks = new ArrayDeque<>();
-
-        public void offer(Runnable task)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("enqueuing task {} on {}", task, ServerHTTP3Session.this);
-            tasks.offer(task);
-        }
-
-        @Override
-        public Runnable produce()
-        {
-            Runnable task = tasks.poll();
-            if (LOG.isDebugEnabled())
-                LOG.debug("dequeued task {} on {}", task, ServerHTTP3Session.this);
-            return task;
-        }
     }
 }

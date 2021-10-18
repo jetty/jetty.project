@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,14 +41,17 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     private static final Logger LOG = LoggerFactory.getLogger(QuicStreamEndPoint.class);
     private static final ByteBuffer LAST_FLAG = ByteBuffer.allocate(0);
 
+    private final AutoLock lock = new AutoLock();
     private final QuicSession session;
     private final long streamId;
+    private boolean readable;
 
     public QuicStreamEndPoint(Scheduler scheduler, QuicSession session, long streamId)
     {
         super(scheduler);
         this.session = session;
         this.streamId = streamId;
+        this.readable = true;
     }
 
     public QuicSession getQuicSession()
@@ -209,12 +213,38 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         getWriteFlusher().completeWrite();
     }
 
-    public boolean onReadable()
+    public void onReadable()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("stream {} is readable", streamId);
+        // TODO: use AtomicBoolean.
+        try (AutoLock l = lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("stream {} is readable, processing: {}", streamId, readable);
+            if (!readable)
+                return;
+            readable = false;
+        }
         getFillInterest().fillable();
-        return isFillInterested();
+    }
+
+    @Override
+    public void fillInterested(Callback callback)
+    {
+        try (AutoLock l = lock.lock())
+        {
+            readable = true;
+        }
+        super.fillInterested(callback);
+    }
+
+    @Override
+    public boolean tryFillInterested(Callback callback)
+    {
+        try (AutoLock l = lock.lock())
+        {
+            readable = true;
+        }
+        return super.tryFillInterested(callback);
     }
 
     @Override
