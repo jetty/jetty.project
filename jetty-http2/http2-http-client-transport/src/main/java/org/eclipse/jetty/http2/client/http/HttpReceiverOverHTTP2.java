@@ -313,7 +313,6 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements HTTP2Channel.
                     }
                 }
 
-
                 ByteBuffer buffer = dataInfo.frame.getData();
                 Callback callback = dataInfo.callback;
                 if (buffer.hasRemaining())

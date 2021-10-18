@@ -282,7 +282,7 @@ public class ClientServerTest extends AbstractClientServerTest
         });
 
         int maxRequestHeadersSize = 128;
-        client.getHTTP3Configuration().setMaxRequestHeadersSize(maxRequestHeadersSize);
+        http3Client.getHTTP3Configuration().setMaxRequestHeadersSize(maxRequestHeadersSize);
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
         CountDownLatch requestFailureLatch = new CountDownLatch(1);

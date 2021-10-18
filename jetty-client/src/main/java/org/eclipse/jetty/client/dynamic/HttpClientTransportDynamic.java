@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -125,10 +124,9 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     private static ClientConnector findClientConnector(ClientConnectionFactory.Info[] infos)
     {
         return Arrays.stream(infos)
-            .map(info -> info.getBean(ClientConnector.class))
-            .filter(Objects::nonNull)
+            .flatMap(info -> info.getContainedBeans(ClientConnector.class).stream())
             .findFirst()
-            .orElse(new ClientConnector());
+            .orElseGet(ClientConnector::new);
     }
 
     @Override

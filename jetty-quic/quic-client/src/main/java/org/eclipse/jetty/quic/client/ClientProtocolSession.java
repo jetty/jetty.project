@@ -38,6 +38,11 @@ public class ClientProtocolSession extends ProtocolSession
     protected void doStart() throws Exception
     {
         super.doStart();
+        initialize();
+    }
+
+    protected void initialize()
+    {
         // Create a single bidirectional, client-initiated,
         // QUIC stream that plays the role of the TCP stream.
         long streamId = getQuicSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);

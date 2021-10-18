@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
@@ -28,6 +29,7 @@ import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -39,6 +41,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class ClientQuicSession extends QuicSession
 {
     private final Map<String, Object> context;
+    private final AtomicReference<Runnable> task = new AtomicReference<>();
 
     protected ClientQuicSession(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, QuicheConnection quicheConnection, QuicConnection connection, InetSocketAddress remoteAddress, Map<String, Object> context)
     {
@@ -46,12 +49,28 @@ public class ClientQuicSession extends QuicSession
         this.context = context;
     }
 
+    void offerTask(Runnable task)
+    {
+        this.task.set(task);
+    }
+
+    @Override
+    protected Runnable pollTask()
+    {
+        return task.getAndSet(null);
+    }
+
     @Override
     protected ProtocolSession createProtocolSession()
     {
         ClientConnectionFactory connectionFactory = (ClientConnectionFactory)context.get(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
+        ProtocolSession.Factory factory = null;
         if (connectionFactory instanceof ProtocolSession.Factory)
-            return ((ProtocolSession.Factory)connectionFactory).newProtocolSession(this, context);
+            factory = (ProtocolSession.Factory)connectionFactory;
+        if (factory == null && connectionFactory instanceof Container)
+            factory = ((Container)connectionFactory).getContainedBeans(ProtocolSession.Factory.class).stream().findFirst().orElse(null);
+        if (factory != null)
+            return factory.newProtocolSession(this, context);
         return new ClientProtocolSession(this);
     }
 

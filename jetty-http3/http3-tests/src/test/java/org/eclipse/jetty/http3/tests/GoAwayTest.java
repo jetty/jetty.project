@@ -792,7 +792,7 @@ public class GoAwayTest extends AbstractClientServerTest
                 serverDisconnectLatch.countDown();
             }
         });
-        client.getClientConnector().setIdleTimeout(Duration.ofMillis(idleTimeout));
+        http3Client.getClientConnector().setIdleTimeout(Duration.ofMillis(idleTimeout));
 
         CountDownLatch clientIdleTimeoutLatch = new CountDownLatch(1);
         CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
@@ -1177,7 +1177,7 @@ public class GoAwayTest extends AbstractClientServerTest
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        client.stop();
+        http3Client.stop();
 
         assertTrue(serverGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));
@@ -1286,7 +1286,7 @@ public class GoAwayTest extends AbstractClientServerTest
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
 
-        CompletableFuture<Void> shutdown = client.shutdown();
+        CompletableFuture<Void> shutdown = http3Client.shutdown();
 
         // Shutdown must not complete yet.
         assertThrows(TimeoutException.class, () -> shutdown.get(1, TimeUnit.SECONDS));

@@ -11,9 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http3.client.http.internal;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.HttpExchange;
@@ -25,26 +26,27 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ISession;
-import org.eclipse.jetty.http2.IStream;
-import org.eclipse.jetty.http2.api.Stream;
-import org.eclipse.jetty.http2.frames.DataFrame;
-import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http3.api.Stream;
+import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
+import org.eclipse.jetty.http3.frames.DataFrame;
+import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
 
-public class HttpSenderOverHTTP2 extends HttpSender
+public class HttpSenderOverHTTP3 extends HttpSender
 {
-    public HttpSenderOverHTTP2(HttpChannelOverHTTP2 channel)
+    private Stream stream;
+
+    public HttpSenderOverHTTP3(HttpChannelOverHTTP3 channel)
     {
         super(channel);
     }
 
     @Override
-    protected HttpChannelOverHTTP2 getHttpChannel()
+    protected HttpChannelOverHTTP3 getHttpChannel()
     {
-        return (HttpChannelOverHTTP2)super.getHttpChannel();
+        return (HttpChannelOverHTTP3)super.getHttpChannel();
     }
 
     @Override
@@ -75,30 +77,30 @@ public class HttpSenderOverHTTP2 extends HttpSender
                 .port(request.getPort())
                 .path(path)
                 .query(request.getQuery());
-            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_2, request.getHeaders(), -1, request.getTrailers());
+            metaData = new MetaData.Request(request.getMethod(), uri, HttpVersion.HTTP_3, request.getHeaders(), -1, request.getTrailers());
         }
 
         HeadersFrame headersFrame;
         DataFrame dataFrame = null;
-        HeadersFrame trailersFrame = null;
+        HeadersFrame trailerFrame = null;
 
         if (isTunnel)
         {
-            headersFrame = new HeadersFrame(metaData, null, false);
+            headersFrame = new HeadersFrame(metaData, false);
         }
         else
         {
             boolean hasContent = BufferUtil.hasContent(contentBuffer);
             if (hasContent)
             {
-                headersFrame = new HeadersFrame(metaData, null, false);
+                headersFrame = new HeadersFrame(metaData, false);
                 if (lastContent)
                 {
                     HttpFields trailers = retrieveTrailers(request);
                     boolean hasTrailers = trailers != null;
                     dataFrame = new DataFrame(contentBuffer, !hasTrailers);
                     if (hasTrailers)
-                        trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+                        trailerFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
                 }
                 else
                 {
@@ -111,20 +113,38 @@ public class HttpSenderOverHTTP2 extends HttpSender
                 {
                     HttpFields trailers = retrieveTrailers(request);
                     boolean hasTrailers = trailers != null;
-                    headersFrame = new HeadersFrame(metaData, null, !hasTrailers);
+                    headersFrame = new HeadersFrame(metaData, !hasTrailers);
                     if (hasTrailers)
-                        trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_2, trailers), null, true);
+                        trailerFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
                 }
                 else
                 {
-                    headersFrame = new HeadersFrame(metaData, null, false);
+                    headersFrame = new HeadersFrame(metaData, false);
                 }
             }
         }
 
-        HttpChannelOverHTTP2 channel = getHttpChannel();
-        IStream.FrameList frameList = new IStream.FrameList(headersFrame, dataFrame, trailersFrame);
-        ((ISession)channel.getSession()).newStream(frameList, new HeadersPromise(request, callback), channel.getStreamListener());
+        HeadersFrame hf = headersFrame;
+        DataFrame df = dataFrame;
+        HeadersFrame tf = trailerFrame;
+
+        HTTP3SessionClient session = getHttpChannel().getSession();
+        CompletableFuture<Stream> completable = session.newRequest(hf, getHttpChannel().getStreamListener())
+            .thenApply(stream -> onNewStream(stream, request));
+        if (df != null)
+            completable = completable.thenCompose(stream -> stream.data(df));
+        if (tf != null)
+            completable = completable.thenCompose(stream -> stream.trailer(tf));
+        callback.completeWith(completable);
+    }
+
+    private Stream onNewStream(Stream stream, HttpRequest request)
+    {
+        this.stream = stream;
+        long idleTimeout = request.getIdleTimeout();
+        if (idleTimeout > 0)
+            ((HTTP3Stream)stream).setIdleTimeout(idleTimeout);
+        return stream;
     }
 
     private HttpFields retrieveTrailers(HttpRequest request)
@@ -137,7 +157,6 @@ public class HttpSenderOverHTTP2 extends HttpSender
     @Override
     protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
-        Stream stream = getHttpChannel().getStream();
         boolean hasContent = contentBuffer.hasRemaining();
         if (lastContent)
         {
@@ -146,31 +165,30 @@ public class HttpSenderOverHTTP2 extends HttpSender
             boolean hasTrailers = trailers != null && trailers.size() > 0;
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, !hasTrailers);
+                DataFrame dataFrame = new DataFrame(contentBuffer, !hasTrailers);
+                CompletableFuture<Stream> completable;
                 if (hasTrailers)
-                    stream.data(dataFrame, Callback.from(() -> sendTrailers(stream, trailers, callback), callback::failed));
+                    completable = stream.data(dataFrame).thenCompose(s -> sendTrailer(s, trailers));
                 else
-                    stream.data(dataFrame, callback);
+                    completable = stream.data(dataFrame);
+                callback.completeWith(completable);
             }
             else
             {
+                CompletableFuture<Stream> completable;
                 if (hasTrailers)
-                {
-                    sendTrailers(stream, trailers, callback);
-                }
+                    completable = sendTrailer(stream, trailers);
                 else
-                {
-                    DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, true);
-                    stream.data(dataFrame, callback);
-                }
+                    completable = stream.data(new DataFrame(contentBuffer, true));
+                callback.completeWith(completable);
             }
         }
         else
         {
             if (hasContent)
             {
-                DataFrame dataFrame = new DataFrame(stream.getId(), contentBuffer, false);
-                stream.data(dataFrame, callback);
+                CompletableFuture<Stream> completable = stream.data(new DataFrame(contentBuffer, false));
+                callback.completeWith(completable);
             }
             else
             {
@@ -180,37 +198,10 @@ public class HttpSenderOverHTTP2 extends HttpSender
         }
     }
 
-    private void sendTrailers(Stream stream, HttpFields trailers, Callback callback)
+    private CompletableFuture<Stream> sendTrailer(Stream stream, HttpFields trailers)
     {
-        MetaData metaData = new MetaData(HttpVersion.HTTP_2, trailers);
-        HeadersFrame trailersFrame = new HeadersFrame(stream.getId(), metaData, null, true);
-        stream.headers(trailersFrame, callback);
-    }
-
-    private static class HeadersPromise implements Promise<Stream>
-    {
-        private final HttpRequest request;
-        private final Callback callback;
-
-        private HeadersPromise(HttpRequest request, Callback callback)
-        {
-            this.request = request;
-            this.callback = callback;
-        }
-
-        @Override
-        public void succeeded(Stream stream)
-        {
-            long idleTimeout = request.getIdleTimeout();
-            if (idleTimeout >= 0)
-                stream.setIdleTimeout(idleTimeout);
-            callback.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            callback.failed(x);
-        }
+        MetaData metaData = new MetaData(HttpVersion.HTTP_3, trailers);
+        HeadersFrame trailerFrame = new HeadersFrame(metaData, true);
+        return stream.trailer(trailerFrame);
     }
 }
