@@ -414,7 +414,7 @@ TMPDIR="`cygpath -w $TMPDIR`"
 ;;
 esac
 
-JAVA_OPTIONS=(${JAVA_OPTIONS[*]} "-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.tmpdir=$TMPDIR")
+JETTY_SYS_PROPS=$(echo -ne "-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.tmpdir=$TMPDIR")
 
 #####################################################
 # This is how the Jetty server will be started
@@ -433,8 +433,8 @@ case "`uname`" in
 CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
-RUN_ARGS=$(echo -ne $JAVA_OPTIONS ; "$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]})
-RUN_CMD=("$JAVA" ${RUN_ARGS[@]})
+RUN_ARGS=$("$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]})
+RUN_CMD=("$JAVA" $JETTY_SYS_PROPS ${RUN_ARGS[@]})
 
 #####################################################
 # Comment these out after you're happy with what
