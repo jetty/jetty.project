@@ -27,15 +27,15 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http3.internal.HTTP3Session;
+import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 
 public class HttpConnectionOverHTTP3 extends HttpConnection implements ConnectionPool.Multiplexable
 {
     private final Set<HttpChannel> activeChannels = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean closed = new AtomicBoolean();
-    private final HTTP3Session session;
+    private final HTTP3SessionClient session;
 
-    public HttpConnectionOverHTTP3(HttpDestination destination, HTTP3Session session)
+    public HttpConnectionOverHTTP3(HttpDestination destination, HTTP3SessionClient session)
     {
         super(destination);
         this.session = session;
@@ -62,7 +62,7 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
         normalizeRequest(request);
 
         // One connection maps to N channels, so one channel for each exchange.
-        HttpChannelOverHTTP3 channel = new HttpChannelOverHTTP3(getHttpDestination());
+        HttpChannelOverHTTP3 channel = new HttpChannelOverHTTP3(getHttpDestination(), session);
         activeChannels.add(channel);
 
         return send(channel, exchange);

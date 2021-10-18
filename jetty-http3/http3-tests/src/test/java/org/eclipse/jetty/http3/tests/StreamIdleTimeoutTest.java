@@ -97,7 +97,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         });
 
         long streamIdleTimeout = 1000;
-        client.getHTTP3Configuration().setStreamIdleTimeout(streamIdleTimeout);
+        http3Client.getHTTP3Configuration().setStreamIdleTimeout(streamIdleTimeout);
 
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
@@ -179,7 +179,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         assertNotNull(h3);
         h3.getConfiguration().setStreamIdleTimeout(idleTimeout);
 
-        Session.Client clientSession = client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
+        Session.Client clientSession = http3Client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
             .get(5, TimeUnit.SECONDS);
 
         CountDownLatch clientFailureLatch = new CountDownLatch(1);

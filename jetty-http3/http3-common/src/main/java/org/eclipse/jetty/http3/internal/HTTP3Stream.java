@@ -200,7 +200,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
             if (listener == null)
             {
                 Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> endPoint.shutdownInput(HTTP3ErrorCode.NO_ERROR.code()));
-                session.writeMessageFrame(getId(), new HTTP3Flusher.FlushFrame(), callback);
+                session.writeMessageFrame(getId(), new MessageFlusher.FlushFrame(), callback);
             }
             updateClose(frame.isLast(), false);
         }

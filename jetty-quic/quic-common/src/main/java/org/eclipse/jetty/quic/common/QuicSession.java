@@ -330,9 +330,10 @@ public abstract class QuicSession extends ContainerLifeCycle
                 addManaged(session);
             }
 
-            if (processing.compareAndSet(false, true))
-                return session::process;
-            return null;
+            boolean process = processing.compareAndSet(false, true);
+            if (LOG.isDebugEnabled())
+                LOG.debug("processing={} on {}", process, session);
+            return process ? session::process : null;
         }
         else
         {
@@ -343,7 +344,14 @@ public abstract class QuicSession extends ContainerLifeCycle
 
     void processingComplete()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing complete on {}", protocolSession);
         processing.set(false);
+    }
+
+    protected Runnable pollTask()
+    {
+        return null;
     }
 
     protected abstract ProtocolSession createProtocolSession();

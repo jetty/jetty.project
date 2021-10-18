@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
-import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -25,10 +24,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http3.api.Stream;
-import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
-import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
@@ -230,12 +227,16 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         if (content != null)
         {
             HttpInput.Content result = content;
-            if (!content.isSpecial())
+            if (!result.isSpecial())
                 content = null;
+            if (LOG.isDebugEnabled())
+                LOG.debug("produced content {} on {}", result, this);
             return result;
         }
 
         Stream.Data data = stream.readData();
+        if (LOG.isDebugEnabled())
+            LOG.debug("read {} on {}", data, this);
         if (data == null)
             return null;
 
@@ -270,9 +271,11 @@ public class HttpChannelOverHTTP3 extends HttpChannel
             handle |= handleContent | handleRequest;
         }
 
-        HttpInput.Content result = this.content;
-        if (result != null && !result.isSpecial())
+        HttpInput.Content result = content;
+        if (!result.isSpecial())
             content = result.isEof() ? new HttpInput.EofContent() : null;
+        if (LOG.isDebugEnabled())
+            LOG.debug("produced new content {} on {}", result, this);
         return result;
     }
 

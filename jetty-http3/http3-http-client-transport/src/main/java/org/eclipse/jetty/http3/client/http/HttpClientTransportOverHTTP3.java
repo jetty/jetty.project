@@ -23,22 +23,17 @@ import java.util.Objects;
 
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.HttpClient;
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.MultiplexHttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.http3.HTTP3Configuration;
-import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.HTTP3Client;
-import org.eclipse.jetty.http3.client.http.internal.HttpConnectionOverHTTP3;
-import org.eclipse.jetty.http3.frames.SettingsFrame;
-import org.eclipse.jetty.http3.internal.HTTP3Session;
+import org.eclipse.jetty.http3.client.http.internal.SessionClientListener;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.Promise;
 
 public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport
 {
@@ -120,29 +115,5 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         return null;
-    }
-
-    private class SessionClientListener implements Session.Client.Listener
-    {
-        private final Map<String, Object> context;
-
-        private SessionClientListener(Map<String, Object> context)
-        {
-            this.context = context;
-        }
-
-        @SuppressWarnings("unchecked")
-        private Promise<org.eclipse.jetty.client.api.Connection> httpConnectionPromise()
-        {
-            return (Promise<org.eclipse.jetty.client.api.Connection>)context.get(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
-        }
-
-        @Override
-        public void onSettings(Session session, SettingsFrame frame)
-        {
-            HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-            HttpConnectionOverHTTP3 connection = new HttpConnectionOverHTTP3(destination, (HTTP3Session)session);
-            httpConnectionPromise().succeeded(connection);
-        }
     }
 }

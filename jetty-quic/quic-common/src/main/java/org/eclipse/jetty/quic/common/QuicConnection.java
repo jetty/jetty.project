@@ -172,6 +172,9 @@ public abstract class QuicConnection extends AbstractConnection
     {
         try
         {
+            if (isFillInterested())
+                return null;
+
             ByteBuffer cipherBuffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             while (true)
             {
@@ -222,6 +225,13 @@ public abstract class QuicConnection extends AbstractConnection
                         sessions.put(quicheConnectionId, session);
                         listeners.forEach(session::addEventListener);
                         LifeCycle.start(session);
+
+                        // Session creation may have generated a task.
+                        Runnable task = session.pollTask();
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("processing creation task {} on {}", task, session);
+                        if (task != null)
+                            return task;
                     }
                     else
                     {
@@ -235,7 +245,7 @@ public abstract class QuicConnection extends AbstractConnection
                     LOG.debug("packet is for existing session {}, processing {} bytes", session, cipherBuffer.remaining());
                 Runnable task = session.process(remoteAddress, cipherBuffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("processing session {} produced task {}", session, task);
+                    LOG.debug("produced task {} on {}", task, session);
                 if (task != null)
                     return task;
             }

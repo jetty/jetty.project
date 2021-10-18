@@ -29,9 +29,9 @@ import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP3Flusher extends IteratingCallback
+public class MessageFlusher extends IteratingCallback
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HTTP3Flusher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MessageFlusher.class);
 
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> queue = new ArrayDeque<>();
@@ -39,7 +39,7 @@ public class HTTP3Flusher extends IteratingCallback
     private final MessageGenerator generator;
     private Entry entry;
 
-    public HTTP3Flusher(ByteBufferPool byteBufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
+    public MessageFlusher(ByteBufferPool byteBufferPool, QpackEncoder encoder, int maxHeadersLength, boolean useDirectByteBuffers)
     {
         this.lease = new ByteBufferPool.Lease(byteBufferPool);
         this.generator = new MessageGenerator(encoder, maxHeadersLength, useDirectByteBuffers);

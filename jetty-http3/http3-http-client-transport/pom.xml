@@ -18,6 +18,12 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
     </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty.http3</groupId>
+      <artifactId>http3-server</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>

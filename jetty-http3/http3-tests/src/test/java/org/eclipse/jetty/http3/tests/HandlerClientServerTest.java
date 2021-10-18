@@ -139,7 +139,7 @@ public class HandlerClientServerTest extends AbstractClientServerTest
             })
             .get(555, TimeUnit.SECONDS);
 
-        byte[] bytes = new byte[16 * 1024 * 1024];
+        byte[] bytes = new byte[1 * 1024];
         new Random().nextBytes(bytes);
         stream.data(new DataFrame(ByteBuffer.wrap(bytes, 0, bytes.length / 2), false))
             .thenCompose(s -> s.data(new DataFrame(ByteBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true)))

@@ -18,35 +18,63 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpSender;
+import org.eclipse.jetty.http3.api.Stream;
+import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 
 public class HttpChannelOverHTTP3 extends HttpChannel
 {
-    public HttpChannelOverHTTP3(HttpDestination destination)
+    private final HTTP3SessionClient session;
+    private final HttpSenderOverHTTP3 sender;
+    private final HttpReceiverOverHTTP3 receiver;
+
+    public HttpChannelOverHTTP3(HttpDestination destination, HTTP3SessionClient session)
     {
         super(destination);
+        this.session = session;
+        sender = new HttpSenderOverHTTP3(this);
+        receiver = new HttpReceiverOverHTTP3(this);
+    }
+
+    public HTTP3SessionClient getSession()
+    {
+        return session;
+    }
+
+    public Stream.Listener getStreamListener()
+    {
+        return receiver;
     }
 
     @Override
     protected HttpSender getHttpSender()
     {
-        return null;
+        return sender;
     }
 
     @Override
     protected HttpReceiver getHttpReceiver()
     {
-        return null;
+        return receiver;
     }
 
     @Override
     public void send(HttpExchange exchange)
     {
-
+        sender.send(exchange);
     }
 
     @Override
     public void release()
     {
+        // TODO
+    }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s[send=%s,recv=%s]",
+            super.toString(),
+            sender,
+            receiver);
     }
 }

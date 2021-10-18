@@ -23,9 +23,9 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.ControlFlusher;
 import org.eclipse.jetty.http3.internal.DecoderStreamConnection;
 import org.eclipse.jetty.http3.internal.EncoderStreamConnection;
-import org.eclipse.jetty.http3.internal.HTTP3Flusher;
 import org.eclipse.jetty.http3.internal.InstructionFlusher;
 import org.eclipse.jetty.http3.internal.InstructionHandler;
+import org.eclipse.jetty.http3.internal.MessageFlusher;
 import org.eclipse.jetty.http3.internal.UnidirectionalStreamConnection;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackEncoder;
@@ -47,7 +47,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
     private final QpackDecoder decoder;
     private final HTTP3SessionClient session;
     private final ControlFlusher controlFlusher;
-    private final HTTP3Flusher messageFlusher;
+    private final MessageFlusher messageFlusher;
 
     public ClientHTTP3Session(HTTP3Configuration configuration, ClientQuicSession quicSession, Session.Client.Listener listener, Promise<Session.Client> promise)
     {
@@ -82,7 +82,7 @@ public class ClientHTTP3Session extends ClientProtocolSession
         if (LOG.isDebugEnabled())
             LOG.debug("created control stream #{} on {}", controlStreamId, controlEndPoint);
 
-        this.messageFlusher = new HTTP3Flusher(quicSession.getByteBufferPool(), encoder, configuration.getMaxRequestHeadersSize(), configuration.isUseOutputDirectByteBuffers());
+        this.messageFlusher = new MessageFlusher(quicSession.getByteBufferPool(), encoder, configuration.getMaxRequestHeadersSize(), configuration.isUseOutputDirectByteBuffers());
         addBean(messageFlusher);
     }
 
@@ -97,9 +97,8 @@ public class ClientHTTP3Session extends ClientProtocolSession
     }
 
     @Override
-    protected void doStart() throws Exception
+    protected void initialize()
     {
-        super.doStart();
         // Queue the mandatory SETTINGS frame.
         Map<Long, Long> settings = session.onPreface();
         if (settings == null)

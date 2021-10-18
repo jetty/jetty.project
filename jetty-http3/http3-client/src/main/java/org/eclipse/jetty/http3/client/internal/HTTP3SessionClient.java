@@ -51,7 +51,8 @@ public class HTTP3SessionClient extends HTTP3Session implements Session.Client
     public void onOpen()
     {
         super.onOpen();
-        promise.succeeded(this);
+        if (promise != null)
+            promise.succeeded(this);
     }
 
     @Override

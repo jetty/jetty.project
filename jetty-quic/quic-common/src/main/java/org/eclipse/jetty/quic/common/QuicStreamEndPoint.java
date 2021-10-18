@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.io.AbstractEndPoint;
@@ -26,7 +27,6 @@ import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,17 +41,15 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     private static final Logger LOG = LoggerFactory.getLogger(QuicStreamEndPoint.class);
     private static final ByteBuffer LAST_FLAG = ByteBuffer.allocate(0);
 
-    private final AutoLock lock = new AutoLock();
+    private final AtomicBoolean readable = new AtomicBoolean(true);
     private final QuicSession session;
     private final long streamId;
-    private boolean readable;
 
     public QuicStreamEndPoint(Scheduler scheduler, QuicSession session, long streamId)
     {
         super(scheduler);
         this.session = session;
         this.streamId = streamId;
-        this.readable = true;
     }
 
     public QuicSession getQuicSession()
@@ -215,35 +213,24 @@ public class QuicStreamEndPoint extends AbstractEndPoint
 
     public void onReadable()
     {
-        // TODO: use AtomicBoolean.
-        try (AutoLock l = lock.lock())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("stream {} is readable, processing: {}", streamId, readable);
-            if (!readable)
-                return;
-            readable = false;
-        }
-        getFillInterest().fillable();
+        boolean expected = readable.compareAndExchange(true, false);
+        if (LOG.isDebugEnabled())
+            LOG.debug("stream {} is readable, processing: {}", streamId, expected);
+        if (expected)
+            getFillInterest().fillable();
     }
 
     @Override
     public void fillInterested(Callback callback)
     {
-        try (AutoLock l = lock.lock())
-        {
-            readable = true;
-        }
+        readable.set(true);
         super.fillInterested(callback);
     }
 
     @Override
     public boolean tryFillInterested(Callback callback)
     {
-        try (AutoLock l = lock.lock())
-        {
-            readable = true;
-        }
+        readable.set(true);
         return super.tryFillInterested(callback);
     }
 

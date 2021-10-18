@@ -115,18 +115,23 @@ public class ClientQuicConnection extends QuicConnection
     @Override
     public void onFillable()
     {
-        Runnable task = receiveAndProcess();
-        if (task != null)
+        while (true)
+        {
+            Runnable task = receiveAndProcess();
+            if (task == null)
+                break;
             task.run();
+        }
     }
 
     @Override
     protected QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
-        QuicSession session = pendingSessions.get(remoteAddress);
+        ClientQuicSession session = pendingSessions.get(remoteAddress);
         if (session != null)
         {
-            session.process(remoteAddress, cipherBuffer);
+            Runnable task = session.process(remoteAddress, cipherBuffer);
+            session.offerTask(task);
             if (session.isConnectionEstablished())
             {
                 pendingSessions.remove(remoteAddress);

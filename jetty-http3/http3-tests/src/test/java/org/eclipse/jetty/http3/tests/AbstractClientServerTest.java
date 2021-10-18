@@ -16,6 +16,8 @@ package org.eclipse.jetty.http3.tests;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
@@ -23,6 +25,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.http.ClientConnectionFactoryOverHTTP3;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
@@ -41,9 +44,10 @@ public class AbstractClientServerTest
     @RegisterExtension
     final BeforeTestExecutionCallback printMethodName = context ->
         System.err.printf("Running %s.%s() %s%n", context.getRequiredTestClass().getSimpleName(), context.getRequiredTestMethod().getName(), context.getDisplayName());
-    protected HTTP3ServerConnector connector;
-    protected HTTP3Client client;
     protected Server server;
+    protected HTTP3ServerConnector connector;
+    protected HTTP3Client http3Client;
+    protected HttpClient httpClient;
 
     protected void start(Handler handler) throws Exception
     {
@@ -79,14 +83,18 @@ public class AbstractClientServerTest
 
     protected void startClient() throws Exception
     {
-        client = new HTTP3Client();
-        client.start();
+        http3Client = new HTTP3Client();
+        httpClient = new HttpClient(new HttpClientTransportDynamic(new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)));
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
+        httpClient.setExecutor(clientThreads);
+        httpClient.start();
     }
 
     protected Session.Client newSession(Session.Client.Listener listener) throws Exception
     {
         InetSocketAddress address = new InetSocketAddress("localhost", connector.getLocalPort());
-        return client.connect(address, listener).get(5, TimeUnit.SECONDS);
+        return http3Client.connect(address, listener).get(5, TimeUnit.SECONDS);
     }
 
     protected MetaData.Request newRequest(String path)
@@ -108,7 +116,7 @@ public class AbstractClientServerTest
     @AfterEach
     public void dispose()
     {
-        LifeCycle.stop(client);
+        LifeCycle.stop(httpClient);
         LifeCycle.stop(server);
     }
 }
