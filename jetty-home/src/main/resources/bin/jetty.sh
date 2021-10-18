@@ -433,7 +433,7 @@ case "`uname`" in
 CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
 esac
 
-RUN_ARGS=$(echo $JAVA_OPTIONS ; "$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]})
+RUN_ARGS=$(echo -ne $JAVA_OPTIONS ; "$JAVA" -jar "$JETTY_START" --dry-run=opts,path,main,args ${JETTY_ARGS[*]})
 RUN_CMD=("$JAVA" ${RUN_ARGS[@]})
 
 #####################################################
@@ -462,10 +462,16 @@ case "$ACTION" in
       unset CH_USER
       if [ -n "$JETTY_USER" ]
       then
-        CH_USER="-c$JETTY_USER"
+        CH_USER="--chuid $JETTY_USER"
       fi
 
-      start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_BASE" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" start-log-file="$JETTY_START_LOG"
+      start-stop-daemon --start $CH_USER \
+       --pidfile "$JETTY_PID" \
+       --chdir "$JETTY_BASE" \
+       --background \
+       --make-pidfile \
+       --startas "$JAVA" \
+       -- ${RUN_ARGS[@]} start-log-file="$JETTY_START_LOG"
 
     else
 
