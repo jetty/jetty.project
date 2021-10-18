@@ -45,15 +45,14 @@ public class ClientProtocolSession extends ProtocolSession
     }
 
     @Override
-    protected boolean onReadable(long readableStreamId)
+    protected void onReadable(long readableStreamId)
     {
         // On the client, we need a get-only semantic in case of reads.
         QuicStreamEndPoint streamEndPoint = getStreamEndPoint(readableStreamId);
         if (LOG.isDebugEnabled())
             LOG.debug("stream #{} selected for read: {}", readableStreamId, streamEndPoint);
         if (streamEndPoint != null)
-            return streamEndPoint.onReadable();
-        return false;
+            streamEndPoint.onReadable();
     }
 
     @Override

@@ -32,7 +32,10 @@ import org.eclipse.jetty.quic.server.internal.SimpleTokenValidator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +48,7 @@ public class ServerQuicConnection extends QuicConnection
 
     private final QuicheConfig quicheConfig;
     private final Connector connector;
+    private final AdaptiveExecutionStrategy strategy;
     private final SessionTimeouts sessionTimeouts;
 
     protected ServerQuicConnection(Connector connector, EndPoint endPoint, QuicheConfig quicheConfig)
@@ -52,6 +56,7 @@ public class ServerQuicConnection extends QuicConnection
         super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
         this.quicheConfig = quicheConfig;
         this.connector = connector;
+        this.strategy = new AdaptiveExecutionStrategy(new QuicProducer(), getExecutor());
         this.sessionTimeouts = new SessionTimeouts(connector.getScheduler());
     }
 
@@ -59,7 +64,21 @@ public class ServerQuicConnection extends QuicConnection
     public void onOpen()
     {
         super.onOpen();
+        LifeCycle.start(strategy);
         fillInterested();
+    }
+
+    @Override
+    public void onClose(Throwable cause)
+    {
+        LifeCycle.stop(strategy);
+        super.onClose(cause);
+    }
+
+    @Override
+    public void onFillable()
+    {
+        strategy.produce();
     }
 
     @Override
@@ -116,6 +135,15 @@ public class ServerQuicConnection extends QuicConnection
         super.outwardClose(session, failure);
         // Do nothing else, as the current architecture only has one
         // listening DatagramChannelEndPoint, so it must not be closed.
+    }
+
+    private class QuicProducer implements ExecutionStrategy.Producer
+    {
+        @Override
+        public Runnable produce()
+        {
+            return receiveAndProcess();
+        }
     }
 
     private class SessionTimeouts extends CyclicTimeouts<ServerQuicSession>

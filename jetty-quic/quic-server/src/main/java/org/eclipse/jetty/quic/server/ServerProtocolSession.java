@@ -34,13 +34,13 @@ public class ServerProtocolSession extends ProtocolSession
     }
 
     @Override
-    protected boolean onReadable(long readableStreamId)
+    protected void onReadable(long readableStreamId)
     {
         // On the server, we need a get-or-create semantic in case of reads.
         QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, this::configureProtocolEndPoint);
         if (LOG.isDebugEnabled())
             LOG.debug("stream #{} selected for read: {}", readableStreamId, streamEndPoint);
-        return streamEndPoint.onReadable();
+        streamEndPoint.onReadable();
     }
 
     @Override

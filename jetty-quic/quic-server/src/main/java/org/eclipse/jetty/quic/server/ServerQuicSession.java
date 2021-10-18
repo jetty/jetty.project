@@ -103,10 +103,10 @@ public class ServerQuicSession extends QuicSession implements CyclicTimeouts.Exp
     }
 
     @Override
-    public void process(SocketAddress remoteAddress, ByteBuffer cipherBufferIn) throws IOException
+    public Runnable process(SocketAddress remoteAddress, ByteBuffer cipherBufferIn) throws IOException
     {
         notIdle();
-        super.process(remoteAddress, cipherBufferIn);
+        return super.process(remoteAddress, cipherBufferIn);
     }
 
     @Override
