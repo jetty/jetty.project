@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 public class HttpChannelOverHTTP3 extends HttpChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHTTP3.class);
+    private static final HttpInput.Content NULL_CONTENT = new NullContent();
 
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
     private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
@@ -214,6 +215,9 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     @Override
     public boolean needContent()
     {
+        if (content == NULL_CONTENT)
+            content = null;
+
         if (content != null)
             return true;
 
@@ -226,6 +230,8 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     {
         if (content != null)
         {
+            if (content == NULL_CONTENT)
+                return null;
             HttpInput.Content result = content;
             if (!result.isSpecial())
                 content = null;
@@ -238,7 +244,10 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         if (LOG.isDebugEnabled())
             LOG.debug("read {} on {}", data, this);
         if (data == null)
+        {
+            content = NULL_CONTENT;
             return null;
+        }
 
         content = new HttpInput.Content(data.getByteBuffer())
         {
@@ -295,5 +304,9 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     protected boolean eof()
     {
         return false;
+    }
+
+    private static class NullContent extends HttpInput.SpecialContent
+    {
     }
 }

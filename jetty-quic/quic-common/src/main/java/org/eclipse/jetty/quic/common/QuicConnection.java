@@ -173,7 +173,11 @@ public abstract class QuicConnection extends AbstractConnection
         try
         {
             if (isFillInterested())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("receiveAndProcess() idle");
                 return null;
+            }
 
             ByteBuffer cipherBuffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             while (true)
@@ -253,7 +257,7 @@ public abstract class QuicConnection extends AbstractConnection
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("exception in receiveAndProcess()", x);
+                LOG.debug("receiveAndProcess() failure", x);
             // TODO: close?
             return null;
         }

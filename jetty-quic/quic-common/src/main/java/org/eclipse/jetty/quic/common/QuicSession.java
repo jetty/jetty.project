@@ -349,6 +349,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         processing.set(false);
     }
 
+    // TODO: this is ugly, is there a better solution?
     protected Runnable pollTask()
     {
         return null;
