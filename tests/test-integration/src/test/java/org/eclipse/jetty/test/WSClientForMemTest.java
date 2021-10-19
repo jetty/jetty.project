@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
@@ -30,10 +31,11 @@ public class WSClientForMemTest
     public void test() throws Exception
     {
         HttpClient httpClient = new HttpClient();
+        httpClient.setByteBufferPool(new NullByteBufferPool());
         WebSocketClient _client = new WebSocketClient(httpClient);
         _client.start();
 
-        int numThreads = 25;
+        int numThreads = 100;
         int maxMessageSize = 1024 * 64;
         for (int msgSize = 1024; msgSize < maxMessageSize; msgSize += 512)
         {
