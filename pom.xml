@@ -24,7 +24,7 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <alpn.api.version>1.1.3.v20160715</alpn.api.version>
-    <ant.version>1.10.11</ant.version>
+    <ant.version>1.10.12</ant.version>
     <asm.version>9.2</asm.version>
     <bndlib.version>5.3.0</bndlib.version>
     <build-support.version>1.5</build-support.version>
