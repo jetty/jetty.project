@@ -25,7 +25,6 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -160,6 +159,7 @@ public interface ByteBufferPool
         private final int _maxSize;
         private final AtomicInteger _size;
         private final AtomicLong _lastUpdate = new AtomicLong(System.nanoTime());
+        private AtomicLong _poolSize;
 
         public Bucket(ByteBufferPool pool, int capacity, int maxSize)
         {
@@ -167,6 +167,11 @@ public interface ByteBufferPool
             _capacity = capacity;
             _maxSize = maxSize;
             _size = maxSize > 0 ? new AtomicInteger() : null;
+        }
+
+        void setPoolSizeAtomic(AtomicLong poolSize)
+        {
+            _poolSize = poolSize;
         }
 
         public ByteBuffer acquire()
@@ -209,19 +214,12 @@ public interface ByteBufferPool
 
         public void clear()
         {
-            clear(null);
-        }
-
-        void clear(Consumer<ByteBuffer> memoryFn)
-        {
             int size = _size == null ? 0 : _size.get() - 1;
             while (size >= 0)
             {
                 ByteBuffer buffer = queuePoll();
                 if (buffer == null)
                     break;
-                if (memoryFn != null)
-                    memoryFn.accept(buffer);
                 if (_size != null)
                 {
                     _size.decrementAndGet();
@@ -233,11 +231,16 @@ public interface ByteBufferPool
         private void queueOffer(ByteBuffer buffer)
         {
             _queue.offer(buffer);
+            if (_poolSize != null)
+                _poolSize.addAndGet(buffer.capacity());
         }
 
         private ByteBuffer queuePoll()
         {
-            return _queue.poll();
+            ByteBuffer buffer = _queue.poll();
+            if (buffer != null && _poolSize != null)
+                _poolSize.addAndGet(-buffer.capacity());
+            return buffer;
         }
 
         boolean isEmpty()

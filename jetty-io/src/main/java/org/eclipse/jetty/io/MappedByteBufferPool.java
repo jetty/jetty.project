@@ -99,12 +99,14 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
     public MappedByteBufferPool(int factor, int maxQueueLength, Function<Integer, Bucket> newBucket, long maxHeapMemory, long maxDirectMemory)
     {
         super(factor, maxQueueLength, maxHeapMemory, maxDirectMemory);
-        _newBucket = newBucket != null ? newBucket : this::newBucket;
+        _newBucket = newBucket;
     }
 
-    private Bucket newBucket(int key)
+    private Bucket newBucket(int key, boolean direct)
     {
-        return new Bucket(this, key * getCapacityFactor(), getMaxQueueLength());
+        Bucket bucket = (_newBucket != null) ? _newBucket.apply(key) : new Bucket(this, key * getCapacityFactor(), getMaxQueueLength());
+        bucket.setPoolSizeAtomic(getSizeAtomic(direct));
+        return bucket;
     }
 
     @Override
@@ -119,7 +121,6 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
         ByteBuffer buffer = bucket.acquire();
         if (buffer == null)
             return newByteBuffer(capacity, direct);
-        decrementMemory(buffer);
         return buffer;
     }
 
@@ -141,9 +142,8 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
         int b = bucketFor(capacity);
         boolean direct = buffer.isDirect();
         ConcurrentMap<Integer, Bucket> buckets = bucketsFor(direct);
-        Bucket bucket = buckets.computeIfAbsent(b, _newBucket);
+        Bucket bucket = buckets.computeIfAbsent(b, i -> newBucket(i, direct));
         bucket.release(buffer);
-        incrementMemory(buffer);
         releaseExcessMemory(direct, this::clearOldestBucket);
     }
 
@@ -174,11 +174,10 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
         }
         if (index >= 0)
         {
-            Bucket bucket = buckets.remove(index);
-            // The same bucket may be concurrently
-            // removed, so we need this null guard.
+            Bucket bucket = buckets.get(index);
+            // Null guard in case this.clear() is called concurrently.
             if (bucket != null)
-                bucket.clear(this::decrementMemory);
+                bucket.clear();
         }
     }
 

@@ -21,7 +21,6 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.IntFunction;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -109,13 +108,12 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
     public ByteBuffer acquire(int size, boolean direct)
     {
         int capacity = size < _minCapacity ? size : (bucketFor(size) + 1) * getCapacityFactor();
-        ByteBufferPool.Bucket bucket = bucketFor(size, direct, null);
+        ByteBufferPool.Bucket bucket = bucketFor(size, direct, false);
         if (bucket == null)
             return newByteBuffer(capacity, direct);
         ByteBuffer buffer = bucket.acquire();
         if (buffer == null)
             return newByteBuffer(capacity, direct);
-        decrementMemory(buffer);
         return buffer;
     }
 
@@ -135,18 +133,19 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
         }
 
         boolean direct = buffer.isDirect();
-        ByteBufferPool.Bucket bucket = bucketFor(capacity, direct, this::newBucket);
+        ByteBufferPool.Bucket bucket = bucketFor(capacity, direct, true);
         if (bucket != null)
         {
             bucket.release(buffer);
-            incrementMemory(buffer);
             releaseExcessMemory(direct, this::clearOldestBucket);
         }
     }
 
-    private Bucket newBucket(int key)
+    private Bucket newBucket(int key, boolean direct)
     {
-        return new Bucket(this, key * getCapacityFactor(), getMaxQueueLength());
+        Bucket bucket = new Bucket(this, key * getCapacityFactor(), getMaxQueueLength());
+        bucket.setPoolSizeAtomic(getSizeAtomic(direct));
+        return bucket;
     }
 
     @Override
@@ -174,7 +173,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
         for (int i = 0; i < buckets.length; ++i)
         {
             Bucket bucket = buckets[i];
-            if (bucket == null)
+            if (bucket == null || bucket.isEmpty())
                 continue;
             long lastUpdate = bucket.getLastUpdate();
             if (lastUpdate < oldest)
@@ -186,11 +185,9 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
         if (index >= 0)
         {
             Bucket bucket = buckets[index];
-            buckets[index] = null;
-            // The same bucket may be concurrently
-            // removed, so we need this null guard.
+            // Null guard in case this.clear() is called concurrently.
             if (bucket != null)
-                bucket.clear(this::decrementMemory);
+                bucket.clear();
         }
     }
 
@@ -199,7 +196,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
         return (capacity - 1) / getCapacityFactor();
     }
 
-    private ByteBufferPool.Bucket bucketFor(int capacity, boolean direct, IntFunction<Bucket> newBucket)
+    private ByteBufferPool.Bucket bucketFor(int capacity, boolean direct, boolean create)
     {
         if (capacity < _minCapacity)
             return null;
@@ -208,9 +205,16 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
             return null;
         Bucket[] buckets = bucketsFor(direct);
         Bucket bucket = buckets[b];
-        if (bucket == null && newBucket != null)
-            buckets[b] = bucket = newBucket.apply(b + 1);
-        return bucket;
+        if (bucket != null)
+            return  bucket;
+
+        synchronized (this)
+        {
+            bucket = buckets[b];
+            if (bucket == null && create)
+                buckets[b] = bucket = newBucket(b + 1, direct);
+            return bucket;
+        }
     }
 
     @ManagedAttribute("The number of pooled direct ByteBuffers")

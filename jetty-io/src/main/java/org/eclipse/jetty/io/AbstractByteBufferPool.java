@@ -32,8 +32,8 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
     private final int _factor;
     private final int _maxQueueLength;
     private final long _maxHeapMemory;
-    private final AtomicLong _heapMemory = new AtomicLong();
     private final long _maxDirectMemory;
+    private final AtomicLong _heapMemory = new AtomicLong();
     private final AtomicLong _directMemory = new AtomicLong();
 
     protected AbstractByteBufferPool(int factor, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
@@ -54,11 +54,13 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         return _maxQueueLength;
     }
 
+    @Deprecated
     protected void decrementMemory(ByteBuffer buffer)
     {
         updateMemory(buffer, false);
     }
 
+    @Deprecated
     protected void incrementMemory(ByteBuffer buffer)
     {
         updateMemory(buffer, true);
@@ -99,6 +101,11 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
     {
         AtomicLong memory = direct ? _directMemory : _heapMemory;
         return memory.get();
+    }
+
+    public AtomicLong getSizeAtomic(boolean direct)
+    {
+        return (direct) ? _directMemory : _heapMemory;
     }
 
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")
