@@ -26,6 +26,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     private final HTTP3SessionClient session;
     private final HttpSenderOverHTTP3 sender;
     private final HttpReceiverOverHTTP3 receiver;
+    private Stream stream;
 
     public HttpChannelOverHTTP3(HttpDestination destination, HTTP3SessionClient session)
     {
@@ -55,6 +56,16 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     protected HttpReceiver getHttpReceiver()
     {
         return receiver;
+    }
+
+    public Stream getStream()
+    {
+        return stream;
+    }
+
+    public void setStream(Stream stream)
+    {
+        this.stream = stream;
     }
 
     @Override

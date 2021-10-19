@@ -24,11 +24,17 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listener
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP3.class);
+    private boolean notifySuccess;
+
     protected HttpReceiverOverHTTP3(HttpChannelOverHTTP3 channel)
     {
         super(channel);
@@ -38,6 +44,23 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
     protected HttpChannelOverHTTP3 getHttpChannel()
     {
         return (HttpChannelOverHTTP3)super.getHttpChannel();
+    }
+
+    @Override
+    protected void receive()
+    {
+        // Called when the application resumes demand of content.
+        if (LOG.isDebugEnabled())
+            LOG.debug("resuming response processing on {}", this);
+
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return;
+
+        if (notifySuccess)
+            responseSuccess(exchange);
+        else
+            getHttpChannel().getStream().demand();
     }
 
     @Override
@@ -73,22 +96,11 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
             }
             else
             {
-                if (frame.isLast())
-                {
-                    // There is no demand to trigger response success, so add
-                    // a poison pill to trigger it when there will be demand.
-                    // TODO
-//                    notifyContent(exchange, new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("stalling response processing, no demand after headers on {}", this);
+                notifySuccess = frame.isLast();
             }
         }
-    }
-
-    @Override
-    protected void receive()
-    {
-        // Called when the application resumes demand of content.
-        // TODO: stream.demand() should be enough.
     }
 
     @Override
@@ -104,8 +116,12 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
             ByteBuffer byteBuffer = data.getByteBuffer();
             if (byteBuffer.hasRemaining())
             {
-                // TODO: callback failure should invoke responseFailure().
-                Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::complete);
+                Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::complete, x ->
+                {
+                    data.complete();
+                    if (responseFailure(x))
+                        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                });
                 boolean proceed = responseContent(exchange, byteBuffer, callback);
                 if (proceed)
                 {
@@ -113,6 +129,12 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
                         responseSuccess(exchange);
                     else
                         stream.demand();
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("stalling response processing, no demand after {} on {}", data, this);
+                    notifySuccess = data.isLast();
                 }
             }
             else
@@ -139,10 +161,6 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
 
         HttpFields trailers = frame.getMetaData().getFields();
         trailers.forEach(exchange.getResponse()::trailer);
-        // Previous DataFrames had endStream=false, so
-        // add a poison pill to trigger response success
-        // after all normal DataFrames have been consumed.
-        // TODO
-//        notifyContent(exchange, new DataFrame(stream.getId(), BufferUtil.EMPTY_BUFFER, true), Callback.NOOP);
+        responseSuccess(exchange);
     }
 }

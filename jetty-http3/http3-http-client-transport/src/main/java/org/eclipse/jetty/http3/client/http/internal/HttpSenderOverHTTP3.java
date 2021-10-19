@@ -36,8 +36,6 @@ import org.eclipse.jetty.util.Callback;
 
 public class HttpSenderOverHTTP3 extends HttpSender
 {
-    private Stream stream;
-
     public HttpSenderOverHTTP3(HttpChannelOverHTTP3 channel)
     {
         super(channel);
@@ -140,7 +138,7 @@ public class HttpSenderOverHTTP3 extends HttpSender
 
     private Stream onNewStream(Stream stream, HttpRequest request)
     {
-        this.stream = stream;
+        getHttpChannel().setStream(stream);
         long idleTimeout = request.getIdleTimeout();
         if (idleTimeout > 0)
             ((HTTP3Stream)stream).setIdleTimeout(idleTimeout);
@@ -157,6 +155,7 @@ public class HttpSenderOverHTTP3 extends HttpSender
     @Override
     protected void sendContent(HttpExchange exchange, ByteBuffer contentBuffer, boolean lastContent, Callback callback)
     {
+        Stream stream = getHttpChannel().getStream();
         boolean hasContent = contentBuffer.hasRemaining();
         if (lastContent)
         {
