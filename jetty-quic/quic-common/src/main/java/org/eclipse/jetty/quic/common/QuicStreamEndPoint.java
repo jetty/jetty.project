@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import org.eclipse.jetty.io.AbstractEndPoint;
@@ -41,7 +40,6 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     private static final Logger LOG = LoggerFactory.getLogger(QuicStreamEndPoint.class);
     private static final ByteBuffer LAST_FLAG = ByteBuffer.allocate(0);
 
-    private final AtomicBoolean readable = new AtomicBoolean(true);
     private final QuicSession session;
     private final long streamId;
 
@@ -211,27 +209,32 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         getWriteFlusher().completeWrite();
     }
 
-    public void onReadable()
+    /**
+     * @return whether this endPoint is interested in reads
+     */
+    public boolean onReadable()
     {
-        boolean expected = readable.compareAndExchange(true, false);
+        boolean interested = isFillInterested();
         if (LOG.isDebugEnabled())
-            LOG.debug("stream {} is readable, processing: {}", streamId, expected);
-        if (expected)
+            LOG.debug("stream {} is readable, processing: {}", streamId, interested);
+        if (interested)
             getFillInterest().fillable();
+        return interested;
     }
 
     @Override
     public void fillInterested(Callback callback)
     {
-        readable.set(true);
         super.fillInterested(callback);
+        getQuicSession().getProtocolSession().process();
     }
 
     @Override
     public boolean tryFillInterested(Callback callback)
     {
-        readable.set(true);
-        return super.tryFillInterested(callback);
+        boolean result = super.tryFillInterested(callback);
+        getQuicSession().getProtocolSession().process();
+        return result;
     }
 
     @Override

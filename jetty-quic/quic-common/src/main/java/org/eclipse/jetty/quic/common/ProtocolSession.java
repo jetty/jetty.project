@@ -51,6 +51,8 @@ public abstract class ProtocolSession extends ContainerLifeCycle
 
     public void process()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("processing {}", this);
         strategy.produce();
     }
 
@@ -87,15 +89,17 @@ public abstract class ProtocolSession extends ContainerLifeCycle
             streamEndPoint.onWritable();
     }
 
-    protected void processReadableStreams()
+    protected boolean processReadableStreams()
     {
         List<Long> readableStreamIds = session.getReadableStreamIds();
         if (LOG.isDebugEnabled())
             LOG.debug("readable stream ids: {}", readableStreamIds);
-        readableStreamIds.forEach(this::onReadable);
+        return readableStreamIds.stream()
+            .map(this::onReadable)
+            .reduce(false, (result, readable) -> result || readable);
     }
 
-    protected abstract void onReadable(long readableStreamId);
+    protected abstract boolean onReadable(long readableStreamId);
 
     public void configureProtocolEndPoint(QuicStreamEndPoint endPoint)
     {
@@ -167,18 +171,24 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         {
             Runnable task = poll();
             if (LOG.isDebugEnabled())
-                LOG.debug("dequeued task {} on {}", task, ProtocolSession.this);
+                LOG.debug("dequeued existing task {} on {}", task, ProtocolSession.this);
             if (task != null)
                 return task;
 
-            processWritableStreams();
-            processReadableStreams();
+            while (true)
+            {
+                processWritableStreams();
+                boolean loop = processReadableStreams();
 
-            task = poll();
-            if (LOG.isDebugEnabled())
-                LOG.debug("dequeued produced task {} on {}", task, ProtocolSession.this);
-            if (task != null)
-                return task;
+                task = poll();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("dequeued produced task {} on {}", task, ProtocolSession.this);
+                if (task != null)
+                    return task;
+
+                if (!loop)
+                    break;
+            }
 
             CloseInfo closeInfo = session.getRemoteCloseInfo();
             if (closeInfo != null)
