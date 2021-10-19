@@ -46,7 +46,9 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.StringUtil;
@@ -114,7 +116,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
     public WebSocketServerFactory(ServletContext context)
     {
-        this(context, WebSocketPolicy.newServerPolicy(), new MappedByteBufferPool());
+        this(context, WebSocketPolicy.newServerPolicy(), null);
     }
 
     public WebSocketServerFactory(ServletContext context, ByteBufferPool bufferPool)
@@ -130,7 +132,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
      */
     public WebSocketServerFactory(ServletContext context, WebSocketPolicy policy)
     {
-        this(context, policy, new MappedByteBufferPool());
+        this(context, policy, null);
     }
 
     public WebSocketServerFactory(ServletContext context, WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -156,7 +158,22 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.defaultPolicy = policy;
         this.objectFactory = objectFactory;
         this.executor = executor;
+
+        if (bufferPool == null)
+        {
+            ContextHandler contextHandler = ServletContextHandler.getContextHandler(context);
+            if (contextHandler != null)
+            {
+                Server server = contextHandler.getServer();
+                if (server != null)
+                    bufferPool = server.getBean(ByteBufferPool.class);
+            }
+            if (bufferPool == null)
+                bufferPool = new MappedByteBufferPool();
+        }
         this.bufferPool = bufferPool;
+        addBean(bufferPool);
+
 
         this.creator = this;
         this.contextClassloader = Thread.currentThread().getContextClassLoader();
@@ -185,7 +202,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         supportedVersions = rv.toString();
 
         addBean(scheduler);
-        addBean(bufferPool);
         addBean(sessionTracker);
         addBean(extensionFactory);
         listeners.add(this.sessionTracker);
