@@ -104,22 +104,13 @@ public class TestOSGiUtil
         return options;
     }
 
-    public static List<Option> provisionCoreJetty()
-    {
-        List<Option> res = new ArrayList<>();
-        // get the jetty home config from the osgi boot bundle.
-        res.add(CoreOptions.systemProperty("jetty.home.bundle").value("org.eclipse.jetty.osgi.boot"));
-        res.addAll(coreJettyDependencies());
-        return res;
-    }
-
     public static Option optionalRemoteDebug()
     {
         return CoreOptions.when(Boolean.getBoolean("pax.exam.debug.remote"))
             .useOptions(CoreOptions.vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"));
     }
 
-    public static List<Option> coreJettyDependencies()
+    public static List<Option> coreJettyDependencies(boolean withJsp)
     {
         List<Option> res = new ArrayList<>();
         //enables a dump of the status of all deployed bundles
@@ -180,8 +171,12 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.apache.geronimo.specs").artifactId("geronimo-jta_1.1_spec").version("1.1.1").start());
-
+        res.add(mavenBundle().groupId("jakarta.enterprise").artifactId("jakarta.enterprise.cdi-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.interceptor").artifactId("jakarta.interceptor-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.transaction").artifactId("jakarta.transaction-api").versionAsInProject().start());
+        //if not deploying jsp, then just deploy the el-api because jakarta.enterprise depends on it
+        if (!withJsp)
+            res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-deploy").versionAsInProject().start());
@@ -211,21 +206,17 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-javax-common").versionAsInProject().noStart());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot").versionAsInProject().start());
-        return res;
-    }
 
-    public static List<Option> jspDependencies()
-    {
-        List<Option> res = new ArrayList<>();
-
-        //jetty jsp bundles  
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
-        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("apache-jsp").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.glassfish.web").artifactId("javax.servlet.jsp.jstl").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
+        if (withJsp)
+        {
+            res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
+            res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
+            res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
+            res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("apache-jsp").versionAsInProject().start());
+            res.add(mavenBundle().groupId("org.glassfish.web").artifactId("javax.servlet.jsp.jstl").versionAsInProject().start());
+            res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
+            res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
+        }
         return res;
     }
 

@@ -61,18 +61,12 @@ public class TestJettyOSGiBootWithJavaxWebSocket
             "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
             "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
 
-        options.addAll(TestOSGiUtil.coreJettyDependencies());
+        options.addAll(TestOSGiUtil.coreJettyDependencies(true));
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
-        options.addAll(jspDependencies());
         options.addAll(testJettyWebApp());
         options.addAll(extraDependencies());
         return options.toArray(new Option[0]);
-    }
-
-    public static List<Option> jspDependencies()
-    {
-        return TestOSGiUtil.jspDependencies();
     }
 
     public static List<Option> testJettyWebApp()
