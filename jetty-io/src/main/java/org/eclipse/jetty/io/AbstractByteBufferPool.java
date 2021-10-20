@@ -36,12 +36,20 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
     private final AtomicLong _heapMemory = new AtomicLong();
     private final AtomicLong _directMemory = new AtomicLong();
 
+    /**
+     * Creates a new ByteBufferPool with the given configuration.
+     *
+     * @param factor the capacity factor
+     * @param maxQueueLength the maximum ByteBuffer queue length
+     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
+     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
+     */
     protected AbstractByteBufferPool(int factor, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
     {
         _factor = factor <= 0 ? 1024 : factor;
         _maxQueueLength = maxQueueLength;
-        _maxHeapMemory = maxHeapMemory;
-        _maxDirectMemory = maxDirectMemory;
+        _maxHeapMemory = (maxHeapMemory != 0) ? maxHeapMemory : Runtime.getRuntime().totalMemory() / 4;
+        _maxDirectMemory = (maxDirectMemory != 0) ? maxDirectMemory : Runtime.getRuntime().totalMemory() / 4;
     }
 
     protected int getCapacityFactor()
@@ -95,6 +103,18 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
     public long getHeapMemory()
     {
         return getMemory(false);
+    }
+
+    @ManagedAttribute("The max num of bytes that can be retained from direct ByteBuffers")
+    public long getMaxDirectMemory()
+    {
+        return _maxDirectMemory;
+    }
+
+    @ManagedAttribute("The max num of bytes that can be retained from heap ByteBuffers")
+    public long getMaxHeapMemory()
+    {
+        return _maxHeapMemory;
     }
 
     public long getMemory(boolean direct)

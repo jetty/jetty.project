@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -28,6 +31,8 @@ import java.util.function.Function;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -45,6 +50,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
     private final ConcurrentMap<Integer, Bucket> _directBuffers = new ConcurrentHashMap<>();
     private final ConcurrentMap<Integer, Bucket> _heapBuffers = new ConcurrentHashMap<>();
     private final Function<Integer, Bucket> _newBucket;
+    private boolean _detailedDump = false;
 
     /**
      * Creates a new MappedByteBufferPool with a default configuration.
@@ -93,8 +99,8 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
      * @param factor the capacity factor
      * @param maxQueueLength the maximum ByteBuffer queue length
      * @param newBucket the function that creates a Bucket
-     * @param maxHeapMemory the max heap memory in bytes
-     * @param maxDirectMemory the max direct memory in bytes
+     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
+     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
      */
     public MappedByteBufferPool(int factor, int maxQueueLength, Function<Integer, Bucket> newBucket, long maxHeapMemory, long maxDirectMemory)
     {
@@ -112,8 +118,8 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
     @Override
     public ByteBuffer acquire(int size, boolean direct)
     {
-        int b = bucketFor(size);
-        int capacity = b * getCapacityFactor();
+        int b = getBucketNumber(size);
+        int capacity = getBucketCapacity(b);
         ConcurrentMap<Integer, Bucket> buffers = bucketsFor(direct);
         Bucket bucket = buffers.get(b);
         if (bucket == null)
@@ -131,20 +137,20 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
             return; // nothing to do
 
         int capacity = buffer.capacity();
+        int b = getBucketNumber(capacity);
         // Validate that this buffer is from this pool.
-        if ((capacity % getCapacityFactor()) != 0)
+        if (capacity != getBucketCapacity(b))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("ByteBuffer {} does not belong to this pool, discarding it", BufferUtil.toDetailString(buffer));
             return;
         }
 
-        int b = bucketFor(capacity);
         boolean direct = buffer.isDirect();
         ConcurrentMap<Integer, Bucket> buckets = bucketsFor(direct);
         Bucket bucket = buckets.computeIfAbsent(b, i -> newBucket(i, direct));
         bucket.release(buffer);
-        releaseExcessMemory(direct, this::clearOldestBucket);
+        releaseExcessMemory(direct, this::releaseMemory);
     }
 
     @Override
@@ -157,7 +163,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
         _heapBuffers.clear();
     }
 
-    private void clearOldestBucket(boolean direct)
+    protected void releaseMemory(boolean direct)
     {
         long oldest = Long.MAX_VALUE;
         int index = -1;
@@ -165,6 +171,9 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
         for (Map.Entry<Integer, Bucket> entry : buckets.entrySet())
         {
             Bucket bucket = entry.getValue();
+            if (bucket.isEmpty())
+                continue;
+
             long lastUpdate = bucket.getLastUpdate();
             if (lastUpdate < oldest)
             {
@@ -181,13 +190,14 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
         }
     }
 
-    private int bucketFor(int size)
+    protected int getBucketNumber(int capacity)
     {
-        int factor = getCapacityFactor();
-        int bucket = size / factor;
-        if (bucket * factor != size)
-            ++bucket;
-        return bucket;
+        return (int)Math.ceil((double)capacity / getCapacityFactor());
+    }
+
+    protected int getBucketCapacity(int bucket)
+    {
+        return bucket * getCapacityFactor();
     }
 
     @ManagedAttribute("The number of pooled direct ByteBuffers")

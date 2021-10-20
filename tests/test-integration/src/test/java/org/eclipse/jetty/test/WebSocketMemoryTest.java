@@ -10,8 +10,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -58,9 +57,11 @@ public class WebSocketMemoryTest
     {
         _server = new Server();
 //        _server.addBean(new LogArrayByteBufferPool(512, -1, -1, maxMemory, maxMemory));
-        int maxMemory = 1024 * 8;
-        ByteBufferPool bufferPool = new ArrayByteBufferPool(-1, -1, -1, -1, maxMemory, maxMemory);
-//        ByteBufferPool bufferPool = new MappedByteBufferPool(-1, -1, null, maxMemory, maxMemory);
+        int maxMemory = 0;//-1;//1024 * 8;
+//        ByteBufferPool bufferPool = new ArrayByteBufferPool(-1, -1, -1, -1, maxMemory, maxMemory);
+//        ByteBufferPool bufferPool = new LogArrayByteBufferPool(-1, -1, -1, maxMemory, maxMemory);
+        MappedByteBufferPool bufferPool = new MappedByteBufferPool(-1, -1, null, maxMemory, maxMemory);
+        bufferPool.setDetailedDump(true);
 //        ByteBufferPool bufferPool = new NullByteBufferPool();
         _server.addBean(bufferPool);
         ServerConnector _connector = new ServerConnector(_server);

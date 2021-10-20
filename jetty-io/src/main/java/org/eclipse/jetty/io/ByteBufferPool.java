@@ -202,7 +202,7 @@ public interface ByteBufferPool
 
         public void release(ByteBuffer buffer)
         {
-            _lastUpdate.lazySet(System.nanoTime());
+            resetUpdateTime();
             BufferUtil.clear(buffer);
             if (_size == null)
                 queueOffer(buffer);
@@ -210,6 +210,11 @@ public interface ByteBufferPool
                 queueOffer(buffer);
             else
                 _size.decrementAndGet();
+        }
+
+        void resetUpdateTime()
+        {
+            _lastUpdate.lazySet(System.nanoTime());
         }
 
         public void clear()

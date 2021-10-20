@@ -36,8 +36,8 @@ public class WSClientForMemTest
         _client.start();
 
         int numThreads = 100;
-        int maxMessageSize = 1024 * 64;
-        for (int msgSize = 1024; msgSize < maxMessageSize; msgSize += 512)
+        int maxMessageSize = 1024 * 1024;
+        for (int msgSize = 1024; msgSize < maxMessageSize; msgSize += 1024)
         {
             ContentResponse get = httpClient.GET("http://localhost:8080/setCount?numThreads=" + numThreads);
             assertThat(get.getStatus(), is(200));

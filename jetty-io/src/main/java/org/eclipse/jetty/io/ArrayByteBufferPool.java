@@ -18,13 +18,19 @@
 
 package org.eclipse.jetty.io;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -39,9 +45,11 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
 {
     private static final Logger LOG = Log.getLogger(MappedByteBufferPool.class);
 
+    private final int _maxCapacity;
     private final int _minCapacity;
     private final ByteBufferPool.Bucket[] _direct;
     private final ByteBufferPool.Bucket[] _indirect;
+    private boolean _detailedDump = false;
 
     /**
      * Creates a new ArrayByteBufferPool with a default configuration.
@@ -83,8 +91,8 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
      * @param factor the capacity factor
      * @param maxCapacity the maximum ByteBuffer capacity
      * @param maxQueueLength the maximum ByteBuffer queue length
-     * @param maxHeapMemory the max heap memory in bytes
-     * @param maxDirectMemory the max direct memory in bytes
+     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
+     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
      */
     public ArrayByteBufferPool(int minCapacity, int factor, int maxCapacity, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
     {
@@ -97,9 +105,9 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
             maxCapacity = 64 * 1024;
         if ((maxCapacity % factor) != 0 || factor >= maxCapacity)
             throw new IllegalArgumentException("The capacity factor must be a divisor of maxCapacity");
+        _maxCapacity = maxCapacity;
         _minCapacity = minCapacity;
-
-        int length = maxCapacity / factor;
+        int length = getBucketNumber(maxCapacity);
         _direct = new ByteBufferPool.Bucket[length];
         _indirect = new ByteBufferPool.Bucket[length];
     }
@@ -107,7 +115,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
     @Override
     public ByteBuffer acquire(int size, boolean direct)
     {
-        int capacity = size < _minCapacity ? size : (bucketFor(size) + 1) * getCapacityFactor();
+        int capacity = size < _minCapacity ? size : getBucketCapacity(getBucketNumber(size));
         ByteBufferPool.Bucket bucket = bucketFor(size, direct, false);
         if (bucket == null)
             return newByteBuffer(capacity, direct);
@@ -125,25 +133,29 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
 
         int capacity = buffer.capacity();
         // Validate that this buffer is from this pool.
-        if ((capacity % getCapacityFactor()) != 0)
+        if (capacity != getBucketCapacity(getBucketNumber(capacity)))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("ByteBuffer {} does not belong to this pool, discarding it", BufferUtil.toDetailString(buffer));
             return;
         }
 
+        // Don't release into the pool if greater than the maximum ByteBuffer capacity.
+        if (capacity > _maxCapacity)
+            return;
+
         boolean direct = buffer.isDirect();
         ByteBufferPool.Bucket bucket = bucketFor(capacity, direct, true);
         if (bucket != null)
         {
             bucket.release(buffer);
-            releaseExcessMemory(direct, this::clearOldestBucket);
+            releaseExcessMemory(direct, this::releaseMemory);
         }
     }
 
     private Bucket newBucket(int key, boolean direct)
     {
-        Bucket bucket = new Bucket(this, key * getCapacityFactor(), getMaxQueueLength());
+        Bucket bucket = new Bucket(this, getBucketCapacity(key), getMaxQueueLength());
         bucket.setPoolSizeAtomic(getSizeAtomic(direct));
         return bucket;
     }
@@ -165,7 +177,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
         }
     }
 
-    private void clearOldestBucket(boolean direct)
+    protected void releaseMemory(boolean direct)
     {
         long oldest = Long.MAX_VALUE;
         int index = -1;
@@ -191,28 +203,33 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
         }
     }
 
-    private int bucketFor(int capacity)
+    protected int getBucketNumber(int capacity)
     {
-        return (capacity - 1) / getCapacityFactor();
+        return (int)Math.ceil((double)capacity / getCapacityFactor());
+    }
+
+    protected int getBucketCapacity(int bucket)
+    {
+        return bucket * getCapacityFactor();
     }
 
     private ByteBufferPool.Bucket bucketFor(int capacity, boolean direct, boolean create)
     {
         if (capacity < _minCapacity)
             return null;
-        int b = bucketFor(capacity);
-        if (b >= _direct.length)
+        int index = getBucketNumber(capacity) - 1;
+        if (index >= _direct.length)
             return null;
         Bucket[] buckets = bucketsFor(direct);
-        Bucket bucket = buckets[b];
+        Bucket bucket = buckets[index];
         if (bucket != null)
             return  bucket;
 
         synchronized (this)
         {
-            bucket = buckets[b];
+            bucket = buckets[index];
             if (bucket == null && create)
-                buckets[b] = bucket = newBucket(b + 1, direct);
+                buckets[index] = bucket = newBucket(index + 1, direct);
             return bucket;
         }
     }
