@@ -110,16 +110,14 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
 
     private Bucket newBucket(int key, boolean direct)
     {
-        Bucket bucket = (_newBucket != null) ? _newBucket.apply(key) : new Bucket(this, key * getCapacityFactor(), getMaxQueueLength());
-        bucket.setPoolSizeAtomic(getSizeAtomic(direct));
-        return bucket;
+        return (_newBucket != null) ? _newBucket.apply(key) : new Bucket(this, capacityFor(key), getMaxQueueLength(), getSizeAtomic(direct));
     }
 
     @Override
     public ByteBuffer acquire(int size, boolean direct)
     {
-        int b = getBucketNumber(size);
-        int capacity = getBucketCapacity(b);
+        int b = bucketFor(size);
+        int capacity = capacityFor(b);
         ConcurrentMap<Integer, Bucket> buffers = bucketsFor(direct);
         Bucket bucket = buffers.get(b);
         if (bucket == null)
@@ -137,9 +135,9 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
             return; // nothing to do
 
         int capacity = buffer.capacity();
-        int b = getBucketNumber(capacity);
+        int b = bucketFor(capacity);
         // Validate that this buffer is from this pool.
-        if (capacity != getBucketCapacity(b))
+        if (capacity != capacityFor(b))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("ByteBuffer {} does not belong to this pool, discarding it", BufferUtil.toDetailString(buffer));
@@ -190,12 +188,12 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
         }
     }
 
-    protected int getBucketNumber(int capacity)
+    protected int bucketFor(int capacity)
     {
         return (int)Math.ceil((double)capacity / getCapacityFactor());
     }
 
-    protected int getBucketCapacity(int bucket)
+    protected int capacityFor(int bucket)
     {
         return bucket * getCapacityFactor();
     }

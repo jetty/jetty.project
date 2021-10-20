@@ -72,13 +72,13 @@ public class LogArrayByteBufferPool extends ArrayByteBufferPool
     }
 
     @Override
-    protected int getBucketNumber(int capacity)
+    protected int bucketFor(int capacity)
     {
         return 32 - Integer.numberOfLeadingZeros(capacity - 1);
     }
 
     @Override
-    protected int getBucketCapacity(int bucket)
+    protected int capacityFor(int bucket)
     {
         return 1 << bucket;
     }

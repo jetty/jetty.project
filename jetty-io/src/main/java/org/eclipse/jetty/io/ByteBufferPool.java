@@ -159,18 +159,20 @@ public interface ByteBufferPool
         private final int _maxSize;
         private final AtomicInteger _size;
         private final AtomicLong _lastUpdate = new AtomicLong(System.nanoTime());
-        private AtomicLong _poolSize;
+        private final AtomicLong _poolSize;
 
+        @Deprecated
         public Bucket(ByteBufferPool pool, int capacity, int maxSize)
+        {
+            this(pool, capacity, maxSize, null);
+        }
+
+        public Bucket(ByteBufferPool pool, int capacity, int maxSize, AtomicLong poolSize)
         {
             _pool = pool;
             _capacity = capacity;
             _maxSize = maxSize;
             _size = maxSize > 0 ? new AtomicInteger() : null;
-        }
-
-        void setPoolSizeAtomic(AtomicLong poolSize)
-        {
             _poolSize = poolSize;
         }
 
@@ -219,17 +221,13 @@ public interface ByteBufferPool
 
         public void clear()
         {
-            int size = _size == null ? 0 : _size.get() - 1;
-            while (size >= 0)
+            while (true)
             {
                 ByteBuffer buffer = queuePoll();
                 if (buffer == null)
                     break;
                 if (_size != null)
-                {
                     _size.decrementAndGet();
-                    --size;
-                }
             }
         }
 

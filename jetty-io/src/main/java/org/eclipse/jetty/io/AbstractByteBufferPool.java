@@ -123,7 +123,7 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         return memory.get();
     }
 
-    public AtomicLong getSizeAtomic(boolean direct)
+    protected AtomicLong getSizeAtomic(boolean direct)
     {
         return (direct) ? _directMemory : _heapMemory;
     }
