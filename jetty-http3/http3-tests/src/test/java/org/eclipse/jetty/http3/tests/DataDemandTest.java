@@ -511,4 +511,56 @@ public class DataDemandTest extends AbstractClientServerTest
 
         assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testReadDataIdempotent() throws Exception
+    {
+        CountDownLatch nullDataLatch = new CountDownLatch(1);
+        CountDownLatch lastDataLatch = new CountDownLatch(1);
+        start(new Session.Server.Listener()
+        {
+            @Override
+            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            {
+                stream.demand();
+                return new Stream.Listener()
+                {
+                    @Override
+                    public void onDataAvailable(Stream stream)
+                    {
+                        Stream.Data data = stream.readData();
+                        if (data == null)
+                        {
+                            // Second attempt to read still has no data, should be idempotent.
+                            assertNull(stream.readData());
+                            stream.demand();
+                            nullDataLatch.countDown();
+                        }
+                        else
+                        {
+                            data.complete();
+                            if (data.isLast())
+                                lastDataLatch.countDown();
+                            else
+                                stream.demand();
+                        }
+                    }
+                };
+            }
+        });
+
+        Session.Client session = newSession(new Session.Client.Listener() {});
+
+        HeadersFrame request = new HeadersFrame(newRequest("/"), false);
+        Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+
+        // Send a first chunk to trigger reads.
+        stream.data(new DataFrame(ByteBuffer.allocate(16), false));
+
+        assertTrue(nullDataLatch.await(555, TimeUnit.SECONDS));
+
+        stream.data(new DataFrame(ByteBuffer.allocate(4096), true));
+
+        assertTrue(lastDataLatch.await(5, TimeUnit.SECONDS));
+    }
 }

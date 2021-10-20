@@ -94,9 +94,12 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         List<Long> readableStreamIds = session.getReadableStreamIds();
         if (LOG.isDebugEnabled())
             LOG.debug("readable stream ids: {}", readableStreamIds);
-        return readableStreamIds.stream()
-            .map(this::onReadable)
-            .reduce(false, (result, readable) -> result || readable);
+        boolean result = false;
+        for (long readableStreamId : readableStreamIds)
+        {
+            result = result || onReadable(readableStreamId);
+        }
+        return result;
     }
 
     protected abstract boolean onReadable(long readableStreamId);

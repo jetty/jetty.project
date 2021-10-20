@@ -16,8 +16,6 @@ package org.eclipse.jetty.http3.internal;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.Queue;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http.MetaData;
@@ -42,7 +40,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private static final ByteBuffer EMPTY_DATA_FRAME = ByteBuffer.allocate(2);
 
     private final AutoLock lock = new AutoLock();
-    private final Queue<DataFrame> dataFrames = new ArrayDeque<>();
     private final RetainableByteBufferPool buffers;
     private final MessageParser parser;
     private boolean useInputDirectByteBuffers = true;
@@ -50,7 +47,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private boolean dataMode;
     private boolean dataDemand;
     private boolean dataStalled;
+    private DataFrame dataFrame;
     private boolean dataLast;
+    private boolean noData;
     private boolean remotelyClosed;
 
     public HTTP3StreamConnection(QuicStreamEndPoint endPoint, Executor executor, ByteBufferPool byteBufferPool, MessageParser parser)
@@ -120,7 +119,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         {
             while (true)
             {
-                if (parseAndFill() == MessageParser.Result.NO_FRAME)
+                if (parseAndFill(true) == MessageParser.Result.NO_FRAME)
                     break;
 
                 // TODO: we should also exit if the connection was closed due to errors.
@@ -168,11 +167,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (hasDemand())
                 throw new IllegalStateException("invalid call to readData(): outstanding demand");
 
-            switch (parseAndFill())
+            switch (parseAndFill(false))
             {
                 case FRAME:
                 {
-                    DataFrame frame = dataFrames.poll();
+                    DataFrame frame = dataFrame;
+                    dataFrame = null;
                     if (LOG.isDebugEnabled())
                         LOG.debug("read data {} on {}", frame, this);
                     if (frame == null)
@@ -193,6 +193,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 }
                 case NO_FRAME:
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("read no data on {}", this);
                     return null;
                 }
                 default:
@@ -211,9 +213,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     public void demand()
     {
+        boolean interested;
         boolean process = false;
         try (AutoLock l = lock.lock())
         {
+            interested = noData;
             dataDemand = true;
             if (dataStalled)
             {
@@ -225,6 +229,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             LOG.debug("demand, wasStalled={} on {}", process, this);
         if (process)
             processDataDemand();
+        else if (interested)
+            fillInterested();
     }
 
     public boolean hasDemand()
@@ -240,6 +246,14 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         try (AutoLock l = lock.lock())
         {
             return dataStalled;
+        }
+    }
+
+    private void setNoData(boolean noData)
+    {
+        try (AutoLock l = lock.lock())
+        {
+            this.noData = noData;
         }
     }
 
@@ -275,15 +289,17 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
     }
 
-    public MessageParser.Result parseAndFill()
+    public MessageParser.Result parseAndFill(boolean setFillInterest)
     {
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("parse+fill on {} with buffer {}", this, buffer);
+                LOG.debug("parse+fill interest={} on {} with buffer {}", setFillInterest, this, buffer);
 
             if (buffer == null)
                 buffer = buffers.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+
+            setNoData(false);
 
             while (true)
             {
@@ -320,7 +336,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 {
                     buffer.release();
                     buffer = null;
-                    fillInterested();
+                    setNoData(true);
+                    if (setFillInterest)
+                        fillInterested();
                     break;
                 }
                 else
@@ -353,11 +371,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         {
             throw new UncheckedIOException(x.getMessage(), x);
         }
-    }
-
-    public DataFrame pollContent()
-    {
-        return dataFrames.poll();
     }
 
     @Override
@@ -397,9 +410,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         @Override
         public void onData(long streamId, DataFrame frame)
         {
-            remotelyClosed = frame.isLast();
+            if (dataFrame != null)
+                throw new IllegalStateException();
+            dataFrame = frame;
             dataLast = frame.isLast();
-            dataFrames.offer(frame);
+            remotelyClosed = frame.isLast();
             super.onData(streamId, frame);
         }
     }
