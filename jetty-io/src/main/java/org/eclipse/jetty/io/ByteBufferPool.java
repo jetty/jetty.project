@@ -266,7 +266,7 @@ public interface ByteBufferPool
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%d/%d@%d}", getClass().getSimpleName(), hashCode(), size(), _maxSize, _capacity);
+            return String.format("%s@%x{capacity=%d, size=%d, maxSize=%d}", getClass().getSimpleName(), hashCode(), _capacity, size(), _maxSize);
         }
     }
 }

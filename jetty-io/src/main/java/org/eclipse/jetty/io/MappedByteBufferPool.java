@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
  * queue of ByteBuffers each of capacity 2048, and so on.</p>
  */
 @ManagedObject
-public class MappedByteBufferPool extends AbstractByteBufferPool
+public class MappedByteBufferPool extends AbstractByteBufferPool implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(MappedByteBufferPool.class);
 
@@ -239,5 +239,35 @@ public class MappedByteBufferPool extends AbstractByteBufferPool
             BufferUtil.clear(slice);
             return slice;
         }
+    }
+
+    public boolean isDetailedDump()
+    {
+        return _detailedDump;
+    }
+
+    public void setDetailedDump(boolean detailedDump)
+    {
+        _detailedDump = detailedDump;
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        List<Object> dump = new ArrayList<>();
+        dump.add(String.format("HeapMemory: %d/%d", getHeapMemory(), getMaxHeapMemory()));
+        dump.add(String.format("DirectMemory: %d/%d", getDirectMemory(), getMaxDirectMemory()));
+
+        if (_detailedDump)
+        {
+            dump.add(new DumpableCollection("Indirect Buckets", _heapBuffers.values()));
+            dump.add(new DumpableCollection("Direct Buckets", _directBuffers.values()));
+        }
+        else
+        {
+            dump.add("Indirect Buckets size=" + _heapBuffers.size());
+            dump.add("Direct Buckets size=" + _directBuffers.size());
+        }
+        Dumpable.dumpObjects(out, indent, this, dump);
     }
 }

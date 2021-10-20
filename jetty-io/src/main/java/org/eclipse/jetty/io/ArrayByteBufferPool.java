@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
  * 2048, and so on.</p>
  */
 @ManagedObject
-public class ArrayByteBufferPool extends AbstractByteBufferPool
+public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpable
 {
     private static final Logger LOG = Log.getLogger(MappedByteBufferPool.class);
 
@@ -258,5 +258,37 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool
     ByteBufferPool.Bucket[] bucketsFor(boolean direct)
     {
         return direct ? _direct : _indirect;
+    }
+
+    public boolean isDetailedDump()
+    {
+        return _detailedDump;
+    }
+
+    public void setDetailedDump(boolean detailedDump)
+    {
+        _detailedDump = detailedDump;
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        List<Object> dump = new ArrayList<>();
+        dump.add(String.format("HeapMemory: %d/%d", getHeapMemory(), getMaxHeapMemory()));
+        dump.add(String.format("DirectMemory: %d/%d", getDirectMemory(), getMaxDirectMemory()));
+
+        List<Bucket> indirect = Arrays.stream(_indirect).filter(Objects::nonNull).collect(Collectors.toList());
+        List<Bucket> direct = Arrays.stream(_direct).filter(Objects::nonNull).collect(Collectors.toList());
+        if (_detailedDump)
+        {
+            dump.add(new DumpableCollection("Indirect Buckets", indirect));
+            dump.add(new DumpableCollection("Direct Buckets", direct));
+        }
+        else
+        {
+            dump.add("Indirect Buckets size=" + indirect.size());
+            dump.add("Direct Buckets size=" + direct.size());
+        }
+        Dumpable.dumpObjects(out, indent, this, dump);
     }
 }
