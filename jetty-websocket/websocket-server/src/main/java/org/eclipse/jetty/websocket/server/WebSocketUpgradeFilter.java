@@ -108,7 +108,9 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     @Deprecated
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
     {
-        return configure(context);
+        WebSocketUpgradeFilter upgradeFilter = configure(context);
+        upgradeFilter.configuration = NativeWebSocketServletContainerInitializer.initialize(context);
+        return upgradeFilter;
     }
 
     /**
@@ -125,7 +127,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         {
             throw new ServletException("Not running on Jetty, WebSocket support unavailable");
         }
-        return configure(handler);
+        return configureContext(handler);
     }
 
     private NativeWebSocketConfiguration configuration;

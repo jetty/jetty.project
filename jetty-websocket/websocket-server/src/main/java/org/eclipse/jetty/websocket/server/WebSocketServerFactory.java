@@ -159,6 +159,14 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.objectFactory = objectFactory;
         this.executor = executor;
 
+        this.creator = this;
+        this.contextClassloader = Thread.currentThread().getContextClassLoader();
+        this.eventDriverFactory = new EventDriverFactory(this);
+        this.extensionFactory = new WebSocketExtensionFactory(this);
+
+        this.handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
+        this.sessionFactories.add(new WebSocketSessionFactory(this));
+
         if (bufferPool == null)
         {
             ContextHandler contextHandler = ServletContextHandler.getContextHandler(context);
@@ -174,22 +182,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.bufferPool = bufferPool;
         addBean(bufferPool);
 
-
-        this.creator = this;
-        this.contextClassloader = Thread.currentThread().getContextClassLoader();
-        this.eventDriverFactory = new EventDriverFactory(this);
-        this.extensionFactory = new WebSocketExtensionFactory(this);
-
-        this.handshakes.put(HandshakeRFC6455.VERSION, new HandshakeRFC6455());
-        this.sessionFactories.add(new WebSocketSessionFactory(this));
-
         // Create supportedVersions
-        List<Integer> versions = new ArrayList<>();
-        for (int v : handshakes.keySet())
-        {
-            versions.add(v);
-        }
-        Collections.sort(versions, Collections.reverseOrder()); // newest first
+        List<Integer> versions = new ArrayList<>(handshakes.keySet());
+        versions.sort(Collections.reverseOrder()); // newest first
         StringBuilder rv = new StringBuilder();
         for (int v : versions)
         {
