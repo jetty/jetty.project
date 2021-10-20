@@ -39,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test raw behaviors of RequestLog and how Request / Response objects behave during
@@ -53,7 +54,18 @@ public class RequestLogTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(RequestLogTest.class);
 
-    public Server createServer(RequestLog requestLog) throws Exception
+    private static class NormalResponse extends AbstractHandler
+    {
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            response.setCharacterEncoding("UTF-8");
+            response.setContentType("text/plain");
+            response.getWriter().printf("Got %s to %s%n", request.getMethod(), request.getRequestURI());
+            baseRequest.setHandled(true);
+        }
+    }
+
+    public Server createServer(RequestLog requestLog, Handler serverHandler) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
@@ -61,18 +73,7 @@ public class RequestLogTest
         server.addConnector(connector);
 
         server.setRequestLog(requestLog);
-        server.setHandler(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                response.setCharacterEncoding("UTF-8");
-                response.setContentType("text/plain");
-                response.getWriter().printf("Got %s to %s%n", request.getMethod(), request.getRequestURI());
-                baseRequest.setHandled(true);
-            }
-        });
-
+        server.setHandler(serverHandler);
         return server;
     }
 
@@ -84,8 +85,9 @@ public class RequestLogTest
         {
             BlockingArrayQueue<String> requestLogLines = new BlockingArrayQueue<>();
 
-            server = createServer((request, response) ->
-                requestLogLines.add(String.format("method:%s|uri:%s|status:%d", request.getMethod(), request.getRequestURI(), response.getStatus())));
+            server = createServer((request, response1) ->
+                    requestLogLines.add(String.format("method:%s|uri:%s|status:%d", request.getMethod(), request.getRequestURI(), response1.getStatus())),
+                new NormalResponse());
             server.start();
 
             URI baseURI = server.getURI();
@@ -143,13 +145,15 @@ public class RequestLogTest
         {
             BlockingArrayQueue<String> requestLogLines = new BlockingArrayQueue<>();
 
-            server = createServer((request, response) ->
+            // Use a Servlet API that would cause a read of the Request inputStream.
+            // This should result in no paramNames, as nothing is read during RequestLog execution
+            server = createServer((request, response1) ->
             {
                 // Use a Servlet API that would cause a read of the Request inputStream.
                 List<String> paramNames = Collections.list(request.getParameterNames());
                 // This should result in no paramNames, as nothing is read during RequestLog execution
-                requestLogLines.add(String.format("method:%s|uri:%s|paramNames.size:%d|status:%d", request.getMethod(), request.getRequestURI(), paramNames.size(), response.getStatus()));
-            });
+                requestLogLines.add(String.format("method:%s|uri:%s|paramNames.size:%d|status:%d", request.getMethod(), request.getRequestURI(), paramNames.size(), response1.getStatus()));
+            }, new NormalResponse());
             server.start();
 
             URI baseURI = server.getURI();
@@ -218,13 +222,15 @@ public class RequestLogTest
         {
             BlockingArrayQueue<String> requestLogLines = new BlockingArrayQueue<>();
 
-            server = createServer((request, response) ->
+            // Use a Servlet API that would cause a read of the Request inputStream.
+            // This should result in no paramNames, as nothing is read during RequestLog execution
+            server = createServer((request, response1) ->
             {
                 // Use a Servlet API that would cause a read of the Request inputStream.
                 List<String> paramNames = Collections.list(request.getParameterNames());
                 // This should result in no paramNames, as nothing is read during RequestLog execution
-                requestLogLines.add(String.format("method:%s|uri:%s|paramNames.size:%d|status:%d", request.getMethod(), request.getRequestURI(), paramNames.size(), response.getStatus()));
-            });
+                requestLogLines.add(String.format("method:%s|uri:%s|paramNames.size:%d|status:%d", request.getMethod(), request.getRequestURI(), paramNames.size(), response1.getStatus()));
+            }, new NormalResponse());
             server.start();
 
             URI baseURI = server.getURI();
@@ -280,6 +286,89 @@ public class RequestLogTest
                 // We should see a requestlog entry for this 400 response
                 String reqlog = requestLogLines.poll(3, TimeUnit.SECONDS);
                 assertThat("RequestLog", reqlog, containsString("method:POST|uri:/hello|paramNames.size:0|status:400"));
+            }
+        }
+        finally
+        {
+            LifeCycle.stop(server);
+        }
+    }
+
+    @Test
+    public void testResponseThenChangeStatusAndHeaders() throws Exception
+    {
+        Server server = null;
+        try
+        {
+            BlockingArrayQueue<String> requestLogLines = new BlockingArrayQueue<>();
+
+            RequestLog requestLog = (request, response) ->
+            {
+                String xname = response.getHeader("X-Name");
+                requestLogLines.add(String.format("method:%s|uri:%s|header[x-name]:%s|status:%d", request.getMethod(), request.getRequestURI(), xname, response.getStatus()));
+            };
+
+            Handler handler = new AbstractHandler()
+            {
+                @Override
+                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                {
+                    response.setStatus(202);
+                    response.setHeader("X-Name", "actual");
+                    response.setCharacterEncoding("UTF-8");
+                    response.setContentType("text/plain");
+                    response.getWriter().printf("Got %s to %s%n", request.getMethod(), request.getRequestURI());
+                    response.flushBuffer();
+                    assertTrue(response.isCommitted(), "Response should be committed");
+                    baseRequest.setHandled(true);
+                    response.setStatus(204);
+                    response.setHeader("X-Name", "post-commit");
+                }
+            };
+
+            server = createServer(requestLog, handler);
+            server.start();
+
+            URI baseURI = server.getURI();
+
+            try (Socket socket = new Socket(baseURI.getHost(), baseURI.getPort());
+                 OutputStream out = socket.getOutputStream();
+                 InputStream in = socket.getInputStream())
+            {
+                StringBuilder req = new StringBuilder();
+                req.append("GET /world HTTP/1.1\r\n");
+                req.append("Host: ").append(baseURI.getRawAuthority()).append("\r\n");
+                req.append("Connection: close\r\n");
+                req.append("\r\n");
+
+                byte[] bufRequest = req.toString().getBytes(UTF_8);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("--Request--\n" + req);
+                out.write(bufRequest);
+                out.flush();
+
+                ByteArrayOutputStream outBuf = new ByteArrayOutputStream();
+                IO.copy(in, outBuf);
+                String response = outBuf.toString(UTF_8);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("--Response--\n" + response);
+
+                List<String> responseLines = response.lines()
+                    .map(String::trim)
+                    .collect(Collectors.toList());
+
+                // Find status code
+                String responseStatusLine = responseLines.get(0);
+                assertThat("Status Code Response", responseStatusLine, containsString("HTTP/1.1 202 Accepted"));
+
+                // Find body content (always last line)
+                String bodyContent = responseLines.get(responseLines.size() - 1);
+                assertThat("Body Content", bodyContent, containsString("Got GET to /world"));
+
+                // We should see a requestlog entry for this 400 response
+                String reqlog = requestLogLines.poll(3, TimeUnit.SECONDS);
+                assertThat("RequestLog", reqlog, containsString("method:GET|uri:/world|header[x-name]:actual|status:202"));
             }
         }
         finally

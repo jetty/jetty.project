@@ -1282,6 +1282,14 @@ public interface HttpFields extends Iterable<HttpField>
             _fields[_size] = null;
         }
 
+        public void setAll(HttpFields httpFields)
+        {
+            for (HttpField field : httpFields)
+            {
+                put(field);
+            }
+        }
+
         public int size()
         {
             return _size;

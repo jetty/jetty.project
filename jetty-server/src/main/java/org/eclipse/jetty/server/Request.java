@@ -1418,11 +1418,17 @@ public class Request implements HttpServletRequest
         // Don't allow pulling more parameters
         _contentParamsExtracted = true;
 
-        // Reset the status code to what was committed
+        // Reset the response to what it was when committed
         MetaData.Response committedResponse = getResponse().getCommittedMetaData();
         if (committedResponse != null)
         {
+            // restore status
             getResponse().setStatus(committedResponse.getStatus());
+
+            // restore headers
+            HttpFields.Mutable responseFields = getResponse().getHttpFields();
+            responseFields.clear();
+            responseFields.setAll(committedResponse.getFields());
         }
     }
 
