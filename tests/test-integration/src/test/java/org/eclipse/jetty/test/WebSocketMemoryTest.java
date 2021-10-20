@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.test;
 
 import java.io.IOException;
@@ -57,16 +75,16 @@ public class WebSocketMemoryTest
     {
         _server = new Server();
 //        _server.addBean(new LogArrayByteBufferPool(512, -1, -1, maxMemory, maxMemory));
-        int maxMemory = 1024 * 1024 * 64;
+        int maxMemory = 0; //1024 * 1024 * 64;
 //        ByteBufferPool bufferPool = new ArrayByteBufferPool(-1, -1, -1, -1, maxMemory, maxMemory);
         LogArrayByteBufferPool bufferPool = new LogArrayByteBufferPool(-1, 1024 * 1024, -1, maxMemory, maxMemory);
 //        MappedByteBufferPool bufferPool = new MappedByteBufferPool(-1, -1, null, maxMemory, maxMemory);
         bufferPool.setDetailedDump(true);
 //        ByteBufferPool bufferPool = new NullByteBufferPool();
         _server.addBean(bufferPool);
-        ServerConnector _connector = new ServerConnector(_server);
-        _connector.setPort(8080);
-        _server.addConnector(_connector);
+        ServerConnector connector = new ServerConnector(_server);
+        connector.setPort(8080);
+        _server.addConnector(connector);
 
         ServletContextHandler contextHandler = new ServletContextHandler();
         WebSocketUpgradeFilter.configure(contextHandler);

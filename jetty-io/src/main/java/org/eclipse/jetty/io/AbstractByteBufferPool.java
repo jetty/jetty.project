@@ -48,8 +48,8 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
     {
         _factor = factor <= 0 ? 1024 : factor;
         _maxQueueLength = maxQueueLength;
-        _maxHeapMemory = (maxHeapMemory != 0) ? maxHeapMemory : Runtime.getRuntime().totalMemory() / 4;
-        _maxDirectMemory = (maxDirectMemory != 0) ? maxDirectMemory : Runtime.getRuntime().totalMemory() / 4;
+        _maxHeapMemory = (maxHeapMemory != 0) ? maxHeapMemory : Runtime.getRuntime().maxMemory() / 4;
+        _maxDirectMemory = (maxDirectMemory != 0) ? maxDirectMemory : Runtime.getRuntime().maxMemory() / 4;
     }
 
     protected int getCapacityFactor()

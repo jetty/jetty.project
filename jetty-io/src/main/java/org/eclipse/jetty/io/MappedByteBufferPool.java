@@ -90,7 +90,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
      */
     public MappedByteBufferPool(int factor, int maxQueueLength, Function<Integer, Bucket> newBucket)
     {
-        this(factor, maxQueueLength, newBucket, -1, -1);
+        this(factor, maxQueueLength, newBucket, 0, 0);
     }
 
     /**

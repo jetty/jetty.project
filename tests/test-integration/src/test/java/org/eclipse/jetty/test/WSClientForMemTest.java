@@ -1,3 +1,21 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
 package org.eclipse.jetty.test;
 
 import java.net.URI;
@@ -25,15 +43,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WSClientForMemTest
 {
-    private static final char[] ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789{}	\":;<>,.()[]".toCharArray();
+    private static final char[] ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789{}\":;<>,.()[]".toCharArray();
 
     @Test
     public void test() throws Exception
     {
         HttpClient httpClient = new HttpClient();
         httpClient.setByteBufferPool(new NullByteBufferPool());
-        WebSocketClient _client = new WebSocketClient(httpClient);
-        _client.start();
+        WebSocketClient client = new WebSocketClient(httpClient);
+        client.start();
 
         int numThreads = 100;
         int maxMessageSize = 1024 * 1024;
@@ -65,7 +83,7 @@ public class WSClientForMemTest
                         URI uri = URI.create("ws://localhost:8080/websocket");
                         ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
                         upgradeRequest.addExtensions("permessage-deflate");
-                        Session session = _client.connect(clientSocket, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
+                        Session session = client.connect(clientSocket, uri, upgradeRequest).get(5, TimeUnit.SECONDS);
                         assertTrue(session.getUpgradeResponse().getExtensions().stream().anyMatch(config -> config.getName().equals("permessage-deflate")));
 
                         session.getRemote().sendString(randomString(messageSize));
