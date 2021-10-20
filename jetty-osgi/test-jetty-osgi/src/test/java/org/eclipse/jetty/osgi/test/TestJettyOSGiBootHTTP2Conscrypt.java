@@ -70,7 +70,8 @@ public class TestJettyOSGiBootHTTP2Conscrypt
             "sun.security", "sun.security.x509", "sun.security.ssl"));
         options.addAll(http2JettyDependencies());
 
-        options.addAll(TestOSGiUtil.coreJettyDependencies(true));
+        TestOSGiUtil.coreJettyDependencies(options);
+        TestOSGiUtil.coreJspDependencies(options);
         //deploy a test webapp
         options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jsp-webapp").classifier("webbundle").versionAsInProject());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-conscrypt-client").versionAsInProject().start());

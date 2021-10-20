@@ -58,7 +58,8 @@ public class TestJettyOSGiAnnotationParser
         ArrayList<Option> options = new ArrayList<>();
         options.add(TestOSGiUtil.optionalRemoteDebug());
         options.add(CoreOptions.junitBundles());
-        options.addAll(TestOSGiUtil.coreJettyDependencies(false));
+        TestOSGiUtil.coreJettyDependencies(options);
+        TestOSGiUtil.coreJspDependencies(options);
         //The jetty-alpn-client jars aren't used by this test, but as
         //TestOSGiUtil.coreJettyDependencies deploys the jetty-client,
         //we need them deployed to satisfy the dependency.
