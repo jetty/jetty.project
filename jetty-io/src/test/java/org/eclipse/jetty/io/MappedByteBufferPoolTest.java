@@ -32,7 +32,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -164,7 +163,7 @@ public class MappedByteBufferPoolTest
         // Now the oldest buffer should be gone and we have: 1+2x2+3=8
         long memory = bufferPool.getMemory(true);
         assertThat(memory, lessThan((long)maxMemory));
-        assertNull(buckets.get(4));
+        assertTrue(buckets.get(4).isEmpty());
 
         // Create and release a large buffer.
         // Max memory is exceeded and buckets 3 and 1 are cleared.
@@ -173,7 +172,7 @@ public class MappedByteBufferPoolTest
         bufferPool.release(buffer);
         memory = bufferPool.getMemory(true);
         assertThat(memory, lessThanOrEqualTo((long)maxMemory));
-        assertNull(buckets.get(1));
-        assertNull(buckets.get(3));
+        assertTrue(buckets.get(1).isEmpty());
+        assertTrue(buckets.get(3).isEmpty());
     }
 }
