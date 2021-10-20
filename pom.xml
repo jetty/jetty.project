@@ -23,7 +23,7 @@
 
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
-    <ant.version>1.10.11</ant.version>
+    <ant.version>1.10.12</ant.version>
     <apache.httpclient.version>4.5.13</apache.httpclient.version>
     <apache.httpcore.version>4.4.14</apache.httpcore.version>
     <asciidoctorj.version>2.5.2</asciidoctorj.version>
@@ -163,7 +163,7 @@
     <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
-    <spotbugs.maven.plugin.version>4.4.2</spotbugs.maven.plugin.version>
+    <spotbugs.maven.plugin.version>4.4.2.1</spotbugs.maven.plugin.version>
     <versions.maven.plugin.version>2.8.1</versions.maven.plugin.version>
 
     <!-- testing -->
