@@ -25,9 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -36,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -53,20 +49,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HazelcastSessionDistributionTests extends AbstractDistributionTest
 {
+    private static final String HAZELCAST_VERSION_DEFAULT = "3.12.12";
+
     private static final Logger HAZELCAST_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.HazelcastLogs");
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HazelcastSessionDistributionTests.class);
 
+    public static String getHazelcastVersion()
+    {
+        return System.getProperty("hazelcast.version", "3.12.12");
+    }
 
     /**
-     *  This simulate the onlyClient option which means the JVM running Jetty is only an Hazelcast client and not part
-     *  of the cluster
+     * This simulate the onlyClient option which means the JVM running Jetty is only an Hazelcast client and not part
+     * of the cluster
      */
     @Test
     public void testHazelcastRemoteOnlyClient() throws Exception
     {
         try (GenericContainer hazelcast =
-                            new GenericContainer("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "3.12.6"))
+                 new GenericContainer("hazelcast/hazelcast:" + getHazelcastVersion())
                                     .withExposedPorts(5701)
                             .waitingFor(Wait.forListeningPort())
                             .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG)))
@@ -148,7 +150,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
         // -Dhazelcast.local.publicAddress=127.0.0.1:5701
         env.put("JAVA_OPTS", "-Dhazelcast.config=/opt/hazelcast/config_ext/hazelcast.xml");
         try (GenericContainer hazelcast =
-                 new GenericContainer("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "3.12.6"))
+                 new GenericContainer("hazelcast/hazelcast:" + getHazelcastVersion())
                      .withExposedPorts(5701, 5705)
                      .withEnv(env)
                      .waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
