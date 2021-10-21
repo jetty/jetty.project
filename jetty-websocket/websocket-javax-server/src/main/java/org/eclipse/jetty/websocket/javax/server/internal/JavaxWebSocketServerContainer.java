@@ -13,12 +13,16 @@
 
 package org.eclipse.jetty.websocket.javax.server.internal;
 
+import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
@@ -34,7 +38,9 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
 import org.eclipse.jetty.websocket.javax.server.config.ContainerDefaultConfigurator;
@@ -46,6 +52,7 @@ import org.slf4j.LoggerFactory;
 public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer implements javax.websocket.server.ServerContainer, LifeCycle.Listener
 {
     public static final String JAVAX_WEBSOCKET_CONTAINER_ATTRIBUTE = javax.websocket.server.ServerContainer.class.getName();
+    public static final String PATH_PARAM_ATTRIBUTE = "javax.websocket.server.pathParams";
     private static final Logger LOG = LoggerFactory.getLogger(JavaxWebSocketServerContainer.class);
 
     public static JavaxWebSocketServerContainer getContainer(ServletContext servletContext)
@@ -252,6 +259,35 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
         {
             throw new DeploymentException("Unable to deploy: " + config.getEndpointClass().getName(), t);
         }
+    }
+
+    public void upgradeHttpToWebSocket(Object httpServletRequest, Object httpServletResponse, ServerEndpointConfig sec,
+                                       Map<String, String> pathParameters) throws IOException, DeploymentException
+    {
+        HttpServletRequest request = (HttpServletRequest)httpServletRequest;
+        HttpServletResponse response = (HttpServletResponse)httpServletResponse;
+
+        // Decorate the provided Configurator.
+        components.getObjectFactory().decorate(sec.getConfigurator());
+
+        // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
+        Class<?> endpointClass = sec.getEndpointClass();
+        ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+        ServerEndpointConfig config = (anno == null) ? sec
+            : new AnnotatedServerEndpointConfig(this, endpointClass, anno, sec);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
+
+        validateEndpointConfig(config);
+        frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
+        request.setAttribute(JavaxWebSocketServerContainer.PATH_PARAM_ATTRIBUTE, pathParameters);
+
+        // Perform the upgrade.
+        JavaxWebSocketCreator creator = new JavaxWebSocketCreator(this, config, getExtensionRegistry());
+        WebSocketNegotiator negotiator = WebSocketNegotiator.from(creator, frameHandlerFactory);
+        Handshaker handshaker = webSocketMappings.getHandshaker();
+        handshaker.upgradeRequest(negotiator, request, response, components, defaultCustomizer);
     }
 
     @Override
