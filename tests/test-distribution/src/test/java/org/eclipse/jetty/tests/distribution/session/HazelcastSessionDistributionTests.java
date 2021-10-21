@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -60,9 +61,9 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
     @BeforeEach
     public void setupHazelcast()
     {
-        hazelcast = new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.1"))
+        hazelcast = new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.2.2"))
             .withExposedPorts(5701)
-            .waitingFor(Wait.forListeningPort())
+            .waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(120L)))
             .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG));
     }
 
