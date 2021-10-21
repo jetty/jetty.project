@@ -59,7 +59,7 @@ public final class UriCompliance implements ComplianceViolation.Mode
          */
         AMBIGUOUS_PATH_SEPARATOR("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path separator"),
         /**
-         * Allow ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code>
+         * Allow ambiguous path parameters within a URI segment e.g. <code>/foo/..;/bar</code> or <code>/foo/%2e%2e;param/bar</code>
          */
         AMBIGUOUS_PATH_PARAMETER("https://tools.ietf.org/html/rfc3986#section-3.3", "Ambiguous URI path parameter"),
         /**
