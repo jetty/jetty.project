@@ -13,13 +13,17 @@
 
 package org.eclipse.jetty.websocket.jakarta.server.internal;
 
+import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
@@ -34,7 +38,9 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
+import org.eclipse.jetty.websocket.core.server.Handshaker;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
+import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
 import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.websocket.jakarta.server.config.ContainerDefaultConfigurator;
@@ -45,6 +51,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("JSR356 Server Container")
 public class JakartaWebSocketServerContainer extends JakartaWebSocketClientContainer implements jakarta.websocket.server.ServerContainer, LifeCycle.Listener
 {
+    public static final String PATH_PARAM_ATTRIBUTE = "javax.websocket.server.pathParams";
 
     public static final String JAKARTA_WEBSOCKET_CONTAINER_ATTRIBUTE = jakarta.websocket.server.ServerContainer.class.getName();
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketServerContainer.class);
@@ -253,6 +260,35 @@ public class JakartaWebSocketServerContainer extends JakartaWebSocketClientConta
         {
             throw new DeploymentException("Unable to deploy: " + config.getEndpointClass().getName(), t);
         }
+    }
+
+    public void upgradeHttpToWebSocket(Object httpServletRequest, Object httpServletResponse, ServerEndpointConfig sec,
+                                       Map<String, String> pathParameters) throws IOException, DeploymentException
+    {
+        HttpServletRequest request = (HttpServletRequest)httpServletRequest;
+        HttpServletResponse response = (HttpServletResponse)httpServletResponse;
+
+        // Decorate the provided Configurator.
+        components.getObjectFactory().decorate(sec.getConfigurator());
+
+        // If we have annotations merge the annotated ServerEndpointConfig with the provided one.
+        Class<?> endpointClass = sec.getEndpointClass();
+        ServerEndpoint anno = endpointClass.getAnnotation(ServerEndpoint.class);
+        ServerEndpointConfig config = (anno == null) ? sec
+            : new AnnotatedServerEndpointConfig(this, endpointClass, anno, sec);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("addEndpoint({}) path={} endpoint={}", config, config.getPath(), endpointClass);
+
+        validateEndpointConfig(config);
+        frameHandlerFactory.getMetadata(config.getEndpointClass(), config);
+        request.setAttribute(JakartaWebSocketServerContainer.PATH_PARAM_ATTRIBUTE, pathParameters);
+
+        // Perform the upgrade.
+        JakartaWebSocketCreator creator = new JakartaWebSocketCreator(this, config, getExtensionRegistry());
+        WebSocketNegotiator negotiator = WebSocketNegotiator.from(creator, frameHandlerFactory);
+        Handshaker handshaker = webSocketMappings.getHandshaker();
+        handshaker.upgradeRequest(negotiator, request, response, components, defaultCustomizer);
     }
 
     @Override

@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.websocket.jakarta.common.PathParamProvider;
 import org.eclipse.jetty.websocket.jakarta.common.ServerEndpointConfigWrapper;
@@ -30,18 +29,13 @@ public class PathParamServerEndpointConfig extends ServerEndpointConfigWrapper i
 {
     private final Map<String, String> pathParamMap;
 
-    public PathParamServerEndpointConfig(ServerEndpointConfig config, UriTemplatePathSpec pathSpec, String requestPath)
+    public PathParamServerEndpointConfig(ServerEndpointConfig config, Map<String, String> pathParams)
     {
         super(config);
 
-        Map<String, String> pathMap = pathSpec.getPathParams(requestPath);
         pathParamMap = new HashMap<>();
-        if (pathMap != null)
-        {
-            pathMap.entrySet().stream().forEach(
-                entry -> pathParamMap.put(entry.getKey(), URIUtil.decodePath(entry.getValue()))
-            );
-        }
+        if (pathParams != null)
+            pathParams.forEach((key, value) -> pathParamMap.put(key, URIUtil.decodePath(value)));
     }
 
     @Override
