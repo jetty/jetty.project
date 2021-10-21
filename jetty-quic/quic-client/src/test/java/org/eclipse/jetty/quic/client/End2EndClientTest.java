@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.client;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -101,7 +102,9 @@ public class End2EndClientTest
     @Test
     public void testSimpleHTTP1() throws Exception
     {
-        ContentResponse response = client.GET("https://localhost:" + connector.getLocalPort());
+        ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
+            .timeout(5, TimeUnit.SECONDS)
+            .send();
         assertThat(response.getStatus(), is(200));
         String contentAsString = response.getContentAsString();
         assertThat(contentAsString, is(responseContent));
@@ -112,6 +115,7 @@ public class End2EndClientTest
     {
         ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort())
             .version(HttpVersion.HTTP_2)
+            .timeout(5, TimeUnit.SECONDS)
             .send();
         assertThat(response.getStatus(), is(200));
         String contentAsString = response.getContentAsString();
@@ -123,7 +127,9 @@ public class End2EndClientTest
     {
         for (int i = 0; i < 1000; i++)
         {
-            ContentResponse response = client.GET("https://localhost:" + connector.getLocalPort() + "/" + i);
+            ContentResponse response = client.newRequest("https://localhost:" + connector.getLocalPort() + "/" + i)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
             assertThat(response.getStatus(), is(200));
             String contentAsString = response.getContentAsString();
             assertThat(contentAsString, is(responseContent));
@@ -153,6 +159,8 @@ public class End2EndClientTest
                 }
             });
         }
-        CompletableFuture.allOf(futures).join();
+        CompletableFuture.allOf(futures)
+            .orTimeout(15, TimeUnit.SECONDS)
+            .join();
     }
 }
