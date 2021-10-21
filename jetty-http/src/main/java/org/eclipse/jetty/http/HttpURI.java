@@ -1414,15 +1414,14 @@ public interface HttpURI
 
             // Look for segment in the ambiguous segment index.
             Boolean ambiguous = __ambiguousSegments.get(uri, segment, end - segment);
-            if (ambiguous == Boolean.TRUE)
+            if (ambiguous != null)
             {
                 // The segment is always ambiguous.
-                _violations.add(Violation.AMBIGUOUS_PATH_SEGMENT);
-            }
-            else if (param && ambiguous == Boolean.FALSE)
-            {
+                if (Boolean.TRUE.equals(ambiguous))
+                    _violations.add(Violation.AMBIGUOUS_PATH_SEGMENT);
                 // The segment is ambiguous only when followed by a parameter.
-                _violations.add(Violation.AMBIGUOUS_PATH_PARAMETER);
+                if (param)
+                    _violations.add(Violation.AMBIGUOUS_PATH_PARAMETER);
             }
         }
     }
