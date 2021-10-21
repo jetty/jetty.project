@@ -144,6 +144,13 @@ public class JsrCreator implements WebSocketCreator
             // Wrap the config with the path spec information
             config = new PathParamServerEndpointConfig(containerScope, config, wspathSpec, requestPath);
         }
+        else
+        {
+            // This is for the programmatic websocket upgrade.
+            Map<String, String> pathParams = jsrHandshakeRequest.getPathParams();
+            if (pathParams != null)
+                config = new PathParamServerEndpointConfig(containerScope, config, pathParams);
+        }
 
         // [JSR] Step 5: Call modifyHandshake
         configurator.modifyHandshake(config, jsrHandshakeRequest, jsrHandshakeResponse);
