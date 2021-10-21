@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -59,7 +58,6 @@ public abstract class QuicSession extends ContainerLifeCycle
 
     private final AtomicLong[] ids = new AtomicLong[StreamType.values().length];
     private final ConcurrentMap<Long, QuicStreamEndPoint> endPoints = new ConcurrentHashMap<>();
-    private final AtomicBoolean processing = new AtomicBoolean();
     private final Executor executor;
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
@@ -297,7 +295,7 @@ public abstract class QuicSession extends ContainerLifeCycle
         if (accepted != remaining)
             throw new IllegalStateException();
 
-        if (quicheConnection.isConnectionEstablished())
+        if (isConnectionEstablished())
         {
             // HTTP/1.1
             // client1 -- sockEP1 -- H1Connection
@@ -330,23 +328,15 @@ public abstract class QuicSession extends ContainerLifeCycle
                 addManaged(session);
             }
 
-            boolean process = processing.compareAndSet(false, true);
             if (LOG.isDebugEnabled())
-                LOG.debug("processing={} on {}", process, session);
-            return process ? session::process : null;
+                LOG.debug("processing {}", session);
+            return session.getProducer();
         }
         else
         {
             flush();
             return null;
         }
-    }
-
-    void processingComplete()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("processing complete on {}", protocolSession);
-        processing.set(false);
     }
 
     // TODO: this is ugly, is there a better solution?

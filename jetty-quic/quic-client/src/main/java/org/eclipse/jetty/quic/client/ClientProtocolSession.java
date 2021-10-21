@@ -16,12 +16,15 @@ package org.eclipse.jetty.quic.client;
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.common.StreamType;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ClientProtocolSession extends ProtocolSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(ClientProtocolSession.class);
+
+    private final Runnable producer = Invocable.from(Invocable.InvocationType.NON_BLOCKING, this::produce);
 
     public ClientProtocolSession(ClientQuicSession session)
     {
@@ -47,6 +50,12 @@ public class ClientProtocolSession extends ProtocolSession
         // QUIC stream that plays the role of the TCP stream.
         long streamId = getQuicSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);
         getOrCreateStreamEndPoint(streamId, this::configureProtocolEndPoint);
+    }
+
+    @Override
+    public Runnable getProducer()
+    {
+        return producer;
     }
 
     @Override

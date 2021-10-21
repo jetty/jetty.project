@@ -1177,7 +1177,8 @@ public class GoAwayTest extends AbstractClientServerTest
 
         assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        http3Client.stop();
+        // Stopping the HttpClient will also stop the HTTP3Client.
+        httpClient.stop();
 
         assertTrue(serverGoAwayLatch.await(5, TimeUnit.SECONDS));
         assertTrue(serverDisconnectLatch.await(5, TimeUnit.SECONDS));

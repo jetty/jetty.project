@@ -525,16 +525,36 @@ public class DataDemandTest extends AbstractClientServerTest
                 stream.demand();
                 return new Stream.Listener()
                 {
+                    private boolean firstData;
+                    private boolean nullData;
+
                     @Override
                     public void onDataAvailable(Stream stream)
                     {
+                        while (!firstData)
+                        {
+                            Stream.Data data = stream.readData();
+                            if (data == null)
+                                continue;
+                            firstData = true;
+                            break;
+                        }
+
+                        if (!nullData)
+                        {
+                            assertNull(stream.readData());
+                            // Verify that readData() is idempotent.
+                            assertNull(stream.readData());
+                            nullData = true;
+                            nullDataLatch.countDown();
+                            stream.demand();
+                            return;
+                        }
+
                         Stream.Data data = stream.readData();
                         if (data == null)
                         {
-                            // Second attempt to read still has no data, should be idempotent.
-                            assertNull(stream.readData());
                             stream.demand();
-                            nullDataLatch.countDown();
                         }
                         else
                         {
@@ -552,12 +572,13 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = session.newRequest(request, new Stream.Listener() {})
+            .get(5, TimeUnit.SECONDS);
 
         // Send a first chunk to trigger reads.
         stream.data(new DataFrame(ByteBuffer.allocate(16), false));
 
-        assertTrue(nullDataLatch.await(555, TimeUnit.SECONDS));
+        assertTrue(nullDataLatch.await(5, TimeUnit.SECONDS));
 
         stream.data(new DataFrame(ByteBuffer.allocate(4096), true));
 
