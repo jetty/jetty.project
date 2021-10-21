@@ -13,14 +13,20 @@
 
 package org.eclipse.jetty.quic.server;
 
+import java.util.function.Consumer;
+
 import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ServerProtocolSession extends ProtocolSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerProtocolSession.class);
+
+    private final Runnable producer = Invocable.from(Invocable.InvocationType.BLOCKING, this::produce);
+    private final Consumer<QuicStreamEndPoint> configureProtocolEndPoint = this::configureProtocolEndPoint;
 
     public ServerProtocolSession(ServerQuicSession session)
     {
@@ -34,10 +40,16 @@ public class ServerProtocolSession extends ProtocolSession
     }
 
     @Override
+    public Runnable getProducer()
+    {
+        return producer;
+    }
+
+    @Override
     protected boolean onReadable(long readableStreamId)
     {
         // On the server, we need a get-or-create semantic in case of reads.
-        QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, this::configureProtocolEndPoint);
+        QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, configureProtocolEndPoint);
         if (LOG.isDebugEnabled())
             LOG.debug("stream #{} selected for read: {}", readableStreamId, streamEndPoint);
         return streamEndPoint.onReadable();

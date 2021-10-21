@@ -123,7 +123,7 @@ public class End2EndClientTest
     {
         for (int i = 0; i < 1000; i++)
         {
-            ContentResponse response = client.GET("https://localhost:" + connector.getLocalPort());
+            ContentResponse response = client.GET("https://localhost:" + connector.getLocalPort() + "/" + i);
             assertThat(response.getStatus(), is(200));
             String contentAsString = response.getContentAsString();
             assertThat(contentAsString, is(responseContent));
@@ -137,11 +137,12 @@ public class End2EndClientTest
         CompletableFuture<?>[] futures = new CompletableFuture[count];
         for (int i = 0; i < count; ++i)
         {
+            String path = "/" + i;
             futures[i] = CompletableFuture.runAsync(() ->
             {
                 try
                 {
-                    ContentResponse response = client.GET("https://localhost:" + connector.getLocalPort());
+                    ContentResponse response = client.GET("https://localhost:" + connector.getLocalPort() + path);
                     assertThat(response.getStatus(), is(200));
                     String contentAsString = response.getContentAsString();
                     assertThat(contentAsString, is(responseContent));

@@ -116,6 +116,7 @@ public class AbstractClientServerTest
     @AfterEach
     public void dispose()
     {
+        LifeCycle.stop(http3Client);
         LifeCycle.stop(httpClient);
         LifeCycle.stop(server);
     }

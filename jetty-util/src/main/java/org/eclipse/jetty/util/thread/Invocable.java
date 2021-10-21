@@ -125,6 +125,35 @@ public interface Invocable
         return new ReadyTask(type, task);
     }
 
+    public static Runnable from(InvocationType type, Runnable task)
+    {
+        class RunnableInvocable implements Runnable, Invocable
+        {
+            private final InvocationType type;
+            private final Runnable task;
+
+            RunnableInvocable(InvocationType type, Runnable task)
+            {
+                this.type = type;
+                this.task = task;
+            }
+
+            @Override
+            public void run()
+            {
+                task.run();
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return type;
+            }
+        }
+
+        return new RunnableInvocable(type, task);
+    }
+
     /**
      * Test if the current thread has been tagged as non blocking
      *

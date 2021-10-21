@@ -73,17 +73,16 @@ public interface Stream
      * that the end of the read side of the stream has not yet been reached, which
      * may happen in these cases:</p>
      * <ul>
-     *   <li>not all the bytes have been received so far, and a further attempt
-     *   to call this method returns {@code null} because the rest of the bytes
-     *   are not yet available (for example, the remote peer did not send them
-     *   yet, or they are in-flight)</li>
+     *   <li>not all the bytes have been received so far, for example the remote
+     *   peer did not send them yet, or they are in-flight</li>
      *   <li>all the bytes have been received, but there is a trailer HEADERS
      *   frame to be received to indicate the end of the read side of the
-     *   stream.</li>
+     *   stream</li>
      * </ul>
      * <p>When the returned {@link Stream.Data} object is not {@code null},
-     * applications <em>must</em> call {@link Stream.Data#complete()} to
-     * notify the implementation that the bytes have been processed.</p>
+     * applications <em>must</em> call, either immediately or later (possibly
+     * asynchronously) {@link Stream.Data#complete()} to notify the
+     * implementation that the bytes have been processed.</p>
      * <p>{@link Stream.Data} objects may be stored away for later, asynchronous,
      * processing (for example, to process them only when all of them have been
      * received).</p>
@@ -163,8 +162,8 @@ public interface Stream
 
         /**
          * <p>Callback method invoked if the application has expressed
-         * {@link Stream#demand() demand} for content, and if there is
-         * content available.</p>
+         * {@link Stream#demand() demand} for content, and if there may
+         * be content available.</p>
          * <p>A server application that wishes to handle request content
          * should typically call {@link Stream#demand()} from
          * {@link Session.Server.Listener#onRequest(Stream, HeadersFrame)}.</p>
@@ -175,7 +174,7 @@ public interface Stream
          * cancelled; applications that implement this method should read
          * content calling {@link Stream#readData()}, and call
          * {@link Stream#demand()} to signal to the implementation to call
-         * again this method when there is more content available.</p>
+         * again this method when there may be more content available.</p>
          * <p>Only one thread at a time invokes this method, although it
          * may not be the same thread across different invocations.</p>
          * <p>It is always guaranteed that invoking {@link Stream#demand()}

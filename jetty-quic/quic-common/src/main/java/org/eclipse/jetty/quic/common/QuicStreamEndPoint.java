@@ -214,6 +214,19 @@ public class QuicStreamEndPoint extends AbstractEndPoint
      */
     public boolean onReadable()
     {
+        // TODO: there is a race condition here.
+        //  Thread T1 enters this method and sees that this endPoint
+        //  is not interested, so it does not call onFillable().
+        //  Thread T2 is in fillInterested() about to set interest.
+        //  When this happens, this endPoint will miss a notification
+        //  that there is data to read.
+        //  The race condition is fixed by always calling produce()
+        //  from fillInterested() methods below.
+
+        // TODO: an alternative way of avoid the race would be to emulate an NIO style
+        //  notification, where onReadable() gets called only if there is interest.
+//        getQuicSession().setFillInterested(getStreamId(), false);
+
         boolean interested = isFillInterested();
         if (LOG.isDebugEnabled())
             LOG.debug("stream {} is readable, processing: {}", streamId, interested);
@@ -226,14 +239,20 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     public void fillInterested(Callback callback)
     {
         super.fillInterested(callback);
-        getQuicSession().getProtocolSession().process();
+
+        // TODO: see above
+//        getQuicSession().setFillInterested(getStreamId(), true);
+
+        // Method produce() could block, but it's called synchronously from the producer thread
+        // which calls onReadable() above, so it will just go into re-producing and never block.
+        getQuicSession().getProtocolSession().produce();
     }
 
     @Override
     public boolean tryFillInterested(Callback callback)
     {
         boolean result = super.tryFillInterested(callback);
-        getQuicSession().getProtocolSession().process();
+        getQuicSession().getProtocolSession().produce();
         return result;
     }
 

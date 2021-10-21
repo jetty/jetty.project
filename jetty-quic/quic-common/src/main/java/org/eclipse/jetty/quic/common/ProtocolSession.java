@@ -49,7 +49,9 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         return session;
     }
 
-    public void process()
+    public abstract Runnable getProducer();
+
+    public void produce()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("processing {}", this);
@@ -76,7 +78,10 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         List<Long> writableStreamIds = session.getWritableStreamIds();
         if (LOG.isDebugEnabled())
             LOG.debug("writable stream ids: {}", writableStreamIds);
-        writableStreamIds.forEach(this::onWritable);
+        for (long writableStreamId : writableStreamIds)
+        {
+            onWritable(writableStreamId);
+        }
     }
 
     protected void onWritable(long writableStreamId)
@@ -97,7 +102,8 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         boolean result = false;
         for (long readableStreamId : readableStreamIds)
         {
-            result = result || onReadable(readableStreamId);
+            // Bit-wise "or" because we do not want onReadable() to be short-circuited.
+            result |= onReadable(readableStreamId);
         }
         return result;
     }
@@ -154,7 +160,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         public void offer(Runnable task)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("enqueuing task {} on {}", task, ProtocolSession.this);
+                LOG.debug("enqueuing stream task {} on {}", task, ProtocolSession.this);
             try (AutoLock l = lock.lock())
             {
                 tasks.offer(task);
@@ -174,7 +180,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         {
             Runnable task = poll();
             if (LOG.isDebugEnabled())
-                LOG.debug("dequeued existing task {} on {}", task, ProtocolSession.this);
+                LOG.debug("dequeued existing stream task {} on {}", task, ProtocolSession.this);
             if (task != null)
                 return task;
 
@@ -185,7 +191,7 @@ public abstract class ProtocolSession extends ContainerLifeCycle
 
                 task = poll();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("dequeued produced task {} on {}", task, ProtocolSession.this);
+                    LOG.debug("dequeued produced stream task {} on {}", task, ProtocolSession.this);
                 if (task != null)
                     return task;
 
@@ -197,7 +203,6 @@ public abstract class ProtocolSession extends ContainerLifeCycle
             if (closeInfo != null)
                 onClose(closeInfo.error(), closeInfo.reason());
 
-            getQuicSession().processingComplete();
             return null;
         }
     }

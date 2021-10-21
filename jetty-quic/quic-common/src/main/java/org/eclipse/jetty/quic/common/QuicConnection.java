@@ -38,7 +38,9 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +60,7 @@ public abstract class QuicConnection extends AbstractConnection
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Scheduler scheduler;
     private final ByteBufferPool byteBufferPool;
+    private final AdaptiveExecutionStrategy strategy;
     private final Flusher flusher = new Flusher();
     private int outputBufferSize = 2048;
     private boolean useInputDirectByteBuffers = true;
@@ -68,6 +71,7 @@ public abstract class QuicConnection extends AbstractConnection
         super(endPoint, executor);
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
+        this.strategy = new AdaptiveExecutionStrategy(new QuicProducer(), getExecutor());
     }
 
     public Scheduler getScheduler()
@@ -131,10 +135,32 @@ public abstract class QuicConnection extends AbstractConnection
             listeners.remove((QuicSession.Listener)listener);
     }
 
-    public abstract void onFillable();
+    @Override
+    public void onOpen()
+    {
+        super.onOpen();
+        LifeCycle.start(strategy);
+    }
+
+    @Override
+    public void onClose(Throwable cause)
+    {
+        LifeCycle.stop(strategy);
+        super.onClose(cause);
+    }
+
+    public void onFillable()
+    {
+        produce();
+    }
 
     @Override
     public abstract boolean onIdleExpired();
+
+    public void produce()
+    {
+        strategy.produce();
+    }
 
     @Override
     public void close()
@@ -172,12 +198,11 @@ public abstract class QuicConnection extends AbstractConnection
     {
         try
         {
-            if (isFillInterested())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("receiveAndProcess() idle");
+            boolean interested = isFillInterested();
+            if (LOG.isDebugEnabled())
+                LOG.debug("receiveAndProcess() interested={}", interested);
+            if (interested)
                 return null;
-            }
 
             ByteBuffer cipherBuffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             while (true)
@@ -249,7 +274,7 @@ public abstract class QuicConnection extends AbstractConnection
                     LOG.debug("packet is for existing session {}, processing {} bytes", session, cipherBuffer.remaining());
                 Runnable task = session.process(remoteAddress, cipherBuffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("produced task {} on {}", task, session);
+                    LOG.debug("produced session task {} on {}", task, this);
                 if (task != null)
                     return task;
             }
@@ -260,6 +285,15 @@ public abstract class QuicConnection extends AbstractConnection
                 LOG.debug("receiveAndProcess() failure", x);
             // TODO: close?
             return null;
+        }
+    }
+
+    private class QuicProducer implements ExecutionStrategy.Producer
+    {
+        @Override
+        public Runnable produce()
+        {
+            return receiveAndProcess();
         }
     }
 

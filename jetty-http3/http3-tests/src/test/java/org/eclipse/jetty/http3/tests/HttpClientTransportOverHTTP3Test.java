@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
 {
     @Test
-    public void testRequestHasHTTP2Version() throws Exception
+    public void testRequestHasHTTP3Version() throws Exception
     {
         start(new AbstractHandler()
         {
