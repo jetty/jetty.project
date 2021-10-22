@@ -21,10 +21,12 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntConsumer;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -159,30 +161,33 @@ public interface ByteBufferPool
         private final int _maxSize;
         private final AtomicInteger _size;
         private final AtomicLong _lastUpdate = new AtomicLong(System.nanoTime());
-        private final AtomicLong _poolSize;
+        private final IntConsumer _memoryFunction;
 
         @Deprecated
         public Bucket(ByteBufferPool pool, int capacity, int maxSize)
         {
-            this(pool, capacity, maxSize, null);
+            this(pool, capacity, maxSize, i -> {});
         }
 
-        public Bucket(ByteBufferPool pool, int capacity, int maxSize, AtomicLong poolSize)
+        public Bucket(ByteBufferPool pool, int capacity, int maxSize, IntConsumer memoryFunction)
         {
             _pool = pool;
             _capacity = capacity;
             _maxSize = maxSize;
             _size = maxSize > 0 ? new AtomicInteger() : null;
-            _poolSize = poolSize;
+            _memoryFunction = Objects.requireNonNull(memoryFunction);
         }
 
         public ByteBuffer acquire()
         {
-            ByteBuffer buffer = queuePoll();
-            if (buffer == null)
-                return null;
-            if (_size != null)
-                _size.decrementAndGet();
+            ByteBuffer buffer = _queue.poll();
+            if (buffer != null)
+            {
+                if (_size != null)
+                    _size.decrementAndGet();
+                _memoryFunction.accept(-buffer.capacity());
+            }
+
             return buffer;
         }
 
@@ -194,11 +199,9 @@ public interface ByteBufferPool
         @Deprecated
         public ByteBuffer acquire(boolean direct)
         {
-            ByteBuffer buffer = queuePoll();
+            ByteBuffer buffer = acquire();
             if (buffer == null)
                 return _pool.newByteBuffer(_capacity, direct);
-            if (_size != null)
-                _size.decrementAndGet();
             return buffer;
         }
 
@@ -206,12 +209,15 @@ public interface ByteBufferPool
         {
             resetUpdateTime();
             BufferUtil.clear(buffer);
-            if (_size == null)
-                queueOffer(buffer);
-            else if (_size.incrementAndGet() <= _maxSize)
-                queueOffer(buffer);
+            if (_size == null || _size.incrementAndGet() <= _maxSize)
+            {
+                _queue.offer(buffer);
+                _memoryFunction.accept(buffer.capacity());
+            }
             else
+            {
                 _size.decrementAndGet();
+            }
         }
 
         void resetUpdateTime()
@@ -224,30 +230,12 @@ public interface ByteBufferPool
             int size = _size == null ? 0 : _size.get() - 1;
             while (size >= 0)
             {
-                ByteBuffer buffer = queuePoll();
+                ByteBuffer buffer = acquire();
                 if (buffer == null)
                     break;
                 if (_size != null)
-                {
-                    _size.decrementAndGet();
                     --size;
-                }
             }
-        }
-
-        private void queueOffer(ByteBuffer buffer)
-        {
-            _queue.offer(buffer);
-            if (_poolSize != null)
-                _poolSize.addAndGet(buffer.capacity());
-        }
-
-        private ByteBuffer queuePoll()
-        {
-            ByteBuffer buffer = _queue.poll();
-            if (buffer != null && _poolSize != null)
-                _poolSize.addAndGet(-buffer.capacity());
-            return buffer;
         }
 
         boolean isEmpty()

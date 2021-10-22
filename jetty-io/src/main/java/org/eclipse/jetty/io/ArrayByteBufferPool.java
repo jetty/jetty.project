@@ -162,7 +162,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
 
     private Bucket newBucket(int key, boolean direct)
     {
-        return new Bucket(this, capacityFor(key), getMaxQueueLength(), getSizeAtomic(direct));
+        return new Bucket(this, capacityFor(key), getMaxQueueLength(), getSizeAtomic(direct)::addAndGet);
     }
 
     @Override
