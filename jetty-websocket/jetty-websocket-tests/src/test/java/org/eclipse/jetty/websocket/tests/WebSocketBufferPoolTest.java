@@ -32,7 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.io.LogArrayByteBufferPool;
+import org.eclipse.jetty.io.LogarithmicArrayByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
@@ -133,7 +133,7 @@ public class WebSocketBufferPoolTest
 
         _server = new Server(threadPool);
         int maxMemory = 1024 * 1024 * 16;
-        LogArrayByteBufferPool bufferPool = new LogArrayByteBufferPool(-1, -1, -1, maxMemory, maxMemory);
+        LogarithmicArrayByteBufferPool bufferPool = new LogarithmicArrayByteBufferPool(-1, -1, -1, maxMemory, maxMemory);
         bufferPool.setDetailedDump(true);
         _server.addBean(bufferPool);
 

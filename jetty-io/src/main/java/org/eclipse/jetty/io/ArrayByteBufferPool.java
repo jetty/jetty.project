@@ -184,7 +184,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
         for (int i = 0; i < buckets.length; ++i)
         {
             Bucket bucket = buckets[i];
-            if (bucket == null || bucket.isEmpty())
+            if (bucket.isEmpty())
                 continue;
             long lastUpdate = bucket.getLastUpdate();
             if (lastUpdate < oldest)
@@ -266,7 +266,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
 
         List<Bucket> indirect = Arrays.stream(_indirect).filter(b -> !b.isEmpty()).collect(Collectors.toList());
         List<Bucket> direct = Arrays.stream(_direct).filter(b -> !b.isEmpty()).collect(Collectors.toList());
-        if (_detailedDump)
+        if (isDetailedDump())
         {
             dump.add(new DumpableCollection("Indirect Buckets", indirect));
             dump.add(new DumpableCollection("Direct Buckets", direct));

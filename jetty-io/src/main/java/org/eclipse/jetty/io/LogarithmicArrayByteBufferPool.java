@@ -24,12 +24,12 @@ package org.eclipse.jetty.io;
  * which can lower total memory usage if buffers are often being acquired of different sizes. However as there are
  * fewer buckets this will also increase the contention on each bucket.
  */
-public class LogArrayByteBufferPool extends ArrayByteBufferPool
+public class LogarithmicArrayByteBufferPool extends ArrayByteBufferPool
 {
     /**
      * Creates a new ByteBufferPool with a default configuration.
      */
-    public LogArrayByteBufferPool()
+    public LogarithmicArrayByteBufferPool()
     {
         this(-1, -1, -1);
     }
@@ -40,7 +40,7 @@ public class LogArrayByteBufferPool extends ArrayByteBufferPool
      * @param minCapacity the minimum ByteBuffer capacity
      * @param maxCapacity the maximum ByteBuffer capacity
      */
-    public LogArrayByteBufferPool(int minCapacity, int maxCapacity)
+    public LogarithmicArrayByteBufferPool(int minCapacity, int maxCapacity)
     {
         this(minCapacity, maxCapacity, -1, -1, -1);
     }
@@ -52,7 +52,7 @@ public class LogArrayByteBufferPool extends ArrayByteBufferPool
      * @param maxCapacity the maximum ByteBuffer capacity
      * @param maxQueueLength the maximum ByteBuffer queue length
      */
-    public LogArrayByteBufferPool(int minCapacity, int maxCapacity, int maxQueueLength)
+    public LogarithmicArrayByteBufferPool(int minCapacity, int maxCapacity, int maxQueueLength)
     {
         this(minCapacity, maxCapacity, maxQueueLength, -1, -1);
     }
@@ -66,7 +66,7 @@ public class LogArrayByteBufferPool extends ArrayByteBufferPool
      * @param maxHeapMemory the max heap memory in bytes
      * @param maxDirectMemory the max direct memory in bytes
      */
-    public LogArrayByteBufferPool(int minCapacity, int maxCapacity, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
+    public LogarithmicArrayByteBufferPool(int minCapacity, int maxCapacity, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
     {
         super(minCapacity, 1, maxCapacity, maxQueueLength, maxHeapMemory, maxDirectMemory);
     }
@@ -92,7 +92,7 @@ public class LogArrayByteBufferPool extends ArrayByteBufferPool
         for (int i = 0; i < buckets.length; ++i)
         {
             Bucket bucket = buckets[i];
-            if (bucket == null || bucket.isEmpty())
+            if (bucket.isEmpty())
                 continue;
             long lastUpdate = bucket.getLastUpdate();
             if (lastUpdate < oldest)

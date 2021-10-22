@@ -221,13 +221,17 @@ public interface ByteBufferPool
 
         public void clear()
         {
-            while (true)
+            int size = _size == null ? 0 : _size.get() - 1;
+            while (size >= 0)
             {
                 ByteBuffer buffer = queuePoll();
                 if (buffer == null)
                     break;
                 if (_size != null)
+                {
                     _size.decrementAndGet();
+                    --size;
+                }
             }
         }
 

@@ -256,7 +256,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
         dump.add(String.format("HeapMemory: %d/%d", getHeapMemory(), getMaxHeapMemory()));
         dump.add(String.format("DirectMemory: %d/%d", getDirectMemory(), getMaxDirectMemory()));
 
-        if (_detailedDump)
+        if (isDetailedDump())
         {
             dump.add(new DumpableCollection("Indirect Buckets", _heapBuffers.values()));
             dump.add(new DumpableCollection("Direct Buckets", _directBuffers.values()));
