@@ -12,7 +12,7 @@
 //
 
 [[og-module-alpn]]
-==== Module `alpn`
+===== Module `alpn`
 
 The `alpn` module enables support for the ALPN negotiation mechanism of the TLS protocol.
 

@@ -11,22 +11,17 @@
 // ========================================================================
 //
 
-[[og-modules-standard]]
-==== Standard Modules
+[[og-module-well-known]]
+===== Module `well-known`
 
-include::module-alpn.adoc[]
-include::module-bytebufferpool.adoc[]
-include::module-deploy.adoc[]
-include::module-http.adoc[]
-include::module-http2.adoc[]
-include::module-http2c.adoc[]
-include::module-http-forwarded.adoc[]
-include::module-https.adoc[]
-include::module-jmx-remote.adoc[]
-include::module-server.adoc[]
-include::module-ssl.adoc[]
-include::module-ssl-reload.adoc[]
-include::module-test-keystore.adoc[]
-include::module-threadpool.adoc[]
-include::module-console-capture.adoc[]
-include::module-well-known.adoc[]
+The `well-known` creates a `ResourceHandler` deployed at the `/.well-known` context path.
+This `Handler` serves files from a directory created at `${jetty.base}/.well-known`, note that this may be seen as a hidden directory by the filesystem.
+
+The concept of well-known URIs has been defined in RFC5785.
+It may be used for things like automation of the renewal for Let's Encrypt certificates.
+
+The module file is `$JETTY_HOME/modules/well-known.mod`:
+
+----
+include::{JETTY_HOME}/modules/well-known.mod[]
+----

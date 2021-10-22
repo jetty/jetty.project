@@ -15,9 +15,6 @@ etc/well-known.xml
 [files]
 .well-known/
 
-[ini]
-jetty.wellknown.dir?=.well-known
-
 [ini-template]
 ## Well Known Directory (relative to $jetty.base)
 # jetty.wellknown.dir=.well-known
