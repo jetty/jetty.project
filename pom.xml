@@ -105,7 +105,7 @@
     <maven.version>3.8.2</maven.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven.resolver.version>1.7.2</maven.resolver.version>
-    <mongodb.version>2.13.2</mongodb.version>
+    <mongodb.version>3.2.2</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.0.1</org.osgi.annotation.version>
     <org.osgi.core.version>6.0.0</org.osgi.core.version>
@@ -115,7 +115,7 @@
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.16.0</testcontainers.version>
+    <testcontainers.version>1.16.1</testcontainers.version>
     <xmemcached.version>2.4.7</xmemcached.version>
     <weld.version>3.1.8.Final</weld.version>
 
@@ -169,6 +169,8 @@
     <jetty.surefire.argLine>-Dfile.encoding=UTF-8 -Duser.language=en -Duser.region=US -showversion -Xmx4g -Xms2g -Xlog:gc:stderr:time,level,tags</jetty.surefire.argLine>
     <jetty.testtracker.log>false</jetty.testtracker.log>
     <jetty.unixdomain.dir>/tmp</jetty.unixdomain.dir>
+    <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
+    <mongo.docker.version>3.2.20</mongo.docker.version>
     <settingsPath>src/it/settings.xml</settingsPath>
     <surefire.rerunFailingTestsCount>0</surefire.rerunFailingTestsCount>
   </properties>

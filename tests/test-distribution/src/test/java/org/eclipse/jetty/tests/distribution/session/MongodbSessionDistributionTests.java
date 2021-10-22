@@ -21,8 +21,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  *  
@@ -35,11 +37,12 @@ public class MongodbSessionDistributionTests extends AbstractSessionDistribution
 
     private static final int MONGO_PORT = 27017;
 
-    final String imageName = "mongo:" + System.getProperty("mongo.docker.version", "2.2.7");
-    final GenericContainer mongoDBContainer =
-            new GenericContainer(imageName)
-                    .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG))
-                    .withExposedPorts(MONGO_PORT);
+    final String imageName = "mongo:" + System.getProperty("mongo.docker.version", "3.2.20");
+
+    final MongoDBContainer mongoDBContainer =
+            new MongoDBContainer(DockerImageName.parse(imageName))
+                    .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
+
     private String host;
     private int port;
 

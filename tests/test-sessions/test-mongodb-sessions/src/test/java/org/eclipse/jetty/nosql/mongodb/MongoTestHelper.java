@@ -30,8 +30,10 @@ import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.utility.DockerImageName;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -50,10 +52,9 @@ public class MongoTestHelper
     
     private static final int MONGO_PORT = 27017;
 
-    static GenericContainer mongo =
-        new GenericContainer("mongo:" + System.getProperty("mongo.docker.version", "2.2.7"))
-            .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG))
-            .withExposedPorts(MONGO_PORT);
+    static MongoDBContainer mongo =
+            new MongoDBContainer(DockerImageName.parse("mongo:" + System.getProperty("mongo.docker.version", "3.2.20")))
+            .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
 
     static MongoClient mongoClient;
 
