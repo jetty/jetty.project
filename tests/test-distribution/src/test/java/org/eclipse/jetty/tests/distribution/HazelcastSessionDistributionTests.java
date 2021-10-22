@@ -49,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HazelcastSessionDistributionTests extends AbstractDistributionTest
 {
-    private static final String HAZELCAST_VERSION_DEFAULT = "3.12.12";
 
     private static final Logger HAZELCAST_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.HazelcastLogs");
 
@@ -60,6 +59,8 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
         return System.getProperty("hazelcast.version", "3.12.12");
     }
 
+    private Path hazelcastJettyPath;
+
     /**
      * This simulate the onlyClient option which means the JVM running Jetty is only an Hazelcast client and not part
      * of the cluster
@@ -67,11 +68,10 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
     @Test
     public void testHazelcastRemoteOnlyClient() throws Exception
     {
-        try (GenericContainer hazelcast =
-                 new GenericContainer("hazelcast/hazelcast:" + getHazelcastVersion())
-                                    .withExposedPorts(5701)
-                            .waitingFor(Wait.forListeningPort())
-                            .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG)))
+        try (GenericContainer hazelcast =new GenericContainer<>("hazelcast/hazelcast:" + getHazelcastVersion())
+                .withExposedPorts(5701)
+                .waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
+                .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG)))
         {
             hazelcast.start();
             String hazelcastHost = hazelcast.getContainerIpAddress();
