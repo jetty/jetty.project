@@ -13,23 +13,21 @@
 
 package org.eclipse.jetty.http3.qpack;
 
-@SuppressWarnings("serial")
 public abstract class QpackException extends Exception
 {
-    public static final int QPACK_DECOMPRESSION_FAILED = 0x200;
-    public static final int QPACK_ENCODER_STREAM_ERROR = 0x201;
-    public static final int QPACK_DECODER_STREAM_ERROR = 0x202;
-    public static final int H3_GENERAL_PROTOCOL_ERROR = 0x0101;
+    public static final long QPACK_DECOMPRESSION_FAILED = 0x200;
+    public static final long QPACK_ENCODER_STREAM_ERROR = 0x201;
+    public static final long QPACK_DECODER_STREAM_ERROR = 0x202;
+    public static final long H3_GENERAL_PROTOCOL_ERROR = 0x0101;
+    private final long _errorCode;
 
-    private final int _errorCode;
-
-    QpackException(int errorCode, String messageFormat, Throwable cause)
+    QpackException(long errorCode, String messageFormat, Throwable cause)
     {
         super(messageFormat, cause);
         _errorCode = errorCode;
     }
 
-    public int getErrorCode()
+    public long getErrorCode()
     {
         return _errorCode;
     }
@@ -43,12 +41,12 @@ public abstract class QpackException extends Exception
      */
     public static class StreamException extends QpackException
     {
-        public StreamException(int errorCode, String messageFormat)
+        public StreamException(long errorCode, String messageFormat)
         {
             this(errorCode, messageFormat, null);
         }
 
-        public StreamException(int errorCode, String messageFormat, Throwable cause)
+        public StreamException(long errorCode, String messageFormat, Throwable cause)
         {
             super(errorCode, messageFormat, cause);
         }
@@ -61,12 +59,12 @@ public abstract class QpackException extends Exception
      */
     public static class SessionException extends QpackException
     {
-        public SessionException(int errorCode, String message)
+        public SessionException(long errorCode, String message)
         {
             this(errorCode, message, null);
         }
 
-        public SessionException(int errorCode, String message, Throwable cause)
+        public SessionException(long errorCode, String message, Throwable cause)
         {
             super(errorCode, message, cause);
         }

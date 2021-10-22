@@ -219,12 +219,6 @@ public abstract class QuicSession extends ContainerLifeCycle
         return flushed;
     }
 
-    public void flushFinished(long streamId) throws IOException
-    {
-        quicheConnection.feedFinForStream(streamId);
-        flush();
-    }
-
     public boolean isFinished(long streamId)
     {
         return quicheConnection.isStreamFinished(streamId);
@@ -397,7 +391,6 @@ public abstract class QuicSession extends ContainerLifeCycle
     public void inwardClose(long error, String reason)
     {
         protocolSession.inwardClose(error, reason);
-        flush();
     }
 
     public void outwardClose(long error, String reason)

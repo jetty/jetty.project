@@ -70,12 +70,14 @@ public interface LibQuiche extends Library
     // The minimum length of Initial packets sent by a client.
     int QUICHE_MIN_CLIENT_INITIAL_LEN = 1200;
 
-    interface quiche_cc_algorithm {
+    interface quiche_cc_algorithm
+    {
         int QUICHE_CC_RENO = 0,
-        QUICHE_CC_CUBIC = 1;
+            QUICHE_CC_CUBIC = 1;
     }
 
-    interface quiche_error {
+    interface quiche_error
+    {
         // There is no more work to do.
         long QUICHE_ERR_DONE = -1,
 
@@ -236,13 +238,15 @@ public interface LibQuiche extends Library
         public byte dummy;
     }
 
-    @Structure.FieldOrder({"recv", "sent", "lost", "retrans", "rtt", "cwnd", "sent_bytes", "recv_bytes", "lost_bytes",
-                           "stream_retrans_bytes", "pmtu", "delivery_rate", "peer_max_idle_timeout",
-                           "peer_max_udp_payload_size", "peer_initial_max_data", "peer_initial_max_stream_data_bidi_local",
-                           "peer_initial_max_stream_data_bidi_remote", "peer_initial_max_stream_data_uni",
-                           "peer_initial_max_streams_bidi", "peer_initial_max_streams_uni", "peer_ack_delay_exponent",
-                           "peer_max_ack_delay", "peer_disable_active_migration", "peer_active_conn_id_limit",
-                           "peer_max_datagram_frame_size"})
+    @Structure.FieldOrder({
+        "recv", "sent", "lost", "retrans", "rtt", "cwnd", "sent_bytes", "recv_bytes", "lost_bytes",
+        "stream_retrans_bytes", "pmtu", "delivery_rate", "peer_max_idle_timeout",
+        "peer_max_udp_payload_size", "peer_initial_max_data", "peer_initial_max_stream_data_bidi_local",
+        "peer_initial_max_stream_data_bidi_remote", "peer_initial_max_stream_data_uni",
+        "peer_initial_max_streams_bidi", "peer_initial_max_streams_uni", "peer_ack_delay_exponent",
+        "peer_max_ack_delay", "peer_disable_active_migration", "peer_active_conn_id_limit",
+        "peer_max_datagram_frame_size"
+    })
     class quiche_stats extends Structure
     {
         // The number of QUIC packets received on this connection.
@@ -335,11 +339,11 @@ public interface LibQuiche extends Library
     interface packet_type
     {
         byte INITIAL = 1,
-             RETRY = 2,
-             HANDSHAKE = 3,
-             ZERO_RTT = 4,
-             SHORT = 5,
-             VERSION_NEGOTIATION = 6;
+            RETRY = 2,
+            HANDSHAKE = 3,
+            ZERO_RTT = 4,
+            SHORT = 5,
+            VERSION_NEGOTIATION = 6;
 
         static String typeToString(byte type)
         {
@@ -377,10 +381,10 @@ public interface LibQuiche extends Library
 
     // Writes a retry packet.
     ssize_t quiche_retry(byte[] scid, size_t scid_len,
-                                                       byte[] dcid, size_t dcid_len,
-                                                       byte[] new_scid, size_t new_scid_len,
-                                                       byte[] token, size_t token_len,
-                                                       uint32_t version, ByteBuffer out, size_t out_len);
+                         byte[] dcid, size_t dcid_len,
+                         byte[] new_scid, size_t new_scid_len,
+                         byte[] token, size_t token_len,
+                         uint32_t version, ByteBuffer out, size_t out_len);
 
     // Creates a new server-side connection.
     quiche_conn quiche_accept(byte[] scid, size_t scid_len, byte[] odcid, size_t odcid_len, sockaddr from, size_t from_len, quiche_config config);
@@ -460,7 +464,8 @@ public interface LibQuiche extends Library
         public byte dummy;
     }
 
-    interface quiche_shutdown {
+    interface quiche_shutdown
+    {
         int QUICHE_SHUTDOWN_READ = 0,
             QUICHE_SHUTDOWN_WRITE = 1;
     }

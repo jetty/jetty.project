@@ -194,13 +194,13 @@ public class QuicServerConnector extends AbstractNetworkConnector
         try
         {
             datagramChannel.bind(bindAddress);
+            return datagramChannel;
         }
         catch (Throwable e)
         {
             IO.close(datagramChannel);
             throw new IOException("Failed to bind to " + bindAddress, e);
         }
-        return datagramChannel;
     }
 
     @Override

@@ -171,7 +171,18 @@ public abstract class QuicConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("closing connection {}", this);
             // Propagate the close inward to the protocol-specific session.
-            sessions.values().forEach(session -> session.inwardClose(QuicErrorCode.NO_ERROR.code(), "stop"));
+            for (QuicSession session : sessions.values())
+            {
+                try
+                {
+                    session.inwardClose(QuicErrorCode.NO_ERROR.code(), "stop");
+                }
+                catch (Throwable x)
+                {
+                    if (LOG.isTraceEnabled())
+                        LOG.trace("could not close {}", session, x);
+                }
+            }
         }
     }
 
