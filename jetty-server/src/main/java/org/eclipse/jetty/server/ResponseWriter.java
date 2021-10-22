@@ -39,9 +39,6 @@ import org.slf4j.LoggerFactory;
 public class ResponseWriter extends PrintWriter
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResponseWriter.class);
-    private static final String __lineSeparator = System.getProperty("line.separator");
-    private static final String __trueln = "true" + __lineSeparator;
-    private static final String __falseln = "false" + __lineSeparator;
 
     private final HttpWriter _httpWriter;
     private final Locale _locale;
@@ -321,7 +318,7 @@ public class ResponseWriter extends PrintWriter
             synchronized (lock)
             {
                 isOpen();
-                out.write(__lineSeparator);
+                out.write(System.lineSeparator());
             }
         }
         catch (InterruptedIOException ex)
@@ -339,7 +336,7 @@ public class ResponseWriter extends PrintWriter
     @Override
     public void println(boolean b)
     {
-        println(b ? __trueln : __falseln);
+        println(Boolean.toString(b));
     }
 
     @Override
@@ -351,6 +348,7 @@ public class ResponseWriter extends PrintWriter
             {
                 isOpen();
                 out.write(c);
+                out.write(System.lineSeparator());
             }
         }
         catch (InterruptedIOException ex)
@@ -398,7 +396,7 @@ public class ResponseWriter extends PrintWriter
             {
                 isOpen();
                 out.write(s, 0, s.length);
-                out.write(__lineSeparator);
+                out.write(System.lineSeparator());
             }
         }
         catch (InterruptedIOException ex)
@@ -425,7 +423,7 @@ public class ResponseWriter extends PrintWriter
             {
                 isOpen();
                 out.write(s, 0, s.length());
-                out.write(__lineSeparator);
+                out.write(System.lineSeparator());
             }
         }
         catch (InterruptedIOException ex)
