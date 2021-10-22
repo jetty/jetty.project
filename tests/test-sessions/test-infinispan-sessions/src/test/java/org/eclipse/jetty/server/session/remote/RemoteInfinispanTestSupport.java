@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,8 +70,7 @@ public class RemoteInfinispanTestSupport
                 .withEnv("PASS", "foobar")
                 .withEnv("MGMT_USER", "admin")
                 .withEnv("MGMT_PASS", "admin")
-                .waitingFor(new LogMessageWaitStrategy()
-                    .withRegEx(".*Infinispan Server.*started in.*\\s"))
+                .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
                 .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
                 .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
             infinispan.start();
