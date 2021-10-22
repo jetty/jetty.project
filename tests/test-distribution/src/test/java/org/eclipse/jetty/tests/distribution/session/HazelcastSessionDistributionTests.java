@@ -31,13 +31,10 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.tests.distribution.JettyHomeTester;
-import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
@@ -54,24 +51,20 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HazelcastSessionDistributionTests.class);
 
-    private GenericContainer<?> hazelcast;
-
-    private Path hazelcastJettyPath;
-
-    @BeforeEach
-    public void setupHazelcast()
-    {
-        hazelcast = new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.2.2"))
+    private GenericContainer<?> hazelcast = new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.2.2"))
             .withExposedPorts(5701)
             .waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(120L)))
             .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG));
-    }
+
+    private Path hazelcastJettyPath;
 
     @Override
     public void startExternalSessionStorage() throws Exception
     {
-        hazelcast.start();
-
+        if (!hazelcast.isRunning())
+        {
+            hazelcast.start();
+        }
         String hazelcastHost = hazelcast.getContainerIpAddress();
         int hazelcastPort = hazelcast.getMappedPort(5701);
 
