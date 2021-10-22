@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.http3.tests;
 
+import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
+import javax.management.MBeanServer;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
@@ -29,6 +31,7 @@ import org.eclipse.jetty.http3.client.http.ClientConnectionFactoryOverHTTP3;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.http3.server.RawHTTP3ServerConnectionFactory;
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -79,6 +82,8 @@ public class AbstractClientServerTest
         server = new Server(serverThreads);
         connector = new HTTP3ServerConnector(server, sslContextFactory, serverConnectionFactory);
         server.addConnector(connector);
+        MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        server.addBean(mbeanContainer);
     }
 
     protected void startClient() throws Exception
@@ -88,6 +93,9 @@ public class AbstractClientServerTest
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
         httpClient.setExecutor(clientThreads);
+        MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
+        MBeanContainer mbeanContainer = new MBeanContainer(mbeanServer);
+        httpClient.addBean(mbeanContainer);
         httpClient.start();
     }
 

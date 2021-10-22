@@ -86,7 +86,7 @@ public abstract class BodyParser
         }
     }
 
-    protected void notifyStreamFailure(long streamId, int error, Throwable failure)
+    protected void notifyStreamFailure(long streamId, long error, Throwable failure)
     {
         try
         {

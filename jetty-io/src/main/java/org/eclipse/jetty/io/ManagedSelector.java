@@ -16,7 +16,6 @@ package org.eclipse.jetty.io;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.ClosedSelectorException;
