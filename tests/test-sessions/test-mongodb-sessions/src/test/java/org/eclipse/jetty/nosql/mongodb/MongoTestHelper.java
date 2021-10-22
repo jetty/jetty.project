@@ -53,7 +53,6 @@ public class MongoTestHelper
     private static final int MONGO_PORT = 27017;
 
     static MongoDBContainer mongo =
-        //new GenericContainer("mongo:" + System.getProperty("mongo.docker.version", "2.2.7"))
             new MongoDBContainer(DockerImageName.parse("mongo:" + System.getProperty("mongo.docker.version", "3.2.20")))
             .withLogConsumer(new Slf4jLogConsumer(MONGO_LOG));
 

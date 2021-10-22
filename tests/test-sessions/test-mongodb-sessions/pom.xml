@@ -11,8 +11,6 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.mongo</bundle-symbolic-name>
     <embedmongo.host>localhost</embedmongo.host>
-    <!-- if changing this version please update default in MongoTestHelper you will get thanks from Eclipse IDE users -->
-    <mongo.docker.version>3.2.20</mongo.docker.version>
   </properties>
   <build>
     <plugins>
