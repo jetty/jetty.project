@@ -264,7 +264,7 @@ public class ClientServerTest extends AbstractClientServerTest
         stream.data(new DataFrame(ByteBuffer.wrap(bytesSent), true));
 
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientDataLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientDataLatch.await(15, TimeUnit.SECONDS));
         assertArrayEquals(bytesSent, bytesReceived);
     }
 
