@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 public class QuicheConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicheConnection.class);
+    // TODO: cannot be static!
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     static
@@ -168,7 +169,7 @@ public class QuicheConnection
         byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcid_len = new size_t_pointer(dcid.length);
 
-        byte[] token = new byte[48]; // TODO the token buffer size depends on the token minter.
+        byte[] token = new byte[512]; // TODO the token buffer size depends on the token minter.
         size_t_pointer token_len = new size_t_pointer(token.length);
 
         int rc = LibQuiche.INSTANCE.quiche_header_info(packet, new size_t(packet.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
@@ -200,10 +201,10 @@ public class QuicheConnection
         byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcid_len = new size_t_pointer(dcid.length);
 
-        byte[] token = new byte[48]; // TODO the token buffer size depends on the token minter.
+        byte[] token = new byte[512]; // TODO the token buffer size depends on the token minter.
         size_t_pointer token_len = new size_t_pointer(token.length);
 
-        LOG.debug("  getting header info...");
+        LOG.debug("getting header info...");
         int rc = LibQuiche.INSTANCE.quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
             version, type,
             scid, scid_len,
@@ -221,7 +222,7 @@ public class QuicheConnection
 
         if (!LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()))
         {
-            LOG.debug("  < version negotiation");
+            LOG.debug("version negotiation");
 
             ssize_t generated = LibQuiche.INSTANCE.quiche_negotiate_version(scid, scid_len.getPointee(), dcid, dcid_len.getPointee(), packetToSend, new size_t(packetToSend.remaining()));
             packetToSend.position(packetToSend.position() + generated.intValue());
@@ -232,7 +233,7 @@ public class QuicheConnection
 
         if (token_len.getValue() == 0)
         {
-            LOG.debug("  < stateless retry");
+            LOG.debug("stateless retry");
 
             token = tokenMinter.mint(dcid, (int)dcid_len.getValue());
 
@@ -292,24 +293,24 @@ public class QuicheConnection
 
         if (!LibQuiche.INSTANCE.quiche_version_is_supported(version.getPointee()))
         {
-            LOG.debug("  < need version negotiation");
+            LOG.debug("need version negotiation");
             return null;
         }
 
         if (token_len.getValue() == 0)
         {
-            LOG.debug("  < need stateless retry");
+            LOG.debug("need stateless retry");
             return null;
         }
 
-        LOG.debug("  token validation...");
+        LOG.debug("token validation...");
         // Original Destination Connection ID
         byte[] odcid = tokenValidator.validate(token, (int)token_len.getValue());
         if (odcid == null)
             throw new TokenValidationException("invalid address validation token");
-        LOG.debug("  validated token");
+        LOG.debug("validated token");
 
-        LOG.debug("  connection creation...");
+        LOG.debug("connection creation...");
         LibQuiche.quiche_config libQuicheConfig = buildConfig(quicheConfig);
 
         SizedStructure<sockaddr> s = sockaddr.convert(peer);
@@ -321,7 +322,7 @@ public class QuicheConnection
             throw new IOException("failed to create connection");
         }
 
-        LOG.debug("  < connection created");
+        LOG.debug("connection created");
         QuicheConnection quicheConnection = new QuicheConnection(quicheConn, libQuicheConfig);
         LOG.debug("accepted, immediately receiving the same packet - remaining in buffer: {}", packetRead.remaining());
         while (packetRead.hasRemaining())
