@@ -27,9 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
@@ -61,7 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class InfinispanSessionDistributionTests extends AbstractDistributionTest
 {   
-    private static final Logger LOGGER = LoggerFactory.getLogger(InfinispanSessionDistributionTests.class);
     private static final Logger INFINISPAN_LOG = LoggerFactory.getLogger("org.eclipse.jetty.tests.distribution.session.infinispan");
 
     @SuppressWarnings("rawtypes")
@@ -69,7 +65,7 @@ public class InfinispanSessionDistributionTests extends AbstractDistributionTest
 
     private String infinispanHost;
     private int infinispanPort;
-    
+
     @Test
     public void stopRestartWebappTestSessionContentSaved() throws Exception
     {
@@ -125,7 +121,10 @@ public class InfinispanSessionDistributionTests extends AbstractDistributionTest
                 assertThat(response.getContentAsString(), containsString("SESSION READ CHOCOLATE THE BEST:FRENCH"));
             }
         }
-        stopExternalSessionStorage();
+        finally
+        {
+            stopExternalSessionStorage();
+        }
     }
 
     public void startExternalSessionStorage(Path jettyBase) throws Exception
