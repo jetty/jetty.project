@@ -49,9 +49,9 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         return session;
     }
 
-    public abstract Runnable getProducer();
+    public abstract Runnable getProducerTask();
 
-    public void produce()
+    protected void produce()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("processing {}", this);

@@ -69,7 +69,7 @@ public class ClientProtocolSession extends ProtocolSession
     }
 
     @Override
-    public Runnable getProducer()
+    public Runnable getProducerTask()
     {
         return producer;
     }
