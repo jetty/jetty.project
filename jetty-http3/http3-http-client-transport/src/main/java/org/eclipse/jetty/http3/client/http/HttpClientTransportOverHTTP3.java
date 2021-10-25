@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.client.http;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
@@ -30,13 +29,17 @@ import org.eclipse.jetty.client.MultiplexHttpDestination;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.HTTP3ClientConnectionFactory;
 import org.eclipse.jetty.http3.client.http.internal.SessionClientListener;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.common.ProtocolSession;
+import org.eclipse.jetty.quic.common.QuicSession;
 
-public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport
+public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport implements ProtocolSession.Factory
 {
+    private final HTTP3ClientConnectionFactory factory = new HTTP3ClientConnectionFactory();
     private final HTTP3Client client;
 
     public HttpClientTransportOverHTTP3(HTTP3Client client)
@@ -112,8 +115,14 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport
     }
 
     @Override
-    public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
     {
-        return null;
+        return factory.newProtocolSession(quicSession, context);
+    }
+
+    @Override
+    public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
+    {
+        return factory.newConnection(endPoint, context);
     }
 }

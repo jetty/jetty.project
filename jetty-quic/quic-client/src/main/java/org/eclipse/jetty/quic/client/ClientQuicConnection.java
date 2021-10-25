@@ -23,8 +23,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.client.HttpClientTransport;
-import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
@@ -71,17 +69,15 @@ public class ClientQuicConnection extends QuicConnection
             List<String> protocols = quicConfiguration.getProtocols();
             if (protocols == null || protocols.isEmpty())
             {
-                HttpDestination destination = (HttpDestination)context.get(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY);
-                if (destination != null)
-                    protocols = destination.getOrigin().getProtocol().getProtocols();
-                if (protocols == null)
+                protocols = (List<String>)context.get(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY);
+                if (protocols == null || protocols.isEmpty())
                     throw new IllegalStateException("Missing ALPN protocols");
             }
 
             QuicheConfig quicheConfig = new QuicheConfig();
             quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
-            quicheConfig.setDisableActiveMigration(true);
-            quicheConfig.setVerifyPeer(false);
+            quicheConfig.setDisableActiveMigration(quicConfiguration.isDisableActiveMigration());
+            quicheConfig.setVerifyPeer(quicConfiguration.isVerifyPeerCertificates());
             // Idle timeouts must not be managed by Quiche.
             quicheConfig.setMaxIdleTimeout(0L);
             quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());

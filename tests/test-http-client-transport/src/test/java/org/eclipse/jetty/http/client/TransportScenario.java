@@ -19,7 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.BlockingQueue;
 import java.util.function.Consumer;
 import javax.servlet.http.HttpServlet;
@@ -36,6 +36,10 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.http.HttpClientTransportOverHTTP3;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.AbstractConnector;
@@ -45,15 +49,16 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HostHeaderCustomizer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
-import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
+import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -61,7 +66,6 @@ import org.junit.jupiter.api.Assumptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -77,56 +81,27 @@ public class TransportScenario
     protected ServletContextHandler context;
     protected String servletPath = "/servlet";
     protected HttpClient client;
-    protected Path sockFile;
+    protected Path unixDomainPath;
     protected final BlockingQueue<String> requestLog = new BlockingArrayQueue<>();
 
-    public TransportScenario(final Transport transport) throws IOException
+    public TransportScenario(Transport transport) throws IOException
     {
         this.transport = transport;
 
-        String dir = System.getProperty("jetty.unixdomain.dir");
-        assertNotNull(dir);
-        sockFile = Files.createTempFile(Path.of(dir), "unix_", ".sock");
-        assertTrue(sockFile.toAbsolutePath().toString().length() < UnixSocketConnector.MAX_UNIX_SOCKET_PATH_LENGTH, "Unix-Domain path too long");
-        Files.delete(sockFile);
-
-        // Disable UNIX_SOCKET due to jnr/jnr-unixsocket#69.
-        Assumptions.assumeTrue(transport != UNIX_SOCKET);
-    }
-
-    public Optional<String> getNetworkConnectorLocalPort()
-    {
-        if (connector instanceof ServerConnector)
+        if (transport == Transport.UNIX_DOMAIN)
         {
-            ServerConnector serverConnector = (ServerConnector)connector;
-            return Optional.of(Integer.toString(serverConnector.getLocalPort()));
+            Assumptions.assumeTrue(JavaVersion.VERSION.getPlatform() >= 16);
+            String dir = System.getProperty("jetty.unixdomain.dir");
+            assertNotNull(dir);
+            unixDomainPath = Files.createTempFile(Path.of(dir), "unix_", ".sock");
+            assertTrue(unixDomainPath.toAbsolutePath().toString().length() < UnixDomainServerConnector.MAX_UNIX_DOMAIN_PATH_LENGTH, "Unix-Domain path too long");
+            Files.delete(unixDomainPath);
         }
-
-        return Optional.empty();
-    }
-
-    public Optional<Integer> getNetworkConnectorLocalPortInt()
-    {
-        if (connector instanceof ServerConnector)
-        {
-            ServerConnector serverConnector = (ServerConnector)connector;
-            return Optional.of(serverConnector.getLocalPort());
-        }
-
-        return Optional.empty();
     }
 
     public String getScheme()
     {
         return transport.isTlsBased() ? "https" : "http";
-    }
-
-    public HTTP2Client newHTTP2Client(SslContextFactory.Client sslContextFactory)
-    {
-        ClientConnector clientConnector = new ClientConnector();
-        clientConnector.setSelectors(1);
-        clientConnector.setSslContextFactory(sslContextFactory);
-        return new HTTP2Client(clientConnector);
     }
 
     public HttpClient newHttpClient(HttpClientTransport transport)
@@ -136,13 +111,30 @@ public class TransportScenario
 
     public Connector newServerConnector(Server server)
     {
-        if (transport == Transport.UNIX_SOCKET)
+        switch (transport)
         {
-            UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, provideServerConnectionFactory(transport));
-            unixSocketConnector.setUnixSocket(sockFile.toString());
-            return unixSocketConnector;
+            case HTTP:
+            case HTTPS:
+            case H2C:
+            case H2:
+            case FCGI:
+                return new ServerConnector(server, provideServerConnectionFactory(transport));
+            case H3:
+                return new HTTP3ServerConnector(server, sslContextFactory, provideServerConnectionFactory(transport));
+            case UNIX_DOMAIN:
+                UnixDomainServerConnector connector = new UnixDomainServerConnector(server, provideServerConnectionFactory(transport));
+                connector.setUnixDomainPath(unixDomainPath);
+                return connector;
+            default:
+                throw new IllegalStateException();
         }
-        return new ServerConnector(server, provideServerConnectionFactory(transport));
+    }
+
+    public OptionalInt getServerPort()
+    {
+        if (connector instanceof NetworkConnector)
+            return OptionalInt.of(((NetworkConnector)connector).getLocalPort());
+        return OptionalInt.empty();
     }
 
     public String newURI()
@@ -150,8 +142,7 @@ public class TransportScenario
         StringBuilder ret = new StringBuilder();
         ret.append(getScheme());
         ret.append("://localhost");
-        Optional<String> localPort = getNetworkConnectorLocalPort();
-        localPort.ifPresent(s -> ret.append(':').append(s));
+        getServerPort().ifPresent(s -> ret.append(':').append(s));
         return ret.toString();
     }
 
@@ -170,16 +161,31 @@ public class TransportScenario
             case H2C:
             case H2:
             {
-                HTTP2Client http2Client = newHTTP2Client(sslContextFactory);
+                ClientConnector clientConnector = new ClientConnector();
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(sslContextFactory);
+                HTTP2Client http2Client = new HTTP2Client(clientConnector);
                 return new HttpClientTransportOverHTTP2(http2Client);
+            }
+            case H3:
+            {
+                HTTP3Client http3Client = new HTTP3Client();
+                ClientConnector clientConnector = http3Client.getClientConnector();
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(sslContextFactory);
+                http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
+                return new HttpClientTransportOverHTTP3(http3Client);
             }
             case FCGI:
             {
                 return new HttpClientTransportOverFCGI(1, "");
             }
-            case UNIX_SOCKET:
+            case UNIX_DOMAIN:
             {
-                return new HttpClientTransportOverUnixSockets(sockFile.toString());
+                ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
+                clientConnector.setSelectors(1);
+                clientConnector.setSslContextFactory(sslContextFactory);
+                return new HttpClientTransportOverHTTP(clientConnector);
             }
             default:
             {
@@ -193,8 +199,8 @@ public class TransportScenario
         List<ConnectionFactory> result = new ArrayList<>();
         switch (transport)
         {
-            case UNIX_SOCKET:
             case HTTP:
+            case UNIX_DOMAIN:
             {
                 result.add(new HttpConnectionFactory(httpConfig));
                 break;
@@ -226,6 +232,14 @@ public class TransportScenario
                 result.add(h2);
                 break;
             }
+            case H3:
+            {
+                httpConfig.addCustomizer(new SecureRequestCustomizer());
+                httpConfig.addCustomizer(new HostHeaderCustomizer());
+                HTTP3ServerConnectionFactory h3 = new HTTP3ServerConnectionFactory(httpConfig);
+                result.add(h3);
+                break;
+            }
             case FCGI:
             {
                 result.add(new ServerFCGIConnectionFactory(httpConfig));
@@ -236,7 +250,7 @@ public class TransportScenario
                 throw new IllegalArgumentException();
             }
         }
-        return result.toArray(new ConnectionFactory[0]);
+        return result.toArray(ConnectionFactory[]::new);
     }
 
     public void setConnectionIdleTimeout(long idleTimeout)
@@ -396,15 +410,15 @@ public class TransportScenario
             LOG.trace("IGNORED", x);
         }
 
-        if (sockFile != null)
+        if (unixDomainPath != null)
         {
             try
             {
-                Files.deleteIfExists(sockFile);
+                Files.deleteIfExists(unixDomainPath);
             }
             catch (IOException e)
             {
-                LOG.warn("Unable to delete sockFile: {}", sockFile, e);
+                LOG.warn("Unable to delete sockFile: {}", unixDomainPath, e);
             }
         }
     }

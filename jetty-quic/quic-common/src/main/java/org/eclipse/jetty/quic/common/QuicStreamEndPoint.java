@@ -50,6 +50,24 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         this.streamId = streamId;
     }
 
+    public void opened()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("opened {}", this);
+        Connection connection = getConnection();
+        if (connection != null)
+            connection.onOpen();
+    }
+
+    public void closed(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("closed {}", this);
+        Connection connection = getConnection();
+        if (connection != null)
+            connection.onClose(failure);
+    }
+
     public QuicSession getQuicSession()
     {
         return session;
@@ -83,13 +101,13 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         {
             shutdownInput();
             if (LOG.isDebugEnabled())
-                LOG.debug("shutting down input of stream #{} with error 0x{}", streamId, Long.toHexString(error));
+                LOG.debug("shutting down input with error 0x{} on {}", Long.toHexString(error), this);
             session.shutdownInput(streamId, error);
         }
         catch (IOException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("error shutting down input of stream #{} with error 0x{}", streamId, Long.toHexString(error), x);
+                LOG.debug("error shutting down input with error 0x{} on {}", Long.toHexString(error), this, x);
         }
     }
 
@@ -99,13 +117,13 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         {
             shutdownOutput();
             if (LOG.isDebugEnabled())
-                LOG.debug("shutting down output of stream #{} with error 0x{}", streamId, Long.toHexString(error));
+                LOG.debug("shutting down output with error 0x{} on {}", Long.toHexString(error), this);
             session.shutdownOutput(streamId, error);
         }
         catch (IOException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("error shutting down output of stream #{} with error 0x{}", streamId, Long.toHexString(error), x);
+                LOG.debug("error shutting down output with error 0x{} on {}", Long.toHexString(error), this, x);
         }
     }
 
@@ -125,10 +143,10 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         else
             writeFlusher.onFail(failure);
 
-        session.onClose(streamId);
+        session.remove(this, failure);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("closed stream #{} with error 0x{}", streamId, Long.toHexString(error), failure);
+            LOG.debug("closed with error 0x{} {}", Long.toHexString(error), this, failure);
     }
 
     @Override
@@ -142,7 +160,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     public int fill(ByteBuffer buffer) throws IOException
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("filling buffer from stream {} finished={}", streamId, isStreamFinished());
+            LOG.debug("filling buffer finished={} from {}", isStreamFinished(), this);
         int pos = BufferUtil.flipToFill(buffer);
         int drained = session.fill(streamId, buffer);
         BufferUtil.flipToFlush(buffer, pos);
@@ -160,22 +178,22 @@ public class QuicStreamEndPoint extends AbstractEndPoint
         if (last)
             --length;
         if (LOG.isDebugEnabled())
-            LOG.debug("flushing {} buffer(s) to stream {}", length, streamId);
+            LOG.debug("flushing {} buffer(s) to {}", length, this);
         for (int i = 0; i < length; ++i)
         {
             ByteBuffer buffer = buffers[i];
             int flushed = session.flush(streamId, buffer, (i == length - 1) && last);
             if (LOG.isDebugEnabled())
-                LOG.debug("flushed {} bytes to stream {} window={}/{}", flushed, streamId, session.getWindowCapacity(streamId), session.getWindowCapacity());
+                LOG.debug("flushed {} bytes window={}/{} to {}", flushed, session.getWindowCapacity(streamId), session.getWindowCapacity(), this);
             if (buffer.hasRemaining())
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("incomplete flushing of stream {}", streamId);
+                    LOG.debug("incomplete flushing of {}", this);
                 return false;
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("flushed stream {}", streamId);
+            LOG.debug("flushed {}", this);
         return true;
     }
 

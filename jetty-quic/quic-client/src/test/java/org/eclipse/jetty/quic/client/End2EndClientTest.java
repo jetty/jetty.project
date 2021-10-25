@@ -87,7 +87,9 @@ public class End2EndClientTest
 
         ClientConnectionFactory.Info http1Info = HttpClientConnectionFactory.HTTP11;
         ClientConnectionFactoryOverHTTP2.HTTP2 http2Info = new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client());
-        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(new ClientConnector(new QuicClientConnectorConfigurator()), http1Info, http2Info);
+        QuicClientConnectorConfigurator configurator = new QuicClientConnectorConfigurator();
+        configurator.getQuicConfiguration().setVerifyPeerCertificates(false);
+        HttpClientTransportDynamic transport = new HttpClientTransportDynamic(new ClientConnector(configurator), http1Info, http2Info);
         client = new HttpClient(transport);
         client.start();
     }

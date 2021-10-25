@@ -294,6 +294,21 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     @Override
     protected boolean eof()
     {
+        HttpInput.Content content = this.content;
+        if (content == null)
+        {
+            this.content = new HttpInput.EofContent();
+        }
+        else
+        {
+            if (!content.isEof())
+            {
+                if (content.remaining() == 0)
+                    this.content = new HttpInput.EofContent();
+                else
+                    throw new IllegalStateException();
+            }
+        }
         return false;
     }
 }

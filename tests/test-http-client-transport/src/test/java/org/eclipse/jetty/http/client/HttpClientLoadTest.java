@@ -49,8 +49,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
-import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
+import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.ProcessorUtils;
@@ -156,14 +155,14 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         int factor = (logger.isDebugEnabled() ? 25 : 1) * 100;
 
         // Dumps the state of the client if the test takes too long
-        final Thread testThread = Thread.currentThread();
+        Thread testThread = Thread.currentThread();
         Scheduler.Task task = scenario.client.getScheduler().schedule(() ->
         {
             logger.warn("Interrupting test, it is taking too long{}{}{}{}",
                 System.lineSeparator(), scenario.server.dump(),
                 System.lineSeparator(), scenario.client.dump());
             testThread.interrupt();
-        }, iterations * factor, TimeUnit.MILLISECONDS);
+        }, (long)iterations * factor, TimeUnit.MILLISECONDS);
 
         long begin = System.nanoTime();
         for (int i = 0; i < iterations; ++i)
@@ -175,7 +174,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         long end = System.nanoTime();
         task.cancel();
         long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
-        logger.info("{} requests in {} ms, {} req/s", iterations, elapsed, elapsed > 0 ? iterations * 1000 / elapsed : -1);
+        logger.info("{} requests in {} ms, {} req/s", iterations, elapsed, elapsed > 0 ? iterations * 1000L / elapsed : -1);
 
         for (String failure : failures)
         {
@@ -185,7 +184,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         assertTrue(failures.isEmpty(), failures.toString());
     }
 
-    private void test(final CountDownLatch latch, final List<String> failures)
+    private void test(CountDownLatch latch, List<String> failures)
     {
         ThreadLocalRandom random = ThreadLocalRandom.current();
         // Choose a random destination
@@ -196,12 +195,8 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         boolean ssl = scenario.transport.isTlsBased();
 
         // Choose randomly whether to close the connection on the client or on the server
-        boolean clientClose = false;
-        if (!ssl && random.nextInt(100) < 5)
-            clientClose = true;
-        boolean serverClose = false;
-        if (!ssl && random.nextInt(100) < 5)
-            serverClose = true;
+        boolean clientClose = !ssl && random.nextInt(100) < 5;
+        boolean serverClose = !ssl && random.nextInt(100) < 5;
 
         long clientTimeout = 0;
 //        if (!ssl && random.nextInt(100) < 5)
@@ -213,10 +208,10 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         test(scenario.getScheme(), host, method.asString(), clientClose, serverClose, clientTimeout, contentLength, true, latch, failures);
     }
 
-    private void test(String scheme, String host, String method, boolean clientClose, boolean serverClose, long clientTimeout, int contentLength, final boolean checkContentLength, final CountDownLatch latch, final List<String> failures)
+    private void test(String scheme, String host, String method, boolean clientClose, boolean serverClose, long clientTimeout, int contentLength, boolean checkContentLength, CountDownLatch latch, List<String> failures)
     {
         long requestId = requestCount.incrementAndGet();
-        Request request = scenario.client.newRequest(host, scenario.getNetworkConnectorLocalPortInt().orElse(0))
+        Request request = scenario.client.newRequest(host, scenario.getServerPort().orElse(0))
             .scheme(scheme)
             .path("/" + requestId)
             .method(method);
@@ -243,7 +238,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 break;
         }
 
-        final CountDownLatch requestLatch = new CountDownLatch(1);
+        CountDownLatch requestLatch = new CountDownLatch(1);
         request.send(new Response.Listener.Adapter()
         {
             private final AtomicInteger contentLength = new AtomicInteger();
@@ -317,7 +312,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
 
             String timeout = request.getHeader("X-Timeout");
             if (timeout != null)
-                sleep(2 * Integer.parseInt(timeout));
+                sleep(2L * Integer.parseInt(timeout));
 
             String method = request.getMethod().toUpperCase(Locale.ENGLISH);
             switch (method)
@@ -373,10 +368,10 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
             int selectors = Math.min(1, ProcessorUtils.availableProcessors() / 2);
             ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
             byteBufferPool = new LeakTrackingByteBufferPool(byteBufferPool);
-            if (transport == Transport.UNIX_SOCKET)
+            if (transport == Transport.UNIX_DOMAIN)
             {
-                UnixSocketConnector unixSocketConnector = new UnixSocketConnector(server, null, null, byteBufferPool, selectors, provideServerConnectionFactory(transport));
-                unixSocketConnector.setUnixSocket(sockFile.toString());
+                UnixDomainServerConnector unixSocketConnector = new UnixDomainServerConnector(server, null, null, byteBufferPool, 1, selectors, provideServerConnectionFactory(transport));
+                unixSocketConnector.setUnixDomainPath(unixDomainPath);
                 return unixSocketConnector;
             }
             return new ServerConnector(server, null, null, byteBufferPool, 1, selectors, provideServerConnectionFactory(transport));
@@ -389,6 +384,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
             {
                 case HTTP:
                 case HTTPS:
+                case UNIX_DOMAIN:
                 {
                     ClientConnector clientConnector = new ClientConnector();
                     clientConnector.setSelectors(1);
@@ -408,20 +404,6 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 case FCGI:
                 {
                     HttpClientTransport clientTransport = new HttpClientTransportOverFCGI(1, "");
-                    clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
-                    {
-                        @Override
-                        protected void leaked(LeakDetector.LeakInfo leakInfo)
-                        {
-                            super.leaked(leakInfo);
-                            connectionLeaks.incrementAndGet();
-                        }
-                    });
-                    return clientTransport;
-                }
-                case UNIX_SOCKET:
-                {
-                    HttpClientTransportOverUnixSockets clientTransport = new HttpClientTransportOverUnixSockets(sockFile.toString());
                     clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
                     {
                         @Override

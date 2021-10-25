@@ -565,6 +565,9 @@ public class HttpClient extends ContainerLifeCycle
         Map<String, Object> context = new ConcurrentHashMap<>();
         context.put(ClientConnectionFactory.CLIENT_CONTEXT_KEY, HttpClient.this);
         context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
+        Origin.Protocol protocol = destination.getOrigin().getProtocol();
+        List<String> protocols = protocol != null ? protocol.getProtocols() : List.of("http/1.1");
+        context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, protocols);
 
         Origin.Address address = destination.getConnectAddress();
         resolver.resolve(address.getHost(), address.getPort(), new Promise<>()

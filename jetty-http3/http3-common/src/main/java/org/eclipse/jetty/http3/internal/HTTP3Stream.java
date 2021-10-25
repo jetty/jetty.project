@@ -137,17 +137,25 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
     @Override
     public CompletableFuture<Stream> respond(HeadersFrame frame)
     {
-        Promise.Completable<Stream> completable = writeFrame(frame);
-        updateClose(frame.isLast(), true);
-        return completable;
+        return write(frame);
     }
 
     @Override
     public CompletableFuture<Stream> data(DataFrame frame)
     {
-        Promise.Completable<Stream> completable = writeFrame(frame);
-        updateClose(frame.isLast(), true);
-        return completable;
+        return write(frame);
+    }
+
+    private CompletableFuture<Stream> write(Frame frame)
+    {
+        return writeFrame(frame)
+            .whenComplete((s, x) ->
+            {
+                if (x == null)
+                    updateClose(Frame.isLast(frame), true);
+                else
+                    session.removeStream(this, x);
+            });
     }
 
     @Override
@@ -181,7 +189,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
     {
         if (!frame.isLast())
             throw new IllegalArgumentException("invalid trailer frame: property 'last' must be true");
-        return writeFrame(frame);
+        return write(frame);
     }
 
     public boolean hasDemand()
@@ -312,7 +320,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
     public void onFailure(Throwable failure)
     {
         notifyFailure(failure);
-        session.removeStream(this);
+        session.removeStream(this, failure);
     }
 
     private void notifyFailure(Throwable failure)
@@ -377,7 +385,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
                     if (!local)
                     {
                         closeState = CloseState.CLOSED;
-                        session.removeStream(this);
+                        session.removeStream(this, null);
                     }
                     break;
                 }
@@ -386,7 +394,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
                     if (local)
                     {
                         closeState = CloseState.CLOSED;
-                        session.removeStream(this);
+                        session.removeStream(this, null);
                     }
                     break;
                 }
@@ -408,7 +416,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         if (LOG.isDebugEnabled())
             LOG.debug("resetting {} with error 0x{} {}", this, Long.toHexString(error), failure.toString());
         closeState = CloseState.CLOSED;
-        session.removeStream(this);
+        session.removeStream(this, failure);
         endPoint.close(error, failure);
     }
 

@@ -110,12 +110,11 @@ public abstract class ProtocolSession extends ContainerLifeCycle
 
     protected abstract boolean onReadable(long readableStreamId);
 
-    public void configureProtocolEndPoint(QuicStreamEndPoint endPoint)
+    public void openProtocolEndPoint(QuicStreamEndPoint endPoint)
     {
         Connection connection = getQuicSession().newConnection(endPoint);
         endPoint.setConnection(connection);
-        endPoint.onOpen();
-        connection.onOpen();
+        endPoint.opened();
     }
 
     protected boolean onIdleTimeout()

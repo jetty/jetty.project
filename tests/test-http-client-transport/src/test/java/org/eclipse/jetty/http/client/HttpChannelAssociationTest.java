@@ -38,7 +38,6 @@ import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -116,6 +115,7 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
         {
             case HTTP:
             case HTTPS:
+            case UNIX_DOMAIN:
             {
                 ClientConnector clientConnector = new ClientConnector();
                 clientConnector.setSelectors(1);
@@ -123,7 +123,7 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
                 return new HttpClientTransportOverHTTP(clientConnector)
                 {
                     @Override
-                    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+                    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
                     {
                         return new HttpConnectionOverHTTP(endPoint, context)
                         {
@@ -173,6 +173,11 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
                     }
                 };
             }
+            case H3:
+            {
+                // TODO:
+                throw new UnsupportedOperationException();
+            }
             case FCGI:
             {
                 ClientConnector clientConnector = new ClientConnector();
@@ -189,31 +194,6 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
                             protected HttpChannelOverFCGI newHttpChannel(Request request)
                             {
                                 return new HttpChannelOverFCGI(this, getFlusher(), request.getIdleTimeout())
-                                {
-                                    @Override
-                                    public boolean associate(HttpExchange exchange)
-                                    {
-                                        return code.test(exchange) && super.associate(exchange);
-                                    }
-                                };
-                            }
-                        };
-                    }
-                };
-            }
-            case UNIX_SOCKET:
-            {
-                return new HttpClientTransportOverUnixSockets(scenario.sockFile.toString())
-                {
-                    @Override
-                    public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context)
-                    {
-                        return new HttpConnectionOverHTTP(endPoint, context)
-                        {
-                            @Override
-                            protected HttpChannelOverHTTP newHttpChannel()
-                            {
-                                return new HttpChannelOverHTTP(this)
                                 {
                                     @Override
                                     public boolean associate(HttpExchange exchange)

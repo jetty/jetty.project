@@ -20,6 +20,8 @@ public class QuicConfiguration
     public static final String CONTEXT_KEY = QuicConfiguration.class.getName();
 
     private List<String> protocols = List.of();
+    private boolean disableActiveMigration;
+    private boolean verifyPeerCertificates;
     private int maxBidirectionalRemoteStreams;
     private int maxUnidirectionalRemoteStreams;
     private int sessionRecvWindow;
@@ -34,6 +36,26 @@ public class QuicConfiguration
     public void setProtocols(List<String> protocols)
     {
         this.protocols = protocols;
+    }
+
+    public boolean isDisableActiveMigration()
+    {
+        return disableActiveMigration;
+    }
+
+    public void setDisableActiveMigration(boolean disableActiveMigration)
+    {
+        this.disableActiveMigration = disableActiveMigration;
+    }
+
+    public boolean isVerifyPeerCertificates()
+    {
+        return verifyPeerCertificates;
+    }
+
+    public void setVerifyPeerCertificates(boolean verifyPeerCertificates)
+    {
+        this.verifyPeerCertificates = verifyPeerCertificates;
     }
 
     public int getMaxBidirectionalRemoteStreams()

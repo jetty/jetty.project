@@ -89,6 +89,7 @@ public class AbstractClientServerTest
     protected void startClient() throws Exception
     {
         http3Client = new HTTP3Client();
+        http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
         httpClient = new HttpClient(new HttpClientTransportDynamic(new ClientConnectionFactoryOverHTTP3.HTTP3(http3Client)));
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");

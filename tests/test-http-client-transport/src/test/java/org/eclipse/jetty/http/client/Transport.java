@@ -15,7 +15,7 @@ package org.eclipse.jetty.http.client;
 
 public enum Transport
 {
-    HTTP, HTTPS, H2C, H2, FCGI, UNIX_SOCKET;
+    HTTP, HTTPS, H2C, H2, H3, FCGI, UNIX_DOMAIN;
 
     public boolean isHttp1Based()
     {
@@ -29,6 +29,6 @@ public enum Transport
 
     public boolean isTlsBased()
     {
-        return this == HTTPS || this == H2;
+        return this == HTTPS || this == H2 || this == H3;
     }
 }

@@ -246,9 +246,15 @@ public abstract class QuicSession extends ContainerLifeCycle
         flush();
     }
 
-    public void onClose(long streamId)
+    public void remove(QuicStreamEndPoint endPoint, Throwable failure)
     {
-        endPoints.remove(streamId);
+        boolean removed = endPoints.remove(endPoint.getStreamId()) != null;
+        if (removed)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("removed {} from {}", endPoint, this);
+            endPoint.closed(failure);
+        }
     }
 
     public SocketAddress getLocalAddress()
