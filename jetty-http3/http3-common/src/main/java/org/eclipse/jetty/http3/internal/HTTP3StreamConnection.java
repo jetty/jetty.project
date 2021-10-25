@@ -389,7 +389,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         @Override
         public void onHeaders(long streamId, HeadersFrame frame)
         {
-            remotelyClosed = frame.isLast();
             MetaData metaData = frame.getMetaData();
             if (metaData.isRequest() || metaData.isResponse())
             {
@@ -400,10 +399,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             else
             {
                 // Trailer.
-                remotelyClosed = true;
                 if (!frame.isLast())
                     frame = new HeadersFrame(metaData, true);
             }
+            if (frame.isLast())
+                shutdownInput();
             super.onHeaders(streamId, frame);
         }
 
@@ -413,9 +413,21 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (dataFrame != null)
                 throw new IllegalStateException();
             dataFrame = frame;
-            dataLast = frame.isLast();
-            remotelyClosed = frame.isLast();
+            if (frame.isLast())
+            {
+                dataLast = true;
+                shutdownInput();
+            }
             super.onData(streamId, frame);
+        }
+
+        private void shutdownInput()
+        {
+            remotelyClosed = true;
+            // We want to shutdown the input to avoid "spurious" wakeups where
+            // zero bytes could be spuriously read from the EndPoint after the
+            // stream is remotely closed by receiving a frame with last=true.
+            getEndPoint().shutdownInput(HTTP3ErrorCode.NO_ERROR.code());
         }
     }
 }

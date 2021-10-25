@@ -13,7 +13,6 @@
 
 module org.eclipse.jetty.quic.client
 {
-    requires org.eclipse.jetty.client;
     requires org.eclipse.jetty.quic.quiche;
     requires org.slf4j;
 

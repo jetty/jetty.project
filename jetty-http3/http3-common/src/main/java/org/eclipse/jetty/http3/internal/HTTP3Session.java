@@ -262,7 +262,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (LOG.isDebugEnabled())
             LOG.debug("new request stream #{} with {} on {}", streamId, frame, this);
 
-        QuicStreamEndPoint endPoint = session.getOrCreateStreamEndPoint(streamId, session::configureProtocolEndPoint);
+        QuicStreamEndPoint endPoint = session.getOrCreateStreamEndPoint(streamId, session::openProtocolEndPoint);
 
         Promise.Completable<Stream> promise = new Promise.Completable<>();
         promise.whenComplete((s, x) ->
@@ -283,15 +283,15 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                 {
                     if (listener == null)
                         endPoint.shutdownInput(HTTP3ErrorCode.NO_ERROR.code());
+                    stream.updateClose(frame.isLast(), true);
                     promise.succeeded(stream);
                 }
                 else
                 {
-                    removeStream(stream);
+                    removeStream(stream, x);
                     promise.failed(x);
                 }
             });
-        stream.updateClose(frame.isLast(), true);
 
         return promise;
     }
@@ -350,13 +350,17 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         return streams.get(streamId);
     }
 
-    public void removeStream(HTTP3Stream stream)
+    public void removeStream(HTTP3Stream stream, Throwable failure)
     {
         boolean removed = streams.remove(stream.getId()) != null;
         if (removed)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("destroyed {}", stream);
+
+            // Do not call HTTP3Stream.reset() or QuicStreamEndPoint.close(...),
+            // as we do not want to send a RESET_STREAM frame to the other peer.
+            getProtocolSession().getQuicSession().remove(stream.getEndPoint(), failure);
 
             if (streamCount.decrementAndGet() == 0)
                 tryRunZeroStreamsAction();
@@ -813,7 +817,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (stream != null)
         {
             stream.onFailure(failure);
-            removeStream(stream);
+            removeStream(stream, failure);
         }
     }
 
@@ -875,8 +879,9 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         @Override
         protected boolean onExpired(HTTP3Stream stream)
         {
-            if (stream.onIdleTimeout(new TimeoutException("idle timeout " + stream.getIdleTimeout() + " ms elapsed")))
-                removeStream(stream);
+            TimeoutException timeout = new TimeoutException("idle timeout " + stream.getIdleTimeout() + " ms elapsed");
+            if (stream.onIdleTimeout(timeout))
+                removeStream(stream, timeout);
             // The iterator returned from the method above does not support removal.
             return false;
         }

@@ -45,6 +45,8 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
         // Initialize to sane defaults for a client.
         configuration.setSessionRecvWindow(16 * 1024 * 1024);
         configuration.setBidirectionalStreamRecvWindow(8 * 1024 * 1024);
+        configuration.setDisableActiveMigration(true);
+        configuration.setVerifyPeerCertificates(true);
     }
 
     public QuicConfiguration getQuicConfiguration()

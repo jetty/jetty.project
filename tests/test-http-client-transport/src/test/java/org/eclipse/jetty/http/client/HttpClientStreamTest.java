@@ -899,8 +899,6 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         CountDownLatch latch = new CountDownLatch(1);
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         String uri = "http://0.0.0.1";
-        if (scenario.getNetworkConnectorLocalPort().isPresent())
-            uri += ":" + scenario.getNetworkConnectorLocalPort().get();
         scenario.client.newRequest(uri)
             .scheme(scenario.getScheme())
             .body(content)
@@ -993,8 +991,6 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         CountDownLatch completeLatch = new CountDownLatch(1);
         String uri = "http://0.0.0.1";
-        if (scenario.getNetworkConnectorLocalPort().isPresent())
-            uri += ":" + scenario.getNetworkConnectorLocalPort().get();
         scenario.client.newRequest(uri)
             .scheme(scenario.getScheme())
             .body(content)

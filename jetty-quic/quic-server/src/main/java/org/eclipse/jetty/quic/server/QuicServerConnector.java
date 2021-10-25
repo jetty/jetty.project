@@ -75,6 +75,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         // One bidirectional stream to simulate the TCP stream, and no unidirectional streams.
         quicConfiguration.setMaxBidirectionalRemoteStreams(1);
         quicConfiguration.setMaxUnidirectionalRemoteStreams(0);
+        quicConfiguration.setVerifyPeerCertificates(true);
     }
 
     public QuicConfiguration getQuicConfiguration()
@@ -157,7 +158,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
 
         quicheConfig.setPrivKeyPemPath(pemFiles[0].getPath());
         quicheConfig.setCertChainPemPath(pemFiles[1].getPath());
-        quicheConfig.setVerifyPeer(false);
+        quicheConfig.setVerifyPeer(quicConfiguration.isVerifyPeerCertificates());
         // Idle timeouts must not be managed by Quiche.
         quicheConfig.setMaxIdleTimeout(0L);
         quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());

@@ -26,7 +26,7 @@ public class ServerProtocolSession extends ProtocolSession
     private static final Logger LOG = LoggerFactory.getLogger(ServerProtocolSession.class);
 
     private final Runnable producer = Invocable.from(Invocable.InvocationType.BLOCKING, this::produce);
-    private final Consumer<QuicStreamEndPoint> configureProtocolEndPoint = this::configureProtocolEndPoint;
+    private final Consumer<QuicStreamEndPoint> configureProtocolEndPoint = this::openProtocolEndPoint;
 
     public ServerProtocolSession(ServerQuicSession session)
     {
@@ -37,6 +37,28 @@ public class ServerProtocolSession extends ProtocolSession
     public ServerQuicSession getQuicSession()
     {
         return (ServerQuicSession)super.getQuicSession();
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        onStart();
+    }
+
+    protected void onStart()
+    {
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        onStop();
+        super.doStop();
+    }
+
+    protected void onStop()
+    {
     }
 
     @Override

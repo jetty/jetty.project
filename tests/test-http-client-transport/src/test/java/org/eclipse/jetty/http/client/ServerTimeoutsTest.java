@@ -52,7 +52,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.eclipse.jetty.http.client.Transport.FCGI;
-import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -261,8 +260,6 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
     public void testAsyncWriteIdleTimeoutFires(Transport transport) throws Exception
     {
         init(transport);
-        // TODO work out why this test fails for UNIX_SOCKET
-        Assumptions.assumeFalse(scenario.transport == UNIX_SOCKET);
 
         CountDownLatch handlerLatch = new CountDownLatch(1);
         scenario.start(new AbstractHandler()

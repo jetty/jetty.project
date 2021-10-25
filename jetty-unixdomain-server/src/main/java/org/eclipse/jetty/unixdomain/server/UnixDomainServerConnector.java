@@ -58,6 +58,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject
 public class UnixDomainServerConnector extends AbstractConnector
 {
+    public static final int MAX_UNIX_DOMAIN_PATH_LENGTH = 107;
+
     private final AtomicReference<Closeable> acceptor = new AtomicReference<>();
     private final SelectorManager selectorManager;
     private ServerSocketChannel serverChannel;

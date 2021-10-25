@@ -25,6 +25,7 @@ public class ClientProtocolSession extends ProtocolSession
     private static final Logger LOG = LoggerFactory.getLogger(ClientProtocolSession.class);
 
     private final Runnable producer = Invocable.from(Invocable.InvocationType.NON_BLOCKING, this::produce);
+    private QuicStreamEndPoint endPoint;
 
     public ClientProtocolSession(ClientQuicSession session)
     {
@@ -41,15 +42,30 @@ public class ClientProtocolSession extends ProtocolSession
     protected void doStart() throws Exception
     {
         super.doStart();
-        initialize();
+        onStart();
     }
 
-    protected void initialize()
+    protected void onStart()
     {
         // Create a single bidirectional, client-initiated,
         // QUIC stream that plays the role of the TCP stream.
         long streamId = getQuicSession().newStreamId(StreamType.CLIENT_BIDIRECTIONAL);
-        getOrCreateStreamEndPoint(streamId, this::configureProtocolEndPoint);
+        endPoint = getOrCreateStreamEndPoint(streamId, this::openProtocolEndPoint);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        onStop();
+        super.doStop();
+    }
+
+    protected void onStop()
+    {
+        QuicStreamEndPoint endPoint = this.endPoint;
+        if (endPoint != null)
+            endPoint.closed(null);
+        this.endPoint = null;
     }
 
     @Override

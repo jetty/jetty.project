@@ -27,11 +27,15 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
+import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
+import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
+import org.eclipse.jetty.quic.client.ClientQuicSession;
+import org.eclipse.jetty.quic.common.QuicSession;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -89,12 +93,14 @@ public class ClientServerTest extends AbstractClientServerTest
     @Test
     public void testGETThenResponseWithoutContent() throws Exception
     {
+        AtomicReference<HTTP3Session> serverSessionRef = new AtomicReference<>();
         CountDownLatch serverRequestLatch = new CountDownLatch(1);
         start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
             {
+                serverSessionRef.set((HTTP3Session)stream.getSession());
                 serverRequestLatch.countDown();
                 // Send the response.
                 stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), true));
@@ -103,11 +109,11 @@ public class ClientServerTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        HTTP3SessionClient clientSession = (HTTP3SessionClient)newSession(new Session.Client.Listener() {});
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest("/"), true);
-        Stream stream = session.newRequest(frame, new Stream.Listener()
+        Stream stream = clientSession.newRequest(frame, new Stream.Listener()
             {
                 @Override
                 public void onResponse(Stream stream, HeadersFrame frame)
@@ -120,6 +126,18 @@ public class ClientServerTest extends AbstractClientServerTest
 
         assertTrue(serverRequestLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
+
+        HTTP3Session serverSession = serverSessionRef.get();
+        assertTrue(serverSession.getStreams().isEmpty());
+        assertTrue(clientSession.getStreams().isEmpty());
+
+        QuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
+        assertTrue(serverQuicSession.getQuicStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
+
+        ClientQuicSession clientQuicSession = clientSession.getProtocolSession().getQuicSession();
+        assertTrue(clientQuicSession.getQuicStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
     }
 
     @Test
@@ -194,11 +212,13 @@ public class ClientServerTest extends AbstractClientServerTest
     @ValueSource(ints = {1024, 10 * 1024, 100 * 1024, 1000 * 1024})
     public void testEchoRequestContentAsResponseContent(int length) throws Exception
     {
+        AtomicReference<HTTP3Session> serverSessionRef = new AtomicReference<>();
         start(new Session.Server.Listener()
         {
             @Override
             public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
             {
+                serverSessionRef.set((HTTP3Session)stream.getSession());
                 // Send the response headers.
                 stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), false));
                 stream.demand();
@@ -225,7 +245,7 @@ public class ClientServerTest extends AbstractClientServerTest
             }
         });
 
-        Session.Client session = newSession(new Session.Client.Listener() {});
+        HTTP3SessionClient clientSession = (HTTP3SessionClient)newSession(new Session.Client.Listener() {});
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest("/"), false);
@@ -234,7 +254,7 @@ public class ClientServerTest extends AbstractClientServerTest
         byte[] bytesReceived = new byte[bytesSent.length];
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytesReceived);
         CountDownLatch clientDataLatch = new CountDownLatch(1);
-        Stream stream = session.newRequest(frame, new Stream.Listener()
+        Stream stream = clientSession.newRequest(frame, new Stream.Listener()
             {
                 @Override
                 public void onResponse(Stream stream, HeadersFrame frame)
@@ -266,6 +286,18 @@ public class ClientServerTest extends AbstractClientServerTest
         assertTrue(clientResponseLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientDataLatch.await(15, TimeUnit.SECONDS));
         assertArrayEquals(bytesSent, bytesReceived);
+
+        HTTP3Session serverSession = serverSessionRef.get();
+        assertTrue(serverSession.getStreams().isEmpty());
+        assertTrue(clientSession.getStreams().isEmpty());
+
+        QuicSession serverQuicSession = serverSession.getProtocolSession().getQuicSession();
+        assertTrue(serverQuicSession.getQuicStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
+
+        ClientQuicSession clientQuicSession = clientSession.getProtocolSession().getQuicSession();
+        assertTrue(clientQuicSession.getQuicStreamEndPoints().stream()
+            .noneMatch(endPoint -> endPoint.getStreamId() == stream.getId()));
     }
 
     @Test
