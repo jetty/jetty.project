@@ -59,8 +59,6 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
         return System.getProperty("hazelcast.version", "3.12.12");
     }
 
-    private Path hazelcastJettyPath;
-
     /**
      * This simulate the onlyClient option which means the JVM running Jetty is only an Hazelcast client and not part
      * of the cluster
@@ -68,7 +66,7 @@ public class HazelcastSessionDistributionTests extends AbstractDistributionTest
     @Test
     public void testHazelcastRemoteOnlyClient() throws Exception
     {
-        try (GenericContainer hazelcast =new GenericContainer<>("hazelcast/hazelcast:" + getHazelcastVersion())
+        try (GenericContainer hazelcast = new GenericContainer<>("hazelcast/hazelcast:" + getHazelcastVersion())
                 .withExposedPorts(5701)
                 .waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
                 .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG)))
