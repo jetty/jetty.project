@@ -321,16 +321,17 @@ public abstract class QuicSession extends ContainerLifeCycle
             // H3ProtoSession - QpackDecoder
             // H3ProtoSession -* request streams
 
-            ProtocolSession session = protocolSession;
-            if (session == null)
+            ProtocolSession protocol = protocolSession;
+            if (protocol == null)
             {
-                protocolSession = session = createProtocolSession();
-                addManaged(session);
+                protocolSession = protocol = createProtocolSession();
+                addManaged(protocol);
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("processing {}", session);
-            return session.getProducer();
+                LOG.debug("processing {}", protocol);
+            // Return a task because we want 1 thread per QUIC connection ID.
+            return protocol.getProducerTask();
         }
         else
         {

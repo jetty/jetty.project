@@ -149,18 +149,14 @@ public abstract class QuicConnection extends AbstractConnection
         super.onClose(cause);
     }
 
+    @Override
     public void onFillable()
     {
-        produce();
+        strategy.produce();
     }
 
     @Override
     public abstract boolean onIdleExpired();
-
-    public void produce()
-    {
-        strategy.produce();
-    }
 
     @Override
     public void close()
@@ -205,7 +201,7 @@ public abstract class QuicConnection extends AbstractConnection
         flusher.offer(callback, remoteAddress, buffers);
     }
 
-    protected Runnable receiveAndProcess()
+    private Runnable receiveAndProcess()
     {
         try
         {

@@ -63,12 +63,6 @@ public class ServerQuicConnection extends QuicConnection
     }
 
     @Override
-    public void onFillable()
-    {
-        produce();
-    }
-
-    @Override
     protected QuicSession createSession(SocketAddress remoteAddress, ByteBuffer cipherBuffer) throws IOException
     {
         ByteBufferPool byteBufferPool = getByteBufferPool();
