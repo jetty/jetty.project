@@ -1037,6 +1037,19 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         /**
+         * Set all the fields in one go
+         *
+         * @param httpFields the fields to set
+         */
+        public void putAll(HttpFields httpFields)
+        {
+            for (HttpField field : httpFields)
+            {
+                put(field);
+            }
+        }
+
+        /**
          * Sets the value of a date field.
          *
          * @param name the field name
@@ -1280,14 +1293,6 @@ public interface HttpFields extends Iterable<HttpField>
             _size--;
             System.arraycopy(_fields, i + 1, _fields, i, _size - i);
             _fields[_size] = null;
-        }
-
-        public void setAll(HttpFields httpFields)
-        {
-            for (HttpField field : httpFields)
-            {
-                put(field);
-            }
         }
 
         public int size()

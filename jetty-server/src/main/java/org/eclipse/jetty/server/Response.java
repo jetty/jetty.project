@@ -1305,6 +1305,29 @@ public class Response implements HttpServletResponse
         return meta;
     }
 
+    /**
+     * Restore the CommittedMetaData, overwriting the current
+     * metadata in the process.
+     * <p>
+     *     This is useful when you want to see the state of
+     *     the Response object as it was when it was committed.
+     * </p>
+     */
+    public void restoreCommittedMetaData()
+    {
+        MetaData.Response committedResponse = getCommittedMetaData();
+        if (committedResponse != null)
+        {
+            // restore status
+            setStatus(committedResponse.getStatus());
+
+            // restore headers
+            HttpFields.Mutable responseFields = getHttpFields();
+            responseFields.clear();
+            responseFields.putAll(committedResponse.getFields());
+        }
+    }
+
     @Override
     public boolean isCommitted()
     {
