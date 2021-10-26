@@ -216,6 +216,9 @@ public class Response implements HttpServletResponse
 
     public void addCookie(HttpCookie cookie)
     {
+        if (isCommitted() || !isMutable())
+            return;
+
         if (StringUtil.isBlank(cookie.getName()))
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
      
@@ -258,30 +261,30 @@ public class Response implements HttpServletResponse
     @Override
     public void addCookie(Cookie cookie)
     {
-        //Servlet Spec 9.3 Include method: cannot set a cookie if handling an include
-        if (isMutable())
-        {
-            if (StringUtil.isBlank(cookie.getName()))
-                throw new IllegalArgumentException("Cookie.name cannot be blank/null");
+        // Servlet Spec 9.3 Include method: cannot set a cookie if handling an include
+        if (isCommitted() || !isMutable())
+            return;
 
-            String comment = cookie.getComment();
-            // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
-            boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
-            SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
-            comment = HttpCookie.getCommentWithoutAttributes(comment);
+        if (StringUtil.isBlank(cookie.getName()))
+            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
-            addCookie(new HttpCookie(
-                cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                httpOnly,
-                cookie.getSecure(),
-                comment,
-                cookie.getVersion(),
-                sameSite));
-        }
+        String comment = cookie.getComment();
+        // HttpOnly was supported as a comment in cookie flags before the java.net.HttpCookie implementation so need to check that
+        boolean httpOnly = cookie.isHttpOnly() || HttpCookie.isHttpOnlyInComment(comment);
+        SameSite sameSite = HttpCookie.getSameSiteFromComment(comment);
+        comment = HttpCookie.getCommentWithoutAttributes(comment);
+
+        addCookie(new HttpCookie(
+            cookie.getName(),
+            cookie.getValue(),
+            cookie.getDomain(),
+            cookie.getPath(),
+            cookie.getMaxAge(),
+            httpOnly,
+            cookie.getSecure(),
+            comment,
+            cookie.getVersion(),
+            sameSite));
     }
 
     /**
@@ -292,6 +295,9 @@ public class Response implements HttpServletResponse
      */
     public void replaceCookie(HttpCookie cookie)
     {
+        if (isCommitted() || !isMutable())
+            return;
+
         for (ListIterator<HttpField> i = _fields.listIterator(); i.hasNext(); )
         {
             HttpField field = i.next();
@@ -602,40 +608,42 @@ public class Response implements HttpServletResponse
     @Override
     public void setDateHeader(String name, long date)
     {
-        if (isMutable())
-        {
-            HttpHeader header = HttpHeader.CACHE.get(name);
-            if (header == null)
-                _fields.putDateField(name, date);
-            else
-                _fields.putDateField(header, date);
-        }
+        if (isCommitted() || !isMutable())
+            return;
+
+        HttpHeader header = HttpHeader.CACHE.get(name);
+        if (header == null)
+            _fields.putDateField(name, date);
+        else
+            _fields.putDateField(header, date);
     }
 
     @Override
     public void addDateHeader(String name, long date)
     {
-        if (isMutable())
-            _fields.addDateField(name, date);
+        if (isCommitted() || !isMutable())
+            return;
+
+        _fields.addDateField(name, date);
     }
 
     public void setHeader(HttpHeader name, String value)
     {
-        if (isMutable())
-        {
-            if (HttpHeader.CONTENT_TYPE == name)
-                setContentType(value);
-            else
-            {
-                _fields.put(name, value);
+        if (isCommitted() || !isMutable())
+            return;
 
-                if (HttpHeader.CONTENT_LENGTH == name)
-                {
-                    if (value == null)
-                        _contentLength = -1L;
-                    else
-                        _contentLength = Long.parseLong(value);
-                }
+        if (HttpHeader.CONTENT_TYPE == name)
+            setContentType(value);
+        else
+        {
+            _fields.put(name, value);
+
+            if (HttpHeader.CONTENT_LENGTH == name)
+            {
+                if (value == null)
+                    _contentLength = -1L;
+                else
+                    _contentLength = Long.parseLong(value);
             }
         }
     }
@@ -643,6 +651,9 @@ public class Response implements HttpServletResponse
     @Override
     public void setHeader(String name, String value)
     {
+        if (isCommitted() || !isMutable())
+            return;
+
         long biInt = _errorSentAndIncludes.get();
         if (biInt != 0)
         {
@@ -693,6 +704,9 @@ public class Response implements HttpServletResponse
     @Override
     public void addHeader(String name, String value)
     {
+        if (isCommitted() || !isMutable())
+            return;
+
         long biInt = _errorSentAndIncludes.get();
         if (biInt != 0)
         {
@@ -722,38 +736,39 @@ public class Response implements HttpServletResponse
     @Override
     public void setIntHeader(String name, int value)
     {
-        if (isMutable())
-        {
-            _fields.putLongField(name, value);
-            if (HttpHeader.CONTENT_LENGTH.is(name))
-                _contentLength = value;
-        }
+        if (isCommitted() || !isMutable())
+            return;
+
+        _fields.putLongField(name, value);
+        if (HttpHeader.CONTENT_LENGTH.is(name))
+            _contentLength = value;
     }
 
     @Override
     public void addIntHeader(String name, int value)
     {
-        if (isMutable())
-        {
-            _fields.add(name, Integer.toString(value));
-            if (HttpHeader.CONTENT_LENGTH.is(name))
-                _contentLength = value;
-        }
+        if (isCommitted() || !isMutable())
+            return;
+
+        _fields.add(name, Integer.toString(value));
+        if (HttpHeader.CONTENT_LENGTH.is(name))
+            _contentLength = value;
     }
 
     @Override
     public void setStatus(int sc)
     {
         if (sc <= 0)
-            throw new IllegalArgumentException();
-        if (isMutable())
-        {
-            // Null the reason only if the status is different. This allows
-            // a specific reason to be sent with setStatusWithReason followed by sendError.
-            if (_status != sc)
-                _reason = null;
-            _status = sc;
-        }
+            throw new IllegalArgumentException("Invalid status code");
+
+        if (!isMutable())
+            return;
+
+        // Null the reason only if the status is different. This allows
+        // a specific reason to be sent with setStatusWithReason followed by sendError.
+        if (_status != sc)
+            _reason = null;
+        _status = sc;
     }
 
     @Override
@@ -766,12 +781,13 @@ public class Response implements HttpServletResponse
     public void setStatusWithReason(int sc, String message)
     {
         if (sc <= 0)
-            throw new IllegalArgumentException();
-        if (isMutable())
-        {
-            _status = sc;
-            _reason = message;
-        }
+            throw new IllegalArgumentException("Invalid status code");
+
+        if (!isMutable())
+            return;
+
+        _status = sc;
+        _reason = message;
     }
 
     @Override
@@ -990,6 +1006,7 @@ public class Response implements HttpServletResponse
         // if the getHandling committed the response!
         if (isCommitted() || !isMutable())
             return;
+
         _contentLength = len;
         _fields.putLongField(HttpHeader.CONTENT_LENGTH.toString(), len);
     }
@@ -1008,7 +1025,7 @@ public class Response implements HttpServletResponse
 
     private void setCharacterEncoding(String encoding, EncodingFrom from)
     {
-        if (!isMutable() || isWriting() || isCommitted())
+        if (isCommitted() || isWriting() || !isMutable())
             return;
 
         if (encoding == null)
@@ -1276,7 +1293,7 @@ public class Response implements HttpServletResponse
     public void setTrailerFields(Supplier<Map<String, String>> trailers)
     {
         if (isCommitted())
-            throw new IllegalStateException("Committed");
+            throw new IllegalStateException("Response already committed");
         if (getHttpChannel().getRequest().getHttpVersion().ordinal() <= HttpVersion.HTTP_1_0.ordinal())
             throw new IllegalStateException("Trailers not supported");
         this._trailers = new HttpFieldsSupplier(trailers);
@@ -1320,11 +1337,6 @@ public class Response implements HttpServletResponse
         {
             // restore status
             setStatus(committedResponse.getStatus());
-
-            // restore headers
-            HttpFields.Mutable responseFields = getHttpFields();
-            responseFields.clear();
-            responseFields.putAll(committedResponse.getFields());
         }
     }
 
@@ -1405,6 +1417,9 @@ public class Response implements HttpServletResponse
 
     public void putHeaders(HttpContent content, long contentLength, boolean etag)
     {
+        if (isCommitted() || !isMutable())
+            return;
+
         HttpField lm = content.getLastModified();
         if (lm != null)
             _fields.put(lm);
@@ -1450,6 +1465,9 @@ public class Response implements HttpServletResponse
 
     public static void putHeaders(HttpServletResponse response, HttpContent content, long contentLength, boolean etag)
     {
+        if (response.isCommitted())
+            return;
+
         long lml = content.getResource().lastModified();
         if (lml >= 0)
             response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(), lml);
