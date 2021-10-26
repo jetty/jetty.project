@@ -119,7 +119,7 @@
     <springboot.version>2.1.1.RELEASE</springboot.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
-    <testcontainers.version>1.16.1</testcontainers.version>
+    <testcontainers.version>1.16.2</testcontainers.version>
     <xmemcached.version>2.4.7</xmemcached.version>
     <weld.version>4.0.2.Final</weld.version>
 
@@ -131,7 +131,7 @@
     <depends.maven.plugin.version>1.4.0</depends.maven.plugin.version>
     <docbkx.maven.plugin.version>2.0.17</docbkx.maven.plugin.version>
     <flatten.maven.plugin.version>1.2.7</flatten.maven.plugin.version>
-    <h2spec.maven.plugin.version>1.0.7</h2spec.maven.plugin.version>
+    <h2spec.maven.plugin.version>1.0.8</h2spec.maven.plugin.version>
     <jacoco.maven.plugin.version>0.8.7</jacoco.maven.plugin.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
@@ -163,7 +163,7 @@
     <maven.surefire.plugin.version>3.0.0-M5</maven.surefire.plugin.version>
     <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
     <maven.war.plugin.version>3.3.2</maven.war.plugin.version>
-    <spotbugs.maven.plugin.version>4.4.2.1</spotbugs.maven.plugin.version>
+    <spotbugs.maven.plugin.version>4.4.2.2</spotbugs.maven.plugin.version>
     <versions.maven.plugin.version>2.8.1</versions.maven.plugin.version>
 
     <!-- testing -->
