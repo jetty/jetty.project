@@ -683,22 +683,41 @@ public class Response implements HttpServletResponse
         }
     }
 
+    /**
+     * Get the relevant HttpFields based on commit status and state.
+     *
+     * @return the in-progress or committed HttpFields
+     */
+    private HttpFields getActiveHttpFields()
+    {
+        if (isCommitted())
+        {
+            MetaData.Response committed = getCommittedMetaData();
+            if (committed != null)
+            {
+                return committed.getFields();
+            }
+        }
+
+        return getHttpFields();
+    }
+
     @Override
     public Collection<String> getHeaderNames()
     {
-        return _fields.getFieldNamesCollection();
+        return getActiveHttpFields().getFieldNamesCollection();
     }
 
     @Override
     public String getHeader(String name)
     {
-        return _fields.get(name);
+        return getActiveHttpFields().get(name);
     }
 
     @Override
     public Collection<String> getHeaders(String name)
     {
-        Collection<String> i = _fields.getValuesList(name);
+        Collection<String> i = getActiveHttpFields().getValuesList(name);
         if (i == null)
             return Collections.emptyList();
         return i;
