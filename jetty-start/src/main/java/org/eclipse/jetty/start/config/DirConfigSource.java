@@ -136,12 +136,14 @@ public class DirConfigSource implements ConfigSource
                 };
 
                 List<Path> paths = new ArrayList<>();
-
-                for (Path diniFile : Files.newDirectoryStream(startDdir, filter))
+                try (DirectoryStream<Path> stream = Files.newDirectoryStream(startDdir, filter))
                 {
-                    if (FS.canReadFile(diniFile))
+                    for (Path diniFile : stream)
                     {
-                        paths.add(diniFile);
+                        if (FS.canReadFile(diniFile))
+                        {
+                            paths.add(diniFile);
+                        }
                     }
                 }
 

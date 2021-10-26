@@ -195,9 +195,12 @@ public class BaseBuilder
                     }
                 };
                 List<Path> paths = new ArrayList<>();
-                for (Path path : Files.newDirectoryStream(startd, filter))
+                try (DirectoryStream<Path> stream = Files.newDirectoryStream(startd, filter))
                 {
-                    paths.add(path);
+                    for (Path path : stream)
+                    {
+                        paths.add(path);
+                    }
                 }
                 paths.sort(new NaturalSort.Paths());
 
