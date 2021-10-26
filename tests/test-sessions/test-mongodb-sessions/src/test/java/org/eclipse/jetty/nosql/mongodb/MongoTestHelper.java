@@ -29,10 +29,8 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,33 +59,23 @@ public class MongoTestHelper
     static String mongoHost;
     static int mongoPort;
 
-    static
-    {
-        try
-        {
-            long start = System.currentTimeMillis();
-            mongo.start();
-            mongoHost =  mongo.getHost();
-            mongoPort = mongo.getMappedPort(MONGO_PORT);
-            LOG.info("Mongo container started for {}:{} - {}ms", mongoHost, mongoPort,
-                     System.currentTimeMillis() - start);
-            mongoClient = new MongoClient(mongoHost, mongoPort);
-        }
-        catch (Exception e)
-        {
-            LOG.error(e.getMessage(), e);
-            throw new RuntimeException(e);
-        }
-    }
-
     public static MongoClient getMongoClient() throws UnknownHostException
     {
+        if (mongoClient == null)
+        {
+            mongoClient = new MongoClient(mongoHost, mongoPort);
+        }
         return mongoClient;
     }
 
     public static void dropCollection() throws Exception
     {
         getMongoClient().getDB(DB_NAME).getCollection(COLLECTION_NAME).drop();
+    }
+
+    public static void shutdown() throws Exception
+    {
+        mongo.stop();
     }
 
     public static void createCollection() throws UnknownHostException, MongoException
@@ -102,6 +90,25 @@ public class MongoTestHelper
 
     public static MongoSessionDataStoreFactory newSessionDataStoreFactory()
     {
+        if (!mongo.isRunning())
+        {
+            try
+            {
+                long start = System.currentTimeMillis();
+                mongo.start();
+                mongoHost = mongo.getHost();
+                mongoPort = mongo.getMappedPort(MONGO_PORT);
+                LOG.info("Mongo container started for {}:{} - {}ms", mongoHost, mongoPort,
+                        System.currentTimeMillis() - start);
+                mongoClient = new MongoClient(mongoHost, mongoPort);
+            }
+            catch (Exception e)
+            {
+                LOG.error(e.getMessage(), e);
+                throw new RuntimeException(e);
+            }
+        }
+
         MongoSessionDataStoreFactory storeFactory = new MongoSessionDataStoreFactory();
         storeFactory.setHost(mongoHost);
         storeFactory.setPort(mongoPort);

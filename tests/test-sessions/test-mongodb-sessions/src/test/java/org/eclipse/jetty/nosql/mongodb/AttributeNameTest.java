@@ -50,7 +50,6 @@ public class AttributeNameTest
     @BeforeAll
     public static void beforeClass() throws Exception
     {
-        MongoTestHelper.dropCollection();
         MongoTestHelper.createCollection();
     }
 
@@ -58,6 +57,7 @@ public class AttributeNameTest
     public static void afterClass() throws Exception
     {
         MongoTestHelper.dropCollection();
+        MongoTestHelper.shutdown();
     }
 
     @Test
