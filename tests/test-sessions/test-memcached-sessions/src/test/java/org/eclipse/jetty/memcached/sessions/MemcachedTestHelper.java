@@ -152,24 +152,28 @@ public class MemcachedTestHelper
                 .withExposedPorts(11211)
                 .withLogConsumer(new Slf4jLogConsumer(MEMCACHED_LOG));
 
-    static
+    public static void shutdown() throws Exception
     {
-        try
-        {
-            long start = System.currentTimeMillis();
-            memcached.start();
-            LOG.info("time to start memcache instance {}ms on {}:{}", System.currentTimeMillis() - start,
-                     memcached.getHost(), memcached.getMappedPort(11211));
-        }
-        catch (Exception e)
-        {
-            LOG.error(e.getMessage(), e);
-            throw new RuntimeException(e.getMessage(), e);
-        }
+        memcached.stop();
     }
 
     public static SessionDataStoreFactory newSessionDataStoreFactory()
     {
+        if (!memcached.isRunning())
+        {
+            try
+            {
+                long start = System.currentTimeMillis();
+                memcached.start();
+                LOG.info("time to start memcache instance {}ms on {}:{}", System.currentTimeMillis() - start,
+                        memcached.getHost(), memcached.getMappedPort(11211));
+            }
+            catch (Exception e)
+            {
+                LOG.error(e.getMessage(), e);
+                throw new RuntimeException(e.getMessage(), e);
+            }
+        }
         MockDataStoreFactory storeFactory = new MockDataStoreFactory();
         MemcachedSessionDataMapFactory mapFactory = new MemcachedSessionDataMapFactory();
         String host = memcached.getContainerIpAddress();
