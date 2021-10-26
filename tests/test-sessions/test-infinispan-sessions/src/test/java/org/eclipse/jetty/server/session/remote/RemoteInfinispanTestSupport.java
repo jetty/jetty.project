@@ -54,78 +54,17 @@ public class RemoteInfinispanTestSupport
     private static final Logger INFINISPAN_LOG =
         LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
 
-    static GenericContainer infinispan;
+    private static String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
+            ":" + System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
 
-    static
-    {
-        try
-        {
-            //Testcontainers.exposeHostPorts(11222);
-            long start = System.currentTimeMillis();
-            String infinispanVersion = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
-            infinispan =
-                new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
-                    ":" + infinispanVersion)
-                .withEnv("USER", "theuser")
+    private static final GenericContainer infinispan = new GenericContainer(IMAGE_NAME)
+        .withEnv("USER", "theuser")
                 .withEnv("PASS", "foobar")
                 .withEnv("MGMT_USER", "admin")
                 .withEnv("MGMT_PASS", "admin")
                 .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
-                .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
+        .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
                 .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
-            infinispan.start();
-            String host = infinispan.getContainerIpAddress();
-            System.setProperty("hotrod.host", host);
-            int port = infinispan.getMappedPort(11222);
-
-            LOG.info("Infinispan container started for {}:{} - {}ms", host, port,
-                     System.currentTimeMillis() - start);
-            SearchMapping mapping = new SearchMapping();
-            mapping.entity(InfinispanSessionData.class).indexed().providedId()
-                .property("expiry", ElementType.METHOD).field();
-
-            Properties properties = new Properties();
-            properties.put(Environment.MODEL_MAPPING, mapping);
-
-            ConfigurationBuilder configurationBuilder = new ConfigurationBuilder().withProperties(properties)
-                .addServer().host(host).port(port)
-                // we just want to limit connectivity to list of host:port we knows at start
-                // as infinispan create new host:port dynamically but due to how docker expose host/port we cannot do that
-                .clientIntelligence(ClientIntelligence.BASIC)
-                .marshaller(new ProtoStreamMarshaller());
-
-            if (infinispanVersion.startsWith("1"))
-            {
-                configurationBuilder.security().authentication()
-                    .saslMechanism("DIGEST-MD5")
-                    .username("theuser").password("foobar");
-            }
-            
-            configurationBuilder.addContextInitializer(new InfinispanSerializationContextInitializer());
-            Configuration configuration = configurationBuilder.build();
-
-            _manager = new RemoteCacheManager(configuration);
-
-            //upload the session.proto file to the remote cache
-            ByteArrayOutputStream baos;
-            try (InputStream is = RemoteInfinispanSessionDataStoreTest.class.getClassLoader().getResourceAsStream("session.proto"))
-            {
-                if (is == null)
-                    throw new IllegalStateException("inputstream is null");
-
-                baos = new ByteArrayOutputStream();
-                IO.copy(is, baos);
-            }
-
-            String content = baos.toString("UTF-8");
-            _manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
-        }
-        catch (Exception e)
-        {
-            LOG.error(e.getMessage(), e);
-            throw new RuntimeException(e);
-        }
-    }
 
     public RemoteInfinispanTestSupport()
     {
@@ -138,6 +77,67 @@ public class RemoteInfinispanTestSupport
             cacheName = DEFAULT_CACHE_NAME + System.currentTimeMillis();
 
         _name = cacheName;
+
+        if (!infinispan.isRunning())
+        {
+            try
+            {
+                long start = System.currentTimeMillis();
+                String infinispanVersion = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
+
+                infinispan.start();
+                String host = infinispan.getContainerIpAddress();
+                System.setProperty("hotrod.host", host);
+                int port = infinispan.getMappedPort(11222);
+
+                LOG.info("Infinispan container started for {}:{} - {}ms", host, port,
+                        System.currentTimeMillis() - start);
+                SearchMapping mapping = new SearchMapping();
+                mapping.entity(InfinispanSessionData.class).indexed().providedId()
+                        .property("expiry", ElementType.METHOD).field();
+
+                Properties properties = new Properties();
+                properties.put(Environment.MODEL_MAPPING, mapping);
+
+                ConfigurationBuilder configurationBuilder = new ConfigurationBuilder().withProperties(properties)
+                        .addServer().host(host).port(port)
+                        // we just want to limit connectivity to list of host:port we knows at start
+                        // as infinispan create new host:port dynamically but due to how docker expose host/port we cannot do that
+                        .clientIntelligence(ClientIntelligence.BASIC)
+                        .marshaller(new ProtoStreamMarshaller());
+
+                if (infinispanVersion.startsWith("1"))
+                {
+                    configurationBuilder.security().authentication()
+                            .saslMechanism("DIGEST-MD5")
+                            .username("theuser").password("foobar");
+                }
+
+                configurationBuilder.addContextInitializer(new InfinispanSerializationContextInitializer());
+                Configuration configuration = configurationBuilder.build();
+
+                _manager = new RemoteCacheManager(configuration);
+
+                //upload the session.proto file to the remote cache
+                ByteArrayOutputStream baos;
+                try (InputStream is = RemoteInfinispanSessionDataStoreTest.class.getClassLoader().getResourceAsStream("session.proto"))
+                {
+                    if (is == null)
+                        throw new IllegalStateException("inputstream is null");
+
+                    baos = new ByteArrayOutputStream();
+                    IO.copy(is, baos);
+                }
+
+                String content = baos.toString("UTF-8");
+                _manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
+            }
+            catch (Exception e)
+            {
+                LOG.error(e.getMessage(), e);
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     public RemoteCache<String, InfinispanSessionData> getCache()
@@ -161,6 +161,11 @@ public class RemoteInfinispanTestSupport
     public void teardown() throws Exception
     {
         _cache.clear();
+    }
+
+    public void shutdown() throws Exception
+    {
+        infinispan.stop();
     }
 
     public void createSession(InfinispanSessionData data)
