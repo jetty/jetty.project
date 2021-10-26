@@ -651,19 +651,22 @@ public class Response implements HttpServletResponse
     @Override
     public void setHeader(String name, String value)
     {
-        if (isCommitted() || !isMutable())
-            return;
+        boolean allowSetHeader = !isCommitted();
 
         long biInt = _errorSentAndIncludes.get();
         if (biInt != 0)
         {
             boolean errorSent = AtomicBiInteger.getHi(biInt) != 0;
             boolean including = AtomicBiInteger.getLo(biInt) > 0;
+            allowSetHeader &= including;
             if (!errorSent && including && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
                 name = name.substring(SET_INCLUDE_HEADER_PREFIX.length());
             else
                 return;
         }
+
+        if (!allowSetHeader)
+            return;
 
         if (HttpHeader.CONTENT_TYPE.is(name))
             setContentType(value);
@@ -704,19 +707,22 @@ public class Response implements HttpServletResponse
     @Override
     public void addHeader(String name, String value)
     {
-        if (isCommitted() || !isMutable())
-            return;
+        boolean allowSetHeader = !isCommitted();
 
         long biInt = _errorSentAndIncludes.get();
         if (biInt != 0)
         {
             boolean errorSent = AtomicBiInteger.getHi(biInt) != 0;
             boolean including = AtomicBiInteger.getLo(biInt) > 0;
+            allowSetHeader &= including;
             if (!errorSent && including && name.startsWith(SET_INCLUDE_HEADER_PREFIX))
                 name = name.substring(SET_INCLUDE_HEADER_PREFIX.length());
             else
                 return;
         }
+
+        if (!allowSetHeader)
+            return;
 
         if (HttpHeader.CONTENT_TYPE.is(name))
         {

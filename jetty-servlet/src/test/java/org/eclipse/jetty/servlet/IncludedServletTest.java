@@ -68,6 +68,7 @@ public class IncludedServletTest
                 headerPrefix = "org.eclipse.jetty.server.include.";
 
             resp.setHeader(headerPrefix + "included-page-key", "included-page-value");
+            resp.addHeader(headerPrefix + "added-included-page-key", "added-included-page-value");
             resp.getWriter().println("<h3> This is the included page");
         }
     }
@@ -179,6 +180,7 @@ public class IncludedServletTest
 
             assertThat("Response Header[main-page-key]", connection.getHeaderField("main-page-key"), is("main-page-value"));
             assertThat("Response Header[included-page-key]", connection.getHeaderField("included-page-key"), is("included-page-value"));
+            assertThat("Response Header[added-included-page-key]", connection.getHeaderField("added-included-page-key"), is("added-included-page-value"));
         }
         finally
         {
