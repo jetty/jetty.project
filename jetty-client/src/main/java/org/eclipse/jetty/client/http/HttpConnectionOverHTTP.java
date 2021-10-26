@@ -184,7 +184,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
 
     protected boolean onIdleTimeout(long idleTimeout)
     {
-        return delegate.onIdleTimeout(idleTimeout);
+        TimeoutException failure = new TimeoutException("Idle timeout " + idleTimeout + " ms");
+        return delegate.onIdleTimeout(idleTimeout, failure);
     }
 
     @Override

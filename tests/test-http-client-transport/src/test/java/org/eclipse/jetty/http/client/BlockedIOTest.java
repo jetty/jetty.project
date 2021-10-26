@@ -21,7 +21,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.util.DeferredContentProvider;
+import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BufferUtil;
@@ -107,11 +107,11 @@ public class BlockedIOTest extends AbstractTest<TransportScenario>
             }
         });
 
-        DeferredContentProvider contentProvider = new DeferredContentProvider();
+        AsyncRequestContent requestContent = new AsyncRequestContent();
         CountDownLatch ok = new CountDownLatch(2);
         scenario.client.newRequest(scenario.newURI())
             .method("POST")
-            .content(contentProvider)
+            .body(requestContent)
             .onResponseContent((response, content) ->
             {
                 assertThat(BufferUtil.toString(content), containsString("OK"));
@@ -131,7 +131,7 @@ public class BlockedIOTest extends AbstractTest<TransportScenario>
                 }
             })
             .send(null);
-        contentProvider.offer(BufferUtil.toBuffer("1"));
+        requestContent.offer(BufferUtil.toBuffer("1"));
 
         assertTrue(ok.await(10, TimeUnit.SECONDS));
         assertThat(readException.get(), instanceOf(IOException.class));

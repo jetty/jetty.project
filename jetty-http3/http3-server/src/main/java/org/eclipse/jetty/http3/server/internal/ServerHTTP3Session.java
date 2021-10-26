@@ -110,7 +110,8 @@ public class ServerHTTP3Session extends ServerProtocolSession
 
     private void fail(Throwable failure)
     {
-        // TODO: must close the connection.
+        // TODO
+        throw new UnsupportedOperationException();
     }
 
     private QuicStreamEndPoint openInstructionEndPoint(long streamId)

@@ -261,7 +261,7 @@ public abstract class HttpConnection implements IConnection, Attachable
         }
     }
 
-    public boolean onIdleTimeout(long idleTimeout)
+    public boolean onIdleTimeout(long idleTimeout, Throwable failure)
     {
         try (AutoLock l = lock.lock())
         {

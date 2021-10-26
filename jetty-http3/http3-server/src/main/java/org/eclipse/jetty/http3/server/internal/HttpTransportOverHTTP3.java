@@ -122,7 +122,7 @@ public class HttpTransportOverHTTP3 implements HttpTransport
                         else
                         {
                             dataFrame = new DataFrame(content, false);
-                            trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_2, trailers), true);
+                            trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
                         }
                     }
                     else
@@ -148,7 +148,7 @@ public class HttpTransportOverHTTP3 implements HttpTransport
                             else
                             {
                                 headersFrame = new HeadersFrame(metaData, false);
-                                trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_2, trailers), true);
+                                trailersFrame = new HeadersFrame(new MetaData(HttpVersion.HTTP_3, trailers), true);
                             }
                         }
                     }
@@ -252,7 +252,8 @@ public class HttpTransportOverHTTP3 implements HttpTransport
     @Override
     public void push(MetaData.Request request)
     {
-        // TODO implement
+        // TODO
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -497,7 +498,7 @@ public class HttpTransportOverHTTP3 implements HttpTransport
         public void succeeded()
         {
             transportCallback.send(getCallback(), false, c ->
-                sendTrailerFrame(new MetaData(HttpVersion.HTTP_2, trailers), c));
+                sendTrailerFrame(new MetaData(HttpVersion.HTTP_3, trailers), c));
         }
     }
 }

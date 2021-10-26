@@ -18,19 +18,23 @@ import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpReceiver;
 import org.eclipse.jetty.client.HttpSender;
+import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 
 public class HttpChannelOverHTTP3 extends HttpChannel
 {
+    private final HttpConnectionOverHTTP3 connection;
     private final HTTP3SessionClient session;
     private final HttpSenderOverHTTP3 sender;
     private final HttpReceiverOverHTTP3 receiver;
     private Stream stream;
 
-    public HttpChannelOverHTTP3(HttpDestination destination, HTTP3SessionClient session)
+    public HttpChannelOverHTTP3(HttpDestination destination, HttpConnectionOverHTTP3 connection, HTTP3SessionClient session)
     {
         super(destination);
+        this.connection = connection;
         this.session = session;
         sender = new HttpSenderOverHTTP3(this);
         receiver = new HttpReceiverOverHTTP3(this);
@@ -75,9 +79,22 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     }
 
     @Override
+    public void exchangeTerminated(HttpExchange exchange, Result result)
+    {
+        super.exchangeTerminated(exchange, result);
+
+        Stream stream = getStream();
+        if (stream != null && result.isFailed())
+            stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), result.getFailure());
+        else
+            release();
+    }
+
+    @Override
     public void release()
     {
-        // TODO
+        setStream(null);
+        connection.release(this);
     }
 
     @Override

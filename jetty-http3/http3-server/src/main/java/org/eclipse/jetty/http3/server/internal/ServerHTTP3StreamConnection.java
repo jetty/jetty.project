@@ -19,7 +19,6 @@ import org.eclipse.jetty.http3.internal.HTTP3StreamConnection;
 import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
 
@@ -27,20 +26,20 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
 {
     private final Connector connector;
     private final HttpConfiguration httpConfiguration;
-    private final ServerHTTP3Session http3Session;
+    private final ServerHTTP3Session session;
 
-    public ServerHTTP3StreamConnection(Connector connector, HttpConfiguration httpConfiguration, QuicStreamEndPoint endPoint, ServerHTTP3Session http3Session, MessageParser parser)
+    public ServerHTTP3StreamConnection(Connector connector, HttpConfiguration httpConfiguration, QuicStreamEndPoint endPoint, ServerHTTP3Session session, MessageParser parser)
     {
         super(endPoint, connector.getExecutor(), connector.getByteBufferPool(), parser);
         this.connector = connector;
         this.httpConfiguration = httpConfiguration;
-        this.http3Session = http3Session;
+        this.session = session;
     }
 
     @Override
     protected void onDataAvailable(long streamId)
     {
-        http3Session.onDataAvailable(streamId);
+        session.onDataAvailable(streamId);
     }
 
     public Runnable onRequest(HTTP3Stream stream, HeadersFrame frame)

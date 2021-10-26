@@ -100,11 +100,12 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
     public boolean onIdleTimeout(Session session)
     {
         long idleTimeout = ((HTTP2Session)session).getEndPoint().getIdleTimeout();
-        if (failConnectionPromise(new TimeoutException("Idle timeout expired: " + idleTimeout + " ms")))
+        TimeoutException failure = new TimeoutException("Idle timeout expired: " + idleTimeout + " ms");
+        if (failConnectionPromise(failure))
             return true;
         HttpConnectionOverHTTP2 connection = this.connection.getReference();
         if (connection != null)
-            return connection.onIdleTimeout(idleTimeout);
+            return connection.onIdleTimeout(idleTimeout, failure);
         return true;
     }
 

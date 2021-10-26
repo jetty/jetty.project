@@ -154,6 +154,11 @@ public abstract class QuicSession extends ContainerLifeCycle
         return protocolSession;
     }
 
+    public int getMaxLocalStreams()
+    {
+        return quicheConnection.maxLocalStreams();
+    }
+
     public String getNegotiatedProtocol()
     {
         return quicheConnection.getNegotiatedProtocol();

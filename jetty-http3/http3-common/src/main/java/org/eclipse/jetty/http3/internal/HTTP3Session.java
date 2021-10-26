@@ -107,6 +107,11 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         return List.copyOf(streams.values());
     }
 
+    public int getMaxLocalStreams()
+    {
+        return session.getMaxLocalStreams();
+    }
+
     @Override
     public CompletableFuture<Void> goAway(boolean graceful)
     {
@@ -240,6 +245,11 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (LOG.isDebugEnabled())
             LOG.debug("outward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
         getProtocolSession().outwardClose(error, reason);
+    }
+
+    public long getIdleTimeout()
+    {
+        return getProtocolSession().getIdleTimeout();
     }
 
     public long getStreamIdleTimeout()
@@ -784,7 +794,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             notifyFailure = closeState == CloseState.NOT_CLOSED;
             closeState = CloseState.CLOSED;
             zeroStreamsAction = null;
-            // TODO: what about field shutdown?
         }
 
         // No point in closing the streams, as QUIC frames cannot be sent.
@@ -825,6 +834,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     public void onSessionFailure(long error, String reason)
     {
         // TODO
+        throw new UnsupportedOperationException();
     }
 
     public void notifyFailure(Throwable failure)

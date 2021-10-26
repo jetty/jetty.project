@@ -161,7 +161,6 @@ public abstract class QuicConnection extends AbstractConnection
     @Override
     public void close()
     {
-        // This method should only be called when the client or the server are stopped.
         if (closed.compareAndSet(false, true))
         {
             if (LOG.isDebugEnabled())
@@ -171,7 +170,7 @@ public abstract class QuicConnection extends AbstractConnection
             {
                 try
                 {
-                    session.inwardClose(QuicErrorCode.NO_ERROR.code(), "stop");
+                    session.inwardClose(QuicErrorCode.NO_ERROR.code(), "close");
                 }
                 catch (Throwable x)
                 {

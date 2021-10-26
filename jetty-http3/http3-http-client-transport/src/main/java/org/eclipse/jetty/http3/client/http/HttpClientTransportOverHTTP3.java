@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
@@ -30,7 +31,9 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.HTTP3ClientConnectionFactory;
+import org.eclipse.jetty.http3.client.http.internal.HttpConnectionOverHTTP3;
 import org.eclipse.jetty.http3.client.http.internal.SessionClientListener;
+import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -111,7 +114,9 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         context.put(ClientConnector.CLIENT_CONNECTION_FACTORY_CONTEXT_KEY, destination.getClientConnectionFactory());
 
-        getHTTP3Client().connect(address, new SessionClientListener(context), context);
+        SessionClientListener listener = new TransportSessionClientListener(context);
+        getHTTP3Client().connect(address, listener, context)
+            .whenComplete(listener::onConnect);
     }
 
     @Override
@@ -124,5 +129,24 @@ public class HttpClientTransportOverHTTP3 extends AbstractHttpClientTransport im
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context)
     {
         return factory.newConnection(endPoint, context);
+    }
+
+    protected HttpConnection newHttpConnection(HttpDestination destination, HTTP3SessionClient session)
+    {
+        return new HttpConnectionOverHTTP3(destination, session);
+    }
+
+    private class TransportSessionClientListener extends SessionClientListener
+    {
+        private TransportSessionClientListener(Map<String, Object> context)
+        {
+            super(context);
+        }
+
+        @Override
+        protected HttpConnectionOverHTTP3 newHttpConnection(HttpDestination destination, HTTP3SessionClient session)
+        {
+            return (HttpConnectionOverHTTP3)HttpClientTransportOverHTTP3.this.newHttpConnection(destination, session);
+        }
     }
 }

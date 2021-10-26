@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory;
 public class QuicheConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(QuicheConnection.class);
-    // TODO: cannot be static!
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     static
@@ -527,6 +526,18 @@ public class QuicheConnection
         }
     }
 
+    public int maxLocalStreams()
+    {
+        try (AutoLock ignore = lock.lock())
+        {
+            if (quicheConn == null)
+                throw new IllegalStateException("connection was released");
+            LibQuiche.quiche_stats stats = new LibQuiche.quiche_stats();
+            LibQuiche.INSTANCE.quiche_conn_stats(quicheConn, stats);
+            return stats.peer_initial_max_streams_bidi.intValue();
+        }
+    }
+
     public long windowCapacity()
     {
         try (AutoLock ignore = lock.lock())
@@ -547,7 +558,10 @@ public class QuicheConnection
                 throw new IOException("connection was released");
             long value = LibQuiche.INSTANCE.quiche_conn_stream_capacity(quicheConn, new uint64_t(streamId)).longValue();
             if (value < 0)
-                throw new IOException(" failed to read capacity of stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(value));
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("could not read window capacity for stream {} err={}", streamId, LibQuiche.quiche_error.errToString(value));
+            }
             return value;
         }
     }
