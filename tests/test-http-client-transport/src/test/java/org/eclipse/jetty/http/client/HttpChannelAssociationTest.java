@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
+import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.api.Connection;
@@ -36,6 +37,11 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpChannelOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
+import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.http.HttpClientTransportOverHTTP3;
+import org.eclipse.jetty.http3.client.http.internal.HttpChannelOverHTTP3;
+import org.eclipse.jetty.http3.client.http.internal.HttpConnectionOverHTTP3;
+import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
@@ -175,8 +181,32 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
             }
             case H3:
             {
-                // TODO:
-                throw new UnsupportedOperationException();
+                HTTP3Client http3Client = new HTTP3Client();
+                http3Client.getClientConnector().setSelectors(1);
+                http3Client.getClientConnector().setSslContextFactory(scenario.newClientSslContextFactory());
+                http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
+                return new HttpClientTransportOverHTTP3(http3Client)
+                {
+                    @Override
+                    protected HttpConnection newHttpConnection(HttpDestination destination, HTTP3SessionClient session)
+                    {
+                        return new HttpConnectionOverHTTP3(destination, session)
+                        {
+                            @Override
+                            protected HttpChannelOverHTTP3 newHttpChannel()
+                            {
+                                return new HttpChannelOverHTTP3(getHttpDestination(), this, getSession())
+                                {
+                                    @Override
+                                    public boolean associate(HttpExchange exchange)
+                                    {
+                                        return code.test(exchange) && super.associate(exchange);
+                                    }
+                                };
+                            }
+                        };
+                    }
+                };
             }
             case FCGI:
             {

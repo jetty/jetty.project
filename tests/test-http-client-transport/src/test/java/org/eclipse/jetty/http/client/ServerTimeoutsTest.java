@@ -599,7 +599,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         // In HTTP/2, we force the flow control window to be small, so that the server
         // stalls almost immediately without having written many bytes, so that the test
         // completes quickly.
-        Assumptions.assumeTrue(transport.isHttp2Based());
+        Assumptions.assumeTrue(transport.isMultiplexed());
 
         init(transport);
 

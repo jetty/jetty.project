@@ -28,9 +28,13 @@ import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.SendFailure;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class HttpConnectionOverHTTP3 extends HttpConnection implements ConnectionPool.Multiplexable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP3.class);
+
     private final Set<HttpChannel> activeChannels = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final HTTP3SessionClient session;
@@ -41,11 +45,15 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
         this.session = session;
     }
 
+    public HTTP3SessionClient getSession()
+    {
+        return session;
+    }
+
     @Override
     public int getMaxMultiplex()
     {
-        // TODO: need to retrieve this via stats, and it's a fixed value.
-        return 1;
+        return session.getMaxLocalStreams();
     }
 
     @Override
@@ -62,10 +70,25 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
         normalizeRequest(request);
 
         // One connection maps to N channels, so one channel for each exchange.
-        HttpChannelOverHTTP3 channel = new HttpChannelOverHTTP3(getHttpDestination(), session);
+        HttpChannelOverHTTP3 channel = newHttpChannel();
         activeChannels.add(channel);
 
         return send(channel, exchange);
+    }
+
+    protected HttpChannelOverHTTP3 newHttpChannel()
+    {
+        return new HttpChannelOverHTTP3(getHttpDestination(), this, getSession());
+    }
+
+    public void release(HttpChannelOverHTTP3 channel)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("released {}", channel);
+        if (activeChannels.remove(channel))
+            getHttpDestination().release(this);
+        else
+            channel.destroy();
     }
 
     @Override
@@ -80,7 +103,7 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
         close(new AsynchronousCloseException());
     }
 
-    private void close(Throwable failure)
+    public void close(Throwable failure)
     {
         if (closed.compareAndSet(false, true))
         {
@@ -100,5 +123,13 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
                 exchange.getRequest().abort(failure);
         }
         activeChannels.clear();
+    }
+
+    @Override
+    public boolean onIdleTimeout(long idleTimeout, Throwable failure)
+    {
+        if (super.onIdleTimeout(idleTimeout, failure))
+            close(failure);
+        return false;
     }
 }

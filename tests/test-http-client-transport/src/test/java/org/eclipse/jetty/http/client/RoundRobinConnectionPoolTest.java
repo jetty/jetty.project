@@ -112,7 +112,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
     {
         init(transport);
         int multiplex = 1;
-        if (scenario.transport.isHttp2Based())
+        if (scenario.transport.isMultiplexed())
             multiplex = 4;
         int maxMultiplex = multiplex;
 
@@ -207,7 +207,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         init(transport);
 
         int multiplex = 1;
-        if (scenario.transport.isHttp2Based())
+        if (scenario.transport.isMultiplexed())
             multiplex = 2;
         int maxMultiplex = multiplex;
 

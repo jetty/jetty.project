@@ -49,6 +49,16 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         return session;
     }
 
+    public long getIdleTimeout()
+    {
+        return session.getIdleTimeout();
+    }
+
+    public int getMaxLocalStreams()
+    {
+        return session.getMaxLocalStreams();
+    }
+
     public abstract Runnable getProducerTask();
 
     protected void produce()

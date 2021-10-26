@@ -77,6 +77,6 @@ public class QuicClientConnectorConfigurator extends ClientConnector.Configurato
     @Override
     public Connection newConnection(ClientConnector clientConnector, SocketAddress address, EndPoint endPoint, Map<String, Object> context)
     {
-        return configurator.apply(new ClientQuicConnection(clientConnector.getExecutor(), clientConnector.getScheduler(), clientConnector.getByteBufferPool(), endPoint, context));
+        return configurator.apply(new ClientQuicConnection(clientConnector, endPoint, context));
     }
 }

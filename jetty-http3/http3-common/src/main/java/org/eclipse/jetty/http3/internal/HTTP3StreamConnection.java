@@ -213,23 +213,23 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     public void demand()
     {
-        boolean interested;
+        boolean hasData;
         boolean process = false;
         try (AutoLock l = lock.lock())
         {
-            interested = noData;
+            hasData = !noData;
             dataDemand = true;
-            if (dataStalled)
+            if (dataStalled && hasData)
             {
                 dataStalled = false;
                 process = true;
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("demand, wasStalled={} on {}", process, this);
+            LOG.debug("demand, wasStalled={} hasData={} on {}", process, hasData, this);
         if (process)
-            processDataDemand();
-        else if (interested)
+            processDataFrames();
+        else if (!hasData)
             fillInterested();
     }
 

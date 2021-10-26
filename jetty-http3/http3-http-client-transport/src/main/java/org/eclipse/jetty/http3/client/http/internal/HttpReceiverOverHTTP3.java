@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.client.http.internal;
 
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.client.HttpExchange;
@@ -110,45 +111,55 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
         if (exchange == null)
             return;
 
-        Stream.Data data = stream.readData();
-        if (data != null)
+        try
         {
-            ByteBuffer byteBuffer = data.getByteBuffer();
-            if (byteBuffer.hasRemaining())
+            Stream.Data data = stream.readData();
+            if (data != null)
             {
-                Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::complete, x ->
+                ByteBuffer byteBuffer = data.getByteBuffer();
+                if (byteBuffer.hasRemaining())
+                {
+                    Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, data::complete, x ->
+                    {
+                        data.complete();
+                        if (responseFailure(x))
+                            stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
+                    });
+                    boolean proceed = responseContent(exchange, byteBuffer, callback);
+                    if (proceed)
+                    {
+                        if (data.isLast())
+                            responseSuccess(exchange);
+                        else
+                            stream.demand();
+                    }
+                    else
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("stalling response processing, no demand after {} on {}", data, this);
+                        notifySuccess = data.isLast();
+                    }
+                }
+                else
                 {
                     data.complete();
-                    if (responseFailure(x))
-                        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
-                });
-                boolean proceed = responseContent(exchange, byteBuffer, callback);
-                if (proceed)
-                {
                     if (data.isLast())
                         responseSuccess(exchange);
                     else
                         stream.demand();
                 }
-                else
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("stalling response processing, no demand after {} on {}", data, this);
-                    notifySuccess = data.isLast();
-                }
             }
             else
             {
-                data.complete();
-                if (data.isLast())
-                    responseSuccess(exchange);
-                else
-                    stream.demand();
+                stream.demand();
             }
         }
-        else
+        catch (Throwable x)
         {
-            stream.demand();
+            Throwable failure = x;
+            if (x instanceof UncheckedIOException)
+                failure = x.getCause();
+            exchange.getRequest().abort(failure);
         }
     }
 
@@ -162,5 +173,21 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
         HttpFields trailers = frame.getMetaData().getFields();
         trailers.forEach(exchange.getResponse()::trailer);
         responseSuccess(exchange);
+    }
+
+    @Override
+    public boolean onIdleTimeout(Stream stream, Throwable failure)
+    {
+        HttpExchange exchange = getHttpExchange();
+        if (exchange == null)
+            return false;
+
+        return !exchange.abort(failure);
+    }
+
+    @Override
+    public void onFailure(Stream stream, Throwable failure)
+    {
+        responseFailure(failure);
     }
 }

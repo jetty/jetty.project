@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.AsyncContext;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -33,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
 {
-    private long idleTimeout = 1000;
+    private final long idleTimeout = 1000;
 
     @Override
     public void init(Transport transport) throws IOException
@@ -49,7 +48,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
         scenario.startServer(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 if (target.equals("/timeout"))
@@ -85,7 +84,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
         scenario.start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
                 if (target.equals("/timeout"))
@@ -139,7 +138,7 @@ public class HttpClientIdleTimeoutTest extends AbstractTest<TransportScenario>
     {
         init(transport);
         scenario.start(new EmptyServerHandler());
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setConnectionIdleTimeout(idleTimeout);
 
         ContentResponse response1 = scenario.client.newRequest(scenario.newURI()).send();
         assertEquals(HttpStatus.OK_200, response1.getStatus());

@@ -118,7 +118,8 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
     private void fail(Throwable failure)
     {
-        // TODO: must close the connection.
+        // TODO
+        throw new UnsupportedOperationException();
     }
 
     private QuicStreamEndPoint openInstructionEndPoint(long streamId)

@@ -22,9 +22,9 @@ public enum Transport
         return this == HTTP || this == HTTPS;
     }
 
-    public boolean isHttp2Based()
+    public boolean isMultiplexed()
     {
-        return this == H2C || this == H2;
+        return this == H2C || this == H2 || this == H3;
     }
 
     public boolean isTlsBased()

@@ -171,6 +171,8 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         }
         catch (Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not read {}", this, x);
             reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
             // Rethrow to the application, so don't notify onFailure().
             throw x;

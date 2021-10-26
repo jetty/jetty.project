@@ -104,7 +104,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("HTTP3 Request #{}/{}, delayed={}:{}{} {} {}{}{}",
+                LOG.debug("HTTP3 request #{}/{}, delayed={}:{}{} {} {}{}{}",
                     stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
                     delayedUntilContent, System.lineSeparator(),
                     request.getMethod(), request.getURI(), request.getHttpVersion(),
@@ -116,7 +116,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         catch (BadMessageException x)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("onRequest", x);
+                LOG.debug("onRequest() failure", x);
             onBadMessage(x);
             return null;
         }
@@ -132,7 +132,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         boolean woken = getRequest().getHttpInput().onContentProducible();
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP3 Request #{}/{} woken: {}",
+            LOG.debug("HTTP3 request data available #{}/{} woken: {}",
                 stream.getId(),
                 Integer.toHexString(stream.getSession().hashCode()),
                 woken);
@@ -140,7 +140,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
         boolean wasDelayed = delayedUntilContent;
         delayedUntilContent = false;
-        return wasDelayed ? this : null;
+        return wasDelayed || woken ? this : null;
     }
 
     public Runnable onTrailer(HeadersFrame frame)
@@ -163,7 +163,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
         boolean wasDelayed = delayedUntilContent;
         delayedUntilContent = false;
-        return handle || wasDelayed ? this : null;
+        return wasDelayed || handle ? this : null;
     }
 
     public boolean onIdleTimeout(Throwable failure, Consumer<Runnable> consumer)
