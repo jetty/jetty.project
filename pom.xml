@@ -29,7 +29,7 @@
     <asciidoctorj.version>2.5.2</asciidoctorj.version>
     <asciidoctorj-diagram.version>2.2.1</asciidoctorj-diagram.version>
     <asm.version>9.2</asm.version>
-    <awaitility.version>4.1.0</awaitility.version>
+    <awaitility.version>4.1.1</awaitility.version>
     <bndlib.version>5.3.0</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>9.0</checkstyle.version>
@@ -131,7 +131,7 @@
     <depends.maven.plugin.version>1.4.0</depends.maven.plugin.version>
     <docbkx.maven.plugin.version>2.0.17</docbkx.maven.plugin.version>
     <flatten.maven.plugin.version>1.2.7</flatten.maven.plugin.version>
-    <h2spec.maven.plugin.version>1.0.8</h2spec.maven.plugin.version>
+    <h2spec.maven.plugin.version>1.0.9</h2spec.maven.plugin.version>
     <jacoco.maven.plugin.version>0.8.7</jacoco.maven.plugin.version>
     <jetty-version.maven.plugin.version>2.7</jetty-version.maven.plugin.version>
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
