@@ -1000,7 +1000,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 completeLatch.countDown();
             });
 
-        assertTrue(completeLatch.await(2 * connectTimeout, TimeUnit.SECONDS));
+        assertTrue(completeLatch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -1203,7 +1203,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
         long idleTimeout = 1000;
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         CountDownLatch latch = new CountDownLatch(1);
         byte[] bytes = "[{\"key\":\"value\"}]".getBytes(StandardCharsets.UTF_8);

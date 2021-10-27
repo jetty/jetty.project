@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import java.util.function.Consumer;
+
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.http3.internal.HTTP3StreamConnection;
@@ -20,7 +22,6 @@ import org.eclipse.jetty.http3.internal.parser.MessageParser;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpTransport;
 
 public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
 {
@@ -44,7 +45,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
 
     public Runnable onRequest(HTTP3Stream stream, HeadersFrame frame)
     {
-        HttpTransport transport = new HttpTransportOverHTTP3(stream);
+        HttpTransportOverHTTP3 transport = new HttpTransportOverHTTP3(stream);
         HttpChannelOverHTTP3 channel = new HttpChannelOverHTTP3(connector, httpConfiguration, getEndPoint(), transport, stream, this);
         stream.setAttachment(channel);
         return channel.onRequest(frame);
@@ -62,10 +63,10 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
         return channel.onTrailer(frame);
     }
 
-    public boolean onIdleTimeout(HTTP3Stream stream, Throwable failure)
+    public boolean onIdleTimeout(HTTP3Stream stream, Throwable failure, Consumer<Runnable> consumer)
     {
         HttpChannelOverHTTP3 channel = (HttpChannelOverHTTP3)stream.getAttachment();
-        return channel.onIdleTimeout(failure, null); // TODO
+        return channel.onIdleTimeout(failure, consumer);
     }
 
     public void onFailure(HTTP3Stream stream, Throwable failure)

@@ -31,29 +31,35 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class HttpChannelOverHTTP3 extends HttpChannel
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelOverHTTP3.class);
-
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
     private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
 
+    private final AutoLock lock = new AutoLock();
     private final HTTP3Stream stream;
     private final ServerHTTP3StreamConnection connection;
     private HttpInput.Content content;
     private boolean expect100Continue;
     private boolean delayedUntilContent;
 
-    public HttpChannelOverHTTP3(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HTTP3Stream stream, ServerHTTP3StreamConnection connection)
+    public HttpChannelOverHTTP3(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP3 transport, HTTP3Stream stream, ServerHTTP3StreamConnection connection)
     {
         super(connector, configuration, endPoint, transport);
         this.stream = stream;
         this.connection = connection;
+    }
+
+    @Override
+    public HttpTransportOverHTTP3 getHttpTransport()
+    {
+        return (HttpTransportOverHTTP3)super.getHttpTransport();
     }
 
     void consumeInput()
@@ -175,15 +181,17 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         if (reset)
             consumeInput();
 
-        //TODO
-//        getHttpTransport().onStreamTimeout(failure);
+        getHttpTransport().onStreamIdleTimeout(failure);
 
-        failure.addSuppressed(new Throwable("HttpInput idle timeout"));
-        // TODO: writing to the content field here is at race with demand?
-        if (content == null)
-            content = new HttpInput.ErrorContent(failure);
+        failure.addSuppressed(new Throwable("idle timeout"));
+
+        try (AutoLock l = lock.lock())
+        {
+            if (content == null)
+                content = new HttpInput.ErrorContent(failure);
+        }
+
         boolean needed = getRequest().getHttpInput().onContentProducible();
-
         if (needed || delayed)
         {
             consumer.accept(this::handleWithContext);
@@ -214,9 +222,11 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     @Override
     public boolean needContent()
     {
-        if (content != null)
-            return true;
-
+        try (AutoLock l = lock.lock())
+        {
+            if (content != null)
+                return true;
+        }
         stream.demand();
         return false;
     }
@@ -224,14 +234,18 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     @Override
     public HttpInput.Content produceContent()
     {
-        if (content != null)
+        HttpInput.Content result;
+        try (AutoLock l = lock.lock())
         {
-            HttpInput.Content result = content;
-            if (!result.isSpecial())
-                content = null;
-            if (LOG.isDebugEnabled())
-                LOG.debug("produced content {} on {}", result, this);
-            return result;
+            if (content != null)
+            {
+                result = content;
+                if (!result.isSpecial())
+                    content = null;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("produced content {} on {}", result, this);
+                return result;
+            }
         }
 
         Stream.Data data = stream.readData();
@@ -240,7 +254,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         if (data == null)
             return null;
 
-        content = new HttpInput.Content(data.getByteBuffer())
+        result = new HttpInput.Content(data.getByteBuffer())
         {
             @Override
             public boolean isEof()
@@ -260,20 +274,30 @@ public class HttpChannelOverHTTP3 extends HttpChannel
                 data.complete();
             }
         };
-        boolean handle = onContent(content);
+        try (AutoLock l = lock.lock())
+        {
+            content = result;
+        }
+
+        boolean handle = onContent(result);
 
         boolean isLast = data.isLast();
         if (isLast)
         {
             boolean handleContent = onContentComplete();
-            // This will generate EOF -> must happen before onContentProducible.
+            // This will generate EOF -> must happen before onContentProducible().
             boolean handleRequest = onRequestComplete();
             handle |= handleContent | handleRequest;
         }
 
-        HttpInput.Content result = content;
         if (!result.isSpecial())
-            content = result.isEof() ? new HttpInput.EofContent() : null;
+        {
+            HttpInput.Content newContent = result.isEof() ? new HttpInput.EofContent() : null;
+            try (AutoLock l = lock.lock())
+            {
+                content = newContent;
+            }
+        }
         if (LOG.isDebugEnabled())
             LOG.debug("produced new content {} on {}", result, this);
         return result;
@@ -294,21 +318,20 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     @Override
     protected boolean eof()
     {
-        HttpInput.Content content = this.content;
-        if (content == null)
+        try (AutoLock l = lock.lock())
         {
-            this.content = new HttpInput.EofContent();
-        }
-        else
-        {
-            if (!content.isEof())
+            if (content == null)
+            {
+                content = new HttpInput.EofContent();
+            }
+            else if (!content.isEof())
             {
                 if (content.remaining() == 0)
-                    this.content = new HttpInput.EofContent();
+                    content = new HttpInput.EofContent();
                 else
                     throw new IllegalStateException();
             }
+            return false;
         }
-        return false;
     }
 }

@@ -68,9 +68,13 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         strategy.produce();
     }
 
-    public void offer(Runnable task)
+    public void offer(Runnable task, boolean dispatch)
     {
         producer.offer(task);
+        if (dispatch)
+            strategy.dispatch();
+        else
+            strategy.produce();
     }
 
     public QuicStreamEndPoint getStreamEndPoint(long streamId)

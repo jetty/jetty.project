@@ -172,7 +172,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             }
         });
         long idleTimeout = 1000;
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         CountDownLatch resultLatch = new CountDownLatch(2);
         AsyncRequestContent content = new AsyncRequestContent();
@@ -236,7 +236,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             }
         });
         long idleTimeout = 2500;
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
@@ -292,7 +292,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
             }
         });
         long idleTimeout = 2500;
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         BlockingQueue<Callback> callbacks = new LinkedBlockingQueue<>();
         CountDownLatch resultLatch = new CountDownLatch(1);
@@ -442,7 +442,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         scenario.httpConfig.setIdleTimeout(httpIdleTimeout);
         CountDownLatch handlerLatch = new CountDownLatch(1);
         scenario.start(new BlockingReadHandler(handlerLatch));
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
         {
@@ -510,7 +510,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                 });
             }
         });
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         AsyncRequestContent content = new AsyncRequestContent(ByteBuffer.allocate(1));
         CountDownLatch resultLatch = new CountDownLatch(1);
@@ -551,7 +551,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
                 }
             }
         });
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         byte[] data = new byte[1024];
         new Random().nextBytes(data);
