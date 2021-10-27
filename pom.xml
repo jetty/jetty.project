@@ -55,7 +55,7 @@
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jmh.version>1.33</jmh.version>
     <jna.version>5.9.0</jna.version>
-    <jnr-enxio.version>0.32.9</jnr-enxio.version>
+    <jnr-enxio.version>0.32.10</jnr-enxio.version>
     <jnr-ffi.version>2.2.7</jnr-ffi.version>
     <jnr-posix.version>3.1.10</jnr-posix.version>
     <jnr-unixsocket.version>0.38.11</jnr-unixsocket.version>
