@@ -24,7 +24,7 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
 {
     private static final Logger LOG = LoggerFactory.getLogger(LeakTrackingConnectionPool.class);
 
-    private final LeakDetector<Connection> leakDetector = new LeakDetector<Connection>()
+    private final LeakDetector<Connection> leakDetector = new LeakDetector<>()
     {
         @Override
         protected void leaked(LeakInfo leakInfo)
@@ -35,7 +35,7 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
 
     public LeakTrackingConnectionPool(HttpDestination destination, int maxConnections, Callback requester)
     {
-        super((HttpDestination)destination, maxConnections, requester);
+        super(destination, maxConnections, requester);
         addBean(leakDetector);
     }
 
@@ -60,7 +60,7 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
             LOG.info("Connection {}@{} released but not acquired", connection, leakDetector.id(connection));
     }
 
-    protected void leaked(LeakDetector.LeakInfo leakInfo)
+    protected void leaked(LeakDetector<Connection>.LeakInfo leakInfo)
     {
         LOG.info("Connection {} leaked at:", leakInfo.getResourceDescription(), leakInfo.getStackFrames());
     }

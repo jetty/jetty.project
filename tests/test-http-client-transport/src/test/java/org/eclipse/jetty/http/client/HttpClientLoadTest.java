@@ -31,18 +31,17 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.LeakTrackingConnectionPool;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.BytesRequestContent;
-import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Connector;
@@ -368,58 +367,54 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
             int selectors = Math.min(1, ProcessorUtils.availableProcessors() / 2);
             ByteBufferPool byteBufferPool = new ArrayByteBufferPool();
             byteBufferPool = new LeakTrackingByteBufferPool(byteBufferPool);
-            if (transport == Transport.UNIX_DOMAIN)
+            switch (transport)
             {
-                UnixDomainServerConnector unixSocketConnector = new UnixDomainServerConnector(server, null, null, byteBufferPool, 1, selectors, provideServerConnectionFactory(transport));
-                unixSocketConnector.setUnixDomainPath(unixDomainPath);
-                return unixSocketConnector;
+                case HTTP:
+                case HTTPS:
+                case H2C:
+                case H2:
+                case FCGI:
+                    return new ServerConnector(server, null, null, byteBufferPool, 1, selectors, provideServerConnectionFactory(transport));
+                case H3:
+                    return new HTTP3ServerConnector(server, null, null, byteBufferPool, sslContextFactory, provideServerConnectionFactory(transport));
+                case UNIX_DOMAIN:
+                    UnixDomainServerConnector unixSocketConnector = new UnixDomainServerConnector(server, null, null, byteBufferPool, 1, selectors, provideServerConnectionFactory(transport));
+                    unixSocketConnector.setUnixDomainPath(unixDomainPath);
+                    return unixSocketConnector;
+                default:
+                    throw new IllegalStateException();
             }
-            return new ServerConnector(server, null, null, byteBufferPool, 1, selectors, provideServerConnectionFactory(transport));
         }
 
         @Override
         public HttpClientTransport provideClientTransport(Transport transport, SslContextFactory.Client sslContextFactory)
         {
+            HttpClientTransport clientTransport = super.provideClientTransport(transport, sslContextFactory);
             switch (transport)
             {
                 case HTTP:
                 case HTTPS:
+                case FCGI:
                 case UNIX_DOMAIN:
                 {
-                    ClientConnector clientConnector = new ClientConnector();
-                    clientConnector.setSelectors(1);
-                    clientConnector.setSslContextFactory(sslContextFactory);
-                    HttpClientTransport clientTransport = new HttpClientTransportOverHTTP(clientConnector);
+                    // Track connection leaking only for non-multiplexed transports.
                     clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
                     {
                         @Override
-                        protected void leaked(LeakDetector.LeakInfo leakInfo)
+                        protected void leaked(LeakDetector<Connection>.LeakInfo leakInfo)
                         {
                             super.leaked(leakInfo);
                             connectionLeaks.incrementAndGet();
                         }
                     });
-                    return clientTransport;
-                }
-                case FCGI:
-                {
-                    HttpClientTransport clientTransport = new HttpClientTransportOverFCGI(1, "");
-                    clientTransport.setConnectionPoolFactory(destination -> new LeakTrackingConnectionPool(destination, client.getMaxConnectionsPerDestination(), destination)
-                    {
-                        @Override
-                        protected void leaked(LeakDetector.LeakInfo leakInfo)
-                        {
-                            super.leaked(leakInfo);
-                            connectionLeaks.incrementAndGet();
-                        }
-                    });
-                    return clientTransport;
+                    break;
                 }
                 default:
                 {
-                    return super.provideClientTransport(transport, sslContextFactory);
+                    break;
                 }
             }
+            return clientTransport;
         }
     }
 }

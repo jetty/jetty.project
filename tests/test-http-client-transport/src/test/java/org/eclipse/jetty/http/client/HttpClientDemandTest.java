@@ -126,7 +126,9 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
     {
         init(transport);
 
-        int bufferSize = 512;
+        // A small buffer size so the response content is
+        // read in multiple buffers, but big enough for HTTP/3.
+        int bufferSize = 1536;
         byte[] content = new byte[10 * bufferSize];
         new Random().nextBytes(content);
         scenario.startServer(new EmptyServerHandler()
@@ -140,7 +142,6 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
         });
         scenario.startClient(client ->
         {
-            // A small buffer size so the response content is read in multiple buffers.
             client.setByteBufferPool(new MappedByteBufferPool(bufferSize));
             client.setResponseBufferSize(bufferSize);
         });
@@ -287,7 +288,7 @@ public class HttpClientDemandTest extends AbstractTest<TransportScenario>
     {
         init(transport);
 
-        int bufferSize = 512;
+        int bufferSize = 1536;
         byte[] content = new byte[10 * bufferSize];
         new Random().nextBytes(content);
         scenario.startServer(new EmptyServerHandler()
