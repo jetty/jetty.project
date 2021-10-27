@@ -18,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.stream.Stream;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -86,13 +87,16 @@ public class ForcedServletTest
     private void copyDir(Path src, Path dest) throws IOException
     {
         FS.ensureDirExists(dest);
-        for (Iterator<Path> it = Files.list(src).iterator(); it.hasNext(); )
+        try (Stream<Path> srcStream = Files.list(src))
         {
-            Path path = it.next();
-            if (Files.isRegularFile(path))
-                Files.copy(path, dest.resolve(path.getFileName()));
-            else if (Files.isDirectory(path))
-                copyDir(path, dest.resolve(path.getFileName()));
+            for (Iterator<Path> it = srcStream.iterator(); it.hasNext(); )
+            {
+                Path path = it.next();
+                if (Files.isRegularFile(path))
+                    Files.copy(path, dest.resolve(path.getFileName()));
+                else if (Files.isDirectory(path))
+                    copyDir(path, dest.resolve(path.getFileName()));
+            }
         }
     }
 

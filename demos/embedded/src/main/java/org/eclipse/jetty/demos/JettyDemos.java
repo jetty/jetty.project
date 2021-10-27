@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -75,9 +76,9 @@ public class JettyDemos
 
         String version = "unknown";
         Path pomFile = demosDir.resolve("pom.xml");
-        try
+        try (Stream<String> lineStream = Files.lines(pomFile))
         {
-            String versionLine = Files.lines(pomFile)
+            String versionLine = lineStream
                 .filter((line) -> line.contains("<version>"))
                 .findFirst()
                 .orElseThrow(() ->
