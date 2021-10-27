@@ -85,6 +85,7 @@ import static org.eclipse.jetty.http.client.Transport.FCGI;
 import static org.eclipse.jetty.http.client.Transport.H2C;
 import static org.eclipse.jetty.http.client.Transport.H3;
 import static org.eclipse.jetty.http.client.Transport.HTTP;
+import static org.eclipse.jetty.http.client.Transport.UNIX_DOMAIN;
 import static org.eclipse.jetty.util.BufferUtil.toArray;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -1085,7 +1086,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         // only generates the close alert back, without encrypting the
         // response, so we need to skip the transports over TLS.
         Assumptions.assumeFalse(scenario.transport.isTlsBased());
-        Assumptions.assumeFalse(scenario.transport == FCGI);
 
         String content = "jetty";
         int responseCode = HttpStatus.NO_CONTENT_204;
@@ -1136,7 +1136,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
             .body(requestContent)
             .onResponseSuccess(response ->
             {
-                if (transport == HTTP)
+                if (transport == HTTP || transport == UNIX_DOMAIN)
                     responseLatch.countDown();
             })
             .onResponseFailure((response, failure) ->
@@ -1155,6 +1155,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
             switch (transport)
             {
                 case HTTP:
+                case UNIX_DOMAIN:
                     assertThat(result.getResponse().getStatus(), Matchers.equalTo(responseCode));
                     break;
                 case H2C:
@@ -1172,6 +1173,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         switch (transport)
         {
             case HTTP:
+            case UNIX_DOMAIN:
                 ((HttpConnectionOverHTTP)connection).getEndPoint().shutdownOutput();
                 break;
             case H2C:
