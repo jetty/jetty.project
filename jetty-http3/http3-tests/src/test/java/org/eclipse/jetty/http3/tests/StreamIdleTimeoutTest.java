@@ -177,7 +177,7 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         });
         AbstractHTTP3ServerConnectionFactory h3 = connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
         assertNotNull(h3);
-        h3.getConfiguration().setStreamIdleTimeout(idleTimeout);
+        h3.getHTTP3Configuration().setStreamIdleTimeout(idleTimeout);
 
         Session.Client clientSession = http3Client.connect(new InetSocketAddress("localhost", connector.getLocalPort()), new Session.Client.Listener() {})
             .get(5, TimeUnit.SECONDS);

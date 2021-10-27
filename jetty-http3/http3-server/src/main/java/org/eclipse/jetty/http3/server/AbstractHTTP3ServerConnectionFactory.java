@@ -55,7 +55,7 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
         return httpConfiguration;
     }
 
-    public HTTP3Configuration getConfiguration()
+    public HTTP3Configuration getHTTP3Configuration()
     {
         return configuration;
     }
@@ -63,7 +63,7 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
     @Override
     public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context)
     {
-        return new ServerHTTP3Session(getConfiguration(), (ServerQuicSession)quicSession, listener);
+        return new ServerHTTP3Session(getHTTP3Configuration(), (ServerQuicSession)quicSession, listener);
     }
 
     @Override

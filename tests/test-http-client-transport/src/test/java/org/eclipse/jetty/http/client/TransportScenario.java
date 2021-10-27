@@ -38,10 +38,12 @@ import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http3.client.HTTP3Client;
 import org.eclipse.jetty.http3.client.http.HttpClientTransportOverHTTP3;
+import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
 import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -259,20 +261,35 @@ public class TransportScenario
             ((AbstractConnector)connector).setIdleTimeout(idleTimeout);
     }
 
-    public void setServerIdleTimeout(long idleTimeout)
+    public void setRequestIdleTimeout(long idleTimeout)
     {
         AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
         if (h2 != null)
+        {
             h2.setStreamIdleTimeout(idleTimeout);
+        }
         else
-            setConnectionIdleTimeout(idleTimeout);
+        {
+            AbstractHTTP3ServerConnectionFactory h3 = connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
+            if (h3 != null)
+                h3.getHTTP3Configuration().setStreamIdleTimeout(idleTimeout);
+            else
+                setConnectionIdleTimeout(idleTimeout);
+        }
     }
 
     public void setMaxRequestsPerConnection(int maxRequestsPerConnection)
     {
         AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
         if (h2 != null)
+        {
             h2.setMaxConcurrentStreams(maxRequestsPerConnection);
+        }
+        else
+        {
+            if (connector instanceof QuicServerConnector)
+                ((QuicServerConnector)connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxRequestsPerConnection);
+        }
     }
 
     public void start(Handler handler) throws Exception

@@ -385,7 +385,7 @@ public class ClientServerTest extends AbstractClientServerTest
         });
         AbstractHTTP3ServerConnectionFactory h3 = connector.getConnectionFactory(AbstractHTTP3ServerConnectionFactory.class);
         assertNotNull(h3);
-        h3.getConfiguration().setMaxResponseHeadersSize(maxResponseHeadersSize);
+        h3.getHTTP3Configuration().setMaxResponseHeadersSize(maxResponseHeadersSize);
 
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 

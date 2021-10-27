@@ -91,11 +91,11 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public void onRequest(Stream stream, HeadersFrame frame)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            Runnable runnable = getConnection().onRequest(http3Stream, frame);
-            if (runnable != null)
+            Runnable task = getConnection().onRequest(http3Stream, frame);
+            if (task != null)
             {
                 ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
-                protocolSession.offer(runnable);
+                protocolSession.offer(task, false);
             }
         }
 
@@ -103,11 +103,11 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public void onDataAvailable(Stream stream)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            Runnable runnable = getConnection().onDataAvailable(http3Stream);
-            if (runnable != null)
+            Runnable task = getConnection().onDataAvailable(http3Stream);
+            if (task != null)
             {
                 ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
-                protocolSession.offer(runnable);
+                protocolSession.offer(task, false);
             }
         }
 
@@ -115,18 +115,26 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         public void onTrailer(Stream stream, HeadersFrame frame)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
-            Runnable runnable = getConnection().onTrailer(http3Stream, frame);
-            if (runnable != null)
+            Runnable task = getConnection().onTrailer(http3Stream, frame);
+            if (task != null)
             {
                 ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
-                protocolSession.offer(runnable);
+                protocolSession.offer(task, false);
             }
         }
 
         @Override
         public boolean onIdleTimeout(Stream stream, Throwable failure)
         {
-            return getConnection().onIdleTimeout((HTTP3Stream)stream, failure);
+            HTTP3Stream http3Stream = (HTTP3Stream)stream;
+            return getConnection().onIdleTimeout((HTTP3Stream)stream, failure, task ->
+            {
+                if (task != null)
+                {
+                    ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
+                    protocolSession.offer(task, true);
+                }
+            });
         }
 
         @Override
