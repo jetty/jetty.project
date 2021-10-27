@@ -58,6 +58,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -890,6 +891,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testUploadWithOutputStreamFailureToConnect(Transport transport) throws Exception
     {
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
+
         init(transport);
 
         long connectTimeout = 1000;
@@ -972,6 +976,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testUploadWithConnectFailureClosesStream(Transport transport) throws Exception
     {
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
+
         init(transport);
 
         long connectTimeout = 1000;

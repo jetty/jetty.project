@@ -26,7 +26,6 @@ import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
-import org.eclipse.jetty.quic.quiche.ffi.LibQuiche;
 import org.eclipse.jetty.quic.server.internal.SimpleTokenMinter;
 import org.eclipse.jetty.quic.server.internal.SimpleTokenValidator;
 import org.eclipse.jetty.server.Connector;
@@ -70,8 +69,7 @@ public class ServerQuicConnection extends QuicConnection
         QuicheConnection quicheConnection = QuicheConnection.tryAccept(quicheConfig, new SimpleTokenValidator((InetSocketAddress)remoteAddress), cipherBuffer, remoteAddress);
         if (quicheConnection == null)
         {
-            // TODO make the buffer size configurable
-            ByteBuffer negotiationBuffer = byteBufferPool.acquire(LibQuiche.QUICHE_MIN_CLIENT_INITIAL_LEN, true);
+            ByteBuffer negotiationBuffer = byteBufferPool.acquire(getOutputBufferSize(), true);
             int pos = BufferUtil.flipToFill(negotiationBuffer);
             // TODO make the token minter configurable
             if (!QuicheConnection.negotiate(new SimpleTokenMinter((InetSocketAddress)remoteAddress), cipherBuffer, negotiationBuffer))
