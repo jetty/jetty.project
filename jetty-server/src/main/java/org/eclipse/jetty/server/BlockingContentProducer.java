@@ -152,17 +152,19 @@ class BlockingContentProducer implements ContentProducer
     {
         _semaphore.assertLocked();
         // In blocking mode, the dispatched thread normally does not have to be rescheduled as it is normally in state
-        // DISPATCHED blocked on the semaphore that just needs to be released for the dispatched thread to resume. This is why
-        // this method always returns false.
+        // DISPATCHED blocked on the semaphore that just needs to be released for the dispatched thread to resume.
+        // This is why this method always returns false.
         // But async errors can occur while the dispatched thread is NOT blocked reading (i.e.: in state WAITING),
-        // so the WAITING to WOKEN transition must be done by the error-notifying thread which then has to reschedule the
-        // dispatched thread after HttpChannelState.asyncError() is called.
-        // Calling _asyncContentProducer.wakeup() changes the channel state from WAITING to WOKEN which would prevent the
-        // subsequent call to HttpChannelState.asyncError() from rescheduling the thread.
+        // so the WAITING to WOKEN transition must be done by the error-notifying thread which then has to reschedule
+        // the dispatched thread after HttpChannelState.asyncError() is called.
+        // Calling _asyncContentProducer.onContentProducible() changes the channel state from WAITING to WOKEN which
+        // would prevent the subsequent call to HttpChannelState.asyncError() from rescheduling the thread.
         // AsyncServletTest.testStartAsyncThenClientStreamIdleTimeout() tests this.
+        boolean unready = _asyncContentProducer.isUnready();
         if (LOG.isDebugEnabled())
-            LOG.debug("onContentProducible releasing semaphore {}", _semaphore);
-        _semaphore.release();
+            LOG.debug("onContentProducible releasing semaphore {} unready={}", _semaphore, unready);
+        if (unready)
+            _semaphore.release();
         return false;
     }
 }

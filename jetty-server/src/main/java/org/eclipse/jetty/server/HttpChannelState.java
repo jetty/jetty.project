@@ -1361,6 +1361,14 @@ public class HttpChannelState
         }
     }
 
+    public boolean isInputUnready()
+    {
+        try (AutoLock l = lock())
+        {
+            return _inputState == InputState.UNREADY;
+        }
+    }
+
     public boolean onWritePossible()
     {
         boolean wake = false;

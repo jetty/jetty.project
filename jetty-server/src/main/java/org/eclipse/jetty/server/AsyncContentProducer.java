@@ -290,6 +290,11 @@ class AsyncContentProducer implements ContentProducer
         return false;
     }
 
+    boolean isUnready()
+    {
+        return _httpChannel.getState().isInputUnready();
+    }
+
     private HttpInput.Content nextTransformedContent()
     {
         if (LOG.isDebugEnabled())
