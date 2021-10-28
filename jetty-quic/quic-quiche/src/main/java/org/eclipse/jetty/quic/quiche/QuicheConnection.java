@@ -331,6 +331,12 @@ public class QuicheConnection
         return quicheConnection;
     }
 
+    public void enableQlog(String filename, String title, String desc) throws IOException
+    {
+        if (!LibQuiche.INSTANCE.quiche_conn_set_qlog_path(quicheConn, filename, title, desc))
+            throw new IOException("unable to set qlog path to " + filename);
+    }
+
     public List<Long> readableStreamIds()
     {
         return iterableStreamIds(false);

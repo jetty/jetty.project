@@ -18,6 +18,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
@@ -232,7 +234,13 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
 
     public void onResponse(HeadersFrame frame)
     {
-        if (validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.HEADER))
+        MetaData.Response response = (MetaData.Response)frame.getMetaData();
+        boolean valid;
+        if (response.getStatus() == HttpStatus.CONTINUE_100)
+            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.CONTINUE);
+        else
+            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.CONTINUE), FrameState.HEADER);
+        if (valid)
         {
             notIdle();
             notifyResponse(frame);
@@ -437,7 +445,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
 
     private enum FrameState
     {
-        INITIAL, HEADER, DATA, TRAILER, FAILED
+        INITIAL, CONTINUE, HEADER, DATA, TRAILER, FAILED
     }
 
     private enum CloseState

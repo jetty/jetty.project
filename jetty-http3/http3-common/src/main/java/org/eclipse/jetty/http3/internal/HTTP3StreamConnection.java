@@ -18,6 +18,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
@@ -44,7 +45,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private final MessageParser parser;
     private boolean useInputDirectByteBuffers = true;
     private RetainableByteBuffer buffer;
-    private boolean dataMode;
+    private boolean applicationMode;
+    private boolean parserDataMode;
     private boolean dataDemand;
     private boolean dataStalled;
     private DataFrame dataFrame;
@@ -76,6 +78,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         this.useInputDirectByteBuffers = useInputDirectByteBuffers;
     }
 
+    public void setApplicationMode(boolean mode)
+    {
+        this.applicationMode = mode;
+    }
+
     @Override
     public void onOpen()
     {
@@ -94,8 +101,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("processing dataMode={} on {}", dataMode, this);
-        if (dataMode)
+            LOG.debug("processing parserDataMode={} on {}", parserDataMode, this);
+        if (parserDataMode)
             processDataFrames();
         else
             processNonDataFrames();
@@ -104,7 +111,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     private void processDataFrames()
     {
         processDataDemand();
-        if (!dataMode)
+        if (!parserDataMode)
         {
             if (buffer.hasRemaining())
                 processNonDataFrames();
@@ -134,14 +141,26 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     break;
                 }
 
-                if (dataMode)
+                if (parserDataMode)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("switching to dataMode=true on {}", this);
                     if (buffer.hasRemaining())
+                    {
                         processDataFrames();
+                    }
                     else
-                        fillInterested();
+                    {
+                        if (applicationMode)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("skipping fill interest on {}", this);
+                        }
+                        else
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("setting fill interest on {}", this);
+                            fillInterested();
+                        }
+                    }
                     break;
                 }
             }
@@ -185,9 +204,9 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 case MODE_SWITCH:
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("switching to dataMode=false on {}", this);
+                        LOG.debug("switching to parserDataMode=false on {}", this);
                     dataLast = true;
-                    dataMode = false;
+                    parserDataMode = false;
                     parser.setDataMode(false);
                     return null;
                 }
@@ -294,7 +313,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("parse+fill interest={} on {} with buffer {}", setFillInterest, this, buffer);
+                LOG.debug("parse+fill setFillInterest={} on {} with buffer {}", setFillInterest, this, buffer);
 
             if (buffer == null)
                 buffer = buffers.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
@@ -376,7 +395,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     @Override
     public String toConnectionString()
     {
-        return String.format("%s[demand=%b,stalled=%b,dataMode=%b]", super.toConnectionString(), hasDemand(), isStalled(), dataMode);
+        return String.format("%s[demand=%b,stalled=%b,parserDataMode=%b]", super.toConnectionString(), hasDemand(), isStalled(), parserDataMode);
     }
 
     private class MessageListener extends ParserListener.Wrapper
@@ -390,11 +409,30 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         public void onHeaders(long streamId, HeadersFrame frame)
         {
             MetaData metaData = frame.getMetaData();
-            if (metaData.isRequest() || metaData.isResponse())
+            if (metaData.isRequest())
             {
                 // Expect DATA frames now.
-                dataMode = true;
+                parserDataMode = true;
                 parser.setDataMode(true);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("switching to parserDataMode=true for request {} on {}", metaData, this);
+            }
+            else if (metaData.isResponse())
+            {
+                MetaData.Response response = (MetaData.Response)metaData;
+                if (response.getStatus() != HttpStatus.CONTINUE_100)
+                {
+                    // Expect DATA frames now.
+                    parserDataMode = true;
+                    parser.setDataMode(true);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("switching to parserDataMode=true for response {} on {}", metaData, this);
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("staying in parserDataMode=false for response {} on {}", metaData, this);
+                }
             }
             else
             {

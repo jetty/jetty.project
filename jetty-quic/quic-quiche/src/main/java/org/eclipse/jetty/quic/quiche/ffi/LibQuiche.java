@@ -374,6 +374,10 @@ public interface LibQuiche extends Library
     // Returns true if the given protocol version is supported.
     boolean quiche_version_is_supported(uint32_t version);
 
+    // Enables qlog to the specified file path. Returns true on success.
+    boolean quiche_conn_set_qlog_path(quiche_conn conn, String path,
+                                      String log_title, String log_desc);
+
     // Writes a version negotiation packet.
     ssize_t quiche_negotiate_version(byte[] scid, size_t scid_len,
                                      byte[] dcid, size_t dcid_len,
