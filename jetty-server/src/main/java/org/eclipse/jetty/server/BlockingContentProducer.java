@@ -163,6 +163,8 @@ class BlockingContentProducer implements ContentProducer
         boolean unready = _asyncContentProducer.isUnready();
         if (LOG.isDebugEnabled())
             LOG.debug("onContentProducible releasing semaphore {} unready={}", _semaphore, unready);
+        // Do not release the semaphore if we are not unready, as certain protocols may call this method
+        // just after having received the request, not only when they have read all the available content.
         if (unready)
             _semaphore.release();
         return false;

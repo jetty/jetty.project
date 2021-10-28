@@ -174,6 +174,14 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
     public boolean onIdleTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
+        try (AutoLock l = lock.lock())
+        {
+            if (content == null)
+                content = new HttpInput.ErrorContent(failure);
+            else
+                return false;
+        }
+
         boolean delayed = delayedUntilContent;
         delayedUntilContent = false;
 
@@ -184,12 +192,6 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         getHttpTransport().onStreamIdleTimeout(failure);
 
         failure.addSuppressed(new Throwable("idle timeout"));
-
-        try (AutoLock l = lock.lock())
-        {
-            if (content == null)
-                content = new HttpInput.ErrorContent(failure);
-        }
 
         boolean needed = getRequest().getHttpInput().onContentProducible();
         if (needed || delayed)
@@ -225,8 +227,28 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         try (AutoLock l = lock.lock())
         {
             if (content != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("need content has immediate content {} on {}", content, this);
                 return true;
+            }
         }
+
+        Stream.Data data = stream.readData();
+        if (data != null)
+        {
+            HttpInput.Content result = newContent(data);
+            try (AutoLock l = lock.lock())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("need content read content {} on {}", result, this);
+                content = result;
+            }
+            return true;
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("need content demanding content on {}", this);
         stream.demand();
         return false;
     }
@@ -254,26 +276,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         if (data == null)
             return null;
 
-        result = new HttpInput.Content(data.getByteBuffer())
-        {
-            @Override
-            public boolean isEof()
-            {
-                return data.isLast();
-            }
-
-            @Override
-            public void succeeded()
-            {
-                data.complete();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                data.complete();
-            }
-        };
+        result = newContent(data);
         try (AutoLock l = lock.lock())
         {
             content = result;
@@ -301,6 +304,30 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         if (LOG.isDebugEnabled())
             LOG.debug("produced new content {} on {}", result, this);
         return result;
+    }
+
+    private HttpInput.Content newContent(Stream.Data data)
+    {
+        return new HttpInput.Content(data.getByteBuffer())
+        {
+            @Override
+            public boolean isEof()
+            {
+                return data.isLast();
+            }
+
+            @Override
+            public void succeeded()
+            {
+                data.complete();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                data.complete();
+            }
+        };
     }
 
     @Override
