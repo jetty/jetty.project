@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -67,6 +69,32 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         getRequest().getHttpInput().consumeAll();
     }
 
+    @Override
+    public boolean isExpecting100Continue()
+    {
+        return expect100Continue;
+    }
+
+    @Override
+    public void continue100(int available) throws IOException
+    {
+        if (isExpecting100Continue())
+        {
+            expect100Continue = false;
+
+            // is content missing?
+            if (available == 0)
+            {
+                if (getResponse().isCommitted())
+                    throw new IOException("Committed before 100 Continues");
+
+                boolean committed = sendResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
+                if (!committed)
+                    throw new IOException("Concurrent commit while trying to send 100-Continue");
+            }
+        }
+    }
+
     public Runnable onRequest(HeadersFrame frame)
     {
         try
@@ -95,17 +123,21 @@ public class HttpChannelOverHTTP3 extends HttpChannel
             delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
                 !endStream && !expect100Continue && !connect;
 
-            // Delay the demand of DATA frames for CONNECT with :protocol
-            // or for normal requests expecting 100 continue.
             if (connect)
             {
+                // Delay the demand of DATA frames for CONNECT with :protocol,
+                // since we want the other protocol to trigger content demand.
                 if (request.getProtocol() == null)
                     stream.demand();
             }
             else
             {
+                // When the dispatch to the application is delayed, then
+                // demand for content, so when it arrives we can dispatch.
                 if (delayedUntilContent)
                     stream.demand();
+                else
+                    connection.setApplicationMode(true);
             }
 
             if (LOG.isDebugEnabled())
@@ -133,6 +165,18 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         }
     }
 
+    @Override
+    protected void commit(MetaData.Response info)
+    {
+        super.commit(info);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP3 commit response #{}/{}:{}{} {} {}{}{}",
+                stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getHttpVersion(), info.getStatus(), info.getReason(),
+                System.lineSeparator(), info.getFields());
+        }
+    }
+
     public Runnable onDataAvailable()
     {
         boolean woken = getRequest().getHttpInput().onContentProducible();
@@ -146,6 +190,10 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
         boolean wasDelayed = delayedUntilContent;
         delayedUntilContent = false;
+
+        if (wasDelayed)
+            connection.setApplicationMode(true);
+
         return wasDelayed || woken ? this : null;
     }
 
@@ -169,6 +217,10 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
         boolean wasDelayed = delayedUntilContent;
         delayedUntilContent = false;
+
+        if (wasDelayed)
+            connection.setApplicationMode(true);
+
         return wasDelayed || handle ? this : null;
     }
 
@@ -182,8 +234,11 @@ public class HttpChannelOverHTTP3 extends HttpChannel
                 return false;
         }
 
-        boolean delayed = delayedUntilContent;
+        boolean wasDelayed = delayedUntilContent;
         delayedUntilContent = false;
+
+        if (wasDelayed)
+            connection.setApplicationMode(true);
 
         boolean reset = getState().isIdle();
         if (reset)
@@ -194,7 +249,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         failure.addSuppressed(new Throwable("idle timeout"));
 
         boolean needed = getRequest().getHttpInput().onContentProducible();
-        if (needed || delayed)
+        if (needed || wasDelayed)
         {
             consumer.accept(this::handleWithContext);
             reset = false;
@@ -308,26 +363,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
     private HttpInput.Content newContent(Stream.Data data)
     {
-        return new HttpInput.Content(data.getByteBuffer())
-        {
-            @Override
-            public boolean isEof()
-            {
-                return data.isLast();
-            }
-
-            @Override
-            public void succeeded()
-            {
-                data.complete();
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                data.complete();
-            }
-        };
+        return new DataContent(data);
     }
 
     @Override
@@ -359,6 +395,35 @@ public class HttpChannelOverHTTP3 extends HttpChannel
                     throw new IllegalStateException();
             }
             return false;
+        }
+    }
+
+    private static class DataContent extends HttpInput.Content
+    {
+        private final Stream.Data data;
+
+        public DataContent(Stream.Data data)
+        {
+            super(data.getByteBuffer());
+            this.data = data;
+        }
+
+        @Override
+        public boolean isEof()
+        {
+            return data.isLast();
+        }
+
+        @Override
+        public void succeeded()
+        {
+            data.complete();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            data.complete();
         }
     }
 }

@@ -223,7 +223,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     public void onWritable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("stream {} is writable", streamId);
+            LOG.debug("stream #{} is writable", streamId);
         getWriteFlusher().completeWrite();
     }
 
@@ -247,7 +247,7 @@ public class QuicStreamEndPoint extends AbstractEndPoint
 
         boolean interested = isFillInterested();
         if (LOG.isDebugEnabled())
-            LOG.debug("stream {} is readable, processing: {}", streamId, interested);
+            LOG.debug("stream #{} is readable, processing: {}", streamId, interested);
         if (interested)
             getFillInterest().fillable();
         return interested;
@@ -256,6 +256,8 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     @Override
     public void fillInterested(Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("setting fill interest on {}", this);
         super.fillInterested(callback);
 
         // TODO: see above
@@ -269,6 +271,8 @@ public class QuicStreamEndPoint extends AbstractEndPoint
     @Override
     public boolean tryFillInterested(Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("try setting fill interest on {}", this);
         boolean result = super.tryFillInterested(callback);
         getQuicSession().getProtocolSession().produce();
         return result;

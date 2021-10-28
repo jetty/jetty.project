@@ -206,7 +206,7 @@ public abstract class QuicConnection extends AbstractConnection
         {
             boolean interested = isFillInterested();
             if (LOG.isDebugEnabled())
-                LOG.debug("receiveAndProcess() interested={}", interested);
+                LOG.debug("receiveAndProcess() fillInterested={}", interested);
             if (interested)
                 return null;
 

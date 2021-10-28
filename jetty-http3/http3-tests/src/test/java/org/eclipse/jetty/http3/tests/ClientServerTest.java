@@ -417,4 +417,6 @@ public class ClientServerTest extends AbstractClientServerTest
 
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
+
+    // TODO: write a test calling readData() from onRequest() (not from onDataAvailable()).
 }
