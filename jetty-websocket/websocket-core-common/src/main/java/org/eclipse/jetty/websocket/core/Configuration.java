@@ -238,5 +238,15 @@ public interface Configuration
             if (maxOutgoingFrames != null)
                 configurable.setMaxOutgoingFrames(maxOutgoingFrames);
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x{idleTimeout=%s, writeTimeout=%s, autoFragment=%s, maxFrameSize=%s, " +
+                    "inputBufferSize=%s, outputBufferSize=%s, maxBinaryMessageSize=%s, maxTextMessageSize=%s, maxOutgoingFrames=%s}",
+                getClass().getSimpleName(), hashCode(),
+                idleTimeout, writeTimeout, autoFragment, maxFrameSize, inputBufferSize, outputBufferSize,
+                maxBinaryMessageSize, maxTextMessageSize, maxOutgoingFrames);
+        }
     }
 }
