@@ -161,7 +161,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 System.lineSeparator(), scenario.server.dump(),
                 System.lineSeparator(), scenario.client.dump());
             testThread.interrupt();
-        }, (long)iterations * factor, TimeUnit.MILLISECONDS);
+        }, Math.max(5000, (long)iterations * factor), TimeUnit.MILLISECONDS);
 
         long begin = System.nanoTime();
         for (int i = 0; i < iterations; ++i)
