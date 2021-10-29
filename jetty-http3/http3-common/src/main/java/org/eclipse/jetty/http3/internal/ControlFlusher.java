@@ -41,6 +41,7 @@ public class ControlFlusher extends IteratingCallback
     private final ControlGenerator generator;
     private final QuicStreamEndPoint endPoint;
     private boolean initialized;
+    private Throwable terminated;
     private List<Entry> entries;
     private InvocationType invocationType = InvocationType.NON_BLOCKING;
 
@@ -51,12 +52,19 @@ public class ControlFlusher extends IteratingCallback
         this.generator = new ControlGenerator(useDirectByteBuffers);
     }
 
-    public void offer(Frame frame, Callback callback)
+    public boolean offer(Frame frame, Callback callback)
     {
+        Throwable closed;
         try (AutoLock l = lock.lock())
         {
-            queue.offer(new Entry(frame, callback));
+            closed = terminated;
+            if (closed == null)
+                queue.offer(new Entry(frame, callback));
         }
+        if (closed == null)
+            return true;
+        callback.failed(closed);
+        return false;
     }
 
     @Override
@@ -119,10 +127,22 @@ public class ControlFlusher extends IteratingCallback
 
         lease.recycle();
 
-        entries.forEach(e -> e.callback.failed(failure));
+        List<Entry> allEntries = new ArrayList<>(entries);
         entries.clear();
+        try (AutoLock l = lock.lock())
+        {
+            terminated = failure;
+            allEntries.addAll(queue);
+            queue.clear();
+        }
 
-        // TODO: I guess we should fail the whole connection, as we cannot proceed without the control stream.
+        allEntries.forEach(e -> e.callback.failed(failure));
+
+        long error = HTTP3ErrorCode.INTERNAL_ERROR.code();
+        endPoint.close(error, failure);
+
+        // Cannot continue without the control stream, close the session.
+        endPoint.getQuicSession().getProtocolSession().outwardClose(error, "control_stream_failure");
     }
 
     @Override

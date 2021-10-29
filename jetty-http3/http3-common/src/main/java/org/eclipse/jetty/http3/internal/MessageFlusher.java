@@ -34,7 +34,7 @@ public class MessageFlusher extends IteratingCallback
     private static final Logger LOG = LoggerFactory.getLogger(MessageFlusher.class);
 
     private final AutoLock lock = new AutoLock();
-    private final Queue<Entry> queue = new ArrayDeque<>();
+    private final Queue<Entry> entries = new ArrayDeque<>();
     private final ByteBufferPool.Lease lease;
     private final MessageGenerator generator;
     private Entry entry;
@@ -45,12 +45,13 @@ public class MessageFlusher extends IteratingCallback
         this.generator = new MessageGenerator(encoder, maxHeadersLength, useDirectByteBuffers);
     }
 
-    public void offer(QuicStreamEndPoint endPoint, Frame frame, Callback callback)
+    public boolean offer(QuicStreamEndPoint endPoint, Frame frame, Callback callback)
     {
         try (AutoLock l = lock.lock())
         {
-            queue.offer(new Entry(endPoint, frame, callback));
+            entries.offer(new Entry(endPoint, frame, callback));
         }
+        return true;
     }
 
     @Override
@@ -58,7 +59,7 @@ public class MessageFlusher extends IteratingCallback
     {
         try (AutoLock l = lock.lock())
         {
-            entry = queue.poll();
+            entry = entries.poll();
             if (entry == null)
                 return Action.IDLE;
         }
@@ -74,7 +75,7 @@ public class MessageFlusher extends IteratingCallback
             return Action.SCHEDULED;
         }
 
-        int generated = generator.generate(lease, entry.endPoint.getStreamId(), frame, this::fail);
+        int generated = generator.generate(lease, entry.endPoint.getStreamId(), frame, this::failed);
         if (generated < 0)
             return Action.SCHEDULED;
 
@@ -91,30 +92,29 @@ public class MessageFlusher extends IteratingCallback
     public void succeeded()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("succeeded to flush {} on {}", entry, this);
+            LOG.debug("succeeded to write {} on {}", entry, this);
+
         lease.recycle();
+
         entry.callback.succeeded();
         entry = null;
-        super.succeeded();
-    }
 
-    private void fail(Throwable x)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("failed to flush {} on {}", entry, this);
-        lease.recycle();
-        entry.callback.failed(x);
-        entry = null;
-        // Continue the iteration.
         super.succeeded();
     }
 
     @Override
-    protected void onCompleteFailure(Throwable failure)
+    public void failed(Throwable x)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("failed to flush {} on {}", entry, this, failure);
-        // TODO
+            LOG.debug("failed to write {} on {}", entry, this, x);
+
+        lease.recycle();
+
+        entry.callback.failed(x);
+        entry = null;
+
+        // Continue the iteration.
+        super.succeeded();
     }
 
     @Override

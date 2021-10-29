@@ -71,7 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class HttpClientTest extends AbstractTest<TransportScenario>
+public class  HttpClientTest extends AbstractTest<TransportScenario>
 {
     @Override
     public void init(Transport transport) throws IOException
@@ -700,6 +700,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
     public void testIPv6Host(Transport transport) throws Exception
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
 
         init(transport);
         scenario.start(new EmptyServerHandler()

@@ -183,9 +183,6 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("reading data on {}", this);
 
-            if (hasDemand())
-                throw new IllegalStateException("invalid call to readData(): outstanding demand");
-
             switch (parseAndFill(false))
             {
                 case FRAME:
@@ -224,6 +221,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
         catch (Throwable x)
         {
+            cancelDemand();
             getEndPoint().close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
             // Rethrow so the application has a chance to handle it.
             throw x;
@@ -257,6 +255,14 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         try (AutoLock l = lock.lock())
         {
             return dataDemand;
+        }
+    }
+
+    private void cancelDemand()
+    {
+        try (AutoLock l = lock.lock())
+        {
+            dataDemand = false;
         }
     }
 
