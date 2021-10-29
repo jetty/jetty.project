@@ -194,7 +194,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
             int base = i % maxConnections;
             int expected = remotePorts.get(base);
             int candidate = remotePorts.get(i);
-            assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts.toString(), expected, Matchers.equalTo(candidate));
+            assertThat(scenario.client.dump() + System.lineSeparator() + remotePorts, expected, Matchers.equalTo(candidate));
             if (transport != Transport.UNIX_DOMAIN && i > 0)
                 assertThat(remotePorts.get(i - 1), Matchers.not(Matchers.equalTo(candidate)));
         }
@@ -254,6 +254,7 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         // [p1, p2, p3 | p1, p2, p3 | p4, p4, p5 | p6, p5, p7]
         // Opening p5 and p6 was delayed, so the opening of p7 was triggered
         // to replace p4 while p5 and p6 were busy sending their requests.
-        assertThat(remotePorts.toString(), count / maxUsage, lessThanOrEqualTo(results.size()));
+        if (transport != Transport.UNIX_DOMAIN)
+            assertThat(remotePorts.toString(), count / maxUsage, lessThanOrEqualTo(results.size()));
     }
 }
