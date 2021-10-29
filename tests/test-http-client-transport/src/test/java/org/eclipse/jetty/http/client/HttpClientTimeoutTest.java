@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.opentest4j.TestAbortedException;
@@ -283,6 +284,8 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
         init(transport);
         testConnectTimeoutFailsRequest(true);
     }
@@ -291,6 +294,8 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testNonBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
         init(transport);
         testConnectTimeoutFailsRequest(false);
     }
@@ -326,6 +331,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
+
         init(transport);
 
         String host = "10.255.255.1";
@@ -357,8 +365,11 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void retryAfterConnectTimeout(Transport transport) throws Exception
+    public void testRetryAfterConnectTimeout(Transport transport) throws Exception
     {
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
+
         init(transport);
 
         final String host = "10.255.255.1";
