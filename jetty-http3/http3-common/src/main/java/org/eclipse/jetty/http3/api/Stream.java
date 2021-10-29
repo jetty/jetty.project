@@ -86,14 +86,6 @@ public interface Stream
      * <p>{@link Stream.Data} objects may be stored away for later, asynchronous,
      * processing (for example, to process them only when all of them have been
      * received).</p>
-     * <p>This method <em>must only</em> be called when there is no outstanding
-     * {@link #demand() demand}.</p>
-     * <p>Practically, this means that this method should be called either
-     * synchronously from within {@link Stream.Listener#onDataAvailable(Stream)},
-     * or applications must arrange, for example using a
-     * {@link java.util.concurrent.Semaphore}, that a call to
-     * {@link Stream.Listener#onDataAvailable(Stream)} is made before
-     * calling this method (possibly from a different thread).</p>
      *
      * @return a {@link Stream.Data} object containing the request bytes or
      * the response bytes, or null if no bytes are available

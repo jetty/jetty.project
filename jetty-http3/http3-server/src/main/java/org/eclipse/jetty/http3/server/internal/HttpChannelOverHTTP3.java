@@ -270,6 +270,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     public void onFailure(Throwable failure)
     {
         //TODO
+        throw new UnsupportedOperationException(failure);
 //        getHttpTransport().onStreamFailure(failure);
 //        boolean handle = failed(failure);
 //        consumeInput();
@@ -369,13 +370,28 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     @Override
     public boolean failAllContent(Throwable failure)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("failing all content with {} {}", failure, this);
+        // TODO: must read as much as possible to seek EOF.
+        HttpInput.Content result;
+        try (AutoLock l = lock.lock())
+        {
+            result = content;
+            if (result == null)
+                return false;
+            if (result.isSpecial())
+                return result.isEof();
+            content = null;
+        }
+        result.failed(failure);
         return false;
     }
 
     @Override
     public boolean failed(Throwable failure)
     {
-        return false;
+        // TODO
+        throw new UnsupportedOperationException(failure);
     }
 
     @Override

@@ -105,8 +105,8 @@ public class ClientHTTP3Session extends ClientProtocolSession
             settings = Map.of();
         // TODO: add default settings.
         SettingsFrame frame = new SettingsFrame(settings);
-        controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, session::onOpen, this::fail));
-        controlFlusher.iterate();
+        if (controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, session::onOpen, this::fail)))
+            controlFlusher.iterate();
     }
 
     @Override
@@ -192,15 +192,15 @@ public class ClientHTTP3Session extends ClientProtocolSession
 
     void writeControlFrame(Frame frame, Callback callback)
     {
-        controlFlusher.offer(frame, callback);
-        controlFlusher.iterate();
+        if (controlFlusher.offer(frame, callback))
+            controlFlusher.iterate();
     }
 
     void writeMessageFrame(long streamId, Frame frame, Callback callback)
     {
         QuicStreamEndPoint endPoint = getOrCreateStreamEndPoint(streamId, this::openProtocolEndPoint);
-        messageFlusher.offer(endPoint, frame, callback);
-        messageFlusher.iterate();
+        if (messageFlusher.offer(endPoint, frame, callback))
+            messageFlusher.iterate();
     }
 
     public void onDataAvailable(long streamId)

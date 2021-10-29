@@ -33,9 +33,16 @@ public class InstructionHandler implements Instruction.Handler
     @Override
     public void onInstructions(List<Instruction> instructions)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("processing {}", instructions);
-        encoderFlusher.offer(instructions);
-        encoderFlusher.iterate();
+        if (encoderFlusher.offer(instructions))
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("processing {}", instructions);
+            encoderFlusher.iterate();
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not process {}", instructions);
+        }
     }
 }

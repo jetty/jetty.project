@@ -473,6 +473,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testInputStreamResponseListenerFailedBeforeResponse(Transport transport) throws Exception
     {
+        // Failure to connect is based on TCP connection refused
+        // (as the server is stopped), which does not work for UDP.
+        Assumptions.assumeTrue(transport != Transport.H3);
+
         init(transport);
         scenario.start(new EmptyServerHandler());
         String uri = scenario.newURI();

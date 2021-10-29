@@ -42,6 +42,7 @@ public class InstructionFlusher extends IteratingCallback
     private final QuicStreamEndPoint endPoint;
     private final long streamType;
     private boolean initialized;
+    private Throwable terminated;
 
     public InstructionFlusher(QuicSession session, QuicStreamEndPoint endPoint, long streamType)
     {
@@ -50,12 +51,16 @@ public class InstructionFlusher extends IteratingCallback
         this.streamType = streamType;
     }
 
-    public void offer(List<Instruction> instructions)
+    public boolean offer(List<Instruction> instructions)
     {
+        Throwable closed;
         try (AutoLock l = lock.lock())
         {
-            queue.addAll(instructions);
+            closed = terminated;
+            if (closed == null)
+                queue.addAll(instructions);
         }
+        return closed == null;
     }
 
     @Override
@@ -96,7 +101,9 @@ public class InstructionFlusher extends IteratingCallback
     {
         if (LOG.isDebugEnabled())
             LOG.debug("succeeded to write {} on {}", lease.getByteBuffers(), this);
+
         lease.recycle();
+
         super.succeeded();
     }
 
@@ -105,7 +112,20 @@ public class InstructionFlusher extends IteratingCallback
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failed to write {} on {}", lease.getByteBuffers(), this, failure);
-        // TODO
+
+        lease.recycle();
+
+        try (AutoLock l = lock.lock())
+        {
+            terminated = failure;
+            queue.clear();
+        }
+
+        long error = HTTP3ErrorCode.INTERNAL_ERROR.code();
+        endPoint.close(error, failure);
+
+        // Cannot continue without the instruction stream, close the session.
+        endPoint.getQuicSession().getProtocolSession().outwardClose(error, "instruction_stream_failure");
     }
 
     @Override
