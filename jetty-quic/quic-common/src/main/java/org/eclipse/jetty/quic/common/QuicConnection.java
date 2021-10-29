@@ -202,15 +202,15 @@ public abstract class QuicConnection extends AbstractConnection
 
     private Runnable receiveAndProcess()
     {
+        boolean interested = isFillInterested();
+        if (LOG.isDebugEnabled())
+            LOG.debug("receiveAndProcess() fillInterested={}", interested);
+        if (interested)
+            return null;
+
+        ByteBuffer cipherBuffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
         try
         {
-            boolean interested = isFillInterested();
-            if (LOG.isDebugEnabled())
-                LOG.debug("receiveAndProcess() fillInterested={}", interested);
-            if (interested)
-                return null;
-
-            ByteBuffer cipherBuffer = byteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             while (true)
             {
                 BufferUtil.clear(cipherBuffer);
@@ -266,7 +266,10 @@ public abstract class QuicConnection extends AbstractConnection
                         if (LOG.isDebugEnabled())
                             LOG.debug("processing creation task {} on {}", task, session);
                         if (task != null)
+                        {
+                            byteBufferPool.release(cipherBuffer);
                             return task;
+                        }
                     }
                     else
                     {
@@ -282,13 +285,17 @@ public abstract class QuicConnection extends AbstractConnection
                 if (LOG.isDebugEnabled())
                     LOG.debug("produced session task {} on {}", task, this);
                 if (task != null)
+                {
+                    byteBufferPool.release(cipherBuffer);
                     return task;
+                }
             }
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("receiveAndProcess() failure", x);
+            byteBufferPool.release(cipherBuffer);
             // TODO: close?
             return null;
         }

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.api;
 
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.jetty.http.MetaData;
@@ -258,8 +259,8 @@ public interface Stream
 
         public Data(DataFrame frame, Runnable complete)
         {
-            this.frame = frame;
-            this.complete = complete;
+            this.frame = Objects.requireNonNull(frame);
+            this.complete = Objects.requireNonNull(complete);
         }
 
         /**

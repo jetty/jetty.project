@@ -492,6 +492,8 @@ public abstract class QuicSession extends ContainerLifeCycle
                 Action action = connectionClosed ? Action.SUCCEEDED : Action.IDLE;
                 if (LOG.isDebugEnabled())
                     LOG.debug("connection draining={} closed={}, action={} on {}", quicheConnection.isDraining(), connectionClosed, action, QuicSession.this);
+                if (action == Action.IDLE)
+                    byteBufferPool.release(cipherBuffer);
                 return action;
             }
             BufferUtil.flipToFlush(cipherBuffer, pos);
