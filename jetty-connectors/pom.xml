@@ -5,13 +5,15 @@
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-servlet</artifactId>
+  <artifactId>jetty-connectors</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty :: Servlet</name>
+  <name>Jetty :: Connectors</name>
 
   <modules>
-    <module>jetty-servlet-common</module>
-    <module>jetty-session</module>
+    <module>jetty-http2</module>
+    <module>jetty-fcgi</module>
+    <module>jetty-unixsocket</module>
+    <module>jetty-unixdomain-server</module>
   </modules>
 
 </project>

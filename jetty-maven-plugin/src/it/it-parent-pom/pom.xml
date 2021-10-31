@@ -52,7 +52,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlet</artifactId>
+        <artifactId>jetty-servlet-common</artifactId>
         <version>@project.version@</version>
       </dependency>
       <dependency>

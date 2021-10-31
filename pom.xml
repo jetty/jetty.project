@@ -199,20 +199,19 @@
   <modules>
     <module>build-resources</module>
     <module>demos</module>
+    <module>jetty-connectors</module>
     <module>jetty-slf4j-impl</module>
     <module>jetty-ant</module>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
-    <module>jetty-http2</module>
     <module>jetty-server</module>
+    <module>jetty-servlet</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
     <module>jetty-openid</module>
-    <module>jetty-servlet</module>
     <module>jetty-webapp</module>
-    <module>jetty-fcgi</module>
     <module>jetty-websocket</module>
     <module>jetty-servlets</module>
     <module>jetty-util-ajax</module>
@@ -234,9 +233,6 @@
     <module>jetty-nosql</module>
     <module>jetty-infinispan</module>
     <module>jetty-gcloud</module>
-    <module>jetty-memcached</module>
-    <module>jetty-hazelcast</module>
-    <module>jetty-unixsocket</module>
     <module>tests</module>
     <module>jetty-quickstart</module>
     <module>jetty-runner</module>
@@ -248,7 +244,6 @@
     <module>documentation</module>
     <module>jetty-keystore</module>
     <module>jetty-p2</module>
-    <module>jetty-unixdomain-server</module>
   </modules>
 
   <build>
@@ -1569,7 +1564,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlet</artifactId>
+        <artifactId>jetty-servlet-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
