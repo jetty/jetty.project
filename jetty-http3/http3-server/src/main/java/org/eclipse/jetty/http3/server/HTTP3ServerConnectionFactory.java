@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.server;
 
+import java.io.IOException;
 import java.util.Objects;
 
 import org.eclipse.jetty.http3.api.Session;
@@ -67,10 +68,12 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onFailure(Session session, Throwable failure)
+        public void onFailure(Session session, long error, String reason)
         {
-            // TODO
-            throw new UnsupportedOperationException();
+            IOException failure = new IOException(reason);
+            session.getStreams().stream()
+                .map(stream -> (HTTP3Stream)stream)
+                .forEach(stream -> stream.onFailure(error, failure));
         }
     }
 
@@ -138,9 +141,15 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onFailure(Stream stream, Throwable failure)
+        public void onFailure(Stream stream, long error, Throwable failure)
         {
-            getConnection().onFailure((HTTP3Stream)stream, failure);
+            HTTP3Stream http3Stream = (HTTP3Stream)stream;
+            Runnable task = getConnection().onFailure((HTTP3Stream)stream, failure);
+            if (task != null)
+            {
+                ServerHTTP3Session protocolSession = (ServerHTTP3Session)http3Stream.getSession().getProtocolSession();
+                protocolSession.offer(task, true);
+            }
         }
     }
 }

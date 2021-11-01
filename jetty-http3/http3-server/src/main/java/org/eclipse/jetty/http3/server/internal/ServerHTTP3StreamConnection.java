@@ -69,9 +69,9 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
         return channel.onIdleTimeout(failure, consumer);
     }
 
-    public void onFailure(HTTP3Stream stream, Throwable failure)
+    public Runnable onFailure(HTTP3Stream stream, Throwable failure)
     {
         HttpChannelOverHTTP3 channel = (HttpChannelOverHTTP3)stream.getAttachment();
-        channel.onFailure(failure);
+        return channel.onFailure(failure);
     }
 }

@@ -188,8 +188,10 @@ public interface Session
          * <p>Callback method invoked when the underlying transport has been disconnected.</p>
          *
          * @param session the session
+         * @param error the disconnect error
+         * @param reason the disconnect reason
          */
-        public default void onDisconnect(Session session)
+        public default void onDisconnect(Session session, long error, String reason)
         {
         }
 
@@ -236,9 +238,10 @@ public interface Session
          * <p>Callback method invoked when a failure has been detected for this session.</p>
          *
          * @param session the session
-         * @param failure the cause of the failure
+         * @param error the failure error
+         * @param reason the failure reason
          */
-        public default void onFailure(Session session, Throwable failure)
+        public default void onFailure(Session session, long error, String reason)
         {
         }
     }

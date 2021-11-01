@@ -183,7 +183,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                         else
                         {
                             closeState = CloseState.CLOSING;
-                            zeroStreamsAction = () -> terminate("go_away");
+                            zeroStreamsAction = this::terminate;
                         }
                     }
                     break;
@@ -212,7 +212,13 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         else
         {
             if (failStreams)
-                failStreams(stream -> true, "go_away", true);
+            {
+                long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
+                String reason = "go_away";
+                failStreams(stream -> true, error, reason, true);
+                terminate();
+                outwardDisconnect(error, reason);
+            }
             return CompletableFuture.completedFuture(null);
         }
     }
@@ -238,13 +244,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     protected void updateLastId(long id)
     {
         Atomics.updateMax(lastId, id);
-    }
-
-    public void outwardClose(long error, String reason)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("outward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
-        getProtocolSession().outwardClose(error, reason);
     }
 
     public long getIdleTimeout()
@@ -475,7 +474,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (stream != null)
             stream.onData(frame);
         else
-            fail(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
+            onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
     }
 
     public void onDataAvailable(long streamId)
@@ -484,17 +483,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (LOG.isDebugEnabled())
             LOG.debug("notifying data available on {}", stream);
         stream.onDataAvailable();
-    }
-
-    void fail(long error, String reason)
-    {
-        // Hard failure, no need to send a GOAWAY.
-        try (AutoLock l = lock.lock())
-        {
-            closeState = CloseState.CLOSED;
-        }
-        outwardClose(error, reason);
-        notifyFailure(new IOException(String.format("%d/%s", error, reason)));
     }
 
     @Override
@@ -522,7 +510,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                         goAwaySent = newGoAwayFrame(false);
                         closeState = CloseState.CLOSING;
                         GoAwayFrame goAwayFrame = goAwaySent;
-                        zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(() -> terminate("go_away")));
+                        zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(this::terminate));
                         failStreams = true;
                     }
                     break;
@@ -542,11 +530,19 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                         {
                             goAwaySent = newGoAwayFrame(false);
                             GoAwayFrame goAwayFrame = goAwaySent;
-                            zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(() -> terminate("go_away")));
+                            zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(() ->
+                            {
+                                terminate();
+                                outwardDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away");
+                            }));
                         }
                         else
                         {
-                            zeroStreamsAction = () -> terminate("go_away");
+                            zeroStreamsAction = () ->
+                            {
+                                terminate();
+                                outwardDisconnect(HTTP3ErrorCode.NO_ERROR.code(), "go_away");
+                            };
                             failStreams = true;
                         }
                     }
@@ -567,11 +563,11 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                         {
                             goAwaySent = newGoAwayFrame(false);
                             GoAwayFrame goAwayFrame = goAwaySent;
-                            zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(() -> terminate("go_away")));
+                            zeroStreamsAction = () -> writeControlFrame(goAwayFrame, Callback.from(this::terminate));
                         }
                         else
                         {
-                            zeroStreamsAction = () -> terminate("go_away");
+                            zeroStreamsAction = this::terminate;
                         }
                         failStreams = true;
                     }
@@ -598,7 +594,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             // The other peer sent us a GOAWAY with the last processed streamId,
             // so we must fail the streams that have a bigger streamId.
             Predicate<HTTP3Stream> predicate = stream -> stream.isLocal() && stream.getId() > frame.getLastId();
-            failStreams(predicate, "go_away", true);
+            failStreams(predicate, HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), "go_away", true);
         }
 
         tryRunZeroStreamsAction();
@@ -645,12 +641,22 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (!confirmed)
             return false;
 
-        disconnect("idle_timeout");
+        inwardClose(HTTP3ErrorCode.NO_ERROR.code(), "idle_timeout");
 
         return false;
     }
 
-    public void disconnect(String reason)
+    /**
+     * <p>Called when a an external event wants to initiate the close of this session locally,
+     * for example a close at the network level (due to e.g. stopping a component) or a timeout.</p>
+     * <p>The correspondent passive event, where it's the remote peer that initiates the close,
+     * is delivered via {@link #onClose(long, String)}.</p>
+     *
+     * @param error the close error
+     * @param reason the close reason
+     * @see #onClose(long, String)
+     */
+    public void inwardClose(long error, String reason)
     {
         GoAwayFrame goAwayFrame = null;
         try (AutoLock l = lock.lock())
@@ -678,17 +684,58 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             }
         }
 
-        failStreams(stream -> true, reason, true);
+        failStreams(stream -> true, error, reason, true);
 
         if (goAwayFrame != null)
-            writeControlFrame(goAwayFrame, Callback.from(() -> terminate(reason)));
+        {
+            writeControlFrame(goAwayFrame, Callback.from(() ->
+            {
+                terminate();
+                outwardDisconnect(error, reason);
+            }));
+        }
         else
-            terminate(reason);
+        {
+            terminate();
+            outwardDisconnect(error, reason);
+        }
     }
 
-    private void failStreams(Predicate<HTTP3Stream> predicate, String reason, boolean close)
+    /**
+     * <p>Calls {@link #outwardClose(long, String)}, then notifies
+     * {@link Session.Listener#onDisconnect(Session, long, String)}.</p>
+     *
+     * @param error the close error
+     * @param reason the close reason.
+     * @see #outwardClose(long, String)
+     */
+    private void outwardDisconnect(long error, String reason)
     {
-        long error = HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code();
+        outwardClose(error, reason);
+        // Since the outwardClose() above is called by
+        // the implementation, notify the application.
+        notifyDisconnect(error, reason);
+    }
+
+    /**
+     * <p>Propagates a close outwards, i.e. towards the network.</p>
+     * <p>This method does not notify  {@link Session.Listener#onDisconnect(Session, long, String)}
+     * so calling {@link #outwardDisconnect(long, String)} is preferred.</p>
+     *
+     * @param error the close error
+     * @param reason the close reason
+     * @see #outwardDisconnect(long, String)
+     * @see #inwardClose(long, String)
+     */
+    private void outwardClose(long error, String reason)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("outward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
+        getProtocolSession().outwardClose(error, reason);
+    }
+
+    private void failStreams(Predicate<HTTP3Stream> predicate, long error, String reason, boolean close)
+    {
         Throwable failure = new IOException(reason);
         streams.values().stream()
             .filter(predicate)
@@ -698,19 +745,22 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
                     stream.reset(error, failure);
                 // Since the stream failure was generated
                 // by a GOAWAY, notify the application.
-                stream.onFailure(failure);
+                stream.onFailure(error, failure);
             });
     }
 
-    private void terminate(String reason)
+    /**
+     * Terminates this session at the HTTP/3 level, and possibly notifies the shutdown callback.
+     * Termination at the QUIC level may still be in progress.
+     *
+     * @see #onClose(long, String)
+     * @see #inwardClose(long, String)
+     */
+    private void terminate()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("terminating reason={} for {}", reason, this);
+            LOG.debug("terminating {}", this);
         streamTimeouts.destroy();
-        outwardClose(HTTP3ErrorCode.NO_ERROR.code(), reason);
-        // Since the close() above is called by the
-        // implementation, notify the application.
-        notifyDisconnect();
         // Notify the shutdown completable.
         CompletableFuture<Void> shutdown;
         try (AutoLock l = lock.lock())
@@ -781,6 +831,14 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         }
     }
 
+    /**
+     * <p>Called when the local peer receives a close initiated by the remote peer.</p>
+     * <p>The correspondent active event, where it's the local peer that initiates the close,
+     * it's delivered via {@link #inwardClose(long, String)}.</p>
+     *
+     * @param error the close error
+     * @param reason the close reason
+     */
     public void onClose(long error, String reason)
     {
         if (LOG.isDebugEnabled())
@@ -797,19 +855,19 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         }
 
         // No point in closing the streams, as QUIC frames cannot be sent.
-        failStreams(stream -> true, "remote_close", false);
+        failStreams(stream -> true, error, reason, false);
 
         if (notifyFailure)
-            fail(error, reason);
+            onSessionFailure(error, reason);
 
-        notifyDisconnect();
+        notifyDisconnect(error, reason);
     }
 
-    private void notifyDisconnect()
+    private void notifyDisconnect(long error, String reason)
     {
         try
         {
-            listener.onDisconnect(this);
+            listener.onDisconnect(this, error, reason);
         }
         catch (Throwable x)
         {
@@ -824,24 +882,21 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             LOG.debug("stream failure 0x{}/{} for stream #{} on {}", Long.toHexString(error), failure.getMessage(), streamId, this);
         HTTP3Stream stream = getStream(streamId);
         if (stream != null)
-        {
-            stream.onFailure(failure);
-            removeStream(stream, failure);
-        }
+            stream.onFailure(error, failure);
     }
 
     @Override
     public void onSessionFailure(long error, String reason)
     {
-        // TODO
-        throw new UnsupportedOperationException();
+        notifyFailure(error, reason);
+        inwardClose(error, reason);
     }
 
-    public void notifyFailure(Throwable failure)
+    private void notifyFailure(long error, String reason)
     {
         try
         {
-            listener.onFailure(this, failure);
+            listener.onFailure(this, error, reason);
         }
         catch (Throwable x)
         {

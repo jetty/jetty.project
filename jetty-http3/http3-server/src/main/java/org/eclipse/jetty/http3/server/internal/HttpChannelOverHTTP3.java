@@ -244,7 +244,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         if (reset)
             consumeInput();
 
-        getHttpTransport().onStreamIdleTimeout(failure);
+        getHttpTransport().onIdleTimeout(failure);
 
         failure.addSuppressed(new Throwable("idle timeout"));
 
@@ -267,14 +267,21 @@ public class HttpChannelOverHTTP3 extends HttpChannel
             handle();
     }
 
-    public void onFailure(Throwable failure)
+    public Runnable onFailure(Throwable failure)
     {
-        //TODO
-        throw new UnsupportedOperationException(failure);
-//        getHttpTransport().onStreamFailure(failure);
-//        boolean handle = failed(failure);
-//        consumeInput();
-//        return new FailureTask(failure, callback, handle);
+        consumeInput();
+
+        getHttpTransport().onFailure(failure);
+
+        boolean handle = failed(failure);
+
+        return () ->
+        {
+            if (handle)
+                handleWithContext();
+            else if (getHttpConfiguration().isNotifyRemoteAsyncErrors())
+                getState().asyncError(failure);
+        };
     }
 
     @Override
@@ -390,8 +397,31 @@ public class HttpChannelOverHTTP3 extends HttpChannel
     @Override
     public boolean failed(Throwable failure)
     {
-        // TODO
-        throw new UnsupportedOperationException(failure);
+        HttpInput.Content contentToFail = null;
+        try (AutoLock l = lock.lock())
+        {
+            if (content == null)
+            {
+                content = new HttpInput.ErrorContent(failure);
+            }
+            else
+            {
+                if (content.isSpecial())
+                {
+                    // Either EOF or error already, no nothing.
+                }
+                else
+                {
+                    contentToFail = content;
+                    content = new HttpInput.ErrorContent(failure);
+                }
+            }
+        }
+
+        if (contentToFail != null)
+            contentToFail.failed(failure);
+
+        return getRequest().getHttpInput().onContentProducible();
     }
 
     @Override

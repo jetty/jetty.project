@@ -278,9 +278,14 @@ public class HttpTransportOverHTTP3 implements HttpTransport
         }
     }
 
-    boolean onStreamIdleTimeout(Throwable failure)
+    boolean onIdleTimeout(Throwable failure)
     {
         return transportCallback.idleTimeout(failure);
+    }
+
+    void onFailure(Throwable failure)
+    {
+        transportCallback.abort(failure);
     }
 
     @Override
