@@ -17,6 +17,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
@@ -25,6 +26,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
+import org.ops4j.pax.exam.options.MavenArtifactProvisionOption;
 import org.ops4j.pax.tinybundles.core.TinyBundle;
 import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.Bundle;
@@ -104,24 +106,14 @@ public class TestOSGiUtil
         return options;
     }
 
-    public static List<Option> provisionCoreJetty()
-    {
-        List<Option> res = new ArrayList<>();
-        // get the jetty home config from the osgi boot bundle.
-        res.add(CoreOptions.systemProperty("jetty.home.bundle").value("org.eclipse.jetty.osgi.boot"));
-        res.addAll(coreJettyDependencies());
-        return res;
-    }
-
     public static Option optionalRemoteDebug()
     {
         return CoreOptions.when(Boolean.getBoolean("pax.exam.debug.remote"))
             .useOptions(CoreOptions.vmOption("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"));
     }
 
-    public static List<Option> coreJettyDependencies()
+    public static void coreJettyDependencies(List<Option> res)
     {
-        List<Option> res = new ArrayList<>();
         //enables a dump of the status of all deployed bundles
         res.add(systemProperty("bundle.debug").value(Boolean.toString(Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))));
 
@@ -180,8 +172,10 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.ow2.asm").artifactId("asm-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.apache.aries.spifly").artifactId("org.apache.aries.spifly.dynamic.bundle").versionAsInProject().start());
         res.add(mavenBundle().groupId("jakarta.annotation").artifactId("jakarta.annotation-api").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.apache.geronimo.specs").artifactId("geronimo-jta_1.1_spec").version("1.1.1").start());
-
+        res.add(mavenBundle().groupId("jakarta.enterprise").artifactId("jakarta.enterprise.cdi-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.interceptor").artifactId("jakarta.interceptor-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.transaction").artifactId("jakarta.transaction-api").versionAsInProject().start());
+        res.add(mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject().start());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-deploy").versionAsInProject().start());
@@ -211,14 +205,30 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.eclipse.jetty.websocket").artifactId("websocket-javax-common").versionAsInProject().noStart());
 
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot").versionAsInProject().start());
-        return res;
     }
 
-    public static List<Option> jspDependencies()
+    public static void coreJspDependencies(List<Option> res)
     {
-        List<Option> res = new ArrayList<>();
-
-        //jetty jsp bundles  
+        
+        /* The coreJettyDependencies() method needs to configure jakarta.el-api to satisfy the jakarta.transaction-api bundle.
+         * However, as we are now configuring the full jsp bundle set, we need to remove the jakarta.el-api
+         * bundle because the org.mortbay.jasper.apache-el bundle will be providing both the api and the impl.
+         */
+        MavenArtifactProvisionOption option = mavenBundle().groupId("jakarta.el").artifactId("jakarta.el-api").versionAsInProject();
+        
+        ListIterator<Option> iter = res.listIterator();
+        while (iter.hasNext())
+        {
+            Option o = iter.next();
+            if (o instanceof MavenArtifactProvisionOption)
+            {
+                if (((MavenArtifactProvisionOption)o).getURL().contains("jakarta.el-api"))
+                {
+                    iter.remove();
+                }
+            }
+        }
+        
         res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject().start());
@@ -226,9 +236,8 @@ public class TestOSGiUtil
         res.add(mavenBundle().groupId("org.glassfish.web").artifactId("javax.servlet.jsp.jstl").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jdt").artifactId("ecj").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
-        return res;
     }
-
+    
     protected static Bundle getBundle(BundleContext bundleContext, String symbolicName)
     {
         Map<String, Bundle> bundles = new HashMap<>();
