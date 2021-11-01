@@ -12,6 +12,7 @@
   <modules>
     <module>jetty-servlet-common</module>
     <module>jetty-session</module>
+    <module>jetty-security</module>
   </modules>
 
 </project>
