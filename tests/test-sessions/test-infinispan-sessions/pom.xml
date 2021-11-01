@@ -89,12 +89,12 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>infinispan-remote-query</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>infinispan-embedded-query</artifactId>
       <scope>test</scope>
     </dependency>

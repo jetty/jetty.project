@@ -461,14 +461,14 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
+                  <groupId>org.eclipse.jetty.session</groupId>
                   <artifactId>infinispan-embedded</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>
                   <type>jar</type>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
+                  <groupId>org.eclipse.jetty.session</groupId>
                   <artifactId>infinispan-remote</artifactId>
                   <version>${project.version}</version>
                   <classifier>config</classifier>
@@ -709,19 +709,19 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>infinispan-embedded</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>infinispan-embedded-query</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>infinispan-remote</artifactId>
       <version>${project.version}</version>
       <type>pom</type>
@@ -734,7 +734,7 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>infinispan-remote-query</artifactId>
     </dependency>
     <dependency>
@@ -753,7 +753,7 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>jetty-nosql</artifactId>
       <optional>true</optional>
     </dependency>

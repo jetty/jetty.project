@@ -231,8 +231,6 @@
     <module>jetty-proxy</module>
     <module>jetty-jaspi</module>
     <module>jetty-rewrite</module>
-    <module>jetty-nosql</module>
-    <module>jetty-infinispan</module>
     <module>tests</module>
     <module>jetty-quickstart</module>
     <module>jetty-runner</module>
@@ -1423,27 +1421,27 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
+        <groupId>org.eclipse.jetty.session</groupId>
         <artifactId>infinispan-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
+        <groupId>org.eclipse.jetty.session</groupId>
         <artifactId>infinispan-embedded</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
+        <groupId>org.eclipse.jetty.session</groupId>
         <artifactId>infinispan-embedded-query</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
+        <groupId>org.eclipse.jetty.session</groupId>
         <artifactId>infinispan-remote</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
+        <groupId>org.eclipse.jetty.session</groupId>
         <artifactId>infinispan-remote-query</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1454,36 +1452,11 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-embedded</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-embedded-query</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-remote</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>infinispan-remote-query</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-io</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
+        <groupId>org.eclipse.jetty.session</groupId>
         <artifactId>jetty-nosql</artifactId>
         <version>${project.version}</version>
       </dependency>

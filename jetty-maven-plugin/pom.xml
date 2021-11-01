@@ -304,7 +304,7 @@
           <artifactId>jetty-start</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
+          <groupId>org.eclipse.jetty.session</groupId>
           <artifactId>jetty-nosql</artifactId>
         </exclusion>
         <exclusion>

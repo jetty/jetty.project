@@ -204,7 +204,7 @@
       <artifactId>jetty-memcached</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>jetty-nosql</artifactId>
     </dependency>
     <dependency>

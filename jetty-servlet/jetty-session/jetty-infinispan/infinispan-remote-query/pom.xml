@@ -1,17 +1,17 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty</groupId>
-    <artifactId>infinispan-parent</artifactId>
+    <groupId>org.eclipse.jetty.session</groupId>
+    <artifactId>jetty-infinispan</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>infinispan-embedded-query</artifactId>
-  <name>Jetty :: Infinispan Session Manager Embedded with Querying</name>
+  <artifactId>infinispan-remote-query</artifactId>
+  <name>Jetty :: Servlet :: Session :: Infinispan :: Session Manager Remote with Querying</name>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.infinispan.embedded.query</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.infinispan.remote.query</bundle-symbolic-name>
+    <infinispan.docker.image.version>11.0.9.Final</infinispan.docker.image.version>
   </properties>
   <build>
-    <defaultGoal>install</defaultGoal>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -27,7 +27,7 @@
               <appendOutput>false</appendOutput>
               <outputFile>${project.build.directory}/deps.txt</outputFile>
               <sort>true</sort>
-              <excludeGroupIds>org.eclipse.jetty,jakarta.servlet,org.slf4j</excludeGroupIds>
+              <excludeGroupIds>org.eclipse.jetty,jakarta.servlet</excludeGroupIds>
               <prependGroupId>true</prependGroupId>
               <includeScope>runtime</includeScope>
             </configuration>
@@ -46,6 +46,7 @@
             </goals>
             <configuration>
               <target>
+                <replaceregexp file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):(.*):.*$" replace="maven://\1/\2/\4/jar/\3|lib/infinispan/\2-\3-\4.jar" byline="true" />
                 <replaceregexp file="${project.build.directory}/deps.txt" match=" *(.*):(.*):jar:(.*):.*$" replace="maven://\1/\2/\3|lib/infinispan/\2-\3.jar" byline="true" />
                 <replaceregexp file="${project.build.directory}/deps.txt" match="The following files have been resolved:" replace="[files]" />
               </target>
@@ -59,8 +60,8 @@
             </goals>
             <configuration>
               <target>
-                <concat destfile="${project.build.directory}/infinispan-embedded-query-libs.mod">
-                  <fileset file="${project.build.directory}/jetty-config-files/modules/sessions/infinispan/embedded/infinispan-embedded-query-libs.mod" />
+                <concat destfile="${project.build.directory}/infinispan-remote-query-libs.mod">
+                  <fileset file="${project.build.directory}/jetty-config-files/modules/sessions/infinispan/remote/infinispan-remote-query-libs.mod" />
                   <fileset file="${project.build.directory}/deps.txt" />
                 </concat>
               </target>
@@ -68,11 +69,20 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <systemPropertyVariables>
+            <infinispan.docker.image.version>${infinispan.docker.image.version}</infinispan.docker.image.version>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>infinispan-common</artifactId>
       <exclusions>
         <exclusion>
@@ -90,8 +100,30 @@
       <artifactId>infinispan-query</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-test-helper</artifactId>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-client-hotrod</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.infinispan</groupId>
+      <artifactId>infinispan-remote-query-client</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
