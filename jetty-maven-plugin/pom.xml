@@ -276,7 +276,7 @@
           <artifactId>jetty-gcloud-session-manager</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
+          <groupId>org.eclipse.jetty.session</groupId>
           <artifactId>jetty-hazelcast</artifactId>
         </exclusion>
         <exclusion>
@@ -288,8 +288,8 @@
           <artifactId>jetty-jaspi</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty.memcached</groupId>
-          <artifactId>jetty-memcached-sessions</artifactId>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-memcached</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.eclipse.jetty</groupId>

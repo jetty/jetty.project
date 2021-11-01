@@ -200,8 +200,8 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.memcached</groupId>
-      <artifactId>jetty-memcached-sessions</artifactId>
+      <groupId>org.eclipse.jetty.session</groupId>
+      <artifactId>jetty-memcached</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

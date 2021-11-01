@@ -193,7 +193,7 @@
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
+        <groupId>org.eclipse.jetty.session</groupId>
         <artifactId>jetty-hazelcast</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
@@ -223,8 +223,8 @@
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.memcached</groupId>
-        <artifactId>jetty-memcached-sessions</artifactId>
+        <groupId>org.eclipse.jetty.session</groupId>
+        <artifactId>jetty-memcached</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
