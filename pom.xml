@@ -1087,11 +1087,6 @@
         <version>${jakarta.authentication.api.version}</version>
       </dependency>
       <dependency>
-        <groupId>jakarta.el</groupId>
-        <artifactId>jakarta.el-api</artifactId>
-        <version>${jakarta.el.api.version}</version>
-      </dependency>
-      <dependency>
         <groupId>jakarta.inject</groupId>
         <artifactId>jakarta.inject-api</artifactId>
         <version>${jakarta.inject.api.version}</version>
@@ -1320,11 +1315,6 @@
         <version>${conscrypt.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.conscrypt</groupId>
-        <artifactId>conscrypt-openjdk-uber</artifactId>
-        <version>${conscrypt.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.codehaus.plexus</groupId>
         <artifactId>plexus-component-annotations</artifactId>
         <version>${plexus-component-annotations.version}</version>
@@ -1443,11 +1433,6 @@
       <dependency>
         <groupId>org.eclipse.jetty.session</groupId>
         <artifactId>infinispan-remote-query</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-http-spi</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1853,11 +1838,6 @@
         <version>${infinispan.version}</version>
         <type>pom</type>
         <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.infinispan.protostream</groupId>
-        <artifactId>protostream</artifactId>
-        <version>${infinispan.protostream.version}</version>
       </dependency>
       <dependency>
         <groupId>org.infinispan.protostream</groupId>
