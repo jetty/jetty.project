@@ -13,6 +13,7 @@
     <module>jetty-servlet-common</module>
     <module>jetty-session</module>
     <module>jetty-security</module>
+    <module>jetty-annotations</module>
   </modules>
 
 </project>
