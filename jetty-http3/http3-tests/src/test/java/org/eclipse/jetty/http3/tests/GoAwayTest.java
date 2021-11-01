@@ -73,7 +73,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -90,7 +90,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -153,7 +153,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -170,7 +170,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -190,7 +190,7 @@ public class GoAwayTest extends AbstractClientServerTest
                 clientSession.newRequest(new HeadersFrame(newRequest("/2"), true), new Stream.Listener()
                 {
                     @Override
-                    public void onFailure(Stream stream, Throwable failure)
+                    public void onFailure(Stream stream, long error, Throwable failure)
                     {
                         streamFailureLatch.countDown();
                     }
@@ -232,7 +232,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -253,7 +253,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -315,7 +315,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -336,7 +336,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -405,7 +405,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -422,7 +422,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -492,7 +492,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -517,7 +517,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -607,7 +607,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -628,7 +628,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -673,7 +673,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -689,7 +689,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -723,7 +723,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -746,7 +746,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -787,7 +787,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -806,7 +806,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -849,7 +849,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -868,7 +868,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -916,7 +916,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -938,7 +938,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -948,7 +948,7 @@ public class GoAwayTest extends AbstractClientServerTest
         clientSession.newRequest(new HeadersFrame(newRequest("/"), false), new Stream.Listener()
         {
             @Override
-            public void onFailure(Stream stream, Throwable failure)
+            public void onFailure(Stream stream, long error, Throwable failure)
             {
                 clientFailureLatch.countDown();
             }
@@ -1011,7 +1011,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -1029,7 +1029,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -1038,7 +1038,7 @@ public class GoAwayTest extends AbstractClientServerTest
         clientSession.newRequest(new HeadersFrame(newRequest("/"), false), new Stream.Listener()
         {
             @Override
-            public void onFailure(Stream stream, Throwable failure)
+            public void onFailure(Stream stream, long error, Throwable failure)
             {
                 streamFailureLatch.countDown();
             }
@@ -1083,7 +1083,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -1100,7 +1100,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -1110,7 +1110,7 @@ public class GoAwayTest extends AbstractClientServerTest
         clientSession.newRequest(new HeadersFrame(newRequest("/"), false), new Stream.Listener()
         {
             @Override
-            public void onFailure(Stream stream, Throwable failure)
+            public void onFailure(Stream stream, long error, Throwable failure)
             {
                 clientFailureLatch.countDown();
             }
@@ -1153,7 +1153,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -1169,7 +1169,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }
@@ -1203,7 +1203,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 serverDisconnectLatch.countDown();
             }
@@ -1226,7 +1226,7 @@ public class GoAwayTest extends AbstractClientServerTest
             }
 
             @Override
-            public void onDisconnect(Session session)
+            public void onDisconnect(Session session, long error, String reason)
             {
                 clientDisconnectLatch.countDown();
             }

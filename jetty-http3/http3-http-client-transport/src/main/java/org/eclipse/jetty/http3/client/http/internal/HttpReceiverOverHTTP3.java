@@ -186,7 +186,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public void onFailure(Stream stream, Throwable failure)
+    public void onFailure(Stream stream, long error, Throwable failure)
     {
         responseFailure(failure);
     }

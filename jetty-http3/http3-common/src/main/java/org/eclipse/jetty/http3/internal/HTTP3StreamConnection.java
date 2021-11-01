@@ -202,7 +202,12 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                     if (LOG.isDebugEnabled())
                         LOG.debug("read data {} on {}", frame, this);
                     buffer.retain();
-                    return new Stream.Data(frame, this::completeReadData);
+                    // Store in a local variable so that the lambda captures the right buffer.
+                    RetainableByteBuffer current = buffer;
+                    // Release the network buffer here (if empty), since the application may
+                    // not be reading more bytes, to avoid to keep around a consumed buffer.
+                    tryReleaseBuffer(false);
+                    return new Stream.Data(frame, () -> completeReadData(current));
                 }
                 case MODE_SWITCH:
                 {
@@ -237,11 +242,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         }
     }
 
-    private void completeReadData()
+    private void completeReadData(RetainableByteBuffer buffer)
     {
         buffer.release();
-        if (!buffer.isRetained())
-            tryReleaseBuffer(false);
+        if (LOG.isDebugEnabled())
+            LOG.debug("retained released {}", buffer);
     }
 
     public void demand()
@@ -377,7 +382,10 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 if (buffer.isRetained())
                 {
                     buffer.release();
-                    buffer = buffers.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+                    RetainableByteBuffer newBuffer = buffers.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("reacquired {} for retained {}", newBuffer, buffer);
+                    buffer = newBuffer;
                     byteBuffer = buffer.getBuffer();
                 }
 

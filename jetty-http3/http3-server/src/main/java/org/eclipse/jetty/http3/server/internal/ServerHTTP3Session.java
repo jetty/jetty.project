@@ -158,7 +158,7 @@ public class ServerHTTP3Session extends ServerProtocolSession
     {
         if (LOG.isDebugEnabled())
             LOG.debug("inward closing 0x{}/{} on {}", Long.toHexString(error), reason, this);
-        session.disconnect(reason);
+        session.inwardClose(error, reason);
     }
 
     @Override

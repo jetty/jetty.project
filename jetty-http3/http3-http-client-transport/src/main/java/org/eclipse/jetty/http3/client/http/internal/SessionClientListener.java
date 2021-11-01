@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.http3.client.http.internal;
 
-import java.nio.channels.ClosedChannelException;
+import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicMarkableReference;
@@ -66,14 +66,15 @@ public class SessionClientListener implements Session.Client.Listener
     }
 
     @Override
-    public void onDisconnect(Session session)
+    public void onDisconnect(Session session, long error, String reason)
     {
-        onFailure(session, new ClosedChannelException());
+        onFailure(session, error, reason);
     }
 
     @Override
-    public void onFailure(Session session, Throwable failure)
+    public void onFailure(Session session, long error, String reason)
     {
+        IOException failure = new IOException(String.format("%#x/%s", error, reason));
         if (failConnectionPromise(failure))
             return;
         HttpConnectionOverHTTP3 connection = this.connection.getReference();

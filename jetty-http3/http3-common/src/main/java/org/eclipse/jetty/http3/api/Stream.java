@@ -237,9 +237,10 @@ public interface Stream
          * the stream has been reset.</p>
          *
          * @param stream the stream
+         * @param error the failure error
          * @param failure the cause of the failure
          */
-        public default void onFailure(Stream stream, Throwable failure)
+        public default void onFailure(Stream stream, long error, Throwable failure)
         {
         }
     }

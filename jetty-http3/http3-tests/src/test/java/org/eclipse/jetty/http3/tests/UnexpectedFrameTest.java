@@ -19,11 +19,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.frames.DataFrame;
+import org.eclipse.jetty.http3.frames.GoAwayFrame;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UnexpectedFrameTest extends AbstractClientServerTest
@@ -31,30 +34,40 @@ public class UnexpectedFrameTest extends AbstractClientServerTest
     @Test
     public void testDataBeforeHeaders() throws Exception
     {
-        CountDownLatch serverLatch = new CountDownLatch(1);
+        CountDownLatch serverFailureLatch = new CountDownLatch(1);
         start(new Session.Server.Listener()
         {
             @Override
-            public void onFailure(Session session, Throwable failure)
+            public void onFailure(Session session, long error, String reason)
             {
-                serverLatch.countDown();
+                assertEquals(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), error);
+                serverFailureLatch.countDown();
             }
         });
 
-        CountDownLatch clientLatch = new CountDownLatch(1);
+        CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
+        CountDownLatch clientDisconnectLatch = new CountDownLatch(1);
         HTTP3Session clientSession = (HTTP3Session)newSession(new Session.Client.Listener()
+        {
+            @Override
+            public void onGoAway(Session session, GoAwayFrame frame)
             {
-                @Override
-                public void onFailure(Session session, Throwable failure)
-                {
-                    clientLatch.countDown();
-                }
-            });
+                clientGoAwayLatch.countDown();
+            }
+
+            @Override
+            public void onDisconnect(Session session, long error, String reason)
+            {
+                assertEquals(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), error);
+                clientDisconnectLatch.countDown();
+            }
+        });
 
         clientSession.writeMessageFrame(0, new DataFrame(ByteBuffer.allocate(128), false), Callback.NOOP);
 
-        assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(clientLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(serverFailureLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientGoAwayLatch.await(5, TimeUnit.SECONDS));
+        assertTrue(clientDisconnectLatch.await(5, TimeUnit.SECONDS));
 
         await().atMost(1, TimeUnit.SECONDS).until(clientSession::isClosed);
     }

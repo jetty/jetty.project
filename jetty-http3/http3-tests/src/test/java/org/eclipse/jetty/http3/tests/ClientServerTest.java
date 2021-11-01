@@ -393,7 +393,7 @@ public class ClientServerTest extends AbstractClientServerTest
         clientSession.newRequest(new HeadersFrame(newRequest("/large"), true), new Stream.Listener()
             {
                 @Override
-                public void onFailure(Stream stream, Throwable failure)
+                public void onFailure(Stream stream, long error, Throwable failure)
                 {
                     streamFailureLatch.countDown();
                 }

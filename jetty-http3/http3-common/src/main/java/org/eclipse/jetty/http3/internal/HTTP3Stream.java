@@ -327,19 +327,19 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         }
     }
 
-    public void onFailure(Throwable failure)
+    public void onFailure(long error, Throwable failure)
     {
-        notifyFailure(failure);
+        notifyFailure(error, failure);
         session.removeStream(this, failure);
     }
 
-    private void notifyFailure(Throwable failure)
+    private void notifyFailure(long error, Throwable failure)
     {
         Listener listener = getListener();
         try
         {
             if (listener != null)
-                listener.onFailure(this, failure);
+                listener.onFailure(this, error, failure);
         }
         catch (Throwable x)
         {
@@ -361,7 +361,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
             if (frameState == FrameState.FAILED)
                 return false;
             frameState = FrameState.FAILED;
-            session.fail(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
+            session.onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
             return false;
         }
     }
