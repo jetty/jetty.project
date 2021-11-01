@@ -56,7 +56,7 @@ public class RemoteInfinispanTestSupport
     private static String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
             ":" + System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
 
-    private static final GenericContainer infinispan = new GenericContainer(IMAGE_NAME)
+    private static final GenericContainer INFINISPAN = new GenericContainer(IMAGE_NAME)
         .withEnv("USER", "theuser")
                 .withEnv("PASS", "foobar")
                 .withEnv("MGMT_USER", "admin")
@@ -77,17 +77,17 @@ public class RemoteInfinispanTestSupport
 
         _name = cacheName;
 
-        if (!infinispan.isRunning())
+        if (!INFINISPAN.isRunning())
         {
             try
             {
                 long start = System.currentTimeMillis();
                 String infinispanVersion = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
 
-                infinispan.start();
-                String host = infinispan.getContainerIpAddress();
+                INFINISPAN.start();
+                String host = INFINISPAN.getContainerIpAddress();
                 System.setProperty("hotrod.host", host);
-                int port = infinispan.getMappedPort(11222);
+                int port = INFINISPAN.getMappedPort(11222);
 
                 LOG.info("Infinispan container started for {}:{} - {}ms", host, port,
                         System.currentTimeMillis() - start);
@@ -164,7 +164,7 @@ public class RemoteInfinispanTestSupport
 
     public void shutdown() throws Exception
     {
-        infinispan.stop();
+        INFINISPAN.stop();
     }
 
     public void createSession(InfinispanSessionData data)
