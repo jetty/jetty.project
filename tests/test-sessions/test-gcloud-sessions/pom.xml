@@ -45,7 +45,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.gcloud</groupId>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>jetty-gcloud-session-manager</artifactId>
       <scope>test</scope>
     </dependency>

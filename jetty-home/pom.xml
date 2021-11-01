@@ -743,7 +743,7 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.gcloud</groupId>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>jetty-gcloud-session-manager</artifactId>
       <optional>true</optional>
     </dependency>
