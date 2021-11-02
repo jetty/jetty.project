@@ -26,7 +26,7 @@ public class ServerProtocolSession extends ProtocolSession
     private static final Logger LOG = LoggerFactory.getLogger(ServerProtocolSession.class);
 
     private final Runnable producer = Invocable.from(Invocable.InvocationType.BLOCKING, this::produce);
-    private final Consumer<QuicStreamEndPoint> configureProtocolEndPoint = this::openProtocolEndPoint;
+    private final Consumer<QuicStreamEndPoint> openProtocolEndPoint = this::openProtocolEndPoint;
 
     public ServerProtocolSession(ServerQuicSession session)
     {
@@ -71,7 +71,7 @@ public class ServerProtocolSession extends ProtocolSession
     protected boolean onReadable(long readableStreamId)
     {
         // On the server, we need a get-or-create semantic in case of reads.
-        QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, configureProtocolEndPoint);
+        QuicStreamEndPoint streamEndPoint = getOrCreateStreamEndPoint(readableStreamId, openProtocolEndPoint);
         if (LOG.isDebugEnabled())
             LOG.debug("stream #{} selected for read: {}", readableStreamId, streamEndPoint);
         return streamEndPoint.onReadable();
