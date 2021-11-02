@@ -596,7 +596,7 @@ public class QuicheConnection
             if (written == LibQuiche.quiche_error.QUICHE_ERR_DONE)
                 return;
             if (written < 0L)
-                throw new IOException(" failed to write FIN to stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(written));
+                throw new IOException("failed to write FIN to stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(written));
         }
     }
 

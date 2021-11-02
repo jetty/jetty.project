@@ -92,14 +92,14 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         int iterations = 500;
         for (int i = 0; i < runs; ++i)
         {
-            run(iterations);
+            run(transport, iterations);
         }
 
         // Re-run after warmup
-        iterations = 5_000;
+        iterations = 1_000;
         for (int i = 0; i < runs; ++i)
         {
-            run(iterations);
+            run(transport, iterations);
         }
 
         System.gc();
@@ -143,10 +143,10 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         int iterations = 256;
         IntStream.range(0, 16).parallel().forEach(i ->
             IntStream.range(0, runs).forEach(j ->
-                run(iterations)));
+                run(transport, iterations)));
     }
 
-    private void run(int iterations)
+    private void run(Transport transport, int iterations)
     {
         CountDownLatch latch = new CountDownLatch(iterations);
         List<String> failures = new ArrayList<>();
@@ -173,7 +173,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         long end = System.nanoTime();
         task.cancel();
         long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
-        logger.info("{} requests in {} ms, {} req/s", iterations, elapsed, elapsed > 0 ? iterations * 1000L / elapsed : -1);
+        logger.info("{} {} requests in {} ms, {} req/s", iterations, transport, elapsed, elapsed > 0 ? iterations * 1000L / elapsed : -1);
 
         for (String failure : failures)
         {
