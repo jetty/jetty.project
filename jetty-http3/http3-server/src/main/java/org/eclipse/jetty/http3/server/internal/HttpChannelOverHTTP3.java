@@ -64,6 +64,12 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         return (HttpTransportOverHTTP3)super.getHttpTransport();
     }
 
+    @Override
+    public void setIdleTimeout(long timeoutMs)
+    {
+        stream.setIdleTimeout(timeoutMs);
+    }
+
     void consumeInput()
     {
         getRequest().getHttpInput().consumeAll();
@@ -226,36 +232,44 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
     public boolean onIdleTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
-        try (AutoLock l = lock.lock())
-        {
-            if (content == null)
-                content = new HttpInput.ErrorContent(failure);
-            else
-                return false;
-        }
-
         boolean wasDelayed = delayedUntilContent;
         delayedUntilContent = false;
 
         if (wasDelayed)
             connection.setApplicationMode(true);
 
-        boolean reset = getState().isIdle();
-        if (reset)
-            consumeInput();
-
         getHttpTransport().onIdleTimeout(failure);
 
-        failure.addSuppressed(new Throwable("idle timeout"));
+        boolean neverDispatched = getState().isIdle();
+        boolean hasDemand = stream.hasDemand();
 
-        boolean needed = getRequest().getHttpInput().onContentProducible();
-        if (needed || wasDelayed)
+        if (LOG.isDebugEnabled())
         {
-            consumer.accept(this::handleWithContext);
-            reset = false;
+            LOG.debug("HTTP3 request idle timeout #{}/{}, dispatched={} demand={}",
+                stream.getId(),
+                Integer.toHexString(stream.getSession().hashCode()),
+                !neverDispatched,
+                hasDemand);
         }
 
-        return reset;
+        if (neverDispatched)
+        {
+            try (AutoLock l = lock.lock())
+            {
+                content = new HttpInput.ErrorContent(failure);
+            }
+            consumer.accept(this::handleWithContext);
+        }
+        else if (hasDemand)
+        {
+            try (AutoLock l = lock.lock())
+            {
+                content = new HttpInput.ErrorContent(failure);
+            }
+            if (getRequest().getHttpInput().onContentProducible())
+                consumer.accept(this::handleWithContext);
+        }
+        return false;
     }
 
     private void handleWithContext()

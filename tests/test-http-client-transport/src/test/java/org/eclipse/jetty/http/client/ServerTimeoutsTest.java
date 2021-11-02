@@ -52,6 +52,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static org.eclipse.jetty.http.client.Transport.FCGI;
+import static org.eclipse.jetty.http.client.Transport.H2;
+import static org.eclipse.jetty.http.client.Transport.H2C;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -599,7 +601,7 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         // In HTTP/2, we force the flow control window to be small, so that the server
         // stalls almost immediately without having written many bytes, so that the test
         // completes quickly.
-        Assumptions.assumeTrue(transport.isMultiplexed());
+        Assumptions.assumeTrue(transport == H2C || transport == H2);
 
         init(transport);
 
