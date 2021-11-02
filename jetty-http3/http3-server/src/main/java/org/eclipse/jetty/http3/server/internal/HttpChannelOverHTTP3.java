@@ -297,16 +297,12 @@ public class HttpChannelOverHTTP3 extends HttpChannel
             }
         }
 
-        Stream.Data data = stream.readData();
-        if (data != null)
+        HttpInput.Content result = readContent();
+
+        if (result != null)
         {
-            HttpInput.Content result = newContent(data);
-            try (AutoLock l = lock.lock())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("need content read content {} on {}", result, this);
-                content = result;
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("need content read content {} on {}", this.content, this);
             return true;
         }
 
@@ -322,39 +318,14 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         HttpInput.Content result;
         try (AutoLock l = lock.lock())
         {
-            if (content != null)
-            {
-                result = content;
-                if (!result.isSpecial())
-                    content = null;
-                if (LOG.isDebugEnabled())
-                    LOG.debug("produced content {} on {}", result, this);
-                return result;
-            }
+            result = content;
         }
 
-        Stream.Data data = stream.readData();
-        if (LOG.isDebugEnabled())
-            LOG.debug("read {} on {}", data, this);
-        if (data == null)
+        if (result == null)
+            result = readContent();
+
+        if (result == null)
             return null;
-
-        result = newContent(data);
-        try (AutoLock l = lock.lock())
-        {
-            content = result;
-        }
-
-        boolean handle = onContent(result);
-
-        boolean isLast = data.isLast();
-        if (isLast)
-        {
-            boolean handleContent = onContentComplete();
-            // This will generate EOF -> must happen before onContentProducible().
-            boolean handleRequest = onRequestComplete();
-            handle |= handleContent | handleRequest;
-        }
 
         if (!result.isSpecial())
         {
@@ -365,8 +336,39 @@ public class HttpChannelOverHTTP3 extends HttpChannel
             }
         }
         if (LOG.isDebugEnabled())
-            LOG.debug("produced new content {} on {}", result, this);
+            LOG.debug("produced content {} on {}", result, this);
         return result;
+    }
+
+    private HttpInput.Content readContent()
+    {
+        Stream.Data data = stream.readData();
+        if (LOG.isDebugEnabled())
+            LOG.debug("read data {} on {}", data, this);
+        if (data != null)
+        {
+            HttpInput.Content result = newContent(data);
+
+            boolean handle = onContent(result);
+
+            try (AutoLock l = lock.lock())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("read content {} on {}", result, this);
+                content = result;
+            }
+
+            if (data.isLast())
+            {
+                boolean handleContent = onContentComplete();
+                // This will generate EOF -> must happen before onContentProducible().
+                boolean handleRequest = onRequestComplete();
+                handle |= handleContent | handleRequest;
+            }
+
+            return result;
+        }
+        return null;
     }
 
     private HttpInput.Content newContent(Stream.Data data)
