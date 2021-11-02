@@ -396,20 +396,24 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 if (filled > 0)
                     continue;
 
-                if (!remotelyClosed && getEndPoint().isStreamFinished())
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("detected end of stream on {}", this);
-                    parser.parse(EMPTY_DATA_FRAME.slice());
-                    return MessageParser.Result.FRAME;
-                }
-
                 if (filled == 0)
                 {
+                    // Workaround for a Quiche glitch, that sometimes reports
+                    // an HTTP/3 frame with last=false, but a subsequent read
+                    // of zero bytes reports that the stream is finished.
+                    if (!remotelyClosed && getEndPoint().isStreamFinished())
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("detected end of stream on {}", this);
+                        parser.parse(EMPTY_DATA_FRAME.slice());
+                        return MessageParser.Result.FRAME;
+                    }
+
                     setNoData(true);
                     if (setFillInterest)
                         fillInterested();
                 }
+
                 return MessageParser.Result.NO_FRAME;
             }
         }

@@ -54,7 +54,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Session.class);
 
     private final AutoLock lock = new AutoLock();
-    private final AtomicLong lastId = new AtomicLong();
+    private final AtomicLong lastStreamId = new AtomicLong(0);
     private final Map<Long, HTTP3Stream> streams = new ConcurrentHashMap<>();
     private final ProtocolSession session;
     private final Session.Listener listener;
@@ -225,7 +225,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
     protected GoAwayFrame newGoAwayFrame(boolean graceful)
     {
-        return new GoAwayFrame(lastId.get());
+        return new GoAwayFrame(lastStreamId.get());
     }
 
     public CompletableFuture<Void> shutdown()
@@ -241,9 +241,9 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         return result;
     }
 
-    protected void updateLastId(long id)
+    private void updateLastStreamId(long id)
     {
-        Atomics.updateMax(lastId, id);
+        Atomics.updateMax(lastStreamId, id);
     }
 
     public long getIdleTimeout()
@@ -340,6 +340,8 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             long idleTimeout = getStreamIdleTimeout();
             if (idleTimeout > 0)
                 stream.setIdleTimeout(idleTimeout);
+            if (!local)
+                updateLastStreamId(stream.getId());
             if (LOG.isDebugEnabled())
                 LOG.debug("created {}", stream);
             return stream;
