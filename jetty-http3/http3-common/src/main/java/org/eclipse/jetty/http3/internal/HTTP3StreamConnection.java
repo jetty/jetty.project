@@ -197,17 +197,26 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
             {
                 case FRAME:
                 {
-                    DataFrame frame = dataFrame;
-                    dataFrame = null;
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("read data {} on {}", frame, this);
-                    buffer.retain();
-                    // Store in a local variable so that the lambda captures the right buffer.
-                    RetainableByteBuffer current = buffer;
-                    // Release the network buffer here (if empty), since the application may
-                    // not be reading more bytes, to avoid to keep around a consumed buffer.
-                    tryReleaseBuffer(false);
-                    return new Stream.Data(frame, () -> completeReadData(current));
+                    if (parserDataMode)
+                    {
+                        DataFrame frame = dataFrame;
+                        dataFrame = null;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("read data {} on {}", frame, this);
+                        buffer.retain();
+                        // Store in a local variable so that the lambda captures the right buffer.
+                        RetainableByteBuffer current = buffer;
+                        // Release the network buffer here (if empty), since the application may
+                        // not be reading more bytes, to avoid to keep around a consumed buffer.
+                        tryReleaseBuffer(false);
+                        return new Stream.Data(frame, () -> completeReadData(current));
+                    }
+                    else
+                    {
+                        // Not anymore in data mode, so it's a trailer frame.
+                        tryReleaseBuffer(false);
+                        return null;
+                    }
                 }
                 case MODE_SWITCH:
                 {

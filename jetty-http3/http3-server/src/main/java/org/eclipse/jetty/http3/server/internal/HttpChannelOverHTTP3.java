@@ -368,7 +368,15 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
             return result;
         }
-        return null;
+        else
+        {
+            // The call to readData() may have parsed the trailer frame which
+            // triggers the content complete event which sets the content to EOF.
+            try (AutoLock l = lock.lock())
+            {
+                return content;
+            }
+        }
     }
 
     private HttpInput.Content newContent(Stream.Data data)
