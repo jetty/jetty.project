@@ -60,9 +60,12 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -73,7 +76,6 @@ public class AsyncServletTest
     protected int _port;
 
     protected Server _server = new Server();
-    protected ServletHandler _servletHandler;
     protected ErrorPageErrorHandler _errorHandler;
     protected ServerConnector _connector;
     protected List<String> _log;
@@ -109,18 +111,20 @@ public class AsyncServletTest
         context.setErrorHandler(_errorHandler);
         _errorHandler.addErrorPage(300, 599, "/error/custom");
 
-        _servletHandler = context.getServletHandler();
         ServletHolder holder = new ServletHolder(_servlet);
         holder.setAsyncSupported(true);
-        _servletHandler.addServletWithMapping(holder, "/error/*");
-        _servletHandler.addServletWithMapping(holder, "/path/*");
-        _servletHandler.addServletWithMapping(holder, "/path1/*");
-        _servletHandler.addServletWithMapping(holder, "/path2/*");
-        _servletHandler.addServletWithMapping(holder, "/p th3/*");
-        _servletHandler.addServletWithMapping(new ServletHolder(new FwdServlet()), "/fwd/*");
+        context.addServlet(holder, "/error/*");
+        context.addServlet(holder, "/path/*");
+        context.addServlet(holder, "/path1/*");
+        context.addServlet(holder, "/path2/*");
+        context.addServlet(holder, "/p th3/*");
+        context.addServlet(new ServletHolder(new FwdServlet()), "/fwd/*");
         ServletHolder holder2 = new ServletHolder("NoAsync", _servlet);
         holder2.setAsyncSupported(false);
-        _servletHandler.addServletWithMapping(holder2, "/noasync/*");
+        context.addServlet(holder2, "/noasync/*");
+
+        context.addServlet(AsyncStartSimpleServlet.class, "/simple-start/*")
+            .setAsyncSupported(true);
         _server.start();
         _port = _connector.getLocalPort();
         __history.clear();
@@ -526,6 +530,31 @@ public class AsyncServletTest
         assertContains("DISPATCHED", response);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "search=foo",
+        "search=%E3",
+        "search=%E3."
+    })
+    public void testStartDispatchBadQueryEncoding(String query) throws Exception
+    {
+        String rawRequest = "GET /ctx/simple-start/?" + query + " HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "Connection: close\r\n" +
+            "\r\n";
+
+        try (Socket socket = new Socket("localhost", _port))
+        {
+            socket.setSoTimeout(10000);
+            socket.getOutputStream().write(rawRequest.getBytes(StandardCharsets.UTF_8));
+
+            String response = IO.toString(socket.getInputStream());
+            __latch.await(1, TimeUnit.SECONDS);
+            assertThat(response, startsWith("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("NORMAL: query=" + query));
+        }
+    }
+
     @Test
     public void testFwdStartDispatch() throws Exception
     {
@@ -689,6 +718,56 @@ public class AsyncServletTest
             if (request instanceof ServletRequestWrapper || response instanceof ServletResponseWrapper)
                 historyAdd("wrapped" + ((request instanceof ServletRequestWrapper) ? " REQ" : "") + ((response instanceof ServletResponseWrapper) ? " RSP" : ""));
             request.getServletContext().getRequestDispatcher("/path1").forward(request, response);
+        }
+    }
+
+    public static class AsyncStartSimpleServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            try
+            {
+                AsyncContext asyncContext = request.getAsyncContext();
+                asyncContext.complete();
+                return;
+            }
+            catch (IllegalStateException ignore)
+            {
+                // ignore
+            }
+
+            AsyncContext asyncContext = request.startAsync();
+            asyncContext.setTimeout(200);
+            asyncContext.addListener(new AsyncListener()
+            {
+                @Override
+                public void onComplete(AsyncEvent event)
+                {
+                }
+
+                @Override
+                public void onTimeout(AsyncEvent event) throws IOException
+                {
+                    HttpServletRequest request = (HttpServletRequest)event.getSuppliedRequest();
+                    HttpServletResponse response = (HttpServletResponse)event.getSuppliedResponse();
+                    response.setCharacterEncoding("utf-8");
+                    response.setContentType("text/plain");
+                    response.getWriter().println("NORMAL: query=" + request.getQueryString());
+                    event.getAsyncContext().complete();
+                }
+
+                @Override
+                public void onError(AsyncEvent event)
+                {
+                    System.out.println("onError: " + event.getThrowable());
+                }
+
+                @Override
+                public void onStartAsync(AsyncEvent event)
+                {
+                }
+            });
         }
     }
 
