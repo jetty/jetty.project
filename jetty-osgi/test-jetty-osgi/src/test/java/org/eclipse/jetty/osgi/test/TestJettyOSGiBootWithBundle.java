@@ -65,7 +65,8 @@ public class TestJettyOSGiBootWithBundle
         options.add(CoreOptions.junitBundles());
         options.addAll(configureJettyHomeAndPort());
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
-        options.addAll(TestOSGiUtil.coreJettyDependencies());
+        TestOSGiUtil.coreJettyDependencies(options);
+        TestOSGiUtil.coreJspDependencies(options);
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
 

@@ -32,7 +32,7 @@
     <awaitility.version>4.1.1</awaitility.version>
     <bndlib.version>5.3.0</bndlib.version>
     <build-support.version>1.5</build-support.version>
-    <checkstyle.version>9.0</checkstyle.version>
+    <checkstyle.version>9.1</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
     <conscrypt.version>2.5.2</conscrypt.version>
@@ -51,7 +51,7 @@
     <guava.version>31.0.1-jre</guava.version>
     <guice.version>5.0.1</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hawtio.version>2.14.0</hawtio.version>
+    <hawtio.version>2.14.1</hawtio.version>
     <hazelcast.version>4.2.2</hazelcast.version>
     <infinispan.version>11.0.11.Final</infinispan.version>
     <infinispan.protostream.version>4.3.4.Final</infinispan.protostream.version>
@@ -1084,14 +1084,14 @@
         <version>${jakarta.authentication.api.version}</version>
       </dependency>
       <dependency>
-        <groupId>jakarta.inject</groupId>
-        <artifactId>jakarta.inject-api</artifactId>
-        <version>${jakarta.inject.api.version}</version>
-      </dependency>
-      <dependency>
         <groupId>jakarta.interceptor</groupId>
         <artifactId>jakarta.interceptor-api</artifactId>
         <version>${jakarta.interceptor.api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.inject</groupId>
+        <artifactId>jakarta.inject-api</artifactId>
+        <version>${jakarta.inject.api.version}</version>
       </dependency>
       <dependency>
         <groupId>jakarta.mail</groupId>
@@ -1177,31 +1177,6 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>org.apache.felix.framework</artifactId>
         <version>${felix.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.geronimo.specs</groupId>
-        <artifactId>geronimo-annotation_1.3_spec</artifactId>
-        <version>${geronimo.annotation.spec.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.geronimo.specs</groupId>
-        <artifactId>geronimo-jcdi_2.0_spec</artifactId>
-        <version>${geronimo.jcdi.spec.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.geronimo.specs</groupId>
-        <artifactId>geronimo-atinject_1.0_spec</artifactId>
-        <version>${geronimo.atinject.spec.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.geronimo.specs</groupId>
-        <artifactId>geronimo-interceptor_1.2_spec</artifactId>
-        <version>${geronimo.interceptor.spec.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.apache.geronimo.specs</groupId>
-        <artifactId>geronimo-jta_1.1_spec</artifactId>
-        <version>${geronimo.jta.spec.version}</version>
       </dependency>
       <dependency>
         <groupId>org.apache.kerby</groupId>
