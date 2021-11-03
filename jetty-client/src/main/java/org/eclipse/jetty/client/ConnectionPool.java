@@ -124,4 +124,15 @@ public interface ConnectionPool extends Closeable
         {
         }
     }
+
+    /**
+     * Marks a connection as being usable for a maximum number of requests.
+     */
+    interface MaxUsable
+    {
+        /**
+         * @return the max number of requests on a single connection
+         */
+        int getMaxUsageCount();
+    }
 }

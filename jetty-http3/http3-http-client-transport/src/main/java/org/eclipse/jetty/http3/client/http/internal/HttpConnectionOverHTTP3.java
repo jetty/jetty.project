@@ -31,7 +31,7 @@ import org.eclipse.jetty.http3.client.internal.HTTP3SessionClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverHTTP3 extends HttpConnection implements ConnectionPool.Multiplexable
+public class HttpConnectionOverHTTP3 extends HttpConnection implements ConnectionPool.Multiplexable, ConnectionPool.MaxUsable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP3.class);
 
@@ -52,6 +52,14 @@ public class HttpConnectionOverHTTP3 extends HttpConnection implements Connectio
 
     @Override
     public int getMaxMultiplex()
+    {
+        // As weird as this is, RFC 9000 specifies a *cumulative* number
+        // for the number of streams that can be opened in a connection.
+        return getMaxUsageCount();
+    }
+
+    @Override
+    public int getMaxUsageCount()
     {
         return session.getMaxLocalStreams();
     }

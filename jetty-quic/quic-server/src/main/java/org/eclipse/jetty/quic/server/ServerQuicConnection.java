@@ -24,11 +24,9 @@ import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.quic.common.QuicConnection;
 import org.eclipse.jetty.quic.common.QuicSession;
-import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.quic.server.internal.SimpleTokenMinter;
 import org.eclipse.jetty.quic.server.internal.SimpleTokenValidator;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -42,14 +40,12 @@ public class ServerQuicConnection extends QuicConnection
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerQuicConnection.class);
 
-    private final QuicheConfig quicheConfig;
-    private final Connector connector;
+    private final QuicServerConnector connector;
     private final SessionTimeouts sessionTimeouts;
 
-    protected ServerQuicConnection(Connector connector, EndPoint endPoint, QuicheConfig quicheConfig)
+    protected ServerQuicConnection(QuicServerConnector connector, EndPoint endPoint)
     {
         super(connector.getExecutor(), connector.getScheduler(), connector.getByteBufferPool(), endPoint);
-        this.quicheConfig = quicheConfig;
         this.connector = connector;
         this.sessionTimeouts = new SessionTimeouts(connector.getScheduler());
     }
@@ -66,7 +62,7 @@ public class ServerQuicConnection extends QuicConnection
     {
         ByteBufferPool byteBufferPool = getByteBufferPool();
         // TODO make the token validator configurable
-        QuicheConnection quicheConnection = QuicheConnection.tryAccept(quicheConfig, new SimpleTokenValidator((InetSocketAddress)remoteAddress), cipherBuffer, remoteAddress);
+        QuicheConnection quicheConnection = QuicheConnection.tryAccept(connector.newQuicheConfig(), new SimpleTokenValidator((InetSocketAddress)remoteAddress), cipherBuffer, remoteAddress);
         if (quicheConnection == null)
         {
             ByteBuffer negotiationBuffer = byteBufferPool.acquire(getOutputBufferSize(), true);

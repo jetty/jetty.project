@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.file.Files;
 import java.util.EventListener;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -47,7 +48,8 @@ public class QuicServerConnector extends AbstractNetworkConnector
     private final QuicSessionContainer container = new QuicSessionContainer();
     private final ServerDatagramSelectorManager selectorManager;
     private final SslContextFactory.Server sslContextFactory;
-    private final QuicheConfig quicheConfig = new QuicheConfig();
+    private File privateKeyFile;
+    private File certificateChainFile;
     private volatile DatagramChannel datagramChannel;
     private volatile int localPort = -1;
     private int inputBufferSize = 2048;
@@ -155,23 +157,8 @@ public class QuicServerConnector extends AbstractNetworkConnector
             keyManagerPassword == null ? keyStorePassword : keyManagerPassword.toCharArray()
         );
         File[] pemFiles = keyPair.export(new File(System.getProperty("java.io.tmpdir")));
-
-        quicheConfig.setPrivKeyPemPath(pemFiles[0].getPath());
-        quicheConfig.setCertChainPemPath(pemFiles[1].getPath());
-        quicheConfig.setVerifyPeer(quicConfiguration.isVerifyPeerCertificates());
-        // Idle timeouts must not be managed by Quiche.
-        quicheConfig.setMaxIdleTimeout(0L);
-        quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());
-        quicheConfig.setInitialMaxStreamDataBidiLocal((long)quicConfiguration.getBidirectionalStreamRecvWindow());
-        quicheConfig.setInitialMaxStreamDataBidiRemote((long)quicConfiguration.getBidirectionalStreamRecvWindow());
-        quicheConfig.setInitialMaxStreamDataUni((long)quicConfiguration.getUnidirectionalStreamRecvWindow());
-        quicheConfig.setInitialMaxStreamsUni((long)quicConfiguration.getMaxUnidirectionalRemoteStreams());
-        quicheConfig.setInitialMaxStreamsBidi((long)quicConfiguration.getMaxBidirectionalRemoteStreams());
-        quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
-        List<String> protocols = getProtocols();
-        // This is only needed for Quiche example clients.
-        protocols.add(0, "http/0.9");
-        quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
+        privateKeyFile = pemFiles[0];
+        certificateChainFile = pemFiles[1];
     }
 
     @Override
@@ -204,6 +191,28 @@ public class QuicServerConnector extends AbstractNetworkConnector
         }
     }
 
+    QuicheConfig newQuicheConfig()
+    {
+        QuicheConfig quicheConfig = new QuicheConfig();
+        quicheConfig.setPrivKeyPemPath(privateKeyFile.getPath());
+        quicheConfig.setCertChainPemPath(certificateChainFile.getPath());
+        quicheConfig.setVerifyPeer(quicConfiguration.isVerifyPeerCertificates());
+        // Idle timeouts must not be managed by Quiche.
+        quicheConfig.setMaxIdleTimeout(0L);
+        quicheConfig.setInitialMaxData((long)quicConfiguration.getSessionRecvWindow());
+        quicheConfig.setInitialMaxStreamDataBidiLocal((long)quicConfiguration.getBidirectionalStreamRecvWindow());
+        quicheConfig.setInitialMaxStreamDataBidiRemote((long)quicConfiguration.getBidirectionalStreamRecvWindow());
+        quicheConfig.setInitialMaxStreamDataUni((long)quicConfiguration.getUnidirectionalStreamRecvWindow());
+        quicheConfig.setInitialMaxStreamsUni((long)quicConfiguration.getMaxUnidirectionalRemoteStreams());
+        quicheConfig.setInitialMaxStreamsBidi((long)quicConfiguration.getMaxBidirectionalRemoteStreams());
+        quicheConfig.setCongestionControl(QuicheConfig.CongestionControl.CUBIC);
+        List<String> protocols = getProtocols();
+        // This is only needed for Quiche example clients.
+        protocols.add(0, "http/0.9");
+        quicheConfig.setApplicationProtos(protocols.toArray(String[]::new));
+        return quicheConfig;
+    }
+
     @Override
     public void setIdleTimeout(long idleTimeout)
     {
@@ -214,6 +223,9 @@ public class QuicServerConnector extends AbstractNetworkConnector
     @Override
     protected void doStop() throws Exception
     {
+        deleteFile(privateKeyFile);
+        deleteFile(certificateChainFile);
+
         // We want the DatagramChannel to be stopped by the SelectorManager.
         super.doStop();
 
@@ -223,6 +235,20 @@ public class QuicServerConnector extends AbstractNetworkConnector
 
         for (EventListener l : getBeans(EventListener.class))
             selectorManager.removeEventListener(l);
+    }
+
+    private void deleteFile(File file)
+    {
+        try
+        {
+            if (file != null)
+                Files.delete(file.toPath());
+        }
+        catch (IOException x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("could not delete {}", file, x);
+        }
     }
 
     @Override
@@ -261,7 +287,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SelectableChannel channel, EndPoint endpoint, Object attachment)
         {
-            ServerQuicConnection connection = new ServerQuicConnection(QuicServerConnector.this, endpoint, quicheConfig);
+            ServerQuicConnection connection = new ServerQuicConnection(QuicServerConnector.this, endpoint);
             connection.addEventListener(container);
             connection.setInputBufferSize(getInputBufferSize());
             connection.setOutputBufferSize(getOutputBufferSize());
