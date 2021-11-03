@@ -300,10 +300,10 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-jakarta-servlet-api</artifactId>
-                  <version>${jetty.servlet.api.version}</version>
+                  <version>${jetty.servlet5.api.version}</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>jetty-jakarta-servlet-api-${jetty.servlet.api.version}.jar</destFileName>
+                  <destFileName>jetty-jakarta-servlet-api-${jetty.servlet5.api.version}.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>

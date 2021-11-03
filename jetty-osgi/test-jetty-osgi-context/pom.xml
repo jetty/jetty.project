@@ -73,8 +73,8 @@
             compilation time. -->
             <_nouses>true</_nouses>
             <Import-Package>
-              jakarta.servlet;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
-              jakarta.servlet.resources;version="[$(version;==;${jetty.servlet.api.version}),$(version;+;${jetty.servlet.api.version}))",
+              jakarta.servlet;version="[$(version;==;${jetty.servlet5.api.version}),$(version;+;${jetty.servlet5.api.version}))",
+              jakarta.servlet.resources;version="[$(version;==;${jetty.servlet5.api.version}),$(version;+;${jetty.servlet5.api.version}))",
               org.osgi.framework,
               org.osgi.service.cm;version="1.2.0",
               org.osgi.service.packageadmin,

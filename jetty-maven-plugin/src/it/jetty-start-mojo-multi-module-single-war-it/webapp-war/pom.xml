@@ -17,7 +17,7 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-jakarta-servlet-api</artifactId>
-      <version>@jetty.servlet.api.version@</version>
+      <version>@jetty.servlet5.api.version@</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
