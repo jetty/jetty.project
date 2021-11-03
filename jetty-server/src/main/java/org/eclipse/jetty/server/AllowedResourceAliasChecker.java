@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -64,10 +63,10 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     {
         _base = getPath(_contextHandler.getBaseResource());
         if (_base == null)
-            _base = Paths.get("/").toAbsolutePath();
+            return;
+
         if (Files.exists(_base, NO_FOLLOW_LINKS))
             _base = _base.toRealPath(FOLLOW_LINKS);
-
         String[] protectedTargets = _contextHandler.getProtectedTargets();
         if (protectedTargets != null)
         {
@@ -86,6 +85,9 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     @Override
     public boolean check(String pathInContext, Resource resource)
     {
+        if (_base == null)
+            return false;
+
         try
         {
             // The existence check resolves the symlinks.
@@ -184,7 +186,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         {
             if (resource instanceof PathResource)
                 return ((PathResource)resource).getPath();
-            return resource.getFile().toPath();
+            return (resource == null) ? null : resource.getFile().toPath();
         }
         catch (Throwable t)
         {

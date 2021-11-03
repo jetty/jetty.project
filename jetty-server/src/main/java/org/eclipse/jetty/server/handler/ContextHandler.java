@@ -1700,6 +1700,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setBaseResource(Resource base)
     {
+        if (isStarting() || isStarted())
+            throw new IllegalStateException("Cannot change base resource after starting");
         _baseResource = base;
     }
 
