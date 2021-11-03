@@ -12,6 +12,7 @@
 
   <modules>
     <module>jetty-servlet6</module>
+    <module>jetty-annotations6</module>
   </modules>
 
 </project>
