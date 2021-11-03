@@ -6,7 +6,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-annotations</artifactId>
+  <artifactId>jetty-annotations6</artifactId>
   <name>Jetty :: Servlet :: 6 :: Annotations</name>
   <description>Annotation support for deploying servlets in jetty.</description>
   <properties>
