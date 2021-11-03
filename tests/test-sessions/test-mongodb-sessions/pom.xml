@@ -66,8 +66,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
+      <artifactId>jetty-webapp-common</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

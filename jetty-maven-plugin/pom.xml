@@ -160,8 +160,8 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
+      <artifactId>jetty-webapp-common</artifactId>
       <exclusions>
         <exclusion>
           <groupId>jakarta.servlet</groupId>
@@ -210,8 +210,8 @@
       <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-annotations</artifactId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
+      <artifactId>jetty-annotations-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>

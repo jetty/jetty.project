@@ -42,8 +42,8 @@ To use this example in your project you will need the following Maven dependenci
   <version>${project.version}</version>
 </dependency>
 <dependency>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-security</artifactId>
+  <groupId>org.eclipse.jetty.servlet</groupId>
+  <artifactId>jetty-security-common</artifactId>
   <version>${project.version}</version>
 </dependency>
 

@@ -5,11 +5,15 @@
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
+  <groupId>org.eclipse.jetty.servlet</groupId>
   <artifactId>jetty-servlet</artifactId>
   <packaging>pom</packaging>
   <name>Jetty :: Servlet</name>
 
   <modules>
+    <module>jetty-security-common</module>
+    <module>jetty-annotations-common</module>
+    <module>jetty-webapp-common</module>
     <module>servlet6</module>
     <module>jetty-session</module>
   </modules>

@@ -72,20 +72,20 @@
       <artifactId>ant-launcher</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-security</artifactId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
+      <artifactId>jetty-security-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-plus</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
+      <artifactId>jetty-webapp-common</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-annotations</artifactId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
+      <artifactId>jetty-annotations-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
