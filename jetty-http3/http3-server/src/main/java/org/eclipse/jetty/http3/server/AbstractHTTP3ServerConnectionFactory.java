@@ -73,6 +73,7 @@ public abstract class AbstractHTTP3ServerConnectionFactory extends AbstractConne
         long streamId = streamEndPoint.getStreamId();
         ServerHTTP3Session http3Session = (ServerHTTP3Session)streamEndPoint.getQuicSession().getProtocolSession();
         MessageParser parser = new MessageParser(http3Session.getSessionServer(), http3Session.getQpackDecoder(), streamId, streamEndPoint::isStreamFinished);
-        return new ServerHTTP3StreamConnection(connector, getHttpConfiguration(), streamEndPoint, http3Session, parser);
+        ServerHTTP3StreamConnection connection = new ServerHTTP3StreamConnection(connector, getHttpConfiguration(), streamEndPoint, http3Session, parser);
+        return configure(connection, connector, endPoint);
     }
 }
