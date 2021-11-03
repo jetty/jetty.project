@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -32,6 +33,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
@@ -44,7 +46,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.Assumptions;
@@ -56,12 +57,9 @@ import static org.eclipse.jetty.http.client.Transport.H2;
 import static org.eclipse.jetty.http.client.Transport.H2C;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
@@ -357,15 +355,22 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
         });
 
         AsyncRequestContent content = new AsyncRequestContent();
-        BlockingQueue<Object> results = new BlockingArrayQueue<>();
+        AtomicReference<Response> responseRef = new AtomicReference<>();
+        CountDownLatch responseLatch = new CountDownLatch(1);
+        CountDownLatch resultLatch = new CountDownLatch(1);
         scenario.client.newRequest(scenario.newURI())
             .body(content)
+            .onResponseSuccess(response ->
+            {
+                responseRef.set(response);
+                responseLatch.countDown();
+                // Now that we have the response, fail the request,
+                // as the request body has not been fully sent yet.
+                response.abort(new Exception("thrown by the test"));
+            })
             .send(result ->
             {
-                if (result.isFailed())
-                    results.offer(result.getFailure());
-                else
-                    results.offer(result.getResponse().getStatus());
+                resultLatch.countDown();
             });
 
         for (int i = 0; i < 3; ++i)
@@ -377,15 +382,12 @@ public class ServerTimeoutsTest extends AbstractTest<TransportScenario>
 
         assertThat(scenario.requestLog.poll(5, TimeUnit.SECONDS), containsString(" 408"));
 
-        // Request should timeout.
+        // Request should timeout on server.
         assertTrue(handlerLatch.await(5, TimeUnit.SECONDS));
 
-        Object result = results.poll(5, TimeUnit.SECONDS);
-        assertNotNull(result);
-        if (result instanceof Integer)
-            assertThat(result, is(408));
-        else
-            assertThat(result, instanceOf(Throwable.class));
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+        assertEquals(HttpStatus.REQUEST_TIMEOUT_408, responseRef.get().getStatus());
+        assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
