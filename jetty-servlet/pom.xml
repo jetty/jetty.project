@@ -12,7 +12,6 @@
   <modules>
     <module>servlet6</module>
     <module>jetty-session</module>
-    <module>jetty-webapp</module>
   </modules>
 
 </project>

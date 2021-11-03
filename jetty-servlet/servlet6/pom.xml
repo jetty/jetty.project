@@ -14,6 +14,7 @@
     <module>jetty-servlet6</module>
     <module>jetty-annotations6</module>
     <module>jetty-security6</module>
+    <module>jetty-webapp6</module>
   </modules>
 
 </project>
