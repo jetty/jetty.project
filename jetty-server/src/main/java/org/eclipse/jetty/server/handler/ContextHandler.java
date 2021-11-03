@@ -2074,7 +2074,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void addAliasCheck(AliasCheck check)
     {
-        getAliasChecks().add(check);
+        _aliasChecks.add(check);
         if (check instanceof LifeCycle)
             addManaged((LifeCycle)check);
         else
@@ -2082,11 +2082,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /**
-     * @return Mutable list of Alias checks
+     * @return Immutable list of Alias checks
      */
     public List<AliasCheck> getAliasChecks()
     {
-        return _aliasChecks;
+        return List.copyOf(_aliasChecks);
     }
 
     /**
@@ -2095,7 +2095,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void setAliasChecks(List<AliasCheck> checks)
     {
         clearAliasChecks();
-        getAliasChecks().addAll(checks);
+        checks.forEach(this::addAliasCheck);
     }
 
     /**
@@ -2103,9 +2103,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void clearAliasChecks()
     {
-        List<AliasCheck> aliasChecks = getAliasChecks();
-        aliasChecks.forEach(this::removeBean);
-        aliasChecks.clear();
+        _aliasChecks.forEach(this::removeBean);
+        _aliasChecks.clear();
     }
 
     /**

@@ -24,6 +24,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -43,6 +44,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
 
     private final ContextHandler _contextHandler;
     private final List<Path> _protected = new ArrayList<>();
+    private final AllowedResourceAliasCheckListener _listener = new AllowedResourceAliasCheckListener();
     protected Path _base;
 
     /**
@@ -50,7 +52,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
      */
     public AllowedResourceAliasChecker(ContextHandler contextHandler)
     {
-        _contextHandler = contextHandler;
+        _contextHandler = Objects.requireNonNull(contextHandler);
     }
 
     protected ContextHandler getContextHandler()
@@ -58,26 +60,45 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         return _contextHandler;
     }
 
-    @Override
-    protected void doStart() throws Exception
+    protected void initialize()
     {
         _base = getPath(_contextHandler.getBaseResource());
         if (_base == null)
             return;
 
-        if (Files.exists(_base, NO_FOLLOW_LINKS))
-            _base = _base.toRealPath(FOLLOW_LINKS);
-        String[] protectedTargets = _contextHandler.getProtectedTargets();
-        if (protectedTargets != null)
+        try
         {
-            for (String s : protectedTargets)
-                _protected.add(_base.getFileSystem().getPath(_base.toString(), s));
+            if (Files.exists(_base, NO_FOLLOW_LINKS))
+                _base = _base.toRealPath(FOLLOW_LINKS);
+            String[] protectedTargets = _contextHandler.getProtectedTargets();
+            if (protectedTargets != null)
+            {
+                for (String s : protectedTargets)
+                    _protected.add(_base.getFileSystem().getPath(_base.toString(), s));
+            }
         }
+        catch (IOException e)
+        {
+            LOG.warn("Initialization failed", e);
+            _base = null;
+        }
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        // We can only initialize if ContextHandler in started state, the baseResource can be changed even in starting state.
+        // If the ContextHandler is not started add a listener to delay initialization until fully started.
+        if (_contextHandler.isStarted())
+            initialize();
+        else
+            _contextHandler.addEventListener(_listener);
     }
 
     @Override
     protected void doStop() throws Exception
     {
+        _contextHandler.removeEventListener(_listener);
         _base = null;
         _protected.clear();
     }
@@ -192,6 +213,15 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         {
             LOG.trace("getPath() failed", t);
             return null;
+        }
+    }
+
+    private class AllowedResourceAliasCheckListener implements LifeCycle.Listener
+    {
+        @Override
+        public void lifeCycleStarted(LifeCycle event)
+        {
+            initialize();
         }
     }
 
