@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.RoundRobinConnectionPool;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.Request;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -224,6 +225,8 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
                 remotePorts.add(request.getRemotePort());
             }
         });
+        if (transport == Transport.H3)
+            ((QuicServerConnector)scenario.connector).getQuicConfiguration().setMaxBidirectionalRemoteStreams(maxUsage);
         scenario.client.getTransport().setConnectionPoolFactory(destination ->
         {
             RoundRobinConnectionPool pool = new RoundRobinConnectionPool(destination, maxConnections, destination, maxMultiplex);

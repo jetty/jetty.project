@@ -82,6 +82,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 import static java.nio.ByteBuffer.wrap;
 import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.http.client.Transport.FCGI;
+import static org.eclipse.jetty.http.client.Transport.H2;
 import static org.eclipse.jetty.http.client.Transport.H2C;
 import static org.eclipse.jetty.http.client.Transport.H3;
 import static org.eclipse.jetty.http.client.Transport.HTTP;
@@ -236,7 +237,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                 });
             }
         });
-        scenario.setConnectionIdleTimeout(1000);
+        scenario.setRequestIdleTimeout(1000);
         CountDownLatch closeLatch = new CountDownLatch(1);
         scenario.connector.addBean(new Connection.Listener()
         {
@@ -269,7 +270,9 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                 clientLatch.countDown();
             });
 
-        assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "close latch expired");
+        // HTTP/2 does not close a Connection when the request idle times out.
+        if (transport != H2C && transport != H2)
+            assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "close latch expired");
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS), "response latch expired");
         content.close();
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS), "client latch expired");
