@@ -34,8 +34,17 @@ public class MultiplexConnectionPool extends AbstractConnectionPool
 
     public MultiplexConnectionPool(HttpDestination destination, Pool.StrategyType strategy, int maxConnections, boolean cache, Callback requester, int maxMultiplex)
     {
-        super(destination, new Pool<Connection>(strategy, maxConnections, cache)
+        super(destination, new Pool<>(strategy, maxConnections, cache)
         {
+            @Override
+            protected int getMaxUsageCount(Connection connection)
+            {
+                int maxUsage = (connection instanceof MaxUsable)
+                    ? ((MaxUsable)connection).getMaxUsageCount()
+                    : super.getMaxUsageCount(connection);
+                return maxUsage > 0 ? maxUsage : -1;
+            }
+
             @Override
             protected int getMaxMultiplex(Connection connection)
             {

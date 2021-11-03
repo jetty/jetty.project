@@ -384,14 +384,14 @@ public abstract class QuicSession extends ContainerLifeCycle
             if (quicStreamEndPoint == null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("creating endpoint for stream {} for {}", id, this);
+                    LOG.debug("creating endpoint for stream #{} for {}", id, this);
                 quicStreamEndPoint = newQuicStreamEndPoint(streamId);
                 consumer.accept(quicStreamEndPoint);
             }
             return quicStreamEndPoint;
         });
         if (LOG.isDebugEnabled())
-            LOG.debug("returning endpoint for stream {} for {}", streamId, this);
+            LOG.debug("returning {} for {}", endPoint, this);
         return endPoint;
     }
 
