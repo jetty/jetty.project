@@ -228,10 +228,11 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     @Override
     public String toString()
     {
+        String[] protectedTargets = _contextHandler.getProtectedTargets();
         return String.format("%s@%x{base=%s,protected=%s}",
             this.getClass().getSimpleName(),
             hashCode(),
             _base,
-            Arrays.asList(_contextHandler.getProtectedTargets()));
+            (protectedTargets == null) ? null : Arrays.asList(protectedTargets));
     }
 }

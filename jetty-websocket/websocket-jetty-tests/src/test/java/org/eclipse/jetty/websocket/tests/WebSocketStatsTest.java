@@ -90,6 +90,7 @@ public class WebSocketStatsTest
         MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbeanContainer);
 
+        server.setDumpAfterStart(true);
         server.start();
         client.start();
     }
