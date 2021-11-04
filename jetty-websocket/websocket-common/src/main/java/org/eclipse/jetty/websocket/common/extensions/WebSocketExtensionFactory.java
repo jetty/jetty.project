@@ -59,18 +59,25 @@ public class WebSocketExtensionFactory extends ExtensionFactory implements LifeC
             }
         };
 
-        this.inflaterPool = (inflaterPool != null) ? inflaterPool :
-            new InflaterPool(CompressionPool.INFINITE_CAPACITY, true);
+        this.inflaterPool = (inflaterPool != null) ? inflaterPool : new InflaterPool(CompressionPool.INFINITE_CAPACITY, true);
         this.containerLifeCycle.addBean(this.inflaterPool);
-
-        this.deflaterPool = (deflaterPool != null) ? deflaterPool :
-            new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
+        this.deflaterPool = (deflaterPool != null) ? deflaterPool : new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
         this.containerLifeCycle.addBean(this.deflaterPool);
     }
 
     public void unmanage(Object object)
     {
         containerLifeCycle.unmanage(object);
+    }
+
+    public InflaterPool getInflaterPool()
+    {
+        return inflaterPool;
+    }
+
+    public DeflaterPool getDeflaterPool()
+    {
+        return deflaterPool;
     }
 
     @Override
