@@ -1299,7 +1299,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>apache-jsp</artifactId>
+        <artifactId>jakarta-jsp</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
