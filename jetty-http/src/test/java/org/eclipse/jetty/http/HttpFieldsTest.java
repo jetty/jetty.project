@@ -42,6 +42,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -145,7 +146,7 @@ public class HttpFieldsTest
     @Test
     public void testMap()
     {
-        Map<HttpFields.Immutable, String> map = new HashMap<>();
+        Map<HttpFields, String> map = new HashMap<>();
         map.put(HttpFields.build().add("X", "1").add(HttpHeader.ETAG, "tag").asImmutable(), "1");
         map.put(HttpFields.build().add("X", "2").add(HttpHeader.ETAG, "other").asImmutable(), "2");
 
@@ -1071,5 +1072,45 @@ public class HttpFieldsTest
         fields.add(new HttpField("Test", "two"));
         fields.ensureField(new HttpField("Test", "three, four"));
         assertThat(fields.stream().map(HttpField::toString).collect(Collectors.toList()), contains("Test: one, two, three, four"));
+    }
+
+    @Test
+    public void testReadOnly()
+    {
+        HttpFields.Mutable headers = HttpFields.build()
+            .add(HttpHeader.ETAG, "tag")
+            .add("name0", "value0")
+            .add("name1", "value1");
+
+        HttpFields readonly = headers.toReadOnly();
+
+        assertThat(headers.size(), is(3));
+        assertThat(headers.getField(0).getName(), is(HttpHeader.ETAG.asString()));
+        assertThat(headers.getField(0).getValue(), is("tag"));
+        assertThat(headers.getField(1).getName(), is("name0"));
+        assertThat(headers.getField(1).getValue(), is("value0"));
+        assertThat(headers.getField(2).getName(), is("name1"));
+        assertThat(headers.getField(2).getValue(), is("value1"));
+
+        ListIterator<HttpField> i = headers.listIterator();
+        i.next();
+        i.remove();
+        i.next();
+        i.set(new HttpField("Wrong", "Value"));
+        headers.remove(HttpHeader.ETAG);
+        headers.remove("name0");
+        headers.clear();
+        headers.remove(EnumSet.of(HttpHeader.ETAG));
+
+        assertThat(headers.size(), is(3));
+        assertThat(headers.getField(0).getName(), is(HttpHeader.ETAG.asString()));
+        assertThat(headers.getField(0).getValue(), is("tag"));
+        assertThat(headers.getField(1).getName(), is("name0"));
+        assertThat(headers.getField(1).getValue(), is("value0"));
+        assertThat(headers.getField(2).getName(), is("name1"));
+        assertThat(headers.getField(2).getValue(), is("value1"));
+
+        assertSame(readonly, headers.asImmutable());
+
     }
 }
