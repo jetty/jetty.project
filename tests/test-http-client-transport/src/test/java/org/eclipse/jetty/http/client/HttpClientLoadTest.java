@@ -96,7 +96,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         }
 
         // Re-run after warmup
-        iterations = 1_000;
+        iterations = 500;
         for (int i = 0; i < runs; ++i)
         {
             run(transport, iterations);
@@ -140,7 +140,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         });
 
         int runs = 1;
-        int iterations = 256;
+        int iterations = 64;
         IntStream.range(0, 16).parallel().forEach(i ->
             IntStream.range(0, runs).forEach(j ->
                 run(transport, iterations)));
@@ -155,13 +155,14 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
 
         // Dumps the state of the client if the test takes too long
         Thread testThread = Thread.currentThread();
+        long maxTime = Math.max(5000, (long)iterations * factor);
         Scheduler.Task task = scenario.client.getScheduler().schedule(() ->
         {
-            logger.warn("Interrupting test, it is taking too long{}{}{}{}",
+            logger.warn("Interrupting test, it is taking too long (maxTime={} ms){}{}{}{}", maxTime,
                 System.lineSeparator(), scenario.server.dump(),
                 System.lineSeparator(), scenario.client.dump());
             testThread.interrupt();
-        }, Math.max(5000, (long)iterations * factor), TimeUnit.MILLISECONDS);
+        }, maxTime, TimeUnit.MILLISECONDS);
 
         long begin = System.nanoTime();
         for (int i = 0; i < iterations; ++i)
@@ -169,7 +170,6 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
             test(latch, failures);
 //            test("http", "localhost", "GET", false, false, 64 * 1024, false, latch, failures);
         }
-        assertTrue(await(latch, iterations, TimeUnit.SECONDS));
         long end = System.nanoTime();
         task.cancel();
         long elapsed = TimeUnit.NANOSECONDS.toMillis(end - begin);
@@ -282,9 +282,10 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 latch.countDown();
             }
         });
-        if (!await(requestLatch, 5, TimeUnit.SECONDS))
+        int maxTime = 5000;
+        if (!await(requestLatch, maxTime, TimeUnit.MILLISECONDS))
         {
-            logger.warn("Request {} took too long{}{}{}{}", requestId,
+            logger.warn("Request {} took too long (maxTime={} ms){}{}{}{}", requestId, maxTime,
                 System.lineSeparator(), scenario.server.dump(),
                 System.lineSeparator(), scenario.client.dump());
         }
