@@ -229,7 +229,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<EventListener> _durableListeners = new CopyOnWriteArrayList<>();
     private String[] _protectedTargets;
-    private final CopyOnWriteArrayList<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
+    private final List<AliasCheck> _aliasChecks = new ArrayList<>();
 
     public enum Availability
     {
@@ -1724,6 +1724,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void setBaseResource(Resource base)
     {
+        if (isStarted())
+            throw new IllegalStateException("Cannot call setBaseResource after starting");
         _baseResource = base;
     }
 
@@ -2084,7 +2086,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void addAliasCheck(AliasCheck check)
     {
-        getAliasChecks().add(check);
+        _aliasChecks.add(check);
         if (check instanceof LifeCycle)
             addManaged((LifeCycle)check);
         else
@@ -2092,11 +2094,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /**
-     * @return Mutable list of Alias checks
+     * @return Immutable list of Alias checks
      */
     public List<AliasCheck> getAliasChecks()
     {
-        return _aliasChecks;
+        return Collections.unmodifiableList(_aliasChecks);
     }
 
     /**
@@ -2105,7 +2107,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void setAliasChecks(List<AliasCheck> checks)
     {
         clearAliasChecks();
-        getAliasChecks().addAll(checks);
+        checks.forEach(this::addAliasCheck);
     }
 
     /**
@@ -2113,9 +2115,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void clearAliasChecks()
     {
-        List<AliasCheck> aliasChecks = getAliasChecks();
-        aliasChecks.forEach(this::removeBean);
-        aliasChecks.clear();
+        _aliasChecks.forEach(this::removeBean);
+        _aliasChecks.clear();
     }
 
     /**
