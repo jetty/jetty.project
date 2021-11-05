@@ -255,7 +255,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     {
         buffer.release();
         if (LOG.isDebugEnabled())
-            LOG.debug("retained released {}", buffer);
+            LOG.debug("released retained {}", buffer);
     }
 
     public void demand()

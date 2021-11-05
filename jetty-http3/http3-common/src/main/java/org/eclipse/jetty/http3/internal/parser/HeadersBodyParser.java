@@ -23,7 +23,6 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.qpack.QpackDecoder;
 import org.eclipse.jetty.http3.qpack.QpackException;
-import org.eclipse.jetty.util.BufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +71,9 @@ public class HeadersBodyParser extends BodyParser
                     {
                         // Copy and accumulate the buffer.
                         length -= remaining;
-                        ByteBuffer copy = BufferUtil.copy(buffer);
+                        ByteBuffer copy = buffer.isDirect() ? ByteBuffer.allocateDirect(remaining) : ByteBuffer.allocate(remaining);
+                        copy.put(buffer);
+                        copy.flip();
                         byteBuffers.add(copy);
                         return Result.NO_FRAME;
                     }
@@ -96,6 +97,7 @@ public class HeadersBodyParser extends BodyParser
                             byteBuffers.add(slice);
                             int capacity = byteBuffers.stream().mapToInt(ByteBuffer::remaining).sum();
                             encoded = byteBuffers.stream().reduce(ByteBuffer.allocate(capacity), ByteBuffer::put);
+                            encoded.flip();
                             byteBuffers.clear();
                         }
 

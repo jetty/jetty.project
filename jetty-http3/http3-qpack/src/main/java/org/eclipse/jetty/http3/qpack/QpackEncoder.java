@@ -40,6 +40,7 @@ import org.eclipse.jetty.http3.qpack.internal.table.Entry;
 import org.eclipse.jetty.http3.qpack.internal.util.NBitIntegerEncoder;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +87,7 @@ public class QpackEncoder implements Dumpable
             HttpHeader.SET_COOKIE,
             HttpHeader.SET_COOKIE2);
 
+    private final AutoLock lock = new AutoLock();
     private final List<Instruction> _instructions = new ArrayList<>();
     private final Instruction.Handler _handler;
     private final QpackContext _context;
@@ -129,83 +131,86 @@ public class QpackEncoder implements Dumpable
      */
     public void encode(ByteBuffer buffer, long streamId, MetaData metadata) throws QpackException
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
-
-        // Verify that we can encode without errors.
-        if (metadata.getFields() != null)
+        try (AutoLock l = lock.lock())
         {
-            for (HttpField field : metadata.getFields())
+            if (LOG.isDebugEnabled())
+                LOG.debug("Encoding: streamId={}, metadata={}", streamId, metadata);
+
+            // Verify that we can encode without errors.
+            if (metadata.getFields() != null)
             {
-                String name = field.getName();
-                char firstChar = name.charAt(0);
-                if (firstChar <= ' ')
-                    throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, String.format("Invalid header name: '%s'", name));
-            }
-        }
-
-        List<EncodableEntry> encodableEntries = new ArrayList<>();
-        DynamicTable dynamicTable = _context.getDynamicTable();
-
-        // We need to remember what fields were referenced for each stream for multiple reasons:
-        //  1. We can only (potentially) block up to SETTINGS_QPACK_BLOCKED_STREAMS by referencing entries which may not have arrived.
-        //  2. We need to remember reference counts to each entry which are then acknowledged by the remote decoder, this
-        //     allows us to know when we can evict an entry (when it has no un-acknowledged references).
-        StreamInfo streamInfo = _streamInfoMap.get(streamId);
-        if (streamInfo == null)
-        {
-            streamInfo = new StreamInfo(streamId);
-            _streamInfoMap.put(streamId, streamInfo);
-        }
-        StreamInfo.SectionInfo sectionInfo = new StreamInfo.SectionInfo();
-        streamInfo.add(sectionInfo);
-
-        try
-        {
-            int requiredInsertCount = 0;
-            for (HttpField field : new Http3Fields(metadata))
-            {
-                EncodableEntry entry = encode(streamInfo, field);
-                encodableEntries.add(entry);
-
-                // Update the required InsertCount.
-                int entryRequiredInsertCount = entry.getRequiredInsertCount();
-                if (entryRequiredInsertCount > requiredInsertCount)
-                    requiredInsertCount = entryRequiredInsertCount;
+                for (HttpField field : metadata.getFields())
+                {
+                    String name = field.getName();
+                    char firstChar = name.charAt(0);
+                    if (firstChar <= ' ')
+                        throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, String.format("Invalid header name: '%s'", name));
+                }
             }
 
-            sectionInfo.setRequiredInsertCount(requiredInsertCount);
-            int base = dynamicTable.getBase();
-            int encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
-            boolean signBit = base < requiredInsertCount;
-            int deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
+            List<EncodableEntry> encodableEntries = new ArrayList<>();
+            DynamicTable dynamicTable = _context.getDynamicTable();
 
-            // Encode the Field Section Prefix into the ByteBuffer.
-            NBitIntegerEncoder.encode(buffer, 8, encodedInsertCount);
-            buffer.put(signBit ? (byte)0x80 : (byte)0x00);
-            NBitIntegerEncoder.encode(buffer, 7, deltaBase);
-
-            // Encode the field lines into the ByteBuffer.
-            for (EncodableEntry entry : encodableEntries)
+            // We need to remember what fields were referenced for each stream for multiple reasons:
+            //  1. We can only (potentially) block up to SETTINGS_QPACK_BLOCKED_STREAMS by referencing entries which may not have arrived.
+            //  2. We need to remember reference counts to each entry which are then acknowledged by the remote decoder, this
+            //     allows us to know when we can evict an entry (when it has no un-acknowledged references).
+            StreamInfo streamInfo = _streamInfoMap.get(streamId);
+            if (streamInfo == null)
             {
-                entry.encode(buffer, base);
+                streamInfo = new StreamInfo(streamId);
+                _streamInfoMap.put(streamId, streamInfo);
             }
+            StreamInfo.SectionInfo sectionInfo = new StreamInfo.SectionInfo();
+            streamInfo.add(sectionInfo);
 
-            notifyInstructionHandler();
-        }
-        catch (BufferOverflowException e)
-        {
-            // TODO: We have already added to the dynamic table so we need to send the instructions to maintain correct state.
-            //  Can we prevent adding to the table until we know the buffer has enough space?
-            notifyInstructionHandler();
-            streamInfo.remove(sectionInfo);
-            sectionInfo.release();
-            throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "buffer_space_exceeded", e);
-        }
-        catch (Throwable t)
-        {
-            // We are failing the whole Session so don't need to send instructions back.
-            throw new QpackException.SessionException(H3_GENERAL_PROTOCOL_ERROR, "compression_error", t);
+            try
+            {
+                int requiredInsertCount = 0;
+                for (HttpField field : new Http3Fields(metadata))
+                {
+                    EncodableEntry entry = encode(streamInfo, field);
+                    encodableEntries.add(entry);
+
+                    // Update the required InsertCount.
+                    int entryRequiredInsertCount = entry.getRequiredInsertCount();
+                    if (entryRequiredInsertCount > requiredInsertCount)
+                        requiredInsertCount = entryRequiredInsertCount;
+                }
+
+                sectionInfo.setRequiredInsertCount(requiredInsertCount);
+                int base = dynamicTable.getBase();
+                int encodedInsertCount = encodeInsertCount(requiredInsertCount, dynamicTable.getCapacity());
+                boolean signBit = base < requiredInsertCount;
+                int deltaBase = signBit ? requiredInsertCount - base - 1 : base - requiredInsertCount;
+
+                // Encode the Field Section Prefix into the ByteBuffer.
+                NBitIntegerEncoder.encode(buffer, 8, encodedInsertCount);
+                buffer.put(signBit ? (byte)0x80 : (byte)0x00);
+                NBitIntegerEncoder.encode(buffer, 7, deltaBase);
+
+                // Encode the field lines into the ByteBuffer.
+                for (EncodableEntry entry : encodableEntries)
+                {
+                    entry.encode(buffer, base);
+                }
+
+                notifyInstructionHandler();
+            }
+            catch (BufferOverflowException e)
+            {
+                // TODO: We have already added to the dynamic table so we need to send the instructions to maintain correct state.
+                //  Can we prevent adding to the table until we know the buffer has enough space?
+                notifyInstructionHandler();
+                streamInfo.remove(sectionInfo);
+                sectionInfo.release();
+                throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "buffer_space_exceeded", e);
+            }
+            catch (Throwable t)
+            {
+                // We are failing the whole Session so don't need to send instructions back.
+                throw new QpackException.SessionException(H3_GENERAL_PROTOCOL_ERROR, "compression_error", t);
+            }
         }
     }
 
@@ -219,7 +224,7 @@ public class QpackEncoder implements Dumpable
      */
     public void parseInstructions(ByteBuffer buffer) throws QpackException
     {
-        try
+        try (AutoLock l = lock.lock())
         {
             while (BufferUtil.hasContent(buffer))
             {

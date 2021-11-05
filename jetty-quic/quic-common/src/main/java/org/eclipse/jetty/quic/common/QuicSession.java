@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -379,17 +380,22 @@ public abstract class QuicSession extends ContainerLifeCycle
 
     public QuicStreamEndPoint getOrCreateStreamEndPoint(long streamId, Consumer<QuicStreamEndPoint> consumer)
     {
-        QuicStreamEndPoint endPoint = endPoints.compute(streamId, (id, quicStreamEndPoint) ->
+        AtomicBoolean created = new AtomicBoolean();
+        QuicStreamEndPoint endPoint = endPoints.computeIfAbsent(streamId, id ->
         {
-            if (quicStreamEndPoint == null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("creating endpoint for stream #{} for {}", id, this);
-                quicStreamEndPoint = newQuicStreamEndPoint(streamId);
-                consumer.accept(quicStreamEndPoint);
-            }
-            return quicStreamEndPoint;
+            if (LOG.isDebugEnabled())
+                LOG.debug("creating endpoint for stream #{} for {}", id, this);
+            QuicStreamEndPoint result = newQuicStreamEndPoint(id);
+            created.set(true);
+            return result;
         });
+
+        // The consumer must be executed outside the Map.compute() above,
+        // since it may take a long time and it may be re-entrant, causing the
+        // creation of two QuicStreamEndPoint objects for the same stream id.
+        if (created.get())
+            consumer.accept(endPoint);
+
         if (LOG.isDebugEnabled())
             LOG.debug("returning {} for {}", endPoint, this);
         return endPoint;
