@@ -97,13 +97,13 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         if (_contextHandler.isStarted())
             initialize();
         else
-            _contextHandler.addEventListener(_listener);
+            _contextHandler.addLifeCycleListener(_listener);
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        _contextHandler.removeEventListener(_listener);
+        _contextHandler.removeLifeCycleListener(_listener);
         _base = null;
         _protected.clear();
     }
