@@ -1,12 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-project</artifactId>
+    <groupId>org.eclipse.jetty.runners</groupId>
+    <artifactId>jetty-runners</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-runner</artifactId>
-  <name>Jetty :: Runner</name>
+  <artifactId>jetty-runner6</artifactId>
+  <name>Jetty :: Runners :: Runner 6</name>
 
   <properties>
     <assembly-directory>target/distribution</assembly-directory>

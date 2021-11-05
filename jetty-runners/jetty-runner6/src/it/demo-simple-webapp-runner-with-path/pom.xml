@@ -15,13 +15,13 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-runner</artifactId>
+      <groupId>org.eclipse.jetty.runners</groupId>
+      <artifactId>jetty-runner6</artifactId>
       <version>@project.version@</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-runner</artifactId>
+      <groupId>org.eclipse.jetty.runners</groupId>
+      <artifactId>jetty-runner6</artifactId>
       <version>@project.version@</version>
       <classifier>tests</classifier>
       <type>test-jar</type>
