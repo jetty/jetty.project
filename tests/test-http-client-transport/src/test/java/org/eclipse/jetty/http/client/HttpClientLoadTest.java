@@ -55,6 +55,7 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.slf4j.Logger;
@@ -89,19 +90,47 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
 
         // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
         int runs = 1;
-        int iterations = 500;
+        int iterations = 100;
         for (int i = 0; i < runs; ++i)
         {
             run(transport, iterations);
         }
 
         // Re-run after warmup
-        iterations = 500;
+        iterations = 250;
         for (int i = 0; i < runs; ++i)
         {
             run(transport, iterations);
         }
 
+        assertLeaks();
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testConcurrent(Transport transport) throws Exception
+    {
+        Assumptions.assumeTrue(transport == Transport.H3);
+
+        init(transport);
+        scenario.start(new LoadHandler(), client ->
+        {
+            client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+            client.setMaxConnectionsPerDestination(32768);
+            client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+        });
+
+        int runs = 1;
+        int iterations = 64;
+        IntStream.range(0, 16).parallel().forEach(i ->
+            IntStream.range(0, runs).forEach(j ->
+                run(transport, iterations)));
+
+        assertLeaks();
+    }
+
+    private void assertLeaks()
+    {
         System.gc();
 
         ByteBufferPool byteBufferPool = scenario.connector.getByteBufferPool();
@@ -127,25 +156,6 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         assertThat("Connection Leaks", connectionLeaks.get(), Matchers.is(0L));
     }
 
-    @ParameterizedTest
-    @ArgumentsSource(TransportProvider.class)
-    public void testConcurrent(Transport transport) throws Exception
-    {
-        init(transport);
-        scenario.start(new LoadHandler(), client ->
-        {
-            client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
-            client.setMaxConnectionsPerDestination(32768);
-            client.setMaxRequestsQueuedPerDestination(1024 * 1024);
-        });
-
-        int runs = 1;
-        int iterations = 64;
-        IntStream.range(0, 16).parallel().forEach(i ->
-            IntStream.range(0, runs).forEach(j ->
-                run(transport, iterations)));
-    }
-
     private void run(Transport transport, int iterations)
     {
         CountDownLatch latch = new CountDownLatch(iterations);
@@ -155,7 +165,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
 
         // Dumps the state of the client if the test takes too long
         Thread testThread = Thread.currentThread();
-        long maxTime = Math.max(5000, (long)iterations * factor);
+        long maxTime = Math.max(15000, (long)iterations * factor);
         Scheduler.Task task = scenario.client.getScheduler().schedule(() ->
         {
             logger.warn("Interrupting test, it is taking too long (maxTime={} ms){}{}{}{}", maxTime,
@@ -282,7 +292,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 latch.countDown();
             }
         });
-        int maxTime = 5000;
+        int maxTime = 15000;
         if (!await(requestLatch, maxTime, TimeUnit.MILLISECONDS))
         {
             logger.warn("Request {} took too long (maxTime={} ms){}{}{}{}", requestId, maxTime,
