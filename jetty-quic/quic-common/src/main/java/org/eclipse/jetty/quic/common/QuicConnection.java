@@ -279,11 +279,7 @@ public abstract class QuicConnection extends AbstractConnection
                     continue;
                 }
 
-                if (LOG.isDebugEnabled())
-                    LOG.debug("packet is for existing session {}, processing {} bytes", session, cipherBuffer.remaining());
-                Runnable task = session.process(remoteAddress, cipherBuffer);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("produced session task {} on {}", task, this);
+                Runnable task = process(session, remoteAddress, cipherBuffer);
                 if (task != null)
                 {
                     byteBufferPool.release(cipherBuffer);
@@ -296,9 +292,35 @@ public abstract class QuicConnection extends AbstractConnection
             if (LOG.isDebugEnabled())
                 LOG.debug("receiveAndProcess() failure", x);
             byteBufferPool.release(cipherBuffer);
-            // TODO: close?
+            onFailure(x);
             return null;
         }
+    }
+
+    private Runnable process(QuicSession session, SocketAddress remoteAddress, ByteBuffer cipherBuffer)
+    {
+        try
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("packet is for existing session {}, processing {} bytes", session, cipherBuffer.remaining());
+            Runnable task = session.process(remoteAddress, cipherBuffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("produced session task {} on {}", task, this);
+            return task;
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("process failure for {}", session, x);
+            byteBufferPool.release(cipherBuffer);
+            session.onFailure(x);
+            return null;
+        }
+    }
+
+    protected void onFailure(Throwable failure)
+    {
+        sessions.values().forEach(session -> outwardClose(session, failure));
     }
 
     private class QuicProducer implements ExecutionStrategy.Producer

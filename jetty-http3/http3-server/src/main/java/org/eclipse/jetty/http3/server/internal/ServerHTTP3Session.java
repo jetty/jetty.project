@@ -23,6 +23,7 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.ControlFlusher;
 import org.eclipse.jetty.http3.internal.DecoderStreamConnection;
 import org.eclipse.jetty.http3.internal.EncoderStreamConnection;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.internal.InstructionFlusher;
 import org.eclipse.jetty.http3.internal.InstructionHandler;
 import org.eclipse.jetty.http3.internal.MessageFlusher;
@@ -104,14 +105,14 @@ public class ServerHTTP3Session extends ServerProtocolSession
             settings = Map.of();
         // TODO: add default settings.
         SettingsFrame frame = new SettingsFrame(settings);
-        if (controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, session::onOpen, this::fail)))
+        if (controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, session::onOpen, this::failControlStream)))
             controlFlusher.iterate();
     }
 
-    private void fail(Throwable failure)
+    private void failControlStream(Throwable failure)
     {
-        // TODO
-        throw new UnsupportedOperationException();
+        long error = HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code();
+        onFailure(error, "control_stream_failure", failure);
     }
 
     private QuicStreamEndPoint openInstructionEndPoint(long streamId)
@@ -151,6 +152,12 @@ public class ServerHTTP3Session extends ServerProtocolSession
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout {} ms expired for {}", getQuicSession().getIdleTimeout(), this);
         return session.onIdleTimeout();
+    }
+
+    @Override
+    protected void onFailure(long error, String reason, Throwable failure)
+    {
+        session.onSessionFailure(HTTP3ErrorCode.NO_ERROR.code(), "failure", failure);
     }
 
     @Override

@@ -15,6 +15,7 @@ package org.eclipse.jetty.http3.internal;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
@@ -476,7 +477,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         if (stream != null)
             stream.onData(frame);
         else
-            onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence");
+            onSessionFailure(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_sequence", new IllegalStateException("invalid frame sequence"));
     }
 
     public void onDataAvailable(long streamId)
@@ -860,7 +861,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         failStreams(stream -> true, error, reason, false);
 
         if (notifyFailure)
-            onSessionFailure(error, reason);
+            onSessionFailure(error, reason, new ClosedChannelException());
 
         notifyDisconnect(error, reason);
     }
@@ -888,17 +889,17 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     }
 
     @Override
-    public void onSessionFailure(long error, String reason)
+    public void onSessionFailure(long error, String reason, Throwable failure)
     {
-        notifyFailure(error, reason);
+        notifyFailure(error, reason, failure);
         inwardClose(error, reason);
     }
 
-    private void notifyFailure(long error, String reason)
+    private void notifyFailure(long error, String reason, Throwable failure)
     {
         try
         {
-            listener.onFailure(this, error, reason);
+            listener.onFailure(this, error, reason, failure);
         }
         catch (Throwable x)
         {

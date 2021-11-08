@@ -240,8 +240,9 @@ public interface Session
          * @param session the session
          * @param error the failure error
          * @param reason the failure reason
+         * @param failure the failure
          */
-        public default void onFailure(Session session, long error, String reason)
+        public default void onFailure(Session session, long error, String reason, Throwable failure)
         {
         }
     }

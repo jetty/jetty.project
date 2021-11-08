@@ -40,7 +40,7 @@ public interface ParserListener
     {
     }
 
-    public default void onSessionFailure(long error, String reason)
+    public default void onSessionFailure(long error, String reason, Throwable failure)
     {
     }
 
@@ -78,9 +78,9 @@ public interface ParserListener
         }
 
         @Override
-        public void onSessionFailure(long error, String reason)
+        public void onSessionFailure(long error, String reason, Throwable failure)
         {
-            listener.onSessionFailure(error, reason);
+            listener.onSessionFailure(error, reason, failure);
         }
     }
 }

@@ -33,6 +33,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.CyclicTimeout;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.quic.common.internal.QuicErrorCode;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.quic.quiche.QuicheConnectionId;
 import org.eclipse.jetty.util.BufferUtil;
@@ -198,6 +199,11 @@ public abstract class QuicSession extends ContainerLifeCycle
     public boolean onIdleTimeout()
     {
         return protocolSession.onIdleTimeout();
+    }
+
+    public void onFailure(Throwable failure)
+    {
+        protocolSession.onFailure(QuicErrorCode.NO_ERROR.code(), "failure", failure);
     }
 
     /**

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.server;
 
-import java.io.IOException;
 import java.util.Objects;
 
 import org.eclipse.jetty.http3.api.Session;
@@ -68,9 +67,8 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onFailure(Session session, long error, String reason)
+        public void onFailure(Session session, long error, String reason, Throwable failure)
         {
-            IOException failure = new IOException(reason);
             session.getStreams().stream()
                 .map(stream -> (HTTP3Stream)stream)
                 .forEach(stream -> stream.onFailure(error, failure));
