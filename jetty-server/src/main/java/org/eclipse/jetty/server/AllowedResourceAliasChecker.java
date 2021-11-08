@@ -84,7 +84,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         }
         catch (IOException e)
         {
-            LOG.warn("Initialization failed", e);
+            LOG.warn("Base resource failure ({} is disabled): {}", this.getClass().getName(), _base, e);
             _base = null;
         }
     }
