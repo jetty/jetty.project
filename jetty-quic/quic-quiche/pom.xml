@@ -23,7 +23,7 @@
         <jdk>[17,)</jdk>
       </activation>
       <modules>
-        <module>quic-quiche-panama-jdk</module>
+        <module>quic-quiche-foreign-incubator</module>
       </modules>
     </profile>
   </profiles>
