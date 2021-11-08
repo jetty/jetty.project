@@ -693,7 +693,7 @@ public class PanamaJdkQuicheConnection extends QuicheConnection
         {
             if (quicheConn == null)
                 throw new IllegalStateException("connection was released");
-            return quiche_h.quiche_conn_is_draining(quicheConn) != 0;
+            return quiche_h.quiche_conn_is_draining(quicheConn) != C_FALSE;
         }
     }
 
