@@ -44,8 +44,6 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.logging.JettyLevel;
-import org.eclipse.jetty.logging.JettyLogger;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -82,48 +80,35 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     @ArgumentsSource(TransportProvider.class)
     public void testIterative(Transport transport) throws Exception
     {
-//        JettyLogger logger = (JettyLogger)LoggerFactory.getLogger("org.eclipse.jetty");
-//        logger.setLevel(JettyLevel.DEBUG);
-        JettyLogger h3Logger = (JettyLogger)LoggerFactory.getLogger("org.eclipse.jetty.http3");
-        h3Logger.setLevel(JettyLevel.DEBUG);
-        JettyLogger quicLogger = (JettyLogger)LoggerFactory.getLogger("org.eclipse.jetty.quic");
-        quicLogger.setLevel(JettyLevel.DEBUG);
-        try
+        Assumptions.assumeTrue(transport == Transport.H3);
+
+        init(transport);
+        scenario.start(new LoadHandler(), client ->
         {
-            init(transport);
-            scenario.start(new LoadHandler(), client ->
-            {
-                client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
-                client.setMaxConnectionsPerDestination(32768);
-                client.setMaxRequestsQueuedPerDestination(1024 * 1024);
-            });
-            scenario.setConnectionIdleTimeout(120000);
-            scenario.setRequestIdleTimeout(120000);
-            scenario.client.setIdleTimeout(120000);
+            client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
+            client.setMaxConnectionsPerDestination(32768);
+            client.setMaxRequestsQueuedPerDestination(1024 * 1024);
+        });
+        scenario.setConnectionIdleTimeout(120000);
+        scenario.setRequestIdleTimeout(120000);
+        scenario.client.setIdleTimeout(120000);
 
-            // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
-            int runs = 1;
-            int iterations = 50;
-            for (int i = 0; i < runs; ++i)
-            {
-                run(transport, iterations);
-            }
-
-            // Re-run after warmup
-            iterations = 100;
-            for (int i = 0; i < runs; ++i)
-            {
-                run(transport, iterations);
-            }
-
-            assertLeaks();
-        }
-        finally
+        // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
+        int runs = 1;
+        int iterations = 50;
+        for (int i = 0; i < runs; ++i)
         {
-//            logger.setLevel(JettyLevel.INFO);
-            h3Logger.setLevel(JettyLevel.INFO);
-            quicLogger.setLevel(JettyLevel.INFO);
+            run(transport, iterations);
         }
+
+        // Re-run after warmup
+        iterations = 100;
+        for (int i = 0; i < runs; ++i)
+        {
+            run(transport, iterations);
+        }
+
+        assertLeaks();
     }
 
     @ParameterizedTest
