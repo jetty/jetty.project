@@ -29,6 +29,7 @@
         <configuration>
           <source>17</source>
           <target>17</target>
+          <release>17</release>
           <compilerArgs>
             <arg>--add-modules</arg>
             <arg>jdk.incubator.foreign</arg>
@@ -39,7 +40,10 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --enable-native-access org.eclipse.jetty.quic.quiche.foreign.incubator
+            @{argLine}
+            ${jetty.surefire.argLine}
+            --add-opens org.eclipse.jetty.quic.quiche.foreign.incubator/org.eclipse.jetty.quic.quiche.foreign.incubator=ALL-UNNAMED
+            --enable-native-access org.eclipse.jetty.quic.quiche.foreign.incubator
           </argLine>
         </configuration>
       </plugin>
