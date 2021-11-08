@@ -49,12 +49,12 @@ public interface LibQuiche extends Library
         {
             String quicheVersion = INSTANCE.quiche_version();
             if (!EXPECTED_QUICHE_VERSION.equals(quicheVersion))
-                throw new IllegalStateException("Native Quiche library version [" + quicheVersion + "] does not match expected version [" + EXPECTED_QUICHE_VERSION + "]");
+                throw new IllegalStateException("native quiche library version [" + quicheVersion + "] does not match expected version [" + EXPECTED_QUICHE_VERSION + "]");
 
             if (LIB_QUICHE_LOG.isDebugEnabled() && LOGGING_ENABLED.compareAndSet(false, true))
             {
                 INSTANCE.quiche_enable_debug_logging(LIB_QUICHE_LOGGING_CALLBACK, null);
-                LIB_QUICHE_LOG.debug("Quiche version {}", quicheVersion);
+                LIB_QUICHE_LOG.debug("quiche version {}", quicheVersion);
             }
         }
     }
