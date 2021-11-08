@@ -95,14 +95,14 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
 
         // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
         int runs = 1;
-        int iterations = 50;
+        int iterations = 150;
         for (int i = 0; i < runs; ++i)
         {
             run(transport, iterations);
         }
 
         // Re-run after warmup
-        iterations = 100;
+        iterations = 300;
         for (int i = 0; i < runs; ++i)
         {
             run(transport, iterations);
