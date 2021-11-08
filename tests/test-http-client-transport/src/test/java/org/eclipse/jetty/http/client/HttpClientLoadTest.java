@@ -87,6 +87,9 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
             client.setMaxConnectionsPerDestination(32768);
             client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         });
+        scenario.setConnectionIdleTimeout(120000);
+        scenario.setRequestIdleTimeout(120000);
+        scenario.client.setIdleTimeout(120000);
 
         // At least 25k requests to warmup properly (use -XX:+PrintCompilation to verify JIT activity)
         int runs = 1;
@@ -165,7 +168,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
 
         // Dumps the state of the client if the test takes too long
         Thread testThread = Thread.currentThread();
-        long maxTime = Math.max(15000, (long)iterations * factor);
+        long maxTime = Math.max(60000, (long)iterations * factor);
         Scheduler.Task task = scenario.client.getScheduler().schedule(() ->
         {
             logger.warn("Interrupting test, it is taking too long (maxTime={} ms){}{}{}{}", maxTime,
@@ -292,7 +295,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
                 latch.countDown();
             }
         });
-        int maxTime = 15000;
+        int maxTime = 30000;
         if (!await(requestLatch, maxTime, TimeUnit.MILLISECONDS))
         {
             logger.warn("Request {} took too long (maxTime={} ms){}{}{}{}", requestId, maxTime,

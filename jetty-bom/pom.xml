@@ -284,7 +284,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-quiche</artifactId>
+        <artifactId>quic-quiche-common</artifactId>
         <version>10.0.8-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -439,4 +439,37 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <profiles>
+    <profile>
+      <id>earlier-than-jdk17</id>
+      <activation>
+        <jdk>(,17)</jdk>
+      </activation>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.jetty.quic</groupId>
+            <artifactId>quic-quiche-jna</artifactId>
+            <version>10.0.8-SNAPSHOT</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+    </profile>
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.jetty.quic</groupId>
+            <artifactId>quic-quiche-panama-jdk</artifactId>
+            <version>10.0.8-SNAPSHOT</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+    </profile>
+  </profiles>
 </project>
