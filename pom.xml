@@ -1681,7 +1681,17 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.quic</groupId>
-        <artifactId>quic-quiche</artifactId>
+        <artifactId>quic-quiche-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-quiche-jna</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-quiche-panama-jdk</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

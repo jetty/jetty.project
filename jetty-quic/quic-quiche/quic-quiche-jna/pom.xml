@@ -2,17 +2,30 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.quic</groupId>
-    <artifactId>quic-parent</artifactId>
+    <artifactId>quic-quiche</artifactId>
     <version>10.0.8-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>quic-common</artifactId>
-  <name>Jetty :: QUIC :: Common</name>
+  <artifactId>quic-quiche-jna</artifactId>
+  <name>Jetty :: QUIC :: Quiche :: JNA Binding</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.quic-quiche-jna</bundle-symbolic-name>
   </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>${maven.checkstyle.plugin.version}</version>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
   <dependencies>
     <dependency>
@@ -23,16 +36,19 @@
       <groupId>org.eclipse.jetty.quic</groupId>
       <artifactId>quic-quiche-common</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>net.java.dev.jna</groupId>
+      <artifactId>jna</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-io</artifactId>
+      <artifactId>jetty-util</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
+
 </project>

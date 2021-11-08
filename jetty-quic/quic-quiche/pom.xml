@@ -8,44 +8,23 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>quic-quiche</artifactId>
+  <packaging>pom</packaging>
   <name>Jetty :: QUIC :: Quiche</name>
 
-  <properties>
-    <bundle-symbolic-name>${project.groupId}.quic-quiche</bundle-symbolic-name>
-  </properties>
+  <modules>
+    <module>quic-quiche-common</module>
+    <module>quic-quiche-jna</module>
+  </modules>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-checkstyle-plugin</artifactId>
-        <version>${maven.checkstyle.plugin.version}</version>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>net.java.dev.jna</groupId>
-      <artifactId>jna</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-
+  <profiles>
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <modules>
+        <module>quic-quiche-panama-jdk</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>
