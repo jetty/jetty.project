@@ -13,51 +13,28 @@
 
 package org.eclipse.jetty.quic.quiche.panama.jdk;
 
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.ByteBuffer;
 
 import jdk.incubator.foreign.MemorySegment;
 import jdk.incubator.foreign.ResourceScope;
+import org.eclipse.jetty.quic.quiche.panama.jdk.linux.sockaddr_linux;
+import org.eclipse.jetty.quic.quiche.panama.jdk.macos.sockaddr_macos;
+import org.eclipse.jetty.quic.quiche.panama.jdk.windows.sockaddr_windows;
+
+import static org.eclipse.jetty.quic.quiche.panama.jdk.NativeHelper.isLinux;
+import static org.eclipse.jetty.quic.quiche.panama.jdk.NativeHelper.isMac;
+import static org.eclipse.jetty.quic.quiche.panama.jdk.NativeHelper.isWindows;
 
 public class sockaddr
 {
-    // TODO: linux-specific constants
-    private static final short AF_INET = 2;
-    private static final short AF_INET6 = 10;
-
     public static MemorySegment convert(SocketAddress socketAddress, ResourceScope scope)
     {
-        if (!(socketAddress instanceof InetSocketAddress))
-            throw new IllegalArgumentException("Expected InetSocketAddress instance, got: " + socketAddress);
-        InetSocketAddress inetSocketAddress = (InetSocketAddress)socketAddress;
-        InetAddress address = inetSocketAddress.getAddress();
-        if (address instanceof Inet4Address)
-        {
-            // TODO: linux-specific implementation
-            MemorySegment sin = sockaddr_in.allocate(scope);
-            sockaddr_in.set_sin_family(sin, AF_INET);
-            sockaddr_in.set_sin_port(sin, (short) inetSocketAddress.getPort());
-            sockaddr_in.set_sin_addr(sin, ByteBuffer.wrap(address.getAddress()).getInt());
-            return sin;
-        }
-        else if (address instanceof Inet6Address)
-        {
-            // TODO: linux-specific implementation
-            MemorySegment sin6 = sockaddr_in6.allocate(scope);
-            sockaddr_in6.set_sin6_family(sin6, AF_INET6);
-            sockaddr_in6.set_sin6_port(sin6, (short) inetSocketAddress.getPort());
-            sockaddr_in6.set_sin6_addr(sin6, address.getAddress());
-            sockaddr_in6.set_sin6_scope_id(sin6, 0);
-            sockaddr_in6.set_sin6_flowinfo(sin6, 0);
-            return sin6;
-        }
-        else
-        {
-            throw new UnsupportedOperationException("Unsupported InetAddress: " + address);
-        }
+        if (isLinux())
+            return sockaddr_linux.convert(socketAddress, scope);
+        if (isMac())
+            return sockaddr_macos.convert(socketAddress, scope);
+        if (isWindows())
+            return sockaddr_windows.convert(socketAddress, scope);
+        throw new UnsupportedOperationException("Unsupported OS: " + System.getProperty("os.name"));
     }
 }
