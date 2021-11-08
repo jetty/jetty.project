@@ -47,7 +47,7 @@
       <dependencies>
         <dependency>
           <groupId>org.eclipse.jetty.quic</groupId>
-          <artifactId>quic-quiche-panama-jdk</artifactId>
+          <artifactId>quic-quiche-foreign-incubator</artifactId>
         </dependency>
       </dependencies>
     </profile>
