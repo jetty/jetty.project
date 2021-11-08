@@ -42,7 +42,7 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+                mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true -Djacoco.skip=true -am -pl :test-http-client-transport -Dtest=HttpClientLoadTest#testIterative", "maven3")
                 recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
             }
