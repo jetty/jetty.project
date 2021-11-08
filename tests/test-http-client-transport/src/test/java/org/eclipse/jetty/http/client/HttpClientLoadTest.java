@@ -82,9 +82,12 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
     @ArgumentsSource(TransportProvider.class)
     public void testIterative(Transport transport) throws Exception
     {
-        JettyLogger logger = (JettyLogger)LoggerFactory.getLogger("org.eclipse.jetty");
-        logger.setLevel(JettyLevel.DEBUG);
-
+//        JettyLogger logger = (JettyLogger)LoggerFactory.getLogger("org.eclipse.jetty");
+//        logger.setLevel(JettyLevel.DEBUG);
+        JettyLogger h3Logger = (JettyLogger)LoggerFactory.getLogger("org.eclipse.jetty.http3");
+        h3Logger.setLevel(JettyLevel.DEBUG);
+        JettyLogger quicLogger = (JettyLogger)LoggerFactory.getLogger("org.eclipse.jetty.quic");
+        quicLogger.setLevel(JettyLevel.DEBUG);
         try
         {
             init(transport);
@@ -117,7 +120,9 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         }
         finally
         {
-            logger.setLevel(JettyLevel.INFO);
+//            logger.setLevel(JettyLevel.INFO);
+            h3Logger.setLevel(JettyLevel.INFO);
+            quicLogger.setLevel(JettyLevel.INFO);
         }
     }
 
