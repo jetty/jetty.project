@@ -53,7 +53,7 @@ class NativeHelper
 
     private static String getNativePrefix()
     {
-        // TODO: add macos and windows
+        // TODO: check for macos and windows
         String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
 
         String osArch = System.getProperty("os.arch");
@@ -66,6 +66,24 @@ class NativeHelper
         }
 
         return osName + "-" + osArch;
+    }
+
+    public static boolean isLinux()
+    {
+        // TODO add constant & check correctness
+        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("linux");
+    }
+
+    public static boolean isMac()
+    {
+        // TODO add constant & check correctness
+        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("mac");
+    }
+
+    public static boolean isWindows()
+    {
+        // TODO add constant & check correctness
+        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
 
     private static File extractFromResourcePath(String libName, ClassLoader classLoader) throws IOException
