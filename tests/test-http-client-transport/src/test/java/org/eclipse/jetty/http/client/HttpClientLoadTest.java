@@ -126,7 +126,7 @@ public class HttpClientLoadTest extends AbstractTest<HttpClientLoadTest.LoadTran
         });
 
         int runs = 1;
-        int iterations = 64;
+        int iterations = 128;
         IntStream.range(0, 16).parallel().forEach(i ->
             IntStream.range(0, runs).forEach(j ->
                 run(transport, iterations)));
