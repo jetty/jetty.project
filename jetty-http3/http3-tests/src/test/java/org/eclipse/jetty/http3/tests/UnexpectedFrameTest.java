@@ -38,7 +38,7 @@ public class UnexpectedFrameTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public void onFailure(Session session, long error, String reason)
+            public void onFailure(Session session, long error, String reason, Throwable failure)
             {
                 assertEquals(HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), error);
                 serverFailureLatch.countDown();

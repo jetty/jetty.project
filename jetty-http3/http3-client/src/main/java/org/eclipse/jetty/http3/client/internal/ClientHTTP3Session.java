@@ -23,6 +23,7 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.ControlFlusher;
 import org.eclipse.jetty.http3.internal.DecoderStreamConnection;
 import org.eclipse.jetty.http3.internal.EncoderStreamConnection;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.internal.InstructionFlusher;
 import org.eclipse.jetty.http3.internal.InstructionHandler;
 import org.eclipse.jetty.http3.internal.MessageFlusher;
@@ -105,8 +106,14 @@ public class ClientHTTP3Session extends ClientProtocolSession
             settings = Map.of();
         // TODO: add default settings.
         SettingsFrame frame = new SettingsFrame(settings);
-        if (controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, session::onOpen, this::fail)))
+        if (controlFlusher.offer(frame, Callback.from(Invocable.InvocationType.NON_BLOCKING, session::onOpen, this::failControlStream)))
             controlFlusher.iterate();
+    }
+
+    private void failControlStream(Throwable failure)
+    {
+        long error = HTTP3ErrorCode.CLOSED_CRITICAL_STREAM_ERROR.code();
+        onFailure(error, "control_stream_failure", failure);
     }
 
     @Override
@@ -114,12 +121,6 @@ public class ClientHTTP3Session extends ClientProtocolSession
     {
         // Nothing to do, not even calling super,
         // as onStart() does not call super either.
-    }
-
-    private void fail(Throwable failure)
-    {
-        // TODO
-        throw new UnsupportedOperationException();
     }
 
     private QuicStreamEndPoint openInstructionEndPoint(long streamId)
@@ -159,6 +160,12 @@ public class ClientHTTP3Session extends ClientProtocolSession
         if (LOG.isDebugEnabled())
             LOG.debug("idle timeout {} ms expired for {}", getQuicSession().getIdleTimeout(), this);
         return session.onIdleTimeout();
+    }
+
+    @Override
+    protected void onFailure(long error, String reason, Throwable failure)
+    {
+        session.onSessionFailure(error, reason, failure);
     }
 
     @Override

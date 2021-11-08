@@ -133,13 +133,13 @@ public class HeadersBodyParser extends BodyParser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            notifySessionFailure(x.getErrorCode(), x.getMessage());
+            notifySessionFailure(x.getErrorCode(), x.getMessage(), x);
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("decode failure", x);
-            notifySessionFailure(HTTP3ErrorCode.INTERNAL_ERROR.code(), "internal_error");
+            notifySessionFailure(HTTP3ErrorCode.INTERNAL_ERROR.code(), "internal_error", x);
         }
         return false;
     }

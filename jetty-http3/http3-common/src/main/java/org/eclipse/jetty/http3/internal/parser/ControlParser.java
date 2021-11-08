@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.internal.parser;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http3.frames.FrameType;
@@ -86,7 +87,7 @@ public class ControlParser
                                 // SPEC: message frames on the control stream are invalid.
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("invalid message frame type {} on control stream", Long.toHexString(frameType));
-                                sessionFailure(buffer, HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type");
+                                sessionFailure(buffer, HTTP3ErrorCode.FRAME_UNEXPECTED_ERROR.code(), "invalid_frame_type", new IOException("invalid message frame on control stream"));
                                 return;
                             }
 
@@ -132,13 +133,13 @@ public class ControlParser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("parse failed", x);
-            sessionFailure(buffer, HTTP3ErrorCode.INTERNAL_ERROR.code(), "parser_error");
+            sessionFailure(buffer, HTTP3ErrorCode.INTERNAL_ERROR.code(), "parser_error", x);
         }
     }
 
-    private void sessionFailure(ByteBuffer buffer, long error, String reason)
+    private void sessionFailure(ByteBuffer buffer, long error, String reason, Throwable failure)
     {
-        unknownBodyParser.sessionFailure(buffer, error, reason);
+        unknownBodyParser.sessionFailure(buffer, error, reason, failure);
     }
 
     private enum State

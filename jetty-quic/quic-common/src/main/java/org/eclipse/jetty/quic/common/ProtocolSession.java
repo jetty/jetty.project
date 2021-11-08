@@ -136,6 +136,10 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         return true;
     }
 
+    protected void onFailure(long error, String reason, Throwable failure)
+    {
+    }
+
     public void inwardClose(long error, String reason)
     {
         outwardClose(error, reason);
