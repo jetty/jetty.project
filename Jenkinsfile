@@ -7,42 +7,42 @@ pipeline {
   stages {
     stage("Parallel Stage") {
       parallel {
-//        stage("Build / Test - JDK11") {
-//          agent { node { label 'linux' } }
-//          steps {
-//            container('jetty-build') {
-//              timeout( time: 120, unit: 'MINUTES' ) {
-//                mavenBuild( "jdk11", "clean install -Perrorprone", "maven3")
-//                // Collect up the jacoco execution results (only on main build)
-//                jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-//                       exclusionPattern: '' +
-//                               // build tools
-//                               '**/org/eclipse/jetty/ant/**' + ',**/org/eclipse/jetty/maven/**' +
-//                               ',**/org/eclipse/jetty/jspc/**' +
-//                               // example code / documentation
-//                               ',**/org/eclipse/jetty/embedded/**' + ',**/org/eclipse/jetty/asyncrest/**' +
-//                               ',**/org/eclipse/jetty/demo/**' +
-//                               // special environments / late integrations
-//                               ',**/org/eclipse/jetty/gcloud/**' + ',**/org/eclipse/jetty/infinispan/**' +
-//                               ',**/org/eclipse/jetty/osgi/**' +
-//                               ',**/org/eclipse/jetty/http/spi/**' +
-//                               // test classes
-//                               ',**/org/eclipse/jetty/tests/**' + ',**/org/eclipse/jetty/test/**',
-//                       execPattern: '**/target/jacoco.exec',
-//                       classPattern: '**/target/classes',
-//                       sourcePattern: '**/src/main/java'
-//                recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser(), errorProne()]
-//              }
-//            }
-//          }
-//        }
+        stage("Build / Test - JDK11") {
+          agent { node { label 'linux' } }
+          steps {
+            container('jetty-build') {
+              timeout( time: 120, unit: 'MINUTES' ) {
+                mavenBuild( "jdk11", "clean install -Perrorprone", "maven3")
+                // Collect up the jacoco execution results (only on main build)
+                jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
+                       exclusionPattern: '' +
+                               // build tools
+                               '**/org/eclipse/jetty/ant/**' + ',**/org/eclipse/jetty/maven/**' +
+                               ',**/org/eclipse/jetty/jspc/**' +
+                               // example code / documentation
+                               ',**/org/eclipse/jetty/embedded/**' + ',**/org/eclipse/jetty/asyncrest/**' +
+                               ',**/org/eclipse/jetty/demo/**' +
+                               // special environments / late integrations
+                               ',**/org/eclipse/jetty/gcloud/**' + ',**/org/eclipse/jetty/infinispan/**' +
+                               ',**/org/eclipse/jetty/osgi/**' +
+                               ',**/org/eclipse/jetty/http/spi/**' +
+                               // test classes
+                               ',**/org/eclipse/jetty/tests/**' + ',**/org/eclipse/jetty/test/**',
+                       execPattern: '**/target/jacoco.exec',
+                       classPattern: '**/target/classes',
+                       sourcePattern: '**/src/main/java'
+                recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser(), errorProne()]
+              }
+            }
+          }
+        }
 
         stage("Build / Test - JDK17") {
           agent { node { label 'linux' } }
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true -Djacoco.skip=true -am -pl :test-http-client-transport -Dtest=HttpClientLoadTest", "maven3")
+                mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
                 recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
               }
             }
