@@ -52,7 +52,7 @@ class NativeHelper
         }
         else if (osName.startsWith("Mac") || osName.startsWith("Darwin"))
         {
-            prefix = "darwin";
+            prefix = "darwin-" + arch;
             PLATFORM = Platform.MAC;
         }
         else if (osName.startsWith("Windows"))
