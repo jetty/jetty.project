@@ -43,7 +43,7 @@ class NativeHelper
             String libName = getNativePrefix() + "/" + System.mapLibraryName("quiche");
             File lib = extractFromResourcePath(libName, NativeHelper.class.getClassLoader());
             System.load(lib.getAbsolutePath());
-            //TODO delete lib?
+            lib.deleteOnExit();
         }
         catch (IOException e)
         {
@@ -89,7 +89,7 @@ class NativeHelper
     private static File extractFromResourcePath(String libName, ClassLoader classLoader) throws IOException
     {
         File target = new File(System.getProperty("java.io.tmpdir"), libName);
-        target.getParentFile().mkdir();
+        target.getParentFile().mkdirs();
         try (InputStream is = classLoader.getResourceAsStream(libName); OutputStream os = new FileOutputStream(target))
         {
             IO.copy(is, os);
