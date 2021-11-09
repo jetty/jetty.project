@@ -6,6 +6,3 @@ cd ${version}
 git checkout -b tag-${version} tags/${version}
 cargo build --features ffi,qlog
 ls ./target/debug/libquiche.so
-
-# create universal binary on mac:
-lipo -create -output libquiche-universal.dylib libquiche-x86_64.dylib libquiche-aarch64.dylib

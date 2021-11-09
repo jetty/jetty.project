@@ -125,7 +125,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             .scheme(scenario.getScheme())
             .file(upload)
             .onRequestSuccess(request -> requestTime.set(System.nanoTime()))
-            .timeout(30, TimeUnit.SECONDS)
+            .timeout(2, TimeUnit.MINUTES)
             .send();
         long responseTime = System.nanoTime();
 
