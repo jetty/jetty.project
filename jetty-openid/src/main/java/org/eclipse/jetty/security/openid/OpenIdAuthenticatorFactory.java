@@ -29,9 +29,9 @@ public class OpenIdAuthenticatorFactory implements Authenticator.Factory
         String auth = configuration.getAuthMethod();
         if (Constraint.__OPENID_AUTH.equalsIgnoreCase(auth))
         {
-            // If LoginService is an OpenIdLoginService it already contains the configuration and will be obtained in setConfiguration();
+            // If we have an OpenIdLoginService we can extract the configuration.
             if (loginService instanceof OpenIdLoginService)
-                return new OpenIdAuthenticator();
+                return new OpenIdAuthenticator(((OpenIdLoginService)loginService).getConfiguration());
 
             // Otherwise we should find an OpenIdConfiguration for this realm on the Server.
             String realmName = configuration.getRealmName();

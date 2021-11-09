@@ -80,7 +80,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
     public static final String CSRF_TOKEN = "org.eclipse.jetty.security.openid.csrf_token";
 
     private final SecureRandom _secureRandom = new SecureRandom();
-    private OpenIdConfiguration _configuration;
+    private OpenIdConfiguration _openIdConfiguration;
     private String _redirectPath;
     private String _errorPage;
     private String _errorPath;
@@ -104,32 +104,32 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
     public OpenIdAuthenticator(OpenIdConfiguration configuration, String redirectPath, String errorPage)
     {
-        _configuration = configuration;
+        _openIdConfiguration = configuration;
         setRedirectPath(redirectPath);
         if (errorPage != null)
             setErrorPage(errorPage);
     }
 
     @Override
-    public void setConfiguration(AuthConfiguration configuration)
+    public void setConfiguration(AuthConfiguration authConfig)
     {
-        if (_configuration == null)
+        if (_openIdConfiguration == null)
         {
-            LoginService loginService = configuration.getLoginService();
+            LoginService loginService = authConfig.getLoginService();
             if (!(loginService instanceof OpenIdLoginService))
                 throw new IllegalArgumentException("invalid LoginService " + loginService);
-            this._configuration = ((OpenIdLoginService)loginService).getConfiguration();
+            this._openIdConfiguration = ((OpenIdLoginService)loginService).getConfiguration();
         }
 
-        String redirectPath = configuration.getInitParameter(REDIRECT_PATH);
+        String redirectPath = authConfig.getInitParameter(REDIRECT_PATH);
         if (redirectPath != null)
             _redirectPath = redirectPath;
 
-        String error = configuration.getInitParameter(ERROR_PAGE);
+        String error = authConfig.getInitParameter(ERROR_PAGE);
         if (error != null)
             setErrorPage(error);
 
-        super.setConfiguration(new OpenIdAuthConfiguration(_configuration, configuration));
+        super.setConfiguration(new OpenIdAuthConfiguration(_openIdConfiguration, authConfig));
     }
 
     @Override
@@ -209,7 +209,7 @@ public class OpenIdAuthenticator extends LoginAuthenticator
                 session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
                 session.setAttribute(CLAIMS, ((OpenIdCredentials)credentials).getClaims());
                 session.setAttribute(RESPONSE, ((OpenIdCredentials)credentials).getResponse());
-                session.setAttribute(ISSUER, _configuration.getIssuer());
+                session.setAttribute(ISSUER, _openIdConfiguration.getIssuer());
             }
         }
         return user;
@@ -520,13 +520,13 @@ public class OpenIdAuthenticator extends LoginAuthenticator
 
         // any custom scopes requested from configuration
         StringBuilder scopes = new StringBuilder();
-        for (String s : _configuration.getScopes())
+        for (String s : _openIdConfiguration.getScopes())
         {
             scopes.append(" ").append(s);
         }
 
-        return _configuration.getAuthEndpoint() +
-            "?client_id=" + UrlEncoded.encodeString(_configuration.getClientId(), StandardCharsets.UTF_8) +
+        return _openIdConfiguration.getAuthEndpoint() +
+            "?client_id=" + UrlEncoded.encodeString(_openIdConfiguration.getClientId(), StandardCharsets.UTF_8) +
             "&redirect_uri=" + UrlEncoded.encodeString(getRedirectUri(request), StandardCharsets.UTF_8) +
             "&scope=openid" + UrlEncoded.encodeString(scopes.toString(), StandardCharsets.UTF_8) +
             "&state=" + antiForgeryToken +
