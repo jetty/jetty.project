@@ -74,16 +74,16 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             // Source Connection ID
             MemorySegment scid = MemorySegment.allocateNative(QUICHE_MAX_CONN_ID_LEN, scope);
             MemorySegment scid_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
-            scid_len.asByteBuffer().order(ByteOrder.nativeOrder()).putLong(scid.byteSize());
+            putLong(scid_len, scid.byteSize());
 
             // Destination Connection ID
             MemorySegment dcid = MemorySegment.allocateNative(QUICHE_MAX_CONN_ID_LEN, scope);
             MemorySegment dcid_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
-            dcid_len.asByteBuffer().order(ByteOrder.nativeOrder()).putLong(dcid.byteSize());
+            putLong(dcid_len, dcid.byteSize());
 
             MemorySegment token = MemorySegment.allocateNative(QuicheConnection.TokenMinter.MAX_TOKEN_LENGTH, scope);
             MemorySegment token_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
-            token_len.asByteBuffer().order(ByteOrder.nativeOrder()).putLong(token.byteSize());
+            putLong(token_len, token.byteSize());
 
             LOG.debug("getting header info (fromPacket)...");
             int rc;
@@ -103,7 +103,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 // If the ByteBuffer is heap-allocated, it must be copied to native memory.
                 MemorySegment packetReadSegment = MemorySegment.allocateNative(packet.remaining(), scope);
                 int prevPosition = packet.position();
-                packetReadSegment.asByteBuffer().order(ByteOrder.nativeOrder()).put(packet);
+                packetReadSegment.asByteBuffer().put(packet);
                 packet.position(prevPosition);
                 rc = quiche_h.quiche_header_info(packetReadSegment.address(), packet.remaining(), QUICHE_MAX_CONN_ID_LEN,
                     version.address(), type.address(),
@@ -118,8 +118,8 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 return null;
             }
 
-            byte[] bytes = new byte[(int)dcid_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong()];
-            dcid.asByteBuffer().order(ByteOrder.nativeOrder()).get(bytes);
+            byte[] bytes = new byte[(int)getLong(dcid_len)];
+            dcid.asByteBuffer().get(bytes);
             return bytes;
         }
     }
@@ -133,16 +133,28 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
     {
         if (connectionIdLength > QUICHE_MAX_CONN_ID_LEN)
             throw new IOException("Connection ID length is too large: " + connectionIdLength + " > " + QUICHE_MAX_CONN_ID_LEN);
-        ResourceScope scope = ResourceScope.newSharedScope();
-        byte[] scidBytes = new byte[connectionIdLength];
-        SECURE_RANDOM.nextBytes(scidBytes);
-        MemorySegment scid = MemorySegment.allocateNative(scidBytes.length, scope);
-        scid.asByteBuffer().order(ByteOrder.nativeOrder()).put(scidBytes);
-        MemoryAddress libQuicheConfig = buildConfig(quicheConfig, scope);
 
-        MemorySegment s = sockaddr.convert(peer, scope);
-        MemoryAddress quicheConn = quiche_h.quiche_connect(CLinker.toCString(peer.getHostName(), scope), scid, scid.byteSize(), s, s.byteSize(), libQuicheConfig);
-        return new ForeignIncubatorQuicheConnection(quicheConn, libQuicheConfig, scope);
+        ResourceScope scope = ResourceScope.newSharedScope();
+        boolean keepScope = false;
+        try
+        {
+            byte[] scidBytes = new byte[connectionIdLength];
+            SECURE_RANDOM.nextBytes(scidBytes);
+            MemorySegment scid = MemorySegment.allocateNative(scidBytes.length, scope);
+            scid.asByteBuffer().put(scidBytes);
+            MemoryAddress libQuicheConfig = buildConfig(quicheConfig, scope);
+
+            MemorySegment s = sockaddr.convert(peer, scope);
+            MemoryAddress quicheConn = quiche_h.quiche_connect(CLinker.toCString(peer.getHostName(), scope), scid, scid.byteSize(), s, s.byteSize(), libQuicheConfig);
+            ForeignIncubatorQuicheConnection connection = new ForeignIncubatorQuicheConnection(quicheConn, libQuicheConfig, scope);
+            keepScope = true;
+            return connection;
+        }
+        finally
+        {
+            if (!keepScope)
+                scope.close();
+        }
     }
 
     private static MemoryAddress buildConfig(QuicheConfig config, ResourceScope scope) throws IOException
@@ -175,7 +187,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             }
             byte[] bytes = baos.toByteArray();
             MemorySegment segment = MemorySegment.allocateNative(bytes.length, scope);
-            segment.asByteBuffer().order(ByteOrder.nativeOrder()).put(bytes);
+            segment.asByteBuffer().put(bytes);
             quiche_h.quiche_config_set_application_protos(quicheConfig, segment.address(), segment.byteSize());
         }
 
@@ -233,7 +245,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 // If the ByteBuffer is heap-allocated, it must be copied to native memory.
                 packetReadSegment = MemorySegment.allocateNative(packetRead.remaining(), scope);
                 int prevPosition = packetRead.position();
-                packetReadSegment.asByteBuffer().order(ByteOrder.nativeOrder()).put(packetRead);
+                packetReadSegment.asByteBuffer().put(packetRead);
                 packetRead.position(prevPosition);
             }
 
@@ -243,16 +255,16 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             // Source Connection ID
             MemorySegment scid = MemorySegment.allocateNative(QUICHE_MAX_CONN_ID_LEN, scope);
             MemorySegment scid_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
-            scid_len.asByteBuffer().order(ByteOrder.nativeOrder()).putLong(scid.byteSize());
+            putLong(scid_len, scid.byteSize());
 
             // Destination Connection ID
             MemorySegment dcid = MemorySegment.allocateNative(QUICHE_MAX_CONN_ID_LEN, scope);
             MemorySegment dcid_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
-            dcid_len.asByteBuffer().order(ByteOrder.nativeOrder()).putLong(dcid.byteSize());
+            putLong(dcid_len, dcid.byteSize());
 
             MemorySegment token = MemorySegment.allocateNative(TokenMinter.MAX_TOKEN_LENGTH, scope);
             MemorySegment token_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
-            token_len.asByteBuffer().order(ByteOrder.nativeOrder()).putLong(token.byteSize());
+            putLong(token_len, token.byteSize());
 
             LOG.debug("getting header info (negotiate)...");
             int rc = quiche_h.quiche_header_info(packetReadSegment.address(), packetRead.remaining(), QUICHE_MAX_CONN_ID_LEN,
@@ -264,13 +276,13 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 throw new IOException("failed to parse header: " + quiche_error.errToString(rc));
             packetRead.position(packetRead.limit());
 
-            LOG.debug("version: {}", version.asByteBuffer().order(ByteOrder.nativeOrder()).getInt());
-            LOG.debug("type: {}", type.asByteBuffer().order(ByteOrder.nativeOrder()).get());
-            LOG.debug("scid len: {}", scid_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong());
-            LOG.debug("dcid len: {}", dcid_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong());
-            LOG.debug("token len: {}", token_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong());
+            LOG.debug("version: {}", getInt(version));
+            LOG.debug("type: {}", getByte(type));
+            LOG.debug("scid len: {}", getLong(scid_len));
+            LOG.debug("dcid len: {}", getLong(dcid_len));
+            LOG.debug("token len: {}", getLong(token_len));
 
-            if (quiche_h.quiche_version_is_supported(version.asByteBuffer().order(ByteOrder.nativeOrder()).getInt()) == C_FALSE)
+            if (quiche_h.quiche_version_is_supported(getInt(version)) == C_FALSE)
             {
                 LOG.debug("version negotiation");
 
@@ -286,29 +298,29 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                     packetToSendSegment = MemorySegment.allocateNative(packetToSend.remaining(), scope);
                 }
 
-                long generated = quiche_h.quiche_negotiate_version(scid.address(), scid_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong(), dcid.address(), dcid_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong(), packetToSendSegment.address(), packetToSend.remaining());
+                long generated = quiche_h.quiche_negotiate_version(scid.address(), getLong(scid_len), dcid.address(), getLong(dcid_len), packetToSendSegment.address(), packetToSend.remaining());
                 if (generated < 0)
                     throw new IOException("failed to create vneg packet : " + quiche_error.errToString(generated));
                 if (!packetToSend.isDirect())
-                    packetToSend.put(packetToSendSegment.asByteBuffer().order(ByteOrder.nativeOrder()).limit((int)generated));
+                    packetToSend.put(packetToSendSegment.asByteBuffer().limit((int)generated));
                 else
                     packetToSend.position((int)(packetToSend.position() + generated));
                 return true;
             }
 
-            if (token_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong() == 0L)
+            if (getLong(token_len) == 0L)
             {
                 LOG.debug("stateless retry");
 
-                byte[] dcidBytes = new byte[(int)dcid_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong()];
-                dcid.asByteBuffer().order(ByteOrder.nativeOrder()).get(dcidBytes);
+                byte[] dcidBytes = new byte[(int)getLong(dcid_len)];
+                dcid.asByteBuffer().get(dcidBytes);
                 byte[] tokenBytes = tokenMinter.mint(dcidBytes, dcidBytes.length);
-                token.asByteBuffer().order(ByteOrder.nativeOrder()).put(tokenBytes);
+                token.asByteBuffer().put(tokenBytes);
 
                 byte[] newCid = new byte[QUICHE_MAX_CONN_ID_LEN];
                 SECURE_RANDOM.nextBytes(newCid);
                 MemorySegment newCidSegment = MemorySegment.allocateNative(newCid.length, scope);
-                newCidSegment.asByteBuffer().order(ByteOrder.nativeOrder()).put(newCid);
+                newCidSegment.asByteBuffer().put(newCid);
 
                 MemorySegment packetToSendSegment;
                 if (packetToSend.isDirect())
@@ -322,17 +334,17 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                     packetToSendSegment = MemorySegment.allocateNative(packetToSend.remaining(), scope);
                 }
 
-                long generated = quiche_h.quiche_retry(scid.address(), scid_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong(),
-                    dcid.address(), dcid_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong(),
+                long generated = quiche_h.quiche_retry(scid.address(), getLong(scid_len),
+                    dcid.address(), getLong(dcid_len),
                     newCidSegment.address(), newCid.length,
                     token.address(), tokenBytes.length,
-                    version.asByteBuffer().order(ByteOrder.nativeOrder()).getInt(),
+                    getInt(version),
                     packetToSendSegment.address(), packetToSendSegment.byteSize()
                 );
                 if (generated < 0)
                     throw new IOException("failed to create retry packet: " + quiche_error.errToString(generated));
                 if (!packetToSend.isDirect())
-                    packetToSend.put(packetToSendSegment.asByteBuffer().order(ByteOrder.nativeOrder()).limit((int)generated));
+                    packetToSend.put(packetToSendSegment.asByteBuffer().limit((int)generated));
                 else
                     packetToSend.position((int)(packetToSend.position() + generated));
                 return true;
@@ -344,116 +356,115 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
 
     public static ForeignIncubatorQuicheConnection tryAccept(QuicheConfig quicheConfig, TokenValidator tokenValidator, ByteBuffer packetRead, SocketAddress peer) throws IOException
     {
+        boolean keepScope = false;
         ResourceScope scope = ResourceScope.newSharedScope();
-
-        MemorySegment type = MemorySegment.allocateNative(CLinker.C_CHAR, scope);
-        MemorySegment version = MemorySegment.allocateNative(CLinker.C_INT, scope);
-
-        // Source Connection ID
-        MemorySegment scid = MemorySegment.allocateNative(QUICHE_MAX_CONN_ID_LEN, scope);
-        MemorySegment scid_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
-        scid_len.asByteBuffer().order(ByteOrder.nativeOrder()).putLong(scid.byteSize());
-
-        // Destination Connection ID
-        MemorySegment dcid = MemorySegment.allocateNative(QUICHE_MAX_CONN_ID_LEN, scope);
-        MemorySegment dcid_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
-        dcid_len.asByteBuffer().order(ByteOrder.nativeOrder()).putLong(dcid.byteSize());
-
-        MemorySegment token = MemorySegment.allocateNative(TokenMinter.MAX_TOKEN_LENGTH, scope);
-        MemorySegment token_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
-        token_len.asByteBuffer().order(ByteOrder.nativeOrder()).putLong(token.byteSize());
-
-        LOG.debug("getting header info (tryAccept)...");
-        int rc;
-
-        if (packetRead.isDirect())
+        try
         {
-            // If the ByteBuffer is direct, it can be used without any copy.
-            MemorySegment packetReadSegment = MemorySegment.ofByteBuffer(packetRead);
-            rc = quiche_h.quiche_header_info(packetReadSegment.address(), packetRead.remaining(), QUICHE_MAX_CONN_ID_LEN,
-                version.address(), type.address(),
-                scid.address(), scid_len.address(),
-                dcid.address(), dcid_len.address(),
-                token.address(), token_len.address());
-        }
-        else
-        {
-            // If the ByteBuffer is heap-allocated, it must be copied to native memory.
-            try (ResourceScope segmentScope = ResourceScope.newConfinedScope())
+            MemorySegment type = MemorySegment.allocateNative(CLinker.C_CHAR, scope);
+            MemorySegment version = MemorySegment.allocateNative(CLinker.C_INT, scope);
+
+            // Source Connection ID
+            MemorySegment scid = MemorySegment.allocateNative(QUICHE_MAX_CONN_ID_LEN, scope);
+            MemorySegment scid_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
+            putLong(scid_len, scid.byteSize());
+
+            // Destination Connection ID
+            MemorySegment dcid = MemorySegment.allocateNative(QUICHE_MAX_CONN_ID_LEN, scope);
+            MemorySegment dcid_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
+            putLong(dcid_len, dcid.byteSize());
+
+            MemorySegment token = MemorySegment.allocateNative(TokenMinter.MAX_TOKEN_LENGTH, scope);
+            MemorySegment token_len = MemorySegment.allocateNative(CLinker.C_LONG, scope);
+            putLong(token_len, token.byteSize());
+
+            LOG.debug("getting header info (tryAccept)...");
+            int rc;
+
+            if (packetRead.isDirect())
             {
-                MemorySegment packetReadSegment = MemorySegment.allocateNative(packetRead.remaining(), segmentScope);
-                int prevPosition = packetRead.position();
-                packetReadSegment.asByteBuffer().order(ByteOrder.nativeOrder()).put(packetRead);
-                packetRead.position(prevPosition);
+                // If the ByteBuffer is direct, it can be used without any copy.
+                MemorySegment packetReadSegment = MemorySegment.ofByteBuffer(packetRead);
                 rc = quiche_h.quiche_header_info(packetReadSegment.address(), packetRead.remaining(), QUICHE_MAX_CONN_ID_LEN,
                     version.address(), type.address(),
                     scid.address(), scid_len.address(),
                     dcid.address(), dcid_len.address(),
                     token.address(), token_len.address());
             }
+            else
+            {
+                // If the ByteBuffer is heap-allocated, it must be copied to native memory.
+                try (ResourceScope segmentScope = ResourceScope.newConfinedScope())
+                {
+                    MemorySegment packetReadSegment = MemorySegment.allocateNative(packetRead.remaining(), segmentScope);
+                    int prevPosition = packetRead.position();
+                    packetReadSegment.asByteBuffer().put(packetRead);
+                    packetRead.position(prevPosition);
+                    rc = quiche_h.quiche_header_info(packetReadSegment.address(), packetRead.remaining(), QUICHE_MAX_CONN_ID_LEN,
+                        version.address(), type.address(),
+                        scid.address(), scid_len.address(),
+                        dcid.address(), dcid_len.address(),
+                        token.address(), token_len.address());
+                }
+            }
+            if (rc < 0)
+                throw new IOException("failed to parse header: " + quiche_error.errToString(rc));
+
+            LOG.debug("version: {}", getInt(version));
+            LOG.debug("type: {}", getByte(type));
+            LOG.debug("scid len: {}", getLong(scid_len));
+            LOG.debug("dcid len: {}", getLong(dcid_len));
+            LOG.debug("token len: {}", getLong(token_len));
+
+            if (quiche_h.quiche_version_is_supported(getInt(version)) == C_FALSE)
+            {
+                LOG.debug("need version negotiation");
+                return null;
+            }
+
+            int tokenLen = (int)getLong(token_len);
+            if (tokenLen == 0)
+            {
+                LOG.debug("need stateless retry");
+                return null;
+            }
+
+            LOG.debug("token validation...");
+            // Original Destination Connection ID
+            byte[] tokenBytes = new byte[(int)token.byteSize()];
+            token.asByteBuffer().get(tokenBytes, 0, tokenLen);
+            byte[] odcidBytes = tokenValidator.validate(tokenBytes, tokenLen);
+            if (odcidBytes == null)
+                throw new TokenValidationException("invalid address validation token");
+            LOG.debug("validated token");
+            MemorySegment odcid = MemorySegment.allocateNative(odcidBytes.length, scope);
+            odcid.asByteBuffer().put(odcidBytes);
+
+            LOG.debug("connection creation...");
+            MemoryAddress libQuicheConfig = buildConfig(quicheConfig, scope);
+
+            MemorySegment s = sockaddr.convert(peer, scope);
+            MemoryAddress quicheConn = quiche_h.quiche_accept(dcid.address(), getLong(dcid_len), odcid.address(), odcid.byteSize(), s.address(), s.byteSize(), libQuicheConfig);
+            if (quicheConn == null)
+            {
+                quiche_h.quiche_config_free(libQuicheConfig);
+                throw new IOException("failed to create connection");
+            }
+
+            LOG.debug("connection created");
+            ForeignIncubatorQuicheConnection quicheConnection = new ForeignIncubatorQuicheConnection(quicheConn, libQuicheConfig, scope);
+            LOG.debug("accepted, immediately receiving the same packet - remaining in buffer: {}", packetRead.remaining());
+            while (packetRead.hasRemaining())
+            {
+                quicheConnection.feedCipherBytes(packetRead, peer);
+            }
+            keepScope = true;
+            return quicheConnection;
         }
-        if (rc < 0)
+        finally
         {
-            scope.close();
-            throw new IOException("failed to parse header: " + quiche_error.errToString(rc));
+            if (!keepScope)
+                scope.close();
         }
-
-        LOG.debug("version: {}", version.asByteBuffer().order(ByteOrder.nativeOrder()).getInt());
-        LOG.debug("type: {}", type.asByteBuffer().order(ByteOrder.nativeOrder()).get());
-        LOG.debug("scid len: {}", scid_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong());
-        LOG.debug("dcid len: {}", dcid_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong());
-        LOG.debug("token len: {}", token_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong());
-
-        if (quiche_h.quiche_version_is_supported(version.asByteBuffer().order(ByteOrder.nativeOrder()).getInt()) == C_FALSE)
-        {
-            LOG.debug("need version negotiation");
-            scope.close();
-            return null;
-        }
-
-        int tokenLen = (int)token_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong();
-        if (tokenLen == 0)
-        {
-            LOG.debug("need stateless retry");
-            scope.close();
-            return null;
-        }
-
-        LOG.debug("token validation...");
-        // Original Destination Connection ID
-        byte[] tokenBytes = new byte[(int)token.byteSize()];
-        token.asByteBuffer().order(ByteOrder.nativeOrder()).get(tokenBytes, 0, tokenLen);
-        byte[] odcidBytes = tokenValidator.validate(tokenBytes, tokenLen);
-        if (odcidBytes == null)
-        {
-            scope.close();
-            throw new TokenValidationException("invalid address validation token");
-        }
-        LOG.debug("validated token");
-        MemorySegment odcid = MemorySegment.allocateNative(odcidBytes.length, scope);
-        odcid.asByteBuffer().order(ByteOrder.nativeOrder()).put(odcidBytes);
-
-        LOG.debug("connection creation...");
-        MemoryAddress libQuicheConfig = buildConfig(quicheConfig, scope);
-
-        MemorySegment s = sockaddr.convert(peer, scope);
-        MemoryAddress quicheConn = quiche_h.quiche_accept(dcid.address(), dcid_len.asByteBuffer().order(ByteOrder.nativeOrder()).getLong(), odcid.address(), odcid.byteSize(), s.address(), s.byteSize(), libQuicheConfig);
-
-        if (quicheConn == null)
-        {
-            quiche_h.quiche_config_free(libQuicheConfig);
-            scope.close();
-            throw new IOException("failed to create connection");
-        }
-
-        LOG.debug("connection created");
-        ForeignIncubatorQuicheConnection quicheConnection = new ForeignIncubatorQuicheConnection(quicheConn, libQuicheConfig, scope);
-        LOG.debug("accepted, immediately receiving the same packet - remaining in buffer: {}", packetRead.remaining());
-        while (packetRead.hasRemaining())
-        {
-            quicheConnection.feedCipherBytes(packetRead, peer);
-        }
-        return quicheConnection;
     }
 
     @Override
@@ -476,7 +487,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 MemorySegment streamIdSegment = MemorySegment.allocateNative(CLinker.C_LONG, scope);
                 while (quiche_h.quiche_stream_iter_next(quiche_stream_iter, streamIdSegment.address()) != C_FALSE)
                 {
-                    long streamId = streamIdSegment.asByteBuffer().order(ByteOrder.nativeOrder()).getLong();
+                    long streamId = getLong(streamIdSegment);
                     result.add(streamId);
                 }
             }
@@ -509,7 +520,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                     // If the ByteBuffer is heap-allocated, it must be copied to native memory.
                     MemorySegment bufferSegment = MemorySegment.allocateNative(buffer.remaining(), scope);
                     int prevPosition = buffer.position();
-                    bufferSegment.asByteBuffer().order(ByteOrder.nativeOrder()).put(buffer);
+                    bufferSegment.asByteBuffer().put(buffer);
                     buffer.position(prevPosition);
                     received = quiche_h.quiche_conn_recv(quicheConn, bufferSegment.address(), buffer.remaining(), recvInfo.address());
                 }
@@ -544,7 +555,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 {
                     MemorySegment bufferSegment = MemorySegment.allocateNative(buffer.remaining(), scope);
                     written = quiche_h.quiche_conn_send(quicheConn, bufferSegment.address(), buffer.remaining(), sendInfo.address());
-                    buffer.put(bufferSegment.asByteBuffer().order(ByteOrder.nativeOrder()).slice().limit((int)written));
+                    buffer.put(bufferSegment.asByteBuffer().slice().limit((int)written));
                     buffer.position(prevPosition);
                 }
             }
@@ -614,12 +625,12 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
             MemorySegment outLenSegment = MemorySegment.allocateNative(CLinker.C_LONG, scope);
             quiche_h.quiche_conn_application_proto(quicheConn, outSegment.address(), outLenSegment.address());
 
-            long outLen = outLenSegment.asByteBuffer().order(ByteOrder.nativeOrder()).getLong();
+            long outLen = getLong(outLenSegment);
             if (outLen == 0L)
                 return null;
             byte[] out = new byte[(int)outLen];
             // dereference outSegment pointer
-            MemoryAddress memoryAddress = MemoryAddress.ofLong(outSegment.asByteBuffer().order(ByteOrder.nativeOrder()).getLong());
+            MemoryAddress memoryAddress = MemoryAddress.ofLong(getLong(outSegment));
             memoryAddress.asSegment(outLen, ResourceScope.globalScope()).asByteBuffer().get(out);
 
             return new String(out, StandardCharsets.UTF_8);
@@ -649,7 +660,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 {
                     byte[] reasonBytes = reason.getBytes(StandardCharsets.UTF_8);
                     MemorySegment reasonSegment = MemorySegment.allocateNative(reasonBytes.length, scope);
-                    reasonSegment.asByteBuffer().order(ByteOrder.nativeOrder()).put(reasonBytes);
+                    reasonSegment.asByteBuffer().put(reasonBytes);
                     int length = reasonBytes.length;
                     MemoryAddress reasonAddress = reasonSegment.address();
                     rc = quiche_h.quiche_conn_close(quicheConn, C_TRUE, error, reasonAddress, length);
@@ -783,7 +794,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                     {
                         MemorySegment bufferSegment = MemorySegment.allocateNative(buffer.remaining(), scope);
                         int prevPosition = buffer.position();
-                        bufferSegment.asByteBuffer().order(ByteOrder.nativeOrder()).put(buffer);
+                        bufferSegment.asByteBuffer().put(buffer);
                         buffer.position(prevPosition);
                         written = quiche_h.quiche_conn_stream_send(quicheConn, streamId, bufferSegment.address(), buffer.remaining(), last ? C_TRUE : C_FALSE);
                     }
@@ -826,7 +837,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                     read = quiche_h.quiche_conn_stream_recv(quicheConn, streamId, bufferSegment.address(), buffer.remaining(), fin.address());
 
                     int prevPosition = buffer.position();
-                    buffer.put(bufferSegment.asByteBuffer().order(ByteOrder.nativeOrder()).limit((int)read));
+                    buffer.put(bufferSegment.asByteBuffer().limit((int)read));
                     buffer.position(prevPosition);
                 }
             }
@@ -866,8 +877,8 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 MemorySegment reasonLength = MemorySegment.allocateNative(CLinker.C_LONG, scope);
                 if (quiche_h.quiche_conn_peer_error(quicheConn, app.address(), error.address(), reason.address(), reasonLength.address()) != C_FALSE)
                 {
-                    long errorValue = error.asByteBuffer().order(ByteOrder.nativeOrder()).getLong();
-                    long reasonLengthValue = reasonLength.asByteBuffer().order(ByteOrder.nativeOrder()).getLong();
+                    long errorValue = getLong(error);
+                    long reasonLengthValue = getLong(reasonLength);
 
                     String reasonValue;
                     if (reasonLengthValue == 0L)
@@ -878,7 +889,7 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                     {
                         byte[] reasonBytes = new byte[(int)reasonLengthValue];
                         // dereference reason pointer
-                        MemoryAddress memoryAddress = MemoryAddress.ofLong(reason.asByteBuffer().order(ByteOrder.nativeOrder()).getLong());
+                        MemoryAddress memoryAddress = MemoryAddress.ofLong(getLong(reason));
                         memoryAddress.asSegment(reasonLengthValue, ResourceScope.globalScope()).asByteBuffer().get(reasonBytes);
                         reasonValue = new String(reasonBytes, StandardCharsets.UTF_8);
                     }
@@ -888,5 +899,25 @@ public class ForeignIncubatorQuicheConnection extends QuicheConnection
                 return null;
             }
         }
+    }
+
+    private static void putLong(MemorySegment memorySegment, long value)
+    {
+        memorySegment.asByteBuffer().order(ByteOrder.nativeOrder()).putLong(value);
+    }
+
+    private static long getLong(MemorySegment memorySegment)
+    {
+        return memorySegment.asByteBuffer().order(ByteOrder.nativeOrder()).getLong();
+    }
+
+    private static int getInt(MemorySegment memorySegment)
+    {
+        return memorySegment.asByteBuffer().order(ByteOrder.nativeOrder()).getInt();
+    }
+
+    private static byte getByte(MemorySegment memorySegment)
+    {
+        return memorySegment.asByteBuffer().get();
     }
 }
