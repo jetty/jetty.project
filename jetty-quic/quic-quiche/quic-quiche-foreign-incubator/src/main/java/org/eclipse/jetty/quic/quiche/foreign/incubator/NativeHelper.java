@@ -21,7 +21,6 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.util.Locale;
 
 import jdk.incubator.foreign.CLinker;
 import jdk.incubator.foreign.FunctionDescriptor;
@@ -37,6 +36,63 @@ class NativeHelper
     private static final SymbolLookup LIBRARIES = lookup();
     private static final MethodHandles.Lookup MH_LOOKUP = MethodHandles.lookup();
 
+    private static final String NATIVE_PREFIX;
+    private static final Platform PLATFORM;
+
+    private enum Platform
+    {
+        LINUX, MAC, WINDOWS
+    }
+
+    static
+    {
+        String arch = System.getProperty("os.arch");
+        if ("x86_64".equals(arch) || "amd64".equals(arch))
+            arch = "x86-64";
+
+        String osName = System.getProperty("os.name");
+        String prefix;
+        if (osName.startsWith("Linux"))
+        {
+            prefix = "linux-" + arch;
+            PLATFORM = Platform.LINUX;
+        }
+        else if (osName.startsWith("Mac") || osName.startsWith("Darwin"))
+        {
+            prefix = "darwin";
+            PLATFORM = Platform.MAC;
+        }
+        else if (osName.startsWith("Windows"))
+        {
+            prefix = "win32-" + arch;
+            PLATFORM = Platform.WINDOWS;
+        }
+        else
+            throw new AssertionError("Unsupported OS: " + osName);
+
+        NATIVE_PREFIX = prefix;
+    }
+
+    private static String getNativePrefix()
+    {
+        return NATIVE_PREFIX;
+    }
+
+    public static boolean isLinux()
+    {
+        return PLATFORM == Platform.LINUX;
+    }
+
+    public static boolean isMac()
+    {
+        return PLATFORM == Platform.MAC;
+    }
+
+    public static boolean isWindows()
+    {
+        return PLATFORM == Platform.WINDOWS;
+    }
+
     private static void loadNativeLibraryFromClasspath() {
         try
         {
@@ -49,41 +105,6 @@ class NativeHelper
         {
             throw (UnsatisfiedLinkError) new UnsatisfiedLinkError("Cannot find quiche native library").initCause(e);
         }
-    }
-
-    private static String getNativePrefix()
-    {
-        // TODO: check for macos and windows
-        String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-
-        String osArch = System.getProperty("os.arch");
-        switch (osArch)
-        {
-            case "amd64":
-                osArch = "x86-64";
-                break;
-            // TODO: add arm64
-        }
-
-        return osName + "-" + osArch;
-    }
-
-    public static boolean isLinux()
-    {
-        // TODO add constant & check correctness
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("linux");
-    }
-
-    public static boolean isMac()
-    {
-        // TODO add constant & check correctness
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("mac");
-    }
-
-    public static boolean isWindows()
-    {
-        // TODO add constant & check correctness
-        return System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
     }
 
     private static File extractFromResourcePath(String libName, ClassLoader classLoader) throws IOException
