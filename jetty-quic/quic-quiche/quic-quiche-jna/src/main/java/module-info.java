@@ -19,10 +19,10 @@ module org.eclipse.jetty.quic.quiche.jna
     requires org.slf4j;
 
     // Allow JNA to use reflection on the implementation classes.
-    opens org.eclipse.jetty.quic.quiche.jna to com.sun.jna;
-    opens org.eclipse.jetty.quic.quiche.jna.linux to com.sun.jna;
-    opens org.eclipse.jetty.quic.quiche.jna.macos to com.sun.jna;
-    opens org.eclipse.jetty.quic.quiche.jna.windows to com.sun.jna;
+    opens org.eclipse.jetty.quic.quiche.jna;
+    opens org.eclipse.jetty.quic.quiche.jna.linux;
+    opens org.eclipse.jetty.quic.quiche.jna.macos;
+    opens org.eclipse.jetty.quic.quiche.jna.windows;
 
     provides org.eclipse.jetty.quic.quiche.QuicheBinding with
         org.eclipse.jetty.quic.quiche.jna.JnaQuicheBinding;
