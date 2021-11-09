@@ -33,6 +33,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MIN_CLIENT_INITIAL_LEN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -187,7 +188,7 @@ public class LowLevelQuicheTest
     {
         ForeignIncubatorQuicheConnection clientQuicheConnection = entry.getKey();
         ForeignIncubatorQuicheConnection serverQuicheConnection = entry.getValue();
-        ByteBuffer buffer = ByteBuffer.allocate(quiche_h.QUICHE_MIN_CLIENT_INITIAL_LEN);
+        ByteBuffer buffer = ByteBuffer.allocate(QUICHE_MIN_CLIENT_INITIAL_LEN);
 
         int drained = serverQuicheConnection.drainCipherBytes(buffer);
         assertThat(drained, is(expectedSize));
@@ -200,7 +201,7 @@ public class LowLevelQuicheTest
     {
         ForeignIncubatorQuicheConnection clientQuicheConnection = entry.getKey();
         ForeignIncubatorQuicheConnection serverQuicheConnection = entry.getValue();
-        ByteBuffer buffer = ByteBuffer.allocate(quiche_h.QUICHE_MIN_CLIENT_INITIAL_LEN);
+        ByteBuffer buffer = ByteBuffer.allocate(QUICHE_MIN_CLIENT_INITIAL_LEN);
 
         int drained = clientQuicheConnection.drainCipherBytes(buffer);
         assertThat(drained, is(expectedSize));
@@ -211,8 +212,8 @@ public class LowLevelQuicheTest
 
     private Map.Entry<ForeignIncubatorQuicheConnection, ForeignIncubatorQuicheConnection> connectClientToServer() throws IOException
     {
-        ByteBuffer buffer = ByteBuffer.allocate(quiche_h.QUICHE_MIN_CLIENT_INITIAL_LEN);
-        ByteBuffer buffer2 = ByteBuffer.allocate(quiche_h.QUICHE_MIN_CLIENT_INITIAL_LEN);
+        ByteBuffer buffer = ByteBuffer.allocate(QUICHE_MIN_CLIENT_INITIAL_LEN);
+        ByteBuffer buffer2 = ByteBuffer.allocate(QUICHE_MIN_CLIENT_INITIAL_LEN);
 
         ForeignIncubatorQuicheConnection clientQuicheConnection = ForeignIncubatorQuicheConnection.connect(clientQuicheConfig, serverSocketAddress);
         connectionsToDisposeOf.add(clientQuicheConnection);

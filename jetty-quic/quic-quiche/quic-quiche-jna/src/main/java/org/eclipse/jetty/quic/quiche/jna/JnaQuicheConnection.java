@@ -22,12 +22,15 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.quic.quiche.Quiche.quiche_error;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.QuicheConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MAX_CONN_ID_LEN;
 
 public class JnaQuicheConnection extends QuicheConnection
 {
@@ -56,18 +59,18 @@ public class JnaQuicheConnection extends QuicheConnection
         uint32_t_pointer version = new uint32_t_pointer();
 
         // Source Connection ID
-        byte[] scid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
+        byte[] scid = new byte[QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer scidLen = new size_t_pointer(scid.length);
 
         // Destination Connection ID
-        byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
+        byte[] dcid = new byte[QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcidLen = new size_t_pointer(dcid.length);
 
         byte[] token = new byte[QuicheConnection.TokenMinter.MAX_TOKEN_LENGTH];
         size_t_pointer tokenLen = new size_t_pointer(token.length);
 
         LOG.debug("getting header info (fromPacket)...");
-        int rc = LibQuiche.INSTANCE.quiche_header_info(packet, new size_t(packet.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
+        int rc = LibQuiche.INSTANCE.quiche_header_info(packet, new size_t(packet.remaining()), new size_t(QUICHE_MAX_CONN_ID_LEN),
             version, type,
             scid, scidLen,
             dcid, dcidLen,
@@ -98,13 +101,13 @@ public class JnaQuicheConnection extends QuicheConnection
 
     public static JnaQuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress peer) throws IOException
     {
-        return connect(quicheConfig, peer, LibQuiche.QUICHE_MAX_CONN_ID_LEN);
+        return connect(quicheConfig, peer, QUICHE_MAX_CONN_ID_LEN);
     }
 
     public static JnaQuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress peer, int connectionIdLength) throws IOException
     {
-        if (connectionIdLength > LibQuiche.QUICHE_MAX_CONN_ID_LEN)
-            throw new IOException("Connection ID length is too large: " + connectionIdLength + " > " + LibQuiche.QUICHE_MAX_CONN_ID_LEN);
+        if (connectionIdLength > QUICHE_MAX_CONN_ID_LEN)
+            throw new IOException("Connection ID length is too large: " + connectionIdLength + " > " + QUICHE_MAX_CONN_ID_LEN);
         byte[] scid = new byte[connectionIdLength];
         SECURE_RANDOM.nextBytes(scid);
         LibQuiche.quiche_config libQuicheConfig = buildConfig(quicheConfig);
@@ -196,17 +199,17 @@ public class JnaQuicheConnection extends QuicheConnection
         uint8_t_pointer type = new uint8_t_pointer();
         uint32_t_pointer version = new uint32_t_pointer();
 
-        byte[] scid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
+        byte[] scid = new byte[QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer scid_len = new size_t_pointer(scid.length);
 
-        byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
+        byte[] dcid = new byte[QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcid_len = new size_t_pointer(dcid.length);
 
         byte[] token = new byte[TokenMinter.MAX_TOKEN_LENGTH];
         size_t_pointer token_len = new size_t_pointer(token.length);
 
         LOG.debug("getting header info (packetType)...");
-        int rc = LibQuiche.INSTANCE.quiche_header_info(packet, new size_t(packet.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
+        int rc = LibQuiche.INSTANCE.quiche_header_info(packet, new size_t(packet.remaining()), new size_t(QUICHE_MAX_CONN_ID_LEN),
             version, type,
             scid, scid_len,
             dcid, dcid_len,
@@ -228,24 +231,24 @@ public class JnaQuicheConnection extends QuicheConnection
         uint32_t_pointer version = new uint32_t_pointer();
 
         // Source Connection ID
-        byte[] scid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
+        byte[] scid = new byte[QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer scid_len = new size_t_pointer(scid.length);
 
         // Destination Connection ID
-        byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
+        byte[] dcid = new byte[QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcid_len = new size_t_pointer(dcid.length);
 
         byte[] token = new byte[TokenMinter.MAX_TOKEN_LENGTH];
         size_t_pointer token_len = new size_t_pointer(token.length);
 
         LOG.debug("getting header info (negotiate)...");
-        int rc = LibQuiche.INSTANCE.quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
+        int rc = LibQuiche.INSTANCE.quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(QUICHE_MAX_CONN_ID_LEN),
             version, type,
             scid, scid_len,
             dcid, dcid_len,
             token, token_len);
         if (rc < 0)
-            throw new IOException("failed to parse header: " + LibQuiche.quiche_error.errToString(rc));
+            throw new IOException("failed to parse header: " + quiche_error.errToString(rc));
         packetRead.position(packetRead.limit());
 
         LOG.debug("version: {}", version);
@@ -261,7 +264,7 @@ public class JnaQuicheConnection extends QuicheConnection
             ssize_t generated = LibQuiche.INSTANCE.quiche_negotiate_version(scid, scid_len.getPointee(), dcid, dcid_len.getPointee(), packetToSend, new size_t(packetToSend.remaining()));
             packetToSend.position(packetToSend.position() + generated.intValue());
             if (generated.intValue() < 0)
-                throw new IOException("failed to create vneg packet : " + LibQuiche.quiche_error.errToString(generated.intValue()));
+                throw new IOException("failed to create vneg packet : " + quiche_error.errToString(generated.intValue()));
             return true;
         }
 
@@ -271,7 +274,7 @@ public class JnaQuicheConnection extends QuicheConnection
 
             token = tokenMinter.mint(dcid, (int)dcid_len.getValue());
 
-            byte[] newCid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
+            byte[] newCid = new byte[QUICHE_MAX_CONN_ID_LEN];
             SECURE_RANDOM.nextBytes(newCid);
 
             ssize_t generated = LibQuiche.INSTANCE.quiche_retry(scid, scid_len.getPointee(),
@@ -283,7 +286,7 @@ public class JnaQuicheConnection extends QuicheConnection
             );
             packetToSend.position(packetToSend.position() + generated.intValue());
             if (generated.intValue() < 0)
-                throw new IOException("failed to create retry packet: " + LibQuiche.quiche_error.errToString(generated.intValue()));
+                throw new IOException("failed to create retry packet: " + quiche_error.errToString(generated.intValue()));
             return true;
         }
 
@@ -300,24 +303,24 @@ public class JnaQuicheConnection extends QuicheConnection
         uint32_t_pointer version = new uint32_t_pointer();
 
         // Source Connection ID
-        byte[] scid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
+        byte[] scid = new byte[QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer scid_len = new size_t_pointer(scid.length);
 
         // Destination Connection ID
-        byte[] dcid = new byte[LibQuiche.QUICHE_MAX_CONN_ID_LEN];
+        byte[] dcid = new byte[QUICHE_MAX_CONN_ID_LEN];
         size_t_pointer dcid_len = new size_t_pointer(dcid.length);
 
         byte[] token = new byte[TokenMinter.MAX_TOKEN_LENGTH];
         size_t_pointer token_len = new size_t_pointer(token.length);
 
         LOG.debug("getting header info (tryAccept)...");
-        int rc = LibQuiche.INSTANCE.quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(LibQuiche.QUICHE_MAX_CONN_ID_LEN),
+        int rc = LibQuiche.INSTANCE.quiche_header_info(packetRead, new size_t(packetRead.remaining()), new size_t(QUICHE_MAX_CONN_ID_LEN),
             version, type,
             scid, scid_len,
             dcid, dcid_len,
             token, token_len);
         if (rc < 0)
-            throw new IOException("failed to parse header: " + LibQuiche.quiche_error.errToString(rc));
+            throw new IOException("failed to parse header: " + quiche_error.errToString(rc));
 
         LOG.debug("version: {}", version);
         LOG.debug("type: {}", type);
@@ -418,7 +421,7 @@ public class JnaQuicheConnection extends QuicheConnection
             info.from_len = s.getSize();
             int received = LibQuiche.INSTANCE.quiche_conn_recv(quicheConn, buffer, new size_t(buffer.remaining()), info).intValue();
             if (received < 0)
-                throw new IOException("failed to receive packet; err=" + LibQuiche.quiche_error.errToString(received));
+                throw new IOException("failed to receive packet; err=" + quiche_error.errToString(received));
             buffer.position(buffer.position() + received);
             return received;
         }
@@ -442,10 +445,10 @@ public class JnaQuicheConnection extends QuicheConnection
             quiche_send_info.to = new sockaddr_storage();
             quiche_send_info.to_len = new size_t(quiche_send_info.to.size());
             int written = LibQuiche.INSTANCE.quiche_conn_send(quicheConn, buffer, new size_t(buffer.remaining()), quiche_send_info).intValue();
-            if (written == LibQuiche.quiche_error.QUICHE_ERR_DONE)
+            if (written == quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("failed to send packet; err=" + LibQuiche.quiche_error.errToString(written));
+                throw new IOException("failed to send packet; err=" + quiche_error.errToString(written));
             int prevPosition = buffer.position();
             buffer.position(prevPosition + written);
             return written;
@@ -535,10 +538,10 @@ public class JnaQuicheConnection extends QuicheConnection
             int rc = LibQuiche.INSTANCE.quiche_conn_close(quicheConn, true, new uint64_t(error), reason, new size_t(length));
             if (rc == 0)
                 return true;
-            if (rc == LibQuiche.quiche_error.QUICHE_ERR_DONE)
+            if (rc == quiche_error.QUICHE_ERR_DONE)
                 return false;
             if (LOG.isDebugEnabled())
-                LOG.debug("could not close connection: {}", LibQuiche.quiche_error.errToString(rc));
+                LOG.debug("could not close connection: {}", quiche_error.errToString(rc));
             return false;
         }
     }
@@ -605,7 +608,7 @@ public class JnaQuicheConnection extends QuicheConnection
             if (value < 0)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("could not read window capacity for stream {} err={}", streamId, LibQuiche.quiche_error.errToString(value));
+                    LOG.debug("could not read window capacity for stream {} err={}", streamId, quiche_error.errToString(value));
             }
             return value;
         }
@@ -620,9 +623,9 @@ public class JnaQuicheConnection extends QuicheConnection
                 throw new IOException("connection was released");
             int direction = writeSide ? LibQuiche.quiche_shutdown.QUICHE_SHUTDOWN_WRITE : LibQuiche.quiche_shutdown.QUICHE_SHUTDOWN_READ;
             int rc = LibQuiche.INSTANCE.quiche_conn_stream_shutdown(quicheConn, new uint64_t(streamId), direction, new uint64_t(error));
-            if (rc == 0 || rc == LibQuiche.quiche_error.QUICHE_ERR_DONE)
+            if (rc == 0 || rc == quiche_error.QUICHE_ERR_DONE)
                 return;
-            throw new IOException("failed to shutdown stream " + streamId + ": " + LibQuiche.quiche_error.errToString(rc));
+            throw new IOException("failed to shutdown stream " + streamId + ": " + quiche_error.errToString(rc));
         }
     }
 
@@ -634,10 +637,10 @@ public class JnaQuicheConnection extends QuicheConnection
             if (quicheConn == null)
                 throw new IOException("connection was released");
             int written = LibQuiche.INSTANCE.quiche_conn_stream_send(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), last).intValue();
-            if (written == LibQuiche.quiche_error.QUICHE_ERR_DONE)
+            if (written == quiche_error.QUICHE_ERR_DONE)
                 return 0;
             if (written < 0L)
-                throw new IOException("failed to write to stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(written));
+                throw new IOException("failed to write to stream " + streamId + "; err=" + quiche_error.errToString(written));
             buffer.position(buffer.position() + written);
             return written;
         }
@@ -652,10 +655,10 @@ public class JnaQuicheConnection extends QuicheConnection
                 throw new IOException("connection was released");
             bool_pointer fin = new bool_pointer();
             int read = LibQuiche.INSTANCE.quiche_conn_stream_recv(quicheConn, new uint64_t(streamId), buffer, new size_t(buffer.remaining()), fin).intValue();
-            if (read == LibQuiche.quiche_error.QUICHE_ERR_DONE)
+            if (read == quiche_error.QUICHE_ERR_DONE)
                 return isStreamFinished(streamId) ? -1 : 0;
             if (read < 0L)
-                throw new IOException("failed to read from stream " + streamId + "; err=" + LibQuiche.quiche_error.errToString(read));
+                throw new IOException("failed to read from stream " + streamId + "; err=" + quiche_error.errToString(read));
             buffer.position(buffer.position() + read);
             return read;
         }
