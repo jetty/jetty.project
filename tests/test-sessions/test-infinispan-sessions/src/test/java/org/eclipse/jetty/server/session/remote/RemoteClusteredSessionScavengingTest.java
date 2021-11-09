@@ -45,6 +45,7 @@ public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessi
     public static void teardown() throws Exception
     {
         __testSupport.teardown();
+        __testSupport.shutdown();
     }
 
     @Override
