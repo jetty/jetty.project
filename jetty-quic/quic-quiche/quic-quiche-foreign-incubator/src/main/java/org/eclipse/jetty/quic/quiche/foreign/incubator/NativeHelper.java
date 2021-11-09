@@ -31,18 +31,11 @@ import org.eclipse.jetty.util.IO;
 
 class NativeHelper
 {
-    private static final CLinker LINKER = CLinker.getInstance();
-    private static final ClassLoader CLASSLOADER = NativeHelper.class.getClassLoader();
-    private static final SymbolLookup LIBRARIES = lookup();
-    private static final MethodHandles.Lookup MH_LOOKUP = MethodHandles.lookup();
-
-    private static final String NATIVE_PREFIX;
     private static final Platform PLATFORM;
-
-    private enum Platform
-    {
-        LINUX, MAC, WINDOWS
-    }
+    private static final CLinker LINKER;
+    private static final ClassLoader CLASSLOADER;
+    private static final SymbolLookup LIBRARIES;
+    private static final MethodHandles.Lookup MH_LOOKUP;
 
     static
     {
@@ -68,42 +61,33 @@ class NativeHelper
             PLATFORM = Platform.WINDOWS;
         }
         else
-            throw new AssertionError("Unsupported OS: " + osName);
+            throw new UnsatisfiedLinkError("Unsupported OS: " + osName);
 
-        NATIVE_PREFIX = prefix;
+        LINKER = CLinker.getInstance();
+        CLASSLOADER = NativeHelper.class.getClassLoader();
+        LIBRARIES = lookup(prefix);
+        MH_LOOKUP = MethodHandles.lookup();
     }
 
-    private static String getNativePrefix()
+    private static SymbolLookup lookup(String prefix)
     {
-        return NATIVE_PREFIX;
+        loadNativeLibraryFromClasspath(prefix);
+        SymbolLookup loaderLookup = SymbolLookup.loaderLookup();
+        SymbolLookup systemLookup = CLinker.systemLookup();
+        return name -> loaderLookup.lookup(name).or(() -> systemLookup.lookup(name));
     }
 
-    public static boolean isLinux()
-    {
-        return PLATFORM == Platform.LINUX;
-    }
-
-    public static boolean isMac()
-    {
-        return PLATFORM == Platform.MAC;
-    }
-
-    public static boolean isWindows()
-    {
-        return PLATFORM == Platform.WINDOWS;
-    }
-
-    private static void loadNativeLibraryFromClasspath() {
+    private static void loadNativeLibraryFromClasspath(String prefix) {
         try
         {
-            String libName = getNativePrefix() + "/" + System.mapLibraryName("quiche");
+            String libName = prefix + "/" + System.mapLibraryName("quiche");
             File lib = extractFromResourcePath(libName, NativeHelper.class.getClassLoader());
             System.load(lib.getAbsolutePath());
             lib.deleteOnExit();
         }
-        catch (IOException e)
+        catch (Throwable x)
         {
-            throw (UnsatisfiedLinkError) new UnsatisfiedLinkError("Cannot find quiche native library").initCause(e);
+            throw (UnsatisfiedLinkError) new UnsatisfiedLinkError("cannot find quiche native library").initCause(x);
         }
     }
 
@@ -118,13 +102,6 @@ class NativeHelper
         return target;
     }
 
-    private static SymbolLookup lookup()
-    {
-        loadNativeLibraryFromClasspath();
-        SymbolLookup loaderLookup = SymbolLookup.loaderLookup();
-        SymbolLookup systemLookup = CLinker.systemLookup();
-        return name -> loaderLookup.lookup(name).or(() -> systemLookup.lookup(name));
-    }
 
     static MethodHandle downcallHandle(String name, String desc, FunctionDescriptor fdesc)
     {
@@ -152,5 +129,25 @@ class NativeHelper
         {
             throw (UnsatisfiedLinkError) new UnsatisfiedLinkError("unresolved symbol: " + name).initCause(e);
         }
+    }
+
+    public static boolean isLinux()
+    {
+        return PLATFORM == Platform.LINUX;
+    }
+
+    public static boolean isMac()
+    {
+        return PLATFORM == Platform.MAC;
+    }
+
+    public static boolean isWindows()
+    {
+        return PLATFORM == Platform.WINDOWS;
+    }
+
+    private enum Platform
+    {
+        LINUX, MAC, WINDOWS
     }
 }
