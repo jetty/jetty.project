@@ -34,7 +34,6 @@ public abstract class QuicheConnection
 
     static
     {
-        LOG.info("found quiche binding implementations: {}", TypeUtil.serviceStream(ServiceLoader.load(QuicheBinding.class)).sorted(Comparator.comparingInt(QuicheBinding::priority)).collect(Collectors.toList()));
         if (LOG.isDebugEnabled())
         {
             List<QuicheBinding> bindings = TypeUtil.serviceStream(ServiceLoader.load(QuicheBinding.class))
@@ -48,7 +47,6 @@ public abstract class QuicheConnection
             .orElseThrow(() -> new IllegalStateException("no quiche binding implementation found"));
         if (LOG.isDebugEnabled())
             LOG.debug("using quiche binding implementation: {}", QUICHE_BINDING.getClass().getName());
-        LOG.info("using quiche binding implementation: {}", QUICHE_BINDING.getClass().getName());
     }
 
     public static QuicheConnection connect(QuicheConfig quicheConfig, InetSocketAddress peer) throws IOException

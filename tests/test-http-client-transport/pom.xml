@@ -13,7 +13,6 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client.http</bundle-symbolic-name>
-    <org.eclipse.jetty.http.client.AbstractTest.Transports></org.eclipse.jetty.http.client.AbstractTest.Transports>
   </properties>
 
   <build>
@@ -26,19 +25,32 @@
           <skip>true</skip>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <systemPropertyVariables>
-            <org.eclipse.jetty.http.client.AbstractTest.Transports>
-              ${org.eclipse.jetty.http.client.AbstractTest.Transports}
-            </org.eclipse.jetty.http.client.AbstractTest.Transports>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <argLine>
+                @{argLine}
+                ${jetty.surefire.argLine}
+                --add-modules jdk.incubator.foreign
+                --enable-native-access ALL-UNNAMED
+              </argLine>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
   <dependencies>
     <dependency>
