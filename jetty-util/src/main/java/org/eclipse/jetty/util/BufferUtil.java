@@ -858,6 +858,53 @@ public class BufferUtil
         }
     }
 
+    public static void putHexLong(ByteBuffer buffer, long n)
+    {
+        if (n < 0)
+        {
+            buffer.put((byte)'-');
+
+            if (n == Integer.MIN_VALUE)
+            {
+                buffer.put((byte)(0x7f & '8'));
+                buffer.put((byte)(0x7f & '0'));
+                buffer.put((byte)(0x7f & '0'));
+                buffer.put((byte)(0x7f & '0'));
+                buffer.put((byte)(0x7f & '0'));
+                buffer.put((byte)(0x7f & '0'));
+                buffer.put((byte)(0x7f & '0'));
+                buffer.put((byte)(0x7f & '0'));
+
+                return;
+            }
+            n = -n;
+        }
+
+        if (n < 0x10)
+        {
+            buffer.put(DIGIT[(int)n]);
+        }
+        else
+        {
+            boolean started = false;
+            // This assumes constant time int arithmatic
+            for (long hexDivisor : hexDivisorsL)
+            {
+                if (n < hexDivisor)
+                {
+                    if (started)
+                        buffer.put((byte)'0');
+                    continue;
+                }
+
+                started = true;
+                long d = n / hexDivisor;
+                buffer.put(DIGIT[(int)d]);
+                n = n - d * hexDivisor;
+            }
+        }
+    }
+
     public static void putDecInt(ByteBuffer buffer, int n)
     {
         if (n < 0)
@@ -1253,6 +1300,12 @@ public class BufferUtil
         1000000000000000000L, 100000000000000000L, 10000000000000000L, 1000000000000000L, 100000000000000L, 10000000000000L,
         1000000000000L, 100000000000L,
         10000000000L, 1000000000L, 100000000L, 10000000L, 1000000L, 100000L, 10000L, 1000L, 100L, 10L, 1L
+    };
+
+    private static final long[] hexDivisorsL =
+    {
+        0x1000000000000000L, 0x100000000000000L, 0x10000000000000L, 0x1000000000000L, 0x100000000000L, 0x10000000000L,
+        0x1000000000L, 0x100000000L, 0x10000000L, 0x1000000L, 0x100000L, 0x10000L, 0x1000L, 0x100L, 0x10L, 0x1L
     };
 
     public static void putCRLF(ByteBuffer buffer)

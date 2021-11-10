@@ -255,12 +255,12 @@ public class HttpGenerator
 
             case COMMITTED:
             {
-                return committed(chunk, content, last);
+                return committed(chunk, BufferUtil.length(content), last);
             }
 
             case COMPLETING:
             {
-                return completing(chunk, content);
+                return completing(chunk, (content == null) ? null : new ByteBuffer[]{content});
             }
 
             case END:
@@ -277,10 +277,8 @@ public class HttpGenerator
         }
     }
 
-    private Result committed(ByteBuffer chunk, ByteBuffer content, boolean last)
+    private Result committed(ByteBuffer chunk, long len, boolean last)
     {
-        int len = BufferUtil.length(content);
-
         // handle the content.
         if (len > 0)
         {
@@ -303,13 +301,13 @@ public class HttpGenerator
         return len > 0 ? Result.FLUSH : Result.DONE;
     }
 
-    private Result completing(ByteBuffer chunk, ByteBuffer content)
+    private Result completing(ByteBuffer chunk, ByteBuffer[] content)
     {
-        if (BufferUtil.hasContent(content))
+        if (content != null && content.length > 0)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("discarding content in COMPLETING");
-            BufferUtil.clear(content);
+            Arrays.stream(content).forEach(BufferUtil::clear);
         }
 
         if (isChunking())
@@ -350,6 +348,11 @@ public class HttpGenerator
 
     public Result generateResponse(MetaData.Response info, boolean head, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
     {
+        return generateResponse(info, head, header, chunk, (content == null) ? null : new ByteBuffer[]{content}, BufferUtil.length(content), last);
+    }
+
+    public Result generateResponse(MetaData.Response info, boolean head, ByteBuffer header, ByteBuffer chunk, ByteBuffer[] content, long contentLength, boolean last) throws IOException
+    {
         switch (_state)
         {
             case START:
@@ -366,8 +369,7 @@ public class HttpGenerator
                 {
                     _persistent = false;
                     _endOfContent = EndOfContent.EOF_CONTENT;
-                    if (BufferUtil.hasContent(content))
-                        _contentPrepared += content.remaining();
+                    _contentPrepared += contentLength;
                     _state = last ? State.COMPLETING : State.COMMITTED;
                     return Result.FLUSH;
                 }
@@ -401,15 +403,14 @@ public class HttpGenerator
                         _noContentResponse = true;
                     }
 
-                    generateHeaders(header, content, last);
+                    generateHeaders(header, content, contentLength, last);
 
                     // handle the content.
-                    int len = BufferUtil.length(content);
-                    if (len > 0)
+                    if (contentLength > 0)
                     {
-                        _contentPrepared += len;
+                        _contentPrepared += contentLength;
                         if (isChunking() && !head)
-                            prepareChunk(header, len);
+                            prepareChunk(header, contentLength);
                     }
                     _state = last ? State.COMPLETING : State.COMMITTED;
                 }
@@ -436,7 +437,7 @@ public class HttpGenerator
 
             case COMMITTED:
             {
-                return committed(chunk, content, last);
+                return committed(chunk, contentLength, last);
             }
 
             case COMPLETING_1XX:
@@ -451,11 +452,11 @@ public class HttpGenerator
             }
 
             case END:
-                if (BufferUtil.hasContent(content))
+                if (contentLength > 0)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("discarding content in COMPLETING");
-                    BufferUtil.clear(content);
+                    Arrays.stream(content).forEach(BufferUtil::clear);
                 }
                 return Result.DONE;
 
@@ -470,7 +471,7 @@ public class HttpGenerator
         _state = State.COMMITTED;
     }
 
-    private void prepareChunk(ByteBuffer chunk, int remaining)
+    private void prepareChunk(ByteBuffer chunk, long remaining)
     {
         // if we need CRLF add this to header
         if (_needCRLF)
@@ -479,7 +480,7 @@ public class HttpGenerator
         // Add the chunk size to the header
         if (remaining > 0)
         {
-            BufferUtil.putHexInt(chunk, remaining);
+            BufferUtil.putHexLong(chunk, remaining);
             BufferUtil.putCRLF(chunk);
             _needCRLF = true;
         }
@@ -571,12 +572,17 @@ public class HttpGenerator
 
     private void generateHeaders(ByteBuffer header, ByteBuffer content, boolean last)
     {
+        generateHeaders(header, content == null ? null : new ByteBuffer[]{content}, BufferUtil.length(content), last);
+    }
+
+    private void generateHeaders(ByteBuffer header, ByteBuffer[] content, long contentSize, boolean last)
+    {
         final MetaData.Request request = (_info instanceof MetaData.Request) ? (MetaData.Request)_info : null;
         final MetaData.Response response = (_info instanceof MetaData.Response) ? (MetaData.Response)_info : null;
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("generateHeaders {} last={} content={}", _info, last, BufferUtil.toDetailString(content));
+            LOG.debug("generateHeaders {} last={} content={}", _info, last, contentSize);
             LOG.debug(_info.getFields().toString());
         }
 
@@ -671,7 +677,7 @@ public class HttpGenerator
 
         // Can we work out the content length?
         if (last && contentLength < 0 && _info.getTrailerSupplier() == null)
-            contentLength = _contentPrepared + BufferUtil.length(content);
+            contentLength = _contentPrepared + contentSize;
 
         // Calculate how to end _content and connection, _content length and transfer encoding
         // settings from http://tools.ietf.org/html/rfc7230#section-3.3.3
@@ -703,7 +709,7 @@ public class HttpGenerator
                     {
                         // TODO discard content for backward compatibility with 9.3 releases
                         // TODO review if it is still needed in 9.4 or can we just throw.
-                        content.clear();
+                        Arrays.stream(content).forEach(ByteBuffer::clear);
                     }
                     else
                         throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");

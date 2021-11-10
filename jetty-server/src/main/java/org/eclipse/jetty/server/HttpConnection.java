@@ -14,8 +14,10 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+import java.util.Arrays;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -37,6 +39,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -579,7 +582,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 _generator.setPersistent(false);
         }
 
-        if (_sendCallback.reset(request, response, content, lastContent, callback))
+        if (_sendCallback.reset(request, response, new ByteBuffer[]{content}, lastContent, callback))
         {
             _sendCallback.iterate();
         }
@@ -691,7 +694,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         private MetaData.Response _info;
         private boolean _head;
-        private ByteBuffer _content;
+        private ByteBuffer[] _content;
         private boolean _lastContent;
         private Callback _callback;
         private ByteBuffer _header;
@@ -709,7 +712,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             return _callback.getInvocationType();
         }
 
-        private boolean reset(MetaData.Request request, MetaData.Response info, ByteBuffer content, boolean last, Callback callback)
+        private boolean reset(MetaData.Request request, MetaData.Response info, ByteBuffer[] content, boolean last, Callback callback)
         {
             if (reset())
             {
@@ -743,13 +746,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             boolean useDirectByteBuffers = isUseOutputDirectByteBuffers();
             while (true)
             {
-                HttpGenerator.Result result = _generator.generateResponse(_info, _head, _header, _chunk, _content, _lastContent);
+                HttpGenerator.Result result = _generator.generateResponse(_info, _head, _header, _chunk, _content, getRemainingContent(), _lastContent);
                 if (LOG.isDebugEnabled())
                     LOG.debug("generate: {} for {} ({},{},{})@{}",
                         result,
                         this,
                         BufferUtil.toSummaryString(_header),
-                        BufferUtil.toSummaryString(_content),
+                        Arrays.toString(_content),
                         _lastContent,
                         _generator.getState());
 
@@ -788,7 +791,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         if (_head || _generator.isNoContent())
                         {
                             BufferUtil.clear(_chunk);
-                            BufferUtil.clear(_content);
+                            Arrays.stream(_content).forEach(BufferUtil::clear);
                         }
 
                         byte gatherWrite = 0;
@@ -803,28 +806,29 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                             gatherWrite += 2;
                             bytes += _chunk.remaining();
                         }
-                        if (BufferUtil.hasContent(_content))
+                        long contentLength = getRemainingContent();
+                        if (contentLength > 0)
                         {
                             gatherWrite += 1;
-                            bytes += _content.remaining();
+                            bytes += contentLength;
                         }
                         HttpConnection.this.bytesOut.add(bytes);
                         switch (gatherWrite)
                         {
                             case 7:
-                                getEndPoint().write(this, _header, _chunk, _content);
+                                getEndPoint().write(this, ArrayUtil.add(new ByteBuffer[]{_header, _chunk}, _content));
                                 break;
                             case 6:
                                 getEndPoint().write(this, _header, _chunk);
                                 break;
                             case 5:
-                                getEndPoint().write(this, _header, _content);
+                                getEndPoint().write(this, ArrayUtil.prependToArray(_header, _content, ByteBuffer.class));
                                 break;
                             case 4:
                                 getEndPoint().write(this, _header);
                                 break;
                             case 3:
-                                getEndPoint().write(this, _chunk, _content);
+                                getEndPoint().write(this, ArrayUtil.prependToArray(_chunk, _content, ByteBuffer.class));
                                 break;
                             case 2:
                                 getEndPoint().write(this, _chunk);
@@ -888,6 +892,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (_chunk != null)
                 _bufferPool.release(_chunk);
             _chunk = null;
+        }
+
+        private long getRemainingContent()
+        {
+            return  (_content == null) ? 0 : Arrays.stream(_content).map(BufferUtil::length).mapToLong(Long::valueOf).sum();
         }
 
         @Override
