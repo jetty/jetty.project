@@ -25,8 +25,6 @@ import org.eclipse.jetty.security.WrappedAuthConfiguration;
  */
 public class OpenIdAuthConfiguration extends WrappedAuthConfiguration
 {
-    public static final String AUTHENTICATE_NEW_USERS_INIT_PARAM = "jetty.openid.authenticateNewUsers";
-
     private final OpenIdLoginService _openIdLoginService;
 
     public OpenIdAuthConfiguration(OpenIdConfiguration openIdConfiguration, AuthConfiguration authConfiguration)
@@ -43,10 +41,6 @@ public class OpenIdAuthConfiguration extends WrappedAuthConfiguration
             _openIdLoginService = new OpenIdLoginService(openIdConfiguration, loginService);
             if (loginService == null)
                 _openIdLoginService.setIdentityService(authConfiguration.getIdentityService());
-
-            String authNewUsers = authConfiguration.getInitParameter(AUTHENTICATE_NEW_USERS_INIT_PARAM);
-            if (authNewUsers != null)
-                _openIdLoginService.setAuthenticateNewUsers(Boolean.parseBoolean(authNewUsers));
         }
     }
 
