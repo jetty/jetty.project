@@ -13,17 +13,23 @@
 
 package org.eclipse.jetty.security.openid;
 
-import org.eclipse.jetty.security.Authenticator;
+import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.WrappedAuthConfiguration;
 
+/**
+ * <p>This class is used to wrap the {@link AuthConfiguration} given to the {@link OpenIdAuthenticator}.</p>
+ * <p>When {@link #getLoginService()} method is called, this implementation will always return an instance of
+ * {@link OpenIdLoginService}. This allows you to configure an {@link OpenIdAuthenticator} using a {@code null}
+ * LoginService or any alternative LoginService implementation which will be wrapped by the OpenIdLoginService</p>
+ */
 public class OpenIdAuthConfiguration extends WrappedAuthConfiguration
 {
     public static final String AUTHENTICATE_NEW_USERS_INIT_PARAM = "jetty.openid.authenticateNewUsers";
 
     private final OpenIdLoginService _openIdLoginService;
 
-    public OpenIdAuthConfiguration(OpenIdConfiguration openIdConfiguration, Authenticator.AuthConfiguration authConfiguration)
+    public OpenIdAuthConfiguration(OpenIdConfiguration openIdConfiguration, AuthConfiguration authConfiguration)
     {
         super(authConfiguration);
 
