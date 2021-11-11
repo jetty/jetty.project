@@ -317,7 +317,7 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         org.eclipse.jetty.client.api.Request request = scenario.client.newRequest(scenario.newURI());
         FutureResponseListener listener = new FutureResponseListener(request, length);
         request.send(listener);
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = listener.get(15, TimeUnit.SECONDS);
         assertEquals(response.getStatus(), 200);
 
         // Make a request with a small response buffer, should fail.
@@ -326,7 +326,7 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
             request = scenario.client.newRequest(scenario.newURI());
             listener = new FutureResponseListener(request, length / 10);
             request.send(listener);
-            listener.get(5, TimeUnit.SECONDS);
+            listener.get(15, TimeUnit.SECONDS);
             fail("Expected ExecutionException");
         }
         catch (ExecutionException x)
@@ -338,7 +338,7 @@ public class  HttpClientTest extends AbstractTest<TransportScenario>
         request = scenario.client.newRequest(scenario.newURI());
         listener = new FutureResponseListener(request, length);
         request.send(listener);
-        response = listener.get(5, TimeUnit.SECONDS);
+        response = listener.get(15, TimeUnit.SECONDS);
         assertEquals(response.getStatus(), 200);
     }
 
