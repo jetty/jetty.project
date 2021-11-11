@@ -40,6 +40,24 @@ public interface Callback extends Invocable
     };
 
     /**
+     * <p>Completes this callback with the given {@link CompletableFuture}.</p>
+     * <p>When the CompletableFuture completes normally, this callback is succeeded;
+     * when the CompletableFuture completes exceptionally, this callback is failed.</p>
+     *
+     * @param completable the CompletableFuture that completes this callback
+     */
+    default void completeWith(CompletableFuture<?> completable)
+    {
+        completable.whenComplete((o, x) ->
+        {
+            if (x == null)
+                succeeded();
+            else
+                failed(x);
+        });
+    }
+
+    /**
      * <p>Callback invoked when the operation completes.</p>
      *
      * @see #failed(Throwable)
@@ -168,6 +186,18 @@ public interface Callback extends Invocable
         };
     }
 
+    static Callback from(InvocationType invocationType, Runnable completed)
+    {
+        return new Completing(invocationType)
+        {
+            @Override
+            public void completed()
+            {
+                completed.run();
+            }
+        };
+    }
+
     /**
      * Creates a nested callback that runs completed after
      * completing the nested callback.
@@ -285,6 +315,18 @@ public interface Callback extends Invocable
 
     class Completing implements Callback
     {
+        private final InvocationType invocationType;
+
+        public Completing()
+        {
+            this(InvocationType.BLOCKING);
+        }
+
+        public Completing(InvocationType invocationType)
+        {
+            this.invocationType = invocationType;
+        }
+
         @Override
         public void succeeded()
         {
@@ -295,6 +337,12 @@ public interface Callback extends Invocable
         public void failed(Throwable x)
         {
             completed();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return invocationType;
         }
 
         public void completed()

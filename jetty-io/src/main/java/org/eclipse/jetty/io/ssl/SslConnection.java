@@ -1541,7 +1541,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
         @Override
         public String toString()
         {
-            return super.toEndPointString();
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), toEndPointString());
         }
 
         private final class IncompleteWriteCallback implements Callback, Invocable

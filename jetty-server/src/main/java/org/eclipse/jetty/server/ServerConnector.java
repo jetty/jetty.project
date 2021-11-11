@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.SocketException;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.nio.channels.Channel;
@@ -362,6 +361,19 @@ public class ServerConnector extends AbstractNetworkConnector
         }
     }
 
+    private <T> void setSocketOption(SocketChannel channel, SocketOption<T> option, T value)
+    {
+        try
+        {
+            channel.setOption(option, value);
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not configure {} to {} on {}", option, value, channel, x);
+        }
+    }
+
     @Override
     public void close()
     {
@@ -402,25 +414,12 @@ public class ServerConnector extends AbstractNetworkConnector
     private void accepted(SocketChannel channel) throws IOException
     {
         channel.configureBlocking(false);
-        Socket socket = channel.socket();
-        configure(socket);
+        setSocketOption(channel, StandardSocketOptions.TCP_NODELAY, _acceptedTcpNoDelay);
+        if (_acceptedReceiveBufferSize > -1)
+            setSocketOption(channel, StandardSocketOptions.SO_RCVBUF, _acceptedReceiveBufferSize);
+        if (_acceptedSendBufferSize > -1)
+            setSocketOption(channel, StandardSocketOptions.SO_SNDBUF, _acceptedSendBufferSize);
         _manager.accept(channel);
-    }
-
-    protected void configure(Socket socket)
-    {
-        try
-        {
-            socket.setTcpNoDelay(_acceptedTcpNoDelay);
-            if (_acceptedReceiveBufferSize > -1)
-                socket.setReceiveBufferSize(_acceptedReceiveBufferSize);
-            if (_acceptedSendBufferSize > -1)
-                socket.setSendBufferSize(_acceptedSendBufferSize);
-        }
-        catch (SocketException e)
-        {
-            LOG.trace("IGNORED", e);
-        }
     }
 
     @ManagedAttribute("The Selector Manager")

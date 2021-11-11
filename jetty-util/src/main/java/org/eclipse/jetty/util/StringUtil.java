@@ -702,6 +702,16 @@ public class StringUtil
     }
 
     /**
+     * Get the length of a string where a null string is length 0.
+     * @param s the string.
+     * @return the length of the string.
+     */
+    public static int getLength(String s)
+    {
+        return (s == null) ? 0 : s.length();
+    }
+
+    /**
      * Test if a string is not null and contains at least 1 non-whitespace characters in it.
      * <p>
      * Note: uses codepoint version of {@link Character#isWhitespace(int)} to support Unicode better.

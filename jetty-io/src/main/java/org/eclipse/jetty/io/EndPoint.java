@@ -203,7 +203,24 @@ public interface EndPoint extends Closeable
      * filled or -1 if EOF is read or the input is shutdown.
      * @throws IOException if the endpoint is closed.
      */
-    int fill(ByteBuffer buffer) throws IOException;
+    default int fill(ByteBuffer buffer) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * <p>Receives data into the given buffer from the returned address.</p>
+     * <p>This method should be used to receive UDP data, in conjunction
+     * with {@link DatagramChannelEndPoint}.</p>
+     *
+     * @param buffer the buffer to fill with data
+     * @return the peer address that sent the data
+     * @throws IOException if the receive fails
+     */
+    default SocketAddress receive(ByteBuffer buffer) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed
@@ -215,7 +232,26 @@ public interface EndPoint extends Closeable
      * destination (ie is not buffering any data).
      * @throws IOException If the endpoint is closed or output is shutdown.
      */
-    boolean flush(ByteBuffer... buffer) throws IOException;
+    default boolean flush(ByteBuffer... buffer) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * <p>Sends to the given address the data in the given buffers.</p>
+     * <p>This methods should be used to send UDP data, in conjunction
+     * with {@link DatagramChannelEndPoint}.</p>
+     *
+     * @param address the peer address to send data to
+     * @param buffers the buffers containing the data to send
+     * @return true if all the buffers have been consumed
+     * @throws IOException if the send fails
+     * @see #write(Callback, SocketAddress, ByteBuffer...)
+     */
+    default boolean send(SocketAddress address, ByteBuffer... buffers) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return The underlying transport object (socket, channel, etc.)
@@ -271,7 +307,25 @@ public interface EndPoint extends Closeable
      * @param buffers one or more {@link ByteBuffer}s that will be flushed.
      * @throws WritePendingException if another write operation is concurrent.
      */
-    void write(Callback callback, ByteBuffer... buffers) throws WritePendingException;
+    default void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * <p>Writes to the given address the data contained in the given buffers, and invokes
+     * the given callback when either all the data has been sent, or a failure occurs.</p>
+     *
+     * @param callback the callback to notify of the success or failure of the write operation
+     * @param address the peer address to send data to
+     * @param buffers the buffers containing the data to send
+     * @throws WritePendingException if a previous write was initiated but was not yet completed
+     * @see #send(SocketAddress, ByteBuffer...)
+     */
+    default void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return the {@link Connection} associated with this EndPoint
