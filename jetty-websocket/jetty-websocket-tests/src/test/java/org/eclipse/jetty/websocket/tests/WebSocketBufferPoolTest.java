@@ -200,7 +200,7 @@ public class WebSocketBufferPoolTest
             ContentResponse get = _httpClient.GET("http://localhost:8080/setCount?numThreads=" + numThreads);
             assertThat(get.getStatus(), is(200));
 
->            Callback.Completable completable = new Callback.Completable()
+            Callback.Completable completable = new Callback.Completable()
             {
                 final AtomicInteger count = new AtomicInteger(numThreads);
 
