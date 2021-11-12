@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.unixdomain.server;
 
+import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -53,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledForJreRange(min = JRE.JAVA_16)
@@ -254,6 +256,16 @@ public class UnixDomainTest
         {
             httpClient.stop();
         }
+    }
+
+    @Test
+    public void testInvalidUnixDomainPath()
+    {
+        server = new Server();
+        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, factories);
+        connector.setUnixDomainPath(Path.of("/does/not/exist"));
+        server.addConnector(connector);
+        assertThrows(IOException.class, () -> server.start());
     }
 
     private static Path toUnixDomainPath(SocketAddress address)
