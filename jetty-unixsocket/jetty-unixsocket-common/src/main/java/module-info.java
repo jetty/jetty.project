@@ -11,6 +11,7 @@
 // ========================================================================
 //
 
+@Deprecated(forRemoval = true)
 module org.eclipse.jetty.unixsocket.common
 {
     requires org.slf4j;
