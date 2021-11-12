@@ -41,4 +41,3 @@ If your application needs specific features that are not provided by the standar
 include::server-websocket-standard.adoc[]
 include::server-websocket-jetty.adoc[]
 include::server-websocket-filter.adoc[]
-include::../../websocket.adoc[]
