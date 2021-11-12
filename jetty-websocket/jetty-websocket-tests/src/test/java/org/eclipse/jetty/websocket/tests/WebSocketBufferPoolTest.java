@@ -32,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.LogarithmicArrayByteBufferPool;
 import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -60,6 +61,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -70,6 +72,7 @@ public class WebSocketBufferPoolTest
     private static final char[] ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789{}\":;<>,.()[]".toCharArray();
     private static final AtomicReference<CountDownLatch> _latchReference = new AtomicReference<>();
     private Server _server;
+    private ArrayByteBufferPool _bufferPool;
     private HttpClient _httpClient;
     private WebSocketClient _websocketClient;
 
@@ -133,9 +136,9 @@ public class WebSocketBufferPoolTest
 
         _server = new Server(threadPool);
         int maxMemory = 1024 * 1024 * 16;
-        LogarithmicArrayByteBufferPool bufferPool = new LogarithmicArrayByteBufferPool(-1, -1, -1, maxMemory, maxMemory);
-        bufferPool.setDetailedDump(true);
-        _server.addBean(bufferPool);
+        _bufferPool = new LogarithmicArrayByteBufferPool(-1, -1, -1, maxMemory, maxMemory);
+        _bufferPool.setDetailedDump(true);
+        _server.addBean(_bufferPool);
 
         ServerConnector connector = new ServerConnector(_server);
         connector.setPort(8080);
@@ -177,7 +180,7 @@ public class WebSocketBufferPoolTest
         // Check the bufferPool used for the server is now used in the websocket configuration.
         NativeWebSocketConfiguration config = (NativeWebSocketConfiguration)contextHandler.getAttribute(NativeWebSocketConfiguration.class.getName());
         assertNotNull(config);
-        assertThat(config.getFactory().getBufferPool(), is(bufferPool));
+        assertThat(config.getFactory().getBufferPool(), is(_bufferPool));
     }
 
     @AfterEach
@@ -197,7 +200,7 @@ public class WebSocketBufferPoolTest
             ContentResponse get = _httpClient.GET("http://localhost:8080/setCount?numThreads=" + numThreads);
             assertThat(get.getStatus(), is(200));
 
-            Callback.Completable completableFuture = new Callback.Completable()
+>            Callback.Completable completable = new Callback.Completable()
             {
                 final AtomicInteger count = new AtomicInteger(numThreads);
 
@@ -227,16 +230,19 @@ public class WebSocketBufferPoolTest
                         assertTrue(clientSocket.closeLatch.await(20, TimeUnit.SECONDS));
                         assertThat(clientSocket.code, is(1000));
                         assertThat(clientSocket.reason, is("success"));
-                        completableFuture.complete(null);
+                        completable.complete(null);
                     }
                     catch (Throwable t)
                     {
-                        completableFuture.failed(t);
+                        completable.failed(t);
                     }
                 }).start();
             }
 
-            completableFuture.get(20, TimeUnit.SECONDS);
+            completable.get(20, TimeUnit.SECONDS);
         }
+
+        assertThat(_bufferPool.getDirectMemory(), lessThanOrEqualTo(_bufferPool.getMaxDirectMemory()));
+        assertThat(_bufferPool.getHeapMemory(), lessThanOrEqualTo(_bufferPool.getMaxHeapMemory()));
     }
 }

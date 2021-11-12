@@ -110,7 +110,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
 
     private Bucket newBucket(int key, boolean direct)
     {
-        return (_newBucket != null) ? _newBucket.apply(key) : new Bucket(this, capacityFor(key), getMaxQueueLength(), getSizeAtomic(direct)::addAndGet);
+        return (_newBucket != null) ? _newBucket.apply(key) : new Bucket(this, capacityFor(key), getMaxQueueLength(), updateMemory(direct));
     }
 
     @Override

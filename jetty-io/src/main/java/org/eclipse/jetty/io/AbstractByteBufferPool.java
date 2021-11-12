@@ -21,6 +21,7 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -123,7 +124,12 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         return memory.get();
     }
 
-    protected AtomicLong getSizeAtomic(boolean direct)
+    IntConsumer updateMemory(boolean direct)
+    {
+        return getSizeAtomic(direct)::addAndGet;
+    }
+
+    private AtomicLong getSizeAtomic(boolean direct)
     {
         return (direct) ? _directMemory : _heapMemory;
     }

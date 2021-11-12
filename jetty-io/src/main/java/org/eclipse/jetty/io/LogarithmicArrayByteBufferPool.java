@@ -104,15 +104,9 @@ public class LogarithmicArrayByteBufferPool extends ArrayByteBufferPool
         if (index >= 0)
         {
             Bucket bucket = buckets[index];
-
-            // The same bucket may be concurrently
-            // removed, so we need this null guard.
-            if (bucket != null)
-            {
-                // Acquire a buffer but never return it to the pool.
-                bucket.acquire();
-                bucket.resetUpdateTime();
-            }
+            // Acquire a buffer but never return it to the pool.
+            bucket.acquire();
+            bucket.resetUpdateTime();
         }
     }
 }
