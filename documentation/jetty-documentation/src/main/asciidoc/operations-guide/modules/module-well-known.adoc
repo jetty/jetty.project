@@ -14,7 +14,7 @@
 [[og-module-well-known]]
 ===== Module `well-known`
 
-The `well-known` creates a `ResourceHandler` deployed at the `/.well-known` context path which serves files from a directory.
+The `well-known` Jetty module creates a `ResourceHandler` deployed at the `/.well-known` context path which serves files from a directory.
 By default, the directory created at `$JETTY_BASE/.well-known` is used, but it can be configured from `well-known.ini` to anywhere in the filesystem.
 Note that the `.well-known` directory may be seen as a hidden directory by the filesystem.
 

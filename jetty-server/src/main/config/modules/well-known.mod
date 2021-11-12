@@ -17,6 +17,6 @@ etc/well-known.xml
 
 [ini-template]
 # tag::documentation[]
-## Well Known Directory (relative to $jetty.base)
+## Well Known Directory (relative to $JETTY_BASE if relative path, otherwise it is an absolute path).
 # jetty.wellknown.dir=.well-known
 # end::documentation[]
