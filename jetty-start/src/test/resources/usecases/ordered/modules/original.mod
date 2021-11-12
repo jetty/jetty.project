@@ -1,4 +1,0 @@
-
-
-[ini]
-impl=original

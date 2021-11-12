@@ -1,3 +1,0 @@
---create-startd
-# tom -> dick -> harry -> tom == CyclicException
---add-to-start=tom
