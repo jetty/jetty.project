@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SingleMessageHandlerTest
@@ -101,14 +101,14 @@ public class SingleMessageHandlerTest
         // Can send/receive binary message successfully.
         ByteBuffer binaryMessage = BufferUtil.toBuffer("hello world");
         session.getBasicRemote().sendBinary(binaryMessage);
-        assertThat(BINARY_MESSAGES.poll(5, TimeUnit.SECONDS), is(binaryMessage));
+        assertThat(BINARY_MESSAGES.poll(5, TimeUnit.SECONDS), equalTo(binaryMessage));
 
         // Text message is discarded by implementation.
         session.getBasicRemote().sendText("hello world");
 
         // Next binary message is still received.
         session.getBasicRemote().sendBinary(binaryMessage);
-        assertThat(BINARY_MESSAGES.poll(5, TimeUnit.SECONDS), is(binaryMessage));
+        assertThat(BINARY_MESSAGES.poll(5, TimeUnit.SECONDS), equalTo(binaryMessage));
 
         session.close();
         assertTrue(eventSocket.closeLatch.await(5, TimeUnit.SECONDS));
@@ -124,14 +124,14 @@ public class SingleMessageHandlerTest
         // Can send/receive text message successfully.
         String textMessage = "hello world";
         session.getBasicRemote().sendText(textMessage);
-        assertThat(TEXT_MESSAGES.poll(5, TimeUnit.SECONDS), is(textMessage));
+        assertThat(TEXT_MESSAGES.poll(5, TimeUnit.SECONDS), equalTo(textMessage));
 
         // Binary message is discarded by implementation.
         session.getBasicRemote().sendBinary(BufferUtil.toBuffer("hello world"));
 
         // Next text message is still received.
         session.getBasicRemote().sendText(textMessage);
-        assertThat(TEXT_MESSAGES.poll(5, TimeUnit.SECONDS), is(textMessage));
+        assertThat(TEXT_MESSAGES.poll(5, TimeUnit.SECONDS), equalTo(textMessage));
 
         session.close();
         assertTrue(eventSocket.closeLatch.await(5, TimeUnit.SECONDS));
