@@ -12,7 +12,7 @@
 //
 
 [[pg-client-io-arch]]
-=== Client Libraries I/O Architecture
+=== I/O Architecture
 
 The Jetty client libraries provide the basic components and APIs to implement a network client.
 
@@ -24,7 +24,7 @@ There are conceptually two layers that compose the Jetty client libraries:
 . xref:pg-client-io-arch-protocol[The protocol layer], that handles the parsing of bytes read from the network and the generation of bytes to write to the network.
 
 [[pg-client-io-arch-network]]
-==== Client Libraries Network Layer
+==== Network Layer
 
 The Jetty client libraries use the common I/O design described in xref:pg-arch-io[this section].
 The main client-side component is the link:{javadoc-url}/org/eclipse/jetty/io/ClientConnector.html[`ClientConnector`].
@@ -78,8 +78,25 @@ This time includes the DNS lookup time _and_ the TCP connect time.
 
 Please refer to the `ClientConnector` link:{javadoc-url}/org/eclipse/jetty/io/ClientConnector.html[javadocs] for the complete list of configurable parameters.
 
+[[pg-client-io-arch-unix-domain]]
+===== Unix-Domain Support
+
+link:https://openjdk.java.net/jeps/380[JEP 380] introduced Unix-Domain sockets support in Java 16, on all operative systems.
+
+`ClientConnector` can be configured to support Unix-Domain sockets in the following way:
+
+[source,java,indent=0]
+----
+include::../{doc_code}/org/eclipse/jetty/docs/programming/client/ClientConnectorDocs.java[tags=unixDomain]
+----
+
+[IMPORTANT]
+====
+You can use Unix-Domain sockets support only when you run your client application with Java 16 or later.
+====
+
 [[pg-client-io-arch-protocol]]
-==== Client Libraries Protocol Layer
+==== Protocol Layer
 
 The protocol layer builds on top of the network layer to generate the bytes to be written to the network and to parse the bytes read from the network.
 

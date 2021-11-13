@@ -21,6 +21,7 @@ import java.net.CookieStore;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -854,5 +855,33 @@ public class HTTPClientDocs
                 destination,
                 maxRequestsPerConnection));
         // end::setConnectionPool[]
+    }
+
+    public void unixDomain() throws Exception
+    {
+        // tag::unixDomain[]
+        // This is the path where the server "listens" on.
+        Path unixDomainPath = Path.of("/path/to/server.sock");
+
+        // Creates a ClientConnector that uses Unix-Domain
+        // sockets, not the network, to connect to the server.
+        ClientConnector unixDomainClientConnector = ClientConnector.forUnixDomain(unixDomainPath);
+
+        // Use Unix-Domain for HTTP/1.1.
+        HttpClientTransportOverHTTP http1Transport = new HttpClientTransportOverHTTP(unixDomainClientConnector);
+
+        // You can use Unix-Domain also for HTTP/2.
+        HTTP2Client http2Client = new HTTP2Client(unixDomainClientConnector);
+        HttpClientTransportOverHTTP2 http2Transport = new HttpClientTransportOverHTTP2(http2Client);
+
+        // You can also use UnixDomain for the dynamic transport.
+        ClientConnectionFactory.Info http1 = HttpClientConnectionFactory.HTTP11;
+        ClientConnectionFactoryOverHTTP2.HTTP2 http2 = new ClientConnectionFactoryOverHTTP2.HTTP2(http2Client);
+        HttpClientTransportDynamic dynamicTransport = new HttpClientTransportDynamic(unixDomainClientConnector, http1, http2);
+
+        // Choose the transport you prefer for HttpClient, for example the dynamic transport.
+        HttpClient httpClient = new HttpClient(dynamicTransport);
+        httpClient.start();
+        // end::unixDomain[]
     }
 }
