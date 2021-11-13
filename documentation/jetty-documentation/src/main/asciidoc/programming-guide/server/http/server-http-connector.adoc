@@ -19,7 +19,7 @@ A `Connector` is the component that handles incoming requests from clients, and 
 The available implementations are:
 
 * `org.eclipse.jetty.server.ServerConnector`, for TCP/IP sockets.
-* `org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector` for Unix-Domain sockets.
+* `org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector` for Unix-Domain sockets (requires Java 16 or later).
 
 Both use a `java.nio.channels.ServerSocketChannel` to listen to a socket address and to accept socket connections.
 
@@ -36,6 +36,11 @@ Likewise, `UnixDomainServerConnector` also wraps a `ServerSocketChannel` and can
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=configureConnectorUnix]
 ----
+
+[IMPORTANT]
+====
+You can use Unix-Domain sockets support only when you run your server with Java 16 or later.
+====
 
 The _acceptors_ are threads (typically only one) that compete to accept socket connections.
 When a connection is accepted, `ServerConnector` wraps the accepted `SocketChannel` and passes it to the xref:pg-arch-io-selector-manager[`SelectorManager`].
