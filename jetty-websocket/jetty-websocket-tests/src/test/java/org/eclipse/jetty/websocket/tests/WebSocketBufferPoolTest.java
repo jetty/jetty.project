@@ -239,7 +239,7 @@ public class WebSocketBufferPoolTest
                 }).start();
             }
 
-            completable.get(20, TimeUnit.SECONDS);
+            completable.get(30, TimeUnit.SECONDS);
         }
 
         assertThat(_bufferPool.getDirectMemory(), lessThanOrEqualTo(_bufferPool.getMaxDirectMemory()));
