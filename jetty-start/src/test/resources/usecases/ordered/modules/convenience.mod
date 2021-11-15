@@ -1,4 +1,0 @@
-
-[depends]
-replacement
-something-else

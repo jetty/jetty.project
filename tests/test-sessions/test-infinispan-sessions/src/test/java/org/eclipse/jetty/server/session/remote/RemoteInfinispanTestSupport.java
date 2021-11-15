@@ -16,6 +16,7 @@ package org.eclipse.jetty.server.session.remote;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.lang.annotation.ElementType;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 import org.eclipse.jetty.server.session.SessionData;
@@ -35,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.containers.wait.strategy.Wait;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -49,58 +49,82 @@ public class RemoteInfinispanTestSupport
     private static final Logger LOG = LoggerFactory.getLogger(RemoteInfinispanTestSupport.class);
     public static final String DEFAULT_CACHE_NAME = "session_test_cache";
     public RemoteCache<String, InfinispanSessionData> _cache;
-    private String _name;
-    public static RemoteCacheManager _manager;
+    private final String _name;
+    public RemoteCacheManager _manager;
     private static final Logger INFINISPAN_LOG =
-        LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
+            LoggerFactory.getLogger("org.eclipse.jetty.server.session.remote.infinispanLogs");
 
-    static GenericContainer infinispan;
+    private static final String IMAGE_NAME = System.getProperty("infinispan.docker.image.name", "infinispan/server") +
+            ":" + System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
 
-    static
+    private static final GenericContainer INFINISPAN = new GenericContainer(IMAGE_NAME)
+            .withEnv("USER", "theuser")
+            .withEnv("PASS", "foobar")
+            .withEnv("MGMT_USER", "admin")
+            .withEnv("MGMT_PASS", "admin")
+            .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
+            .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
+            .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
+
+    private static final String INFINISPAN_VERSION = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
+
+    public RemoteInfinispanTestSupport()
     {
+        this(null);
+    }
+
+    public RemoteInfinispanTestSupport(String cacheName)
+    {
+        if (cacheName == null)
+            cacheName = DEFAULT_CACHE_NAME + System.currentTimeMillis();
+
+        _name = cacheName;
+
+        if (!INFINISPAN.isRunning())
+        {
+            try
+            {
+                long start = System.currentTimeMillis();
+
+                INFINISPAN.start();
+                System.setProperty("hotrod.host", INFINISPAN.getContainerIpAddress());
+
+                LOG.info("Infinispan container started for {}:{} - {}ms",
+                        INFINISPAN.getContainerIpAddress(),
+                        INFINISPAN.getMappedPort(11222),
+                        System.currentTimeMillis() - start);
+            }
+            catch (Exception e)
+            {
+                LOG.error(e.getMessage(), e);
+                throw new RuntimeException(e);
+            }
+        }
         try
         {
-            //Testcontainers.exposeHostPorts(11222);
-            long start = System.currentTimeMillis();
-            String infinispanVersion = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
-            infinispan =
-                new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
-                    ":" + infinispanVersion)
-                .withEnv("USER", "theuser")
-                .withEnv("PASS", "foobar")
-                .withEnv("MGMT_USER", "admin")
-                .withEnv("MGMT_PASS", "admin")
-                .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
-                .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
-                .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
-            infinispan.start();
-            String host = infinispan.getContainerIpAddress();
-            System.setProperty("hotrod.host", host);
-            int port = infinispan.getMappedPort(11222);
-
-            LOG.info("Infinispan container started for {}:{} - {}ms", host, port,
-                     System.currentTimeMillis() - start);
             SearchMapping mapping = new SearchMapping();
             mapping.entity(InfinispanSessionData.class).indexed().providedId()
-                .property("expiry", ElementType.METHOD).field();
+                    .property("expiry", ElementType.METHOD).field();
 
             Properties properties = new Properties();
             properties.put(Environment.MODEL_MAPPING, mapping);
 
             ConfigurationBuilder configurationBuilder = new ConfigurationBuilder().withProperties(properties)
-                .addServer().host(host).port(port)
-                // we just want to limit connectivity to list of host:port we knows at start
-                // as infinispan create new host:port dynamically but due to how docker expose host/port we cannot do that
-                .clientIntelligence(ClientIntelligence.BASIC)
-                .marshaller(new ProtoStreamMarshaller());
+                    .addServer()
+                    .host(INFINISPAN.getContainerIpAddress())
+                    .port(INFINISPAN.getMappedPort(11222))
+                    // we just want to limit connectivity to list of host:port we knows at start
+                    // as infinispan create new host:port dynamically but due to how docker expose host/port we cannot do that
+                    .clientIntelligence(ClientIntelligence.BASIC)
+                    .marshaller(new ProtoStreamMarshaller());
 
-            if (infinispanVersion.startsWith("1"))
+            if (INFINISPAN_VERSION.startsWith("1"))
             {
                 configurationBuilder.security().authentication()
-                    .saslMechanism("DIGEST-MD5")
-                    .username("theuser").password("foobar");
+                        .saslMechanism("DIGEST-MD5")
+                        .username("theuser").password("foobar");
             }
-            
+
             configurationBuilder.addContextInitializer(new InfinispanSerializationContextInitializer());
             Configuration configuration = configurationBuilder.build();
 
@@ -117,7 +141,7 @@ public class RemoteInfinispanTestSupport
                 IO.copy(is, baos);
             }
 
-            String content = baos.toString("UTF-8");
+            String content = baos.toString(StandardCharsets.UTF_8);
             _manager.administration().getOrCreateCache("___protobuf_metadata", (String)null).put("session.proto", content);
         }
         catch (Exception e)
@@ -125,19 +149,7 @@ public class RemoteInfinispanTestSupport
             LOG.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
-    }
 
-    public RemoteInfinispanTestSupport()
-    {
-        this(null);
-    }
-
-    public RemoteInfinispanTestSupport(String cacheName)
-    {
-        if (cacheName == null)
-            cacheName = DEFAULT_CACHE_NAME + System.currentTimeMillis();
-
-        _name = cacheName;
     }
 
     public RemoteCache<String, InfinispanSessionData> getCache()
@@ -161,6 +173,11 @@ public class RemoteInfinispanTestSupport
     public void teardown() throws Exception
     {
         _cache.clear();
+    }
+
+    public void shutdown() throws Exception
+    {
+        INFINISPAN.stop();
     }
 
     public void createSession(InfinispanSessionData data)

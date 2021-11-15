@@ -54,7 +54,6 @@ public class HazelcastSessionDistributionTests extends AbstractSessionDistributi
     private GenericContainer<?> hazelcast = new GenericContainer<>("hazelcast/hazelcast:" + System.getProperty("hazelcast.version", "4.2.2"))
             .withExposedPorts(5701)
             .waitingFor(Wait.forLogMessage(".*is STARTED.*", 1))
-            //.waitingFor(Wait.forListeningPort().withStartupTimeout(Duration.ofSeconds(120L)))
             .withLogConsumer(new Slf4jLogConsumer(HAZELCAST_LOG));
 
     private Path hazelcastJettyPath;

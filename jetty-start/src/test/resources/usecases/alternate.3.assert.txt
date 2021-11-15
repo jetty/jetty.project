@@ -1,2 +1,0 @@
-EX|UsageException
-EX|default, which is already provided by alternate

@@ -1,1 +1,0 @@
-java.vm.specification.version=1.7

@@ -45,6 +45,7 @@ public class RemoteClusteredInvalidationSessionTest extends AbstractClusteredInv
     public static void teardown() throws Exception
     {
         __testSupport.teardown();
+        __testSupport.shutdown();
     }
 
     @Override

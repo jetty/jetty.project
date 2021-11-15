@@ -25,7 +25,6 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     @BeforeAll
     public static void beforeClass() throws Exception
     {
-        MongoTestHelper.dropCollection();
         MongoTestHelper.createCollection();
     }
 
@@ -33,6 +32,7 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
     public static void afterClass() throws Exception
     {
         MongoTestHelper.dropCollection();
+        MongoTestHelper.shutdown();
     }
 
     @Override

@@ -30,7 +30,9 @@ import org.infinispan.client.hotrod.Search;
 import org.infinispan.query.dsl.Query;
 import org.infinispan.query.dsl.QueryFactory;
 import org.infinispan.query.dsl.QueryResult;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -55,11 +57,16 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     {
         super();
     }
-    
+
+    @BeforeAll
+    public static void initRemoteSupport() throws Exception
+    {
+        __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
+    }
+
     @BeforeEach
     public void setup() throws Exception
     {
-        __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
         __testSupport.setup();
     }
 
@@ -67,6 +74,12 @@ public class RemoteInfinispanSessionDataStoreTest extends AbstractSessionDataSto
     public void teardown() throws Exception
     {
         __testSupport.teardown();
+    }
+
+    @AfterAll
+    public static void shutdown() throws Exception
+    {
+        __testSupport.shutdown();
     }
 
     @Override
