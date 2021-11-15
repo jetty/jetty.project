@@ -1,3 +1,0 @@
-## The XMLs we expect (order is important)
-XML|${jetty.base}/etc/alternateA.xml
-XML|${jetty.base}/etc/dependent.xml

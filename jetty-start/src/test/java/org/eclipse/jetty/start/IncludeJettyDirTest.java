@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -53,7 +54,7 @@ public class IncludeJettyDirTest
                     actualOrder.add(source.getId());
                 }
             }
-            ConfigurationAssert.assertOrdered("Search Order", expectedSearchOrder, actualOrder);
+            assertThat("Search Order", actualOrder, contains(expectedSearchOrder.toArray()));
         }
 
         public void assertProperty(String key, String expectedValue)
