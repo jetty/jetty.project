@@ -186,7 +186,7 @@ public class Modules implements Iterable<Module>
             excluded.add("internal");
 
         Predicate<Module> filter = m -> (included.isEmpty() || m.getTags().stream().anyMatch(included::contains)) &&
-            !m.getTags().stream().anyMatch(excluded::contains);
+            m.getTags().stream().noneMatch(excluded::contains);
 
         Optional<Integer> max = _modules.stream().filter(filter).map(Module::getName).map(String::length).max(Integer::compareTo);
         if (max.isEmpty())
@@ -420,6 +420,13 @@ public class Modules implements Iterable<Module>
         {
             StartLog.debug("Already enabled [%s] from %s", module.getName(), module.getEnableSources());
             return;
+        }
+
+        List<String> deprecated = module.getDeprecated();
+        if (!deprecated.isEmpty())
+        {
+            String reason = deprecated.stream().collect(Collectors.joining(System.lineSeparator()));
+            StartLog.warn(reason);
         }
 
         // Check that this is not already provided by another module!
