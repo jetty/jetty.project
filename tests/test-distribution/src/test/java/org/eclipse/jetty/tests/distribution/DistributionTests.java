@@ -15,6 +15,7 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -24,6 +25,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -36,6 +38,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.toolchain.test.PathAssert;
+import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -1001,6 +1004,55 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 5, TimeUnit.SECONDS));
                 PathAssert.assertFileExists("${jetty.base}/cmdline", jettyBase.resolve("cmdline"));
                 PathAssert.assertNotPathExists("${jetty.base}/modbased", jettyBase.resolve("modbased"));
+            }
+        }
+    }
+
+    @Test
+    public void testWellKnownModule() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+        String[] args1 = {
+            "--approve-all-licenses",
+            "--add-modules=http,well-known"
+        };
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            // Ensure .well-known directory exists.
+            Path wellKnown = distribution.getJettyBase().resolve(".well-known");
+            assertTrue(FS.exists(wellKnown));
+
+            // Write content to a file in the .well-known directory.
+            String testFileContent = "hello world " + UUID.randomUUID();
+            File testFile = wellKnown.resolve("testFile").toFile();
+            assertTrue(testFile.createNewFile());
+            testFile.deleteOnExit();
+            FileWriter fileWriter = new FileWriter(testFile);
+            fileWriter.write(testFileContent);
+            fileWriter.close();
+
+            int port = distribution.freePort();
+            String[] args2 = {
+                "jetty.http.port=" + port
+                //"jetty.server.dumpAfterStart=true"
+            };
+
+            try (JettyHomeTester.Run run2 = distribution.start(args2))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                // Test we can access the file in the .well-known directory.
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port + "/.well-known/testFile");
+                assertThat(response.getStatus(), is(HttpStatus.OK_200));
+                assertThat(response.getContentAsString(), is(testFileContent));
             }
         }
     }

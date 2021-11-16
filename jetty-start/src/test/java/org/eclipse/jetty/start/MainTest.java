@@ -13,7 +13,10 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class MainTest
@@ -48,7 +52,6 @@ public class MainTest
 
         Main main = new Main();
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[0]));
-        // System.err.println(args);
 
         // assertEquals(0, args.getEnabledModules().size(), "--stop should not build module tree");
         assertEquals("10000", args.getProperties().getString("STOP.PORT"), "--stop missing port");
@@ -57,19 +60,35 @@ public class MainTest
     }
 
     @Test
-    @Disabled("Too noisy for general testing")
     public void testListConfig() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
         File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home");
         cmdLineArgs.add("user.dir=" + testJettyHome);
+        cmdLineArgs.add("-Duser.dir=foo"); // used to test "source" display on "Java Environment"
         cmdLineArgs.add("jetty.home=" + testJettyHome);
         cmdLineArgs.add("--list-config");
-        // cmdLineArgs.add("--debug");
 
+        List<String> output;
         Main main = new Main();
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[0]));
-        main.listConfig(args);
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+             PrintStream out = new PrintStream(baos, true, StandardCharsets.UTF_8))
+        {
+            main.listConfig(out, args);
+            out.flush();
+            output = List.of(baos.toString(StandardCharsets.UTF_8).split(System.lineSeparator()));
+        }
+
+        // Test a System Property that comes from JVM
+        String javaVersionLine = output.stream().filter((line) -> line.contains("java.version ="))
+            .findFirst().orElseThrow();
+        assertThat("java.version should have no indicated source", javaVersionLine, not(containsString("(null)")));
+
+        String userDirLine = output.stream().filter((line) -> line.startsWith(" user.dir ="))
+            .findFirst().orElseThrow();
+        assertThat("A source of 'null' is pointless", userDirLine, not(containsString("(null)")));
+        assertThat("user.dir should indicate that it was specified on the command line", userDirLine, containsString("(<command-line>)"));
     }
 
     @Test
