@@ -77,8 +77,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         if (filter == null)
         {
             // Dynamically add filter
-            NativeWebSocketConfiguration configuration = NativeWebSocketServletContainerInitializer.initialize(context);
-            filter = new WebSocketUpgradeFilter(configuration);
+            filter = new WebSocketUpgradeFilter();
             filter.setToAttribute(context, ATTR_KEY);
 
             String name = "Jetty_WebSocketUpgradeFilter";
@@ -109,7 +108,9 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
     @Deprecated
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context) throws ServletException
     {
-        return configure(context);
+        WebSocketUpgradeFilter upgradeFilter = configure(context);
+        upgradeFilter.configuration = NativeWebSocketServletContainerInitializer.initialize(context);
+        return upgradeFilter;
     }
 
     /**
@@ -126,11 +127,10 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         {
             throw new ServletException("Not running on Jetty, WebSocket support unavailable");
         }
-        return configure(handler);
+        return configureContext(handler);
     }
 
     private NativeWebSocketConfiguration configuration;
-    private String instanceKey;
     private boolean localConfiguration = false;
     private boolean alreadySetToAttribute = false;
 
@@ -139,11 +139,13 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         // do nothing
     }
 
+    @Deprecated
     public WebSocketUpgradeFilter(WebSocketServerFactory factory)
     {
         this(new NativeWebSocketConfiguration(factory));
     }
 
+    @Deprecated
     public WebSocketUpgradeFilter(NativeWebSocketConfiguration configuration)
     {
         this.configuration = configuration;
@@ -378,7 +380,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
                 getFactory().getPolicy().setInputBufferSize(Integer.parseInt(max));
             }
 
-            instanceKey = config.getInitParameter(CONTEXT_ATTRIBUTE_KEY);
+            String instanceKey = config.getInitParameter(CONTEXT_ATTRIBUTE_KEY);
             if (instanceKey == null)
             {
                 // assume default
