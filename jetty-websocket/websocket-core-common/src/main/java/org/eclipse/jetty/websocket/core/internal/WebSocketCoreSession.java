@@ -422,10 +422,6 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     {
         if (!demanding)
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
-
-        if (!sessionState.isInputOpen())
-            throw new IllegalStateException("FrameHandler input not open: " + this);
-
         connection.demand(n);
     }
 

@@ -584,6 +584,7 @@ public class JakartaWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
+            coreSession.demand(1);
             return;
         }
 
