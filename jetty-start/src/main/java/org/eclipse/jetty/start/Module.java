@@ -430,8 +430,8 @@ public class Module implements Comparable<Module>
                                 {
                                     _defaultConfig.add(line);
                                 }
-                            }
                                 break;
+                            }
                             case "INI-TEMPLATE":
                                 _iniTemplate.add(line);
                                 break;

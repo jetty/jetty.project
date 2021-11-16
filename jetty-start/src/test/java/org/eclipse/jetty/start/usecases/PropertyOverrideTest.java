@@ -95,7 +95,7 @@ public class PropertyOverrideTest extends AbstractUseCase
         // === Validate Resulting Properties
         List<String> expectedProperties = new ArrayList<>();
         // we should see value from command line
-        expectedProperties.add("" + "jetty.sslContext.keyStorePassword" + "=storepwd");
+        expectedProperties.add("jetty.sslContext.keyStorePassword=storepwd");
         expectedProperties.add("main.prop=value0");
         List<String> actualProperties = results.getProperties();
 
@@ -169,7 +169,7 @@ public class PropertyOverrideTest extends AbstractUseCase
         // === Validate Resulting Properties
         List<String> expectedProperties = new ArrayList<>();
         // we should see value from command line
-        expectedProperties.add("" + "jetty.sslContext.keyStorePassword" + "=storepwd");
+        expectedProperties.add("jetty.sslContext.keyStorePassword=storepwd");
         expectedProperties.add("main.prop=value0");
         List<String> actualProperties = results.getProperties();
 

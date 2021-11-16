@@ -978,7 +978,7 @@ public class DistributionTests extends AbstractJettyHomeTest
         Path jettyBase = distribution.getJettyBase();
         Path jettyBaseModules = jettyBase.resolve("modules");
         Files.createDirectories(jettyBaseModules);
-        String passwordProperty = "jetty.sslContext.keyStorePath";
+        String pathProperty = "jetty.sslContext.keyStorePath";
         // Create module with an [ini] section with an invalid password,
         // which should be overridden on the command line at startup.
         String module = "" +
@@ -986,7 +986,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             "ssl\n" +
             "\n" +
             "[ini]\n" +
-            "" + passwordProperty + "=modbased\n";
+            "" + pathProperty + "=modbased\n";
         String moduleName = "ssl-ini";
         Files.write(jettyBaseModules.resolve(moduleName + ".mod"), module.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
 
@@ -996,7 +996,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             assertEquals(0, run1.getExitValue());
 
             // Override the property on the command line with the correct password.
-            try (JettyHomeTester.Run run2 = distribution.start(passwordProperty + "=cmdline"))
+            try (JettyHomeTester.Run run2 = distribution.start(pathProperty + "=cmdline"))
             {
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 5, TimeUnit.SECONDS));
                 PathAssert.assertFileExists("${jetty.base}/cmdline", jettyBase.resolve("cmdline"));
