@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -264,94 +265,94 @@ public class StartArgs
         }
     }
 
-    public void dumpActiveXmls()
+    public void dumpActiveXmls(PrintStream out)
     {
-        System.out.println();
-        System.out.println("Jetty Active XMLs:");
-        System.out.println("------------------");
+        out.println();
+        out.println("Jetty Active XMLs:");
+        out.println("------------------");
         if (xmls.isEmpty())
         {
-            System.out.println(" (no xml files specified)");
+            out.println(" (no xml files specified)");
             return;
         }
 
         for (Path xml : xmls)
         {
-            System.out.printf(" %s%n", baseHome.toShortForm(xml.toAbsolutePath()));
+            out.printf(" %s%n", baseHome.toShortForm(xml.toAbsolutePath()));
         }
     }
 
-    public void dumpEnvironment()
+    public void dumpEnvironment(PrintStream out)
     {
         // Java Details
-        System.out.println();
-        System.out.println("Java Environment:");
-        System.out.println("-----------------");
-        dumpSystemProperty("java.home");
-        dumpSystemProperty("java.vm.vendor");
-        dumpSystemProperty("java.vm.version");
-        dumpSystemProperty("java.vm.name");
-        dumpSystemProperty("java.vm.info");
-        dumpSystemProperty("java.runtime.name");
-        dumpSystemProperty("java.runtime.version");
-        dumpSystemProperty("java.io.tmpdir");
-        dumpSystemProperty("user.dir");
-        dumpSystemProperty("user.language");
-        dumpSystemProperty("user.country");
+        out.println();
+        out.println("Java Environment:");
+        out.println("-----------------");
+        dumpSystemProperty(out, "java.home");
+        dumpSystemProperty(out, "java.vm.vendor");
+        dumpSystemProperty(out, "java.vm.version");
+        dumpSystemProperty(out, "java.vm.name");
+        dumpSystemProperty(out, "java.vm.info");
+        dumpSystemProperty(out, "java.runtime.name");
+        dumpSystemProperty(out, "java.runtime.version");
+        dumpSystemProperty(out, "java.io.tmpdir");
+        dumpSystemProperty(out, "user.dir");
+        dumpSystemProperty(out, "user.language");
+        dumpSystemProperty(out, "user.country");
 
         // Jetty Environment
-        System.out.println();
-        System.out.println("Jetty Environment:");
-        System.out.println("------------------");
-        dumpProperty(JETTY_VERSION_KEY);
-        dumpProperty(JETTY_TAG_NAME_KEY);
-        dumpProperty(JETTY_BUILDNUM_KEY);
-        dumpProperty("jetty.home");
-        dumpProperty("jetty.base");
+        out.println();
+        out.println("Jetty Environment:");
+        out.println("------------------");
+        dumpProperty(out, JETTY_VERSION_KEY);
+        dumpProperty(out, JETTY_TAG_NAME_KEY);
+        dumpProperty(out, JETTY_BUILDNUM_KEY);
+        dumpProperty(out, "jetty.home");
+        dumpProperty(out, "jetty.base");
 
         // Jetty Configuration Environment
-        System.out.println();
-        System.out.println("Config Search Order:");
-        System.out.println("--------------------");
+        out.println();
+        out.println("Config Search Order:");
+        out.println("--------------------");
         for (ConfigSource config : baseHome.getConfigSources())
         {
-            System.out.printf(" %s", config.getId());
+            out.printf(" %s", config.getId());
             if (config instanceof DirConfigSource)
             {
                 DirConfigSource dirsource = (DirConfigSource)config;
                 if (dirsource.isPropertyBased())
                 {
-                    System.out.printf(" -> %s", dirsource.getDir());
+                    out.printf(" -> %s", dirsource.getDir());
                 }
             }
-            System.out.println();
+            out.println();
         }
     }
 
-    public void dumpJvmArgs()
+    public void dumpJvmArgs(PrintStream out)
     {
         if (jvmArgs.isEmpty())
             return;
 
-        System.out.println();
-        System.out.println("Forked JVM Arguments:");
-        System.out.println("---------------------");
+        out.println();
+        out.println("Forked JVM Arguments:");
+        out.println("---------------------");
 
         for (String jvmArgKey : jvmArgs)
         {
             String value = System.getProperty(jvmArgKey);
             if (value != null)
-                System.out.printf(" %s = %s%n", jvmArgKey, value);
+                out.printf(" %s = %s%n", jvmArgKey, value);
             else
-                System.out.printf(" %s%n", jvmArgKey);
+                out.printf(" %s%n", jvmArgKey);
         }
     }
 
-    public void dumpProperties()
+    public void dumpProperties(PrintStream out)
     {
-        System.out.println();
-        System.out.println("Properties:");
-        System.out.println("-----------");
+        out.println();
+        out.println("Properties:");
+        out.println("-----------");
 
         List<String> sortedKeys = new ArrayList<>();
         for (Prop prop : properties)
@@ -365,7 +366,7 @@ public class StartArgs
 
         if (sortedKeys.isEmpty())
         {
-            System.out.println(" (no properties specified)");
+            out.println(" (no properties specified)");
             return;
         }
 
@@ -373,7 +374,7 @@ public class StartArgs
 
         for (String key : sortedKeys)
         {
-            dumpProperty(key);
+            dumpProperty(out, key);
         }
 
         for (Path path : propertyFiles)
@@ -387,46 +388,45 @@ public class StartArgs
                     props.load(new FileInputStream(path.toFile()));
                     for (Object key : props.keySet())
                     {
-                        System.out.printf(" %s:%s = %s%n", p, key, props.getProperty(String.valueOf(key)));
+                        out.printf(" %s:%s = %s%n", p, key, props.getProperty(String.valueOf(key)));
                     }
                 }
                 catch (Throwable th)
                 {
-                    System.out.printf(" %s NOT READABLE!%n", p);
+                    out.printf(" %s NOT READABLE!%n", p);
                 }
             }
             else
             {
-
-                System.out.printf(" %s NOT READABLE!%n", p);
+                out.printf(" %s NOT READABLE!%n", p);
             }
         }
     }
 
-    private void dumpProperty(String key)
+    private void dumpProperty(PrintStream out, String key)
     {
         Prop prop = properties.getProp(key);
         if (prop == null)
         {
-            System.out.printf(" %s (not defined)%n", key);
+            out.printf(" %s (not defined)%n", key);
         }
         else
         {
-            System.out.printf(" %s = %s%n", key, prop.value);
+            out.printf(" %s = %s%n", key, prop.value);
             if (StartLog.isDebugEnabled())
-                System.out.printf("   origin: %s%n", prop.source);
+                out.printf("   origin: %s%n", prop.source);
         }
     }
 
-    public void dumpSystemProperties()
+    public void dumpSystemProperties(PrintStream out)
     {
-        System.out.println();
-        System.out.println("System Properties:");
-        System.out.println("------------------");
+        out.println();
+        out.println("System Properties:");
+        out.println("------------------");
 
         if (systemPropertySource.keySet().isEmpty())
         {
-            System.out.println(" (no system properties specified)");
+            out.println(" (no system properties specified)");
             return;
         }
 
@@ -435,15 +435,18 @@ public class StartArgs
 
         for (String key : sortedKeys)
         {
-            dumpSystemProperty(key);
+            dumpSystemProperty(out, key);
         }
     }
 
-    private void dumpSystemProperty(String key)
+    private void dumpSystemProperty(PrintStream out, String key)
     {
         String value = System.getProperty(key);
-        String source = systemPropertySource.get(key);
-        System.out.printf(" %s = %s (%s)%n", key, value, source);
+        // "source" is where this property came from (jvm, command line, configuration file, etc)
+        String source = "";
+        if (systemPropertySource.get(key) != null)
+            source = String.format(" (%s)", systemPropertySource.get(key));
+        out.printf(" %s = %s%s%n", key, value, source);
     }
 
     /**
