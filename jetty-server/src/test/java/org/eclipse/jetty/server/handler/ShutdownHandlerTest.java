@@ -70,7 +70,7 @@ public class ShutdownHandlerTest
         start(null);
 
         CountDownLatch stopLatch = new CountDownLatch(1);
-        server.addLifeCycleListener(new AbstractLifeCycle.AbstractLifeCycleListener()
+        server.addLifeCycleListener(new LifeCycle.Listener()
         {
             @Override
             public void lifeCycleStopped(LifeCycle event)
