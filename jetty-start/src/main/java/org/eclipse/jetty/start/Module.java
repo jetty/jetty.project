@@ -408,8 +408,30 @@ public class Module implements Comparable<Module>
                                 break;
                             case "DEFAULTS": // old name introduced in 9.2.x
                             case "INI": // new name for 9.3+
-                                _defaultConfig.add(line);
+                            {
+                                // All default properties are to be treated as `<k>?=<v>` by the configuration system
+                                // even if they are present as `<k>=<v>`
+                                int idx = line.indexOf('=');
+                                if (idx > 0)
+                                {
+                                    String key = line.substring(0, idx);
+                                    String value = line.substring(idx + 1);
+                                    if (key.endsWith("?"))
+                                    {
+                                        // already the correct way
+                                        _defaultConfig.add(line);
+                                    }
+                                    else
+                                    {
+                                        _defaultConfig.add(String.format("%s?=%s", key, value));
+                                    }
+                                }
+                                else
+                                {
+                                    _defaultConfig.add(line);
+                                }
                                 break;
+                            }
                             case "INI-TEMPLATE":
                                 _iniTemplate.add(line);
                                 break;

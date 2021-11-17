@@ -38,6 +38,7 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.start.FS;
+import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.unixsocket.server.UnixSocketConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -964,6 +965,45 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
                 assertTrue(run2.getLogs().stream()
                     .anyMatch(log -> log.contains("WARN") && log.contains("Forking")));
+            }
+        }
+    }
+
+    @Test
+    public void testIniSectionPropertyOverriddenByCommandLine() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        Path jettyBase = distribution.getJettyBase();
+        Path jettyBaseModules = jettyBase.resolve("modules");
+        Files.createDirectories(jettyBaseModules);
+        String pathProperty = "jetty.sslContext.keyStorePath";
+        // Create module with an [ini] section with an invalid password,
+        // which should be overridden on the command line at startup.
+        String module = "" +
+            "[depends]\n" +
+            "ssl\n" +
+            "\n" +
+            "[ini]\n" +
+            "" + pathProperty + "=modbased\n";
+        String moduleName = "ssl-ini";
+        Files.write(jettyBaseModules.resolve(moduleName + ".mod"), module.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-module=https,test-keystore,ssl-ini"))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            // Override the property on the command line with the correct password.
+            try (JettyHomeTester.Run run2 = distribution.start(pathProperty + "=cmdline"))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 5, TimeUnit.SECONDS));
+                PathAssert.assertFileExists("${jetty.base}/cmdline", jettyBase.resolve("cmdline"));
+                PathAssert.assertNotPathExists("${jetty.base}/modbased", jettyBase.resolve("modbased"));
             }
         }
     }
