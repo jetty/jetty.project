@@ -21,10 +21,13 @@ It offers an asynchronous API that never blocks for I/O, making it very efficien
 
 However, when all you need to do is to perform a `GET` request to a resource, Jetty's HTTP client offers also a synchronous API; a programming interface where the thread that issued the request blocks until the request/response conversation is complete.
 
-Jetty's HTTP client supports xref:pg-client-http-transport[different transports]: HTTP/1.1, FastCGI and HTTP/2. This means that the semantic of an HTTP request: " ``GET`` the resource ``/index.html`` " can be carried over the network in different formats.
-The most common and default format is HTTP/1.1. That said, Jetty's HTTP client can carry the same request using the FastCGI format or the HTTP/2 format.
+Jetty's HTTP client supports different xref:pg-client-http-transport[transports protocols]: HTTP/1.1, HTTP/2 and FastCGI. This means that the semantic of an HTTP request such as: " ``GET`` the resource ``/index.html`` " can be carried over the network in different formats.
+The most common and default format is HTTP/1.1. That said, Jetty's HTTP client can carry the same request using the HTTP/2 format or the FastCGI format.
 
-The xref:pg-client-http-transport-fcgi[FastCGI transport] is heavily used in Jetty's xref:pg-server-fastcgi[FastCGI support] that allows Jetty to work as a reverse proxy to PHP (exactly like Apache or Nginx do) and therefore be able to serve, for example, WordPress websites.
+Furthermore, every transport protocol can be sent either over the network or via Unix-Domain sockets.
+Supports for Unix-Domain sockets requires Java 16 or later, since Unix-Domain sockets support has been introduced in OpenJDK with link:https://openjdk.java.net/jeps/380[JEP 380].
+
+The xref:pg-client-http-transport-fcgi[FastCGI transport] is heavily used in Jetty's xref:pg-server-fastcgi[FastCGI support] that allows Jetty to work as a reverse proxy to PHP (exactly like Apache or Nginx do) and therefore be able to serve, for example, WordPress websites, often in conjunction with Unix-Domain sockets (although it's possible to use FastCGI via network too).
 
 The HTTP/2 transport allows Jetty's HTTP client to perform requests using HTTP/2 to HTTP/2 enabled web sites, see also Jetty's xref:pg-client-http2[HTTP/2 support].
 
