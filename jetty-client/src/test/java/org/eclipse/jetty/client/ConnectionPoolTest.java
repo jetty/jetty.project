@@ -62,30 +62,35 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ConnectionPoolTest
 {
-    private Server server;
-    private ServerConnector connector;
-    private HttpClient client;
+    private static final ConnectionPoolFactory DUPLEX = new ConnectionPoolFactory("duplex", destination -> new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination));
+    private static final ConnectionPoolFactory MULTIPLEX = new ConnectionPoolFactory("multiplex", destination -> new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1));
+    private static final ConnectionPoolFactory RANDOM = new ConnectionPoolFactory("random", destination -> new RandomConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1));
+    private static final ConnectionPoolFactory DUPLEX_MAX_DURATION = new ConnectionPoolFactory("duplex-maxDuration", destination ->
+    {
+        DuplexConnectionPool pool = new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination);
+        pool.setMaxDuration(10);
+        return pool;
+    });
+    private static final ConnectionPoolFactory ROUND_ROBIN = new ConnectionPoolFactory("round-robin", destination -> new RoundRobinConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination));
 
     public static Stream<ConnectionPoolFactory> pools()
     {
-        return Stream.concat(poolsNoRoundRobin(),
-            Stream.of(new ConnectionPoolFactory("round-robin", destination -> new RoundRobinConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination))));
+        return Stream.of(DUPLEX, MULTIPLEX, RANDOM, DUPLEX_MAX_DURATION, ROUND_ROBIN);
+    }
+
+    public static Stream<ConnectionPoolFactory> poolsNoMaxDuration()
+    {
+        return Stream.of(DUPLEX, MULTIPLEX, RANDOM, ROUND_ROBIN);
     }
 
     public static Stream<ConnectionPoolFactory> poolsNoRoundRobin()
     {
-        return Stream.of(
-            new ConnectionPoolFactory("duplex", destination -> new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination)),
-            new ConnectionPoolFactory("duplex-maxDuration", destination ->
-            {
-                DuplexConnectionPool pool = new DuplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination);
-                pool.setMaxDuration(10);
-                return pool;
-            }),
-            new ConnectionPoolFactory("multiplex", destination -> new MultiplexConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1)),
-            new ConnectionPoolFactory("random", destination -> new RandomConnectionPool(destination, destination.getHttpClient().getMaxConnectionsPerDestination(), destination, 1))
-        );
+        return Stream.of(DUPLEX, MULTIPLEX, RANDOM, DUPLEX_MAX_DURATION);
     }
+
+    private Server server;
+    private ServerConnector connector;
+    private HttpClient client;
 
     private void start(ConnectionPool.Factory factory, Handler handler) throws Exception
     {
@@ -367,7 +372,8 @@ public class ConnectionPoolTest
     }
 
     @ParameterizedTest
-    @MethodSource("pools")
+    // Connection pool aggressively closes expired connections upon release, which interferes with this test's assertion.
+    @MethodSource("poolsNoMaxDuration")
     public void testConcurrentRequestsAllBlockedOnServerWithLargeConnectionPool(ConnectionPoolFactory factory) throws Exception
     {
         int count = 50;
@@ -375,14 +381,15 @@ public class ConnectionPoolTest
     }
 
     @ParameterizedTest
-    @MethodSource("pools")
+    // Connection pool aggressively closes expired connections upon release, which interferes with this test's assertion.
+    @MethodSource("poolsNoMaxDuration")
     public void testConcurrentRequestsAllBlockedOnServerWithExactConnectionPool(ConnectionPoolFactory factory) throws Exception
     {
         int count = 50;
         testConcurrentRequestsAllBlockedOnServer(factory, count, count);
     }
 
-    private  void testConcurrentRequestsAllBlockedOnServer(ConnectionPoolFactory factory, int count, int maxConnections) throws Exception
+    private void testConcurrentRequestsAllBlockedOnServer(ConnectionPoolFactory factory, int count, int maxConnections) throws Exception
     {
         CyclicBarrier barrier = new CyclicBarrier(count);
 
