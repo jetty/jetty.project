@@ -20,9 +20,11 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.io.File;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -30,6 +32,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.toolchain.test.PathAssert;
 import org.eclipse.jetty.unixsocket.UnixSocketConnector;
 import org.eclipse.jetty.unixsocket.client.HttpClientTransportOverUnixSockets;
 import org.eclipse.jetty.util.IO;
@@ -390,7 +393,7 @@ public class DistributionTests extends AbstractDistributionTest
                 "jetty.webapp.addServerClasses+=,+org.eclipse.jetty.websocket.",
                 "jetty.webapp.addSystemClasses+=,-org.eclipse.jetty.websocket.",
                 // "jetty.server.dumpAfterStart=true",
-                };
+            };
 
             try (DistributionTester.Run run2 = distribution.start(args2))
             {
@@ -429,6 +432,79 @@ public class DistributionTests extends AbstractDistributionTest
             assertTrue(run.awaitConsoleLogsFor("Base directory was modified", 15, TimeUnit.SECONDS));
             Path target = jettyBase.resolve(outPath);
             assertTrue(Files.exists(target), "could not create " + target);
+        }
+    }
+
+    @Test
+    public void testIniSectionPropertyOverriddenByCommandLine() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        DistributionTester distribution = DistributionTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        Path jettyBase = distribution.getJettyBase();
+        Path jettyBaseEtcs = jettyBase.resolve("etc");
+        Files.createDirectories(jettyBaseEtcs);
+        Path jettyBaseModules = jettyBase.resolve("modules");
+        Files.createDirectories(jettyBaseModules);
+        String pathProperty = "dist.keystore.path";
+
+        Files.write(jettyBaseEtcs.resolve("touch-keystore.xml"),
+            ("<?xml version=\"1.0\"?>\n" +
+                "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://www.eclipse.org/jetty/configure_9_3.dtd\">\n" +
+                "<Configure id=\"Server\" class=\"org.eclipse.jetty.server.Server\">\n" +
+                "  <Call class=\"java.nio.file.Files\" name=\"createFile\">\n" +
+                "    <Arg>\n" +
+                "      <Call class=\"java.nio.file.Paths\" name=\"get\">\n" +
+                "        <Arg>\n" +
+                "          <Property name=\"" + pathProperty + "\" default=\"xmlbased\"/>\n" +
+                "        </Arg>\n" +
+                "      </Call>\n" +
+                "    </Arg>\n" +
+                "  </Call>\n" +
+                "</Configure>").getBytes(StandardCharsets.UTF_8),
+            StandardOpenOption.CREATE);
+
+        Files.write(jettyBaseModules.resolve("test-keystore.mod"),
+            ("[depends]\n" +
+                "http\n" +
+                "\n" +
+                "[xml]\n" +
+                "etc/touch-keystore.xml\n" +
+                "\n" +
+                "[ini]\n" +
+                "" + pathProperty + "=test-keystore\n").getBytes(StandardCharsets.UTF_8),
+            StandardOpenOption.CREATE);
+
+        String moduleName = "http-ini";
+        Files.write(jettyBaseModules.resolve(moduleName + ".mod"),
+            ("[depends]\n" +
+                "http\n" +
+                "\n" +
+                "[ini]\n" +
+                "" + pathProperty + "=modbased\n").getBytes(StandardCharsets.UTF_8),
+            StandardOpenOption.CREATE);
+
+        try (DistributionTester.Run run1 = distribution.start("--create-startd", "--add-to-start=http,server,test-keystore,http-ini"))
+        {
+            assertTrue(run1.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            // Override the property on the command line with the correct password.
+            try (DistributionTester.Run run2 = distribution.start(pathProperty + "=cmdline"))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started @", 5, TimeUnit.SECONDS));
+                // should use the path from the command line
+                PathAssert.assertFileExists("${jetty.base}/cmdline", jettyBase.resolve("cmdline"));
+                // not from the base mod
+                PathAssert.assertNotPathExists("${jetty.base}/test-keystore", jettyBase.resolve("test-keystore"));
+                // or the override mod
+                PathAssert.assertNotPathExists("${jetty.base}/modbased", jettyBase.resolve("modbased"));
+                // or the default in the xml
+                PathAssert.assertNotPathExists("${jetty.base}/xmlbased", jettyBase.resolve("xmlbased"));
+            }
         }
     }
 }
