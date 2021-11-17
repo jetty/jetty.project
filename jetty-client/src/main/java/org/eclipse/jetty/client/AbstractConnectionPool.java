@@ -274,6 +274,8 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         if (entry == null)
         {
             pending.decrementAndGet();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not creating connection as pool is full, pending: {}", pending);
             return;
         }
 
@@ -321,7 +323,7 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
                     EntryHolder holder = (EntryHolder)((Attachable)connection).getAttachment();
                     if (holder.isExpired(maxDurationNanos))
                     {
-                        boolean canClose = remove(connection, true);
+                        boolean canClose = remove(connection);
                         if (canClose)
                             IO.close(connection);
                         if (LOG.isDebugEnabled())
@@ -368,13 +370,23 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
         EntryHolder holder = (EntryHolder)attachable.getAttachment();
         if (holder == null)
             return true;
-        boolean reusable = pool.release(holder.entry);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Released ({}) {} {}", reusable, holder.entry, pool);
-        if (reusable)
-            return true;
-        remove(connection);
-        return false;
+
+        long maxDurationNanos = this.maxDurationNanos;
+        if (maxDurationNanos > 0L && holder.isExpired(maxDurationNanos))
+        {
+            // Remove instead of release if the connection expired.
+            return !remove(connection);
+        }
+        else
+        {
+            // Release if the connection has not expired, then remove if not reusable.
+            boolean reusable = pool.release(holder.entry);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Released ({}) {} {}", reusable, holder.entry, pool);
+            if (reusable)
+                return true;
+            return !remove(connection);
+        }
     }
 
     @Override
