@@ -38,9 +38,10 @@ import org.infinispan.commons.configuration.XMLStringConfiguration;
 import org.infinispan.commons.marshall.ProtoStreamMarshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
+import org.testcontainers.containers.wait.strategy.Wait;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,22 +70,23 @@ public class RemoteInfinispanTestSupport
             String infinispanVersion = System.getProperty("infinispan.docker.image.version", "11.0.9.Final");
             infinispan =
                 new GenericContainer(System.getProperty("infinispan.docker.image.name", "infinispan/server") +
-                    ":" + infinispanVersion)
-                .withEnv("USER", "theuser")
-                .withEnv("PASS", "foobar")
-                .withEnv("MGMT_USER", "admin")
-                .withEnv("MGMT_PASS", "admin")
-                .waitingFor(new LogMessageWaitStrategy()
-                .withRegEx(".*Infinispan Server.*started in.*\\s"))
-                .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
-                .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG));
+                        ":" + infinispanVersion)
+                        .withEnv("USER", "theuser")
+                        .withEnv("PASS", "foobar")
+                        .withEnv("MGMT_USER", "admin")
+                        .withEnv("MGMT_PASS", "admin")
+                        .withEnv("CONFIG_PATH", "/user-config/config.yaml")
+                        .waitingFor(Wait.forLogMessage(".*Infinispan Server.*started in.*\\s", 1))
+                        .withExposedPorts(4712, 4713, 8088, 8089, 8443, 9990, 9993, 11211, 11222, 11223, 11224)
+                        .withLogConsumer(new Slf4jLogConsumer(INFINISPAN_LOG))
+                        .withClasspathResourceMapping("/config.yaml", "/user-config/config.yaml", BindMode.READ_ONLY);
             infinispan.start();
             String host = infinispan.getContainerIpAddress();
             System.setProperty("hotrod.host", host);
             int port = infinispan.getMappedPort(11222);
 
             LOG.info("Infinispan container started for {}:{} - {}ms", host, port,
-                     System.currentTimeMillis() - start);
+                    System.currentTimeMillis() - start);
             SearchMapping mapping = new SearchMapping();
             mapping.entity(SessionData.class).indexed().providedId()
                 .property("expiry", ElementType.METHOD).field();
@@ -105,7 +107,7 @@ public class RemoteInfinispanTestSupport
                     .saslMechanism("DIGEST-MD5")
                     .username("theuser").password("foobar");
             }
-            
+
             configurationBuilder.addContextInitializer(new InfinispanSerializationContextInitializer());
             Configuration configuration = configurationBuilder.build();
 

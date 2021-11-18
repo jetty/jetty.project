@@ -39,12 +39,18 @@ public class WebSocketExtensionFactory extends ExtensionFactory implements LifeC
 {
     private final ContainerLifeCycle containerLifeCycle;
     private final WebSocketContainerScope container;
-    private final InflaterPool inflaterPool = new InflaterPool(CompressionPool.INFINITE_CAPACITY, true);
-    private final DeflaterPool deflaterPool = new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
+    private final InflaterPool inflaterPool;
+    private final DeflaterPool deflaterPool;
 
     public WebSocketExtensionFactory(WebSocketContainerScope container)
     {
-        containerLifeCycle = new ContainerLifeCycle()
+        this(container, null, null);
+    }
+
+    public WebSocketExtensionFactory(WebSocketContainerScope container, InflaterPool inflaterPool, DeflaterPool deflaterPool)
+    {
+        this.container = container;
+        this.containerLifeCycle = new ContainerLifeCycle()
         {
             @Override
             public String toString()
@@ -53,9 +59,25 @@ public class WebSocketExtensionFactory extends ExtensionFactory implements LifeC
             }
         };
 
-        this.container = container;
-        containerLifeCycle.addBean(inflaterPool);
-        containerLifeCycle.addBean(deflaterPool);
+        this.inflaterPool = (inflaterPool != null) ? inflaterPool : new InflaterPool(CompressionPool.INFINITE_CAPACITY, true);
+        this.containerLifeCycle.addBean(this.inflaterPool);
+        this.deflaterPool = (deflaterPool != null) ? deflaterPool : new DeflaterPool(CompressionPool.INFINITE_CAPACITY, Deflater.DEFAULT_COMPRESSION, true);
+        this.containerLifeCycle.addBean(this.deflaterPool);
+    }
+
+    public void unmanage(Object object)
+    {
+        containerLifeCycle.unmanage(object);
+    }
+
+    public InflaterPool getInflaterPool()
+    {
+        return inflaterPool;
+    }
+
+    public DeflaterPool getDeflaterPool()
+    {
+        return deflaterPool;
     }
 
     @Override
