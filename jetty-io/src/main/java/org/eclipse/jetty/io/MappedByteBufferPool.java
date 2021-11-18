@@ -268,4 +268,13 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
         }
         Dumpable.dumpObjects(out, indent, this, dump);
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{maxQueueLength=%s, factor=%s}",
+            this.getClass().getSimpleName(), hashCode(),
+            getMaxQueueLength(),
+            getCapacityFactor());
+    }
 }

@@ -126,12 +126,7 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
 
     IntConsumer updateMemory(boolean direct)
     {
-        return getSizeAtomic(direct)::addAndGet;
-    }
-
-    private AtomicLong getSizeAtomic(boolean direct)
-    {
-        return (direct) ? _directMemory : _heapMemory;
+        return (direct) ? _directMemory::addAndGet : _heapMemory::addAndGet;
     }
 
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")

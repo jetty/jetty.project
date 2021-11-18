@@ -278,4 +278,15 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
         }
         Dumpable.dumpObjects(out, indent, this, dump);
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{minBufferCapacity=%s, maxBufferCapacity=%s, maxQueueLength=%s, factor=%s}",
+            this.getClass().getSimpleName(), hashCode(),
+            _minCapacity,
+            _maxCapacity,
+            getMaxQueueLength(),
+            getCapacityFactor());
+    }
 }
