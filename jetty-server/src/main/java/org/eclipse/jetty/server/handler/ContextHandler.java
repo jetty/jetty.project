@@ -229,7 +229,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<EventListener> _durableListeners = new CopyOnWriteArrayList<>();
     private String[] _protectedTargets;
-    private final List<AliasCheck> _aliasChecks = new ArrayList<>();
+    private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
+    private boolean _userDefinedAliasChecks = false;
 
     public enum Availability
     {
@@ -267,8 +268,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _scontext = context == null ? new Context() : context;
         _attributes = new AttributesMap();
         _initParams = new HashMap<>();
-        if (File.separatorChar == '/')
-            addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
 
         if (contextPath != null)
             setContextPath(contextPath);
@@ -912,6 +911,19 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             startContext();
             
             contextInitialized();
+
+            if (_baseResource != null)
+            {
+                if (!_userDefinedAliasChecks)
+                {
+                    if (File.separatorChar == '/')
+                        addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
+                }
+            }
+            else if (_userDefinedAliasChecks && !_aliasChecks.isEmpty())
+            {
+                LOG.warn("User defined alias checks for invalid baseResource");
+            }
 
             _availability.compareAndSet(Availability.STARTING, Availability.AVAILABLE);
             LOG.info("Started {}", this);
@@ -2086,6 +2098,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void addAliasCheck(AliasCheck check)
     {
+        _userDefinedAliasChecks = true;
         _aliasChecks.add(check);
         if (check instanceof LifeCycle)
             addManaged((LifeCycle)check);
@@ -2115,6 +2128,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public void clearAliasChecks()
     {
+        _userDefinedAliasChecks = true;
         _aliasChecks.forEach(this::removeBean);
         _aliasChecks.clear();
     }
