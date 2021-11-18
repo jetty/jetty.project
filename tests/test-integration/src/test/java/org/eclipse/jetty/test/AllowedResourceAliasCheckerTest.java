@@ -36,6 +36,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -91,6 +92,11 @@ public class AllowedResourceAliasCheckerTest
     {
         _client.stop();
         _server.stop();
+    }
+
+    @AfterEach
+    public void afterEach()
+    {
         IO.delete(_baseDir);
     }
 
@@ -120,7 +126,7 @@ public class AllowedResourceAliasCheckerTest
     @Test
     public void testCreateBaseDirBeforeStart() throws Exception
     {
-        assertThat(_context.getAliasChecks().size(), equalTo(0));
+        _context.clearAliasChecks();
         _context.addAliasCheck(new AllowedResourceAliasChecker(_context));
         createBaseDir();
         start();
@@ -135,7 +141,7 @@ public class AllowedResourceAliasCheckerTest
     @Test
     public void testCreateBaseDirAfterStart() throws Exception
     {
-        assertThat(_context.getAliasChecks().size(), equalTo(0));
+        _context.clearAliasChecks();
         _context.addAliasCheck(new AllowedResourceAliasChecker(_context));
         start();
         createBaseDir();
