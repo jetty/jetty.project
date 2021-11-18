@@ -3,45 +3,50 @@
     <title>JAAS Authentication and Authorization Test</title>
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Cache-Control" content="no-cache,no-store">
-    <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+    <link rel="stylesheet" href="demo.css"/>
+    </style>
 </head>
 <body>
-<a href="https://www.eclipse.org/jetty/"><img src="images/jetty_banner.gif"></A>
-<br/>
-<b><a href="http://localhost:8080/">Demo Home</a></b>
-<hr/>
-<center><span style="color:red; font-variant:small-caps; font-weight:bold">Demo Web Application Only - Do NOT Deploy in Production</span>
-</center>
+    <div class="topnav">
+      <a class="menu" href="http://localhost:8080/">Demo Home</a>
+      <a class="menu" href="https://github.com/eclipse/jetty.project/tree/jetty-10.0.x/demos/demo-jaas-webapp">Source</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/">Jetty Project Home</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/documentation/current/">Documentation</a>
+      <a class="menu" href="https://webtide.com">Commercial Support</a>
+    </div>
 
-<h1>JAAS Authentication and Authorization Demo</h1>
-<h2>Preparation</h2>
-<p>To enable JAAS in a base jetty instance do:
-<pre>
+   <div class="content">
+      <center>
+          <span style="color:red; font-style:italic; font-weight:bold">Demo Web Application Only - Do NOT Deploy in Production</span>
+      </center>
+      <h1>JAAS Demo</h1>
+     <p>
+       This is a demo webapp for the <a href="http://www.eclipse.org/jetty/">Eclipse Jetty HTTP Server and Servlet Container</a>. It was added into your <code>$JETTY_BASE/webapps</code> directory.
+
+       It uses a simple login module that stores its configuration in a properties file.
+     </p>
+   
+     <h2>Preparation</h2>
+     <p>To use JAAS in a base jetty instance enable the <code>jaas</code> module:
+     <pre>
     $ cd $JETTY_BASE
     $ java -jar $JETTY_HOME/start.jar --add-module=jaas
     </pre>
-</p>
-<p>This will create a <code>$JETTY_BASE/start.d/jaas.ini</code> file to enable and parameterize JAAS.
-    This Jetty demo-jaas already has JAAS enabled by the demo-jaas module.</p>
+    </p>
+    <p>The <code>demo</code> module pre-enables the <code>jaas</code> module.</p>
 
-<p>The full source of this demonstration is available <a
-        href="https://github.com/eclipse/jetty.project/tree/jetty-10.0.x/demos/demo-jaas-webapp">here</a>.</p>
-
-<h2>Using the Demo</h2>
-<p>
+    <h2>Using the Demo</h2>
+    <p>
     Click on the link below to test JAAS <i>authentication</i> and role-based web security constraint <i>authorization</i>. Use
-    username=&quot;me&quot; with password=&quot;me&quot;. All other usernames, passwords should result in authentication
+    username=<code>me</code> with password=<code>me</code>. All other usernames and passwords should result in authentication
     failure.
-</p>
-<big><b><a href="auth.html">LOGIN</A></b></big>
-<p>
-    This demo uses a simple login module that stores its configuration in a properties file. There are other types of login
-    module provided with the jetty distro. For full information, please refer to the
-    <a href="https://www.eclipse.org/jetty/documentation/current/">Jetty 9 documentation</a>.
-</p>
+    </p>
+    <big><b><a href="auth.html">START</A></b></big>
+   </div>
 
-<hr/>
-<center><a href="https://www.eclipse.org/jetty/"><img style="border:0" src="images/small_powered_by.gif"/></a></center>
+  <div class="footer">
+    <center><a href="https://www.eclipse.org/jetty"><img style="border:0" src="small_powered_by.gif"/></a></center>
+  </div>
 
 </body>
 </html>
