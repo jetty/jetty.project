@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -578,6 +579,10 @@ public class StringUtil
         return new String(b, offset, length, StandardCharsets.UTF_8);
     }
 
+    /**
+     * @deprecated use {@link String#String(byte[], int, int, Charset)} instead
+     */
+    @Deprecated(since = "10", forRemoval = true)
     public static String toString(byte[] b, int offset, int length, String charset)
     {
         try
