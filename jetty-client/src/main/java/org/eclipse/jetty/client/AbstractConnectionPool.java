@@ -392,11 +392,6 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public boolean remove(Connection connection)
     {
-        return remove(connection, false);
-    }
-
-    protected boolean remove(Connection connection, boolean force)
-    {
         if (!(connection instanceof Attachable))
             throw new IllegalArgumentException("Invalid connection object: " + connection);
         Attachable attachable = (Attachable)connection;
@@ -408,12 +403,18 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
             attachable.setAttachment(null);
         if (LOG.isDebugEnabled())
             LOG.debug("Removed ({}) {} {}", removed, holder.entry, pool);
-        if (removed || force)
+        if (removed)
         {
             released(connection);
             removed(connection);
         }
         return removed;
+    }
+
+    @Deprecated
+    protected boolean remove(Connection connection, boolean force)
+    {
+        return remove(connection);
     }
 
     protected void onCreated(Connection connection)
