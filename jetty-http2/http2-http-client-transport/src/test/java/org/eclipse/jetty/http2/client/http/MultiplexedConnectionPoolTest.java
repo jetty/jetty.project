@@ -95,6 +95,7 @@ public class MultiplexedConnectionPoolTest
         final int maxDuration = 200;
         AtomicInteger poolCreateCounter = new AtomicInteger();
         AtomicInteger poolRemoveCounter = new AtomicInteger();
+        AtomicReference<Pool<Connection>> poolRef = new AtomicReference<>();
         ConnectionPoolFactory factory = new ConnectionPoolFactory("MaxDurationConnectionsWithMultiplexedPoolLifecycle", destination ->
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
@@ -112,6 +113,7 @@ public class MultiplexedConnectionPoolTest
                     poolRemoveCounter.incrementAndGet();
                 }
             };
+            poolRef.set(pool.getBean(Pool.class));
             pool.setMaxDuration(maxDuration);
             return pool;
         });
@@ -152,21 +154,21 @@ public class MultiplexedConnectionPoolTest
         client = new HttpClient(transport);
         client.start();
 
-        CountDownLatch[] reqClientDoneLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
+        CountDownLatch[] reqClientSuccessLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
 
-        sendRequest(reqClientDoneLatches, 0);
+        sendRequest(reqClientSuccessLatches, 0);
         // wait until handler is executing
         assertTrue(reqExecutingLatches[0].await(5, TimeUnit.SECONDS));
         LOG.debug("req 0 executing");
 
-        sendRequest(reqClientDoneLatches, 1);
+        sendRequest(reqClientSuccessLatches, 1);
         // wait until handler executed sleep
         assertTrue(reqExecutedLatches[1].await(5, TimeUnit.SECONDS));
         LOG.debug("req 1 executed");
 
         // Now the pool contains one connection that is expired but in use by 2 threads.
 
-        sendRequest(reqClientDoneLatches, 2);
+        sendRequest(reqClientSuccessLatches, 2);
         LOG.debug("req2 sent");
         assertTrue(reqExecutingLatches[2].await(5, TimeUnit.SECONDS));
         LOG.debug("req2 executing");
@@ -175,19 +177,20 @@ public class MultiplexedConnectionPoolTest
 
         // release and wait for req2 to be done before releasing req1
         reqFinishingLatches[2].countDown();
-        assertTrue(reqClientDoneLatches[2].await(5, TimeUnit.SECONDS));
+        assertTrue(reqClientSuccessLatches[2].await(5, TimeUnit.SECONDS));
         reqFinishingLatches[1].countDown();
 
         // release req0 once req1 is done; req 1 should not have closed the response as req 0 is still running
-        assertTrue(reqClientDoneLatches[1].await(5, TimeUnit.SECONDS));
+        assertTrue(reqClientSuccessLatches[1].await(5, TimeUnit.SECONDS));
         reqFinishingLatches[0].countDown();
-        assertTrue(reqClientDoneLatches[0].await(5, TimeUnit.SECONDS));
+        assertTrue(reqClientSuccessLatches[0].await(5, TimeUnit.SECONDS));
 
         // Check that the pool created 2 and removed 2 connections;
         // 2 were removed b/c waiting for req 2 means the 2nd connection
         // expired and has to be removed and closed upon being returned to the pool.
         assertThat(poolCreateCounter.get(), Matchers.is(2));
         assertThat(poolRemoveCounter.get(), Matchers.is(2));
+        assertThat(poolRef.get().size(), Matchers.is(0));
     }
 
     private void sendRequest(CountDownLatch[] reqClientDoneLatches, int i)
