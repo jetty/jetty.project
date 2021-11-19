@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
@@ -39,6 +40,8 @@ import org.eclipse.jetty.util.Pool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -47,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // Sibling of ConnectionPoolTest, but using H2 to multiplex connections.
 public class MultiplexedConnectionPoolTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(MultiplexedConnectionPoolTest.class);
     private static final int MAX_MULTIPLEX = 2;
 
     private Server server;
@@ -86,13 +90,126 @@ public class MultiplexedConnectionPoolTest
     }
 
     @Test
+    public void testMaxDurationConnectionsWithMultiplexedPoolLifecycle() throws Exception
+    {
+        final int maxDuration = 200;
+        AtomicInteger poolCreateCounter = new AtomicInteger();
+        AtomicInteger poolRemoveCounter = new AtomicInteger();
+        ConnectionPoolFactory factory = new ConnectionPoolFactory("MaxDurationConnectionsWithMultiplexedPoolLifecycle", destination ->
+        {
+            int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
+            MultiplexConnectionPool pool = new MultiplexConnectionPool(destination, Pool.StrategyType.FIRST, maxConnections, false, destination, 10)
+            {
+                @Override
+                protected void onCreated(Connection connection)
+                {
+                    poolCreateCounter.incrementAndGet();
+                }
+
+                @Override
+                protected void removed(Connection connection)
+                {
+                    poolRemoveCounter.incrementAndGet();
+                }
+            };
+            pool.setMaxDuration(maxDuration);
+            return pool;
+        });
+
+        CountDownLatch[] reqExecutingLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
+        CountDownLatch[] reqExecutedLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
+        CountDownLatch[] reqFinishingLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
+        startServer(new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            {
+                int req = Integer.parseInt(target.substring(1));
+                try
+                {
+                    LOG.debug("req {} is executing", req);
+                    reqExecutingLatches[req].countDown();
+                    Thread.sleep(250);
+                    reqExecutedLatches[req].countDown();
+                    LOG.debug("req {} executed", req);
+
+                    assertTrue(reqFinishingLatches[req].await(5, TimeUnit.SECONDS));
+
+                    response.getWriter().println("req " + req + " executed");
+                    response.getWriter().flush();
+                    LOG.debug("req {} successful", req);
+                }
+                catch (Exception e)
+                {
+                    throw new ServletException(e);
+                }
+            }
+        });
+
+        ClientConnector clientConnector = new ClientConnector();
+        HttpClientTransport transport = new HttpClientTransportOverHTTP2(new HTTP2Client(clientConnector));
+        transport.setConnectionPoolFactory(factory.factory);
+        client = new HttpClient(transport);
+        client.start();
+
+        CountDownLatch[] reqClientDoneLatches = new CountDownLatch[] {new CountDownLatch(1), new CountDownLatch(1), new CountDownLatch(1)};
+
+        sendRequest(reqClientDoneLatches, 0);
+        // wait until handler is executing
+        assertTrue(reqExecutingLatches[0].await(5, TimeUnit.SECONDS));
+        LOG.debug("req 0 executing");
+
+        sendRequest(reqClientDoneLatches, 1);
+        // wait until handler executed sleep
+        assertTrue(reqExecutedLatches[1].await(5, TimeUnit.SECONDS));
+        LOG.debug("req 1 executed");
+
+        // Now the pool contains one connection that is expired but in use by 2 threads.
+
+        sendRequest(reqClientDoneLatches, 2);
+        LOG.debug("req2 sent");
+        assertTrue(reqExecutingLatches[2].await(5, TimeUnit.SECONDS));
+        LOG.debug("req2 executing");
+
+        // The 3rd request has tried the expired request and marked it as closed as it has expired, then used a 2nd one.
+
+        // release and wait for req2 to be done before releasing req1
+        reqFinishingLatches[2].countDown();
+        assertTrue(reqClientDoneLatches[2].await(5, TimeUnit.SECONDS));
+        reqFinishingLatches[1].countDown();
+
+        // release req0 once req1 is done; req 1 should not have closed the response as req 0 is still running
+        assertTrue(reqClientDoneLatches[1].await(5, TimeUnit.SECONDS));
+        reqFinishingLatches[0].countDown();
+        assertTrue(reqClientDoneLatches[0].await(5, TimeUnit.SECONDS));
+
+        // Check that the pool created 2 and removed 2 connections;
+        // 2 were removed b/c waiting for req 2 means the 2nd connection
+        // expired and has to be removed and closed upon being returned to the pool.
+        assertThat(poolCreateCounter.get(), Matchers.is(2));
+        assertThat(poolRemoveCounter.get(), Matchers.is(2));
+    }
+
+    private void sendRequest(CountDownLatch[] reqClientDoneLatches, int i)
+    {
+        client.newRequest("localhost", connector.getLocalPort())
+            .path("/" + i)
+            .timeout(5, TimeUnit.SECONDS)
+            .send(result ->
+            {
+                assertThat("req " + i + " failed", result.getResponse().getStatus(), Matchers.is(200));
+                reqClientDoneLatches[i].countDown();
+            });
+    }
+
+    @Test
     public void testMaxDurationConnectionsWithMultiplexedPool() throws Exception
     {
         final int maxDuration = 30;
         AtomicInteger poolCreateCounter = new AtomicInteger();
         AtomicInteger poolRemoveCounter = new AtomicInteger();
         AtomicReference<Pool<Connection>> poolRef = new AtomicReference<>();
-        ConnectionPoolFactory factory = new ConnectionPoolFactory("duplex-maxDuration", destination ->
+        ConnectionPoolFactory factory = new ConnectionPoolFactory("maxDurationConnectionsWithMultiplexedPool", destination ->
         {
             int maxConnections = destination.getHttpClient().getMaxConnectionsPerDestination();
             MultiplexConnectionPool connectionPool = new MultiplexConnectionPool(destination, Pool.StrategyType.FIRST, maxConnections, false, destination, MAX_MULTIPLEX)
@@ -279,7 +396,7 @@ public class MultiplexedConnectionPoolTest
 
         assertThat(poolRef.get().getIdleCount(), is(0));
         assertThat(poolRef.get().size(), is(0));
-        assertThat(poolRemoveCounter.get(), is(3));
+        assertThat(poolRemoveCounter.get(), is(2));
     }
 
     private static class ConnectionPoolFactory
