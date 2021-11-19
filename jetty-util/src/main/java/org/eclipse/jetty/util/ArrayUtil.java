@@ -127,6 +127,42 @@ public class ArrayUtil
     }
 
     /**
+     * Add two elements to the start of an array
+     *
+     * @param array The array to add to (or null)
+     * @param item1 The first item to add
+     * @param item2 The second item to add
+     * @param type The type of the array (in case of null array)
+     * @param <T> the array entry type
+     * @return new array with contents of array plus item1 and item2
+     */
+    public static <T> T[] prependToArray(T item1, T item2, T[] array, Class<?> type)
+    {
+        if (array == null)
+        {
+            if (type == null && item1 != null)
+                type = item1.getClass();
+            if (type == null && item2 != null)
+                type = item2.getClass();
+            @SuppressWarnings("unchecked")
+            T[] na = (T[])Array.newInstance(type, 2);
+            na[0] = item1;
+            na[1] = item2;
+            return na;
+        }
+        else
+        {
+            Class<?> c = array.getClass().getComponentType();
+            @SuppressWarnings("unchecked")
+            T[] na = (T[])Array.newInstance(c, Array.getLength(array) + 2);
+            System.arraycopy(array, 0, na, 2, array.length);
+            na[0] = item1;
+            na[1] = item2;
+            return na;
+        }
+    }
+
+    /**
      * @param array Any array of object
      * @param <E> the array entry type
      * @return A new <i>modifiable</i> list initialised with the elements from <code>array</code>.

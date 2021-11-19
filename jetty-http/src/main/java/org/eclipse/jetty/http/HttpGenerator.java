@@ -456,7 +456,8 @@ public class HttpGenerator
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("discarding content in COMPLETING");
-                    Arrays.stream(content).forEach(BufferUtil::clear);
+                    if (content != null)
+                        Arrays.stream(content).forEach(BufferUtil::clear);
                 }
                 return Result.DONE;
 
@@ -709,7 +710,8 @@ public class HttpGenerator
                     {
                         // TODO discard content for backward compatibility with 9.3 releases
                         // TODO review if it is still needed in 9.4 or can we just throw.
-                        Arrays.stream(content).forEach(ByteBuffer::clear);
+                        if (content != null)
+                            Arrays.stream(content).forEach(ByteBuffer::clear);
                     }
                     else
                         throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");

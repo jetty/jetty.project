@@ -1112,11 +1112,18 @@ public class BufferUtil
     {
         StringBuilder builder = new StringBuilder();
         builder.append('[');
-        for (int i = 0; i < buffer.length; i++)
+        if (buffer != null)
         {
-            if (i > 0)
-                builder.append(',');
-            builder.append(toDetailString(buffer[i]));
+            for (int i = 0; i < buffer.length; i++)
+            {
+                if (i > 0)
+                    builder.append(',');
+                builder.append(toDetailString(buffer[i]));
+            }
+        }
+        else
+        {
+            builder.append("null");
         }
         builder.append(']');
         return builder.toString();
