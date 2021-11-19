@@ -139,7 +139,7 @@ public class HttpGeneratorServerHTTPTest
                 // Generate
                 boolean last = !BufferUtil.hasContent(content);
 
-                HttpGenerator.Result result = gen.generateResponse(info, _head, header, chunk, content, last);
+                HttpGenerator.Result result = gen.generateResponse(info, _head, header, chunk, BufferUtil.length(content), last);
 
                 switch (result)
                 {

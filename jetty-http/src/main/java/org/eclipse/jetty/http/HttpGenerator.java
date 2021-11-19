@@ -188,7 +188,7 @@ public class HttpGenerator
         _endOfContent = null;
     }
 
-    public Result generateRequest(MetaData.Request info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
+    public Result generateRequest(MetaData.Request info, ByteBuffer header, ByteBuffer chunk, long contentLength, boolean last) throws IOException
     {
         switch (_state)
         {
@@ -211,7 +211,7 @@ public class HttpGenerator
                     if (info.getHttpVersion() == HttpVersion.HTTP_0_9)
                         throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "HTTP/0.9 not supported");
 
-                    generateHeaders(header, content, last);
+                    generateHeaders(header, contentLength, last);
 
                     boolean expect100 = info.getFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
@@ -222,12 +222,11 @@ public class HttpGenerator
                     else
                     {
                         // handle the content.
-                        int len = BufferUtil.length(content);
-                        if (len > 0)
+                        if (contentLength > 0)
                         {
-                            _contentPrepared += len;
+                            _contentPrepared += contentLength;
                             if (isChunking())
-                                prepareChunk(header, len);
+                                prepareChunk(header, contentLength);
                         }
                         _state = last ? State.COMPLETING : State.COMMITTED;
                     }
@@ -255,22 +254,18 @@ public class HttpGenerator
 
             case COMMITTED:
             {
-                return committed(chunk, BufferUtil.length(content), last);
+                return committed(chunk, contentLength, last);
             }
 
             case COMPLETING:
             {
-                return completing(chunk, (content == null) ? null : new ByteBuffer[]{content});
+                return completing(chunk);
             }
 
             case END:
-                if (BufferUtil.hasContent(content))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("discarding content in COMPLETING");
-                    BufferUtil.clear(content);
-                }
+            {
                 return Result.DONE;
+            }
 
             default:
                 throw new IllegalStateException();
@@ -301,15 +296,8 @@ public class HttpGenerator
         return len > 0 ? Result.FLUSH : Result.DONE;
     }
 
-    private Result completing(ByteBuffer chunk, ByteBuffer[] content)
+    private Result completing(ByteBuffer chunk)
     {
-        if (content != null && content.length > 0)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("discarding content in COMPLETING");
-            Arrays.stream(content).forEach(BufferUtil::clear);
-        }
-
         if (isChunking())
         {
             if (_info.getTrailerSupplier() != null)
@@ -346,12 +334,7 @@ public class HttpGenerator
         return Boolean.TRUE.equals(_persistent) ? Result.DONE : Result.SHUTDOWN_OUT;
     }
 
-    public Result generateResponse(MetaData.Response info, boolean head, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
-    {
-        return generateResponse(info, head, header, chunk, (content == null) ? null : new ByteBuffer[]{content}, BufferUtil.length(content), last);
-    }
-
-    public Result generateResponse(MetaData.Response info, boolean head, ByteBuffer header, ByteBuffer chunk, ByteBuffer[] content, long contentLength, boolean last) throws IOException
+    public Result generateResponse(MetaData.Response info, boolean head, ByteBuffer header, ByteBuffer chunk, long contentLength, boolean last) throws IOException
     {
         switch (_state)
         {
@@ -403,7 +386,7 @@ public class HttpGenerator
                         _noContentResponse = true;
                     }
 
-                    generateHeaders(header, content, contentLength, last);
+                    generateHeaders(header, contentLength, last);
 
                     // handle the content.
                     if (contentLength > 0)
@@ -448,18 +431,13 @@ public class HttpGenerator
 
             case COMPLETING:
             {
-                return completing(chunk, content);
+                return completing(chunk);
             }
 
             case END:
-                if (contentLength > 0)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("discarding content in COMPLETING");
-                    if (content != null)
-                        Arrays.stream(content).forEach(BufferUtil::clear);
-                }
+            {
                 return Result.DONE;
+            }
 
             default:
                 throw new IllegalStateException();
@@ -571,12 +549,7 @@ public class HttpGenerator
         return bytes;
     }
 
-    private void generateHeaders(ByteBuffer header, ByteBuffer content, boolean last)
-    {
-        generateHeaders(header, content == null ? null : new ByteBuffer[]{content}, BufferUtil.length(content), last);
-    }
-
-    private void generateHeaders(ByteBuffer header, ByteBuffer[] content, long contentSize, boolean last)
+    private void generateHeaders(ByteBuffer header, long contentSize, boolean last)
     {
         final MetaData.Request request = (_info instanceof MetaData.Request) ? (MetaData.Request)_info : null;
         final MetaData.Response response = (_info instanceof MetaData.Response) ? (MetaData.Response)_info : null;
@@ -705,17 +678,7 @@ public class HttpGenerator
                 if (response != null && response.getStatus() == HttpStatus.NOT_MODIFIED_304)
                     putContentLength(header, contentLength);
                 else if (contentLength > 0)
-                {
-                    if (_contentPrepared == 0 && last)
-                    {
-                        // TODO discard content for backward compatibility with 9.3 releases
-                        // TODO review if it is still needed in 9.4 or can we just throw.
-                        if (content != null)
-                            Arrays.stream(content).forEach(ByteBuffer::clear);
-                    }
-                    else
-                        throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
-                }
+                    throw new BadMessageException(INTERNAL_SERVER_ERROR_500, "Content for no content response");
             }
         }
         // Else if we are HTTP/1.1 and the content length is unknown and we are either persistent

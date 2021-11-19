@@ -746,7 +746,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             boolean useDirectByteBuffers = isUseOutputDirectByteBuffers();
             while (true)
             {
-                HttpGenerator.Result result = _generator.generateResponse(_info, _head, _header, _chunk, _content, remainingContent, _lastContent);
+                HttpGenerator.Result result = _generator.generateResponse(_info, _head, _header, _chunk, remainingContent, _lastContent);
                 if (LOG.isDebugEnabled())
                     LOG.debug("generate: {} for {} ({},{},{})@{}",
                         result,
@@ -844,16 +844,33 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case SHUTDOWN_OUT:
                     {
+                        if (_content != null && _content.length > 0)
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("discarding content");
+                            Arrays.stream(_content).forEach(BufferUtil::clear);
+                        }
+
                         _shutdownOut = true;
                         continue;
                     }
                     case DONE:
                     {
-                        // If this is the end of the response and the connector was shutdown after response was committed,
-                        // we can't add the Connection:close header, but we are still allowed to close the connection
-                        // by shutting down the output.
-                        if (getConnector().isShutdown() && _generator.isEnd() && _generator.isPersistent())
-                            _shutdownOut = true;
+                        if (_generator.isEnd())
+                        {
+                            // If this is the end of the response and the connector was shutdown after response was committed,
+                            // we can't add the Connection:close header, but we are still allowed to close the connection
+                            // by shutting down the output.
+                            if (getConnector().isShutdown() && _generator.isPersistent())
+                                _shutdownOut = true;
+
+                            if (_content != null && _content.length > 0)
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("discarding content");
+                                Arrays.stream(_content).forEach(BufferUtil::clear);
+                            }
+                        }
 
                         return Action.SUCCEEDED;
                     }
