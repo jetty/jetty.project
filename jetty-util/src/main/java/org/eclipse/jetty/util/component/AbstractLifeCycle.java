@@ -251,7 +251,7 @@ public abstract class AbstractLifeCycle implements LifeCycle
     }
 
     /**
-     * @deprecated this class is unnecessary now that {@link LifeCycle.Listener} has default methods.
+     * @deprecated this class is redundant now that {@link LifeCycle.Listener} has default methods.
      */
     @Deprecated
     public abstract static class AbstractLifeCycleListener implements LifeCycle.Listener
