@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.servlet</groupId>
-  <artifactId>jetty-servlet-parent</artifactId>
+  <artifactId>jetty-servlet</artifactId>
   <packaging>pom</packaging>
   <name>Jetty :: Servlet</name>
 

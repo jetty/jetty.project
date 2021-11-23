@@ -33,7 +33,7 @@
       <!-- TODO: Remove this dependency when jetty-server does not require it. -->
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-jakarta-servlet-api</artifactId>
-      <version>5.0.2</version>
+      <version>${jetty.servlet6.api.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

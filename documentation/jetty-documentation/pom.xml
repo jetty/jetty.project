@@ -163,7 +163,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-servlet</artifactId>
+      <artifactId>jetty-servlet6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -176,7 +176,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <artifactId>jetty-webapp6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>

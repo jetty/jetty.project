@@ -111,7 +111,7 @@
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
-            <servletApiVersion>${jetty.servlet5.api.version}</servletApiVersion>
+            <servletApiVersion>${jetty.servlet6.api.version}</servletApiVersion>
           </scriptVariables>
           <settingsFile>src/it/settings.xml</settingsFile>
           <goals>
@@ -161,7 +161,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <artifactId>jetty-webapp6</artifactId>
       <exclusions>
         <exclusion>
           <groupId>jakarta.servlet</groupId>
@@ -179,7 +179,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-plus</artifactId>
+      <artifactId>jetty-plus6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -191,7 +191,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-servlet</artifactId>
+      <artifactId>jetty-servlet6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -211,7 +211,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-annotations</artifactId>
+      <artifactId>jetty-annotations6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>

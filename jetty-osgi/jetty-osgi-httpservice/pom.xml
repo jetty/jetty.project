@@ -19,7 +19,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-servlet</artifactId>
+      <artifactId>jetty-servlet6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.equinox.http</groupId>

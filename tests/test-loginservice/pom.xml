@@ -18,7 +18,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <artifactId>jetty-webapp6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -26,11 +26,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-security</artifactId>
+      <artifactId>jetty-security6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-plus</artifactId>
+      <artifactId>jetty-plus6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

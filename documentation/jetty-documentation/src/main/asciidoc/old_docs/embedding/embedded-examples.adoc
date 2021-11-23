@@ -56,7 +56,7 @@ To use this example in your project, you will need the following Maven dependenc
 
 <dependency>
   <groupId>org.eclipse.jetty.servlet6</groupId>
-  <artifactId>jetty-annotations</artifactId>
+  <artifactId>jetty-annotations6</artifactId>
   <version>${project.version}</version>
 </dependency>
 <dependency>

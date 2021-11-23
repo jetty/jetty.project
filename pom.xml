@@ -86,8 +86,8 @@
     <jboss-threads.version>3.1.0.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
-    <jetty.servlet5.api.version>5.0.2</jetty.servlet5.api.version>
-    <jetty.servlet6.api.version>6.0.0-SNAPSHOT</jetty.servlet6.api.version>
+    <!-- TODO: Update version to Servlet 6. -->
+    <jetty.servlet6.api.version>5.0.2</jetty.servlet6.api.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty.test.version>5.9</jetty.test.version>
     <jmh.version>1.33</jmh.version>
@@ -209,7 +209,7 @@
     <module>jetty-io</module>
     <module>jetty-http</module>
     <module>jetty-server</module>
-    <module>jetty-servlet-parent</module>
+    <module>jetty-servlet</module>
     <module>jetty-xml</module>
     <module>jetty-openid</module>
     <module>jetty-websocket</module>
@@ -1762,7 +1762,7 @@
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
         <artifactId>jetty-jakarta-servlet-api</artifactId>
-        <version>${jetty.servlet5.api.version}</version>
+        <version>${jetty.servlet6.api.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -1909,27 +1909,27 @@
       <!-- Servlet 6 Dependencies -->
       <dependency>
         <groupId>org.eclipse.jetty.servlet6</groupId>
-        <artifactId>jetty-servlet</artifactId>
+        <artifactId>jetty-servlet6</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.servlet6</groupId>
-        <artifactId>jetty-webapp</artifactId>
+        <artifactId>jetty-webapp6</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.servlet6</groupId>
-        <artifactId>jetty-security</artifactId>
+        <artifactId>jetty-security6</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.servlet6</groupId>
-        <artifactId>jetty-annotations</artifactId>
+        <artifactId>jetty-annotations6</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.servlet6</groupId>
-        <artifactId>jetty-plus</artifactId>
+        <artifactId>jetty-plus6</artifactId>
         <version>${project.version}</version>
       </dependency>
 

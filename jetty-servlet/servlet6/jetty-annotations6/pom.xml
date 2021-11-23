@@ -6,7 +6,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-annotations</artifactId>
+  <artifactId>jetty-annotations6</artifactId>
   <name>Jetty :: Servlet :: 6 :: Annotations</name>
   <description>Annotation support for deploying servlets in jetty.</description>
   <properties>
@@ -45,11 +45,11 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <artifactId>jetty-webapp6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-plus</artifactId>
+      <artifactId>jetty-plus6</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
@@ -66,10 +66,6 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
     </dependency>
     <dependency>
       <groupId>jakarta.transaction</groupId>

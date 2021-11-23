@@ -6,13 +6,13 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-plus</artifactId>
-  <name>Jetty :: Plus</name>
-  <description>Jetty JavaEE style services</description>
+  <artifactId>jetty-security6</artifactId>
+  <name>Jetty :: Servlet :: 6 :: Security</name>
+  <description>Jetty security infrastructure</description>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.plus</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.plus.*</spotbugs.onlyAnalyze>
+    <bundle-symbolic-name>${project.groupId}.security</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.security.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
@@ -21,41 +21,40 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-        <configuration>
-          <instructions>
-            <Import-Package>${osgi.slf4j.import.packages},jakarta.transaction.*;version="2.0.0",*</Import-Package>
-            <Require-Capability>
-              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
-            </Require-Capability>
-            <Provide-Capability>
-              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
-            </Provide-Capability>
-          </instructions>
-        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Require-Capability>osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.security.Authenticator$Factory)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional</Require-Capability>
+              </instructions>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
 
   <dependencies>
     <dependency>
-      <groupId>jakarta.transaction</groupId>
-      <artifactId>jakarta.transaction-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jndi</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <artifactId>jetty-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-http-tools</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

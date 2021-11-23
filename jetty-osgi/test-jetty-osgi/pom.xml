@@ -261,12 +261,12 @@
     <!-- Jetty Deps -->
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-annotations</artifactId>
+      <artifactId>jetty-annotations6</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <artifactId>jetty-webapp6</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -281,7 +281,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-servlet</artifactId>
+      <artifactId>jetty-servlet6</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -291,7 +291,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-security</artifactId>
+      <artifactId>jetty-security6</artifactId>
       <scope>runtime</scope>
     </dependency>
     <dependency>
@@ -376,7 +376,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-plus</artifactId>
+      <artifactId>jetty-plus6</artifactId>
       <scope>runtime</scope>
     </dependency>
 

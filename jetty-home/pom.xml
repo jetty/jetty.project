@@ -300,10 +300,10 @@
                 <artifactItem>
                   <groupId>org.eclipse.jetty.toolchain</groupId>
                   <artifactId>jetty-jakarta-servlet-api</artifactId>
-                  <version>${jetty.servlet5.api.version}</version>
+                  <version>${jetty.servlet6.api.version}</version>
                   <overWrite>true</overWrite>
                   <outputDirectory>${assembly-directory}/lib</outputDirectory>
-                  <destFileName>jetty-jakarta-servlet-api-${jetty.servlet5.api.version}.jar</destFileName>
+                  <destFileName>jetty-jakarta-servlet-api-${jetty.servlet6.api.version}.jar</destFileName>
                 </artifactItem>
               </artifactItems>
             </configuration>
@@ -634,7 +634,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-plus</artifactId>
+      <artifactId>jetty-plus6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -676,7 +676,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
-      <artifactId>jetty-annotations</artifactId>
+      <artifactId>jetty-annotations6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
