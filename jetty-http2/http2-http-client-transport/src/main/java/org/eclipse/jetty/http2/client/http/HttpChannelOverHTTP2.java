@@ -102,7 +102,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public void release()
     {
         setStream(null);
-        if (connection.release(this))
+        boolean released = connection.release(this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("released channel? {} {}", released, this);
+        if (released)
             getHttpDestination().release(getHttpConnection());
     }
 
@@ -110,13 +113,15 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public void exchangeTerminated(HttpExchange exchange, Result result)
     {
         super.exchangeTerminated(exchange, result);
+        Stream stream = getStream();
+        if (LOG.isDebugEnabled())
+            LOG.debug("exchange terminated {} {}", result, stream);
         if (result.isSucceeded())
         {
             release();
         }
         else
         {
-            Stream stream = getStream();
             if (stream != null)
                 stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), new ReleaseCallback());
             else
