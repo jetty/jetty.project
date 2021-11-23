@@ -20,7 +20,7 @@ etc/jetty-openid.xml
 
 [ini-template]
 ## The OpenID Identity Provider's issuer ID (the entire URL *before* ".well-known/openid-configuration")
-# jetty.openid.provider=https://id.example.com/~
+# jetty.openid.provider=https://id.example.com/
 
 ## The OpenID Identity Provider's authorization endpoint (optional if the metadata of the OP is accessible)
 # jetty.openid.provider.authorizationEndpoint=https://id.example.com/authorization
