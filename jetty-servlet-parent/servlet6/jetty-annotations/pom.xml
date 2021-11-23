@@ -20,7 +20,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.annotations/org.eclipse.jetty.annotations.resources=org.eclipse.jetty.plus
+            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.annotations6/org.eclipse.jetty.annotations.resources=org.eclipse.jetty.plus6
           </argLine>
         </configuration>
       </plugin>
@@ -46,12 +46,10 @@
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.servlet6</groupId>
       <artifactId>jetty-plus</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>jakarta.annotation</groupId>
