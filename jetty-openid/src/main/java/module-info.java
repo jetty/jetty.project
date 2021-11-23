@@ -11,6 +11,8 @@
 // ========================================================================
 //
 
+import org.eclipse.jetty.security.openid.OpenIdAuthenticatorFactory;
+
 module org.eclipse.jetty.security.openid
 {
     requires org.eclipse.jetty.util.ajax;
@@ -19,4 +21,6 @@ module org.eclipse.jetty.security.openid
     requires transitive org.eclipse.jetty.security;
 
     exports org.eclipse.jetty.security.openid;
+
+    provides org.eclipse.jetty.security.Authenticator.Factory with OpenIdAuthenticatorFactory;
 }
