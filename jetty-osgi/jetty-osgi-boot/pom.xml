@@ -14,13 +14,13 @@
   </properties>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-annotations-common</artifactId>
+      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <artifactId>jetty-annotations</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-webapp-common</artifactId>
+      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <artifactId>jetty-webapp</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -82,7 +82,7 @@
               jakarta.mail.internet;version="2.0";resolution:=optional,
               jakarta.mail.search;version="2.0";resolution:=optional,
               jakarta.mail.util;version="2.0";resolution:=optional,
-              jakarta.servlet;version="[$(version;==;${}),$(version;+;${jetty.servlet5.api.version}))",
+              jakarta.servlet;version="[$(version;==;${jetty.servlet5.api.version}),$(version;+;${jetty.servlet5.api.version}))",
               jakarta.servlet.http;version="[$(version;==;${jetty.servlet5.api.version}),$(version;+;${jetty.servlet5.api.version}))",
               jakarta.transaction;version="2.0.0";resolution:=optional,
               jakarta.transaction.xa;version="2.0.0";resolution:=optional,

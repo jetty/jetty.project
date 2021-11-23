@@ -209,7 +209,7 @@
     <module>jetty-io</module>
     <module>jetty-http</module>
     <module>jetty-server</module>
-    <module>jetty-servlet</module>
+    <module>jetty-servlet-parent</module>
     <module>jetty-xml</module>
     <module>jetty-openid</module>
     <module>jetty-websocket</module>
@@ -221,7 +221,6 @@
     <module>jetty-jspc-maven-plugin</module>
     <module>jetty-deploy</module>
     <module>jetty-start</module>
-    <module>jetty-plus</module>
     <module>jetty-jndi</module>
     <module>jetty-jaas</module>
     <module>jetty-cdi</module>
@@ -1338,11 +1337,6 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.servlet</groupId>
-        <artifactId>jetty-annotations-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-ant</artifactId>
         <version>${project.version}</version>
@@ -1460,11 +1454,6 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-plus</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-proxy</artifactId>
         <version>${project.version}</version>
       </dependency>
@@ -1481,11 +1470,6 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-runner</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.servlet</groupId>
-        <artifactId>jetty-security-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1541,11 +1525,6 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-util-ajax</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.servlet</groupId>
-        <artifactId>jetty-webapp-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1926,6 +1905,34 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+
+      <!-- Servlet 6 Dependencies -->
+      <dependency>
+        <groupId>org.eclipse.jetty.servlet6</groupId>
+        <artifactId>jetty-servlet</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.servlet6</groupId>
+        <artifactId>jetty-webapp</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.servlet6</groupId>
+        <artifactId>jetty-security</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.servlet6</groupId>
+        <artifactId>jetty-annotations</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.servlet6</groupId>
+        <artifactId>jetty-plus</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 

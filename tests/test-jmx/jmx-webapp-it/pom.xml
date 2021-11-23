@@ -17,8 +17,8 @@
   </properties>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-annotations-common</artifactId>
+      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <artifactId>jetty-annotations</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

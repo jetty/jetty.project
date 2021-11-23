@@ -21,8 +21,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-webapp-common</artifactId>
+      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <artifactId>jetty-webapp</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -31,13 +31,13 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
+      <groupId>org.eclipse.jetty.servlet6</groupId>
       <artifactId>jetty-plus</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-annotations-common</artifactId>
+      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <artifactId>jetty-annotations</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -131,8 +131,8 @@
         </configuration>
         <dependencies>
           <dependency>
-            <groupId>org.eclipse.jetty.servlet</groupId>
-            <artifactId>jetty-webapp-common</artifactId>
+            <groupId>org.eclipse.jetty.servlet6</groupId>
+            <artifactId>jetty-webapp</artifactId>
             <version>${project.version}</version>
           </dependency>
         </dependencies>

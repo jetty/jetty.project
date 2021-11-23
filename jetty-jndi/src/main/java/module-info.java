@@ -22,7 +22,7 @@ module org.eclipse.jetty.jndi
     requires static jakarta.mail;
     // Only required if using DataSourceCloser.
     requires static java.sql;
-    requires static org.eclipse.jetty.security;
+    requires static org.eclipse.jetty.security6;
 
     exports org.eclipse.jetty.jndi;
     exports org.eclipse.jetty.jndi.factories;
