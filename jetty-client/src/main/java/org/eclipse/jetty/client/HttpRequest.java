@@ -14,14 +14,13 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
-import java.nio.charset.UnsupportedCharsetException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -910,15 +909,7 @@ public class HttpRequest implements Request
         if (value == null)
             return "";
 
-        String encoding = "utf-8";
-        try
-        {
-            return URLEncoder.encode(value, encoding);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            throw new UnsupportedCharsetException(encoding);
-        }
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 
     private void extractParams(String query)
@@ -941,15 +932,7 @@ public class HttpRequest implements Request
 
     private String urlDecode(String value)
     {
-        String charset = "utf-8";
-        try
-        {
-            return URLDecoder.decode(value, charset);
-        }
-        catch (UnsupportedEncodingException x)
-        {
-            throw new UnsupportedCharsetException(charset);
-        }
+        return URLDecoder.decode(value, StandardCharsets.UTF_8);
     }
 
     private URI buildURI(boolean withQuery)
