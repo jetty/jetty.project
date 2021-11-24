@@ -155,7 +155,7 @@ public class LifeCycleListenerTest
         }
     }
 
-    private class TestListener extends AbstractLifeCycle.AbstractLifeCycleListener
+    private class TestListener implements LifeCycle.Listener
     {
         @SuppressWarnings("unused")
         private boolean failure = false;
@@ -171,6 +171,7 @@ public class LifeCycleListenerTest
 
         private Throwable cause = null;
 
+        @Override
         public void lifeCycleFailure(LifeCycle event, Throwable cause)
         {
             failure = true;
@@ -182,12 +183,14 @@ public class LifeCycleListenerTest
             return cause;
         }
 
+        @Override
         public void lifeCycleStarted(LifeCycle event)
         {
             started = true;
             startedTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
 
+        @Override
         public void lifeCycleStarting(LifeCycle event)
         {
             starting = true;
@@ -205,12 +208,14 @@ public class LifeCycleListenerTest
             }
         }
 
+        @Override
         public void lifeCycleStopped(LifeCycle event)
         {
             stopped = true;
             stoppedTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
         }
 
+        @Override
         public void lifeCycleStopping(LifeCycle event)
         {
             stopping = true;

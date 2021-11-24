@@ -250,6 +250,10 @@ public abstract class AbstractLifeCycle implements LifeCycle
         this._stopTimeout = stopTimeout;
     }
 
+    /**
+     * @deprecated this class is redundant now that {@link LifeCycle.Listener} has default methods.
+     */
+    @Deprecated
     public abstract static class AbstractLifeCycleListener implements LifeCycle.Listener
     {
         @Override
