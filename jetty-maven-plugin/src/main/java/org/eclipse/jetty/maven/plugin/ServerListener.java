@@ -38,11 +38,6 @@ public class ServerListener implements LifeCycle.Listener
     }
 
     @Override
-    public void lifeCycleStarting(LifeCycle event)
-    {
-    }
-
-    @Override
     public void lifeCycleStarted(LifeCycle event)
     {
         if (_tokenFile != null)
@@ -57,20 +52,5 @@ public class ServerListener implements LifeCycle.Listener
                 throw new IllegalStateException(e);
             }
         }
-    }
-
-    @Override
-    public void lifeCycleFailure(LifeCycle event, Throwable cause)
-    {
-    }
-
-    @Override
-    public void lifeCycleStopping(LifeCycle event)
-    {
-    }
-
-    @Override
-    public void lifeCycleStopped(LifeCycle event)
-    {
     }
 }
