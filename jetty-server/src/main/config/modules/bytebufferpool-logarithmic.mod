@@ -1,13 +1,16 @@
 # DO NOT EDIT - See: https://www.eclipse.org/jetty/documentation/current/startup-modules.html
 
 [description]
-Configures the ByteBufferPool used by ServerConnectors.
+Configures the ByteBufferPool used by ServerConnectors whose bucket sizes increase exponentially instead of linearly.
 
 [tags]
 bytebufferpool
 
+[provides]
+bytebufferpool
+
 [xml]
-etc/jetty-bytebufferpool.xml
+etc/jetty-bytebufferpool-logarithmic.xml
 
 [ini-template]
 ### Server ByteBufferPool Configuration
@@ -16,9 +19,6 @@ etc/jetty-bytebufferpool.xml
 
 ## Maximum capacity to pool ByteBuffers
 #jetty.byteBufferPool.maxCapacity=65536
-
-## Capacity factor
-#jetty.byteBufferPool.factor=1024
 
 ## Maximum queue length for each bucket (-1 for unbounded)
 #jetty.byteBufferPool.maxQueueLength=-1

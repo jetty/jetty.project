@@ -28,11 +28,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,10 +69,13 @@ public class ArrayByteBufferPoolTest
     @Test
     public void testMaxRelease()
     {
-        ArrayByteBufferPool bufferPool = new ArrayByteBufferPool(10, 100, 1000);
+        int minCapacity = 10;
+        int factor = 1;
+        int maxCapacity = 1024;
+        ArrayByteBufferPool bufferPool = new ArrayByteBufferPool(minCapacity, factor, maxCapacity);
         ByteBufferPool.Bucket[] buckets = bufferPool.bucketsFor(true);
 
-        for (int size = 999; size <= 1001; size++)
+        for (int size = maxCapacity - 1; size <= maxCapacity + 1; size++)
         {
             bufferPool.clear();
             ByteBuffer buffer = bufferPool.acquire(size, true);
@@ -91,7 +94,11 @@ public class ArrayByteBufferPoolTest
                 .filter(Objects::nonNull)
                 .mapToInt(Bucket::size)
                 .sum();
-            assertEquals(size <= 1000, 1 == pooled);
+
+            if (size <= maxCapacity)
+                assertThat(pooled, is(1));
+            else
+                assertThat(pooled, is(0));
         }
     }
 
@@ -215,7 +222,7 @@ public class ArrayByteBufferPoolTest
         // Now the oldest buffer should be gone and we have: 1+2x2+3=8
         long memory = bufferPool.getMemory(true);
         assertThat(memory, lessThan((long)maxMemory));
-        assertNull(buckets[3]);
+        assertTrue(buckets[3].isEmpty());
 
         // Create and release a large buffer.
         // Max memory is exceeded and buckets 3 and 1 are cleared.
@@ -224,7 +231,7 @@ public class ArrayByteBufferPoolTest
         bufferPool.release(buffer);
         memory = bufferPool.getMemory(true);
         assertThat(memory, lessThanOrEqualTo((long)maxMemory));
-        assertNull(buckets[0]);
-        assertNull(buckets[2]);
+        assertTrue(buckets[0].isEmpty());
+        assertTrue(buckets[2].isEmpty());
     }
 }
