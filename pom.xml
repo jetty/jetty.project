@@ -669,7 +669,7 @@
             <charset>UTF-8</charset>
             <docencoding>UTF-8</docencoding>
             <encoding>UTF-8</encoding>
-            <additionalOptions>-html5</additionalOptions>
+            <additionalOptions>-html5 --no-module-directories</additionalOptions>
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>false</detectLinks>
             <detectJavaApiLink>false</detectJavaApiLink>
