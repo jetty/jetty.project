@@ -891,6 +891,28 @@ public class HttpParserTest
     }
 
     @Test
+    public void testHeaderContentTypeValue()
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+            "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Content-Type: text/plain;charset=utf-8\r\n" +
+                "\n\n");
+
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler);
+        parseAll(parser, buffer);
+
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Content-Type", _hdr[1]);
+        assertEquals("text/plain;charset=utf-8", _val[1]);
+    }
+
+    @Test
     public void testCaseSensitiveMethod()
     {
         ByteBuffer buffer = BufferUtil.toBuffer(
