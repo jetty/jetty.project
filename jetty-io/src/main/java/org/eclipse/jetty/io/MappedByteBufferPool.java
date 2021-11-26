@@ -181,7 +181,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
         }
         if (index >= 0)
         {
-            Bucket bucket = buckets.get(index);
+            Bucket bucket = buckets.remove(index);
             // Null guard in case this.clear() is called concurrently.
             if (bucket != null)
                 bucket.clear();
@@ -190,7 +190,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
 
     protected int bucketFor(int capacity)
     {
-        return (int)Math.ceil((double)capacity / getCapacityFactor());
+        return Math.max((int)Math.ceil((double)capacity / getCapacityFactor()), 1);
     }
 
     protected int capacityFor(int bucket)
