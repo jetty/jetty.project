@@ -197,7 +197,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
 
     protected int bucketFor(int capacity)
     {
-        return (int)Math.ceil((double)capacity / getCapacityFactor());
+        return Math.max((int)Math.ceil((double)capacity / getCapacityFactor()), 1);
     }
 
     protected int capacityFor(int bucket)
