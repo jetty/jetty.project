@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -52,7 +51,7 @@ public class HandlerClientServerTest extends AbstractClientServerTest
         start(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 jettyRequest.setHandled(true);
                 serverLatch.countDown();
@@ -63,10 +62,10 @@ public class HandlerClientServerTest extends AbstractClientServerTest
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest("/"), true);
-        session.newRequest(frame, new Stream.Listener()
+        session.newRequest(frame, new Stream.Client.Listener()
             {
                 @Override
-                public void onResponse(Stream stream, HeadersFrame frame)
+                public void onResponse(Stream.Client stream, HeadersFrame frame)
                 {
                     MetaData.Response response = (MetaData.Response)frame.getMetaData();
                     assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -101,10 +100,10 @@ public class HandlerClientServerTest extends AbstractClientServerTest
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest(HttpMethod.POST, "/"), false);
-        Stream stream = session.newRequest(frame, new Stream.Listener()
+        Stream stream = session.newRequest(frame, new Stream.Client.Listener()
             {
                 @Override
-                public void onResponse(Stream stream, HeadersFrame frame)
+                public void onResponse(Stream.Client stream, HeadersFrame frame)
                 {
                     MetaData.Response response = (MetaData.Response)frame.getMetaData();
                     assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -112,7 +111,7 @@ public class HandlerClientServerTest extends AbstractClientServerTest
                 }
 
                 @Override
-                public void onDataAvailable(Stream stream)
+                public void onDataAvailable(Stream.Client stream)
                 {
                     Stream.Data data = stream.readData();
                     if (data == null)
@@ -137,9 +136,9 @@ public class HandlerClientServerTest extends AbstractClientServerTest
                     stream.demand();
                 }
             })
-            .get(555, TimeUnit.SECONDS);
+            .get(5, TimeUnit.SECONDS);
 
-        byte[] bytes = new byte[1 * 1024];
+        byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
         stream.data(new DataFrame(ByteBuffer.wrap(bytes, 0, bytes.length / 2), false))
             .thenCompose(s -> s.data(new DataFrame(ByteBuffer.wrap(bytes, bytes.length / 2, bytes.length / 2), true)))

@@ -24,6 +24,9 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Graceful;
 
+/**
+ * <p>A container that tracks {@link QuicSession} instances.</p>
+ */
 public class QuicSessionContainer extends AbstractLifeCycle implements QuicSession.Listener, Graceful, Dumpable
 {
     private final Set<QuicSession> sessions = ConcurrentHashMap.newKeySet();

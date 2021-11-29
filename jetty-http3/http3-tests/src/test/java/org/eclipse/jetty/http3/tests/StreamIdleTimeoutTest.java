@@ -50,17 +50,17 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
             }
 
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 if ("/idle".equals(request.getURI().getPath()))
                 {
                     assertFalse(frame.isLast());
                     stream.demand();
-                    return new Stream.Listener()
+                    return new Stream.Server.Listener()
                     {
                         @Override
-                        public void onDataAvailable(Stream stream)
+                        public void onDataAvailable(Stream.Server stream)
                         {
                             // When the client closes the stream, the server
                             // may either receive an empty, last, DATA frame, or
@@ -102,10 +102,10 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
         CountDownLatch clientIdleLatch = new CountDownLatch(1);
-        clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Listener()
+        clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Client.Listener()
         {
             @Override
-            public boolean onIdleTimeout(Stream stream, Throwable failure)
+            public boolean onIdleTimeout(Stream.Client stream, Throwable failure)
             {
                 clientIdleLatch.countDown();
                 // Signal to close the stream.
@@ -122,10 +122,10 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
 
         // The session should still be open, verify by sending another request.
         CountDownLatch clientLatch = new CountDownLatch(1);
-        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Listener()
+        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Client.Listener()
         {
             @Override
-            public void onResponse(Stream stream, HeadersFrame frame)
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
                 clientLatch.countDown();
             }
@@ -152,15 +152,15 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
             }
 
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 if ("/idle".equals(request.getURI().getPath()))
                 {
-                    return new Stream.Listener()
+                    return new Stream.Server.Listener()
                     {
                         @Override
-                        public boolean onIdleTimeout(Stream stream, Throwable failure)
+                        public boolean onIdleTimeout(Stream.Server stream, Throwable failure)
                         {
                             serverIdleLatch.countDown();
                             return true;
@@ -183,10 +183,10 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
             .get(5, TimeUnit.SECONDS);
 
         CountDownLatch clientFailureLatch = new CountDownLatch(1);
-        clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Listener()
+        clientSession.newRequest(new HeadersFrame(newRequest("/idle"), false), new Stream.Client.Listener()
         {
             @Override
-            public void onFailure(Stream stream, long error, Throwable failure)
+            public void onFailure(Stream.Client stream, long error, Throwable failure)
             {
                 // The server idle times out, but did not send any data back.
                 // However, the stream is readable and the implementation
@@ -203,10 +203,10 @@ public class StreamIdleTimeoutTest extends AbstractClientServerTest
 
         // The session should still be open, verify by sending another request.
         CountDownLatch clientLatch = new CountDownLatch(1);
-        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Listener()
+        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Client.Listener()
         {
             @Override
-            public void onResponse(Stream stream, HeadersFrame frame)
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
                 clientLatch.countDown();
             }

@@ -88,7 +88,6 @@ public interface Session
      * </pre>
      *
      * @see Stream
-     * @see Stream.Listener
      */
     public interface Client extends Session
     {
@@ -99,7 +98,7 @@ public interface Session
          * @param listener the listener that gets notified of stream events
          * @return a CompletableFuture that is notified of the stream creation
          */
-        public CompletableFuture<Stream> newRequest(HeadersFrame frame, Stream.Listener listener);
+        public CompletableFuture<Stream> newRequest(HeadersFrame frame, Stream.Client.Listener listener);
 
         /**
          * <p>The client-side specific {@link Session.Listener}.</p>
@@ -111,7 +110,7 @@ public interface Session
 
     /**
      * <p>The server-side HTTP/3 API representing a connection with a client.</p>
-     * <p>To receive HTTP/3 request events, see {@link Session.Server.Listener#onRequest(Stream, HeadersFrame)}.</p>
+     * <p>To receive HTTP/3 request events, see {@link Session.Server.Listener#onRequest(Stream.Server, HeadersFrame)}.</p>
      */
     public interface Server extends Session
     {
@@ -127,6 +126,45 @@ public interface Session
              */
             public default void onAccept(Session session)
             {
+            }
+
+            /**
+             * <p>Callback method invoked when a request is received.</p>
+             * <p>Applications should implement this method to process HTTP/3 requests,
+             * typically providing an HTTP/3 response via {@link Stream.Server#respond(HeadersFrame)}:</p>
+             * <pre>
+             * class MyServer implements Session.Server.Listener
+             * {
+             *     &#64;Override
+             *     public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+             *     {
+             *         // Send a response.
+             *         var response = new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY);
+             *         stream.respond(new HeadersFrame(response, true));
+             *         if (!frame.isLast())
+             *             stream.demand();
+             *         return null;
+             *     }
+             * }
+             * </pre>
+             * <p>If there is request content (indicated by the fact that the HEADERS frame
+             * is not the last in the stream), then applications either:</p>
+             * <ul>
+             *     <li>return {@code null} to indicate that they are not interested in
+             *     reading the content</li>
+             *     <li><em>must</em> call {@link Stream#demand()} and return a {@link Stream.Server.Listener}
+             *     that overrides {@link Stream.Server.Listener#onDataAvailable(Stream.Server)} that reads
+             *     and consumes the content.</li>
+             * </ul>
+             *
+             * @param stream the stream associated with the request
+             * @param frame the HEADERS frame containing the request headers
+             * @return a {@link Stream.Server.Listener} that will be notified of stream events
+             * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
+             */
+            public default Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
+            {
+                return null;
             }
         }
     }
@@ -193,45 +231,6 @@ public interface Session
          */
         public default void onDisconnect(Session session, long error, String reason)
         {
-        }
-
-        /**
-         * <p>Callback method invoked when a request is received.</p>
-         * <p>Applications should implement this method to process HTTP/3 requests,
-         * typically providing an HTTP/3 response via {@link Stream#respond(HeadersFrame)}:</p>
-         * <pre>
-         * class MyServer implements Session.Server.Listener
-         * {
-         *     &#64;Override
-         *     public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
-         *     {
-         *         // Send a response.
-         *         var response = new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY);
-         *         stream.respond(new HeadersFrame(response, true));
-         *         if (!frame.isLast())
-         *             stream.demand();
-         *         return null;
-         *     }
-         * }
-         * </pre>
-         * <p>If there is request content (indicated by the fact that the HEADERS frame
-         * is not the last in the stream), then applications either:</p>
-         * <ul>
-         *     <li>return {@code null} to indicate that they are not interested in
-         *     reading the content</li>
-         *     <li><em>must</em> call {@link Stream#demand()} and return a {@link Stream.Listener}
-         *     that overrides {@link Stream.Listener#onDataAvailable(Stream)} that reads
-         *     and consumes the content.</li>
-         * </ul>
-         *
-         * @param stream the stream associated with the request
-         * @param frame the HEADERS frame containing the request headers
-         * @return a {@link Stream.Listener} that will be notified of stream events
-         * @see Stream.Listener#onDataAvailable(Stream)
-         */
-        public default Stream.Listener onRequest(Stream stream, HeadersFrame frame)
-        {
-            return null;
         }
 
         /**

@@ -54,10 +54,10 @@ public class ExternalServerTest
             CountDownLatch requestLatch = new CountDownLatch(1);
             HttpURI uri = HttpURI.from(String.format("https://%s/", hostPort));
             MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_3, HttpFields.EMPTY);
-            session.newRequest(new HeadersFrame(request, true), new Stream.Listener()
+            session.newRequest(new HeadersFrame(request, true), new Stream.Client.Listener()
             {
                 @Override
-                public void onResponse(Stream stream, HeadersFrame frame)
+                public void onResponse(Stream.Client stream, HeadersFrame frame)
                 {
                     System.err.println("RESPONSE HEADER = " + frame);
                     if (frame.isLast())
@@ -69,7 +69,7 @@ public class ExternalServerTest
                 }
 
                 @Override
-                public void onDataAvailable(Stream stream)
+                public void onDataAvailable(Stream.Client stream)
                 {
                     Stream.Data data = stream.readData();
                     System.err.println("RESPONSE DATA = " + data);
@@ -86,7 +86,7 @@ public class ExternalServerTest
                 }
 
                 @Override
-                public void onTrailer(Stream stream, HeadersFrame frame)
+                public void onTrailer(Stream.Client stream, HeadersFrame frame)
                 {
                     System.err.println("RESPONSE TRAILER = " + frame);
                     requestLatch.countDown();

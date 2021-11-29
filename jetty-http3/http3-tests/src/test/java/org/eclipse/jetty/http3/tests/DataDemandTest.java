@@ -55,13 +55,13 @@ public class DataDemandTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 stream.demand();
-                return new Stream.Listener()
+                return new Stream.Server.Listener()
                 {
                     @Override
-                    public void onDataAvailable(Stream stream)
+                    public void onDataAvailable(Stream.Server stream)
                     {
                         onDataAvailableCalls.incrementAndGet();
                         if (serverStreamRef.compareAndSet(null, stream))
@@ -86,7 +86,7 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(ByteBuffer.allocate(8192), true));
 
         assertTrue(serverStreamLatch.await(5, TimeUnit.SECONDS));
@@ -110,13 +110,13 @@ public class DataDemandTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 stream.demand();
-                return new Stream.Listener()
+                return new Stream.Server.Listener()
                 {
                     @Override
-                    public void onDataAvailable(Stream stream)
+                    public void onDataAvailable(Stream.Server stream)
                     {
                         onDataAvailableCalls.incrementAndGet();
                         if (serverStreamRef.compareAndSet(null, stream))
@@ -143,7 +143,7 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(ByteBuffer.allocate(16), false));
 
         assertTrue(serverStreamLatch.await(5, TimeUnit.SECONDS));
@@ -172,13 +172,13 @@ public class DataDemandTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 stream.demand();
-                return new Stream.Listener()
+                return new Stream.Server.Listener()
                 {
                     @Override
-                    public void onDataAvailable(Stream stream)
+                    public void onDataAvailable(Stream.Server stream)
                     {
                         onDataAvailableCalls.incrementAndGet();
                         if (serverStreamRef.compareAndSet(null, stream))
@@ -211,7 +211,7 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
         stream.data(new DataFrame(ByteBuffer.allocate(16), false));
 
         assertTrue(serverStreamLatch.await(5, TimeUnit.SECONDS));
@@ -237,13 +237,13 @@ public class DataDemandTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 stream.demand();
-                return new Stream.Listener()
+                return new Stream.Server.Listener()
                 {
                     @Override
-                    public void onDataAvailable(Stream stream)
+                    public void onDataAvailable(Stream.Server stream)
                     {
                         onDataAvailableCalls.incrementAndGet();
                         // Must read to EOF to trigger fill+parse of the trailer.
@@ -255,7 +255,7 @@ public class DataDemandTest extends AbstractClientServerTest
                     }
 
                     @Override
-                    public void onTrailer(Stream stream, HeadersFrame frame)
+                    public void onTrailer(Stream.Server stream, HeadersFrame frame)
                     {
                         serverTrailerLatch.countDown();
                     }
@@ -266,7 +266,7 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
         stream.trailer(new HeadersFrame(new MetaData(HttpVersion.HTTP_3, HttpFields.EMPTY), true)).get(5, TimeUnit.SECONDS);
 
         assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
@@ -289,13 +289,13 @@ public class DataDemandTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 stream.demand();
-                return new Stream.Listener()
+                return new Stream.Server.Listener()
                 {
                     @Override
-                    public void onDataAvailable(Stream stream)
+                    public void onDataAvailable(Stream.Server stream)
                     {
                         onDataAvailableCalls.incrementAndGet();
                         Stream.Data data = stream.readData();
@@ -308,7 +308,7 @@ public class DataDemandTest extends AbstractClientServerTest
                     }
 
                     @Override
-                    public void onTrailer(Stream stream, HeadersFrame frame)
+                    public void onTrailer(Stream.Server stream, HeadersFrame frame)
                     {
                         serverTrailerLatch.countDown();
                     }
@@ -319,7 +319,7 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
 
         stream.data(new DataFrame(ByteBuffer.allocate(dataLength), false));
 
@@ -343,13 +343,13 @@ public class DataDemandTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 stream.demand();
-                return new Stream.Listener()
+                return new Stream.Server.Listener()
                 {
                     @Override
-                    public void onDataAvailable(Stream stream)
+                    public void onDataAvailable(Stream.Server stream)
                     {
                         while (true)
                         {
@@ -372,7 +372,7 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
 
         byte[] bytesSent = new byte[16384];
         new Random().nextBytes(bytesSent);
@@ -397,15 +397,15 @@ public class DataDemandTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 serverStreamRef.set(stream);
                 serverRequestLatch.countDown();
                 // Do not demand here.
-                return new Stream.Listener()
+                return new Stream.Server.Listener()
                 {
                     @Override
-                    public void onDataAvailable(Stream stream)
+                    public void onDataAvailable(Stream.Server stream)
                     {
                         onDataAvailableCalls.incrementAndGet();
                         Stream.Data data = stream.readData();
@@ -420,7 +420,7 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
 
         stream.data(new DataFrame(ByteBuffer.allocate(4096), true));
 
@@ -444,7 +444,7 @@ public class DataDemandTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 stream.demand();
 
@@ -484,10 +484,10 @@ public class DataDemandTest extends AbstractClientServerTest
                     }
                 }).start();
 
-                return new Stream.Listener()
+                return new Stream.Server.Listener()
                 {
                     @Override
-                    public void onDataAvailable(Stream stream)
+                    public void onDataAvailable(Stream.Server stream)
                     {
                         semaphore.release();
                     }
@@ -498,7 +498,7 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Listener() {}).get(5, TimeUnit.SECONDS);
+        Stream stream = session.newRequest(request, new Stream.Client.Listener() {}).get(5, TimeUnit.SECONDS);
 
         // Send a first chunk of data.
         stream.data(new DataFrame(ByteBuffer.allocate(16 * 1024), false));
@@ -520,16 +520,16 @@ public class DataDemandTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 stream.demand();
-                return new Stream.Listener()
+                return new Stream.Server.Listener()
                 {
                     private boolean firstData;
                     private boolean nullData;
 
                     @Override
-                    public void onDataAvailable(Stream stream)
+                    public void onDataAvailable(Stream.Server stream)
                     {
                         while (!firstData)
                         {
@@ -572,7 +572,7 @@ public class DataDemandTest extends AbstractClientServerTest
         Session.Client session = newSession(new Session.Client.Listener() {});
 
         HeadersFrame request = new HeadersFrame(newRequest("/"), false);
-        Stream stream = session.newRequest(request, new Stream.Listener() {})
+        Stream stream = session.newRequest(request, new Stream.Client.Listener() {})
             .get(5, TimeUnit.SECONDS);
 
         // Send a first chunk to trigger reads.

@@ -18,7 +18,6 @@ import org.eclipse.jetty.http3.frames.Frame;
 import org.eclipse.jetty.http3.frames.GoAwayFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
-import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
@@ -53,12 +52,18 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
     }
 
     @Override
+    protected HTTP3StreamServer newHTTP3Stream(QuicStreamEndPoint endPoint, boolean local)
+    {
+        return new HTTP3StreamServer(this, endPoint, local);
+    }
+
+    @Override
     public void onHeaders(long streamId, HeadersFrame frame)
     {
         if (frame.getMetaData().isRequest())
         {
             QuicStreamEndPoint endPoint = getProtocolSession().getStreamEndPoint(streamId);
-            HTTP3Stream stream = getOrCreateStream(endPoint);
+            HTTP3StreamServer stream = (HTTP3StreamServer)getOrCreateStream(endPoint);
             if (LOG.isDebugEnabled())
                 LOG.debug("received request {} on {}", frame, stream);
             if (stream != null)

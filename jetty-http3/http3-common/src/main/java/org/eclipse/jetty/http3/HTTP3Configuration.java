@@ -16,6 +16,9 @@ package org.eclipse.jetty.http3;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
+/**
+ * <p>A record that captures HTTP/3 configuration parameters.</p>
+ */
 @ManagedObject
 public class HTTP3Configuration
 {

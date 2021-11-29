@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.quic.common;
 
+/**
+ * <p>A record that captures error code and error reason.</p>
+ */
 public class CloseInfo
 {
     private final long error;

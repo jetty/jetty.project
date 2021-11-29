@@ -22,6 +22,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
+/**
+ * <p>A HTTP/3 specific {@link QuicServerConnector} that configures QUIC parameters according to HTTP/3 requirements.</p>
+ */
 public class HTTP3ServerConnector extends QuicServerConnector
 {
     public HTTP3ServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)

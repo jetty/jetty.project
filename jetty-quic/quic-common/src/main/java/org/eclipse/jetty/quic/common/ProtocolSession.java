@@ -29,6 +29,14 @@ import org.eclipse.jetty.util.thread.strategy.AdaptiveExecutionStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>Represents an <em>established</em> stateful connection with a remote peer for a specific QUIC connection ID.</p>
+ * <p>Differently from {@link QuicSession}, which is created during the initial phases of connection establishment
+ * and it is not specific to a protocol, {@link ProtocolSession} is created only when the connection is established,
+ * and it is protocol specific, depending on the protocol negotiated during the connection establishment.</p>
+ *
+ * @see QuicSession
+ */
 public abstract class ProtocolSession extends ContainerLifeCycle
 {
     private static final Logger LOG = LoggerFactory.getLogger(ProtocolSession.class);
@@ -164,6 +172,9 @@ public abstract class ProtocolSession extends ContainerLifeCycle
         return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), getQuicSession());
     }
 
+    /**
+     * <p>A factory for protocol specific instances of {@link ProtocolSession}.</p>
+     */
     public interface Factory
     {
         public ProtocolSession newProtocolSession(QuicSession quicSession, Map<String, Object> context);

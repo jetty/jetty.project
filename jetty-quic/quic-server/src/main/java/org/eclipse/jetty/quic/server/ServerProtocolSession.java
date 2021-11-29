@@ -21,6 +21,9 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>Server specific implementation of {@link ProtocolSession}.</p>
+ */
 public class ServerProtocolSession extends ProtocolSession
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerProtocolSession.class);

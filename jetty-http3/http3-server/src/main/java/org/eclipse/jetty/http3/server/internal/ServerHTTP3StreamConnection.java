@@ -43,7 +43,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection
         session.onDataAvailable(streamId);
     }
 
-    public Runnable onRequest(HTTP3Stream stream, HeadersFrame frame)
+    public Runnable onRequest(HTTP3StreamServer stream, HeadersFrame frame)
     {
         HttpTransportOverHTTP3 transport = new HttpTransportOverHTTP3(stream);
         HttpChannelOverHTTP3 channel = new HttpChannelOverHTTP3(connector, httpConfiguration, getEndPoint(), transport, stream, this);

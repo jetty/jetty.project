@@ -18,6 +18,7 @@ import java.net.SocketAddress;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.SocketChannel;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -27,8 +28,17 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.DatagramChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 
+/**
+ * <p>A QUIC specific {@link ClientConnector.Configurator}.</p>
+ * <p>Since QUIC is based on UDP, this class creates {@link DatagramChannel}s instead of
+ * {@link SocketChannel}s, and {@link DatagramChannelEndPoint}s instead of
+ * {@link SocketChannelEndPoint}s.</p>
+ *
+ * @see QuicConfiguration
+ */
 public class QuicClientConnectorConfigurator extends ClientConnector.Configurator
 {
     private final QuicConfiguration configuration = new QuicConfiguration();

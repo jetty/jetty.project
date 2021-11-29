@@ -16,6 +16,9 @@ package org.eclipse.jetty.quic.common;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * <p>The QUIC stream type, either client or server initiated, and either unidirectional or bidirectional.</p>
+ */
 public enum StreamType
 {
     CLIENT_BIDIRECTIONAL(0x00),
@@ -27,16 +30,6 @@ public enum StreamType
     {
         int type = ((int)(streamId)) & 0b11;
         return Types.types.get(type);
-    }
-
-    public static boolean isUnidirectional(long streamId)
-    {
-        return (streamId & 0b01) == 0b01;
-    }
-
-    public static boolean isBidirectional(long streamId)
-    {
-        return (streamId & 0b01) == 0b00;
     }
 
     public static boolean isReserved(long streamType)

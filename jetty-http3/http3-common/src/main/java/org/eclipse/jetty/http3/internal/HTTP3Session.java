@@ -42,7 +42,6 @@ import org.eclipse.jetty.quic.common.ProtocolSession;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -267,45 +266,6 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
         streamTimeouts.schedule(stream);
     }
 
-    protected CompletableFuture<Stream> newRequest(long streamId, HeadersFrame frame, Stream.Listener listener)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("new request stream #{} with {} on {}", streamId, frame, this);
-
-        QuicStreamEndPoint endPoint = session.getOrCreateStreamEndPoint(streamId, session::openProtocolEndPoint);
-
-        Promise.Completable<Stream> promise = new Promise.Completable<>();
-        promise.whenComplete((s, x) ->
-        {
-            if (x != null)
-                endPoint.close(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
-        });
-        HTTP3Stream stream = createStream(endPoint, promise::failed);
-        if (stream == null)
-            return promise;
-
-        stream.setListener(listener);
-
-        stream.writeFrame(frame)
-            .whenComplete((r, x) ->
-            {
-                if (x == null)
-                {
-                    if (listener == null)
-                        endPoint.shutdownInput(HTTP3ErrorCode.NO_ERROR.code());
-                    stream.updateClose(frame.isLast(), true);
-                    promise.succeeded(stream);
-                }
-                else
-                {
-                    removeStream(stream, x);
-                    promise.failed(x);
-                }
-            });
-
-        return promise;
-    }
-
     protected HTTP3Stream createStream(QuicStreamEndPoint endPoint, Consumer<Throwable> fail)
     {
         long streamId = endPoint.getStreamId();
@@ -337,7 +297,7 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
 
         if (failure == null)
         {
-            HTTP3Stream stream = new HTTP3Stream(this, endPoint, local);
+            HTTP3Stream stream = newHTTP3Stream(endPoint, local);
             long idleTimeout = getStreamIdleTimeout();
             if (idleTimeout > 0)
                 stream.setIdleTimeout(idleTimeout);
@@ -356,6 +316,8 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
             return null;
         }
     }
+
+    protected abstract HTTP3Stream newHTTP3Stream(QuicStreamEndPoint endPoint, boolean local);
 
     protected HTTP3Stream getStream(long streamId)
     {

@@ -19,6 +19,7 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
+import org.eclipse.jetty.http3.server.internal.HTTP3StreamServer;
 import org.eclipse.jetty.http3.server.internal.HttpChannelOverHTTP3;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
@@ -44,7 +45,7 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         private static final Logger LOG = LoggerFactory.getLogger(HTTP3SessionListener.class);
 
         @Override
-        public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+        public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
             HTTP3StreamListener listener = new HTTP3StreamListener(http3Stream.getEndPoint());
@@ -75,7 +76,7 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
     }
 
-    private static class HTTP3StreamListener implements Stream.Listener
+    private static class HTTP3StreamListener implements Stream.Server.Listener
     {
         private final EndPoint endPoint;
 
@@ -91,7 +92,7 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
 
         public void onRequest(Stream stream, HeadersFrame frame)
         {
-            HTTP3Stream http3Stream = (HTTP3Stream)stream;
+            HTTP3StreamServer http3Stream = (HTTP3StreamServer)stream;
             Runnable task = getConnection().onRequest(http3Stream, frame);
             if (task != null)
             {
@@ -101,7 +102,7 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onDataAvailable(Stream stream)
+        public void onDataAvailable(Stream.Server stream)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
             Runnable task = getConnection().onDataAvailable(http3Stream);
@@ -113,7 +114,7 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onTrailer(Stream stream, HeadersFrame frame)
+        public void onTrailer(Stream.Server stream, HeadersFrame frame)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
             Runnable task = getConnection().onTrailer(http3Stream, frame);
@@ -125,7 +126,7 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public boolean onIdleTimeout(Stream stream, Throwable failure)
+        public boolean onIdleTimeout(Stream.Server stream, Throwable failure)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
             return getConnection().onIdleTimeout((HTTP3Stream)stream, failure, task ->
@@ -139,7 +140,7 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         }
 
         @Override
-        public void onFailure(Stream stream, long error, Throwable failure)
+        public void onFailure(Stream.Server stream, long error, Throwable failure)
         {
             HTTP3Stream http3Stream = (HTTP3Stream)stream;
             Runnable task = getConnection().onFailure((HTTP3Stream)stream, failure);

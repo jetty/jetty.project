@@ -18,9 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.Frame;
@@ -34,7 +31,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
+public abstract class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3Stream.class);
 
@@ -42,7 +39,6 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
     private final QuicStreamEndPoint endPoint;
     private final boolean local;
     private CloseState closeState = CloseState.NOT_CLOSED;
-    private Listener listener;
     private FrameState frameState = FrameState.INITIAL;
     private long idleTimeout;
     private long expireNanoTime;
@@ -89,16 +85,6 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         return local;
     }
 
-    public Listener getListener()
-    {
-        return listener;
-    }
-
-    public void setListener(Listener listener)
-    {
-        this.listener = listener;
-    }
-
     public long getIdleTimeout()
     {
         return idleTimeout;
@@ -119,7 +105,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         return expireNanoTime;
     }
 
-    private void notIdle()
+    protected void notIdle()
     {
         long idleTimeout = getIdleTimeout();
         if (idleTimeout > 0)
@@ -137,18 +123,12 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
     }
 
     @Override
-    public CompletableFuture<Stream> respond(HeadersFrame frame)
-    {
-        return write(frame);
-    }
-
-    @Override
     public CompletableFuture<Stream> data(DataFrame frame)
     {
         return write(frame);
     }
 
-    private CompletableFuture<Stream> write(Frame frame)
+    protected CompletableFuture<Stream> write(Frame frame)
     {
         return writeFrame(frame)
             .whenComplete((s, x) ->
@@ -202,66 +182,6 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         return connection.hasDemand();
     }
 
-    public void onRequest(HeadersFrame frame)
-    {
-        if (validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.HEADER))
-        {
-            notIdle();
-            Listener listener = notifyRequest(frame);
-            setListener(listener);
-            if (listener == null)
-            {
-                Callback callback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> endPoint.shutdownInput(HTTP3ErrorCode.NO_ERROR.code()));
-                session.writeMessageFrame(getId(), new MessageFlusher.FlushFrame(), callback);
-            }
-            updateClose(frame.isLast(), false);
-        }
-    }
-
-    private Listener notifyRequest(HeadersFrame frame)
-    {
-        Session.Listener listener = session.getListener();
-        try
-        {
-            return listener.onRequest(this, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-            return null;
-        }
-    }
-
-    public void onResponse(HeadersFrame frame)
-    {
-        MetaData.Response response = (MetaData.Response)frame.getMetaData();
-        boolean valid;
-        if (response.getStatus() == HttpStatus.CONTINUE_100)
-            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL), FrameState.CONTINUE);
-        else
-            valid = validateAndUpdate(EnumSet.of(FrameState.INITIAL, FrameState.CONTINUE), FrameState.HEADER);
-        if (valid)
-        {
-            notIdle();
-            notifyResponse(frame);
-            updateClose(frame.isLast(), false);
-        }
-    }
-
-    private void notifyResponse(HeadersFrame frame)
-    {
-        Listener listener = getListener();
-        try
-        {
-            if (listener != null)
-                listener.onResponse(this, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-        }
-    }
-
     public void onData(DataFrame frame)
     {
         if (validateAndUpdate(EnumSet.of(FrameState.HEADER, FrameState.DATA), FrameState.DATA))
@@ -273,19 +193,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         notifyDataAvailable();
     }
 
-    private void notifyDataAvailable()
-    {
-        Stream.Listener listener = getListener();
-        try
-        {
-            if (listener != null)
-                listener.onDataAvailable(this);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-        }
-    }
+    protected abstract void notifyDataAvailable();
 
     public void onTrailer(HeadersFrame frame)
     {
@@ -297,35 +205,9 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         }
     }
 
-    private void notifyTrailer(HeadersFrame frame)
-    {
-        Listener listener = getListener();
-        try
-        {
-            if (listener != null)
-                listener.onTrailer(this, frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-        }
-    }
+    protected abstract void notifyTrailer(HeadersFrame frame);
 
-    private boolean notifyIdleTimeout(TimeoutException timeout)
-    {
-        Listener listener = getListener();
-        try
-        {
-            if (listener != null)
-                return listener.onIdleTimeout(this, timeout);
-            return true;
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-            return true;
-        }
-    }
+    protected abstract boolean notifyIdleTimeout(TimeoutException timeout);
 
     public void onFailure(long error, Throwable failure)
     {
@@ -333,21 +215,9 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         session.removeStream(this, failure);
     }
 
-    private void notifyFailure(long error, Throwable failure)
-    {
-        Listener listener = getListener();
-        try
-        {
-            if (listener != null)
-                listener.onFailure(this, error, failure);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("failure notifying listener {}", listener, x);
-        }
-    }
+    protected abstract void notifyFailure(long error, Throwable failure);
 
-    private boolean validateAndUpdate(EnumSet<FrameState> allowed, FrameState target)
+    protected boolean validateAndUpdate(EnumSet<FrameState> allowed, FrameState target)
     {
         if (allowed.contains(frameState))
         {
@@ -366,7 +236,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         }
     }
 
-    Promise.Completable<Stream> writeFrame(Frame frame)
+    public Promise.Completable<Stream> writeFrame(Frame frame)
     {
         notIdle();
         Promise.Completable<Stream> completable = new Promise.Completable<>();
@@ -379,7 +249,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         return closeState == CloseState.CLOSED;
     }
 
-    void updateClose(boolean update, boolean local)
+    public void updateClose(boolean update, boolean local)
     {
         if (update)
         {
@@ -443,7 +313,7 @@ public class HTTP3Stream implements Stream, CyclicTimeouts.Expirable, Attachable
         );
     }
 
-    private enum FrameState
+    protected enum FrameState
     {
         INITIAL, CONTINUE, HEADER, DATA, TRAILER, FAILED
     }
