@@ -45,10 +45,6 @@
             </goals>
             <configuration>
               <rules>
-                <requireJavaVersion>
-                  <version>[17,)</version>
-                  <message>[ERROR] Old Java [${java.version}] in use. Jetty javadocs ${project.version} MUST use Java 17 or newer</message>
-                </requireJavaVersion>
                 <requireUpperBoundDeps>
                   <excludes>
                     <exclude>com.google.code.findbugs:jsr305</exclude>
@@ -143,10 +139,6 @@
             <configuration>
               <doctitle>Eclipse Jetty API Doc - v${project.version}</doctitle>
               <windowtitle>Eclipse Jetty API Doc - v${project.version}</windowtitle>
-              <additionalJOptions>
-                <option>--add-modules</option>
-                <option>jdk.incubator.foreign</option>
-              </additionalJOptions>
               <excludePackageNames>
                 org.eclipse.jetty.http3.client.http.internal;
                 org.eclipse.jetty.http3.client.internal;
