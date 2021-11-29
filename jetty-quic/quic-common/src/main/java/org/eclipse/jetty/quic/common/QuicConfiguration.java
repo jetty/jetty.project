@@ -15,6 +15,9 @@ package org.eclipse.jetty.quic.common;
 
 import java.util.List;
 
+/**
+ * <p>A record that captures QUIC configuration parameters.</p>
+ */
 public class QuicConfiguration
 {
     public static final String CONTEXT_KEY = QuicConfiguration.class.getName();

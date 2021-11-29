@@ -32,7 +32,9 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
+import org.eclipse.jetty.quic.common.QuicSession;
 import org.eclipse.jetty.quic.common.QuicSessionContainer;
+import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.quic.quiche.QuicheConfig;
 import org.eclipse.jetty.quic.quiche.SSLKeyPair;
 import org.eclipse.jetty.server.AbstractNetworkConnector;
@@ -42,6 +44,15 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
+/**
+ * <p>A server side network connector that uses a {@link DatagramChannel} to listen on a network port for QUIC traffic.</p>
+ * <p>This connector uses {@link ConnectionFactory}s to configure the protocols to support.
+ * The protocol is negotiated during the connection establishment by {@link QuicSession}, and for each QUIC stream
+ * managed by a {@link QuicSession} a {@link ConnectionFactory} is used to create a {@link Connection} for the
+ * correspondent {@link QuicStreamEndPoint}.</p>
+ *
+ * @see QuicConfiguration
+ */
 public class QuicServerConnector extends AbstractNetworkConnector
 {
     private final QuicConfiguration quicConfiguration = new QuicConfiguration();

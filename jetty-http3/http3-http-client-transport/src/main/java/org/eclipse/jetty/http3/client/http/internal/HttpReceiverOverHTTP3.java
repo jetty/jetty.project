@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listener
+public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Client.Listener
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpReceiverOverHTTP3.class);
     private boolean notifySuccess;
@@ -65,7 +65,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public void onResponse(Stream stream, HeadersFrame frame)
+    public void onResponse(Stream.Client stream, HeadersFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -105,7 +105,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public void onDataAvailable(Stream stream)
+    public void onDataAvailable(Stream.Client stream)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -164,7 +164,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public void onTrailer(Stream stream, HeadersFrame frame)
+    public void onTrailer(Stream.Client stream, HeadersFrame frame)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -176,7 +176,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public boolean onIdleTimeout(Stream stream, Throwable failure)
+    public boolean onIdleTimeout(Stream.Client stream, Throwable failure)
     {
         HttpExchange exchange = getHttpExchange();
         if (exchange == null)
@@ -186,7 +186,7 @@ public class HttpReceiverOverHTTP3 extends HttpReceiver implements Stream.Listen
     }
 
     @Override
-    public void onFailure(Stream stream, long error, Throwable failure)
+    public void onFailure(Stream.Client stream, long error, Throwable failure)
     {
         responseFailure(failure);
     }

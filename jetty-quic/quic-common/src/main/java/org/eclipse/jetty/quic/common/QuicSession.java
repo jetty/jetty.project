@@ -53,6 +53,8 @@ import org.slf4j.LoggerFactory;
  * have pending I/O events, either read-ready or write-ready.</p>
  * <p>On the receive side, a QuicSession <em>fans-out</em> to multiple {@link QuicStreamEndPoint}s.</p>
  * <p>On the send side, many {@link QuicStreamEndPoint}s <em>fan-in</em> to a QuicSession.</p>
+ *
+ * @see ProtocolSession
  */
 public abstract class QuicSession extends ContainerLifeCycle
 {
@@ -309,30 +311,6 @@ public abstract class QuicSession extends ContainerLifeCycle
 
         if (isConnectionEstablished())
         {
-            // HTTP/1.1
-            // client1 -- sockEP1 -- H1Connection
-
-            // HTTP/2
-            // client1 -- sockEP1 -> H2Connection - HEADERSParser - H2Session -* RequestStreams -# HTTP Handler
-            // client2 -- sockEP2 -> H2Connection - HEADERSParser - H2Session -* RequestStreams -# HTTP Handler
-
-            // HTTP/1 on QUIC
-            // client1
-            //        \
-            //         dataEP - QuicConnection -* QuicSession -# ProtocolSession -* RequestStreamN - HttpConnection - HTTP Handler
-            //        /
-            // client2
-
-            // HTTP/3
-            // client1
-            //        \                                                        /- ControlStream0 - ControlParser for SETTINGS frames, etc.
-            //         dataEP - QuicConnection -* QuicSession -# H3QuicSession -* RequestStreamsEP - H3Connection - HEADERSParser -# HTTP Handler
-            //        /                                                        `- InstructionStream - InstructionConnection/Parser
-            // client2
-            // H3ProtoSession - QpackEncoder
-            // H3ProtoSession - QpackDecoder
-            // H3ProtoSession -* request streams
-
             ProtocolSession protocol = protocolSession;
             if (protocol == null)
             {
@@ -549,12 +527,25 @@ public abstract class QuicSession extends ContainerLifeCycle
         }
     }
 
+    /**
+     * <p>A listener for {@link QuicSession} events.</p>
+     */
     public interface Listener extends EventListener
     {
+        /**
+         * <p>Callback method invoked when a {@link QuicSession} is opened.</p>
+         *
+         * @param session the session
+         */
         public default void onOpened(QuicSession session)
         {
         }
 
+        /**
+         * <p>Callback method invoked when a {@link QuicSession} is closed.</p>
+         *
+         * @param session the session
+         */
         public default void onClosed(QuicSession session)
         {
         }

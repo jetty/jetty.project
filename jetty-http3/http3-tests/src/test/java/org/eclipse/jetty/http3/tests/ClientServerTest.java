@@ -98,7 +98,7 @@ public class ClientServerTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 serverSessionRef.set((HTTP3Session)stream.getSession());
                 serverRequestLatch.countDown();
@@ -113,10 +113,10 @@ public class ClientServerTest extends AbstractClientServerTest
 
         CountDownLatch clientResponseLatch = new CountDownLatch(1);
         HeadersFrame frame = new HeadersFrame(newRequest("/"), true);
-        Stream stream = clientSession.newRequest(frame, new Stream.Listener()
+        Stream stream = clientSession.newRequest(frame, new Stream.Client.Listener()
             {
                 @Override
-                public void onResponse(Stream stream, HeadersFrame frame)
+                public void onResponse(Stream.Client stream, HeadersFrame frame)
                 {
                     clientResponseLatch.countDown();
                 }
@@ -147,15 +147,15 @@ public class ClientServerTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 // Send the response.
                 stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), false));
                 stream.demand();
-                return new Stream.Listener()
+                return new Stream.Server.Listener()
                 {
                     @Override
-                    public void onDataAvailable(Stream stream)
+                    public void onDataAvailable(Stream.Server stream)
                     {
                         // FlowControl acknowledged already.
                         Stream.Data data = stream.readData();
@@ -180,10 +180,10 @@ public class ClientServerTest extends AbstractClientServerTest
 
         AtomicReference<CountDownLatch> clientLatch = new AtomicReference<>(new CountDownLatch(1));
         HeadersFrame frame = new HeadersFrame(newRequest(HttpMethod.POST, "/"), false);
-        Stream.Listener streamListener = new Stream.Listener()
+        Stream.Client.Listener streamListener = new Stream.Client.Listener()
         {
             @Override
-            public void onResponse(Stream stream, HeadersFrame frame)
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
                 clientLatch.get().countDown();
             }
@@ -216,16 +216,16 @@ public class ClientServerTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 serverSessionRef.set((HTTP3Session)stream.getSession());
                 // Send the response headers.
                 stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), false));
                 stream.demand();
-                return new Stream.Listener()
+                return new Stream.Server.Listener()
                 {
                     @Override
-                    public void onDataAvailable(Stream stream)
+                    public void onDataAvailable(Stream.Server stream)
                     {
                         // Read data.
                         Stream.Data data = stream.readData();
@@ -254,17 +254,17 @@ public class ClientServerTest extends AbstractClientServerTest
         byte[] bytesReceived = new byte[bytesSent.length];
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytesReceived);
         CountDownLatch clientDataLatch = new CountDownLatch(1);
-        Stream stream = clientSession.newRequest(frame, new Stream.Listener()
+        Stream stream = clientSession.newRequest(frame, new Stream.Client.Listener()
             {
                 @Override
-                public void onResponse(Stream stream, HeadersFrame frame)
+                public void onResponse(Stream.Client stream, HeadersFrame frame)
                 {
                     clientResponseLatch.countDown();
                     stream.demand();
                 }
 
                 @Override
-                public void onDataAvailable(Stream stream)
+                public void onDataAvailable(Stream.Client stream)
                 {
                     // Read data.
                     Stream.Data data = stream.readData();
@@ -306,7 +306,7 @@ public class ClientServerTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 stream.respond(new HeadersFrame(new MetaData.Response(HttpVersion.HTTP_3, HttpStatus.OK_200, HttpFields.EMPTY), true));
                 return null;
@@ -319,7 +319,7 @@ public class ClientServerTest extends AbstractClientServerTest
 
         CountDownLatch requestFailureLatch = new CountDownLatch(1);
         HttpFields largeHeaders = HttpFields.build().put("too-large", "x".repeat(2 * maxRequestHeadersSize));
-        clientSession.newRequest(new HeadersFrame(newRequest(HttpMethod.GET, "/", largeHeaders), true), new Stream.Listener() {})
+        clientSession.newRequest(new HeadersFrame(newRequest(HttpMethod.GET, "/", largeHeaders), true), new Stream.Client.Listener() {})
             .whenComplete((s, x) ->
             {
                 // The HTTP3Stream was created, but the application cannot access
@@ -334,10 +334,10 @@ public class ClientServerTest extends AbstractClientServerTest
 
         // Verify that the connection is still good.
         CountDownLatch responseLatch = new CountDownLatch(1);
-        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Listener()
+        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Client.Listener()
         {
             @Override
-            public void onResponse(Stream stream, HeadersFrame frame)
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
                 responseLatch.countDown();
             }
@@ -355,7 +355,7 @@ public class ClientServerTest extends AbstractClientServerTest
         start(new Session.Server.Listener()
         {
             @Override
-            public Stream.Listener onRequest(Stream stream, HeadersFrame frame)
+            public Stream.Server.Listener onRequest(Stream.Server stream, HeadersFrame frame)
             {
                 serverSessionRef.set(stream.getSession());
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
@@ -390,10 +390,10 @@ public class ClientServerTest extends AbstractClientServerTest
         Session.Client clientSession = newSession(new Session.Client.Listener() {});
 
         CountDownLatch streamFailureLatch = new CountDownLatch(1);
-        clientSession.newRequest(new HeadersFrame(newRequest("/large"), true), new Stream.Listener()
+        clientSession.newRequest(new HeadersFrame(newRequest("/large"), true), new Stream.Client.Listener()
             {
                 @Override
-                public void onFailure(Stream stream, long error, Throwable failure)
+                public void onFailure(Stream.Client stream, long error, Throwable failure)
                 {
                     streamFailureLatch.countDown();
                 }
@@ -406,10 +406,10 @@ public class ClientServerTest extends AbstractClientServerTest
 
         // Verify that the connection is still good.
         CountDownLatch responseLatch = new CountDownLatch(1);
-        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Listener()
+        clientSession.newRequest(new HeadersFrame(newRequest("/"), true), new Stream.Client.Listener()
         {
             @Override
-            public void onResponse(Stream stream, HeadersFrame frame)
+            public void onResponse(Stream.Client stream, HeadersFrame frame)
             {
                 responseLatch.countDown();
             }

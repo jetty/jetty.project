@@ -45,7 +45,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
         return session;
     }
 
-    public Stream.Listener getStreamListener()
+    public Stream.Client.Listener getStreamListener()
     {
         return receiver;
     }

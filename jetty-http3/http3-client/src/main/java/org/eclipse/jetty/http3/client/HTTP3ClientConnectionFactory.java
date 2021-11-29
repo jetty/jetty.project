@@ -30,6 +30,10 @@ import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * <p>A {@link ClientConnectionFactory} implementation that creates HTTP/3 specific
+ * {@link Connection} objects to be linked to a {@link QuicStreamEndPoint}.</p>
+ */
 public class HTTP3ClientConnectionFactory implements ClientConnectionFactory, ProtocolSession.Factory
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP3ClientConnectionFactory.class);

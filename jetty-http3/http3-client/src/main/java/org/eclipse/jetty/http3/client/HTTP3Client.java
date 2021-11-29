@@ -21,8 +21,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http3.HTTP3Configuration;
 import org.eclipse.jetty.http3.api.Session;
+import org.eclipse.jetty.http3.client.internal.ClientHTTP3Session;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.DatagramChannelEndPoint;
+import org.eclipse.jetty.quic.client.ClientQuicConnection;
+import org.eclipse.jetty.quic.client.ClientQuicSession;
 import org.eclipse.jetty.quic.client.QuicClientConnectorConfigurator;
 import org.eclipse.jetty.quic.common.QuicConfiguration;
 import org.eclipse.jetty.quic.common.QuicConnection;
@@ -33,10 +37,92 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * <p>HTTP3Client provides an asynchronous, non-blocking implementation to send
+ * HTTP/3 frames to a server.</p>
+ * <p>Typical usage:</p>
  * <pre>
- *             / dgramEP1 - ClientQuiConnection -* ClientQuicSession - ClientProtocolSession
- * HTTP3Client                                                                             / ControlStream
- *             \ dgramEP3 - ClientQuiConnection -* ClientQuicSession - ClientHTTP3Session -* HTTP3Streams
+ * // HTTP3Client setup.
+ *
+ * HTTP3Client client = new HTTP3Client();
+ *
+ * // To configure QUIC properties.
+ * QuicConfiguration quicConfig = client.getQuicConfiguration();
+ *
+ * // To configure HTTP/3 properties.
+ * HTTP3Configuration h3Config = client.getHTTP3Configuration();
+ *
+ * client.start();
+ *
+ * // HTTP3Client request/response usage.
+ *
+ * // Connect to host.
+ * String host = "webtide.com";
+ * int port = 443;
+ * Session.Client session = client
+ *     .connect(new InetSocketAddress(host, port), new Session.Client.Listener() {})
+ *     .get(5, TimeUnit.SECONDS);
+ *
+ * // Prepare the HTTP request headers.
+ * HttpFields requestFields = new HttpFields();
+ * requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
+ *
+ * // Prepare the HTTP request object.
+ * MetaData.Request request = new MetaData.Request("PUT", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_3, requestFields);
+ *
+ * // Create the HTTP/3 HEADERS frame representing the HTTP request.
+ * HeadersFrame headersFrame = new HeadersFrame(request, false);
+ *
+ * // Send the HEADERS frame to create a request stream.
+ * Stream stream = session.newRequest(headersFrame, new Stream.Listener()
+ * {
+ *     &#64;Override
+ *     public void onResponse(Stream stream, HeadersFrame frame)
+ *     {
+ *         // Inspect the response status and headers.
+ *         MetaData.Response response = (MetaData.Response)frame.getMetaData();
+ *
+ *         // Demand for response content.
+ *         stream.demand();
+ *     }
+ *
+ *     &#64;Override
+ *     public void onDataAvailable(Stream stream)
+ *     {
+ *         Stream.Data data = stream.readData();
+ *         if (data != null)
+ *         {
+ *             // Process the response content chunk.
+ *         }
+ *         // Demand for more response content.
+ *         stream.demand();
+ *     }
+ * }).get(5, TimeUnit.SECONDS);
+ *
+ * // Use the Stream object to send request content, if any, using a DATA frame.
+ * ByteBuffer requestChunk1 = ...;
+ * stream.data(new DataFrame(requestChunk1, false))
+ *     // Subsequent sends must wait for previous sends to complete.
+ *     .thenCompose(s ->
+ *     {
+ *         ByteBuffer requestChunk2 = ...;
+ *         s.data(new DataFrame(requestChunk2, true)));
+ *     }
+ * </pre>
+ *
+ * <p>IMPLEMENTATION NOTES.</p>
+ * <p>Each call to {@link #connect(SocketAddress, Session.Client.Listener)} creates a new
+ * {@link DatagramChannelEndPoint} with the correspondent {@link ClientQuicConnection}.</p>
+ * <p>Each {@link ClientQuicConnection} manages one {@link ClientQuicSession} with the
+ * corresponding {@link ClientHTTP3Session}.</p>
+ * <p>Each {@link ClientHTTP3Session} manages the mandatory encoder, decoder and control
+ * streams, plus zero or more request/response streams.</p>
+ * <pre>
+ * GENERIC, TCP-LIKE, SETUP FOR HTTP/1.1 AND HTTP/2
+ * HTTP3Client - dgramEP - ClientQuiConnection - ClientQuicSession - ClientProtocolSession - TCPLikeStream
+ *
+ * SPECIFIC SETUP FOR HTTP/3
+ *                                                                                      /- [Control|Decoder|Encoder]Stream
+ * HTTP3Client - dgramEP - ClientQuiConnection - ClientQuicSession - ClientHTTP3Session -* HTTP3Streams
  * </pre>
  */
 public class HTTP3Client extends ContainerLifeCycle

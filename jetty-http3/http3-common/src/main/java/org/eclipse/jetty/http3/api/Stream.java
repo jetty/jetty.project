@@ -26,8 +26,9 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
  * <p>A {@link Stream} maps to an HTTP/3 request/response cycle, and after the request/response
  * cycle is completed, the stream is closed and removed from the {@link Session}.</p>
  * <p>Like {@link Session}, {@link Stream} is the active part and by calling its API applications
- * can generate events on the stream; conversely, {@link Stream.Listener} is the passive part, and
- * its callbacks are invoked when events happen on the stream.</p>
+ * can generate events on the stream; conversely, {@link Stream.Client.Listener} and
+ * {@link Stream.Server.Listener} are the passive part, and their callbacks are invoked when
+ * events happen on the stream.</p>
  * <p>The client initiates a stream by sending a HEADERS frame containing the HTTP/3 request URI
  * and request headers, and zero or more DATA frames containing request content.</p>
  * <p>Similarly, the server responds by sending a HEADERS frame containing the HTTP/3 response
@@ -35,8 +36,6 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
  * <p>Both client and server can end their side of the stream by sending a final frame with
  * the {@code last} flag set to {@code true}, see {@link HeadersFrame#HeadersFrame(MetaData, boolean)}
  * and {@link DataFrame#DataFrame(ByteBuffer, boolean)}.</p>
- *
- * @see Stream.Listener
  */
 public interface Stream
 {
@@ -49,15 +48,6 @@ public interface Stream
      * @return the session this stream is associated to
      */
     public Session getSession();
-
-    /**
-     * <p>Responds to a request performed via {@link Session.Client#newRequest(HeadersFrame, Listener)},
-     * sending the given HEADERS frame containing the response status code and response headers.</p>
-     *
-     * @param frame the HEADERS frame containing the response headers
-     * @return the {@link CompletableFuture} that gets notified when the frame has been sent
-     */
-    public CompletableFuture<Stream> respond(HeadersFrame frame);
 
     /**
      * <p>Sends the given DATA frame containing some or all the bytes
@@ -90,28 +80,32 @@ public interface Stream
      *
      * @return a {@link Stream.Data} object containing the request bytes or
      * the response bytes, or null if no bytes are available
-     * @see Stream.Listener#onDataAvailable(Stream)
+     * @see Stream.Client.Listener#onDataAvailable(Stream.Client)
+     * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
      */
     public Stream.Data readData();
 
     /**
-     * <p>Causes {@link Stream.Listener#onDataAvailable(Stream)} to be invoked,
-     * possibly at a later time, when the stream has data to be read.</p>
+     * <p>Causes {@link Stream.Client.Listener#onDataAvailable(Stream.Client)}
+     * on the client, or {@link Stream.Server.Listener#onDataAvailable(Stream.Server)}
+     * on the server, to be invoked, possibly at a later time, when the stream
+     * has data to be read.</p>
      * <p>This method is idempotent: calling it when there already is an
-     * outstanding demand to invoke {@link Stream.Listener#onDataAvailable(Stream)}
+     * outstanding demand to invoke {@code onDataAvailable(Stream)}
      * is a no-operation.</p>
      * <p>The thread invoking this method may invoke directly
-     * {@link Stream.Listener#onDataAvailable(Stream)}, unless another thread
-     * that must invoke {@link Stream.Listener#onDataAvailable(Stream)}
+     * {@code onDataAvailable(Stream)}, unless another thread
+     * that must invoke {@code onDataAvailable(Stream)}
      * notices the outstanding demand first.</p>
      * <p>When all bytes have been read (via {@link #readData()}), further
      * invocations of this method are a no-operation.</p>
      * <p>It is always guaranteed that invoking this method from within
-     * {@link Stream.Listener#onDataAvailable(Stream)} will not cause a
+     * {@code onDataAvailable(Stream)} will not cause a
      * {@link StackOverflowError}.</p>
      *
      * @see #readData()
-     * @see Stream.Listener#onDataAvailable(Stream)
+     * @see Stream.Client.Listener#onDataAvailable(Stream.Client)
+     * @see Stream.Server.Listener#onDataAvailable(Stream.Server)
      */
     public void demand();
 
@@ -132,116 +126,237 @@ public interface Stream
     public void reset(long error, Throwable failure);
 
     /**
-     * <p>A {@link Stream.Listener} is the passive counterpart of a {@link Stream} and receives
-     * events happening on an HTTP/3 stream.</p>
-     *
-     * @see Stream
+     * <p>The client side version of {@link Stream}.</p>
      */
-    public interface Listener
+    public interface Client extends Stream
     {
         /**
-         * <p>Callback method invoked when a response is received.</p>
-         * <p>To read response content, applications should call
-         * {@link Stream#demand()} and override
-         * {@link Stream.Listener#onDataAvailable(Stream)}.</p>
+         * <p>A {@link Stream.Client.Listener} is the passive counterpart of a {@link Stream.Client}
+         * and receives client-side events happening on an HTTP/3 stream.</p>
          *
-         * @param stream the stream
+         * @see Stream.Client
+         */
+        public interface Listener
+        {
+            /**
+             * <p>Callback method invoked when a response is received.</p>
+             * <p>To read response content, applications should call
+             * {@link Stream#demand()} and override
+             * {@link Stream.Client.Listener#onDataAvailable(Client)}.</p>
+             *
+             * @param stream the stream
+             * @param frame the HEADERS frame containing the response headers
+             * @see Stream.Client.Listener#onDataAvailable(Client)
+             */
+            public default void onResponse(Stream.Client stream, HeadersFrame frame)
+            {
+            }
+
+            /**
+             * <p>Callback method invoked if the application has expressed
+             * {@link Stream#demand() demand} for content, and if there may
+             * be content available.</p>
+             * <p>A server application that wishes to handle request content
+             * should typically call {@link Stream#demand()} from
+             * {@link Session.Server.Listener#onRequest(Server, HeadersFrame)}.</p>
+             * <p>A client application that wishes to handle response content
+             * should typically call {@link Stream#demand()} from
+             * {@link Stream.Client.Listener#onResponse(Client, HeadersFrame)}.</p>
+             * <p>Just prior calling this method, the outstanding demand is
+             * cancelled; applications that implement this method should read
+             * content calling {@link Stream#readData()}, and call
+             * {@link Stream#demand()} to signal to the implementation to call
+             * again this method when there may be more content available.</p>
+             * <p>Only one thread at a time invokes this method, although it
+             * may not be the same thread across different invocations.</p>
+             * <p>It is always guaranteed that invoking {@link Stream#demand()}
+             * from within this method will not cause a {@link StackOverflowError}.</p>
+             * <p>Typical usage:</p>
+             * <pre>
+             * class MyStreamListener implements Stream.Client.Listener
+             * {
+             *     &#64;Override
+             *     public void onDataAvailable(Stream.Client stream)
+             *     {
+             *         // Read a chunk of the content.
+             *         Stream.Data data = stream.readData();
+             *         if (data == null)
+             *         {
+             *             // No data available now, demand to be called back.
+             *             stream.demand();
+             *         }
+             *         else
+             *         {
+             *             // Process the content.
+             *             process(data.getByteBuffer());
+             *             // Notify that the content has been consumed.
+             *             data.complete();
+             *             if (!data.isLast())
+             *             {
+             *                 // Demand to be called back.
+             *                 stream.demand();
+             *             }
+             *         }
+             *     }
+             * }
+             * </pre>
+             *
+             * @param stream the stream
+             */
+            public default void onDataAvailable(Stream.Client stream)
+            {
+            }
+
+            /**
+             * <p>Callback method invoked when a trailer is received.</p>
+             *
+             * @param stream the stream
+             * @param frame the HEADERS frame containing the trailer headers
+             */
+            public default void onTrailer(Stream.Client stream, HeadersFrame frame)
+            {
+            }
+
+            /**
+             * <p>Callback method invoked when the stream idle timeout elapses.</p>
+             *
+             * @param stream the stream
+             * @param failure the timeout failure
+             * @return true to reset the stream, false to ignore the idle timeout
+             */
+            public default boolean onIdleTimeout(Stream.Client stream, Throwable failure)
+            {
+                return true;
+            }
+
+            /**
+             * <p>Callback method invoked when a stream failure occurred.</p>
+             * <p>Typical stream failures, among others, are failures to
+             * decode a HEADERS frame, or failures to read bytes because
+             * the stream has been reset.</p>
+             *
+             * @param stream the stream
+             * @param error the failure error
+             * @param failure the cause of the failure
+             */
+            public default void onFailure(Stream.Client stream, long error, Throwable failure)
+            {
+            }
+        }
+    }
+
+    /**
+     * <p>The server side version of {@link Stream}.</p>
+     */
+    public interface Server extends Stream
+    {
+        /**
+         * <p>Responds to a request performed via {@link Session.Client#newRequest(HeadersFrame, Client.Listener)},
+         * sending the given HEADERS frame containing the response status code and response headers.</p>
+         *
          * @param frame the HEADERS frame containing the response headers
-         * @see Stream.Listener#onDataAvailable(Stream)
+         * @return the {@link CompletableFuture} that gets notified when the frame has been sent
          */
-        public default void onResponse(Stream stream, HeadersFrame frame)
-        {
-        }
+        public CompletableFuture<Stream> respond(HeadersFrame frame);
 
         /**
-         * <p>Callback method invoked if the application has expressed
-         * {@link Stream#demand() demand} for content, and if there may
-         * be content available.</p>
-         * <p>A server application that wishes to handle request content
-         * should typically call {@link Stream#demand()} from
-         * {@link Session.Server.Listener#onRequest(Stream, HeadersFrame)}.</p>
-         * <p>A client application that wishes to handle response content
-         * should typically call {@link Stream#demand()} from
-         * {@link #onResponse(Stream, HeadersFrame)}.</p>
-         * <p>Just prior calling this method, the outstanding demand is
-         * cancelled; applications that implement this method should read
-         * content calling {@link Stream#readData()}, and call
-         * {@link Stream#demand()} to signal to the implementation to call
-         * again this method when there may be more content available.</p>
-         * <p>Only one thread at a time invokes this method, although it
-         * may not be the same thread across different invocations.</p>
-         * <p>It is always guaranteed that invoking {@link Stream#demand()}
-         * from within this method will not cause a {@link StackOverflowError}.</p>
-         * <p>Typical usage:</p>
-         * <pre>
-         * class MyStreamListener implements Stream.Listener
-         * {
-         *     &#64;Override
-         *     public void onDataAvailable(Stream stream)
-         *     {
-         *         // Read a chunk of the content.
-         *         Stream.Data data = stream.readData();
-         *         if (data == null)
-         *         {
-         *             // No data available now, demand to be called back.
-         *             stream.demand();
-         *         }
-         *         else
-         *         {
-         *             // Process the content.
-         *             process(data.getByteBuffer());
-         *             // Notify that the content has been consumed.
-         *             data.complete();
-         *             if (!data.isLast())
-         *             {
-         *                 // Demand to be called back.
-         *                 stream.demand();
-         *             }
-         *         }
-         *     }
-         * }
-         * </pre>
+         * <p>A {@link Stream.Server.Listener} is the passive counterpart of a {@link Stream.Server}
+         * and receives server-side events happening on an HTTP/3 stream.</p>
          *
-         * @param stream the stream
+         * @see Stream.Server
          */
-        public default void onDataAvailable(Stream stream)
+        public interface Listener
         {
-        }
+            /**
+             * <p>Callback method invoked if the application has expressed
+             * {@link Stream#demand() demand} for content, and if there may
+             * be content available.</p>
+             * <p>A server application that wishes to handle request content
+             * should typically call {@link Stream#demand()} from
+             * {@link Session.Server.Listener#onRequest(Server, HeadersFrame)}.</p>
+             * <p>A client application that wishes to handle response content
+             * should typically call {@link Stream#demand()} from
+             * {@link Stream.Client.Listener#onResponse(Client, HeadersFrame)}.</p>
+             * <p>Just prior calling this method, the outstanding demand is
+             * cancelled; applications that implement this method should read
+             * content calling {@link Stream#readData()}, and call
+             * {@link Stream#demand()} to signal to the implementation to call
+             * again this method when there may be more content available.</p>
+             * <p>Only one thread at a time invokes this method, although it
+             * may not be the same thread across different invocations.</p>
+             * <p>It is always guaranteed that invoking {@link Stream#demand()}
+             * from within this method will not cause a {@link StackOverflowError}.</p>
+             * <p>Typical usage:</p>
+             * <pre>
+             * class MyStreamListener implements Stream.Server.Listener
+             * {
+             *     &#64;Override
+             *     public void onDataAvailable(Stream.Server stream)
+             *     {
+             *         // Read a chunk of the content.
+             *         Stream.Data data = stream.readData();
+             *         if (data == null)
+             *         {
+             *             // No data available now, demand to be called back.
+             *             stream.demand();
+             *         }
+             *         else
+             *         {
+             *             // Process the content.
+             *             process(data.getByteBuffer());
+             *             // Notify that the content has been consumed.
+             *             data.complete();
+             *             if (!data.isLast())
+             *             {
+             *                 // Demand to be called back.
+             *                 stream.demand();
+             *             }
+             *         }
+             *     }
+             * }
+             * </pre>
+             *
+             * @param stream the stream
+             */
+            public default void onDataAvailable(Stream.Server stream)
+            {
+            }
 
-        /**
-         * <p>Callback method invoked when a trailer is received.</p>
-         *
-         * @param stream the stream
-         * @param frame the HEADERS frame containing the trailer headers
-         */
-        public default void onTrailer(Stream stream, HeadersFrame frame)
-        {
-        }
+            /**
+             * <p>Callback method invoked when a trailer is received.</p>
+             *
+             * @param stream the stream
+             * @param frame the HEADERS frame containing the trailer headers
+             */
+            public default void onTrailer(Stream.Server stream, HeadersFrame frame)
+            {
+            }
 
-        /**
-         * <p>Callback method invoked when the stream idle timeout elapses.</p>
-         *
-         * @param stream the stream
-         * @param failure the timeout failure
-         * @return true to reset the stream, false to ignore the idle timeout
-         */
-        public default boolean onIdleTimeout(Stream stream, Throwable failure)
-        {
-            return true;
-        }
+            /**
+             * <p>Callback method invoked when the stream idle timeout elapses.</p>
+             *
+             * @param stream the stream
+             * @param failure the timeout failure
+             * @return true to reset the stream, false to ignore the idle timeout
+             */
+            public default boolean onIdleTimeout(Stream.Server stream, Throwable failure)
+            {
+                return true;
+            }
 
-        /**
-         * <p>Callback method invoked when a stream failure occurred.</p>
-         * <p>Typical stream failures, among others, are failures to
-         * decode a HEADERS frame, or failures to read bytes because
-         * the stream has been reset.</p>
-         *
-         * @param stream the stream
-         * @param error the failure error
-         * @param failure the cause of the failure
-         */
-        public default void onFailure(Stream stream, long error, Throwable failure)
-        {
+            /**
+             * <p>Callback method invoked when a stream failure occurred.</p>
+             * <p>Typical stream failures, among others, are failures to
+             * decode a HEADERS frame, or failures to read bytes because
+             * the stream has been reset.</p>
+             *
+             * @param stream the stream
+             * @param error the failure error
+             * @param failure the cause of the failure
+             */
+            public default void onFailure(Stream.Server stream, long error, Throwable failure)
+            {
+            }
         }
     }
 

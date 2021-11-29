@@ -30,7 +30,6 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
-import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -44,10 +43,10 @@ public class HttpTransportOverHTTP3 implements HttpTransport
 
     private final AtomicBoolean commit = new AtomicBoolean();
     private final TransportCallback transportCallback = new TransportCallback();
-    private final HTTP3Stream stream;
+    private final HTTP3StreamServer stream;
     private MetaData.Response metaData;
 
-    public HttpTransportOverHTTP3(HTTP3Stream stream)
+    public HttpTransportOverHTTP3(HTTP3StreamServer stream)
     {
         this.stream = stream;
     }
