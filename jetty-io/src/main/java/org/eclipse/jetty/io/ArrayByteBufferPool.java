@@ -109,13 +109,13 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
         _minCapacity = minCapacity;
 
         // Initialize all buckets in constructor and never modify the array again.
-        int length = bucketFor(maxCapacity);
+        int length = bucketFor(maxCapacity) + 1;
         _direct = new ByteBufferPool.Bucket[length];
         _indirect = new ByteBufferPool.Bucket[length];
         for (int i = 0; i < length; i++)
         {
-            _direct[i] = newBucket(i + 1, true);
-            _indirect[i] = newBucket(i + 1, false);
+            _direct[i] = newBucket(i, true);
+            _indirect[i] = newBucket(i, false);
         }
     }
 
@@ -202,7 +202,7 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
 
     protected int bucketFor(int capacity)
     {
-        return Math.max((int)Math.ceil((double)capacity / getCapacityFactor()), 1);
+        return (int)Math.ceil((double)capacity / getCapacityFactor());
     }
 
     protected int capacityFor(int bucket)
@@ -214,11 +214,11 @@ public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpa
     {
         if (capacity < _minCapacity)
             return null;
-        int index = bucketFor(capacity) - 1;
-        if (index >= _direct.length)
+        int bucket = bucketFor(capacity);
+        if (bucket >= _direct.length)
             return null;
         Bucket[] buckets = bucketsFor(direct);
-        return buckets[index];
+        return buckets[bucket];
     }
 
     @ManagedAttribute("The number of pooled direct ByteBuffers")
