@@ -185,7 +185,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
 
     protected int bucketFor(int capacity)
     {
-        return Math.max((int)Math.ceil((double)capacity / getCapacityFactor()), 1);
+        return (int)Math.ceil((double)capacity / getCapacityFactor());
     }
 
     protected int capacityFor(int bucket)
