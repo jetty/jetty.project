@@ -75,6 +75,8 @@ public class ClientProtocolSession extends ProtocolSession
     @Override
     public Runnable getProducerTask()
     {
+        // On the client, the contract is that applications should not block inside API callback methods,
+        // so a call to produce() should never block, and we can return a NON_BLOCKING producer task.
         return producer;
     }
 

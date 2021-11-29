@@ -67,6 +67,11 @@ public class ServerProtocolSession extends ProtocolSession
     @Override
     public Runnable getProducerTask()
     {
+        // On the server, a call to produce() may process a stream which then parses a request,
+        // which then typically produces a blocking task that calls the application, which may
+        // be run by the ExecutionStrategy and therefore block the current thread.
+        // The producer task is always blocking to provide a "thread per active connection"
+        // model similar to what happens on the server with TCP networking.
         return producer;
     }
 
