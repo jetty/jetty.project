@@ -71,6 +71,9 @@ public abstract class ProtocolSession extends ContainerLifeCycle
 
     protected void produce()
     {
+        // This method may be called concurrently, but the ExecutionStrategy guarantees
+        // that only one active thread is the producer thread for this ProtocolSession.
+        // On the server, this guarantees a "thread per active connection" model.
         if (LOG.isDebugEnabled())
             LOG.debug("processing {}", this);
         strategy.produce();
