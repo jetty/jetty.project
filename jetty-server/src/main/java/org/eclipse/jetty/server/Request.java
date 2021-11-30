@@ -1423,7 +1423,7 @@ public class Request implements HttpServletRequest
         if (committedResponse != null)
         {
             getResponse().setStatus(committedResponse.getStatus());
-            // TODO: Reset the headers code to what was committed
+            // TODO: Reset the response headers to what they were when committed
         }
     }
 

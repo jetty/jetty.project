@@ -142,7 +142,8 @@ public class RequestLogTest
     }
 
     /**
-     * Test an unread HTTP/1.1 POST (where the server doesn't read the POST, but the RequestLog attempts to read it instead).
+     * Test an unread HTTP/1.1 POST, it has valid body content, the dispatched Handler on the server doesn't read the POST body content.
+     * The RequestLog accidentally attempts to read the Request body content due to the use of Request.getParameterNames() API.
      */
     @Test
     public void testNormalPostFormRequest() throws Exception
@@ -223,7 +224,9 @@ public class RequestLogTest
 
     /**
      * Test a Bad HTTP/1.1 POST Request, it has body content, but also includes a Content-Length + Transfer-Encoding header.
-     * The server doesn't read the POST body, but the RequestLog attempts to read the request body.
+     * This results in a BadMessage internally, and the Handler is never called.
+     * The POST body content is never read by a Handler or the error handling code.
+     * The RequestLog accidentally attempts to read the Request body content due to the use of Request.getParameterNames() API.
      */
     @Test
     public void testBadPostFormRequest() throws Exception
@@ -306,7 +309,7 @@ public class RequestLogTest
     }
 
     /**
-     * Test where the response is committed, then changes the status code and response headers.
+     * Test where the response is committed, then the dispatch changes the status code and response headers.
      * The RequestLog should see the committed status code and committed headers, not the changed ones.
      */
     @Disabled("Support for restoring Committed Response Headers coming in later PR")
