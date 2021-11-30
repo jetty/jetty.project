@@ -1812,13 +1812,18 @@ public class RequestTest
             "Host: whatever\r\n" +
             "\r\n";
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
-        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
+
+        UriCompliance custom = new UriCompliance("Custom", EnumSet.complementOf(
+            EnumSet.of(UriCompliance.Violation.AMBIGUOUS_PATH_ENCODING)));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(custom);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
     }
 
     @Test
