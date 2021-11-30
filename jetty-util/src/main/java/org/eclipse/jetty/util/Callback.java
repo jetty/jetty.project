@@ -186,6 +186,14 @@ public interface Callback extends Invocable
         };
     }
 
+    /**
+     * <p>Creates a Callback with the given {@code invocationType},
+     * that runs the given {@code Runnable} when it succeeds or fails.</p>
+     *
+     * @param invocationType the invocation type of the returned Callback
+     * @param completed the Runnable to run when the callback either succeeds or fails
+     * @return a new Callback with the given invocation type
+     */
     static Callback from(InvocationType invocationType, Runnable completed)
     {
         return new Completing(invocationType)
@@ -313,6 +321,9 @@ public interface Callback extends Invocable
         };
     }
 
+    /**
+     * <p>A Callback implementation that calls the {@link #completed()} method when it either succeeds or fails.</p>
+     */
     class Completing implements Callback
     {
         private final InvocationType invocationType;

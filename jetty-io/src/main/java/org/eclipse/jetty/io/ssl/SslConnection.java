@@ -124,23 +124,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private FlushState _flushState = FlushState.IDLE;
     private FillState _fillState = FillState.IDLE;
     private boolean _underflown;
-
-    private abstract class RunnableTask implements Runnable, Invocable
-    {
-        private final String _operation;
-
-        protected RunnableTask(String op)
-        {
-            _operation = op;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("SSL:%s:%s:%s", SslConnection.this, _operation, getInvocationType());
-        }
-    }
-
     private final Runnable _runFillable = new RunnableTask("runFillable")
     {
         @Override
@@ -155,7 +138,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             return _decryptedEndPoint.getFillInterest().getCallbackInvocationType();
         }
     };
-
     private final Callback _sslReadCallback = new Callback()
     {
         @Override
@@ -1610,6 +1592,22 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 return String.format("SSL@%h.DEP.writeCallback", SslConnection.this);
             }
+        }
+    }
+
+    private abstract class RunnableTask implements Invocable.Task
+    {
+        private final String _operation;
+
+        protected RunnableTask(String op)
+        {
+            _operation = op;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("SSL:%s:%s:%s", SslConnection.this, _operation, getInvocationType());
         }
     }
 }

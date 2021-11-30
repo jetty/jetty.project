@@ -44,46 +44,7 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
     private int _currentInterestOps;
     // The desired value for interestOps.
     private int _desiredInterestOps;
-
-    private abstract class RunnableTask implements Runnable, Invocable
-    {
-        final String _operation;
-
-        private RunnableTask(String op)
-        {
-            _operation = op;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s:%s:%s", SelectableChannelEndPoint.this, _operation, getInvocationType());
-        }
-    }
-
-    private abstract class RunnableCloseable extends RunnableTask implements Closeable
-    {
-        private RunnableCloseable(String op)
-        {
-            super(op);
-        }
-
-        @Override
-        public void close()
-        {
-            try
-            {
-                SelectableChannelEndPoint.this.close();
-            }
-            catch (Throwable x)
-            {
-                LOG.warn("Unable to close {}", SelectableChannelEndPoint.this, x);
-            }
-        }
-    }
-
     private final ManagedSelector.SelectorUpdate _updateKeyAction = this::updateKeyAction;
-
     private final Runnable _runFillable = new RunnableCloseable("runFillable")
     {
         @Override
@@ -98,7 +59,6 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
             return getFillInterest().getCallbackInvocationType();
         }
     };
-
     private final Runnable _runCompleteWrite = new RunnableCloseable("runCompleteWrite")
     {
         @Override
@@ -119,7 +79,6 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
             return String.format("%s:%s:%s->%s", SelectableChannelEndPoint.this, _operation, getInvocationType(), getWriteFlusher());
         }
     };
-
     private final Runnable _runCompleteWriteFillable = new RunnableCloseable("runCompleteWriteFillable")
     {
         @Override
@@ -345,5 +304,34 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
             _desiredInterestOps,
             ManagedSelector.safeInterestOps(_key),
             ManagedSelector.safeReadyOps(_key));
+    }
+
+    private abstract class RunnableCloseable implements Invocable.Task, Closeable
+    {
+        final String _operation;
+
+        private RunnableCloseable(String operation)
+        {
+            _operation = operation;
+        }
+
+        @Override
+        public void close()
+        {
+            try
+            {
+                SelectableChannelEndPoint.this.close();
+            }
+            catch (Throwable x)
+            {
+                LOG.warn("Unable to close {}", SelectableChannelEndPoint.this, x);
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s:%s:%s", SelectableChannelEndPoint.this, _operation, getInvocationType());
+        }
     }
 }
