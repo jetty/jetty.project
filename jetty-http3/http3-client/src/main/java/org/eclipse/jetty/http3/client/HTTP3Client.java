@@ -102,7 +102,7 @@ import org.slf4j.LoggerFactory;
  * ByteBuffer requestChunk1 = ...;
  * stream.data(new DataFrame(requestChunk1, false))
  *     // Subsequent sends must wait for previous sends to complete.
- *     .thenCompose(s ->
+ *     .thenCompose(s -&gt;
  *     {
  *         ByteBuffer requestChunk2 = ...;
  *         s.data(new DataFrame(requestChunk2, true)));
