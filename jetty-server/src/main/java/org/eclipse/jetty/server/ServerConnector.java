@@ -369,8 +369,8 @@ public class ServerConnector extends AbstractNetworkConnector
         }
         catch (Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Could not configure {} to {} on {}", option, value, channel, x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("Could not configure {} to {} on {}", option, value, channel, x);
         }
     }
 

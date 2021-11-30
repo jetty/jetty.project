@@ -383,13 +383,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
-        write(callback, null, buffers);
-    }
-
-    @Override
-    public void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
-    {
-        _writeFlusher.write(callback, address, buffers);
+        _writeFlusher.write(callback, buffers);
     }
 
     protected abstract void onIncompleteFlush();

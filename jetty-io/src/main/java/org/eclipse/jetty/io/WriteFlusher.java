@@ -418,7 +418,7 @@ public abstract class WriteFlusher
         while (progress && buffers != null)
         {
             long before = BufferUtil.remaining(buffers);
-            boolean flushed = address == null ? _endPoint.flush(buffers) : _endPoint.send(address, buffers);
+            boolean flushed = address == null ? _endPoint.flush(buffers) : ((DatagramChannelEndPoint)_endPoint).send(address, buffers);
             long after = BufferUtil.remaining(buffers);
             long written = before - after;
 
