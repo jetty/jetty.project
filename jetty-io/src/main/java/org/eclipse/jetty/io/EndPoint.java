@@ -203,7 +203,10 @@ public interface EndPoint extends Closeable
      * filled or -1 if EOF is read or the input is shutdown.
      * @throws IOException if the endpoint is closed.
      */
-    int fill(ByteBuffer buffer) throws IOException;
+    default int fill(ByteBuffer buffer) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed
@@ -215,7 +218,10 @@ public interface EndPoint extends Closeable
      * destination (ie is not buffering any data).
      * @throws IOException If the endpoint is closed or output is shutdown.
      */
-    boolean flush(ByteBuffer... buffer) throws IOException;
+    default boolean flush(ByteBuffer... buffer) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return The underlying transport object (socket, channel, etc.)
@@ -271,7 +277,10 @@ public interface EndPoint extends Closeable
      * @param buffers one or more {@link ByteBuffer}s that will be flushed.
      * @throws WritePendingException if another write operation is concurrent.
      */
-    void write(Callback callback, ByteBuffer... buffers) throws WritePendingException;
+    default void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return the {@link Connection} associated with this EndPoint

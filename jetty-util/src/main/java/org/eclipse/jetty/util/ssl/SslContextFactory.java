@@ -794,6 +794,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         _validatePeerCerts = validatePeerCerts;
     }
 
+    public String getKeyStorePassword()
+    {
+        return _keyStorePassword == null ? null : _keyStorePassword.toString();
+    }
+
     /**
      * @param password The password for the key store.  If null is passed and
      * a keystore is set, then
@@ -804,6 +809,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     public void setKeyStorePassword(String password)
     {
         _keyStorePassword = password == null ? getPassword(PASSWORD_PROPERTY) : newPassword(password);
+    }
+
+    public String getKeyManagerPassword()
+    {
+        return _keyManagerPassword == null ? null : _keyManagerPassword.toString();
     }
 
     /**

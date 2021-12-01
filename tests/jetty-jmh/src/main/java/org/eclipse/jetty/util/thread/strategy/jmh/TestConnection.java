@@ -65,7 +65,7 @@ public class TestConnection implements Producer
         return handler;
     }
 
-    private class Handler implements Runnable, Invocable
+    private class Handler implements Invocable.Task
     {
         private final Map<String, String> _request;
         private final CompletableFuture<String> _futureResult;

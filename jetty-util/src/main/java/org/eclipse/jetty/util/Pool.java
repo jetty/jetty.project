@@ -870,10 +870,10 @@ public class Pool<T> implements AutoCloseable, Dumpable
                     return false;
                 T pooled = getPooled();
                 int maxUsageCount = getMaxUsageCount(pooled);
+                if (maxUsageCount > 0 && usageCount >= maxUsageCount)
+                    return false;
                 int maxMultiplexed = getMaxMultiplex(pooled);
                 if (maxMultiplexed > 0 && multiplexCount >= maxMultiplexed)
-                    return false;
-                if (maxUsageCount > 0 && usageCount >= maxUsageCount)
                     return false;
 
                 // Prevent overflowing the usage counter by capping it at Integer.MAX_VALUE.
@@ -911,7 +911,7 @@ public class Pool<T> implements AutoCloseable, Dumpable
                     break;
             }
 
-            int currentMaxUsageCount = maxUsage;
+            int currentMaxUsageCount = getMaxUsageCount(getPooled());
             boolean overUsed = currentMaxUsageCount > 0 && usageCount >= currentMaxUsageCount;
             return !(overUsed && newMultiplexCount == 0);
         }
