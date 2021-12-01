@@ -38,7 +38,7 @@
     </dependency>
     <dependency>
       <groupId>net.java.dev.jna</groupId>
-      <artifactId>jna</artifactId>
+      <artifactId>jna-jpms</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

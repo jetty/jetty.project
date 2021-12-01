@@ -15,6 +15,8 @@ package org.eclipse.jetty.http3.server;
 
 import java.util.Objects;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
@@ -38,6 +40,16 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
     public HTTP3ServerConnectionFactory(HttpConfiguration configuration)
     {
         super(configuration, new HTTP3SessionListener());
+        configuration.addCustomizer((connector, httpConfig, request) ->
+        {
+            HTTP3ServerConnector http3Connector = connector.getServer().getBean(HTTP3ServerConnector.class);
+            if (http3Connector != null && HttpVersion.HTTP_2.is(request.getHttpVersion().asString()))
+            {
+                HttpField altSvc = http3Connector.getAltSvcHttpField();
+                if (altSvc != null)
+                    request.getResponse().getHttpFields().add(altSvc);
+            }
+        });
     }
 
     private static class HTTP3SessionListener implements Session.Server.Listener

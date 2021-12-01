@@ -33,9 +33,12 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.http.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.toolchain.test.PathAssert;
@@ -1103,6 +1106,40 @@ public class DistributionTests extends AbstractJettyHomeTest
                 assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
                 assertTrue(run2.getLogs().stream()
                     .anyMatch(log -> log.contains("WARN") && log.contains(reason)));
+            }
+        }
+    }
+
+    @Test
+    public void testH3() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http3,test-keystore"))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            int h2Port = distribution.freePort();
+            int h3Port = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start(List.of("jetty.ssl.selectors=1", "jetty.ssl.port=" + h2Port, "jetty.quic.port=" + h3Port)))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                HTTP3Client http3Client = new HTTP3Client();
+                http3Client.getQuicConfiguration().setVerifyPeerCertificates(false);
+                this.client = new HttpClient(new HttpClientTransportOverHTTP3(http3Client));
+                this.client.start();
+                ContentResponse response = this.client.newRequest("localhost", h3Port)
+                    .scheme(HttpScheme.HTTPS.asString())
+                    .path("/path")
+                    .timeout(15, TimeUnit.SECONDS)
+                    .send();
+                assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
             }
         }
     }
