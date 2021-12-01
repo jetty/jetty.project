@@ -5,14 +5,14 @@
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty.servlet</groupId>
-  <artifactId>jetty-servlet</artifactId>
+  <groupId>org.eclipse.jetty.webapp</groupId>
+  <artifactId>jetty-webapp</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty :: Servlet</name>
+  <name>Jetty :: Webapp</name>
 
   <modules>
-    <module>jetty-servlet6</module>
-    <module>jetty-servlet-common</module>
+    <module>jetty-webapp6</module>
+    <module>jetty-webapp-common</module>
   </modules>
 
 </project>

@@ -633,7 +633,7 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.plus</groupId>
       <artifactId>jetty-plus6</artifactId>
     </dependency>
     <dependency>
@@ -675,7 +675,7 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.annotations</groupId>
       <artifactId>jetty-annotations6</artifactId>
     </dependency>
     <dependency>

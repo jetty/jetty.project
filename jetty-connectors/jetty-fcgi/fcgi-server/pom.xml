@@ -43,7 +43,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
       <artifactId>jetty-servlet6</artifactId>
       <scope>test</scope>
     </dependency>
@@ -58,7 +58,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.annotations</groupId>
       <artifactId>jetty-annotations6</artifactId>
       <scope>test</scope>
     </dependency>

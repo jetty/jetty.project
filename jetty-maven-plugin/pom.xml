@@ -160,7 +160,7 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.webapp</groupId>
       <artifactId>jetty-webapp6</artifactId>
       <exclusions>
         <exclusion>
@@ -178,7 +178,7 @@
       <artifactId>jetty-jaas</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.plus</groupId>
       <artifactId>jetty-plus6</artifactId>
     </dependency>
     <dependency>
@@ -190,7 +190,7 @@
       <artifactId>jetty-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
       <artifactId>jetty-servlet6</artifactId>
     </dependency>
     <dependency>
@@ -210,7 +210,7 @@
       <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.annotations</groupId>
       <artifactId>jetty-annotations6</artifactId>
     </dependency>
     <dependency>

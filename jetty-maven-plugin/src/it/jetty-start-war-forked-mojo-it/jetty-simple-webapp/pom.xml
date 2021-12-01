@@ -25,7 +25,7 @@
       <artifactId>jetty-simple-base</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
       <artifactId>jetty-servlet6</artifactId>
       <scope>provided</scope>
     </dependency>

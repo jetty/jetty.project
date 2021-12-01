@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.servlet6</groupId>
-    <artifactId>servlet6</artifactId>
+    <groupId>org.eclipse.jetty.annotations</groupId>
+    <artifactId>jetty-annotations</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
@@ -44,11 +44,11 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.webapp</groupId>
       <artifactId>jetty-webapp6</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.plus</groupId>
       <artifactId>jetty-plus6</artifactId>
     </dependency>
     <dependency>

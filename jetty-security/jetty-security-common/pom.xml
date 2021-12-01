@@ -1,12 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.servlet</groupId>
-    <artifactId>jetty-servlet</artifactId>
+    <groupId>org.eclipse.jetty.security</groupId>
+    <artifactId>jetty-security</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-webapp-common</artifactId>
+  <artifactId>jetty-security-common</artifactId>
 
-  <name>Jetty :: Servlet :: Jetty Webapp Common</name>
+  <name>Jetty :: Servlet :: Jetty Security Common</name>
 
 </project>

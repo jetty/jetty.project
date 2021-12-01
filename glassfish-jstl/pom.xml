@@ -57,13 +57,13 @@
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.annotations</groupId>
       <artifactId>jetty-annotations6</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.webapp</groupId>
       <artifactId>jetty-webapp6</artifactId>
       <scope>test</scope>
     </dependency>

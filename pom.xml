@@ -210,6 +210,10 @@
     <module>jetty-http</module>
     <module>jetty-server</module>
     <module>jetty-servlet</module>
+    <module>jetty-webapp</module>
+    <module>jetty-security</module>
+    <module>jetty-annotations</module>
+    <module>jetty-plus</module>
     <module>jetty-xml</module>
     <module>jetty-openid</module>
     <module>jetty-websocket</module>
@@ -1908,27 +1912,27 @@
 
       <!-- Servlet 6 Dependencies -->
       <dependency>
-        <groupId>org.eclipse.jetty.servlet6</groupId>
+        <groupId>org.eclipse.jetty.servlet</groupId>
         <artifactId>jetty-servlet6</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.servlet6</groupId>
+        <groupId>org.eclipse.jetty.webapp</groupId>
         <artifactId>jetty-webapp6</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.servlet6</groupId>
+        <groupId>org.eclipse.jetty.security</groupId>
         <artifactId>jetty-security6</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.servlet6</groupId>
+        <groupId>org.eclipse.jetty.annotations</groupId>
         <artifactId>jetty-annotations6</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.servlet6</groupId>
+        <groupId>org.eclipse.jetty.plus</groupId>
         <artifactId>jetty-plus6</artifactId>
         <version>${project.version}</version>
       </dependency>

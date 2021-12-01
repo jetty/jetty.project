@@ -48,7 +48,7 @@
       <artifactId>jetty-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.security</groupId>
       <artifactId>jetty-security6</artifactId>
     </dependency>
     <dependency>
@@ -65,7 +65,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
       <artifactId>jetty-servlet6</artifactId>
       <scope>test</scope>
     </dependency>

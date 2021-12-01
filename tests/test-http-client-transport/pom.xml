@@ -67,7 +67,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
       <artifactId>jetty-servlet6</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>

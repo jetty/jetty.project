@@ -152,7 +152,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.annotations</groupId>
       <artifactId>jetty-annotations6</artifactId>
       <scope>provided</scope>
     </dependency>

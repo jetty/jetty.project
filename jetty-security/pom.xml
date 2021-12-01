@@ -5,14 +5,14 @@
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty.servlet</groupId>
-  <artifactId>jetty-servlet</artifactId>
+  <groupId>org.eclipse.jetty.security</groupId>
+  <artifactId>jetty-security</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty :: Servlet</name>
+  <name>Jetty :: Security</name>
 
   <modules>
-    <module>jetty-servlet6</module>
-    <module>jetty-servlet-common</module>
+    <module>jetty-security6</module>
+    <module>jetty-security-common</module>
   </modules>
 
 </project>

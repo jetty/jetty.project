@@ -42,7 +42,7 @@ To use this example in your project you will need the following Maven dependenci
   <version>${project.version}</version>
 </dependency>
 <dependency>
-  <groupId>org.eclipse.jetty.servlet6</groupId>
+  <groupId>org.eclipse.jetty.security</groupId>
   <artifactId>jetty-security6</artifactId>
   <version>${project.version}</version>
 </dependency>

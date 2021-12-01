@@ -24,7 +24,7 @@
       <artifactId>websocket-servlet</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.annotations</groupId>
       <artifactId>jetty-annotations6</artifactId>
     </dependency>
     <dependency>

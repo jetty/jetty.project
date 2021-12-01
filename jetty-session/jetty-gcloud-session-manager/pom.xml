@@ -43,7 +43,7 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet6</groupId>
+      <groupId>org.eclipse.jetty.webapp</groupId>
       <artifactId>jetty-webapp6</artifactId>
       <scope>test</scope>
     </dependency>
