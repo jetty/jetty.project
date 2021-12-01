@@ -58,24 +58,6 @@ public interface Callback extends Invocable
     }
 
     /**
-     * <p>Completes this callback with the given {@link CompletableFuture}.</p>
-     * <p>When the CompletableFuture completes normally, this callback is succeeded;
-     * when the CompletableFuture completes exceptionally, this callback is failed.</p>
-     *
-     * @param completable the CompletableFuture that completes this callback
-     */
-    default void completeWith(CompletableFuture<?> completable)
-    {
-        completable.whenComplete((o, x) ->
-        {
-            if (x == null)
-                succeeded();
-            else
-                failed(x);
-        });
-    }
-
-    /**
      * <p>Callback invoked when the operation completes.</p>
      *
      * @see #failed(Throwable)
@@ -197,18 +179,6 @@ public interface Callback extends Invocable
     {
         return new Completing()
         {
-            public void completed()
-            {
-                completed.run();
-            }
-        };
-    }
-
-    static Callback from(InvocationType invocationType, Runnable completed)
-    {
-        return new Completing(invocationType)
-        {
-            @Override
             public void completed()
             {
                 completed.run();

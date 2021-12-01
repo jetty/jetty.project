@@ -134,11 +134,6 @@ public class ClientConnector extends ContainerLifeCycle
         return executor;
     }
 
-    public boolean isIntrinsicallySecure()
-    {
-        return false;
-    }
-
     public void setExecutor(Executor executor)
     {
         if (isStarted())

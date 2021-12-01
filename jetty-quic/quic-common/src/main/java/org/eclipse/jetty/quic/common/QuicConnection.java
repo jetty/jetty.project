@@ -69,9 +69,17 @@ public abstract class QuicConnection extends AbstractConnection
     protected QuicConnection(Executor executor, Scheduler scheduler, ByteBufferPool byteBufferPool, EndPoint endPoint)
     {
         super(endPoint, executor);
+        if (!(endPoint instanceof DatagramChannelEndPoint))
+            throw new IllegalArgumentException("EndPoint must be a " + DatagramChannelEndPoint.class.getSimpleName());
         this.scheduler = scheduler;
         this.byteBufferPool = byteBufferPool;
         this.strategy = new AdaptiveExecutionStrategy(new QuicProducer(), getExecutor());
+    }
+
+    @Override
+    public DatagramChannelEndPoint getEndPoint()
+    {
+        return (DatagramChannelEndPoint)super.getEndPoint();
     }
 
     public Scheduler getScheduler()

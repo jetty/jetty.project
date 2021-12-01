@@ -377,7 +377,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _selectorManager.endPointClosed(endPoint);
     }
 
-    public void createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
+    void createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
     {
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
         Object context = selectionKey.attachment();
@@ -402,7 +402,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
             LOG.debug("Created {}", endPoint);
     }
 
-    public void destroyEndPoint(EndPoint endPoint, Throwable cause)
+    void destroyEndPoint(EndPoint endPoint, Throwable cause)
     {
         // Waking up the selector is necessary to clean the
         // cancelled-key set and tell the TCP stack that the
@@ -419,7 +419,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    public static int safeReadyOps(SelectionKey selectionKey)
+    static int safeReadyOps(SelectionKey selectionKey)
     {
         try
         {
@@ -432,7 +432,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         }
     }
 
-    public static int safeInterestOps(SelectionKey selectionKey)
+    static int safeInterestOps(SelectionKey selectionKey)
     {
         try
         {
