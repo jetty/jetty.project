@@ -15,6 +15,9 @@ package org.eclipse.jetty.http3.server;
 
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -27,6 +30,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public class HTTP3ServerConnector extends QuicServerConnector
 {
+    private HttpField altSvcHttpField;
+
     public HTTP3ServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
     {
         this(server, null, null, null, sslContextFactory, factories);
@@ -40,5 +45,17 @@ public class HTTP3ServerConnector extends QuicServerConnector
         // HTTP/3 requires a few mandatory unidirectional streams.
         getQuicConfiguration().setMaxUnidirectionalRemoteStreams(8);
         getQuicConfiguration().setUnidirectionalStreamRecvWindow(1024 * 1024);
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        altSvcHttpField = new PreEncodedHttpField(HttpHeader.ALT_SVC, String.format("h3=\":%d\"", getLocalPort()));
+    }
+
+    public HttpField getAltSvcHttpField()
+    {
+        return altSvcHttpField;
     }
 }

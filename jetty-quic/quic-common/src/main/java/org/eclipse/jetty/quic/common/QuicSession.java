@@ -16,6 +16,7 @@ package org.eclipse.jetty.quic.common;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EventListener;
@@ -514,7 +515,7 @@ public abstract class QuicSession extends ContainerLifeCycle
             if (LOG.isDebugEnabled())
                 LOG.debug("connection closed {}", QuicSession.this);
             byteBufferPool.release(cipherBuffer);
-            finishOutwardClose(null);
+            finishOutwardClose(new ClosedChannelException());
         }
 
         @Override
