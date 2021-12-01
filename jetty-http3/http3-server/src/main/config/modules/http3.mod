@@ -6,6 +6,7 @@ connector
 http3
 http
 quic
+experimental
 
 [depend]
 http2
