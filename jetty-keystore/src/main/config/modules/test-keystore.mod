@@ -22,7 +22,7 @@ lib/bouncycastle/bcprov-jdk15on-${bouncycastle.version}.jar
 etc/jetty-test-keystore.xml
 
 [ini]
-bouncycastle.version?=1.62
+bouncycastle.version?=@bouncycastle.version@
 jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/bouncycastle/
 jetty.sslContext.keyStorePath?=etc/test-keystore.p12
 jetty.sslContext.keyStoreType?=PKCS12
