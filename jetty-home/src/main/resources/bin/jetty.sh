@@ -127,6 +127,7 @@ running()
     return
   fi
   rm -f "$1"
+  rm -f "$2"  
   return 1
 }
 
@@ -475,7 +476,7 @@ case "$ACTION" in
 
     else
 
-      if running $JETTY_PID
+      if running $JETTY_PID $JETTY_STATE
       then
         echo "Already Running $(cat $JETTY_PID)!"
         exit 1
@@ -526,7 +527,7 @@ case "$ACTION" in
       start-stop-daemon -K -p"$JETTY_PID" -d"$JETTY_HOME" -a "$JAVA" -s HUP
 
       TIMEOUT=30
-      while running "$JETTY_PID"; do
+      while running "$JETTY_PID" "$JETTY_STATE"; do
         if (( TIMEOUT-- == 0 )); then
           start-stop-daemon -K -p"$JETTY_PID" -d"$JETTY_HOME" -a "$JAVA" -s KILL
         fi
@@ -547,7 +548,7 @@ case "$ACTION" in
       kill "$PID" 2>/dev/null
 
       TIMEOUT=30
-      while running $JETTY_PID; do
+      while running $JETTY_PID $JETTY_STATE; do
         if (( TIMEOUT-- == 0 )); then
           kill -KILL "$PID" 2>/dev/null
         fi
@@ -590,7 +591,7 @@ case "$ACTION" in
   run|demo)
     echo "Running Jetty: "
 
-    if running "$JETTY_PID"
+    if running "$JETTY_PID" "$JETTY_STATE"
     then
       echo Already Running $(cat "$JETTY_PID")!
       exit 1
@@ -600,7 +601,7 @@ case "$ACTION" in
     ;;
 
   check|status)
-    if running "$JETTY_PID"
+    if running "$JETTY_PID" "$JETTY_STATE"
     then
       echo "Jetty running pid=$(< "$JETTY_PID")"
     else
@@ -610,7 +611,7 @@ case "$ACTION" in
     dumpEnv
     echo
 
-    if running "$JETTY_PID"
+    if running "$JETTY_PID" "$JETTY_STATE"
     then
       exit 0
     fi
