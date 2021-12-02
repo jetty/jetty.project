@@ -8,8 +8,13 @@ as they reduce data copies, avoid needless fragmentation and have better dispatc
 When enabled with corresponding support modules, the connector can 
 accept HTTP, HTTPS or HTTP2C traffic.
 
+[deprecated]
+Module 'unixsocket' is deprecated for removal.
+Use 'unixdomain-http' instead (requires Java 16 or later).
+
 [tags]
 connector
+deprecated
 
 [depend]
 server

@@ -50,7 +50,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>A server-side connector for UNIX sockets.</p>
+ *
+ * @deprecated Use UnixDomainServerConnector from the jetty-unixdomain-server module instead (requires Java 16 or later).
  */
+@Deprecated(forRemoval = true)
 @ManagedObject("Connector using UNIX Socket")
 public class UnixSocketConnector extends AbstractConnector
 {

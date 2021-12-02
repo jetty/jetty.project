@@ -10,8 +10,13 @@ SSL properties may be interpreted by the unixsocket-secure
 module to indicate secure HTTPS traffic. Typically this
 is an alternate to the forwarded module.
 
+[deprecated]
+Module 'unixsocket-proxy-protocol' is deprecated for removal.
+Use 'unixdomain-http' instead (requires Java 16 or later).
+
 [tags]
 connector
+deprecated
 
 [depend]
 unixsocket
