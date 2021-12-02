@@ -127,7 +127,6 @@ running()
     return
   fi
   rm -f "$1"
-  rm -f "$2"  
   return 1
 }
 
@@ -137,9 +136,9 @@ started()
   for ((T = 0; T < $(($3 / 4)); T++))
   do
     sleep 4
-    [ -z "$(grep STARTED $1 2>/dev/null)" ] || return 0
-    [ -z "$(grep STOPPED $1 2>/dev/null)" ] || return 1
-    [ -z "$(grep FAILED $1 2>/dev/null)" ] || return 1
+    [ -z "$(tail -1 $1 | grep STARTED 2>/dev/null)" ] || return 0
+    [ -z "$(tail -1 $1 | grep STOPPED 2>/dev/null)" ] || return 1
+    [ -z "$(tail -1 $1 | grep FAILED 2>/dev/null)" ] || return 1
     local PID=$(cat "$2" 2>/dev/null) || return 1
     kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
@@ -476,7 +475,7 @@ case "$ACTION" in
 
     else
 
-      if running $JETTY_PID $JETTY_STATE
+      if running $JETTY_PID
       then
         echo "Already Running $(cat $JETTY_PID)!"
         exit 1
@@ -527,7 +526,7 @@ case "$ACTION" in
       start-stop-daemon -K -p"$JETTY_PID" -d"$JETTY_HOME" -a "$JAVA" -s HUP
 
       TIMEOUT=30
-      while running "$JETTY_PID" "$JETTY_STATE"; do
+      while running "$JETTY_PID"; do
         if (( TIMEOUT-- == 0 )); then
           start-stop-daemon -K -p"$JETTY_PID" -d"$JETTY_HOME" -a "$JAVA" -s KILL
         fi
@@ -548,7 +547,7 @@ case "$ACTION" in
       kill "$PID" 2>/dev/null
 
       TIMEOUT=30
-      while running $JETTY_PID $JETTY_STATE; do
+      while running $JETTY_PID; do
         if (( TIMEOUT-- == 0 )); then
           kill -KILL "$PID" 2>/dev/null
         fi
@@ -591,7 +590,7 @@ case "$ACTION" in
   run|demo)
     echo "Running Jetty: "
 
-    if running "$JETTY_PID" "$JETTY_STATE"
+    if running "$JETTY_PID"
     then
       echo Already Running $(cat "$JETTY_PID")!
       exit 1
@@ -601,7 +600,7 @@ case "$ACTION" in
     ;;
 
   check|status)
-    if running "$JETTY_PID" "$JETTY_STATE"
+    if running "$JETTY_PID"
     then
       echo "Jetty running pid=$(< "$JETTY_PID")"
     else
@@ -611,7 +610,7 @@ case "$ACTION" in
     dumpEnv
     echo
 
-    if running "$JETTY_PID" "$JETTY_STATE"
+    if running "$JETTY_PID"
     then
       exit 0
     fi
