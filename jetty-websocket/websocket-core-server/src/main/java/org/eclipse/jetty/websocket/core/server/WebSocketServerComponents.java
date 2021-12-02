@@ -112,6 +112,12 @@ public class WebSocketServerComponents extends WebSocketComponents
                 contextHandler.removeBean(serverComponents);
                 contextHandler.removeEventListener(this);
             }
+
+            @Override
+            public String toString()
+            {
+                return String.format("%sCleanupListener", WebSocketServerComponents.class.getSimpleName());
+            }
         });
 
         servletContext.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, serverComponents);

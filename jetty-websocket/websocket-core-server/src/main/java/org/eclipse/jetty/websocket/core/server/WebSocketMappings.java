@@ -142,12 +142,6 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
     }
 
     @Override
-    public String dump()
-    {
-        return Dumpable.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
         Dumpable.dumpObjects(out, indent, this, mappings);

@@ -113,6 +113,12 @@ public class JavaxWebSocketServerContainer extends JavaxWebSocketClientContainer
                 contextHandler.removeEventListener(container);
                 contextHandler.removeEventListener(this);
             }
+
+            @Override
+            public String toString()
+            {
+                return String.format("%sCleanupListener", JavaxWebSocketServerContainer.class.getSimpleName());
+            }
         });
 
         // Store a reference to the ServerContainer per - javax.websocket spec 1.0 final - section 6.4: Programmatic Server Deployment
