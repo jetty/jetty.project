@@ -5,9 +5,14 @@ Adds an HTTP2C connetion factory to the Unix Domain Socket Connector.
 It can be used when either the proxy forwards direct
 HTTP/2C (unecrypted) or decrypted HTTP/2 traffic.
 
+[deprecated]
+Module 'unixsocket-http2c' is deprecated for removal.
+Use 'unixdomain-http' instead (requires Java 16 or later).
+
 [tags]
 connector
 http2
+deprecated
 
 [depend]
 unixsocket-http
