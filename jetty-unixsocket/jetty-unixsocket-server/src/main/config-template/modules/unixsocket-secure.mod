@@ -7,11 +7,16 @@ This looks for a secure scheme transported either by the
 unixsocket-forwarded, unixsocket-proxy-protocol or in a
 HTTP2 request.
 
+[deprecated]
+Module 'unixsocket-secure' is deprecated for removal.
+Use 'unixdomain-http' instead (requires Java 16 or later).
+
 [tags]
 connector
 
 [depend]
 unixsocket-http
+deprecated
 
 [xml]
 etc/jetty-unixsocket-secure.xml

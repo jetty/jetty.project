@@ -23,6 +23,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Deprecated(forRemoval = true)
 public class UnixSocketEndPoint extends SocketChannelEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(UnixSocketEndPoint.class);

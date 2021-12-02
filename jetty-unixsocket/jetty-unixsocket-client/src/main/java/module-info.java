@@ -11,6 +11,7 @@
 // ========================================================================
 //
 
+@Deprecated(forRemoval = true)
 module org.eclipse.jetty.unixsocket.client
 {
     requires org.eclipse.jetty.unixsocket.common;
