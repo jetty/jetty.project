@@ -154,6 +154,11 @@ public class Module implements Comparable<Module>
     private final List<String> _depends = new ArrayList<>();
 
     /**
+     * Text from {@code [deprecated]} section
+     */
+    private final List<String> _deprecated = new ArrayList<>();
+
+    /**
      * Module names from {@code [before]} section
      */
     private final Set<String> _before = new HashSet<>();
@@ -398,6 +403,9 @@ public class Module implements Comparable<Module>
                                 if (!_depends.contains(line))
                                     _depends.add(line);
                                 break;
+                            case "DEPRECATED":
+                                _deprecated.add(line);
+                                break;
                             case "FILE":
                             case "FILES":
                                 _files.add(line);
@@ -536,6 +544,11 @@ public class Module implements Comparable<Module>
     public List<String> getDepends()
     {
         return new ArrayList<>(_depends);
+    }
+
+    public List<String> getDeprecated()
+    {
+        return List.copyOf(_deprecated);
     }
 
     public Set<String> getProvides()
