@@ -186,7 +186,7 @@ public class Modules implements Iterable<Module>
             excluded.add("internal");
 
         Predicate<Module> filter = m -> (included.isEmpty() || m.getTags().stream().anyMatch(included::contains)) &&
-            !m.getTags().stream().anyMatch(excluded::contains);
+            m.getTags().stream().noneMatch(excluded::contains);
 
         Optional<Integer> max = _modules.stream().filter(filter).map(Module::getName).map(String::length).max(Integer::compareTo);
         if (max.isEmpty())
@@ -219,16 +219,18 @@ public class Modules implements Iterable<Module>
         List<Module> enabled = getEnabled();
         for (Module module : enabled)
         {
-            String name = module.getName();
             String index = (i++) + ")";
+            String name = module.getName();
+            if (!module.getDeprecated().isEmpty())
+                name += " (deprecated)";
             for (String s : module.getEnableSources())
             {
-                out.printf("  %4s %-15s %s%n", index, name, s);
+                out.printf("%4s %-25s %s%n", index, name, s);
                 index = "";
                 name = "";
             }
             if (module.isTransitive() && module.hasIniTemplate())
-                out.printf("                       init template available with --add-module=%s%n", module.getName());
+                out.printf(" ".repeat(31) + "ini template available with --add-module=%s%n", module.getName());
         }
     }
 
@@ -420,6 +422,13 @@ public class Modules implements Iterable<Module>
         {
             StartLog.debug("Already enabled [%s] from %s", module.getName(), module.getEnableSources());
             return;
+        }
+
+        List<String> deprecated = module.getDeprecated();
+        if (!deprecated.isEmpty())
+        {
+            String reason = deprecated.stream().collect(Collectors.joining(System.lineSeparator()));
+            StartLog.warn(reason);
         }
 
         // Check that this is not already provided by another module!

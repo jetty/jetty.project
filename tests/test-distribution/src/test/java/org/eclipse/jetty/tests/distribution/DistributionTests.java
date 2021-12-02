@@ -1056,4 +1056,54 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+
+    @Test
+    public void testDeprecatedModule() throws Exception
+    {
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        Path jettyBase = distribution.getJettyBase();
+        Path jettyBaseModules = jettyBase.resolve("modules");
+        Files.createDirectories(jettyBaseModules);
+        Path deprecatedModule = jettyBaseModules.resolve("deprecated.mod");
+        String description = "A deprecated module.";
+        String reason = "This module is deprecated.";
+        List<String> lines = List.of(
+            "[description]",
+            description,
+            "[deprecated]",
+            reason,
+            "[tags]",
+            "deprecated"
+        );
+        Files.write(deprecatedModule, lines, StandardOpenOption.CREATE);
+
+        try (JettyHomeTester.Run listConfigRun = distribution.start(List.of("--list-modules=deprecated")))
+        {
+            assertTrue(listConfigRun.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, listConfigRun.getExitValue());
+
+            assertTrue(listConfigRun.getLogs().stream().anyMatch(log -> log.contains(description)));
+        }
+
+        try (JettyHomeTester.Run run1 = distribution.start(List.of("--add-modules=http,deprecated")))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            assertTrue(run1.getLogs().stream().anyMatch(log -> log.contains("WARN") && log.contains(reason)));
+
+            int port = distribution.freePort();
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+                assertTrue(run2.getLogs().stream()
+                    .anyMatch(log -> log.contains("WARN") && log.contains(reason)));
+            }
+        }
+    }
 }
