@@ -202,7 +202,6 @@ public class HttpSenderOverHTTP extends HttpSender
                             contentBuffer = BufferUtil.EMPTY_BUFFER;
                         long bytes = headerBuffer.remaining() + chunkBuffer.remaining() + contentBuffer.remaining();
                         getHttpChannel().getHttpConnection().addBytesOut(bytes);
-                        // TODO: see notes at QuicSession.onOpen().
                         endPoint.write(this, headerBuffer, chunkBuffer, contentBuffer);
                         generated = true;
                         return Action.SCHEDULED;
