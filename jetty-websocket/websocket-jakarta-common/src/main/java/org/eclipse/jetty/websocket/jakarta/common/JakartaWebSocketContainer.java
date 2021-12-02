@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.websocket.jakarta.common;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,13 +27,14 @@ import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.WebSocketExtensionRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class JakartaWebSocketContainer extends ContainerLifeCycle implements jakarta.websocket.WebSocketContainer
+public abstract class JakartaWebSocketContainer extends ContainerLifeCycle implements jakarta.websocket.WebSocketContainer, Dumpable
 {
     private static final Logger LOG = LoggerFactory.getLogger(JakartaWebSocketContainer.class);
     private final List<JakartaWebSocketSessionListener> sessionListeners = new ArrayList<>();
@@ -197,5 +199,11 @@ public abstract class JakartaWebSocketContainer extends ContainerLifeCycle imple
                 LOG.info("Exception while invoking listener {}", listener, x);
             }
         }
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, defaultCustomizer);
     }
 }

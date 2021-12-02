@@ -134,6 +134,12 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
                     servletHandler.removeFilterMapping(mapping);
                     contextHandler.removeEventListener(this);
                 }
+
+                @Override
+                public String toString()
+                {
+                    return String.format("%sCleanupListener", WebSocketUpgradeFilter.class.getSimpleName());
+                }
             });
 
             if (LOG.isDebugEnabled())
@@ -165,15 +171,9 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     }
 
     @Override
-    public String dump()
-    {
-        return Dumpable.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this, mappings);
+        Dumpable.dumpObjects(out, indent, this, defaultCustomizer, mappings);
     }
 
     @Override

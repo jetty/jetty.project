@@ -27,6 +27,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -93,6 +94,12 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
                 contextHandler.removeBean(container);
                 contextHandler.removeEventListener(container);
                 contextHandler.removeEventListener(this);
+            }
+
+            @Override
+            public String toString()
+            {
+                return String.format("%sCleanupListener", JettyWebSocketServerContainer.class.getSimpleName());
             }
         });
 
@@ -305,5 +312,11 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     public void setAutoFragment(boolean autoFragment)
     {
         customizer.setAutoFragment(autoFragment);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, customizer);
     }
 }
