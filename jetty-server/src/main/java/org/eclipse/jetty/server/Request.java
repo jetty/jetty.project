@@ -1413,20 +1413,6 @@ public class Request implements HttpServletRequest
         return session.getId();
     }
 
-    protected void onRequestLog()
-    {
-        // Don't allow pulling more parameters
-        _contentParamsExtracted = true;
-
-        // Reset the status code to what was committed
-        MetaData.Response committedResponse = getResponse().getCommittedMetaData();
-        if (committedResponse != null)
-        {
-            getResponse().setStatus(committedResponse.getStatus());
-            // TODO: Reset the response headers to what they were when committed
-        }
-    }
-
     /**
      * Called when the request is fully finished being handled.
      * For every session in any context that the session has
@@ -1434,6 +1420,23 @@ public class Request implements HttpServletRequest
      */
     public void onCompleted()
     {
+        RequestLog requestLog = getHttpChannel().getRequestLog();
+        if (requestLog != null)
+        {
+            // Don't allow pulling more parameters
+            _contentParamsExtracted = true;
+
+            // Reset the status code to what was committed
+            MetaData.Response committedResponse = getResponse().getCommittedMetaData();
+            if (committedResponse != null)
+            {
+                getResponse().setStatus(committedResponse.getStatus());
+                // TODO: Reset the response headers to what they were when committed
+            }
+
+            requestLog.log(this, getResponse());
+        }
+
         if (_sessions != null)
         {
             for (Session s:_sessions)
