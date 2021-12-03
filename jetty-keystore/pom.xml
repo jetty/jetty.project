@@ -13,7 +13,7 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.keystore</bundle-symbolic-name>
-    <bouncycastle.version>1.62</bouncycastle.version>
+    <bouncycastle.version>1.70</bouncycastle.version>
   </properties>
 
   <dependencies>
