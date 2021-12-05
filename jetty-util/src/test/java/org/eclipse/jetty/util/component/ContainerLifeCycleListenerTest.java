@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hamcrest.Matcher;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -25,14 +24,11 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 
 /**
- * Testing for LifeCycleListener events on nested components
+ * Testing for LifeCycleListener events on ContainerLifeCycle components
  * during runtime.
  */
-@Disabled
-public class LifeCycleListenerNestedTest
+public class ContainerLifeCycleListenerTest
 {
-    // Set this true to use test-specific workaround.
-    private final boolean workaround = false;
 
     public static class Foo extends ContainerLifeCycle
     {
@@ -181,8 +177,6 @@ public class LifeCycleListenerNestedTest
 
         CapturingListener listener = new CapturingListener();
         foo.addEventListener(listener);
-        if (workaround)
-            foo.addEventListener(listener);
 
         try
         {
@@ -212,8 +206,6 @@ public class LifeCycleListenerNestedTest
 
         CapturingListener listener = new CapturingListener();
         foo.addEventListener(listener);
-        if (workaround)
-            foo.addEventListener(listener);
 
         Bar bara = new Bar("a");
         Bar barb = new Bar("b");
@@ -250,8 +242,6 @@ public class LifeCycleListenerNestedTest
 
         CapturingListener listener = new CapturingListener();
         foo.addEventListener(listener);
-        if (workaround)
-            foo.addEventListener(listener);
 
         try
         {
