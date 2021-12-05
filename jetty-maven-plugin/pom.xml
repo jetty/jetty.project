@@ -111,7 +111,7 @@
             <jettyStopKey>${jetty.stopKey}</jettyStopKey>
             <jettyStopPort>${jetty.stopPort}</jettyStopPort>
             <maven.surefire.plugin.version>${maven.surefire.plugin.version}</maven.surefire.plugin.version>
-            <servletApiVersion>${jetty.servlet5.api.version}</servletApiVersion>
+            <servletApiVersion>${jetty.servlet6.api.version}</servletApiVersion>
           </scriptVariables>
           <settingsFile>src/it/settings.xml</settingsFile>
           <goals>
@@ -160,8 +160,8 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-webapp-common</artifactId>
+      <groupId>org.eclipse.jetty.webapp</groupId>
+      <artifactId>jetty-webapp6</artifactId>
       <exclusions>
         <exclusion>
           <groupId>jakarta.servlet</groupId>
@@ -178,8 +178,8 @@
       <artifactId>jetty-jaas</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-plus</artifactId>
+      <groupId>org.eclipse.jetty.plus</groupId>
+      <artifactId>jetty-plus6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -190,8 +190,8 @@
       <artifactId>jetty-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet-common</artifactId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
+      <artifactId>jetty-servlet6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -210,8 +210,8 @@
       <artifactId>jetty-jmx</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-annotations-common</artifactId>
+      <groupId>org.eclipse.jetty.annotations</groupId>
+      <artifactId>jetty-annotations6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>

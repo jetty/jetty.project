@@ -36,16 +36,16 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-webapp-common</artifactId>
+      <groupId>org.eclipse.jetty.webapp</groupId>
+      <artifactId>jetty-webapp6</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-plus</artifactId>
+      <groupId>org.eclipse.jetty.plus</groupId>
+      <artifactId>jetty-plus6</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-annotations-common</artifactId>
+      <groupId>org.eclipse.jetty.annotations</groupId>
+      <artifactId>jetty-annotations6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

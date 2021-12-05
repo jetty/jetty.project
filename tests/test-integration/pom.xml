@@ -72,8 +72,8 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-webapp-common</artifactId>
+      <groupId>org.eclipse.jetty.webapp</groupId>
+      <artifactId>jetty-webapp6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -121,8 +121,8 @@
       <artifactId>http2-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-annotations-common</artifactId>
+      <groupId>org.eclipse.jetty.annotations</groupId>
+      <artifactId>jetty-annotations6</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

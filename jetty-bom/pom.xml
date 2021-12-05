@@ -91,8 +91,8 @@
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.servlet</groupId>
-        <artifactId>jetty-annotations-common</artifactId>
+        <groupId>org.eclipse.jetty.annotations</groupId>
+        <artifactId>jetty-annotations6</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -253,8 +253,8 @@
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-plus</artifactId>
+        <groupId>org.eclipse.jetty.plus</groupId>
+        <artifactId>jetty-plus6</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -273,8 +273,8 @@
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.servlet</groupId>
-        <artifactId>jetty-security-common</artifactId>
+        <groupId>org.eclipse.jetty.security</groupId>
+        <artifactId>jetty-security6</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -288,8 +288,8 @@
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlet-common</artifactId>
+        <groupId>org.eclipse.jetty.servlet</groupId>
+        <artifactId>jetty-servlet6</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
@@ -328,8 +328,8 @@
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.servlet</groupId>
-        <artifactId>jetty-webapp-common</artifactId>
+        <groupId>org.eclipse.jetty.webapp</groupId>
+        <artifactId>jetty-webapp6</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>
       <dependency>

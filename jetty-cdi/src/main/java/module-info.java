@@ -13,7 +13,7 @@
 
 module org.eclipse.jetty.cdi
 {
-    requires org.eclipse.jetty.annotations;
+    requires org.eclipse.jetty.annotations6;
 
     requires transitive org.eclipse.jetty.webapp;
 

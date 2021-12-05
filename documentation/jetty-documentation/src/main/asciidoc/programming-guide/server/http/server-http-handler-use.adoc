@@ -324,7 +324,7 @@ The Maven artifact coordinates are:
 ----
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-servlet</artifactId>
+  <artifactId>jetty-servlet6</artifactId>
   <version>{version}</version>
 </dependency>
 ----

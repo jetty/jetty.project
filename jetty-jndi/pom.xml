@@ -55,8 +55,8 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-security-common</artifactId>
+      <groupId>org.eclipse.jetty.security</groupId>
+      <artifactId>jetty-security6</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

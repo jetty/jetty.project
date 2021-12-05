@@ -16,7 +16,7 @@ module org.eclipse.jetty.security.openid
     requires org.eclipse.jetty.util.ajax;
 
     requires transitive org.eclipse.jetty.client;
-    requires transitive org.eclipse.jetty.security;
+    requires transitive org.eclipse.jetty.security6;
 
     exports org.eclipse.jetty.security.openid;
 }

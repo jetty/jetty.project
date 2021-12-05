@@ -11,11 +11,8 @@
   <name>Jetty :: Servlet</name>
 
   <modules>
-    <module>jetty-security-common</module>
-    <module>jetty-annotations-common</module>
-    <module>jetty-webapp-common</module>
-    <module>servlet6</module>
-    <module>jetty-session</module>
+    <module>jetty-servlet6</module>
+    <module>jetty-servlet-common</module>
   </modules>
 
 </project>

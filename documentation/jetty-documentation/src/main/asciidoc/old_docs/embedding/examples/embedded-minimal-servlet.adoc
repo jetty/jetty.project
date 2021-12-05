@@ -43,7 +43,7 @@ To use this example in your project you will need the following Maven dependenci
                 
 <dependency>
   <groupId>org.eclipse.jetty</groupId>
-  <artifactId>jetty-servlet</artifactId>
+  <artifactId>jetty-servlet6</artifactId>
   <version>${project.version}</version>
 </dependency>
 

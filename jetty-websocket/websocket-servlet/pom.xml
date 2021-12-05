@@ -20,8 +20,8 @@
       <artifactId>websocket-core-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet-common</artifactId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
+      <artifactId>jetty-servlet6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

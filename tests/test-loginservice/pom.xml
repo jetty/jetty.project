@@ -17,20 +17,20 @@
       <artifactId>jetty-server</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-webapp-common</artifactId>
+      <groupId>org.eclipse.jetty.webapp</groupId>
+      <artifactId>jetty-webapp6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-client</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.servlet</groupId>
-      <artifactId>jetty-security-common</artifactId>
+      <groupId>org.eclipse.jetty.security</groupId>
+      <artifactId>jetty-security6</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-plus</artifactId>
+      <groupId>org.eclipse.jetty.plus</groupId>
+      <artifactId>jetty-plus6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

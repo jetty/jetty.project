@@ -11,13 +11,13 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-servlet-common</artifactId>
+      <groupId>org.eclipse.jetty.servlet</groupId>
+      <artifactId>jetty-servlet6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-jakarta-servlet-api</artifactId>
-      <version>@jetty.servlet5.api.version@</version>
+      <version>@jetty.servlet6.api.version@</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
