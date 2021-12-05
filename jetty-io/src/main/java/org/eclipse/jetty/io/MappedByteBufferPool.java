@@ -181,7 +181,7 @@ public class MappedByteBufferPool extends AbstractByteBufferPool implements Dump
         }
         if (index >= 0)
         {
-            Bucket bucket = buckets.get(index);
+            Bucket bucket = buckets.remove(index);
             // Null guard in case this.clear() is called concurrently.
             if (bucket != null)
                 bucket.clear();
