@@ -1420,21 +1420,27 @@ public class Request implements HttpServletRequest
      */
     public void onCompleted()
     {
-        RequestLog requestLog = getHttpChannel().getRequestLog();
-        if (requestLog != null)
+        HttpChannel httpChannel = getHttpChannel();
+        // httpChannel can be null in some scenarios
+        // it's not possible to use requestlog in those scenarios anyway.
+        if (httpChannel != null)
         {
-            // Don't allow pulling more parameters
-            _contentParamsExtracted = true;
-
-            // Reset the status code to what was committed
-            MetaData.Response committedResponse = getResponse().getCommittedMetaData();
-            if (committedResponse != null)
+            RequestLog requestLog = httpChannel.getRequestLog();
+            if (requestLog != null)
             {
-                getResponse().setStatus(committedResponse.getStatus());
-                // TODO: Reset the response headers to what they were when committed
-            }
+                // Don't allow pulling more parameters
+                _contentParamsExtracted = true;
 
-            requestLog.log(this, getResponse());
+                // Reset the status code to what was committed
+                MetaData.Response committedResponse = getResponse().getCommittedMetaData();
+                if (committedResponse != null)
+                {
+                    getResponse().setStatus(committedResponse.getStatus());
+                    // TODO: Reset the response headers to what they were when committed
+                }
+
+                requestLog.log(this, getResponse());
+            }
         }
 
         if (_sessions != null)
