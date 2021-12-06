@@ -45,6 +45,9 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
     @Override
     protected boolean check(String pathInContext, Path path)
     {
+        if (_base == null)
+            return false;
+
         // do not allow any file separation characters in the URI, as we need to know exactly what are the segments
         if (File.separatorChar != '/' && pathInContext.indexOf(File.separatorChar) >= 0)
             return false;

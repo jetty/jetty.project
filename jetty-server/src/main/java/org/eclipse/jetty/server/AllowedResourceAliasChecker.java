@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +29,7 @@ import java.util.Objects;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.PathResource;
@@ -49,6 +49,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
 
     private final ContextHandler _contextHandler;
     private final List<Path> _protected = new ArrayList<>();
+    private final AllowedResourceAliasCheckListener _listener = new AllowedResourceAliasCheckListener();
     protected Path _base;
 
     /**
@@ -56,7 +57,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
      */
     public AllowedResourceAliasChecker(ContextHandler contextHandler)
     {
-        _contextHandler = contextHandler;
+        _contextHandler = Objects.requireNonNull(contextHandler);
     }
 
     protected ContextHandler getContextHandler()
@@ -64,26 +65,45 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         return _contextHandler;
     }
 
-    @Override
-    protected void doStart() throws Exception
+    protected void initialize()
     {
         _base = getPath(_contextHandler.getBaseResource());
         if (_base == null)
-            _base = Paths.get("/").toAbsolutePath();
-        if (Files.exists(_base, NO_FOLLOW_LINKS))
-            _base = _base.toRealPath(FOLLOW_LINKS);
+            return;
 
-        String[] protectedTargets = _contextHandler.getProtectedTargets();
-        if (protectedTargets != null)
+        try
         {
-            for (String s : protectedTargets)
-                _protected.add(_base.getFileSystem().getPath(_base.toString(), s));
+            if (Files.exists(_base, NO_FOLLOW_LINKS))
+                _base = _base.toRealPath(FOLLOW_LINKS);
+            String[] protectedTargets = _contextHandler.getProtectedTargets();
+            if (protectedTargets != null)
+            {
+                for (String s : protectedTargets)
+                    _protected.add(_base.getFileSystem().getPath(_base.toString(), s));
+            }
         }
+        catch (IOException e)
+        {
+            LOG.warn("Base resource failure ({} is disabled): {}", this.getClass().getName(), _base, e);
+            _base = null;
+        }
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        // We can only initialize if ContextHandler in started state, the baseResource can be changed even in starting state.
+        // If the ContextHandler is not started add a listener to delay initialization until fully started.
+        if (_contextHandler.isStarted())
+            initialize();
+        else
+            _contextHandler.addLifeCycleListener(_listener);
     }
 
     @Override
     protected void doStop() throws Exception
     {
+        _contextHandler.removeLifeCycleListener(_listener);
         _base = null;
         _protected.clear();
     }
@@ -91,6 +111,9 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     @Override
     public boolean check(String pathInContext, Resource resource)
     {
+        if (_base == null)
+            return false;
+
         try
         {
             // The existence check resolves the symlinks.
@@ -189,7 +212,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         {
             if (resource instanceof PathResource)
                 return ((PathResource)resource).getPath();
-            return resource.getFile().toPath();
+            return (resource == null) ? null : resource.getFile().toPath();
         }
         catch (Throwable t)
         {
@@ -198,13 +221,43 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
         }
     }
 
+    private class AllowedResourceAliasCheckListener implements LifeCycle.Listener
+    {
+        @Override
+        public void lifeCycleStarting(LifeCycle event)
+        {
+        }
+
+        @Override
+        public void lifeCycleStarted(LifeCycle event)
+        {
+            initialize();
+        }
+
+        @Override
+        public void lifeCycleFailure(LifeCycle event, Throwable cause)
+        {
+        }
+
+        @Override
+        public void lifeCycleStopping(LifeCycle event)
+        {
+        }
+
+        @Override
+        public void lifeCycleStopped(LifeCycle event)
+        {
+        }
+    }
+
     @Override
     public String toString()
     {
+        String[] protectedTargets = _contextHandler.getProtectedTargets();
         return String.format("%s@%x{base=%s,protected=%s}",
             this.getClass().getSimpleName(),
             hashCode(),
             _base,
-            Arrays.asList(_contextHandler.getProtectedTargets()));
+            (protectedTargets == null) ? null : Arrays.asList(protectedTargets));
     }
 }

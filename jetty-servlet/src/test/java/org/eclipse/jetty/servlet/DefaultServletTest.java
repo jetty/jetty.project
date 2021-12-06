@@ -66,7 +66,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -974,8 +973,6 @@ public class DefaultServletTest
     public void testWelcomeRedirectDirWithQuestion() throws Exception
     {
         FS.ensureDirExists(docRoot);
-        context.setBaseResource(new PathResource(docRoot));
-
         Path dir = assumeMkDirSupported(docRoot, "dir?");
 
         Path index = dir.resolve("index.html");
@@ -1008,8 +1005,6 @@ public class DefaultServletTest
     public void testWelcomeRedirectDirWithSemicolon() throws Exception
     {
         FS.ensureDirExists(docRoot);
-        context.setBaseResource(new PathResource(docRoot));
-
         Path dir = assumeMkDirSupported(docRoot, "dir;");
 
         Path index = dir.resolve("index.html");
@@ -1232,8 +1227,6 @@ public class DefaultServletTest
     public void testDirectFromResourceHttpContent() throws Exception
     {
         FS.ensureDirExists(docRoot);
-        context.setBaseResource(Resource.newResource(docRoot));
-
         Path index = docRoot.resolve("index.html");
         createFile(index, "<h1>Hello World</h1>");
 
