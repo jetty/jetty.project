@@ -130,8 +130,7 @@ public class ServletLifeCycleTest
         server.start();
         context.addEventListener(new EventListener() {});
         listeners = context.getEventListeners();
-        listeners = context.getEventListeners();
-        assertThat(listeners.size(), is(3));
+        assertThat(listeners.size(), is(4));
 
         server.stop();
         listeners = context.getEventListeners();
