@@ -224,29 +224,9 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     private class AllowedResourceAliasCheckListener implements LifeCycle.Listener
     {
         @Override
-        public void lifeCycleStarting(LifeCycle event)
-        {
-        }
-
-        @Override
         public void lifeCycleStarted(LifeCycle event)
         {
             initialize();
-        }
-
-        @Override
-        public void lifeCycleFailure(LifeCycle event, Throwable cause)
-        {
-        }
-
-        @Override
-        public void lifeCycleStopping(LifeCycle event)
-        {
-        }
-
-        @Override
-        public void lifeCycleStopped(LifeCycle event)
-        {
         }
     }
 
