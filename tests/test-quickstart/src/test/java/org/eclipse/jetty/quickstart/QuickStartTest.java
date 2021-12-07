@@ -193,7 +193,7 @@ public class QuickStartTest
         HttpURLConnection connection = (HttpURLConnection)url.openConnection();
         assertEquals(200, connection.getResponseCode());
         String content = IO.toString((InputStream)connection.getContent());
-        assertThat(content, Matchers.containsString("JNDI Test WebApp"));
+        assertThat(content, Matchers.containsString("JNDI Demo WebApp"));
 
         server.stop();
     }

@@ -98,7 +98,7 @@ public class TestJettyOSGiBootWithAnnotations
             assertEquals("Response status code", HttpStatus.OK_200, response.getStatus());
 
             String content = response.getContentAsString();
-            TestOSGiUtil.assertContains("Response contents", content, "Test Specification WebApp");
+            TestOSGiUtil.assertContains("Response contents", content, "Demo Specification WebApp");
 
             Request req = client.POST("http://127.0.0.1:" + port + "/test");
             response = req.send();
