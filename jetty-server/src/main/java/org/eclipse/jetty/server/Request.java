@@ -2532,7 +2532,14 @@ public class Request implements HttpServletRequest
         if (newQuery != null)
         {
             newQueryParams = new MultiMap<>();
-            UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING);
+            try
+            {
+                UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING);
+            }
+            catch (Exception e)
+            {
+                throw new BadMessageException(500, "Bad query encoding", e);
+            }
         }
 
         MultiMap<String> oldQueryParams = _queryParameters;
