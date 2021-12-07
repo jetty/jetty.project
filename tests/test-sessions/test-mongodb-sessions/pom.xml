@@ -82,7 +82,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-nosql</artifactId>
+      <artifactId>jetty-mongodb</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

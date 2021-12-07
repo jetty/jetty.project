@@ -1414,7 +1414,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.session</groupId>
-        <artifactId>jetty-nosql</artifactId>
+        <artifactId>jetty-mongodb</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

@@ -16,7 +16,7 @@
 
 The `MongoSessionDataStore` supports persistence of `SessionData` in a nosql database.
 
-The best description for the document model for session information is found in the javadoc for the link:{javadoc-url}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStore.html[MongoSessionDataStore].
+The best description for the document model for session information is found in the javadoc for the link:{javadoc-url}/org/eclipse/jetty/mongodb/MongoSessionDataStore.html[MongoSessionDataStore].
 In overview, it can be represented thus:
 
 [plantuml]
@@ -68,7 +68,7 @@ An object that is updated every time a session is written out for a context.
 
 ====== Configuration
 
-You can configure either a link:{javadoc-url}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStore.html[MongoSessionDataStore] individually, or a link:{javadoc-url}/org/eclipse/jetty/nosql/mongodb/MongoSessionDataStore.html[MongoSessionDataStoreFactory] if you want multiple ``SessionHandler``s to use ``MongoSessionDataStore``s that are identically configured.
+You can configure either a link:{javadoc-url}/org/eclipse/jetty/mongodb/MongoSessionDataStore.html[MongoSessionDataStore] individually, or a link:{javadoc-url}/org/eclipse/jetty/mongodb/MongoSessionDataStore.html[MongoSessionDataStoreFactory] if you want multiple ``SessionHandler``s to use ``MongoSessionDataStore``s that are identically configured.
 The configuration methods for the `MongoSessionDataStoreFactory` are:
 
 include::session-sessiondatastore.adoc[tag=common-datastore-config]

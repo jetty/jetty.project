@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.nosql.mongodb;
+package org.eclipse.jetty.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;

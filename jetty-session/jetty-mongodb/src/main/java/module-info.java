@@ -11,11 +11,10 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.nosql
+module org.eclipse.jetty.mongodb
 {
     requires transitive mongo.java.driver;
     requires transitive org.eclipse.jetty.server;
 
-    exports org.eclipse.jetty.nosql;
-    exports org.eclipse.jetty.nosql.mongodb;
+    exports org.eclipse.jetty.mongodb;
 }

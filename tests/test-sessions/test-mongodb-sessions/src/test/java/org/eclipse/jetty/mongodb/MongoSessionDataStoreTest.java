@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.nosql.mongodb;
+package org.eclipse.jetty.mongodb;
 
 import java.util.ArrayList;
 import java.util.Arrays;

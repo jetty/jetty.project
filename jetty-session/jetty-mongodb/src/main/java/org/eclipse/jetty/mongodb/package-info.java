@@ -12,7 +12,7 @@
 //
 
 /**
- * Jetty NoSql : Generic Nosql Session Management
+ * Jetty NoSql : MongoDB Integration
  */
-package org.eclipse.jetty.nosql;
+package org.eclipse.jetty.mongodb;
 
