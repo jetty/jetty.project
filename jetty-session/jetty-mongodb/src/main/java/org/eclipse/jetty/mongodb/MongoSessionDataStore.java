@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.nosql.mongodb;
+package org.eclipse.jetty.mongodb;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -30,7 +30,7 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
 import com.mongodb.WriteResult;
-import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
+import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.UnreadableSessionDataException;
@@ -89,7 +89,7 @@ import org.slf4j.LoggerFactory;
  * Eg  <code>"context"."0_0_0_0:_testA"."lastSaved"</code>
  */
 @ManagedObject
-public class MongoSessionDataStore extends NoSqlSessionDataStore
+public class MongoSessionDataStore extends AbstractSessionDataStore
 {
 
     private static final Logger LOG = LoggerFactory.getLogger(MongoSessionDataStore.class);
@@ -157,6 +157,48 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
      */
     private DBCollection _dbSessions;
 
+    public class MongoDBSessionData extends SessionData
+    {
+        private Object _version;
+        private Set<String> _dirtyAttributes = new HashSet<>();
+
+        public MongoDBSessionData(String id, String cpath, String vhost, long created, long accessed, long lastAccessed, long maxInactiveMs)
+        {
+            super(id, cpath, vhost, created, accessed, lastAccessed, maxInactiveMs);
+            setVersion(0L);
+        }
+
+        public void setVersion(Object v)
+        {
+            _version = v;
+        }
+
+        public Object getVersion()
+        {
+            return _version;
+        }
+
+        @Override
+        public void setDirty(String name)
+        {
+            super.setDirty(name);
+            _dirtyAttributes.add(name);
+        }
+
+        public Set<String> takeDirtyAttributes()
+        {
+            Set<String> copy = new HashSet<>(_dirtyAttributes);
+            _dirtyAttributes.clear();
+            return copy;
+        }
+    }
+
+    @Override
+    public SessionData newSessionData(String id, long created, long accessed, long lastAccessed, long maxInactiveMs)
+    {
+        return new MongoDBSessionData(id, _context.getCanonicalContextPath(), _context.getVhost(), created, accessed, lastAccessed, maxInactiveMs);
+    }
+
     public void setDBCollection(DBCollection collection)
     {
         _dbSessions = collection;
@@ -199,7 +241,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             Long maxInactive = (Long)sessionDocument.get(__MAX_IDLE);
             Long expiry = (Long)sessionDocument.get(__EXPIRY);
 
-            NoSqlSessionData data = null;
+            MongoDBSessionData data = null;
 
             // get the session for the context
             DBObject sessionSubDocumentForContext = (DBObject)MongoUtils.getNestedValue(sessionDocument, getContextField());
@@ -213,7 +255,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
                     LOG.debug("Session {} present for context {}", id, _context);
 
                 //only load a session if it exists for this context
-                data = (NoSqlSessionData)newSessionData(id, created, accessed, (lastAccessed == null ? accessed : lastAccessed), maxInactive);
+                data = (MongoDBSessionData)newSessionData(id, created, accessed, (lastAccessed == null ? accessed : lastAccessed), maxInactive);
                 data.setVersion(version);
                 data.setExpiry(expiry);
                 data.setContextPath(_context.getCanonicalContextPath());
@@ -466,7 +508,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
         boolean upsert = false;
         BasicDBObject sets = new BasicDBObject();
 
-        Object version = ((NoSqlSessionData)data).getVersion();
+        Object version = ((MongoDBSessionData)data).getVersion();
 
         // New session
         if (lastSaveTime <= 0)
@@ -480,14 +522,14 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
             sets.put(getContextSubfield(__LASTNODE), data.getLastNode());
             sets.put(__MAX_IDLE, data.getMaxInactiveMs());
             sets.put(__EXPIRY, data.getExpiry());
-            ((NoSqlSessionData)data).setVersion(version);
+            ((MongoDBSessionData)data).setVersion(version);
         }
         else
         {
             sets.put(getContextSubfield(__LASTSAVED), data.getLastSaved());
             sets.put(getContextSubfield(__LASTNODE), data.getLastNode());
             version = ((Number)version).longValue() + 1L;
-            ((NoSqlSessionData)data).setVersion(version);
+            ((MongoDBSessionData)data).setVersion(version);
             update.put("$inc", _version1);
             //if max idle time and/or expiry is smaller for this context, then choose that for the whole session doc
             BasicDBObject fields = new BasicDBObject();
