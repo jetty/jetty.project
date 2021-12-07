@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.hazelcast.session;
+package org.eclipse.jetty.session.hazelcast;
 
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
