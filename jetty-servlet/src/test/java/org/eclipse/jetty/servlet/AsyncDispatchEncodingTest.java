@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import java.io.IOException;
 import javax.servlet.AsyncContext;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -64,11 +63,11 @@ public class AsyncDispatchEncodingTest
     }
 
     /**
-     * An AsyncContext.dispatch(String) test where the incoming query from the User-Agent has bad URI encoding.
+     * An AsyncContext.dispatch(String) test where the incoming query from the Client has bad URI encoding.
      * The merging of query should fail the request and result in a 400 response
      */
     @Test
-    public void testAsyncDispatchBadUserAgentQuery() throws Exception
+    public void testAsyncDispatchBadClientQuery() throws Exception
     {
         ServletContextHandler contextHandler = new ServletContextHandler();
         contextHandler.setContextPath("/");
@@ -89,7 +88,7 @@ public class AsyncDispatchEncodingTest
         ServletHolder simpleHolder = new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             {
                 // we should never reach this.
                 resp.setStatus(444);
@@ -115,7 +114,7 @@ public class AsyncDispatchEncodingTest
     }
 
     /**
-     * An AsyncContext.dispatch(String) test where the incoming query from the User-Agent is sane,
+     * An AsyncContext.dispatch(String) test where the incoming query from the Client is sane,
      * but the application provided path has a query with bad URI encoding.
      * The merging of query should fail the request and result in a 500 response.
      */
@@ -141,7 +140,7 @@ public class AsyncDispatchEncodingTest
         ServletHolder simpleHolder = new ServletHolder(new HttpServlet()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             {
                 // we should never reach this
                 resp.setStatus(444);
