@@ -19,7 +19,6 @@ import java.security.MessageDigest;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -42,7 +41,7 @@ public abstract class Credential implements Serializable
     // Intentionally NOT using TypeUtil.serviceProviderStream
     // as that introduces a Logger requirement that command line Password cannot use.
     private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = ServiceLoader.load(CredentialProvider.class).stream()
-        .flatMap((p) -> Stream.of(p.get()))
+        .map(ServiceLoader.Provider::get)
         .collect(Collectors.toList());
 
     /**
@@ -265,7 +264,7 @@ public abstract class Credential implements Serializable
                         catch (Exception e)
                         {
                             System.err.println("Unable to access MD5 message digest");
-                            e.printStackTrace(System.err);
+                            e.printStackTrace();
                             return null;
                         }
                     }
@@ -280,7 +279,7 @@ public abstract class Credential implements Serializable
             catch (Exception e)
             {
                 System.err.println("Message Digest Failure");
-                e.printStackTrace(System.err);
+                e.printStackTrace();
                 return null;
             }
         }

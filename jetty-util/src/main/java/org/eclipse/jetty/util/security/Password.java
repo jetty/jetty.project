@@ -222,7 +222,7 @@ public class Password extends Credential
             {
                 // only seen with command line input style
                 System.err.println("ERROR: Bad/Invalid password.");
-                e.printStackTrace(System.err);
+                e.printStackTrace();
             }
             if (passwd == null || passwd.length() == 0)
                 passwd = promptDft;
