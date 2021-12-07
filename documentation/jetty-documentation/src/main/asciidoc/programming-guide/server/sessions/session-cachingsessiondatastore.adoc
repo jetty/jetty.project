@@ -29,7 +29,7 @@ The link:{javadoc-url}/org/eclipse/jetty/server/session/CachingSessionDataStore.
 This can improve the performance of slow stores.
 
 The L2 cache is an instance of a link:{javadoc-url}/org/eclipse/jetty/server/session/SessionDataMap.html[SessionDataMap].
-Jetty provides one implementation of this L2 cache based on `memcached`, link:{javadoc-url}/org/eclipse/jetty/memcached/session/MemcachedSessionDataMap.html[MemcachedSessionDataMap].
+Jetty provides one implementation of this L2 cache based on `memcached`, link:{javadoc-url}/org/eclipse/jetty/session/memcached/MemcachedSessionDataMap.html[MemcachedSessionDataMap].
 
 ====== Configuration
 

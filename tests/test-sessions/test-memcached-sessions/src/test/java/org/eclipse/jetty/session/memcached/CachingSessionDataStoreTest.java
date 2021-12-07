@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.memcached.sessions;
+package org.eclipse.jetty.session.memcached;
 
 import java.io.IOException;
 
@@ -23,7 +23,6 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.memcached.sessions.MemcachedTestHelper.MockDataStore;
 import org.eclipse.jetty.server.session.CachingSessionDataStore;
 import org.eclipse.jetty.server.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.server.session.SessionData;
@@ -32,6 +31,7 @@ import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.TestServer;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.memcached.MemcachedTestHelper.MockDataStore;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 

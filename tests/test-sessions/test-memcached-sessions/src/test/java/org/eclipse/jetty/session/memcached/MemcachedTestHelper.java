@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.memcached.sessions;
+package org.eclipse.jetty.session.memcached;
 
 import java.net.InetSocketAddress;
 import java.util.Arrays;
@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.Set;
 
 import net.rubyeye.xmemcached.XMemcachedClientBuilder;
-import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
 import org.eclipse.jetty.server.session.AbstractSessionDataStore;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.CachingSessionDataStoreFactory;
@@ -30,6 +29,7 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.memcached.MemcachedSessionDataMapFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
