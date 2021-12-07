@@ -1,52 +1,56 @@
 <html>
 <head>
-    <title>JNDI Test WebApp</title>
+    <title>JNDI Demo WebApp</title>
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Cache-Control" content="no-cache,no-store">
-    <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+    <link rel="stylesheet" type="text/css" href="demo.css"/>
 </head>
 <body>
-<a href="https://www.eclipse.org/jetty"><img src="images/jetty_banner.gif"></A>
-<br/>
-<b><a href="http://localhost:8080/">Demo Home</a></b>
-<hr/>
-<center><span style="color:red; font-variant:small-caps; font-weight:bold">Demo Web Application Only - Do NOT Deploy in Production</span>
-</center>
+    <div class="topnav">
+      <a class="menu" href="http://localhost:8080/">Demo Home</a>
+      <a class="menu" href="https://github.com/eclipse/jetty.project/tree/jetty-10.0.x/demos/demo-jndi-webapp">Source</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/">Jetty Project Home</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/documentation/current/">Documentation</a>
+      <a class="menu" href="https://webtide.com">Commercial Support</a>
+    </div>
 
-<h1>JNDI Test WebApp</h1>
+    <div class="content">
+      <center>
+          <span style="color:red; font-style:italic; font-weight:bold">Demo Web Application Only - Do NOT Deploy in Production</span>
+      </center>
+      <h1>Eclipse Jetty JNDI Demo Webapp</h1>
+       <p>
+       This is a demo webapp for the <a href="http://www.eclipse.org/jetty/">Eclipse Jetty HTTP Server and Servlet Container</a>. It was added into your <code>$JETTY_BASE/webapps</code> directory.
+       </p>
 
-<p>
-    This example shows how to configure and lookup resources such as DataSources, a JTA transaction manager and a
-    java.mail.Session in JNDI.
-</p>
+       <p>
+       It shows how to configure and lookup resources such as <code>javax.sql.DataSource</code>, a JTA transaction manager and a <code>java.mail.Session</code> in JNDI.
+       </p>
 
-<h2>Preparation</h2>
-<p>To enable JNDI in a base jetty instance do:
-<pre>
-$ cd $JETTY_BASE
-$ java -jar $JETTY_HOME/start.jar --add-module=jndi
-</pre>
-</p>
-<p>
-    This will create a <code>$JETTY_BASE/start.d/jndi.ini</code> file to enable and parameterise JNDI.
-    The jetty demo-base already has JNDI enabled and some mock resources included by the
-    demo-jndi module.
-</p>
-<p>
-    The full source of this demonstration is available
-    <a href="https://github.com/eclipse/jetty.project/tree/jetty-10.0.x/demos/demo-jndi-webapp">here</a>.
-</p>
+       <h2>Preparation</h2>
+       <p>To use JNDI in a base jetty instance enable the <code>jndi</code> module:
+         <pre>
+     $ cd $JETTY_BASE
+     $ java -jar $JETTY_HOME/start.jar --add-module=jndi
+         </pre>
+       </p>
+       <p>
+      The jetty <code>demo</code> module pre-enables JNDI along with some mock resources used by this demo.
+       </p>
 
-<h2>Execution</h2>
-<p>
+      <h2>Execution</h2>
+      <p>
     Click <code>Test</code> to check the runtime lookup of the JNDI resources.
-</p>
-<form action="test" method="post">
-    <button type="submit">Test</button>
-</form>
+      </p>
+      <form action="test" method="post">
+        <button class="test" type="submit">Test</button>
+      </form>
+    </div>
 
-<hr/>
-<center><a href="https://www.eclipse.org/jetty/"><img style="border:0" src="images/small_powered_by.gif"/></a></center>
+    <div class="footer">
+      <center><a href="https://www.eclipse.org/jetty"><img style="border:0" src="small_powered_by.gif"/></a></center>
+    </div>
+
 
 </body>
 </html>
