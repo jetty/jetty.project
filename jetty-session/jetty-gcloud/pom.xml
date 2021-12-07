@@ -7,7 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-gcloud-session-manager</artifactId>
+  <artifactId>jetty-gcloud</artifactId>
   <name>Jetty :: Servlet :: Session :: GCloud Session Manager</name>
 
   <properties>

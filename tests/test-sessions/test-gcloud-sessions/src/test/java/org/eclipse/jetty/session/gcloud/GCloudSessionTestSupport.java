@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.gcloud.session;
+package org.eclipse.jetty.session.gcloud;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -38,10 +38,10 @@ import com.google.cloud.datastore.Query;
 import com.google.cloud.datastore.Query.ResultType;
 import com.google.cloud.datastore.QueryResults;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
-import org.eclipse.jetty.gcloud.session.GCloudSessionDataStore.EntityDataModel;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.gcloud.GCloudSessionDataStore.EntityDataModel;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.gcloud.session;
+package org.eclipse.jetty.session.gcloud;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;

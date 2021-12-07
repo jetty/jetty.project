@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.gcloud.session;
+package org.eclipse.jetty.session.gcloud;
 
 import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
