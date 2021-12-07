@@ -23,8 +23,6 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Credentials. The Credential class represents an abstract mechanism for checking authentication credentials. A credential instance either represents a secret,
@@ -39,10 +37,12 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class Credential implements Serializable
 {
+    // NOTE: DO NOT INTRODUCE LOGGING TO THIS CLASS
     private static final long serialVersionUID = -7760551052768181572L;
-    private static final Logger LOG = LoggerFactory.getLogger(Credential.class);
-    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = TypeUtil.serviceProviderStream(ServiceLoader.load(CredentialProvider.class))
-        .flatMap(p -> Stream.of(p.get()))
+    // Intentionally NOT using TypeUtil.serviceProviderStream
+    // as that introduces a Logger requirement that command line Password cannot use.
+    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = ServiceLoader.load(CredentialProvider.class).stream()
+        .flatMap((p) -> Stream.of(p.get()))
         .collect(Collectors.toList());
 
     /**
@@ -154,8 +154,7 @@ public abstract class Credential implements Serializable
         {
             if (credentials instanceof char[])
                 credentials = new String((char[])credentials);
-            if (!(credentials instanceof String) && !(credentials instanceof Password))
-                LOG.warn("Can't check {} against CRYPT", credentials.getClass());
+
             return stringEquals(_cooked, UnixCrypt.crypt(credentials.toString(), _cooked));
         }
 
@@ -229,13 +228,12 @@ public abstract class Credential implements Serializable
                 }
                 else
                 {
-                    LOG.warn("Can't check {} against MD5", credentials.getClass());
+                    // Not a MD5 or Credential class
                     return false;
                 }
             }
             catch (Exception e)
             {
-                LOG.warn("Failed message digest", e);
                 return false;
             }
         }
@@ -248,6 +246,9 @@ public abstract class Credential implements Serializable
             return false;
         }
 
+        /**
+         * Used only by Command Line Password utility
+         */
         public static String digest(String password)
         {
             try
@@ -263,7 +264,8 @@ public abstract class Credential implements Serializable
                         }
                         catch (Exception e)
                         {
-                            LOG.warn("Unable to access MD5 message digest", e);
+                            System.err.println("Unable to access MD5 message digest");
+                            e.printStackTrace(System.err);
                             return null;
                         }
                     }
@@ -277,7 +279,8 @@ public abstract class Credential implements Serializable
             }
             catch (Exception e)
             {
-                LOG.warn("Message Digest failure", e);
+                System.err.println("Message Digest Failure");
+                e.printStackTrace(System.err);
                 return null;
             }
         }
