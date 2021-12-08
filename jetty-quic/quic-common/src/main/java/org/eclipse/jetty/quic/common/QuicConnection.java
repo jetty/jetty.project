@@ -62,6 +62,7 @@ public abstract class QuicConnection extends AbstractConnection
     private final ByteBufferPool byteBufferPool;
     private final AdaptiveExecutionStrategy strategy;
     private final Flusher flusher = new Flusher();
+    private final Callback fillableCallback = new FillableCallback();
     private int outputBufferSize = 2048;
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
@@ -161,6 +162,12 @@ public abstract class QuicConnection extends AbstractConnection
     public void onFillable()
     {
         strategy.produce();
+    }
+
+    @Override
+    public void fillInterested()
+    {
+        getEndPoint().fillInterested(fillableCallback);
     }
 
     @Override
@@ -407,6 +414,27 @@ public abstract class QuicConnection extends AbstractConnection
                 this.address = address;
                 this.buffers = buffers;
             }
+        }
+    }
+
+    private class FillableCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            onFillable();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            onFillInterestedFailed(x);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.EITHER;
         }
     }
 }
