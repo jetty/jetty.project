@@ -284,7 +284,7 @@ public abstract class Credential implements Serializable
                 // Intentionally not using TypeUtil.toString() here as TypeUtil
                 // introduces a Logging requirement that is not compatible
                 // with Password command line.
-                final char[] HEX = "0123456789ABCDEF".toCharArray();
+                final char[] HEX = "0123456789abcdef".toCharArray();
                 int len = digest.length;
                 char[] out = new char[len * 2];
                 for (int i = 0; i < len; i++)
