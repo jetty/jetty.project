@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -38,6 +37,7 @@ public abstract class Credential implements Serializable
 {
     // NOTE: DO NOT INTRODUCE LOGGING TO THIS CLASS
     private static final long serialVersionUID = -7760551052768181572L;
+    private static final char[] HEXCODES = "0123456789abcdef".toCharArray();
     // Intentionally NOT using TypeUtil.serviceProviderStream
     // as that introduces a Logger requirement that command line Password cannot use.
     private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = ServiceLoader.load(CredentialProvider.class).stream()
@@ -134,6 +134,58 @@ public abstract class Credential implements Serializable
     }
 
     /**
+     * <p>Utility to convert a String of hex into an actual byte array</p>
+     * @param hstr the raw string
+     * @return the parsed byte array
+     */
+    protected static byte[] parseHexToByteArray(String hstr)
+    {
+        if ((hstr.length() <= 0) || ((hstr.length() % 2) != 0))
+        {
+            throw new IllegalArgumentException(String.format("Invalid string length of <%d>", hstr.length()));
+        }
+
+        int size = hstr.length() / 2;
+        byte[] buf = new byte[size];
+        byte hex;
+        int len = hstr.length();
+
+        int idx = (int)Math.floor(((size * 2) - (double)len) / 2);
+        for (int i = 0; i < len; i++)
+        {
+            hex = 0;
+            if (i >= 0)
+            {
+                hex = (byte)(Character.digit(hstr.charAt(i), 16) << 4);
+            }
+            i++;
+            hex += (byte)(Character.digit(hstr.charAt(i), 16));
+
+            buf[idx] = hex;
+            idx++;
+        }
+
+        return buf;
+    }
+
+    /**
+     * Format the byte array as a hex string
+     * @param buf the byte array
+     * @return the hex string
+     */
+    protected static String formatAsHex(byte[] buf)
+    {
+        int len = buf.length;
+        char[] out = new char[len * 2];
+        for (int i = 0; i < len; i++)
+        {
+            out[i * 2] = HEXCODES[(buf[i] & 0xF0) >> 4];
+            out[(i * 2) + 1] = HEXCODES[(buf[i] & 0x0F)];
+        }
+        return String.valueOf(out);
+    }
+
+    /**
      * Unix Crypt Credentials
      */
     public static class Crypt extends Credential
@@ -187,14 +239,7 @@ public abstract class Credential implements Serializable
         MD5(String digest)
         {
             digest = digest.startsWith(__TYPE) ? digest.substring(__TYPE.length()) : digest;
-            // intentionally not using TypeUtil.parseBytes as using TypeUtil introduces
-            // a logging requirement that is not supported by Command Line Password util
-            byte[] digestBytes = new byte[digest.length() / 2];
-            for (int i = 0; i < digest.length(); i += 2)
-            {
-                digestBytes[i / 2] = (byte)TypeUtil.parseInt(digest, i, 2, 16);
-            }
-            _digest = digestBytes;
+            _digest = parseHexToByteArray(digest);
         }
 
         public byte[] getDigest()
@@ -281,18 +326,7 @@ public abstract class Credential implements Serializable
                     digest = __md.digest();
                 }
 
-                // Intentionally not using TypeUtil.toString() here as TypeUtil
-                // introduces a Logging requirement that is not compatible
-                // with Password command line.
-                final char[] HEX = "0123456789abcdef".toCharArray();
-                int len = digest.length;
-                char[] out = new char[len * 2];
-                for (int i = 0; i < len; i++)
-                {
-                    out[i * 2] = HEX[(digest[i] & 0xF0) >> 4];
-                    out[(i * 2) + 1] = HEX[(digest[i] & 0x0F)];
-                }
-                return __TYPE + String.valueOf(out);
+                return __TYPE + formatAsHex(digest);
             }
             catch (Exception e)
             {
