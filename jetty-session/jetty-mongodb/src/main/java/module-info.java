@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.mongodb
+module org.eclipse.jetty.session.mongodb
 {
     requires transitive mongo.java.driver;
     requires transitive org.eclipse.jetty.server;
 
-    exports org.eclipse.jetty.mongodb;
+    exports org.eclipse.jetty.session.mongodb;
 }

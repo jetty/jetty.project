@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.mongodb;
+package org.eclipse.jetty.session.mongodb;
 
 import java.util.ArrayList;
 import java.util.Arrays;

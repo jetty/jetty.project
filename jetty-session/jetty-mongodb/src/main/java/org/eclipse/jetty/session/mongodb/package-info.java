@@ -14,5 +14,5 @@
 /**
  * Jetty NoSql : MongoDB Integration
  */
-package org.eclipse.jetty.mongodb;
+package org.eclipse.jetty.session.mongodb;
 

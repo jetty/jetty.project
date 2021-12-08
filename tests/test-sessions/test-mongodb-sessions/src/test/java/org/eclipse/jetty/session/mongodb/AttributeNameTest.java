@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.mongodb;
+package org.eclipse.jetty.session.mongodb;
 
 import java.io.IOException;
 import java.io.PrintWriter;
