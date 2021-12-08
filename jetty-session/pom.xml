@@ -15,6 +15,8 @@
     <module>jetty-memcached</module>
     <module>jetty-gcloud-session-manager</module>
     <module>jetty-infinispan</module>
+    <module>jetty-file</module>
+    <module>jetty-jdbc</module>
     <module>jetty-mongodb</module>
   </modules>
 

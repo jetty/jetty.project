@@ -17,9 +17,6 @@ module org.eclipse.jetty.server
     requires transitive org.eclipse.jetty.http;
     requires transitive org.slf4j;
 
-    // Only required if using DatabaseAdaptor/JDBCSessionDataStore.
-    requires static java.sql;
-    requires static java.naming;
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 

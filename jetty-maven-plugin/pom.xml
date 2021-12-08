@@ -288,7 +288,7 @@
           <artifactId>jetty-jaspi</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
+          <groupId>org.eclipse.jetty.session</groupId>
           <artifactId>jetty-memcached</artifactId>
         </exclusion>
         <exclusion>
@@ -320,19 +320,19 @@
           <artifactId>http2-server</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
+          <groupId>org.eclipse.jetty.session</groupId>
           <artifactId>infinispan-embedded</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
+          <groupId>org.eclipse.jetty.session</groupId>
           <artifactId>infinispan-embedded-query</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
+          <groupId>org.eclipse.jetty.session</groupId>
           <artifactId>infinispan-remote</artifactId>
         </exclusion>
         <exclusion>
-          <groupId>org.eclipse.jetty</groupId>
+          <groupId>org.eclipse.jetty.session</groupId>
           <artifactId>infinispan-remote-query</artifactId>
         </exclusion>
         <exclusion>
