@@ -245,5 +245,6 @@ public class Password extends Credential
         System.err.println(Credential.MD5.digest(p));
         if (arg.length == 2)
             System.err.println(Credential.Crypt.crypt(arg[0], pw.toString()));
+        System.exit(0);
     }
 }

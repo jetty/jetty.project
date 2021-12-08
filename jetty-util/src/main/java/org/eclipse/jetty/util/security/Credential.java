@@ -187,7 +187,14 @@ public abstract class Credential implements Serializable
         MD5(String digest)
         {
             digest = digest.startsWith(__TYPE) ? digest.substring(__TYPE.length()) : digest;
-            _digest = TypeUtil.parseBytes(digest, 16);
+            // intentionally not using TypeUtil.parseBytes as using TypeUtil introduces
+            // a logging requirement that is not supported by Command Line Password util
+            byte[] digestBytes = new byte[digest.length() / 2];
+            for (int i = 0; i < digest.length(); i += 2)
+            {
+                digestBytes[i / 2] = (byte)TypeUtil.parseInt(digest, i, 2, 16);
+            }
+            _digest = digestBytes;
         }
 
         public byte[] getDigest()
@@ -274,7 +281,18 @@ public abstract class Credential implements Serializable
                     digest = __md.digest();
                 }
 
-                return __TYPE + TypeUtil.toString(digest, 16);
+                // Intentionally not using TypeUtil.toString() here as TypeUtil
+                // introduces a Logging requirement that is not compatible
+                // with Password command line.
+                final char[] HEX = "0123456789ABCDEF".toCharArray();
+                int len = digest.length;
+                char[] out = new char[len * 2];
+                for (int i = 0; i < len; i++)
+                {
+                    out[i * 2] = HEX[(digest[i] & 0xF0) >> 4];
+                    out[(i * 2) + 1] = HEX[(digest[i] & 0x0F)];
+                }
+                return __TYPE + String.valueOf(out);
             }
             catch (Exception e)
             {
