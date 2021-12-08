@@ -23,6 +23,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -69,8 +70,7 @@ public class PasswordTest
             .redirectErrorStream(true);
 
         Process passwordProcess = passwordBuilder.start();
-        try (InputStreamReader inputStreamReader = new InputStreamReader(passwordProcess.getInputStream());
-             BufferedReader reader = new BufferedReader(inputStreamReader))
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(passwordProcess.getInputStream())))
         {
             String output = reader.lines().collect(Collectors.joining(System.lineSeparator()));
             if (passwordProcess.waitFor(5, TimeUnit.SECONDS))
@@ -78,12 +78,18 @@ public class PasswordTest
                 int exitCode = passwordProcess.exitValue();
                 assertThat("Non-error exit code: " + output, exitCode, is(0));
                 assertThat("Output", output, not(containsString("Exception")));
+                assertThat("Output", output, allOf(
+                    containsString("password"),
+                    containsString("OBF:"),
+                    containsString("MD5:"),
+                    containsString("CRYPT:")
+                ));
             }
             else
             {
                 System.out.println(output);
-                fail("Process didn't exit properly (was forcibly destroyed)");
                 passwordProcess.destroy();
+                fail("Process didn't exit properly (was forcibly destroyed)");
             }
         }
     }
