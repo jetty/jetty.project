@@ -11,7 +11,7 @@
   <name>Jetty :: Servlet :: Session :: GCloud Session Manager</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.session</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.gcloud</bundle-symbolic-name>
   </properties>
 
   <dependencies>
