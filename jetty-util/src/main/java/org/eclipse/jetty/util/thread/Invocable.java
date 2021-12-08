@@ -67,11 +67,8 @@ public interface Invocable
          * but the invocation cannot be deferred to a later time, differently
          * from {@link #BLOCKING}.</p>
          * <p>This invocation type is suitable for {@code Invocable}s that
-         * themselves produce other {@code Invocable}s.</p>
-         * <p>The invocation of this {@code Invocable} causes the
-         * production of other, nested, {@code Invocable}s, which may be
-         * of type {@link #NON_BLOCKING} and therefore are invoked
-         * immediately, thus advancing a possibly stalled system.</p>
+         * themselves perform the non-deferrable action in a non-blocking way,
+         * thus advancing a possibly stalled system.</p>
          */
         EITHER
     }
