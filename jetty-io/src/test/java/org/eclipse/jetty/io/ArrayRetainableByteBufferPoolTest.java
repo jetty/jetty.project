@@ -14,6 +14,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -378,5 +379,16 @@ public class ArrayRetainableByteBufferPoolTest
                 c -> 32 - Integer.numberOfLeadingZeros(c - 1),
                 i -> 1 << i);
         }
+    }
+
+    @Test
+    public void testEndiannessResetOnRelease()
+    {
+        ArrayRetainableByteBufferPool bufferPool = new ArrayRetainableByteBufferPool();
+        RetainableByteBuffer buffer = bufferPool.acquire(10, true);
+        assertThat(buffer.getBuffer().order(), Matchers.is(ByteOrder.BIG_ENDIAN));
+        buffer.getBuffer().order(ByteOrder.LITTLE_ENDIAN);
+        assertThat(buffer.release(), is(true));
+        assertThat(buffer.getBuffer().order(), Matchers.is(ByteOrder.BIG_ENDIAN));
     }
 }
