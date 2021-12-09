@@ -273,7 +273,7 @@
         </exclusion>
         <exclusion>
           <groupId>org.eclipse.jetty.session</groupId>
-          <artifactId>jetty-gcloud-session-manager</artifactId>
+          <artifactId>jetty-gcloud</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.eclipse.jetty.session</groupId>

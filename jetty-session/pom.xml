@@ -13,7 +13,7 @@
   <modules>
     <module>jetty-hazelcast</module>
     <module>jetty-memcached</module>
-    <module>jetty-gcloud-session-manager</module>
+    <module>jetty-gcloud</module>
     <module>jetty-infinispan</module>
     <module>jetty-file</module>
     <module>jetty-jdbc</module>

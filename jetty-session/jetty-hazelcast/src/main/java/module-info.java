@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.hazelcast.session
+module org.eclipse.jetty.session.hazelcast
 {
     requires transitive com.hazelcast.core;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.util;
 
-    exports org.eclipse.jetty.hazelcast.session;
+    exports org.eclipse.jetty.session.hazelcast;
 }

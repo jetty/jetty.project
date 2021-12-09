@@ -2,7 +2,7 @@
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-    <New id="sessionDataMapFactory" class="org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory">
+    <New id="sessionDataMapFactory" class="org.eclipse.jetty.session.memcached.MemcachedSessionDataMapFactory">
        <Set name="addresses">
          <Array type="java.net.InetSocketAddress">
            <Item>
