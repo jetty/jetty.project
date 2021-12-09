@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.memcached.session;
+package org.eclipse.jetty.session.memcached;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

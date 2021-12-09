@@ -17,7 +17,7 @@ maven://com.googlecode.xmemcached/xmemcached/${xmemcached.version}|lib/xmemcache
 xmemcached.version?=@xmemcached.version@
 
 [lib]
-lib/jetty-memcached-sessions-${jetty.version}.jar
+lib/jetty-memcached-${jetty.version}.jar
 lib/xmemcached/*.jar
 
 [license]

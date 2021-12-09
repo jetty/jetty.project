@@ -16,7 +16,6 @@ package org.eclipse.jetty.docs.programming.server.session;
 import java.io.File;
 import java.net.InetSocketAddress;
 
-import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.session.CachingSessionDataStoreFactory;
@@ -33,6 +32,7 @@ import org.eclipse.jetty.server.session.NullSessionDataStore;
 import org.eclipse.jetty.server.session.SessionCache;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.memcached.MemcachedSessionDataMapFactory;
 import org.eclipse.jetty.session.mongodb.MongoSessionDataStoreFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
 

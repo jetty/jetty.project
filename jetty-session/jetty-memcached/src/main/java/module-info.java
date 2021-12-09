@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.memcached.session
+module org.eclipse.jetty.session.memcached
 {
     requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.util;
     requires transitive xmemcached;
 
-    exports org.eclipse.jetty.memcached.session;
+    exports org.eclipse.jetty.session.memcached;
 }
