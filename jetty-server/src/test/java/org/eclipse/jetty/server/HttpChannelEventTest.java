@@ -19,7 +19,10 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.ByteBuffer;
+import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,11 +35,14 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -58,8 +64,7 @@ public class HttpChannelEventTest
     @AfterEach
     public void dispose() throws Exception
     {
-        if (server != null)
-            server.stop();
+        LifeCycle.stop(server);
     }
 
     @Test
@@ -238,6 +243,56 @@ public class HttpChannelEventTest
         assertEquals(HttpStatus.OK_200, response.getStatus());
         assertTrue(latch.await(5, TimeUnit.SECONDS));
         assertThat(elapsed.get(), Matchers.greaterThan(0L));
+    }
+
+    @Test
+    public void testCustomizerBeforeDispatch() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.setCharacterEncoding("utf-8");
+                response.setContentType("text/plain");
+                PrintWriter out = response.getWriter();
+                out.printf("Attribute[X-Foo-FromCustomizer] = [%s]%n", request.getAttribute("X-Foo-FromCustomizer"));
+                out.printf("Header[X-Foo-FromListener] = [%s]%n", request.getHeader("X-Foo-FromListener"));
+                baseRequest.setHandled(true);
+            }
+        });
+
+        Collection<HttpConfiguration> httpConfigs = connector.getContainedBeans(HttpConfiguration.class);
+        httpConfigs.forEach((httpConfig) ->
+            httpConfig.addCustomizer((connector, channelConfig, request) ->
+                request.setAttribute("X-Foo-FromCustomizer", "true")
+            )
+        );
+
+        connector.addBean(new HttpChannel.Listener()
+        {
+            @Override
+            public void onBeforeDispatch(Request request)
+            {
+                // Should see value from Customizer
+                // this value would be null if Customizer didn't run first.
+                String value = Objects.toString(request.getAttribute("X-Foo-FromCustomizer"));
+                request.getHttpFields().put("X-Foo-FromListener", value);
+            }
+        });
+
+        HttpTester.Request request = HttpTester.newRequest();
+        request.setMethod("GET");
+        request.setURI("/foo");
+        request.setHeader("Host", "localhost");
+        HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        String responseBody = response.getContent();
+        assertThat("Response Body Content", responseBody,
+            allOf(
+                containsString("Attribute[X-Foo-FromCustomizer] = [true]"),
+                containsString("Header[X-Foo-FromListener] = [true]")
+            ));
     }
 
     @Test

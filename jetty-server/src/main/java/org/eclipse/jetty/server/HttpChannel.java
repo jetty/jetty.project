@@ -389,17 +389,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         if (!_request.hasMetaData())
                             throw new IllegalStateException("state=" + _state);
 
-                        dispatch(DispatcherType.REQUEST, () ->
+                        for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
                         {
-                            for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
-                            {
-                                customizer.customize(getConnector(), _configuration, _request);
-                                if (_request.isHandled())
-                                    return;
-                            }
-                            getServer().handle(HttpChannel.this);
-                        });
+                            customizer.customize(getConnector(), _configuration, _request);
+                        }
 
+                        if (!_request.isHandled())
+                        {
+                            dispatch(DispatcherType.REQUEST, () -> getServer().handle(HttpChannel.this));
+                        }
                         break;
                     }
 
