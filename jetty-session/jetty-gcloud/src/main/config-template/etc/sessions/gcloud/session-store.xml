@@ -9,7 +9,7 @@
   <!-- ===================================================================== -->
   <Call name="addBean">
    <Arg>
-    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStoreFactory">
+    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.session.gcloud.GCloudSessionDataStoreFactory">
        <Set name="gracePeriodSec" property="jetty.session.gracePeriod.seconds"/>
        <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
        <Set name="maxRetries" property="jetty.session.gcloud.maxRetries"/>
@@ -18,7 +18,7 @@
        <Set name="host" property="jetty.session.gcloud.host"/>
        <Set name="projectId" property="jetty.session.gcloud.projectId"/>
        <Set name="entityDataModel">
-          <New class="org.eclipse.jetty.gcloud.session.GCloudSessionDataStore$EntityDataModel">
+          <New class="org.eclipse.jetty.session.gcloud.GCloudSessionDataStore$EntityDataModel">
               <Set name="kind" property="jetty.session.gcloud.model.kind"/>
               <Set name="id" property="jetty.session.gcloud.model.id"/>
               <Set name="contextPath" property="jetty.session.gcloud.model.contextPath"/>

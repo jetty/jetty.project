@@ -20,7 +20,7 @@ sessions
 basehome:modules/gcloud/index.yaml|etc/index.yaml
 
 [lib]
-lib/jetty-gcloud-session-manager-${jetty.version}.jar
+lib/jetty-gcloud-${jetty.version}.jar
 
 [xml]
 etc/sessions/gcloud/session-store.xml
