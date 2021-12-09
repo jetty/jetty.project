@@ -11,20 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.mongodb;
+package org.eclipse.jetty.session.mongodb;
 
-import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
+import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-/**
- * ClusteredOrphanedSessionTest
- */
 @Testcontainers(disabledWithoutDocker = true)
-public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
+public class ClusteredInvalidateSessionTest extends AbstractClusteredInvalidationSessionTest
 {
     @BeforeAll
     public static void beforeClass() throws Exception
@@ -43,12 +39,5 @@ public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessi
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         return MongoTestHelper.newSessionDataStoreFactory();
-    }
-
-    @Test
-    @Override
-    public void testOrphanedSession() throws Exception
-    {
-        super.testOrphanedSession();
     }
 }
