@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -244,5 +245,16 @@ public class ArrayByteBufferPoolTest
         assertThat(bufferPool.getMemory(true), equalTo(11L * factor));
         assertThat(buckets[2].size(), equalTo(2));
         assertThat(buckets[7].size(), equalTo(1));
+    }
+
+    @Test
+    public void testEndiannessResetOnRelease()
+    {
+        ArrayByteBufferPool bufferPool = new ArrayByteBufferPool();
+        ByteBuffer buffer = bufferPool.acquire(10, true);
+        assertThat(buffer.order(), is(ByteOrder.BIG_ENDIAN));
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+        bufferPool.release(buffer);
+        assertThat(buffer.order(), is(ByteOrder.BIG_ENDIAN));
     }
 }
