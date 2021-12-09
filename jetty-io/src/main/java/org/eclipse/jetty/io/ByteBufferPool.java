@@ -208,7 +208,7 @@ public interface ByteBufferPool
         public void release(ByteBuffer buffer)
         {
             resetUpdateTime();
-            BufferUtil.clear(buffer);
+            BufferUtil.reset(buffer);
             if (_size == null || _size.incrementAndGet() <= _maxSize)
             {
                 _queue.offer(buffer);
