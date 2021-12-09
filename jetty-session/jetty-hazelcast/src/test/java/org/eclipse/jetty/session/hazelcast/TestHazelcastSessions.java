@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.hazelcast.session;
+package org.eclipse.jetty.session.hazelcast;
 
 import java.io.IOException;
 import java.io.PrintWriter;

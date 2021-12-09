@@ -10,7 +10,7 @@
   <!-- ===================================================================== -->
   <Call name="addBean">
     <Arg>
-      <New id="sessionDataStoreFactory" class="org.eclipse.jetty.hazelcast.session.HazelcastSessionDataStoreFactory">
+      <New id="sessionDataStoreFactory" class="org.eclipse.jetty.session.hazelcast.HazelcastSessionDataStoreFactory">
         <Set name="mapName" property="jetty.session.hazelcast.mapName"/>
         <Set name="hazelcastInstanceName" property="jetty.session.hazelcast.hazelcastInstanceName"/>
         <Set name="useQueries" property="jetty.session.hazelcast.useQueries"/>

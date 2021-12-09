@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.hazelcast.session.client;
+package org.eclipse.jetty.session.hazelcast.client;
 
-import org.eclipse.jetty.hazelcast.session.HazelcastTestHelper;
-import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
+import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.hazelcast.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-public class ClientOrphanedSessionTest
-    extends AbstractClusteredOrphanedSessionTest
+public class ClientSessionScavengingTest
+    extends AbstractClusteredSessionScavengingTest
 {
     HazelcastTestHelper _testHelper;
 

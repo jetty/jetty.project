@@ -11,18 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.hazelcast.session;
+package org.eclipse.jetty.session.hazelcast;
 
-import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
+import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-/**
- * ClusteredSessionScavengingTest
- */
-public class ClusteredSessionScavengingTest
-    extends AbstractClusteredSessionScavengingTest
+public class HazelcastClusteredInvalidationSessionTest
+    extends AbstractClusteredInvalidationSessionTest
 {
     HazelcastSessionDataStoreFactory factory;
 
