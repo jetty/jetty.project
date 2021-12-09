@@ -749,6 +749,16 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
+      <artifactId>jetty-file</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.session</groupId>
+      <artifactId>jetty-jdbc</artifactId>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>jetty-memcached</artifactId>
       <optional>true</optional>
     </dependency>

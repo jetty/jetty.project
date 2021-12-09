@@ -1408,6 +1408,16 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.session</groupId>
+        <artifactId>jetty-file</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.session</groupId>
+        <artifactId>jetty-jdbc</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-io</artifactId>
         <version>${project.version}</version>

@@ -201,6 +201,14 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
+      <artifactId>jetty-file</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.session</groupId>
+      <artifactId>jetty-jdbc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>jetty-memcached</artifactId>
     </dependency>
     <dependency>

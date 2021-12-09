@@ -35,6 +35,10 @@
       <artifactId>jetty-http</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty.session</groupId>
+      <artifactId>jetty-file</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.webapp</groupId>
       <artifactId>jetty-webapp6</artifactId>
       <scope>provided</scope>
@@ -56,7 +60,6 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>

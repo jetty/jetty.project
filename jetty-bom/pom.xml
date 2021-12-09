@@ -224,6 +224,16 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.session</groupId>
+        <artifactId>jetty-file</artifactId>
+        <version>12.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.session</groupId>
+        <artifactId>jetty-jdbc</artifactId>
+        <version>12.0.0-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.session</groupId>
         <artifactId>jetty-memcached</artifactId>
         <version>12.0.0-SNAPSHOT</version>
       </dependency>

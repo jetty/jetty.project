@@ -76,23 +76,19 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
         packageDirs.mkdirs();
 
         String resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + ".class";
-        Resource resource = Resource.newResource(getClass().getResource(resourceName));
-
-        //File sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
+        Resource resource = Resource.newResource(WebAppObjectInSessionServlet.class.getResource(resourceName));
         File targetFile = new File(packageDirs, resourceName);
-        //copy(sourceFile, targetFile);
         IO.copy(resource.getInputStream(), new FileOutputStream(targetFile));
 
         resourceName = WebAppObjectInSessionServlet.class.getSimpleName() + "$" + WebAppObjectInSessionServlet.TestSharedStatic.class.getSimpleName() + ".class";
-        resource = Resource.newResource(getClass().getResource(resourceName));
-        //sourceFile = new File(getClass().getClassLoader().getResource(resourceName).toURI());
+        resource = Resource.newResource(WebAppObjectInSessionServlet.class.getResource(resourceName));
         targetFile = new File(packageDirs, resourceName);
-        //copy(sourceFile, targetFile);
         IO.copy(resource.getInputStream(), new FileOutputStream(targetFile));
 
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
+
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
 
         TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
@@ -105,6 +101,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
         try
         {
             server1.start();
+
             int port1 = server1.getPort();
 
             TestServer server2 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
@@ -114,6 +111,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
             try
             {
                 server2.start();
+
                 int port2 = server2.getPort();
 
                 HttpClient client = new HttpClient();
