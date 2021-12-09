@@ -11,10 +11,8 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.session.mongodb
-{
-    requires transitive mongo.java.driver;
-    requires transitive org.eclipse.jetty.server;
+/**
+ * Jetty NoSql : MongoDB Integration
+ */
+package org.eclipse.jetty.session.mongodb;
 
-    exports org.eclipse.jetty.session.mongodb;
-}
