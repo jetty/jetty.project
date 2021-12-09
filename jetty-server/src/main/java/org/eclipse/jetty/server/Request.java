@@ -1418,7 +1418,7 @@ public class Request implements HttpServletRequest
         HttpField host = metadata == null ? null : metadata.getFields().getField(HttpHeader.HOST);
         if (host != null)
         {
-            if (!(host instanceof HostPortHttpField) && host.getValue() != null && !host.getValue().isEmpty())
+            if (!(host instanceof HostPortHttpField) && StringUtil.isNotBlank(host.getValue()))
                 host = new HostPortHttpField(host.getValue());
             if (host instanceof HostPortHttpField)
             {
@@ -1456,7 +1456,7 @@ public class Request implements HttpServletRequest
         int port = (uri == null || uri.getHost() == null) ? findServerPort() : uri.getPort();
 
         // If no port specified, return the default port for the scheme
-        if (port <= 0)
+        if (port == HttpURI.NO_PORT)
         {
             if (getScheme().equalsIgnoreCase(URIUtil.HTTPS))
                 return 443;
@@ -1472,7 +1472,7 @@ public class Request implements HttpServletRequest
         MetaData.Request metadata = _metaData;
         // Return host from header field
         HttpField host = metadata == null ? null : metadata.getFields().getField(HttpHeader.HOST);
-        if (host != null)
+        if ((host != null) && StringUtil.isNotBlank(host.getValue()))
         {
             // TODO is this needed now?
             HostPortHttpField authority = (host instanceof HostPortHttpField)
@@ -1486,7 +1486,7 @@ public class Request implements HttpServletRequest
         if (_channel != null)
             return getLocalPort();
 
-        return -1;
+        return HttpURI.NO_PORT;
     }
 
     @Override

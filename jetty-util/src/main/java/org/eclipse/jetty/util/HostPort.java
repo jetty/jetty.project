@@ -25,6 +25,7 @@ package org.eclipse.jetty.util;
  */
 public class HostPort
 {
+    public static final int NO_PORT = -1;  // value used in java.net.URI for no-port
     private final String _host;
     private final int _port;
 
@@ -40,10 +41,9 @@ public class HostPort
             throw new IllegalArgumentException("No Authority");
         try
         {
-            if (authority.isEmpty())
+            if (StringUtil.isBlank(authority))
             {
-                _host = authority;
-                _port = 0;
+                throw new IllegalArgumentException("Empty authority");
             }
             else if (authority.charAt(0) == '[')
             {
@@ -52,6 +52,8 @@ public class HostPort
                 if (close < 0)
                     throw new IllegalArgumentException("Bad IPv6 host");
                 _host = authority.substring(0, close + 1);
+                if (!isLooseIpv6Address(_host))
+                    throw new IllegalArgumentException("Invalid Host");
 
                 if (authority.length() > close + 1)
                 {
@@ -61,7 +63,7 @@ public class HostPort
                 }
                 else
                 {
-                    _port = 0;
+                    _port = NO_PORT;
                 }
             }
             else
@@ -70,22 +72,29 @@ public class HostPort
                 int c = authority.lastIndexOf(':');
                 if (c >= 0)
                 {
-                    // ipv6address
+                    // possible ipv6address
                     if (c != authority.indexOf(':'))
                     {
+                        if (!isLooseIpv6Address(authority))
+                            throw new IllegalArgumentException("Invalid Host");
+
                         _host = "[" + authority + "]";
-                        _port = 0;
+                        _port = NO_PORT;
                     }
                     else
                     {
                         _host = authority.substring(0, c);
                         _port = parsePort(authority.substring(c + 1));
+                        if (StringUtil.isBlank(_host))
+                            throw new IllegalArgumentException("No Host");
+                        // TODO: validate _host is valid (see issue #7269)
                     }
                 }
                 else
                 {
                     _host = authority;
-                    _port = 0;
+                    _port = NO_PORT;
+                    // TODO: validate _host is valid (see issue #7269)
                 }
             }
         }
@@ -97,6 +106,53 @@ public class HostPort
         {
             throw new IllegalArgumentException("Bad HostPort", ex);
         }
+    }
+
+    /**
+     * <p>
+     * Perform a loose validation of the characters in a IPv6 address.
+     * This is not strict, and does not validate all of the aspects of IPv6,
+     * is only designed to catch really bad cases such as <code>X:Y:Z</code>.
+     * </p>
+     *
+     * For normal IPv6, see ...
+     * Per https://datatracker.ietf.org/doc/html/rfc7230#section-5.4
+     * and https://datatracker.ietf.org/doc/html/rfc7230#section-2.7.1
+     * and https://datatracker.ietf.org/doc/html/rfc3986#section-3.2.2
+     *
+     * Updates for IPv4 literals in IPv6 see
+     * https://tools.ietf.org/html/rfc2732#section-2
+     *
+     * Updates for IPv6 with zone identifiers see
+     * https://datatracker.ietf.org/doc/html/rfc6874
+     *
+     * @param authority the raw string authority
+     * @return true if it loosely follows the IPv6 address rules
+     */
+    private boolean isLooseIpv6Address(String authority)
+    {
+        if (StringUtil.isBlank(authority))
+            return false;
+        int start = 0;
+        int end = authority.length() - 1;
+        if (authority.charAt(start) == '[')
+            start = 1;
+        if (authority.charAt(end) == ']')
+            end = end - 1;
+        for (int i = start; i < end; i++)
+        {
+            char c = authority.charAt(i);
+            if (c == '%')
+                return true; // don't bother validating the rest
+            if (!((c >= '0' && c <= '9') ||
+                (c >= 'a' && c <= 'f') ||
+                (c >= 'A' && c <= 'F') ||
+                (c == '.') || (c == ':')))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

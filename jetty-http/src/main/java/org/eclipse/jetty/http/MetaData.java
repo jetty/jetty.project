@@ -180,7 +180,7 @@ public class MetaData implements Iterable<HttpField>
         {
             this(method, new HttpURI(scheme == null ? null : scheme.asString(),
                 hostPort == null ? null : hostPort.getHost(),
-                hostPort == null ? -1 : hostPort.getPort(),
+                hostPort == null ? HttpURI.NO_PORT : hostPort.getPort(),
                 uri), version, fields, contentLength);
         }
 

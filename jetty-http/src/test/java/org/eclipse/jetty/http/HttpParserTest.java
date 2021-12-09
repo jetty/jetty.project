@@ -2000,7 +2000,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertEquals("host", _host);
-        assertEquals(0, _port);
+        assertEquals(HttpURI.NO_PORT, _port);
     }
 
     @Test
@@ -2016,7 +2016,7 @@ public class HttpParserTest
         parser.parseNext(buffer);
         assertEquals("No Host", _bad);
         assertEquals("http://host/", _uriOrStatus);
-        assertEquals(0, _port);
+        assertEquals(HttpURI.NO_PORT, _port);
     }
 
     @Test
@@ -2031,7 +2031,7 @@ public class HttpParserTest
         parser.parseNext(buffer);
         assertNull(_bad);
         assertEquals("http://host/", _uriOrStatus);
-        assertEquals(0, _port);
+        assertEquals(HttpURI.NO_PORT, _port);
     }
 
     @Test
@@ -2061,7 +2061,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertEquals("192.168.0.1", _host);
-        assertEquals(0, _port);
+        assertEquals(HttpURI.NO_PORT, _port);
     }
 
     @Test
@@ -2078,7 +2078,7 @@ public class HttpParserTest
         HttpParser parser = new HttpParser(handler);
         parser.parseNext(buffer);
         assertEquals("[::1]", _host);
-        assertEquals(0, _port);
+        assertEquals(HttpURI.NO_PORT, _port);
     }
 
     @Test
@@ -2924,7 +2924,7 @@ public class HttpParserTest
     }
 
     private String _host;
-    private int _port;
+    private int _port = HttpURI.NO_PORT;
     private String _bad;
     private String _content;
     private String _methodOrVersion;

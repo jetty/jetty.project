@@ -138,6 +138,7 @@ public class HttpURI
     }
 
     private static final Trie<Boolean> __ambiguousSegments = new ArrayTrie<>();
+    public static final int NO_PORT = -1; // value used in java.net.URI for no-port
 
     static
     {
@@ -158,7 +159,7 @@ public class HttpURI
     private String _scheme;
     private String _user;
     private String _host;
-    private int _port;
+    private int _port = NO_PORT;
     private String _path;
     private String _param;
     private String _query;
@@ -184,9 +185,9 @@ public class HttpURI
     public static HttpURI createHttpURI(String scheme, String host, int port, String path, String param, String query, String fragment)
     {
         if (port == 80 && HttpScheme.HTTP.is(scheme))
-            port = 0;
+            port = NO_PORT;
         if (port == 443 && HttpScheme.HTTPS.is(scheme))
-            port = 0;
+            port = NO_PORT;
         return new HttpURI(scheme, host, port, path, param, query, fragment);
     }
 
@@ -243,7 +244,7 @@ public class HttpURI
 
     public HttpURI(String uri)
     {
-        _port = -1;
+        _port = NO_PORT;
         parse(State.START, uri, 0, uri.length());
     }
 
@@ -279,7 +280,7 @@ public class HttpURI
         _scheme = null;
         _user = null;
         _host = null;
-        _port = -1;
+        _port = NO_PORT;
         _path = null;
         _param = null;
         _query = null;
@@ -1083,7 +1084,7 @@ public class HttpURI
 
     public String getAuthority()
     {
-        if (_port > 0)
+        if (_port > NO_PORT)
             return _host + ":" + _port;
         return _host;
     }
