@@ -1,0 +1,15 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+  <Call name="addCustomizer">
+    <Arg>
+      <New class="org.eclipse.jetty.server.HostHeaderCustomizer">
+        <Arg>
+          <Property name="jetty.hostheader.serverName" />
+        </Arg>
+        <Arg>
+          <Property name="jetty.hostheader.serverPort" />
+        </Arg>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
