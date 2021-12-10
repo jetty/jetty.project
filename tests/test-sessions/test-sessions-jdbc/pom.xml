@@ -6,7 +6,7 @@
     <artifactId>test-sessions-parent</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>test-jdbc-sessions</artifactId>
+  <artifactId>test-sessions-jdbc</artifactId>
   <name>Jetty Tests :: Sessions :: JDBC</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.jdbc</bundle-symbolic-name>

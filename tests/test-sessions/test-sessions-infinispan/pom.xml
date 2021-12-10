@@ -6,7 +6,7 @@
     <artifactId>test-sessions-parent</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>test-infinispan-sessions</artifactId>
+  <artifactId>test-sessions-infinispan</artifactId>
   <name>Jetty Tests :: Sessions :: Infinispan</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.infinispan</bundle-symbolic-name>

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.session;
 
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.common.SessionDataStore;
 

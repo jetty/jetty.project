@@ -26,8 +26,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.session.DefaultSessionCacheFactory;
-import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;

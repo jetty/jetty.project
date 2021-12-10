@@ -6,7 +6,7 @@
     <artifactId>test-sessions-parent</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
-  <artifactId>test-memcached-sessions</artifactId>
+  <artifactId>test-sessions-memcached</artifactId>
   <name>Jetty Tests :: Sessions :: Memcached</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.sessions.memcached</bundle-symbolic-name>
