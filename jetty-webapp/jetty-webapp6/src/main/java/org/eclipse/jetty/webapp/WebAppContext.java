@@ -51,10 +51,10 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.ManagedAttributeListener;
-import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TopologicalSort;
@@ -72,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * The WebAppContext handler is an extension of ContextHandler that
  * coordinates the construction and configuration of nested handlers:
- * {@link org.eclipse.jetty.security.ConstraintSecurityHandler}, {@link org.eclipse.jetty.server.session.SessionHandler}
+ * {@link org.eclipse.jetty.security.ConstraintSecurityHandler}, {@link org.eclipse.jetty.session.SessionHandler}
  * and {@link org.eclipse.jetty.servlet.ServletHandler}.
  * The handlers are configured by pluggable configuration classes, with
  * the default being  {@link org.eclipse.jetty.webapp.WebXmlConfiguration} and

@@ -19,6 +19,13 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.session.HouseKeeper;
+import org.eclipse.jetty.session.SessionCache;
+import org.eclipse.jetty.session.SessionCacheFactory;
+import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class TestServer

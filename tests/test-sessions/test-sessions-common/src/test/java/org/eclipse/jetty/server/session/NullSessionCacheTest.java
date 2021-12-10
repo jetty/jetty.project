@@ -17,6 +17,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.AbstractSessionCacheFactory;
+import org.eclipse.jetty.session.NullSessionCache;
+import org.eclipse.jetty.session.NullSessionCacheFactory;
+import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.SessionCache;
+import org.eclipse.jetty.session.SessionCacheFactory;
+import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.SessionDataStore;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

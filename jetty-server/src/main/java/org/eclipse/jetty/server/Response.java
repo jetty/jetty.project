@@ -52,7 +52,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;

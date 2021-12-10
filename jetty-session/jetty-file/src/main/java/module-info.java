@@ -13,8 +13,7 @@
 
 module org.eclipse.jetty.session.file
 {
-    requires transitive org.eclipse.jetty.server;
-    requires transitive org.eclipse.jetty.util;
+    requires transitive org.eclipse.jetty.session.session6;
 
     exports org.eclipse.jetty.session.file;
 }

@@ -32,11 +32,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.server.session.AbstractSessionDataStore;
-import org.eclipse.jetty.server.session.SessionContext;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.UnreadableSessionDataException;
-import org.eclipse.jetty.server.session.UnwriteableSessionDataException;
+import org.eclipse.jetty.session.AbstractSessionDataStore;
+import org.eclipse.jetty.session.SessionContext;
+import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.UnreadableSessionDataException;
+import org.eclipse.jetty.session.UnwriteableSessionDataException;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.StringUtil;

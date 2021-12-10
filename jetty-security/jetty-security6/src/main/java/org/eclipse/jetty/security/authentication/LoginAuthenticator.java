@@ -23,7 +23,7 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.session.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

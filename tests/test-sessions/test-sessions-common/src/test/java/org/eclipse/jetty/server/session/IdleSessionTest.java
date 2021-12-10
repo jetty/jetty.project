@@ -27,6 +27,10 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.session.DefaultSessionCacheFactory;
+import org.eclipse.jetty.session.NullSessionCacheFactory;
+import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.Test;
 

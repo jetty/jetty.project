@@ -19,6 +19,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.session.AbstractSessionDataStore;
+import org.eclipse.jetty.session.SessionData;
+
 /**
  * TestSessionDataStore
  *

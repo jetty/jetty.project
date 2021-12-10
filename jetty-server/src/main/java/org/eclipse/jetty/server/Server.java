@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.session.SessionIdManager;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;

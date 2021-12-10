@@ -34,11 +34,6 @@
   </build>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
       <artifactId>jetty-jdbc</artifactId>
       <scope>test</scope>

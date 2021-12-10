@@ -85,8 +85,8 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
-import org.eclipse.jetty.server.session.Session;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.HostPort;
@@ -114,7 +114,7 @@ import org.slf4j.LoggerFactory;
  * by {@link Request#setContext(Context, String)}.</li>
  *
  * <li>the HTTP session methods will all return null sessions until such time as a request has been passed to a
- * {@link org.eclipse.jetty.server.session.SessionHandler} which checks for session cookies and enables the ability to create new sessions.</li>
+ * {@link org.eclipse.jetty.session.SessionHandler} which checks for session cookies and enables the ability to create new sessions.</li>
  *
  * <li>The {@link Request#getServletPath()} method will return "" until the request has been passed to a <code>org.eclipse.jetty.servlet.ServletHandler</code>
  * and the pathInfo matched against the servlet URL patterns and {@link Request#setServletPathMapping(ServletPathMapping)} called as a result.</li>

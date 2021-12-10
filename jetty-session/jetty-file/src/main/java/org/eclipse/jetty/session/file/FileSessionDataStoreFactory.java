@@ -15,9 +15,9 @@ package org.eclipse.jetty.session.file;
 
 import java.io.File;
 
-import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
-import org.eclipse.jetty.server.session.SessionDataStore;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.SessionHandler;
 
 /**
  * FileSessionDataStoreFactory

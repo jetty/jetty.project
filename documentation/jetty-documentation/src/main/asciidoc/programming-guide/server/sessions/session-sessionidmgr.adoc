@@ -19,7 +19,7 @@ Its purpose is to generate fresh, unique session ids and to coordinate the re-us
 
 The `SessionIdManager` is agnostic with respect to the type of clustering technology chosen.
 
-Jetty provides a default implementation - the link:{javadoc-url}/org/eclipse/jetty/server/session/DefaultSessionIdManager.html[DefaultSessionIdManager]  - which should meet the needs of most users.
+Jetty provides a default implementation - the link:{javadoc-url}/org/eclipse/jetty/session/DefaultSessionIdManager.html[DefaultSessionIdManager]  - which should meet the needs of most users.
 
 NOTE: If you do not explicitly configure a `SessionIdManager`, then when the `SessionHandler` starts, it will use an instance of the `DefaultSessionIdManager`.
 
@@ -64,8 +64,8 @@ This restriction is important to support cross-context dispatch.
 [[pg-server-session-housekeeper]]
 ===== The HouseKeeper
 
-There is a maximum of one link:{javadoc-url}/org/eclipse/jetty/server/session/HouseKeeper.html[HouseKeeper] per `SessionIdManager`.
-Its purpose is to periodically poll the link:{javadoc-url}/org/eclipse/jetty/server/session/SessionHandler.html[SessionHandlers] to clean out expired sessions.
+There is a maximum of one link:{javadoc-url}/org/eclipse/jetty/session/HouseKeeper.html[HouseKeeper] per `SessionIdManager`.
+Its purpose is to periodically poll the link:{javadoc-url}/org/eclipse/jetty/session/SessionHandler.html[SessionHandlers] to clean out expired sessions.
 This operation is usually referred to as "scavenging" expired sessions.
 The scavenging interval is configured by the `setIntervalSec(long)` method.
 The default value is ``600``sec, ie ``10``mins.

@@ -13,8 +13,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
+      <groupId>org.eclipse.jetty.session</groupId>
+      <artifactId>jetty-session6</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

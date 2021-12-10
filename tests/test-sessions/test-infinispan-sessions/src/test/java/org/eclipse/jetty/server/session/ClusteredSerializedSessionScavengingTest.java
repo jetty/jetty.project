@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;

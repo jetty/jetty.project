@@ -27,6 +27,13 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.AbstractSessionDataStore;
+import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.SessionContext;
+import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.UnreadableSessionDataException;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeAll;

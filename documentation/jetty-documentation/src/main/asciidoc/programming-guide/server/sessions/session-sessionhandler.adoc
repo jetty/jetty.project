@@ -20,7 +20,7 @@ It also calls the context-level session listeners at appropriate points in the s
 
 ===== Configuration
 
-The majority of configuration for the link:{javadoc-url}/org/eclipse/jetty/server/session/SessionHandler.html[SessionHandler] can be done via `web.xml` `<session-config>` declarations, or the `javax.servlet.SessionCookieConfig` api.
+The majority of configuration for the link:{javadoc-url}/org/eclipse/jetty/session/SessionHandler.html[SessionHandler] can be done via `web.xml` `<session-config>` declarations, or the `javax.servlet.SessionCookieConfig` api.
 There are also a few jetty-specific configuration options that we will cover here:
 
 checkingRemoteSessionIdEncoding::

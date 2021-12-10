@@ -20,6 +20,16 @@ import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.AbstractSessionCache;
+import org.eclipse.jetty.session.AbstractSessionCacheFactory;
+import org.eclipse.jetty.session.DefaultSessionCache;
+import org.eclipse.jetty.session.DefaultSessionCacheFactory;
+import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.SessionCache;
+import org.eclipse.jetty.session.SessionCacheFactory;
+import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

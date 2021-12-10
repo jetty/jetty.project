@@ -13,6 +13,10 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.SessionHandler;
+
 /**
  * TestSessionDataStoreFactory
  */
