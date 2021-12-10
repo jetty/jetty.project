@@ -25,14 +25,12 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
-import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.common.SessionData;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.containers.wait.strategy.LogMessageWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

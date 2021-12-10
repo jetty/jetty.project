@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.session;
+package org.eclipse.jetty.session.common;
 
 import java.util.Collections;
 import java.util.Set;
@@ -64,7 +64,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
     }
     
     /** 
-     * @see org.eclipse.jetty.session.SessionDataStore#isPassivating()
+     * @see org.eclipse.jetty.session.common.SessionDataStore#isPassivating()
      */
     @ManagedAttribute(value = "does this store serialize sessions", readonly = true)
     @Override

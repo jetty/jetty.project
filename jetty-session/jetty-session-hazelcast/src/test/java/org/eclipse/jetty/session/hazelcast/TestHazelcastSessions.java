@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.session.DefaultSessionCache;
-import org.eclipse.jetty.session.SessionContext;
+import org.eclipse.jetty.session.common.SessionContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,8 +108,7 @@ public class TestHazelcastSessions
         SessionContext sessionContext = new SessionContext("foo", null);
 
         hazelcastSessionDataStoreFactory = new HazelcastSessionDataStoreFactory();
-        hazelcastSessionDataStore = (HazelcastSessionDataStore)hazelcastSessionDataStoreFactory.getSessionDataStore(
-            context.getSessionHandler());
+        hazelcastSessionDataStore = (HazelcastSessionDataStore)hazelcastSessionDataStoreFactory.getSessionDataStore();
         hazelcastSessionDataStore.initialize(sessionContext);
 
         DefaultSessionCache defaultSessionCache = new DefaultSessionCache(context.getSessionHandler());

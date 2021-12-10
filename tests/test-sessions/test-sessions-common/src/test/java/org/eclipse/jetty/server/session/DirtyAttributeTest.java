@@ -31,12 +31,12 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
-import org.eclipse.jetty.session.SessionDataStore;
-import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.common.SessionDataStore;
+import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,7 +70,7 @@ public class DirtyAttributeTest
     {
 
         @Override
-        public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+        public SessionDataStore getSessionDataStore() throws Exception
         {
             return new TestPassivatingSessionDataStore();
         }

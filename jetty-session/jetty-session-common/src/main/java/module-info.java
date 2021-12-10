@@ -11,29 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.session;
-
-/**
- * UnwriteableSessionDataException
- */
-public class UnwriteableSessionDataException extends Exception
+module org.eclipse.jetty.session.common
 {
-    private String _id;
-    private SessionContext _sessionContext;
+    requires transitive org.eclipse.jetty.server;
+    requires transitive org.eclipse.jetty.util;
 
-    public UnwriteableSessionDataException(String id, SessionContext contextId, Throwable t)
-    {
-        super("Unwriteable session " + id + " for " + contextId, t);
-        _id = id;
-    }
-
-    public String getId()
-    {
-        return _id;
-    }
-
-    public SessionContext getSessionContext()
-    {
-        return _sessionContext;
-    }
+    exports org.eclipse.jetty.session.common;
 }

@@ -21,6 +21,7 @@ import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.session.common.SessionData;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

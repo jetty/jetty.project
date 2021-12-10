@@ -16,7 +16,7 @@ module org.eclipse.jetty.session.jdbc
     requires static java.sql;
     requires static java.naming;
 
-    requires transitive org.eclipse.jetty.session.session6;
+    requires transitive org.eclipse.jetty.session.common;
     requires transitive org.eclipse.jetty.util;
 
     exports org.eclipse.jetty.session.jdbc;

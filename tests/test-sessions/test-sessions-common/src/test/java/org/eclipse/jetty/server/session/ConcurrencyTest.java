@@ -31,7 +31,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
-import org.eclipse.jetty.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

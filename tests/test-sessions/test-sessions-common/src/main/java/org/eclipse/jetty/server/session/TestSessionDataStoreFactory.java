@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
-import org.eclipse.jetty.session.SessionDataStore;
 import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.common.SessionDataStore;
 
 /**
  * TestSessionDataStoreFactory
@@ -24,7 +24,7 @@ public class TestSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
 
     @Override
-    public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+    public SessionDataStore getSessionDataStore() throws Exception
     {
         TestSessionDataStore store = new TestSessionDataStore();
         store.setSavePeriodSec(getSavePeriodSec());

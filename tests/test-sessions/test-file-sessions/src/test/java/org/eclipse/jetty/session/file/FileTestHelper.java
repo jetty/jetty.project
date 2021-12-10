@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.common.SessionData;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 

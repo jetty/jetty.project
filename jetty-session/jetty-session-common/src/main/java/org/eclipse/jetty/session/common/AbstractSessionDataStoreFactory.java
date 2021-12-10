@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.session;
+package org.eclipse.jetty.session.common;
 
 /**
  * AbstractSessionDataStoreFactory

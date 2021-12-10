@@ -13,7 +13,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-session6</artifactId>
+      <artifactId>jetty-session-common</artifactId>
     </dependency>
     <dependency>
       <groupId>com.googlecode.xmemcached</groupId>
@@ -23,6 +23,11 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-simple</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.session</groupId>
+      <artifactId>jetty-session6</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

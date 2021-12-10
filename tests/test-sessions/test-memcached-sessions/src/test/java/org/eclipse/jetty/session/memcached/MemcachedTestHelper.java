@@ -22,13 +22,13 @@ import java.util.Map;
 import java.util.Set;
 
 import net.rubyeye.xmemcached.XMemcachedClientBuilder;
-import org.eclipse.jetty.server.session.AbstractSessionDataStore;
-import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
-import org.eclipse.jetty.server.session.CachingSessionDataStoreFactory;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionDataStore;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.session.common.AbstractSessionDataStore;
+import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.common.CachingSessionDataStoreFactory;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.SessionDataStore;
+import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.eclipse.jetty.session.memcached.MemcachedSessionDataMapFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,7 +136,7 @@ public class MemcachedTestHelper
     {
 
         @Override
-        public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+        public SessionDataStore getSessionDataStore() throws Exception
         {
             return new MockDataStore();
         }

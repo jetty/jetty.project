@@ -32,13 +32,13 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.session.AbstractSessionCache;
-import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionCache;
-import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -26,12 +26,11 @@ import com.hazelcast.map.IMap;
 import com.hazelcast.query.Predicate;
 import com.hazelcast.query.PredicateBuilder.EntryObject;
 import com.hazelcast.query.Predicates;
-
-import org.eclipse.jetty.session.AbstractSessionDataStore;
-import org.eclipse.jetty.session.SessionContext;
-import org.eclipse.jetty.session.SessionData;
-import org.eclipse.jetty.session.SessionDataStore;
-import org.eclipse.jetty.session.UnreadableSessionDataException;
+import org.eclipse.jetty.session.common.AbstractSessionDataStore;
+import org.eclipse.jetty.session.common.SessionContext;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.SessionDataStore;
+import org.eclipse.jetty.session.common.UnreadableSessionDataException;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

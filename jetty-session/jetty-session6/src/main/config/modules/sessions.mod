@@ -17,6 +17,7 @@ server
 etc/sessions/id-manager.xml
 
 [lib]
+/ib/jetty-session-common-${jetty.version}.jar
 lib/jetty-session6-${jetty.version}.jar
 
 [ini-template]

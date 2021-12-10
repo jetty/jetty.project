@@ -19,7 +19,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.session.SessionContext;
+import org.eclipse.jetty.session.common.SessionContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

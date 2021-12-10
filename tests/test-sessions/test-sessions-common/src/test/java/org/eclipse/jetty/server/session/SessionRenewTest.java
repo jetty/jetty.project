@@ -35,9 +35,9 @@ import org.eclipse.jetty.session.NullSessionCacheFactory;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionCacheFactory;
-import org.eclipse.jetty.session.SessionData;
-import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;
 

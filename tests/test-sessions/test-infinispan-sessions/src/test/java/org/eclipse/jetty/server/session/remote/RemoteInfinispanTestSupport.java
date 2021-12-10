@@ -18,7 +18,7 @@ import java.io.InputStream;
 import java.lang.annotation.ElementType;
 import java.util.Properties;
 
-import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.common.SessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.util.IO;

@@ -30,8 +30,8 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.NullSessionCacheFactory;
 import org.eclipse.jetty.session.SessionCache;
-import org.eclipse.jetty.session.SessionData;
-import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.SessionDataStore;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 

@@ -18,13 +18,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
-import org.eclipse.jetty.server.session.SessionContext;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionDataStore;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.common.SessionContext;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.SessionDataStore;
+import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -110,7 +110,7 @@ public class MongoSessionDataStoreTest extends AbstractSessionDataStoreTest
         context.setContextPath("/legacy");
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionDataStore store = factory.getSessionDataStore();
         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
         store.initialize(sessionContext);
 

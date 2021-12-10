@@ -1419,12 +1419,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.session</groupId>
-        <artifactId>jetty-session6</artifactId>
+        <artifactId>jetty-session-common</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.session</groupId>
-        <artifactId>jetty-session-common</artifactId>
+        <artifactId>jetty-session6</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

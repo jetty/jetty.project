@@ -20,6 +20,8 @@ import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.session.common.NullSessionDataStore;
+import org.eclipse.jetty.session.common.SessionData;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;

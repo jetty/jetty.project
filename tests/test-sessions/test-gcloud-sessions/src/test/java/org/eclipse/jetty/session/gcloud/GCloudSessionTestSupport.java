@@ -38,9 +38,9 @@ import com.google.cloud.datastore.Query;
 import com.google.cloud.datastore.Query.ResultType;
 import com.google.cloud.datastore.QueryResults;
 import com.google.cloud.datastore.StructuredQuery.PropertyFilter;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionDataStore;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.SessionDataStore;
 import org.eclipse.jetty.session.gcloud.GCloudSessionDataStore.EntityDataModel;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.slf4j.Logger;
@@ -98,9 +98,9 @@ public class GCloudSessionTestSupport
         }
 
         @Override
-        public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+        public SessionDataStore getSessionDataStore() throws Exception
         {
-            GCloudSessionDataStore ds = (GCloudSessionDataStore)super.getSessionDataStore(handler);
+            GCloudSessionDataStore ds = (GCloudSessionDataStore)super.getSessionDataStore();
             ds.setMaxRetries(GCloudSessionDataStore.DEFAULT_MAX_RETRIES);
             ds.setDatastore(_d);
             return ds;

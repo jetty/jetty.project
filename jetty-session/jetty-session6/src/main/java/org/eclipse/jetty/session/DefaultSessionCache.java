@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.eclipse.jetty.session.common.SessionData;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;

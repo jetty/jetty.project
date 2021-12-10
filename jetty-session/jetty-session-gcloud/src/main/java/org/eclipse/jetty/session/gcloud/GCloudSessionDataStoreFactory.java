@@ -13,9 +13,8 @@
 
 package org.eclipse.jetty.session.gcloud;
 
-import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
-import org.eclipse.jetty.server.session.SessionDataStore;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.common.SessionDataStore;
 
 /**
  * GCloudSessionDataStoreFactory
@@ -96,7 +95,7 @@ public class GCloudSessionDataStoreFactory extends AbstractSessionDataStoreFacto
     }
 
     @Override
-    public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+    public SessionDataStore getSessionDataStore() throws Exception
     {
         GCloudSessionDataStore ds = new GCloudSessionDataStore();
         ds.setBackoffMs(getBackoffMs());

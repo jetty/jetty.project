@@ -26,10 +26,10 @@ import java.sql.Statement;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.session.AbstractSessionDataStore;
-import org.eclipse.jetty.session.SessionContext;
-import org.eclipse.jetty.session.SessionData;
-import org.eclipse.jetty.session.UnreadableSessionDataException;
+import org.eclipse.jetty.session.common.AbstractSessionDataStore;
+import org.eclipse.jetty.session.common.SessionContext;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.UnreadableSessionDataException;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;

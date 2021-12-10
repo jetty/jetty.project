@@ -14,8 +14,8 @@
 package org.eclipse.jetty.session.file;
 
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;

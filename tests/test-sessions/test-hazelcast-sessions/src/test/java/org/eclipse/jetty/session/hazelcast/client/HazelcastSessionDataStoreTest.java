@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.session.hazelcast.client;
 
-import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
-import org.eclipse.jetty.server.session.SessionContext;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionDataStore;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
-import org.eclipse.jetty.server.session.UnreadableSessionDataException;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.common.SessionContext;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.SessionDataStore;
+import org.eclipse.jetty.session.common.SessionDataStoreFactory;
+import org.eclipse.jetty.session.common.UnreadableSessionDataException;
 import org.eclipse.jetty.session.hazelcast.HazelcastSessionDataStore;
 import org.eclipse.jetty.session.hazelcast.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;
@@ -114,7 +114,7 @@ public class HazelcastSessionDataStoreTest extends AbstractSessionDataStoreTest
         context.setContextPath("/test");
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionDataStore store = factory.getSessionDataStore();
         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
         store.initialize(sessionContext);
 

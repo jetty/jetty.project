@@ -16,13 +16,12 @@ package org.eclipse.jetty.session.file;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.AbstractTestBase;
-import org.eclipse.jetty.server.session.SessionContext;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.SessionDataStore;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
+import org.eclipse.jetty.session.common.SessionContext;
+import org.eclipse.jetty.session.common.SessionDataStore;
+import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +67,7 @@ public class TestFileSessions extends AbstractTestBase
         context.setContextPath("/test");
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
-        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(context.getSessionHandler());
+        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore();
         store.setDeleteUnrestorableFiles(true);
         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
         store.initialize(sessionContext);
@@ -90,7 +89,7 @@ public class TestFileSessions extends AbstractTestBase
         context.setContextPath("/test");
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
-        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(context.getSessionHandler());
+        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore();
         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
         store.initialize(sessionContext);
 
@@ -169,7 +168,7 @@ public class TestFileSessions extends AbstractTestBase
         context.setContextPath("/");
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
-        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(context.getSessionHandler());
+        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore();
         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
         store.initialize(sessionContext);
 
@@ -214,7 +213,7 @@ public class TestFileSessions extends AbstractTestBase
         context.setContextPath("/test");
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(gracePeriodSec);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionDataStore store = factory.getSessionDataStore();
         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
         store.initialize(sessionContext);
 
@@ -287,7 +286,7 @@ public class TestFileSessions extends AbstractTestBase
         context.setContextPath("/");
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionDataStore store = factory.getSessionDataStore();
         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
         store.initialize(sessionContext);
 
@@ -355,7 +354,7 @@ public class TestFileSessions extends AbstractTestBase
         context.setContextPath("/test");
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionDataStore store = factory.getSessionDataStore();
         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
         ((FileSessionDataStore)store).setDeleteUnrestorableFiles(true); //invalid file will be removed
         store.initialize(sessionContext);
@@ -394,7 +393,7 @@ public class TestFileSessions extends AbstractTestBase
         context.setContextPath("/test");
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(100);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionDataStore store = factory.getSessionDataStore();
         SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
         store.initialize(sessionContext);
 

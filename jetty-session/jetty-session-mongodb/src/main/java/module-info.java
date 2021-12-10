@@ -14,7 +14,7 @@
 module org.eclipse.jetty.session.mongodb
 {
     requires transitive mongo.java.driver;
-    requires transitive org.eclipse.jetty.session.session6;
+    requires transitive org.eclipse.jetty.session.common;
 
     exports org.eclipse.jetty.session.mongodb;
 }

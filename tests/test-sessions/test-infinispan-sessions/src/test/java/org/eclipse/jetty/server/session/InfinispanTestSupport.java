@@ -19,7 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
-import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.common.SessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSerializationContextInitializer;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.toolchain.test.FS;

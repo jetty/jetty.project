@@ -29,6 +29,7 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionContext;
 import jakarta.servlet.http.HttpSessionEvent;
 import org.eclipse.jetty.io.CyclicTimeout;
+import org.eclipse.jetty.session.common.SessionData;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

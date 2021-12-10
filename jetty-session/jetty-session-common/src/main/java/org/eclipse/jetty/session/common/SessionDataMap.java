@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.session;
+package org.eclipse.jetty.session.common;
 
 import org.eclipse.jetty.util.component.LifeCycle;
 

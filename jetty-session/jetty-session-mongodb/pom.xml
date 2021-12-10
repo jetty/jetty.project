@@ -14,7 +14,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-session6</artifactId>
+      <artifactId>jetty-session-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

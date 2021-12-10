@@ -30,11 +30,10 @@ import com.mongodb.DBObject;
 import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
 import com.mongodb.WriteResult;
-
-import org.eclipse.jetty.session.AbstractSessionDataStore;
-import org.eclipse.jetty.session.SessionContext;
-import org.eclipse.jetty.session.SessionData;
-import org.eclipse.jetty.session.UnreadableSessionDataException;
+import org.eclipse.jetty.session.common.AbstractSessionDataStore;
+import org.eclipse.jetty.session.common.SessionContext;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.UnreadableSessionDataException;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;

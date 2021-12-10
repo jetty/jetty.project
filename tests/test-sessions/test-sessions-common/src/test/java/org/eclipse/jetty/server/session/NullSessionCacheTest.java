@@ -23,8 +23,8 @@ import org.eclipse.jetty.session.NullSessionCacheFactory;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionCacheFactory;
-import org.eclipse.jetty.session.SessionData;
-import org.eclipse.jetty.session.SessionDataStore;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.SessionDataStore;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

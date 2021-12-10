@@ -13,7 +13,7 @@
 
 module org.eclipse.jetty.session.memcached
 {
-    requires transitive org.eclipse.jetty.session.session6;
+    requires transitive org.eclipse.jetty.session.common;
     requires transitive org.eclipse.jetty.util;
     requires transitive xmemcached;
 

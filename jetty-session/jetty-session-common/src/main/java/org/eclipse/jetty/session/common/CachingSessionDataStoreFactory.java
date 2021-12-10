@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.session;
+package org.eclipse.jetty.session.common;
 
 /**
  * CachingSessionDataStoreFactory
@@ -52,8 +52,8 @@ public class CachingSessionDataStoreFactory extends AbstractSessionDataStoreFact
     }
 
     @Override
-    public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+    public SessionDataStore getSessionDataStore() throws Exception
     {
-        return new CachingSessionDataStore(_mapFactory.getSessionDataMap(), _sessionStoreFactory.getSessionDataStore(handler));
+        return new CachingSessionDataStore(_mapFactory.getSessionDataMap(), _sessionStoreFactory.getSessionDataStore());
     }
 }

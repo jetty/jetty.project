@@ -21,10 +21,9 @@ import java.util.List;
 import net.rubyeye.xmemcached.MemcachedClient;
 import net.rubyeye.xmemcached.XMemcachedClientBuilder;
 import net.rubyeye.xmemcached.transcoders.SerializingTranscoder;
-
-import org.eclipse.jetty.session.SessionContext;
-import org.eclipse.jetty.session.SessionData;
-import org.eclipse.jetty.session.SessionDataMap;
+import org.eclipse.jetty.session.common.SessionContext;
+import org.eclipse.jetty.session.common.SessionData;
+import org.eclipse.jetty.session.common.SessionDataMap;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;

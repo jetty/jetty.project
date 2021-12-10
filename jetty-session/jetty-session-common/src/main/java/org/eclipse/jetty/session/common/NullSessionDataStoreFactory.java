@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.session;
+package org.eclipse.jetty.session.common;
 
 /**
  * NullSessionDataStoreFactory
@@ -20,7 +20,7 @@ public class NullSessionDataStoreFactory extends AbstractSessionDataStoreFactory
 {
 
     @Override
-    public SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception
+    public SessionDataStore getSessionDataStore() throws Exception
     {
         return new NullSessionDataStore();
     }
