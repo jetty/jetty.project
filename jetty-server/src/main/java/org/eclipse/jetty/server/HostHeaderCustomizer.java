@@ -22,6 +22,8 @@ import java.util.Objects;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
 
 /**
  * Customizes requests that lack the {@code Host} header (for example, HTTP 1.0 requests).
@@ -40,15 +42,14 @@ import org.eclipse.jetty.http.HttpHeader;
  */
 public class HostHeaderCustomizer implements HttpConfiguration.Customizer
 {
-    private final String serverName;
-    private final int serverPort;
+    private final String hostValue;
 
     /**
      * @param serverName the {@code serverName} to set on the request (the {@code serverPort} will not be set)
      */
     public HostHeaderCustomizer(String serverName)
     {
-        this(serverName, 0);
+        this(serverName, HttpURI.NO_PORT);
     }
 
     /**
@@ -57,27 +58,29 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
      */
     public HostHeaderCustomizer(String serverName, int serverPort)
     {
-        this.serverName = Objects.requireNonNull(serverName);
-        this.serverPort = serverPort;
+        String host = Objects.requireNonNull(serverName);
+        if (serverPort > HttpURI.NO_PORT)
+            host += ":" + serverPort;
+        hostValue = host;
     }
 
     @Override
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
         String hostHeaderValue = request.getHeader("Host");
-        String authority = request.getHttpURI().getAuthority();
 
-        if (hostHeaderValue == null || // No Host Header
-            hostHeaderValue.trim().isEmpty()) // Empty Host Header
+        // No Host Header
+        if (request.getHttpVersion().getVersion() != HttpVersion.HTTP_1_1.getVersion() &&
+            hostHeaderValue == null)
         {
-            // only reset authority if it's not set yet
-            // other customizers could have set the authority (eg: ForwardedRequestCustomizer)
-            if (authority == null)
+            if (request.getHttpURI().isAbsolute())
             {
-                request.setAuthority(serverName, serverPort);
-                authority = request.getHttpURI().getAuthority();
+                request.getHttpFields().put(HttpHeader.HOST, request.getHttpURI().getAuthority());
             }
-            request.getHttpFields().put(HttpHeader.HOST, authority);
+            else
+            {
+                request.getHttpFields().put(HttpHeader.HOST, hostValue);
+            }
         }
     }
 }
