@@ -134,35 +134,25 @@ public abstract class Credential implements Serializable
     }
 
     /**
-     * <p>Utility to convert a String of hex into an actual byte array</p>
+     * Utility to convert a String of hex into an actual byte array
      * @param hstr the raw string
      * @return the parsed byte array
      */
-    protected static byte[] parseHexToByteArray(String hstr)
+    private static byte[] parseHexToByteArray(String hstr)
     {
         if ((hstr.length() <= 0) || ((hstr.length() % 2) != 0))
         {
             throw new IllegalArgumentException(String.format("Invalid string length of <%d>", hstr.length()));
         }
 
-        int size = hstr.length() / 2;
-        byte[] buf = new byte[size];
-        byte hex;
+        byte[] buf = new byte[hstr.length() / 2];
         int len = hstr.length();
 
-        int idx = (int)Math.floor(((size * 2) - (double)len) / 2);
-        for (int i = 0; i < len; i++)
+        for (int i = 0, idx = 0; i < len; i++)
         {
-            hex = 0;
-            if (i >= 0)
-            {
-                hex = (byte)(Character.digit(hstr.charAt(i), 16) << 4);
-            }
-            i++;
+            byte hex = (byte)(Character.digit(hstr.charAt(i++), 16) << 4);
             hex += (byte)(Character.digit(hstr.charAt(i), 16));
-
-            buf[idx] = hex;
-            idx++;
+            buf[idx++] = hex;
         }
 
         return buf;
@@ -173,7 +163,7 @@ public abstract class Credential implements Serializable
      * @param buf the byte array
      * @return the hex string
      */
-    protected static String formatAsHex(byte[] buf)
+    private static String formatAsHex(byte[] buf)
     {
         int len = buf.length;
         char[] out = new char[len * 2];
