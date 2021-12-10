@@ -37,6 +37,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +47,8 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Typical usage is:
  * <pre>
- * InputStreamResponseListener listener = new InputStreamResponseListener();
+ * long readTimeout = 5000;
+ * InputStreamResponseListener listener = new InputStreamResponseListener(readTimeout);
  * client.newRequest(...).send(listener);
  *
  * // Wait for the response headers to arrive
@@ -72,13 +74,14 @@ import org.slf4j.LoggerFactory;
 public class InputStreamResponseListener extends Listener.Adapter
 {
     private static final Logger LOG = LoggerFactory.getLogger(InputStreamResponseListener.class);
-    private static final Chunk EOF = new Chunk(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+    private static final Chunk EOF = new EOFChunk();
 
-    private final Object lock = this;
+    private final AutoLock.WithCondition lock = new AutoLock.WithCondition();
     private final CountDownLatch responseLatch = new CountDownLatch(1);
     private final CountDownLatch resultLatch = new CountDownLatch(1);
     private final AtomicReference<InputStream> stream = new AtomicReference<>();
     private final Queue<Chunk> chunks = new ArrayDeque<>();
+    private final long readTimeout;
     private Response response;
     private Result result;
     private Throwable failure;
@@ -86,12 +89,18 @@ public class InputStreamResponseListener extends Listener.Adapter
 
     public InputStreamResponseListener()
     {
+        this(0);
+    }
+
+    public InputStreamResponseListener(long readTimeout)
+    {
+        this.readTimeout = readTimeout;
     }
 
     @Override
     public void onHeaders(Response response)
     {
-        synchronized (lock)
+        try (AutoLock l = lock.lock())
         {
             this.response = response;
             responseLatch.countDown();
@@ -110,7 +119,7 @@ public class InputStreamResponseListener extends Listener.Adapter
         }
 
         boolean closed;
-        synchronized (lock)
+        try (AutoLock.WithCondition l = lock.lock())
         {
             closed = this.closed;
             if (!closed)
@@ -118,7 +127,7 @@ public class InputStreamResponseListener extends Listener.Adapter
                 if (LOG.isDebugEnabled())
                     LOG.debug("Queueing content {}", content);
                 chunks.add(new Chunk(content, callback));
-                lock.notifyAll();
+                l.signalAll();
             }
         }
 
@@ -133,11 +142,11 @@ public class InputStreamResponseListener extends Listener.Adapter
     @Override
     public void onSuccess(Response response)
     {
-        synchronized (lock)
+        try (AutoLock.WithCondition l = lock.lock())
         {
             if (!closed)
                 chunks.add(EOF);
-            lock.notifyAll();
+            l.signalAll();
         }
 
         if (LOG.isDebugEnabled())
@@ -148,19 +157,25 @@ public class InputStreamResponseListener extends Listener.Adapter
     public void onFailure(Response response, Throwable failure)
     {
         List<Callback> callbacks;
-        synchronized (lock)
+        try (AutoLock.WithCondition l = lock.lock())
         {
             if (this.failure != null)
                 return;
+            if (failure == null)
+            {
+                failure = new IOException("Generic failure");
+                LOG.warn("Missing failure in onFailure() callback", failure);
+            }
             this.failure = failure;
             callbacks = drain();
-            lock.notifyAll();
+            l.signalAll();
         }
 
         if (LOG.isDebugEnabled())
             LOG.debug("Content failure", failure);
 
-        callbacks.forEach(callback -> callback.failed(failure));
+        Throwable f = failure;
+        callbacks.forEach(callback -> callback.failed(f));
     }
 
     @Override
@@ -168,7 +183,7 @@ public class InputStreamResponseListener extends Listener.Adapter
     {
         Throwable failure = result.getFailure();
         List<Callback> callbacks = Collections.emptyList();
-        synchronized (lock)
+        try (AutoLock.WithCondition l = lock.lock())
         {
             this.result = result;
             if (result.isFailed() && this.failure == null)
@@ -179,7 +194,7 @@ public class InputStreamResponseListener extends Listener.Adapter
             // Notify the response latch in case of request failures.
             responseLatch.countDown();
             resultLatch.countDown();
-            lock.notifyAll();
+            l.signalAll();
         }
 
         if (LOG.isDebugEnabled())
@@ -211,7 +226,7 @@ public class InputStreamResponseListener extends Listener.Adapter
         boolean expired = !responseLatch.await(timeout, unit);
         if (expired)
             throw new TimeoutException();
-        synchronized (lock)
+        try (AutoLock l = lock.lock())
         {
             // If the request failed there is no response.
             if (response == null)
@@ -237,7 +252,7 @@ public class InputStreamResponseListener extends Listener.Adapter
         boolean expired = !resultLatch.await(timeout, unit);
         if (expired)
             throw new TimeoutException();
-        synchronized (lock)
+        try (AutoLock l = lock.lock())
         {
             return result;
         }
@@ -261,7 +276,7 @@ public class InputStreamResponseListener extends Listener.Adapter
     private List<Callback> drain()
     {
         List<Callback> callbacks = new ArrayList<>();
-        synchronized (lock)
+        try (AutoLock l = lock.lock())
         {
             while (true)
             {
@@ -273,6 +288,22 @@ public class InputStreamResponseListener extends Listener.Adapter
             }
         }
         return callbacks;
+    }
+
+    @Override
+    public String toString()
+    {
+        try (AutoLock l = lock.lock())
+        {
+            return String.format("%s@%x[response=%s,result=%s,closed=%b,failure=%s,chunks=%s]",
+                getClass().getSimpleName(),
+                hashCode(),
+                response,
+                result,
+                closed,
+                failure,
+                chunks);
+        }
     }
 
     private class Input extends InputStream
@@ -292,9 +323,11 @@ public class InputStreamResponseListener extends Listener.Adapter
         {
             try
             {
-                int result;
+                int result = 0;
                 Callback callback = null;
-                synchronized (lock)
+                List<Callback> callbacks = Collections.emptyList();
+                Throwable timeoutFailure = null;
+                try (AutoLock.WithCondition l = lock.lock())
                 {
                     Chunk chunk;
                     while (true)
@@ -312,21 +345,48 @@ public class InputStreamResponseListener extends Listener.Adapter
                         if (closed)
                             throw new AsynchronousCloseException();
 
-                        lock.wait();
+                        if (readTimeout > 0)
+                        {
+                            boolean expired = !l.await(readTimeout, TimeUnit.MILLISECONDS);
+                            if (expired)
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Read timed out {} ms, {}", readTimeout, InputStreamResponseListener.this);
+                                failure = timeoutFailure = new TimeoutException("Read timeout " + readTimeout + " ms");
+                                callbacks = drain();
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            l.await();
+                        }
                     }
 
-                    ByteBuffer buffer = chunk.buffer;
-                    result = Math.min(buffer.remaining(), length);
-                    buffer.get(b, offset, result);
-                    if (!buffer.hasRemaining())
+                    if (timeoutFailure == null)
                     {
-                        callback = chunk.callback;
-                        chunks.poll();
+                        ByteBuffer buffer = chunk.buffer;
+                        result = Math.min(buffer.remaining(), length);
+                        buffer.get(b, offset, result);
+                        if (!buffer.hasRemaining())
+                        {
+                            callback = chunk.callback;
+                            chunks.poll();
+                        }
                     }
                 }
-                if (callback != null)
-                    callback.succeeded();
-                return result;
+                if (timeoutFailure == null)
+                {
+                    if (callback != null)
+                        callback.succeeded();
+                    return result;
+                }
+                else
+                {
+                    Throwable f = timeoutFailure;
+                    callbacks.forEach(c -> c.failed(f));
+                    throw toIOException(f);
+                }
             }
             catch (InterruptedException x)
             {
@@ -346,13 +406,13 @@ public class InputStreamResponseListener extends Listener.Adapter
         public void close() throws IOException
         {
             List<Callback> callbacks;
-            synchronized (lock)
+            try (AutoLock.WithCondition l = lock.lock())
             {
                 if (closed)
                     return;
                 closed = true;
                 callbacks = drain();
-                lock.notifyAll();
+                l.signalAll();
             }
 
             if (LOG.isDebugEnabled())
@@ -374,6 +434,26 @@ public class InputStreamResponseListener extends Listener.Adapter
         {
             this.buffer = Objects.requireNonNull(buffer);
             this.callback = Objects.requireNonNull(callback);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        }
+    }
+
+    private static class EOFChunk extends Chunk
+    {
+        private EOFChunk()
+        {
+            super(BufferUtil.EMPTY_BUFFER, Callback.NOOP);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s[EOF]", super.toString());
         }
     }
 }

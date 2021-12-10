@@ -31,6 +31,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -1239,5 +1240,42 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
         assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testInputStreamResponseListenerReadTimeout(Transport transport) throws Exception
+    {
+        init(transport);
+        scenario.start(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                response.setStatus(HttpStatus.OK_200);
+                // Promise to write some content, but don't write it.
+                response.setContentLength(1);
+                response.flushBuffer();
+                request.startAsync();
+            }
+        });
+
+        long readTimeout = 1000;
+        InputStreamResponseListener listener = new InputStreamResponseListener(readTimeout);
+
+        scenario.client.newRequest(scenario.newURI())
+            .path(scenario.servletPath)
+            .send(listener);
+
+        Response response = listener.get(5, TimeUnit.SECONDS);
+        if (response.getStatus() == HttpStatus.OK_200)
+        {
+            try (InputStream input = listener.getInputStream())
+            {
+                IOException failure = assertThrows(IOException.class, input::read);
+                assertThat(failure.getCause(), instanceOf(TimeoutException.class));
+                response.abort(failure);
+            }
+        }
     }
 }

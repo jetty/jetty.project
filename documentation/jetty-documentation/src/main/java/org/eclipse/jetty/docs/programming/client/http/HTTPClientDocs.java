@@ -424,7 +424,8 @@ public class HTTPClientDocs
         httpClient.start();
 
         // tag::inputStreamResponseListener[]
-        InputStreamResponseListener listener = new InputStreamResponseListener();
+        long readTimeout = 5000; // milliseconds
+        InputStreamResponseListener listener = new InputStreamResponseListener(readTimeout);
         httpClient.newRequest("http://domain.com/path")
             .send(listener);
 
