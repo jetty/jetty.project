@@ -77,7 +77,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-hazelcast</artifactId>
+      <artifactId>jetty-session-hazelcast</artifactId>
       <scope>test</scope>
       <exclusions>
         <exclusion>

@@ -77,7 +77,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-mongodb</artifactId>
+      <artifactId>jetty-session-mongodb</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -11,13 +11,13 @@
   <name>Jetty :: Servlet :: Session</name>
 
   <modules>
-    <module>jetty-file</module>
-    <module>jetty-gcloud</module>
-    <module>jetty-hazelcast</module>
-    <module>jetty-infinispan</module>
-    <module>jetty-jdbc</module>
-    <module>jetty-memcached</module>
-    <module>jetty-mongodb</module>
+    <module>jetty-session-file</module>
+    <module>jetty-session-gcloud</module>
+    <module>jetty-session-hazelcast</module>
+    <module>jetty-session-infinispan</module>
+    <module>jetty-session-jdbc</module>
+    <module>jetty-session-memcached</module>
+    <module>jetty-session-mongodb</module>
     <module>jetty-session-common</module>
     <module>jetty-session6</module>
   </modules>

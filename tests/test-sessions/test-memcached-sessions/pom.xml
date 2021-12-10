@@ -41,7 +41,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-memcached</artifactId>
+      <artifactId>jetty-session-memcached</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

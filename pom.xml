@@ -1363,7 +1363,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.session</groupId>
-        <artifactId>jetty-hazelcast</artifactId>
+        <artifactId>jetty-session-hazelcast</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1409,12 +1409,12 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.session</groupId>
-        <artifactId>jetty-file</artifactId>
+        <artifactId>jetty-session-file</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.session</groupId>
-        <artifactId>jetty-jdbc</artifactId>
+        <artifactId>jetty-session-jdbc</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1434,7 +1434,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.session</groupId>
-        <artifactId>jetty-mongodb</artifactId>
+        <artifactId>jetty-session-mongodb</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1636,7 +1636,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.session</groupId>
-        <artifactId>jetty-gcloud</artifactId>
+        <artifactId>jetty-session-gcloud</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1666,7 +1666,7 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.session</groupId>
-        <artifactId>jetty-memcached</artifactId>
+        <artifactId>jetty-session-memcached</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

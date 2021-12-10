@@ -26,7 +26,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-file</artifactId>
+      <artifactId>jetty-session-file</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

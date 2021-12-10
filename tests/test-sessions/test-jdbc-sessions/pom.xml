@@ -35,7 +35,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-jdbc</artifactId>
+      <artifactId>jetty-session-jdbc</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
