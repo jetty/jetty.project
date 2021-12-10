@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.session.file;
 
-import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
+import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
 import org.eclipse.jetty.session.common.SessionData;
 import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;

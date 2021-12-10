@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.session.hazelcast;
 
-import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
+import org.eclipse.jetty.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -16,8 +16,8 @@ package org.eclipse.jetty.session.file;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.session.AbstractTestBase;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.AbstractTestBase;
 import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.common.SessionContext;
 import org.eclipse.jetty.session.common.SessionDataStore;

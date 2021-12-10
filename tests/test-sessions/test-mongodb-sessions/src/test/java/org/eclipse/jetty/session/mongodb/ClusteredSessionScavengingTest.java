@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.session.mongodb;
 
-import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
+import org.eclipse.jetty.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

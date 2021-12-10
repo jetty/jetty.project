@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -56,7 +57,7 @@ public class ClusteredSerializedSessionScavengingTest extends AbstractClusteredS
     }
 
     /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
+     * @see org.eclipse.jetty.session.AbstractTestBase#createSessionDataStoreFactory()
      */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()

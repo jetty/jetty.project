@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.server.session.remote;
 
-import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.server.session.LoggingUtil;
+import org.eclipse.jetty.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;

@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.session.gcloud;
 
-import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
+import org.eclipse.jetty.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

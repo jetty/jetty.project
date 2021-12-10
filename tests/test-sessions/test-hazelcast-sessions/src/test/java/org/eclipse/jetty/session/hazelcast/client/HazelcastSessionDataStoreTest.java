@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.session.hazelcast.client;
 
-import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.AbstractSessionDataStoreTest;
 import org.eclipse.jetty.session.common.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.session.common.SessionContext;
 import org.eclipse.jetty.session.common.SessionData;

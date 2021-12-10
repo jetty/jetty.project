@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.session.hazelcast.client;
 
-import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
+import org.eclipse.jetty.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.eclipse.jetty.session.hazelcast.HazelcastTestHelper;
 import org.junit.jupiter.api.AfterEach;

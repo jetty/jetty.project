@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.session.jdbc;
 
-import org.eclipse.jetty.server.session.AbstractWebAppObjectInSessionTest;
-import org.eclipse.jetty.server.session.WebAppObjectInSessionServlet;
+import org.eclipse.jetty.session.AbstractWebAppObjectInSessionTest;
+import org.eclipse.jetty.session.WebAppObjectInSessionServlet;
 import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;

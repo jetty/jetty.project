@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.session;
 
+import org.eclipse.jetty.session.AbstractClusteredOrphanedSessionTest;
 import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;

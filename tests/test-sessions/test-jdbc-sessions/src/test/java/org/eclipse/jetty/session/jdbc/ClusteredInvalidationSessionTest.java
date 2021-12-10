@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.session.jdbc;
 
-import org.eclipse.jetty.server.session.AbstractClusteredInvalidationSessionTest;
+import org.eclipse.jetty.session.AbstractClusteredInvalidationSessionTest;
 import org.eclipse.jetty.session.common.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.testcontainers.junit.jupiter.Testcontainers;
