@@ -28,7 +28,6 @@ import java.util.Objects;
 
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -793,16 +792,6 @@ public class HttpURI
             if (param)
                 _violations.add(Violation.PARAM);
         }
-    }
-
-    /**
-     * @return True if the URI contains an authority, always false for non-absolute URIs.
-     */
-    public boolean hasAuthority()
-    {
-        if (!isAbsolute())
-            return false;
-        return StringUtil.isNotBlank(getAuthority());
     }
 
     /**

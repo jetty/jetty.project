@@ -35,6 +35,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class HostHeaderCustomizerTest
 {
@@ -101,10 +102,8 @@ public class HostHeaderCustomizerTest
     {
         Server server = new Server();
         HttpConfiguration httpConfig = new HttpConfiguration();
-        final String serverName = "test_server_name";
-        final int serverPort = 13;
         final String redirectPath = "/redirect";
-        httpConfig.addCustomizer(new HostHeaderCustomizer(serverName, serverPort));
+        httpConfig.addCustomizer(new HostHeaderCustomizer("test_server_name", 13));
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
         server.addConnector(connector);
         server.setHandler(new AbstractHandler()
@@ -203,10 +202,8 @@ public class HostHeaderCustomizerTest
     {
         Server server = new Server();
         HttpConfiguration httpConfig = new HttpConfiguration();
-        final String serverName = "test_server_name";
-        final int serverPort = 13;
         final String redirectPath = "/redirect";
-        httpConfig.addCustomizer(new HostHeaderCustomizer(serverName, serverPort));
+        httpConfig.addCustomizer(new HostHeaderCustomizer("test_server_name", 13));
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
         server.addConnector(connector);
         server.setHandler(new AbstractHandler()
@@ -257,11 +254,8 @@ public class HostHeaderCustomizerTest
     {
         Server server = new Server();
         HttpConfiguration httpConfig = new HttpConfiguration();
-        final String serverName = "test_server_name";
-        final int serverPort = 13;
-        final String redirectPath = "/redirect";
-        httpConfig.addCustomizer(new HostHeaderCustomizer(serverName, serverPort));
-        httpConfig.addCustomizer(new RejectNoAuthorityCustomizer());
+        httpConfig.addCustomizer(new HostHeaderCustomizer("test_server_name", 13));
+        httpConfig.addCustomizer(new RejectInvalidAuthorityCustomizer());
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
         server.addConnector(connector);
         server.setHandler(new AbstractHandler()
@@ -270,11 +264,7 @@ public class HostHeaderCustomizerTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                // TODO: ensure not reached
-                assertEquals(serverName, request.getServerName());
-                assertEquals(serverPort, request.getServerPort());
-                assertEquals(serverName + ":" + serverPort, request.getHeader("Host"));
-                response.sendRedirect(redirectPath);
+                fail("Should not have reached this handler");
             }
         });
         server.start();
@@ -311,11 +301,8 @@ public class HostHeaderCustomizerTest
     {
         Server server = new Server();
         HttpConfiguration httpConfig = new HttpConfiguration();
-        final String serverName = "test_server_name";
-        final int serverPort = 13;
-        final String redirectPath = "/redirect";
-        httpConfig.addCustomizer(new HostHeaderCustomizer(serverName, serverPort));
-        httpConfig.addCustomizer(new RejectNoAuthorityCustomizer());
+        httpConfig.addCustomizer(new HostHeaderCustomizer("test_server_name", 13));
+        httpConfig.addCustomizer(new RejectInvalidAuthorityCustomizer());
         ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
         server.addConnector(connector);
         server.setHandler(new AbstractHandler()
@@ -324,10 +311,7 @@ public class HostHeaderCustomizerTest
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                assertEquals("", request.getServerName());
-                assertEquals(-1, request.getServerPort());
-                assertEquals("", request.getHeader("Host"));
-                response.sendRedirect(redirectPath); // TODO: what?
+                fail("Should not have reached this handler");
             }
         });
         server.start();
