@@ -774,6 +774,47 @@ public class StringUtil
         return true;
     }
 
+    public static byte[] fromHexString(String s)
+    {
+        if (s.length() % 2 != 0)
+            throw new IllegalArgumentException(s);
+        byte[] array = new byte[s.length() / 2];
+        for (int i = 0; i < array.length; i++)
+        {
+            int b = Integer.parseInt(s.substring(i * 2, i * 2 + 2), 16);
+            array[i] = (byte)(0xff & b);
+        }
+        return array;
+    }
+
+    public static String toHexString(byte b)
+    {
+        return toHexString(new byte[]{b}, 0, 1);
+    }
+
+    public static String toHexString(byte[] b)
+    {
+        return toHexString(b, 0, b.length);
+    }
+
+    public static String toHexString(byte[] b, int offset, int length)
+    {
+        StringBuilder buf = new StringBuilder();
+        for (int i = offset; i < offset + length; i++)
+        {
+            int bi = 0xff & b[i];
+            int c = '0' + (bi / 16) % 16;
+            if (c > '9')
+                c = 'A' + (c - '0' - 10);
+            buf.append((char)c);
+            c = '0' + bi % 16;
+            if (c > '9')
+                c = 'a' + (c - '0' - 10);
+            buf.append((char)c);
+        }
+        return buf.toString();
+    }
+
     public static String printable(String name)
     {
         if (name == null)

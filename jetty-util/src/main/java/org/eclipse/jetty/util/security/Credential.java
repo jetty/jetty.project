@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -37,7 +38,6 @@ public abstract class Credential implements Serializable
 {
     // NOTE: DO NOT INTRODUCE LOGGING TO THIS CLASS
     private static final long serialVersionUID = -7760551052768181572L;
-    private static final char[] HEXCODES = "0123456789abcdef".toCharArray();
     // Intentionally NOT using TypeUtil.serviceProviderStream
     // as that introduces a Logger requirement that command line Password cannot use.
     private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = ServiceLoader.load(CredentialProvider.class).stream()
@@ -134,48 +134,6 @@ public abstract class Credential implements Serializable
     }
 
     /**
-     * Utility to convert a String of hex into an actual byte array
-     * @param hstr the raw string
-     * @return the parsed byte array
-     */
-    private static byte[] parseHexToByteArray(String hstr)
-    {
-        if ((hstr.length() <= 0) || ((hstr.length() % 2) != 0))
-        {
-            throw new IllegalArgumentException(String.format("Invalid string length of <%d>", hstr.length()));
-        }
-
-        byte[] buf = new byte[hstr.length() / 2];
-        int len = hstr.length();
-
-        for (int i = 0, idx = 0; i < len; i++)
-        {
-            byte hex = (byte)(Character.digit(hstr.charAt(i++), 16) << 4);
-            hex += (byte)(Character.digit(hstr.charAt(i), 16));
-            buf[idx++] = hex;
-        }
-
-        return buf;
-    }
-
-    /**
-     * Format the byte array as a hex string
-     * @param buf the byte array
-     * @return the hex string
-     */
-    private static String formatAsHex(byte[] buf)
-    {
-        int len = buf.length;
-        char[] out = new char[len * 2];
-        for (int i = 0; i < len; i++)
-        {
-            out[i * 2] = HEXCODES[(buf[i] & 0xF0) >> 4];
-            out[(i * 2) + 1] = HEXCODES[(buf[i] & 0x0F)];
-        }
-        return String.valueOf(out);
-    }
-
-    /**
      * Unix Crypt Credentials
      */
     public static class Crypt extends Credential
@@ -229,7 +187,7 @@ public abstract class Credential implements Serializable
         MD5(String digest)
         {
             digest = digest.startsWith(__TYPE) ? digest.substring(__TYPE.length()) : digest;
-            _digest = parseHexToByteArray(digest);
+            _digest = StringUtil.fromHexString(digest);
         }
 
         public byte[] getDigest()
@@ -316,7 +274,7 @@ public abstract class Credential implements Serializable
                     digest = __md.digest();
                 }
 
-                return __TYPE + formatAsHex(digest);
+                return __TYPE + StringUtil.toHexString(digest);
             }
             catch (Exception e)
             {
