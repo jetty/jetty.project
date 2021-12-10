@@ -401,7 +401,7 @@ public class TypeUtil
     }
 
     /**
-     * @deprecated use {@link #fromHexString(String)} instead
+     * @deprecated use {@link StringUtil#fromHexString(String)} instead
      */
     @Deprecated
     public static byte[] parseBytes(String s, int base)

@@ -22,10 +22,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -188,29 +186,5 @@ public class TypeUtilTest
         // Class from JVM core
         String expectedJavaBase = "/java.base";
         assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(), containsString(expectedJavaBase));
-    }
-
-    @Test
-    public void testParseBytesGood()
-    {
-        assertArrayEquals(new byte[]{0x12, 0x34, 0x56, 0x78, (byte)0x9A}, TypeUtil.parseBytes("123456789A", 16));
-    }
-
-    @Test
-    public void testParseBytesBad()
-    {
-        assertThrows(NumberFormatException.class, () -> TypeUtil.parseBytes("Hello World ", 16));
-    }
-
-    @Test
-    public void testFromHexStringGood()
-    {
-        assertArrayEquals(new byte[]{0x12, 0x34, 0x56, 0x78, (byte)0x9A}, TypeUtil.fromHexString("123456789A"));
-    }
-
-    @Test
-    public void testFromHexStringBad()
-    {
-        assertThrows(NumberFormatException.class, () -> TypeUtil.fromHexString("Hello World "));
     }
 }

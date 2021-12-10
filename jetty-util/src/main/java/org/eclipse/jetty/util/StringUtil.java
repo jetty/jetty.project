@@ -18,6 +18,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Fast String Utilities.
@@ -794,7 +795,7 @@ public class StringUtil
 
     public static String toHexString(byte[] b)
     {
-        return toHexString(b, 0, b.length);
+        return toHexString(Objects.requireNonNull(b, "ByteBuffer cannot be null"), 0, b.length);
     }
 
     public static String toHexString(byte[] b, int offset, int length)
