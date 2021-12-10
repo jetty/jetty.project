@@ -201,19 +201,19 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-file</artifactId>
+      <artifactId>jetty-session-file</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-jdbc</artifactId>
+      <artifactId>jetty-session-jdbc</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-memcached</artifactId>
+      <artifactId>jetty-session-memcached</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-mongodb</artifactId>
+      <artifactId>jetty-session-mongodb</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>

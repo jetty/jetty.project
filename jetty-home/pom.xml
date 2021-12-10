@@ -744,7 +744,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-hazelcast</artifactId>
+      <artifactId>jetty-session-hazelcast</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>

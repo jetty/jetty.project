@@ -36,7 +36,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.session</groupId>
-      <artifactId>jetty-file</artifactId>
+      <artifactId>jetty-session-file</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.webapp</groupId>
