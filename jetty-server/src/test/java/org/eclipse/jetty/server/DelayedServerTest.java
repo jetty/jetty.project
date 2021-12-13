@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -48,10 +49,17 @@ public class DelayedServerTest extends HttpServerTestBase
         }
 
         @Override
-        public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
+        protected Http1Stream newHttpStream(String method, String uri, HttpVersion version)
         {
-            DelayedCallback delay = new DelayedCallback(callback, getServer().getThreadPool());
-            super.send(request, response, content, lastContent, delay);
+            return new Http1Stream(method, uri, version)
+            {
+                @Override
+                public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+                {
+                    DelayedCallback delay = new DelayedCallback(callback, getServer().getThreadPool());
+                    super.send(response, last, delay, content);
+                }
+            };
         }
     }
 
@@ -103,6 +111,12 @@ public class DelayedServerTest extends HttpServerTestBase
                     super.failed(x);
                 }
             });
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
         }
     }
 }

@@ -13,8 +13,9 @@
 
 package org.eclipse.jetty.server.jmx;
 
+import java.util.List;
+
 import org.eclipse.jetty.jmx.ObjectMBean;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -37,7 +38,7 @@ public class ServerMBean extends ObjectMBean
     }
 
     @ManagedAttribute("contexts on this server")
-    public Handler[] getContexts()
+    public List<ContextHandler> getContexts()
     {
         return server.getChildHandlersByClass(ContextHandler.class);
     }

@@ -15,24 +15,24 @@ package org.eclipse.jetty.server.ssl;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.security.KeyStore;
 import java.util.Arrays;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
@@ -143,20 +143,14 @@ public class SslUploadTest
         assertEquals(requestContent.length, total);
     }
 
-    private static class EmptyHandler extends AbstractHandler
+    private static class EmptyHandler extends Handler.Abstract
     {
         @Override
-        public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+        public boolean handle(Request request, Response response) throws Exception
         {
-            request.setHandled(true);
-            InputStream in = request.getInputStream();
-            byte[] b = new byte[4096 * 4];
-            int read;
-            while ((read = in.read(b)) >= 0)
-            {
-                total += read;
-            }
-            System.err.println("Read " + total);
+            ByteBuffer input = Content.readBytes(request);
+            response.write(true, request, BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));
+            return true;
         }
     }
 }

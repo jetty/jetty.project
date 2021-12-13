@@ -41,10 +41,8 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
@@ -128,7 +126,7 @@ import org.slf4j.LoggerFactory;
  * <li>block waiting for new connections</li>
  * <li>accept the connection (eg socket accept)</li>
  * <li>perform any configuration of the connection (eg. socket configuration)</li>
- * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, org.eclipse.jetty.io.EndPoint)}
+ * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, EndPoint)}
  * method to create a new Connection instance.</li>
  * </ol>
  * The default number of acceptor tasks is the minimum of 1 and the number of available CPUs divided by 8. Having more acceptors may reduce
@@ -151,7 +149,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private Shutdown _shutdown;
-    private HttpChannel.Listener _httpChannelListeners = HttpChannel.NOOP_LISTENER;
     private long _idleTimeout = 30000;
     private long _shutdownIdleTimeout = 1000L;
     private String _defaultProtocol;
@@ -193,23 +190,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         RetainableByteBufferPool retainableByteBufferPool = _server.getBean(RetainableByteBufferPool.class);
         addBean(retainableByteBufferPool == null ? new ArrayRetainableByteBufferPool() : retainableByteBufferPool, retainableByteBufferPool == null);
 
-        addEventListener(new Container.Listener()
-        {
-            @Override
-            public void beanAdded(Container parent, Object bean)
-            {
-                if (bean instanceof HttpChannel.Listener)
-                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
-            }
-
-            @Override
-            public void beanRemoved(Container parent, Object bean)
-            {
-                if (bean instanceof HttpChannel.Listener)
-                    _httpChannelListeners = new HttpChannelListeners(getBeans(HttpChannel.Listener.class));
-            }
-        });
-
         for (ConnectionFactory factory : factories)
         {
             addConnectionFactory(factory);
@@ -221,24 +201,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (acceptors > cores)
             LOG.warn("Acceptors should be <= availableProcessors: {} ", this);
         _acceptors = new Thread[acceptors];
-    }
-
-    /**
-     * Get the {@link HttpChannel.Listener}s added to the connector
-     * as a single combined Listener.
-     * This is equivalent to a listener that iterates over the individual
-     * listeners returned from {@code getBeans(HttpChannel.Listener.class);},
-     * except that: <ul>
-     *     <li>The result is precomputed, so it is more efficient</li>
-     *     <li>The result is ordered by the order added.</li>
-     *     <li>The result is immutable.</li>
-     * </ul>
-     * @see #getBeans(Class)
-     * @return An unmodifiable list of EventListener beans
-     */
-    public HttpChannel.Listener getHttpChannelListeners()
-    {
-        return _httpChannelListeners;
     }
 
     @Override
@@ -315,7 +277,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             .map(ConnectionFactory.Configuring.class::cast)
             .forEach(configuring -> configuring.configure(this));
 
-        _shutdown = new Graceful.Shutdown(this)
+        _shutdown = new Shutdown(this)
         {
             @Override
             public boolean isShutdownDone()

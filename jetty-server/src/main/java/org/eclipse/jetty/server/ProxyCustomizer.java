@@ -18,13 +18,11 @@ import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.Attributes;
 
 /**
  * <p>Customizer that extracts the real local and remote address:port pairs from a {@link ProxyConnectionFactory}
- * and sets them on the request with {@link ServletRequest#setAttribute(String, Object)}.
+ * and sets them on the request with {@link Request#setAttribute(String, Object)}.
  */
 public class ProxyCustomizer implements HttpConfiguration.Customizer
 {
@@ -49,26 +47,27 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
     public static final String LOCAL_PORT_ATTRIBUTE_NAME = "org.eclipse.jetty.proxy.local.port";
 
     @Override
-    public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
+    public Request customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
-        EndPoint endPoint = request.getHttpChannel().getEndPoint();
+        EndPoint endPoint = request.getChannel().getConnection().getEndPoint();
         if (endPoint instanceof ProxyConnectionFactory.ProxyEndPoint)
         {
             EndPoint underlyingEndpoint = ((ProxyConnectionFactory.ProxyEndPoint)endPoint).unwrap();
-            request.setAttributes(new ProxyAttributes(underlyingEndpoint.getLocalSocketAddress(), underlyingEndpoint.getRemoteSocketAddress(), request.getAttributes()));
+            request = new ProxyRequest(request, underlyingEndpoint.getLocalSocketAddress(), underlyingEndpoint.getRemoteSocketAddress());
         }
+        return request;
     }
 
-    private static class ProxyAttributes extends Attributes.Wrapper
+    private static class ProxyRequest extends Request.Wrapper
     {
         private final String _remoteAddress;
         private final String _localAddress;
         private final int _remotePort;
         private final int _localPort;
 
-        private ProxyAttributes(SocketAddress local, SocketAddress remote, Attributes attributes)
+        private ProxyRequest(Request request, SocketAddress local, SocketAddress remote)
         {
-            super(attributes);
+            super(request);
             InetSocketAddress inetLocal = local instanceof InetSocketAddress ? (InetSocketAddress)local : null;
             InetSocketAddress inetRemote = remote instanceof InetSocketAddress ? (InetSocketAddress)remote : null;
             _localAddress = inetLocal == null ? null : inetLocal.getAddress().getHostAddress();
@@ -96,9 +95,9 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
         }
 
         @Override
-        public Set<String> getAttributeNameSet()
+        public Set<String> getAttributeNames()
         {
-            Set<String> names = new HashSet<>(_attributes.getAttributeNameSet());
+            Set<String> names = new HashSet<>(_attributes.getAttributeNames());
             names.remove(REMOTE_ADDRESS_ATTRIBUTE_NAME);
             names.remove(LOCAL_ADDRESS_ATTRIBUTE_NAME);
 
