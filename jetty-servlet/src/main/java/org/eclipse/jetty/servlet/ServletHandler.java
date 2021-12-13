@@ -537,7 +537,7 @@ public class ServletHandler extends ScopedHandler
         return _servletNameMap.get(target);
     }
 
-    private FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
+    protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
     {
         Objects.requireNonNull(servletHolder);
         String key = pathInContext == null ? servletHolder.getName() : pathInContext;
