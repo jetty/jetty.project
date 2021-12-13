@@ -40,6 +40,7 @@ import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -652,7 +653,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     {
                                         Throwable failure = _failure;
                                         if (failure != null)
-                                            rethrow(failure);
+                                            throw IO.rethrow(failure);
                                         if (_sslEngine.isInboundDone())
                                             return filled = -1;
                                         continue;
@@ -734,7 +735,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 case CLOSED:
                                     Throwable failure = _failure;
                                     if (failure != null)
-                                        rethrow(failure);
+                                        throw IO.rethrow(failure);
                                     return filled = -1;
 
                                 case BUFFER_UNDERFLOW:
@@ -836,9 +837,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             catch (Throwable x)
             {
                 close(x);
-                rethrow(x);
-                // Never reached.
-                throw new AssertionError();
+                throw IO.rethrow(x);
             }
         }
 
@@ -1191,9 +1190,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             catch (Throwable x)
             {
                 close(x);
-                rethrow(x);
-                // Never reached.
-                throw new AssertionError();
+                throw IO.rethrow(x);
             }
         }
 
@@ -1525,17 +1522,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                 }
                 return _failure;
             }
-        }
-
-        private void rethrow(Throwable x) throws IOException
-        {
-            if (x instanceof RuntimeException)
-                throw (RuntimeException)x;
-            if (x instanceof Error)
-                throw (Error)x;
-            if (x instanceof IOException)
-                throw (IOException)x;
-            throw new IOException(x);
         }
 
         @Override

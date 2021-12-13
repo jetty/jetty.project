@@ -23,7 +23,8 @@ public enum HttpVersion
     HTTP_0_9("HTTP/0.9", 9),
     HTTP_1_0("HTTP/1.0", 10),
     HTTP_1_1("HTTP/1.1", 11),
-    HTTP_2("HTTP/2.0", 20);
+    HTTP_2("HTTP/2.0", 20),
+    HTTP_3("HTTP/2.0", 30);
 
     public static final Index<HttpVersion> CACHE = new Index.Builder<HttpVersion>()
         .caseSensitive(false)
@@ -65,6 +66,14 @@ public enum HttpVersion
                     {
                         case '0':
                             return HTTP_2;
+                        default:
+                            return null;
+                    }
+                case '3':
+                    switch (bytes[position + 7])
+                    {
+                        case '0':
+                            return HTTP_3;
                         default:
                             return null;
                     }

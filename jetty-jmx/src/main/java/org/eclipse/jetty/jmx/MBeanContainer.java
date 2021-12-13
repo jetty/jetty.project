@@ -242,7 +242,7 @@ public class MBeanContainer implements Container.InheritedListener, Dumpable, De
             return null;
         String pName = pkg.getName();
         String cName = klass.getName().substring(pName.isEmpty() ? 0 : pName.length() + 1);
-        String mName = pName + ".jmx." + cName + "MBean";
+        String mName = pName + ".jmx." + cName.replaceAll("\\$", "I") + "MBean";
         try
         {
             Class<?> mbeanClass = Loader.loadClass(klass, mName);

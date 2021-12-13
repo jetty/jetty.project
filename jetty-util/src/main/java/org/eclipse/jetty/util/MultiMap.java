@@ -61,13 +61,24 @@ public class MultiMap<V> extends HashMap<String, List<V>>
     }
 
     /**
+     * Get the first value from a multiple value.
+     *
+     * @param name The entry key.
+     * @return a value from index 0.
+     */
+    public V getValue(String name)
+    {
+        return getValue(name, 0);
+    }
+
+    /**
      * Get a value from a multiple value.
      * If the value is not a multivalue, then index 0 retrieves the
      * value or null.
      *
      * @param name The entry key.
      * @param i Index of element to get.
-     * @return Unmodifieable List of values.
+     * @return a value.
      */
     public V getValue(String name, int i)
     {

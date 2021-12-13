@@ -140,6 +140,14 @@ public class UrlEncoded
         return result.toString();
     }
 
+    public static MultiMap<String> decodeQuery(String query)
+    {
+        MultiMap<String> map = new MultiMap<>();
+        if (StringUtil.isNotBlank(query))
+            decodeUtf8To(query, 0, query.length(), map);
+        return map;
+    }
+
     /**
      * Decoded parameters to Map.
      *

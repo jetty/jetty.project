@@ -21,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Reader;
@@ -271,6 +272,24 @@ public class IO
         {
             copy(in, out);
         }
+    }
+
+    public static IOException rethrow(Throwable cause)
+    {
+        if (cause instanceof IOException)
+            return (IOException)cause;
+        if (cause instanceof Error)
+            throw (Error)cause;
+        if (cause instanceof RuntimeException)
+            throw (RuntimeException)cause;
+        if (cause instanceof InterruptedException)
+            return new InterruptedIOException()
+            {
+                {
+                    initCause(cause);
+                }
+            };
+        return new IOException(cause);
     }
 
     /**
