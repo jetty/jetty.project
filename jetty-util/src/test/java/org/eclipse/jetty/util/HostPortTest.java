@@ -96,7 +96,7 @@ public class HostPortTest
             assertThat(authority, hostPort.getHost(), is(expectedHost));
 
             if (expectedPort == null)
-                assertThat(authority, hostPort.getPort(), is(0));
+                assertThat(authority, hostPort.getPort(), is(HostPort.NO_PORT));
             else
                 assertThat(authority, hostPort.getPort(), is(expectedPort));
         }
