@@ -58,7 +58,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -1175,7 +1174,7 @@ public class HttpClient extends ContainerLifeCycle
 
     public static int normalizePort(String scheme, int port)
     {
-        if (port != HttpURI.NO_PORT)
+        if (port > 0)
             return port;
         else if (isSchemeSecure(scheme))
             return 443;
