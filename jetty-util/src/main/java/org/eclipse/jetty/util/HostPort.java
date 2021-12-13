@@ -25,6 +25,7 @@ package org.eclipse.jetty.util;
  */
 public class HostPort
 {
+    public static final int NO_PORT = -1;  // value used in java.net.URI for no-port
     private final String _host;
     private final int _port;
 
@@ -43,7 +44,7 @@ public class HostPort
             if (authority.isEmpty())
             {
                 _host = authority;
-                _port = 0;
+                _port = NO_PORT;
             }
             else if (authority.charAt(0) == '[')
             {
@@ -61,7 +62,7 @@ public class HostPort
                 }
                 else
                 {
-                    _port = 0;
+                    _port = NO_PORT;
                 }
             }
             else
@@ -74,7 +75,7 @@ public class HostPort
                     if (c != authority.indexOf(':'))
                     {
                         _host = "[" + authority + "]";
-                        _port = 0;
+                        _port = NO_PORT;
                     }
                     else
                     {
@@ -85,7 +86,7 @@ public class HostPort
                 else
                 {
                     _host = authority;
-                    _port = 0;
+                    _port = NO_PORT;
                 }
             }
         }

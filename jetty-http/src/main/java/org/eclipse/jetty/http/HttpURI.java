@@ -138,7 +138,7 @@ public class HttpURI
     }
 
     private static final Trie<Boolean> __ambiguousSegments = new ArrayTrie<>();
-    public static final int NO_PORT = -1; // value used in URI for no-port
+    public static final int NO_PORT = -1; // value used in java.net.URI for no-port
 
     static
     {
@@ -244,7 +244,7 @@ public class HttpURI
 
     public HttpURI(String uri)
     {
-        _port = -1;
+        _port = NO_PORT;
         parse(State.START, uri, 0, uri.length());
     }
 
@@ -280,7 +280,7 @@ public class HttpURI
         _scheme = null;
         _user = null;
         _host = null;
-        _port = -1;
+        _port = NO_PORT;
         _path = null;
         _param = null;
         _query = null;
