@@ -20,9 +20,11 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -32,6 +34,8 @@ import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TrieTest
@@ -250,4 +254,60 @@ public class TrieTest
         testGetBestArray(trie);
         testGetBestBuffer(trie);
     }
+
+    @Test
+    public void testArrayTrieCapacityOverFlow()
+    {
+        assertThrows(IllegalArgumentException.class, () -> new ArrayTrie<String>(Character.MAX_VALUE + 1));
+    }
+
+    @Test
+    public void testArrayTernaryTrieCapacityOverFlow()
+    {
+        assertThrows(IllegalArgumentException.class, () -> new ArrayTernaryTrie<String>(Character.MAX_VALUE + 1));
+    }
+
+    @Test
+    public void testArrayTrieCapacity()
+    {
+        ArrayTrie<String> trie = new ArrayTrie<>(Character.MAX_VALUE);
+
+        char[] c1 = new char[Character.MAX_VALUE - 1];
+        Arrays.fill(c1, 'a');
+        String huge = new String(c1);
+        assertTrue(trie.put(huge, "wow"));
+        assertThat(trie.get(huge), is("wow"));
+    }
+
+    @Test
+    public void testArrayTernaryTrieCapacity()
+    {
+        ArrayTernaryTrie<String> trie = new ArrayTernaryTrie<>(Character.MAX_VALUE);
+
+        char[] c1 = new char[Character.MAX_VALUE - 1];
+        Arrays.fill(c1, 'a');
+        String huge = new String(c1);
+        assertTrue(trie.put(huge, "wow"));
+        assertThat(trie.get(huge), is("wow"));
+
+        assertThrows(IllegalArgumentException.class, () -> new ArrayTrie<String>(Character.MAX_VALUE + 1));
+    }
+
+    @Test
+    public void testArrayTernaryOverflowReject()
+    {
+        ArrayTrie<String> trie = new ArrayTrie<>(Character.MAX_VALUE);
+        assertTrue(trie.put("", "/"));
+        assertThat(trie.getBest("/", 1, 0), is("/"));
+
+        char[] c1 = new char[Character.MAX_VALUE];
+        Arrays.fill(c1, 'a');
+        String huge = new String(c1);
+        assertFalse(trie.put(huge, "overflow"));
+        assertNull(trie.get(huge));
+
+        // The previous variable is not overwritten
+        assertThat(trie.getBest("/", 1, 0), is("/"));
+    }
+
 }

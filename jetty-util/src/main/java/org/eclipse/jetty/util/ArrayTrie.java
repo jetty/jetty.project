@@ -49,6 +49,7 @@ import java.util.Set;
  */
 public class ArrayTrie<V> extends AbstractTrie<V>
 {
+    public static int MAX_CAPACITY = Character.MAX_VALUE;
     /**
      * The Size of a Trie row is how many characters can be looked
      * up directly without going to a big index.  This is set at
@@ -129,6 +130,8 @@ public class ArrayTrie<V> extends AbstractTrie<V>
     public ArrayTrie(int capacity)
     {
         super(true);
+        if (capacity > MAX_CAPACITY)
+            throw new IllegalArgumentException("Capacity " + capacity + " > " + MAX_CAPACITY);
         _value = (V[])new Object[capacity];
         _rowIndex = new char[capacity * 32];
         _key = new String[capacity];

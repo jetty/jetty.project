@@ -70,6 +70,13 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     private static final int ROW_SIZE = 4;
 
     /**
+     * The maximum capacity of the implementation. Over that,
+     * the 16 bit indexes can overflow and the trie
+     * cannot find existing entries anymore.
+     */
+    private static final int MAX_CAPACITY = Character.MAX_VALUE;
+
+    /**
      * The Trie rows in a single array which allows a lookup of row,character
      * to the next row in the Trie.  This is actually a 2 dimensional
      * array that has been flattened to achieve locality of reference.
@@ -140,6 +147,8 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     public ArrayTernaryTrie(boolean insensitive, int capacity)
     {
         super(insensitive);
+        if (capacity > MAX_CAPACITY)
+            throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
         _value = (V[])new Object[capacity];
         _tree = new char[capacity * ROW_SIZE];
         _key = new String[capacity];
@@ -155,6 +164,8 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     {
         super(trie.isCaseInsensitive());
         int capacity = (int)(trie._value.length * factor);
+        if (capacity > MAX_CAPACITY)
+            throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
         _rows = trie._rows;
         _value = Arrays.copyOf(trie._value, capacity);
         _tree = Arrays.copyOf(trie._tree, capacity * ROW_SIZE);
@@ -190,7 +201,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 if (t == _rows)
                 {
                     _rows++;
-                    if (_rows >= _key.length)
+                    if (_rows > _key.length)
                     {
                         _rows--;
                         return false;
@@ -223,7 +234,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         if (t == _rows)
         {
             _rows++;
-            if (_rows >= _key.length)
+            if (_rows > _key.length)
             {
                 _rows--;
                 return false;
