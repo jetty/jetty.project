@@ -1030,17 +1030,6 @@ public class Request implements HttpServletRequest
                 return formatAddrOrHost(localName);
         }
 
-        try
-        {
-            String name = InetAddress.getLocalHost().getHostName();
-            if (StringUtil.ALL_INTERFACES.equals(name))
-                return null;
-            return formatAddrOrHost(name);
-        }
-        catch (UnknownHostException e)
-        {
-            LOG.ignore(e);
-        }
         return null;
     }
 

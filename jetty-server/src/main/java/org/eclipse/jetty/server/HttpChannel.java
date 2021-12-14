@@ -19,9 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EventListener;
@@ -302,23 +300,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     /**
-     * <p>
-     * Override the {@link #getLocalName()} with a specific name.
-     * </p>
-     *
-     * <p>
-     * This allows the name returned by APIs like HttpServletRequest.getServerName() to be overridden with
-     * an arbitrary name when behind an intermediary and the incoming request has no valid uri authority.
-     * </p>
-     *
-     * @param overriddenLocalName the overridden local name, use null to set behavior back to default
-     */
-    public void setLocalNameOverride(String overriddenLocalName)
-    {
-        this.overriddenLocalName = overriddenLocalName;
-    }
-
-    /**
      * <p>Return the Local Name of the connected channel.</p>
      *
      * <p>
@@ -327,7 +308,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * if the local address is unavailable.
      * </p>
      * <p>
-     * Value can be overridden by {@link #setLocalNameOverride(String)} for
+     * Value can be overridden by {@link AbstractConnector#setLocalName(String)} for
      * scenarios where Jetty is being an intermediary and the local name
      * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
      * such as absolute-URI creation (eg: Location response header).
@@ -351,17 +332,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (local != null)
             return local.getHostString();
 
-        try
-        {
-            String name = InetAddress.getLocalHost().getHostName();
-            if (StringUtil.ALL_INTERFACES.equals(name))
-                return null;
-            return name;
-        }
-        catch (UnknownHostException e)
-        {
-            LOG.ignore(e);
-        }
         return null;
     }
 
