@@ -19,6 +19,7 @@ import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +66,8 @@ class AsyncContentProducer implements ContentProducer
         assertLocked();
         if (LOG.isDebugEnabled())
             LOG.debug("recycling {}", this);
+        if (_interceptor instanceof Destroyable)
+            ((Destroyable)_interceptor).destroy();
         _interceptor = null;
         _rawContent = null;
         _transformedContent = null;
