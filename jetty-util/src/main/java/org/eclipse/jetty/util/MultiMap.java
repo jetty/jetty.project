@@ -28,6 +28,8 @@ import java.util.Map;
 @SuppressWarnings("serial")
 public class MultiMap<V> extends HashMap<String, List<V>>
 {
+    // TODO review if this is really still needed or can we just use Map<List<V>> instead?
+
     public MultiMap()
     {
         super();
