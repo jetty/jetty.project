@@ -1503,6 +1503,7 @@ public class StartArgs
 
                 // ALPN feature exists
                 properties.setProperty("runtime.feature.alpn", Boolean.toString(isMethodAvailable(javax.net.ssl.SSLParameters.class, "getApplicationProtocols", null)), source);
+                properties.setProperty("at.least.java9", Boolean.toString(ver.getPlatform() >= 9), source);
             }
             catch (Throwable x)
             {

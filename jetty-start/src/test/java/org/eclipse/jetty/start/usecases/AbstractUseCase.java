@@ -187,7 +187,8 @@ public abstract class AbstractUseCase
                     "user.dir".equals(name) ||
                     p.source.equals(Props.ORIGIN_SYSPROP) ||
                     name.startsWith("runtime.feature.") ||
-                    name.startsWith("java."));
+                    name.startsWith("java.") ||
+                    "at.least.java9".equals(name));
             };
 
             return StreamSupport.stream(
