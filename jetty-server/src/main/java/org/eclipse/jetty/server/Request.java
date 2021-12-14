@@ -1050,10 +1050,14 @@ public class Request implements HttpServletRequest
     @Override
     public int getLocalPort()
     {
-        if (_channel == null)
-            return 0;
-        InetSocketAddress local = _channel.getLocalAddress();
-        return local == null ? 0 : local.getPort();
+        if (_channel != null)
+        {
+            InetSocketAddress local = _channel.getLocalAddress();
+            // only return valid ports (some connectors, like LocalConnector / UnixConnector cannot return a port here)
+            if (local != null && local.getPort() > 0)
+                return local.getPort();
+        }
+        return HttpURI.NO_PORT;
     }
 
     /*

@@ -514,12 +514,14 @@ public class ForwardedRequestCustomizer implements Customizer
                         host = requestURI.getHost();
                     }
 
-                    if (port == MutableHostPort.UNSET) // is unset by headers
+                    if (port == MutableHostPort.UNSET) // is unset by forwarding headers
                     {
-                        port = requestURI.getPort();
+                        port = requestURI.getPort(); // use request port
                     }
-
-                    // Don't change port if port == IMPLIED.
+                    else if (port == MutableHostPort.IMPLIED) // port is implied by a header
+                    {
+                        port = HostPort.NO_PORT; // use NO_PORT to indicate that HostPortHttpField should not set it
+                    }
 
                     // Update authority if different from metadata
                     if (!host.equalsIgnoreCase(requestURI.getHost()) ||
@@ -642,8 +644,8 @@ public class ForwardedRequestCustomizer implements Customizer
 
     private static class MutableHostPort
     {
-        public static final int UNSET = -1;
-        public static final int IMPLIED = 0;
+        public static final int UNSET = HostPort.NO_PORT;
+        public static final int IMPLIED = -2;
 
         String _host;
         Source _hostSource = Source.UNSET;
@@ -853,7 +855,11 @@ public class ForwardedRequestCustomizer implements Customizer
          */
         public void handleForwardedPort(HttpField field)
         {
-            int port = HostPort.parsePort(getLeftMost(field.getValue()));
+            String rawPort = getLeftMost(field.getValue());
+            if (StringUtil.isBlank(rawPort))
+                throw new IllegalStateException("Invalid Forwarding Port");
+
+            int port = HostPort.parsePort(rawPort);
 
             updatePort(port, Source.XFORWARDED_PORT);
         }
