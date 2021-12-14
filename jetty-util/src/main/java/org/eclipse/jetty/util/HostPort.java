@@ -222,7 +222,7 @@ public class HostPort
     public static int parsePort(String rawPort) throws IllegalArgumentException
     {
         if (StringUtil.isEmpty(rawPort))
-            throw new IllegalArgumentException("Bad port");
+            return NO_PORT;
 
         int port = Integer.parseInt(rawPort);
         if (port <= 0 || port > 65535)

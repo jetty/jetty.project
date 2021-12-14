@@ -26,7 +26,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class HostPortTest
@@ -107,22 +106,13 @@ public class HostPortTest
     @MethodSource("validAuthorityProvider")
     public void testValidAuthority(String authority, String expectedHost, Integer expectedPort)
     {
-        try
-        {
-            HostPort hostPort = new HostPort(authority);
-            assertThat(authority, hostPort.getHost(), is(expectedHost));
+        HostPort hostPort = new HostPort(authority);
+        assertThat(authority, hostPort.getHost(), is(expectedHost));
 
-            if (expectedPort == null)
-                assertThat(authority, hostPort.getPort(), is(HostPort.NO_PORT));
-            else
-                assertThat(authority, hostPort.getPort(), is(expectedPort));
-        }
-        catch (Exception e)
-        {
-            if (expectedHost != null)
-                e.printStackTrace();
-            assertNull(authority, expectedHost);
-        }
+        if (expectedPort == null)
+            assertThat("Port should not be present for [" + authority + "]", hostPort.getPort(), is(HostPort.NO_PORT));
+        else
+            assertThat("Port for [" + authority + "]", hostPort.getPort(), is(expectedPort));
     }
 
     @ParameterizedTest
