@@ -161,7 +161,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private long _idleTimeout = 30000;
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
+    /* The name used to link up virtual host configuration to named connectors */
     private String _name;
+    /* The name used to override the connection local name (see ServletRequest.getLocalName()) */
+    private String _localNameOverride;
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
     private ThreadPoolBudget.Lease _lease;
@@ -296,6 +299,24 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     public int getAcceptors()
     {
         return _acceptors.length;
+    }
+
+    /**
+     * @return Returns the optional local name override
+     */
+    @ManagedAttribute("local name override")
+    public String getLocalNameOverride()
+    {
+        return _localNameOverride;
+    }
+
+    /**
+     * Optional override of connection local name used within application API layer
+     * when identifying the local host name of a connected endpoint.
+     */
+    public void setLocalNameOverride(String localNameOverride)
+    {
+        this._localNameOverride = localNameOverride;
     }
 
     @Override

@@ -1025,9 +1025,9 @@ public class Request implements HttpServletRequest
     {
         if (_channel != null)
         {
-            InetSocketAddress local = _channel.getLocalAddress();
-            if (local != null)
-                return formatAddrOrHost(local.getHostString());
+            String localName = _channel.getLocalName();
+            if (localName != null)
+                return formatAddrOrHost(localName);
         }
 
         try

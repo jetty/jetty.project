@@ -19,7 +19,9 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EventListener;
@@ -97,6 +99,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
     private long _oldIdleTimeout;
+    private String overriddenLocalName;
 
     /**
      * Bytes written after interception (eg after compression)
@@ -296,6 +299,64 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public EndPoint getEndPoint()
     {
         return _endPoint;
+    }
+
+    /**
+     * <p>
+     * Override the {@link #getLocalName()} with a specific name.
+     * </p>
+     *
+     * <p>
+     * This allows the name returned by APIs like HttpServletRequest.getServerName() to be overridden with
+     * an arbitrary name when behind an intermediary and the incoming request has no valid uri authority.
+     * </p>
+     *
+     * @param overriddenLocalName the overridden local name, use null to set behavior back to default
+     */
+    public void setLocalNameOverride(String overriddenLocalName)
+    {
+        this.overriddenLocalName = overriddenLocalName;
+    }
+
+    /**
+     * <p>Return the Local Name of the connected channel.</p>
+     *
+     * <p>
+     * This is the name after the connector is bound and the connection is accepted.
+     * The value is typically the local address and optionally the local host name
+     * if the local address is unavailable.
+     * </p>
+     * <p>
+     * Value can be overridden by {@link #setLocalNameOverride(String)} for
+     * scenarios where Jetty is being an intermediary and the local name
+     * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
+     * such as absolute-URI creation (eg: Location response header).
+     * </p>
+     *
+     * @return the local name if overridden, or the local address, or
+     * the local host name.
+     */
+    public String getLocalName()
+    {
+        if (overriddenLocalName != null)
+            return overriddenLocalName;
+
+        InetSocketAddress local = getLocalAddress();
+        if (local != null)
+            return local.getHostString();
+
+        try
+        {
+            String name = InetAddress.getLocalHost().getHostName();
+            if (StringUtil.ALL_INTERFACES.equals(name))
+                return null;
+            return name;
+        }
+        catch (UnknownHostException e)
+        {
+            LOG.ignore(e);
+        }
+        return null;
     }
 
     public InetSocketAddress getLocalAddress()
