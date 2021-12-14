@@ -164,7 +164,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     /* The name used to link up virtual host configuration to named connectors */
     private String _name;
     /* The name used to override the connection local name (see ServletRequest.getLocalName()) */
-    private String _localNameOverride;
+    private String _localName;
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
     private ThreadPoolBudget.Lease _lease;
@@ -304,21 +304,19 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     /**
      * @return Returns the optional local name override
      */
-    @ManagedAttribute("local name override")
-    public String getLocalNameOverride()
+    @ManagedAttribute("local name")
+    public String getLocalName()
     {
-        if (isRunning())
-            throw new IllegalStateException("Unable to change local name override, connector is runnning");
-        return _localNameOverride;
+        return _localName;
     }
 
     /**
      * Optional override of connection local name used within application API layer
      * when identifying the local host name of a connected endpoint.
      */
-    public void setLocalNameOverride(String localNameOverride)
+    public void setLocalName(String localName)
     {
-        this._localNameOverride = localNameOverride;
+        this._localName = localName;
     }
 
     @Override
@@ -341,11 +339,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
 
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _acceptors.length);
-
-        if (_localNameOverride != null)
-        {
-            addBean(new HttpChannelLocalNameOverrideListener(_localNameOverride));
-        }
 
         super.doStart();
 

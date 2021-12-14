@@ -39,7 +39,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class HttpChannelLocalNameOverrideTest
+public class LocalNameOverrideTest
 {
     private static class DumpHandler extends AbstractHandler
     {
@@ -64,7 +64,7 @@ public class HttpChannelLocalNameOverrideTest
         try
         {
             ServerConnector connector = new ServerConnector(server);
-            connector.setLocalNameOverride("FooLocalName");
+            connector.setLocalName("FooLocalName");
             connector.setPort(0);
 
             server.addConnector(connector);
@@ -108,7 +108,7 @@ public class HttpChannelLocalNameOverrideTest
         try
         {
             ServerConnector connector = new ServerConnector(server);
-            connector.setLocalNameOverride("BarLocalName");
+            connector.setLocalName("BarLocalName");
             connector.setPort(0);
 
             server.addConnector(connector);
@@ -158,7 +158,7 @@ public class HttpChannelLocalNameOverrideTest
         try
         {
             ServerConnector connector = new ServerConnector(server);
-            connector.setLocalNameOverride("BarLocalName");
+            connector.setLocalName("BarLocalName");
             connector.setPort(0);
 
             server.addConnector(connector);
@@ -188,7 +188,9 @@ public class HttpChannelLocalNameOverrideTest
                     // request uri is not absolute, so it's assumed to be the scheme from HttpConfiguration (default: "http")
                     // which has an assumed port if unspecified. (like in the above request)
                     containsString("ServerPort=[80]"),
+                    // Local name was overridden, so it remains the name seen by the handler
                     containsString("LocalName=[BarLocalName]"),
+                    // ServerName is used for RequestURL
                     containsString("RequestURL=[http://jetty.eclipse.org/]")
                 ));
             }

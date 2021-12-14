@@ -338,8 +338,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public String getLocalName()
     {
-        if (overriddenLocalName != null)
-            return overriddenLocalName;
+        Connector connector = getConnector();
+
+        if (connector instanceof AbstractConnector)
+        {
+            String localName = ((AbstractConnector)connector).getLocalName();
+            if (localName != null)
+                return localName;
+        }
 
         InetSocketAddress local = getLocalAddress();
         if (local != null)
