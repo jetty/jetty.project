@@ -180,7 +180,7 @@ public class ProxyConnectionTest
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInfo=/path"));
-        assertThat(response, Matchers.containsString("local=0.0.0.0:0"));
+        assertThat(response, Matchers.containsString("local=0.0.0.0:-1")); // LocalConnector has no local host or local port
         assertThat(response, Matchers.containsString("remote=0.0.0.0:0"));
     }
 
