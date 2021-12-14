@@ -230,12 +230,7 @@ public class SharedBlockingCallback
             catch (final InterruptedException e)
             {
                 _state = e;
-                throw new InterruptedIOException()
-                {
-                    {
-                        initCause(e);
-                    }
-                };
+                throw (InterruptedIOException)new InterruptedIOException().initCause(e);
             }
             finally
             {

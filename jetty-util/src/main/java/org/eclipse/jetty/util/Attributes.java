@@ -207,11 +207,6 @@ public interface Attributes
             return _map.size();
         }
 
-        public Set<Map.Entry<String, Object>> getAttributes()
-        {
-            return _map.entrySet();
-        }
-
         @Override
         public String toString()
         {
@@ -248,13 +243,16 @@ public interface Attributes
     }
 
     /**
-     * An Attributes implementation backed by another Attributes instance, which is treated as immutable, but with a
+     * An {@link Attributes} implementation backed by another {@link Attributes} instance, which is treated as immutable, but with a
      * ConcurrentHashMap used as a mutable layer over it.
      */
     class Layer implements Attributes
     {
         private static final Object REMOVED = "REMOVED";
         private final Attributes _persistent;
+        // TODO it is probably not correct to have a concurrent map over another concurrent map as some
+        //      of the operations are not atomic and will suffer from test then act issues if the underlying
+        //      map is mutated.   Need to review if hard atomic locking needed here?
         private final java.util.concurrent.ConcurrentMap<String, Object> _map = new ConcurrentHashMap<>();
         private final Set<String> _names;
 
@@ -315,9 +313,9 @@ public interface Attributes
         @Override
         public int hashCode()
         {
-            int hash = super.hashCode();
+            int hash = 0;
             for (String name : getAttributeNames())
-                hash = hash ^ name.hashCode() ^ getAttribute(name).hashCode();
+                hash += name.hashCode() ^ getAttribute(name).hashCode();
             return hash;
         }
 
@@ -327,9 +325,14 @@ public interface Attributes
             if (o instanceof Attributes)
             {
                 Attributes a = (Attributes)o;
-                for (Map.Entry<String, Object> e : _map.entrySet())
+                Set<String> ours = getAttributeNames();
+                Set<String> theirs = getAttributeNames();
+                if (!ours.equals(theirs))
+                    return false;
+
+                for (String s : ours)
                 {
-                    if (!Objects.equals(e.getValue(), a.getAttribute(e.getKey())))
+                    if (!Objects.equals(getAttribute(s), a.getAttribute(s)))
                         return false;
                 }
                 return true;

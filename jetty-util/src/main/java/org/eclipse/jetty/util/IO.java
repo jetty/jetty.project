@@ -283,12 +283,8 @@ public class IO
         if (cause instanceof RuntimeException)
             throw (RuntimeException)cause;
         if (cause instanceof InterruptedException)
-            return new InterruptedIOException()
-            {
-                {
-                    initCause(cause);
-                }
-            };
+            return (InterruptedIOException)new InterruptedIOException().initCause(cause);
+
         return new IOException(cause);
     }
 

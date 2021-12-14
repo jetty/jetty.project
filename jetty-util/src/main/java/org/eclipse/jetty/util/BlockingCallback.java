@@ -35,7 +35,18 @@ import java.util.concurrent.CompletableFuture;
  */
 public class BlockingCallback implements AutoCloseable, Callback, Runnable
 {
-    private static final Throwable SUCCEEDED = new Throwable();
+    // TODO factor out BlockingRunnable
+
+    // TODO perhaps move all variations to be inners of a single Blocker class that includes the sharable, as well as
+    //      these implementations.
+    private static final Throwable SUCCEEDED = new Throwable()
+    {
+        @Override
+        public synchronized Throwable fillInStackTrace()
+        {
+            return this;
+        }
+    };
 
     private final CompletableFuture<Throwable> _future = new CompletableFuture<>();
 

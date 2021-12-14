@@ -24,7 +24,7 @@ public enum HttpVersion
     HTTP_1_0("HTTP/1.0", 10),
     HTTP_1_1("HTTP/1.1", 11),
     HTTP_2("HTTP/2.0", 20),
-    HTTP_3("HTTP/2.0", 30);
+    HTTP_3("HTTP/3.0", 30);
 
     public static final Index<HttpVersion> CACHE = new Index.Builder<HttpVersion>()
         .caseSensitive(false)
