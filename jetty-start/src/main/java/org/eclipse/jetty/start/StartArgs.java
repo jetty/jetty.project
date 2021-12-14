@@ -1502,7 +1502,8 @@ public class StartArgs
                 properties.setProperty("java.version.micro", Integer.toString(ver.getMicro()), "Deprecated");
 
                 // ALPN feature exists
-                properties.setProperty("runtime.feature.alpn", Boolean.toString(ver.getPlatform() >= 9), source);
+                properties.setProperty("runtime.feature.alpn", Boolean.toString(isMethodAvailable(javax.net.ssl.SSLParameters.class, "getApplicationProtocols", null)), source);
+                properties.setProperty("at.least.java9", Boolean.toString(ver.getPlatform() >= 9), source);
             }
             catch (Throwable x)
             {
