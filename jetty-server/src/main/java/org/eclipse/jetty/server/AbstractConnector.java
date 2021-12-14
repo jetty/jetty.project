@@ -307,6 +307,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @ManagedAttribute("local name override")
     public String getLocalNameOverride()
     {
+        if (isRunning())
+            throw new IllegalStateException("Unable to change local name override, connector is runnning");
         return _localNameOverride;
     }
 
@@ -339,6 +341,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
 
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _acceptors.length);
+
+        if (_localNameOverride != null)
+        {
+            addBean(new HttpChannelLocalNameOverrideListener(_localNameOverride));
+        }
+
         super.doStart();
 
         _stopping = new CountDownLatch(_acceptors.length);
