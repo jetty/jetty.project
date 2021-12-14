@@ -83,18 +83,20 @@ public class HostPort
                     }
                     else
                     {
-                        _host = authority.substring(0, c);
+                        _host = authority.substring(0, c).trim();
                         _port = parsePort(authority.substring(c + 1));
                         if (StringUtil.isBlank(_host))
                             throw new IllegalArgumentException("No Host");
-                        // TODO: validate _host is valid (see issue #7269)
+                        if (containsInvalidRegNameCharacters(_host))
+                            throw new IllegalArgumentException("Invalid Host");
                     }
                 }
                 else
                 {
-                    _host = authority;
+                    _host = authority.trim();
                     _port = NO_PORT;
-                    // TODO: validate _host is valid (see issue #7269)
+                    if (containsInvalidRegNameCharacters(_host))
+                        throw new IllegalArgumentException("Invalid Host");
                 }
             }
         }
@@ -110,6 +112,40 @@ public class HostPort
 
     /**
      * <p>
+     * Ensures that the provided name conforms to {@code reg-name}
+     * definition of https://datatracker.ietf.org/doc/html/rfc3986#section-3.2.2
+     * </p>
+     *
+     * This implementation just checks for characters that are invalid per spec
+     *
+     * @param name the provided raw name
+     * @return true if an invalid character is detected
+     */
+    private boolean containsInvalidRegNameCharacters(String name)
+    {
+        int len = name.length();
+        for (int i = 0; i < len; i++)
+        {
+            // using codepoint to allow IDN.
+            int ch = name.codePointAt(i);
+
+            if (!(
+                // unreserved
+                Character.isLetterOrDigit(ch) ||
+                    ch == '-' || ch == '.' || ch == '_' || ch == '~' ||
+                    // pct-encoded
+                    ch == '%' ||
+                    // sub-delims
+                    ch == '!' || ch == '$' || ch == '&' || ch == '\'' ||
+                    ch == '(' || ch == ')' || ch == '*' || ch == '+' ||
+                    ch == ',' || ch == ';' || ch == '='))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * <p>
      * Perform a loose validation of the characters in a IPv6 address.
      * This is not strict, and does not validate all of the aspects of IPv6,
      * is only designed to catch really bad cases such as <code>X:Y:Z</code>.
@@ -119,11 +155,12 @@ public class HostPort
      * Per https://datatracker.ietf.org/doc/html/rfc7230#section-5.4
      * and https://datatracker.ietf.org/doc/html/rfc7230#section-2.7.1
      * and https://datatracker.ietf.org/doc/html/rfc3986#section-3.2.2
+     * and https://datatracker.ietf.org/doc/html/rfc5952 (generic textual representation of IPv6)
      *
-     * Updates for IPv4 literals in IPv6 see
-     * https://tools.ietf.org/html/rfc2732#section-2
+     * Examples of IPv4 literals in IPv6 see
+     * https://tools.ietf.org/html/rfc2732#section-2 (now obsolete)
      *
-     * Updates for IPv6 with zone identifiers see
+     * IPv6 with zone identifiers see
      * https://datatracker.ietf.org/doc/html/rfc6874
      *
      * @param authority the raw string authority
@@ -139,20 +176,30 @@ public class HostPort
             start = 1;
         if (authority.charAt(end) == ']')
             end = end - 1;
-        for (int i = start; i < end; i++)
+
+        // at least 1 hexDig should be present
+        boolean foundHexDig = false;
+
+        for (int i = start; i <= end; i++)
         {
             char c = authority.charAt(i);
             if (c == '%')
-                return true; // don't bother validating the rest
-            if (!((c >= '0' && c <= '9') ||
+                return foundHexDig; // don't bother validating the zone identifier
+
+            // this char is hexDig?
+            boolean hexDig = ((c >= '0' && c <= '9') ||
                 (c >= 'a' && c <= 'f') ||
-                (c >= 'A' && c <= 'F') ||
-                (c == '.') || (c == ':')))
+                (c >= 'A' && c <= 'F'));
+
+            if (hexDig)
+                foundHexDig = true;
+
+            if (!(hexDig || (c == '.') || (c == ':')))
             {
                 return false;
             }
         }
-        return true;
+        return foundHexDig;
     }
 
     /**
@@ -221,10 +268,10 @@ public class HostPort
      */
     public static int parsePort(String rawPort) throws IllegalArgumentException
     {
-        if (StringUtil.isEmpty(rawPort))
+        if (StringUtil.isBlank(rawPort))
             return NO_PORT;
 
-        int port = Integer.parseInt(rawPort);
+        int port = Integer.parseInt(rawPort.trim());
         if (port <= 0 || port > 65535)
             throw new IllegalArgumentException("Bad port");
 
