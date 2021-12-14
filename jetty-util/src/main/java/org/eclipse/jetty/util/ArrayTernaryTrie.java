@@ -70,6 +70,13 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     private static final int ROW_SIZE = 4;
 
     /**
+     * The maximum capacity of the implementation. Over that,
+     * the 16 bit indexes can overflow and the trie
+     * cannot find existing entries anymore.
+     */
+    private static final int MAX_CAPACITY = Character.MAX_VALUE;
+
+    /**
      * The Trie rows in a single array which allows a lookup of row,character
      * to the next row in the Trie.  This is actually a 2 dimensional
      * array that has been flattened to achieve locality of reference.
@@ -140,6 +147,8 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     public ArrayTernaryTrie(boolean insensitive, int capacity)
     {
         super(insensitive);
+        if (capacity > MAX_CAPACITY)
+            throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
         _value = (V[])new Object[capacity];
         _tree = new char[capacity * ROW_SIZE];
         _key = new String[capacity];
@@ -155,6 +164,8 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     {
         super(trie.isCaseInsensitive());
         int capacity = (int)(trie._value.length * factor);
+        if (capacity > MAX_CAPACITY)
+            throw new IllegalArgumentException("ArrayTernaryTrie maximum capacity overflow (" + capacity + " > " + MAX_CAPACITY + ")");
         _rows = trie._rows;
         _value = Arrays.copyOf(trie._value, capacity);
         _tree = Arrays.copyOf(trie._tree, capacity * ROW_SIZE);
@@ -190,10 +201,15 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 if (t == _rows)
                 {
                     _rows++;
-                    if (_rows >= _key.length)
+                    if (_rows + 1 >= _key.length)
                     {
-                        _rows--;
-                        return false;
+                        if (k + 1 < limit)
+                        {
+                            // More than 1 character remains unprocessed, it must be failed,
+                            // otherwise it should be success
+                            _rows--;
+                            return false;
+                        }
                     }
                     _tree[row] = c;
                 }
@@ -223,10 +239,11 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         if (t == _rows)
         {
             _rows++;
-            if (_rows >= _key.length)
+            if (_rows + 1 >= _key.length)
             {
                 _rows--;
-                return false;
+                // should not return false, here the element already fill into the trie
+                // return false;
             }
         }
 
@@ -530,7 +547,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     @Override
     public boolean isFull()
     {
-        return _rows + 1 == _key.length;
+        return _rows + 1 >= _key.length;
     }
 
     public static int hilo(int diff)
@@ -542,7 +559,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
 
     public void dump()
     {
-        for (int r = 0; r < _rows; r++)
+        for (int r = 0; r <= _rows; r++)
         {
             char c = _tree[r * ROW_SIZE + 0];
             System.err.printf("%4d [%s,%d,%d,%d] '%s':%s%n",

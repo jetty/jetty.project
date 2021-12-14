@@ -20,9 +20,12 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -32,6 +35,8 @@ import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TrieTest
@@ -60,6 +65,14 @@ public class TrieTest
         return impls.stream().map(Arguments::of);
     }
 
+    public static Stream<Arguments> arrayTrieConstructors()
+    {
+        List<Function<Integer, Trie>> tries = new ArrayList<>();
+        tries.add(ArrayTrie::new);
+        tries.add(ArrayTernaryTrie::new);
+        return tries.stream().map(Arguments::of);
+    }
+
     @ParameterizedTest
     @MethodSource("implementations")
     public void testOverflow(Trie<Integer> trie) throws Exception
@@ -69,7 +82,7 @@ public class TrieTest
         {
             if (++i > 10000)
                 break; // must not be fixed size
-            if (!trie.put("prefix" + i, i))
+            if (!trie.put("a", i))
             {
                 assertTrue(trie.isFull());
                 break;
@@ -250,4 +263,43 @@ public class TrieTest
         testGetBestArray(trie);
         testGetBestBuffer(trie);
     }
+
+    @ParameterizedTest
+    @MethodSource("arrayTrieConstructors")
+    public void testArrayTrieCapacityOverflow(Function<Integer, Trie> constructor)
+    {
+        assertThrows(IllegalArgumentException.class, () -> constructor.apply(Character.MAX_VALUE + 1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("arrayTrieConstructors")
+    public void testArrayTrieCapacity(Function<Integer, Trie> constructor)
+    {
+        Trie<String> trie = constructor.apply(Integer.valueOf(Character.MAX_VALUE));
+
+        char[] c1 = new char[Character.MAX_VALUE - 1];
+        Arrays.fill(c1, 'a');
+        String huge = new String(c1);
+        assertTrue(trie.put(huge, "wow"));
+        assertThat(trie.get(huge), is("wow"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("arrayTrieConstructors")
+    public void testArrayTrieOverflowReject(Function<Integer, Trie> constructor)
+    {
+        Trie<String> trie = constructor.apply(Integer.valueOf(Character.MAX_VALUE));
+        assertTrue(trie.put("", "/"));
+        assertThat(trie.getBest("/", 1, 0), is("/"));
+
+        char[] c1 = new char[Character.MAX_VALUE];
+        Arrays.fill(c1, 'a');
+        String huge = new String(c1);
+        assertFalse(trie.put(huge, "overflow"));
+        assertNull(trie.get(huge));
+
+        // The previous entry was not overridden
+        assertThat(trie.getBest("/", 1, 0), is("/"));
+    }
+
 }
