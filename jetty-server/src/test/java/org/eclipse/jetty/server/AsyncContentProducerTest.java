@@ -28,6 +28,7 @@ import java.util.zip.GZIPOutputStream;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.gzip.GzipHttpInputInterceptor;
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.hamcrest.core.Is;
@@ -56,6 +57,22 @@ public class AsyncContentProducerTest
     public void tearDown()
     {
         scheduledExecutorService.shutdownNow();
+    }
+
+    @Test
+    public void testDestroyInterceptorOnRecycle()
+    {
+        DestroyableInterceptor interceptor = new DestroyableInterceptor();
+
+        AsyncContentProducer contentProducer = new AsyncContentProducer(null);
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(interceptor);
+
+            assertThat(interceptor.destroyed, is(false));
+            contentProducer.recycle();
+            assertThat(interceptor.destroyed, is(true));
+        }
     }
 
     @Test
@@ -345,6 +362,23 @@ public class AsyncContentProducerTest
         protected boolean eof()
         {
             return false;
+        }
+    }
+
+    private static class DestroyableInterceptor implements Destroyable, HttpInput.Interceptor
+    {
+        private boolean destroyed = false;
+
+        @Override
+        public void destroy()
+        {
+            destroyed = true;
+        }
+
+        @Override
+        public HttpInput.Content readFrom(HttpInput.Content content)
+        {
+            return null;
         }
     }
 }
