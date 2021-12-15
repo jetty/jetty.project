@@ -284,7 +284,6 @@ public class IO
             throw (RuntimeException)cause;
         if (cause instanceof InterruptedException)
             return (InterruptedIOException)new InterruptedIOException().initCause(cause);
-
         return new IOException(cause);
     }
 

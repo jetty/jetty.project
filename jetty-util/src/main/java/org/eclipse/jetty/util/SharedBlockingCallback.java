@@ -40,8 +40,9 @@ import org.slf4j.LoggerFactory;
  *     }
  * }
  * </pre>
- * @see BlockingCallback
+ * @deprecated Use {@link Blocking.Shared#callback()}
  */
+@Deprecated
 public class SharedBlockingCallback
 {
     private static final Logger LOG = LoggerFactory.getLogger(SharedBlockingCallback.class);

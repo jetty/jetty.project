@@ -19,12 +19,10 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.util.BlockingCallback;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.SharedBlockingCallback;
-import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -159,7 +157,7 @@ public class HttpServerTestFixture
                 Content c = request.readContent();
                 if (c == null)
                 {
-                    try (Blocker blocker = new SharedBlockingCallback().acquire())
+                    try (Blocking.Runnable blocker = Blocking.runnable())
                     {
                         request.demandContent(blocker);
                         blocker.block();
@@ -233,9 +231,10 @@ public class HttpServerTestFixture
                 ByteBuffer bytes = BufferUtil.toBuffer(chunk, StandardCharsets.ISO_8859_1);
                 for (int i = writes; i-- > 0;)
                 {
-                    try (BlockingCallback blocker = new BlockingCallback())
+                    try (Blocking.Callback blocker = Blocking.callback())
                     {
                         response.write(i == 0, blocker, bytes.slice());
+                        blocker.block();
                     }
                 }
             }
@@ -245,9 +244,10 @@ public class HttpServerTestFixture
                 ByteBuffer bytes = BufferUtil.toBuffer(chunk, Charset.forName(encoding));
                 for (int i = writes; i-- > 0;)
                 {
-                    try (BlockingCallback blocker = new BlockingCallback())
+                    try (Blocking.Callback blocker = Blocking.callback())
                     {
                         response.write(i == 0, blocker, bytes.slice());
+                        blocker.block();
                     }
                 }
             }

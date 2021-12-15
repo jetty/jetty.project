@@ -34,7 +34,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
-import org.eclipse.jetty.util.BlockingCallback;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
@@ -333,9 +333,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     Content content = request.readContent();
                     if (content == null)
                     {
-                        try (BlockingCallback blocker = new BlockingCallback())
+                        try (Blocking.Runnable blocker = Blocking.runnable())
                         {
                             request.demandContent(blocker);
+                            blocker.block();
                         }
                         continue;
                     }
@@ -610,7 +611,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 String response = readResponse(client);
 
                 // Check the response
-                assertEquals(RESPONSE2, response, "response for " + i + " " + message.toString());
+                assertEquals(RESPONSE2, response, "response for " + i + " " + message);
 
                 Thread.sleep(10);
             }
@@ -642,7 +643,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 String response = readResponse(client);
 
                 // Check the response
-                assertEquals(RESPONSE2, response, "response for " + i + " " + message.toString());
+                assertEquals(RESPONSE2, response, "response for " + i + " " + message);
 
                 Thread.sleep(10);
             }
@@ -1004,9 +1005,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             for (int i = 0; i < times.length; i++)
             {
                 long start = System.currentTimeMillis();
-                try (BlockingCallback blocker = new BlockingCallback())
+                try (Blocking.Callback blocker = Blocking.callback())
                 {
                     response.write(false, blocker, BufferUtil.toBuffer(buf));
+                    blocker.block();
                 }
                 long end = System.currentTimeMillis();
                 times[i] = end - start;
@@ -1210,9 +1212,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             response.setHeader("test", "value");
             response.setStatus(200);
             response.setContentType("text/plain");
-            try (BlockingCallback blocker = new BlockingCallback())
+            try (Blocking.Callback blocker = Blocking.callback())
             {
                 response.write(false, blocker, BufferUtil.toBuffer("Now is the time for all good men to come to the aid of the party"));
+                blocker.block();
             }
 
             throw new Exception(new Exception("exception after commit"));

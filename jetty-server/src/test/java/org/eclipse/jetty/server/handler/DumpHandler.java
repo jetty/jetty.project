@@ -28,8 +28,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.SharedBlockingCallback;
-import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
@@ -44,7 +43,7 @@ public class DumpHandler extends Handler.Abstract
 {
     private static final Logger LOG = LoggerFactory.getLogger(DumpHandler.class);
 
-    private final SharedBlockingCallback _blocker = new SharedBlockingCallback(); 
+    private final Blocking.Shared _blocker = new Blocking.Shared(); 
     String _label = "Dump Handler";
 
     public DumpHandler()
@@ -67,7 +66,7 @@ public class DumpHandler extends Handler.Abstract
 
         if (Boolean.parseBoolean(params.getValue("flush")))
         {
-            try (Blocker blocker = _blocker.acquire())
+            try (Blocking.Callback blocker = _blocker.callback())
             {
                 response.write(false, blocker);
                 blocker.block();
@@ -96,7 +95,7 @@ public class DumpHandler extends Handler.Abstract
                     content = request.readContent();
                     if (content == null)
                     {
-                        try (Blocker blocker = _blocker.acquire())
+                        try (Blocking.Runnable blocker = _blocker.runnable())
                         {
                             request.demandContent(blocker);
                             blocker.block();
@@ -190,7 +189,7 @@ public class DumpHandler extends Handler.Abstract
         response.getHeaders().add("Before-Flush", response.isCommitted() ? "Committed???" : "Not Committed");
 
 
-        try (Blocker blocker = _blocker.acquire())
+        try (Blocking.Callback blocker = _blocker.callback())
         {
             response.write(false, blocker, BufferUtil.toBuffer(buf.toByteArray()));
             blocker.block();
@@ -201,10 +200,9 @@ public class DumpHandler extends Handler.Abstract
         // write remaining content after commit
         String padding = "ABCDEFGHIJ".repeat(99) + "ABCDEFGH\r\n";
 
-        try (Blocker blocker = _blocker.acquire())
+        try (Blocking.Callback blocker = _blocker.callback())
         {
             response.write(true, blocker, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)));
-            blocker.block();
         }
 
         request.succeeded();
