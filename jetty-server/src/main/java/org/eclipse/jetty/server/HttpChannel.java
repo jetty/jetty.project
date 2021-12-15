@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.SerializedExecutor;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,7 +75,7 @@ public class HttpChannel extends AttributesMap
     private final Server _server;
     private final ConnectionMetaData _connectionMetaData;
     private final HttpConfiguration _configuration;
-    private final SerializedExecutor _serializedExecutor;
+    private final SerializedInvoker _serializedExecutor;
     private int _requests;
 
     private HttpStream _stream;
@@ -87,7 +87,7 @@ public class HttpChannel extends AttributesMap
         _server = server;
         _connectionMetaData = connectionMetaData;
         _configuration = configuration;
-        _serializedExecutor = new SerializedExecutor(_server.getThreadPool())
+        _serializedExecutor = new SerializedInvoker()
         {
             @Override
             protected void onError(Runnable task, Throwable t)
@@ -285,7 +285,7 @@ public class HttpChannel extends AttributesMap
         }
 
         return _serializedExecutor.offer(
-            hasStream ? () -> _serializedExecutor.execute(() -> onError(failed)) : null,
+            hasStream ? () -> _serializedExecutor.run(() -> onError(failed)) : null,
             onConnectionClose == null ? null : () -> onConnectionClose.accept(failed));
     }
 
@@ -520,7 +520,7 @@ public class HttpChannel extends AttributesMap
             }
 
             if (error)
-                _serializedExecutor.execute(onContentAvailable);
+                _serializedExecutor.run(onContentAvailable);
             else
                 getStream().demandContent();
         }
@@ -532,7 +532,7 @@ public class HttpChannel extends AttributesMap
             {
                 if (_error != null)
                 {
-                    _serializedExecutor.execute(() -> onError.accept(_error.getCause()));
+                    _serializedExecutor.run(() -> onError.accept(_error.getCause()));
                     return;
                 }
 
@@ -806,7 +806,7 @@ public class HttpChannel extends AttributesMap
 
                 if (_request._error != null)
                 {
-                    _serializedExecutor.execute(() -> callback.failed(_request._error.getCause()));
+                    _serializedExecutor.run(() -> callback.failed(_request._error.getCause()));
                     return;
                 }
 
