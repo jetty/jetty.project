@@ -46,6 +46,14 @@ class BlockingContentProducer implements ContentProducer
         if (LOG.isDebugEnabled())
             LOG.debug("recycling {}", this);
         _asyncContentProducer.recycle();
+    }
+
+    @Override
+    public void reopen()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("reopening {}", this);
+        _asyncContentProducer.reopen();
         _semaphore.drainPermits();
     }
 
