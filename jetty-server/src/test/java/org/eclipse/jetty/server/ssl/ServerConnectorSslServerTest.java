@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.ssl;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -28,19 +27,17 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.HttpServerTestBase;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -141,7 +138,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
     @Test
     public void testRequest2FixedFragments() throws Exception
     {
-        configureServer(new EchoHandler());
+        configureServer(new TestHandler());
 
         byte[] bytes = REQUEST2.getBytes();
         int[] points = new int[]{74, 325};
@@ -191,12 +188,6 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         Assumptions.assumeFalse(_serverURI.getScheme().equals("https"), "SSLSocket.shutdownOutput() is not supported, but shutdownOutput() is needed by the test");
     }
 
-    @Override
-    public void testAvailable() throws Exception
-    {
-        Assumptions.assumeFalse(_serverURI.getScheme().equals("https"), "SSLSocket available() is not supported");
-    }
-
     @Test
     public void testSecureRequestCustomizer() throws Exception
     {
@@ -240,23 +231,27 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         }
     }
 
-    public static class SecureRequestHandler extends AbstractHandler
+    public static class SecureRequestHandler extends Handler.Abstract
     {
-
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(Request request, Response response) throws Exception
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
-            response.getOutputStream().println("Hello world");
-            response.getOutputStream().println("scheme='" + request.getScheme() + "'");
-            response.getOutputStream().println("isSecure='" + request.isSecure() + "'");
-            response.getOutputStream().println("X509Certificate='" + request.getAttribute("jakarta.servlet.request.X509Certificate") + "'");
-            response.getOutputStream().println("cipher_suite='" + request.getAttribute("jakarta.servlet.request.cipher_suite") + "'");
-            response.getOutputStream().println("key_size='" + request.getAttribute("jakarta.servlet.request.key_size") + "'");
-            response.getOutputStream().println("ssl_session_id='" + request.getAttribute("jakarta.servlet.request.ssl_session_id") + "'");
-            SSLSession sslSession = (SSLSession)request.getAttribute("SSL_SESSION");
-            response.getOutputStream().println("ssl_session='" + sslSession + "'");
+            StringBuilder out = new StringBuilder();
+            SSLSession session = (SSLSession)request.getAttribute("SSL_SESSION");
+
+            SecureRequestCustomizer.SslSessionData data = (SecureRequestCustomizer.SslSessionData)request.getAttribute("SSL_SESSION_data");
+
+            out.append("Hello world").append('\n');
+            out.append("scheme='").append(request.getHttpURI().getScheme()).append("'").append('\n');
+            out.append("isSecure='").append(request.isSecure()).append("'").append('\n');
+            out.append("X509Certificate='").append(data == null ? "" : data.getX509Certificates()).append("'").append('\n');
+            out.append("cipher_suite='").append(session == null ? "" : session.getCipherSuite()).append("'").append('\n');
+            out.append("key_size='").append(data == null ? "" : data.getKeySize()).append("'").append('\n');
+            out.append("ssl_session_id='").append(data == null ? "" : data.getId()).append("'").append('\n');
+            out.append("ssl_session='").append(session).append("'").append('\n');
+            response.write(true, request, out.toString());
+            return true;
         }
     }
 }

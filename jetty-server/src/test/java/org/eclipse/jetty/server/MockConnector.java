@@ -13,18 +13,83 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
-class MockConnector extends AbstractConnector
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.thread.Scheduler;
+
+public class MockConnector extends ContainerLifeCycle implements Connector
 {
-    public MockConnector()
+    private final Server _server;
+
+    public MockConnector(Server server)
     {
-        super(new Server(), null, null, null, 0);
+        _server = server;
     }
 
     @Override
-    protected void accept(int acceptorID) throws IOException, InterruptedException
+    public Server getServer()
     {
+        return _server;
+    }
+
+    @Override
+    public Executor getExecutor()
+    {
+        return _server.getThreadPool();
+    }
+
+    @Override
+    public Scheduler getScheduler()
+    {
+        return _server.getBean(Scheduler.class);
+    }
+
+    @Override
+    public ByteBufferPool getByteBufferPool()
+    {
+        return _server.getBean(ByteBufferPool.class);
+    }
+
+    @Override
+    public ConnectionFactory getConnectionFactory(String nextProtocol)
+    {
+        return null;
+    }
+
+    @Override
+    public <T> T getConnectionFactory(Class<T> factoryType)
+    {
+        return null;
+    }
+
+    @Override
+    public ConnectionFactory getDefaultConnectionFactory()
+    {
+        return null;
+    }
+
+    @Override
+    public Collection<ConnectionFactory> getConnectionFactories()
+    {
+        return null;
+    }
+
+    @Override
+    public List<String> getProtocols()
+    {
+        return null;
+    }
+
+    @Override
+    public long getIdleTimeout()
+    {
+        return 0;
     }
 
     @Override
@@ -34,8 +99,26 @@ class MockConnector extends AbstractConnector
     }
 
     @Override
-    public String dumpSelf()
+    public Collection<EndPoint> getConnectedEndPoints()
     {
         return null;
+    }
+
+    @Override
+    public String getName()
+    {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<Void> shutdown()
+    {
+        return null;
+    }
+
+    @Override
+    public boolean isShutdown()
+    {
+        return false;
     }
 }

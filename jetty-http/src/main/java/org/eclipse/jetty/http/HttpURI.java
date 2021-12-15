@@ -116,6 +116,8 @@ public interface HttpURI
         return new HttpURI.Mutable(uri).asImmutable();
     }
 
+    // TODO remove
+    @Deprecated
     static Immutable from(String method, String uri)
     {
         if (HttpMethod.CONNECT.is(method))

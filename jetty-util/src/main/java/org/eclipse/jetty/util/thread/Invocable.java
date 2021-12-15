@@ -36,7 +36,7 @@ public interface Invocable
         BLOCKING, NON_BLOCKING, EITHER
     }
 
-    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
+    ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 
     /**
      * Test if the current thread has been tagged as non blocking
@@ -44,7 +44,7 @@ public interface Invocable
      * @return True if the task the current thread is running has
      * indicated that it will not block.
      */
-    public static boolean isNonBlockingInvocation()
+    static boolean isNonBlockingInvocation()
     {
         return Boolean.TRUE.equals(__nonBlocking.get());
     }
@@ -55,7 +55,7 @@ public interface Invocable
      *
      * @param task The task to invoke.
      */
-    public static void invokeNonBlocking(Runnable task)
+    static void invokeNonBlocking(Runnable task)
     {
         Boolean wasNonBlocking = __nonBlocking.get();
         try
@@ -90,7 +90,7 @@ public interface Invocable
      * @return If the object is an Invocable, it is coerced and the {@link #getInvocationType()}
      * used, otherwise {@link InvocationType#BLOCKING} is returned.
      */
-    public static InvocationType getInvocationType(Object o)
+    static InvocationType getInvocationType(Object o)
     {
         if (o instanceof Invocable)
             return ((Invocable)o).getInvocationType();
@@ -103,5 +103,13 @@ public interface Invocable
     default InvocationType getInvocationType()
     {
         return InvocationType.BLOCKING;
+    }
+
+    /**
+     * A Runnable-like Invocable interface, that throws Exception
+     */
+    interface Task extends Invocable
+    {
+        void run() throws Exception;
     }
 }

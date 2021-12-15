@@ -13,7 +13,6 @@
 
 module org.eclipse.jetty.server
 {
-    requires transitive jetty.servlet.api;
     requires transitive org.eclipse.jetty.http;
     requires transitive org.slf4j;
 

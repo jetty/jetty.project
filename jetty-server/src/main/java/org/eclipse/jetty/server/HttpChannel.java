@@ -14,113 +14,322 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.EventListener;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.function.Supplier;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.server.HttpChannelState.Action;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.thread.Scheduler;
+import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
-
 /**
- * HttpChannel represents a single endpoint for HTTP semantic processing.
- * The HttpChannel is both an HttpParser.RequestHandler, where it passively receives events from
- * an incoming HTTP request, and a Runnable, where it actively takes control of the request/response
- * life cycle and calls the application (perhaps suspending and resuming with multiple calls to run).
- * The HttpChannel signals the switch from passive mode to active mode by returning true to one of the
- * HttpParser.RequestHandler callbacks.   The completion of the active phase is signalled by a call to
- * HttpTransport.completed().
+ * A Channel represents a sequence of request cycles from the same connection. However only a single
+ * request cycle may be active at once for each channel.    This is some, but not all of the
+ * behaviour of the current HttpChannel class, specifically it does not include the mutual exclusion
+ * of handling required by the servlet spec and currently encapsulated in HttpChannelState.
+ *
+ * Note how Runnables are returned to indicate that further work is needed. These
+ * can be given to an ExecutionStrategy instead of calling known methods like HttpChannel.handle().
  */
-public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
+public class HttpChannel extends AttributesMap
 {
-    public static Listener NOOP_LISTENER = new Listener() {};
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
-    private final AtomicLong _requests = new AtomicLong();
-    private final Connector _connector;
-    private final Executor _executor;
-    private final HttpConfiguration _configuration;
-    private final EndPoint _endPoint;
-    private final HttpTransport _transport;
-    private final HttpChannelState _state;
-    private final Request _request;
-    private final Response _response;
-    private final HttpChannel.Listener _combinedListener;
-    @Deprecated
-    private final List<Listener> _transientListeners = new ArrayList<>();
-    private MetaData.Response _committedMetaData;
-    private RequestLog _requestLog;
-    private long _oldIdleTimeout;
-
-    /**
-     * Bytes written after interception (eg after compression)
-     */
-    private long _written;
-
-    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
+    public static final String UPGRADE_CONNECTION_ATTRIBUTE = HttpChannel.class.getName() + ".UPGRADE";
+    private static final HttpField CONTENT_LENGTH_0 = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, "0")
     {
-        _connector = connector;
+        @Override
+        public int getIntValue()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getLongValue()
+        {
+            return 0L;
+        }
+    };
+
+    private final AutoLock _lock = new AutoLock();
+    private final Runnable _handle = new RunHandle();
+    private final Server _server;
+    private final ConnectionMetaData _connectionMetaData;
+    private final HttpConfiguration _configuration;
+    private final SerializedInvoker _serializedInvoker;
+    private int _requests;
+
+    private HttpStream _stream;
+    private ChannelRequest _request;
+    private Consumer<Throwable> _onConnectionComplete;
+
+    public HttpChannel(Server server, ConnectionMetaData connectionMetaData, HttpConfiguration configuration)
+    {
+        _server = server;
+        _connectionMetaData = connectionMetaData;
         _configuration = configuration;
-        _endPoint = endPoint;
-        _transport = transport;
+        // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
+        _serializedInvoker = new SerializedInvoker()
+        {
+            @Override
+            protected void onError(Runnable task, Throwable t)
+            {
+                Content.Error error;
+                try (AutoLock ignore = _lock.lock())
+                {
+                    error = _request == null ? null : _request._error;
+                }
+                if (error != null && error.getCause() != null)
+                {
+                    if (error.getCause() != t)
+                        error.getCause().addSuppressed(t);
+                }
 
-        _state = new HttpChannelState(this);
-        _request = new Request(this, newHttpInput(_state));
-        _response = new Response(this, newHttpOutput());
-        _executor = connector.getServer().getThreadPool();
-        _requestLog = connector.getServer().getRequestLog();
-        _combinedListener = (connector instanceof AbstractConnector)
-            ? ((AbstractConnector)connector).getHttpChannelListeners()
-            : NOOP_LISTENER;
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("new {} -> {},{},{}",
-                this,
-                _endPoint,
-                _endPoint == null ? null : _endPoint.getConnection(),
-                _state);
+                super.onError(task, t);
+            }
+        };
     }
 
-    public boolean isSendError()
+    public HttpConfiguration getHttpConfiguration()
     {
-        return _state.isSendError();
+        return _configuration;
+    }
+
+    public void setStream(HttpStream stream)
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (_stream != null)
+                throw new IllegalStateException("Stream pending");
+            _stream = stream;
+        }
+    }
+
+    public HttpStream getStream()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _request.getStream();
+        }
+    }
+
+    public Server getServer()
+    {
+        return _server;
+    }
+
+    public ConnectionMetaData getMetaConnection()
+    {
+        return _connectionMetaData;
+    }
+
+    public Connection getConnection()
+    {
+        return _connectionMetaData.getConnection();
+    }
+
+    public Connector getConnector()
+    {
+        return _connectionMetaData.getConnector();
+    }
+
+    /**
+     * Start request handling by returning a Runnable that will call {@link Server#handle(Request, Response)}.
+     * @param request The request metadata to handle.
+     * @return A Runnable that will call {@link Server#handle(Request, Response)}.  Unlike all other Runnables
+     * returned by {@link HttpChannel} methods, this runnable is not mutually excluded or serialized against the other
+     * Runnables.
+     */
+    public Runnable onRequest(MetaData.Request request)
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onRequest {} {}", request, this);
+
+            if (_request != null)
+                throw new IllegalStateException();
+
+            _request = new ChannelRequest(request);
+
+            if (!_request.getPath().startsWith("/") && !HttpMethod.OPTIONS.is(request.getMethod()) && !HttpMethod.CONNECT.is(request.getMethod()))
+                throw new BadMessageException();
+
+            HttpURI uri = request.getURI();
+            if (uri.hasViolations())
+            {
+                String badMessage = UriCompliance.checkUriCompliance(_configuration.getUriCompliance(), uri);
+                if (badMessage != null)
+                    throw new BadMessageException(badMessage);
+            }
+
+            // This is deliberately not serialized as to allow a handler to block.
+            return _handle;
+        }
+    }
+
+    protected Request getRequest()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _request;
+        }
+    }
+
+    protected Response getResponse()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _request == null ? null : _request._response;
+        }
+    }
+
+    public Runnable onContentAvailable()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (_request == null)
+                return null;
+            Runnable onContent = _request._onContentAvailable;
+            _request._onContentAvailable = null;
+            return _serializedInvoker.offer(onContent);
+        }
+    }
+
+    public Invocable.InvocationType getOnContentAvailableInvocationType()
+    {
+        // TODO Can this actually be done, as we may need to invoke other Runnables after onContent?
+        try (AutoLock ignored = _lock.lock())
+        {
+            return Invocable.getInvocationType(_request == null ? null : _request._onContentAvailable);
+        }
+    }
+
+    public boolean onIdleTimeout(long now, long timeoutNanos)
+    {
+        // TODO check time against last activity and return true only if we really are idle.
+        //      If we return true, then onError will be called with a real exception... or is that too late????
+        return true;
+    }
+
+    public Runnable onError(Throwable x)
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("onError {} {}", this, x);
+
+            // If the channel doesn't have a stream, then the error is ignored
+            if (_stream == null)
+                return null;
+
+            // If the channel doesn't have a request, then the error must have occurred during parsing the request header
+            // Make a temp request for logging and producing 400 response.
+            ChannelRequest request = _request == null ? _request = new ChannelRequest(null) : _request;
+
+            // Remember the error and arrange for any subsequent reads, demands or writes to fail with this error
+            if (request._error == null)
+                request._error = new Content.Error(x);
+            else if (request._error.getCause() != x)
+            {
+                request._error.getCause().addSuppressed(x);
+                return null;
+            }
+
+            // invoke onDataAvailable if we are currently demanding
+            Runnable invokeOnContentAvailable = request._onContentAvailable;
+            request._onContentAvailable = null;
+
+            // if a write is in progress, break the linkage and fail the callback
+            Callback onWriteComplete = request._response._onWriteComplete;
+            request._response._onWriteComplete = null;
+            Runnable invokeWriteFailure = onWriteComplete == null ? null : () -> onWriteComplete.failed(x);
+
+            // Invoke any onError listener(s);
+            Consumer<Throwable> onError = request._onError;
+            request._onError = null;
+            Runnable invokeOnError = onError == null ? null : () -> onError.accept(x);
+
+            // Serialize all the error actions.
+            return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError, () -> request.failed(x));
+        }
+    }
+
+    public Runnable onConnectionClose(Throwable failed)
+    {
+        boolean hasStream;
+        Consumer<Throwable> onConnectionClose;
+        try (AutoLock ignored = _lock.lock())
+        {
+            hasStream = _stream != null;
+            onConnectionClose = _onConnectionComplete;
+            _onConnectionComplete = null;
+        }
+
+        Runnable runStreamOnError = hasStream ? () -> _serializedInvoker.run(() -> onError(failed)) : null;
+        Runnable runOnConnectionClose = onConnectionClose == null ? null : () -> onConnectionClose.accept(failed);
+        return _serializedInvoker.offer(runStreamOnError, runOnConnectionClose);
+    }
+
+    public void addStreamWrapper(Function<HttpStream, HttpStream.Wrapper> onStreamEvent)
+    {
+        while (true)
+        {
+            HttpStream stream;
+            try (AutoLock ignored = _lock.lock())
+            {
+                stream = _stream;
+            }
+            if (_stream == null)
+                throw new IllegalStateException("No active stream");
+            HttpStream.Wrapper combined = onStreamEvent.apply(stream);
+            if (combined == null || combined.getWrapped() != stream)
+                throw new IllegalArgumentException("Cannot remove stream");
+            try (AutoLock ignored = _lock.lock())
+            {
+                if (_stream != stream)
+                    continue;
+                _stream = combined;
+                break;
+            }
+        }
+    }
+
+    public void addConnectionCloseListener(Consumer<Throwable> onClose)
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            if (_onConnectionComplete == null)
+                _onConnectionComplete = onClose;
+            else
+            {
+                Consumer<Throwable> previous = _onConnectionComplete;
+                _onConnectionComplete = (failed) ->
+                {
+                    notifyConnectionClose(previous, failed);
+                    notifyConnectionClose(onClose, failed);
+                };
+            }
+        }
     }
 
     /** Format the address or host returned from Request methods
@@ -132,1374 +341,628 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
         return HostPort.normalizeHost(addr);
     }
 
-    private HttpInput newHttpInput(HttpChannelState state)
+    private void notifyConnectionClose(Consumer<Throwable> onConnectionComplete, Throwable failed)
     {
-        return new HttpInput(state);
-    }
-
-    /**
-     * Notify the channel that content is needed. If some content is immediately available, true is returned and
-     * {@link #produceContent()} has to be called and will return a non-null object.
-     * If no content is immediately available, {@link HttpInput#onContentProducible()} is called once some content arrives
-     * and {@link #produceContent()} can be called without returning null.
-     * If a failure happens, then {@link HttpInput#onContentProducible()} will be called and an error content will return the
-     * error on the next call to {@link #produceContent()}.
-     * @return true if content is immediately available.
-     */
-    public abstract boolean needContent();
-
-    /**
-     * Produce a {@link HttpInput.Content} object with data currently stored within the channel. The produced content
-     * can be special (meaning calling {@link HttpInput.Content#isSpecial()} returns true) if the channel reached a special
-     * state, like EOF or an error.
-     * Once a special content has been returned, all subsequent calls to this method will always return a special content
-     * of the same kind and {@link #needContent()} will always return true.
-     * The returned content is "raw", i.e.: not decoded.
-     * @return a {@link HttpInput.Content} object if one is immediately available without blocking, null otherwise.
-     */
-    public abstract HttpInput.Content produceContent();
-
-    /**
-     * Fail all content that is currently stored within the channel.
-     * @param failure the failure to fail the content with.
-     * @return true if EOF was reached while failing all content, false otherwise.
-     */
-    public abstract boolean failAllContent(Throwable failure);
-
-    /**
-     * Fail the channel's input.
-     * @param failure the failure.
-     * @return true if the channel needs to be rescheduled.
-     */
-    public abstract boolean failed(Throwable failure);
-
-    /**
-     * Mark the channel's input as EOF.
-     * @return true if the channel needs to be rescheduled.
-     */
-    protected abstract boolean eof();
-
-    protected HttpOutput newHttpOutput()
-    {
-        return new HttpOutput(this);
-    }
-
-    public HttpChannelState getState()
-    {
-        return _state;
-    }
-
-    /**
-     * Add a transient Listener to the HttpChannel.
-     * <p>Listeners added by this method will only be notified
-     * if the HttpChannel has been constructed with an instance of
-     * {@link TransientListeners} as an {@link AbstractConnector}
-     * provided listener</p>
-     * <p>Transient listeners are removed after every request cycle</p>
-     * @param listener the listener to add
-     * @return true if the listener was added.
-     */
-    @Deprecated
-    public boolean addListener(Listener listener)
-    {
-        return _transientListeners.add(listener);
-    }
-
-    @Deprecated
-    public boolean removeListener(Listener listener)
-    {
-        return _transientListeners.remove(listener);
-    }
-
-    @Deprecated
-    public List<Listener> getTransientListeners()
-    {
-        return _transientListeners;
-    }
-
-    public long getBytesWritten()
-    {
-        return _written;
-    }
-
-    /**
-     * @return the number of requests handled by this connection
-     */
-    public long getRequests()
-    {
-        return _requests.get();
-    }
-
-    public Connector getConnector()
-    {
-        return _connector;
-    }
-
-    public HttpTransport getHttpTransport()
-    {
-        return _transport;
-    }
-
-    public RequestLog getRequestLog()
-    {
-        return _requestLog;
-    }
-
-    public void setRequestLog(RequestLog requestLog)
-    {
-        _requestLog = requestLog;
-    }
-
-    public void addRequestLog(RequestLog requestLog)
-    {
-        if (_requestLog == null)
-            _requestLog = requestLog;
-        else if (_requestLog instanceof RequestLogCollection)
-            ((RequestLogCollection)_requestLog).add(requestLog);
-        else
-            _requestLog = new RequestLogCollection(_requestLog, requestLog);
-    }
-
-    public MetaData.Response getCommittedMetaData()
-    {
-        return _committedMetaData;
-    }
-
-    /**
-     * Get the idle timeout.
-     * <p>This is implemented as a call to {@link EndPoint#getIdleTimeout()}, but may be
-     * overridden by channels that have timeouts different from their connections.
-     *
-     * @return the idle timeout (in milliseconds)
-     */
-    public long getIdleTimeout()
-    {
-        return _endPoint.getIdleTimeout();
-    }
-
-    /**
-     * Set the idle timeout.
-     * <p>This is implemented as a call to {@link EndPoint#setIdleTimeout(long)}, but may be
-     * overridden by channels that have timeouts different from their connections.
-     *
-     * @param timeoutMs the idle timeout in milliseconds
-     */
-    public void setIdleTimeout(long timeoutMs)
-    {
-        _endPoint.setIdleTimeout(timeoutMs);
-    }
-
-    public ByteBufferPool getByteBufferPool()
-    {
-        return _connector.getByteBufferPool();
-    }
-
-    public HttpConfiguration getHttpConfiguration()
-    {
-        return _configuration;
-    }
-
-    public Server getServer()
-    {
-        return _connector.getServer();
-    }
-
-    public Request getRequest()
-    {
-        return _request;
-    }
-
-    public Response getResponse()
-    {
-        return _response;
-    }
-
-    public Connection getConnection()
-    {
-        return _endPoint.getConnection();
-    }
-
-    public EndPoint getEndPoint()
-    {
-        return _endPoint;
-    }
-
-    public InetSocketAddress getLocalAddress()
-    {
-        SocketAddress local = _endPoint.getLocalSocketAddress();
-        if (local instanceof InetSocketAddress)
-            return (InetSocketAddress)local;
-        return null;
-    }
-
-    public InetSocketAddress getRemoteAddress()
-    {
-        SocketAddress remote = _endPoint.getRemoteSocketAddress();
-        if (remote instanceof InetSocketAddress)
-            return (InetSocketAddress)remote;
-        return null;
-    }
-
-    /**
-     * If the associated response has the Expect header set to 100 Continue,
-     * then accessing the input stream indicates that the handler/servlet
-     * is ready for the request body and thus a 100 Continue response is sent.
-     *
-     * @param available estimate of the number of bytes that are available
-     * @throws IOException if the InputStream cannot be created
-     */
-    public void continue100(int available) throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    public void recycle()
-    {
-        _request.recycle();
-        _response.recycle();
-        _committedMetaData = null;
-        _requestLog = _connector == null ? null : _connector.getServer().getRequestLog();
-        _written = 0;
-        _oldIdleTimeout = 0;
-        _transientListeners.clear();
-    }
-
-    @Override
-    public void run()
-    {
-        handle();
-    }
-
-    /**
-     * @return True if the channel is ready to continue handling (ie it is not suspended)
-     */
-    public boolean handle()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("handle {} {} ", _request.getHttpURI(), this);
-
-        HttpChannelState.Action action = _state.handling();
-
-        // Loop here to handle async request redispatches.
-        // The loop is controlled by the call to async.unhandle in the
-        // finally block below.  Unhandle will return false only if an async dispatch has
-        // already happened when unhandle is called.
-        loop:
-        while (!getServer().isStopped())
+        if (onConnectionComplete != null)
         {
             try
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("action {} {}", action, this);
+                onConnectionComplete.accept(failed);
+            }
+            catch (Throwable t)
+            {
+                t.printStackTrace();
+            }
+        }
+    }
 
-                switch (action)
+    private class RunHandle implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            if (!_server.handle(_request, _request._response))
+                throw new IllegalStateException();
+        }
+    }
+
+    private class ChannelRequest extends AttributesMap implements Request
+    {
+        final MetaData.Request _metaData;
+        final String _id;
+        final ChannelResponse _response;
+        Content.Error _error;
+        Consumer<Throwable> _onError;
+        Runnable _onContentAvailable;
+
+        private Request _wrapper = this;
+
+        ChannelRequest(MetaData.Request metaData)
+        {
+            _requests++;
+            _id = Integer.toString(_requests);
+            _metaData = metaData;
+            _response = new ChannelResponse(this);
+        }
+
+        @Override
+        public Response getResponse()
+        {
+            return _response;
+        }
+
+        @Override
+        public void setWrapper(Request wrapper)
+        {
+            if (wrapper.getWrapped() != _wrapper)
+                throw new IllegalStateException("B B B Bad rapping!");
+            _wrapper = wrapper;
+        }
+
+        @Override
+        public Request getWrapper()
+        {
+            return _wrapper;
+        }
+
+        @Override
+        public boolean isComplete()
+        {
+            try (AutoLock ignored = _lock.lock())
+            {
+                return _stream == null || _stream.isComplete();
+            }
+        }
+
+        HttpStream getStream()
+        {
+            try (AutoLock ignored = _lock.lock())
+            {
+                if (_stream == null)
+                    throw new IllegalStateException();
+                return _stream;
+            }
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            if (name.startsWith("org.eclipse.jetty"))
+            {
+                if (Server.class.getName().equals(name))
+                    return getServer();
+                if (HttpChannel.class.getName().equals(name))
+                    return HttpChannel.this;
+                if (HttpConnection.class.getName().equals(name) &&
+                    getConnectionMetaData().getConnection() instanceof HttpConnection)
+                    return getConnectionMetaData().getConnection();
+            }
+            return super.getAttribute(name);
+        }
+
+        @Override
+        public void execute(Runnable task)
+        {
+            _server.getThreadPool().execute(task);
+        }
+
+        @Override
+        public String getId()
+        {
+            return _id;
+        }
+
+        @Override
+        public ConnectionMetaData getConnectionMetaData()
+        {
+            return _connectionMetaData;
+        }
+
+        @Override
+        public HttpChannel getChannel()
+        {
+            return HttpChannel.this;
+        }
+
+        @Override
+        public String getMethod()
+        {
+            return _metaData.getMethod();
+        }
+
+        @Override
+        public HttpURI getHttpURI()
+        {
+            return _metaData.getURI();
+        }
+
+        @Override
+        public String getPath()
+        {
+            return _metaData.getURI().getDecodedPath();
+        }
+
+        @Override
+        public HttpFields getHeaders()
+        {
+            return _metaData.getFields();
+        }
+
+        @Override
+        public long getContentLength()
+        {
+            return _metaData.getContentLength();
+        }
+
+        @Override
+        public Content readContent()
+        {
+            try (AutoLock ignored = _lock.lock())
+            {
+                if (_error != null)
+                    return _error;
+            }
+            return getStream().readContent();
+        }
+
+        @Override
+        public void demandContent(Runnable onContentAvailable)
+        {
+            boolean error;
+            try (AutoLock ignored = _lock.lock())
+            {
+                error = _error != null;
+                if (!error)
                 {
-                    case TERMINATED:
-                        onCompleted();
-                        break loop;
+                    if (_onContentAvailable != null && _onContentAvailable != onContentAvailable)
+                        throw new IllegalArgumentException("Demand pending");
+                    _onContentAvailable = onContentAvailable;
+                }
+            }
 
-                    case WAIT:
-                        // break loop without calling unhandle
-                        break loop;
+            if (error)
+                _serializedInvoker.run(onContentAvailable);
+            else
+                getStream().demandContent();
+        }
 
-                    case DISPATCH:
-                    {
-                        if (!_request.hasMetaData())
-                            throw new IllegalStateException("state=" + _state);
+        @Override
+        public void addErrorListener(Consumer<Throwable> onError)
+        {
+            try (AutoLock ignored = _lock.lock())
+            {
+                if (_error != null)
+                {
+                    _serializedInvoker.run(() -> onError.accept(_error.getCause()));
+                    return;
+                }
 
-                        dispatch(DispatcherType.REQUEST, () ->
-                        {
-                            for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
-                            {
-                                customizer.customize(getConnector(), _configuration, _request);
-                                if (_request.isHandled())
-                                    return;
-                            }
-                            getServer().handle(HttpChannel.this);
-                        });
-
-                        break;
-                    }
-
-                    case ASYNC_DISPATCH:
-                    {
-                        dispatch(DispatcherType.ASYNC, () -> getServer().handleAsync(this));
-                        break;
-                    }
-
-                    case ASYNC_TIMEOUT:
-                        _state.onTimeout();
-                        break;
-
-                    case SEND_ERROR:
+                if (_onError == null)
+                    _onError = onError;
+                else
+                {
+                    Consumer<Throwable> previous = _onError;
+                    _onError = throwable ->
                     {
                         try
                         {
-                            // Get ready to send an error response
-                            _response.resetContent();
-
-                            // the following is needed as you cannot trust the response code and reason
-                            // as those could have been modified after calling sendError
-                            Integer code = (Integer)_request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
-                            if (code == null)
-                                code = HttpStatus.INTERNAL_SERVER_ERROR_500;
-                            _response.setStatus(code);
-
-                            // The handling of the original dispatch failed and we are now going to either generate
-                            // and error response ourselves or dispatch for an error page.  If there is content left over
-                            // from the failed dispatch, then we try to consume it here and if we fail we add a
-                            // Connection:close.  This can't be deferred to COMPLETE as the response will be committed
-                            // by then.
-                            ensureConsumeAllOrNotPersistent();
-
-                            ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
-                            ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
-
-                            // If we can't have a body, then create a minimal error response.
-                            if (HttpStatus.hasNoBody(_response.getStatus()) || errorHandler == null || !errorHandler.errorPageForMethod(_request.getMethod()))
-                            {
-                                sendResponseAndComplete();
-                                break;
-                            }
-
-                            dispatch(DispatcherType.ERROR, () ->
-                            {
-                                errorHandler.handle(null, _request, _request, _response);
-                                _request.setHandled(true);
-                            });
-                        }
-                        catch (Throwable x)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Could not perform ERROR dispatch, aborting", x);
-                            if (_state.isResponseCommitted())
-                                abort(x);
-                            else
-                            {
-                                try
-                                {
-                                    _response.resetContent();
-                                    sendResponseAndComplete();
-                                }
-                                catch (Throwable t)
-                                {
-                                    if (x != t)
-                                        x.addSuppressed(t);
-                                    abort(x);
-                                }
-                            }
+                            previous.accept(throwable);
                         }
                         finally
                         {
-                            // clean up the context that was set in Response.sendError
-                            _request.removeAttribute(ErrorHandler.ERROR_CONTEXT);
+                            onError.accept(throwable);
                         }
-                        break;
-                    }
-
-                    case ASYNC_ERROR:
-                    {
-                        throw _state.getAsyncContextEvent().getThrowable();
-                    }
-
-                    case READ_CALLBACK:
-                    {
-                        ContextHandler handler = _state.getContextHandler();
-                        if (handler != null)
-                            handler.handle(_request, _request.getHttpInput());
-                        else
-                            _request.getHttpInput().run();
-                        break;
-                    }
-
-                    case WRITE_CALLBACK:
-                    {
-                        ContextHandler handler = _state.getContextHandler();
-                        if (handler != null)
-                            handler.handle(_request, _response.getHttpOutput());
-                        else
-                            _response.getHttpOutput().run();
-                        break;
-                    }
-
-                    case COMPLETE:
-                    {
-                        if (!_response.isCommitted())
-                        {
-                            if (!_request.isHandled() && !_response.getHttpOutput().isClosed())
-                            {
-                                // The request was not actually handled
-                                _response.sendError(HttpStatus.NOT_FOUND_404);
-                                break;
-                            }
-
-                            // Indicate Connection:close if we can't consume all.
-                            if (_response.getStatus() >= 200)
-                                ensureConsumeAllOrNotPersistent();
-                        }
-
-                        // RFC 7230, section 3.3.
-                        if (!_request.isHead() &&
-                            _response.getStatus() != HttpStatus.NOT_MODIFIED_304 &&
-                            !_response.isContentComplete(_response.getHttpOutput().getWritten()))
-                        {
-                            if (sendErrorOrAbort("Insufficient content written"))
-                                break;
-                        }
-
-                        // If send error is called we need to break.
-                        if (checkAndPrepareUpgrade())
-                            break;
-                        
-                        // Set a close callback on the HttpOutput to make it an async callback
-                        _response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
-
-                        break;
-                    }
-
-                    default:
-                        throw new IllegalStateException(this.toString());
+                    };
                 }
             }
-            catch (Throwable failure)
-            {
-                if ("org.eclipse.jetty.continuation.ContinuationThrowable".equals(failure.getClass().getName()))
-                    LOG.trace("IGNORED", failure);
-                else
-                    handleException(failure);
-            }
-
-            action = _state.unhandle();
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("!handle {} {}", action, this);
-
-        boolean suspended = action == Action.WAIT;
-        return !suspended;
-    }
-
-    public void ensureConsumeAllOrNotPersistent()
-    {
-        switch (_request.getHttpVersion())
+        @Override
+        public void addCompletionListener(Callback onComplete)
         {
-            case HTTP_1_0:
-                if (_request.getHttpInput().consumeAll())
-                    return;
-
-                // Remove any keep-alive value in Connection headers
-                _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
+            addStreamWrapper(s -> new HttpStream.Wrapper(s)
+            {
+                @Override
+                public void succeeded()
                 {
-                    if (fields == null || fields.isEmpty())
-                        return null;
-                    String v = fields.stream()
-                        .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
-                        .collect(Collectors.joining(", "));
-                    if (StringUtil.isEmpty(v))
-                        return null;
-
-                    return new HttpField(HttpHeader.CONNECTION, v);
-                });
-                break;
-
-            case HTTP_1_1:
-                if (_request.getHttpInput().consumeAll())
-                    return;
-
-                // Add close value to Connection headers
-                _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
-                {
-                    if (fields == null || fields.isEmpty())
-                        return HttpConnection.CONNECTION_CLOSE;
-
-                    if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
+                    try
                     {
-                        if (fields.size() == 1)
+                        onComplete.succeeded();
+                    }
+                    finally
+                    {
+                        super.succeeded();
+                    }
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    try
+                    {
+                        onComplete.failed(x);
+                    }
+                    finally
+                    {
+                        super.failed(x);
+                    }
+                }
+            });
+        }
+
+        @Override
+        public void succeeded()
+        {
+            // Called when the request/response cycle is completing successfully.
+            HttpStream stream;
+            MetaData.Response commit;
+            long contentLength;
+            long written;
+            try (AutoLock ignored = _lock.lock())
+            {
+                // We are being tough on handler implementations and expect them to not have pending operations
+                // when calling succeeded or failed
+                if (_onContentAvailable != null)
+                    throw new IllegalStateException("onContentAvailable Pending");
+                if (_response._onWriteComplete != null)
+                    throw new IllegalStateException("write pending");
+                if (_error != null)
+                    throw new IllegalStateException("error " + _error);
+
+                if (_stream == null | _request != this)
+                    return;
+                stream = _stream;
+                _stream = null;
+                _request = null;
+
+                commit = _response.commitResponse(true);
+                contentLength = _response._contentLength;
+                written = _response._written;
+            }
+
+            // ensure the request is consumed
+            Throwable unconsumed = stream.consumeAll();
+            if (LOG.isDebugEnabled())
+                LOG.debug("consumeAll {} ", this, unconsumed);
+            if (unconsumed != null && getConnectionMetaData().isPersistent())
+                stream.failed(unconsumed);
+            else if (contentLength >= 0L && contentLength != written)
+                stream.failed(new IOException(String.format("contentLength %d != %d", contentLength, written)));
+            else
+                stream.send(commit, true, stream);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            // Called when the request/response cycle is completing with a failure.
+            // This is equivalent to the previous HttpTransport.abort(Throwable), so we don't need to do much clean up
+            // as channel will be shutdown and thrown away.
+            HttpStream stream;
+            MetaData.Response commit = null;
+            ByteBuffer content = BufferUtil.EMPTY_BUFFER;
+            try (AutoLock ignored = _lock.lock())
+            {
+                if (_stream == null || _request != this)
+                    return;
+
+                // Can we write out an error response
+                if (!_stream.isCommitted())
+                {
+                    int status = HttpStatus.INTERNAL_SERVER_ERROR_500;
+                    String reason = x.toString();
+                    if (x instanceof BadMessageException)
+                    {
+                        BadMessageException bme = (BadMessageException)x;
+                        status = bme.getCode();
+                        reason = bme.getReason();
+                    }
+                    if (reason == null)
+                        reason = HttpStatus.getMessage(status);
+
+                    _response._headers.recycle();
+                    _response._status = status;
+
+                    if (!HttpStatus.hasNoBody(_response._status))
+                    {
+                        _response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_8859_1.asString());
+                        content = BufferUtil.toBuffer("<h1>Bad Message " + _response._status + "</h1>\n<pre>reason: " + reason + "</pre>");
+                        _response._written = content.remaining();
+                        commit = _response.commitResponse(true);
+                    }
+                }
+                stream = _stream;
+                _stream = null;
+                _request = null;
+
+                // Cancel any callbacks
+                _onError = null;
+                _response._onWriteComplete = null;
+                _onContentAvailable = null;
+            }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("failed {} {}", stream, x);
+
+            // committed, but the stream is still able to send a response
+            if (commit == null)
+                stream.failed(x);
+            else
+            {
+                stream.send(commit,
+                    true,
+                    Callback.from(
+                        () -> stream.failed(x),
+                        t ->
                         {
-                            HttpField f = fields.get(0);
-                            if (HttpConnection.CONNECTION_CLOSE.equals(f))
-                                return f;
+                            if (t != x)
+                                x.addSuppressed(t);
+                            stream.failed(x);
                         }
-
-                        return new HttpField(HttpHeader.CONNECTION, fields.stream()
-                            .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
-                            .collect(Collectors.joining(", ")));
-                    }
-
-                    return new HttpField(HttpHeader.CONNECTION,
-                        Stream.concat(fields.stream()
-                        .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))),
-                        Stream.of(HttpHeaderValue.CLOSE.asString()))
-                        .collect(Collectors.joining(", ")));
-                });
-                break;
-
-            default:
-                break;
-        }
-    }
-
-    /**
-     * @param message the error message.
-     * @return true if we have sent an error, false if we have aborted.
-     */
-    public boolean sendErrorOrAbort(String message)
-    {
-        try
-        {
-            if (isCommitted())
-            {
-                abort(new IOException(message));
-                return false;
+                    ), content);
             }
-
-            _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
-            return true;
-        }
-        catch (Throwable x)
-        {
-            LOG.trace("IGNORED", x);
-            abort(x);
-        }
-        return false;
-    }
-
-    private void dispatch(DispatcherType type, Dispatchable dispatchable) throws IOException, ServletException
-    {
-        try
-        {
-            _request.setHandled(false);
-            _response.reopen();
-            _request.setDispatcherType(type);
-            _combinedListener.onBeforeDispatch(_request);
-            dispatchable.dispatch();
-        }
-        catch (Throwable x)
-        {
-            _combinedListener.onDispatchFailure(_request, x);
-            throw x;
-        }
-        finally
-        {
-            _combinedListener.onAfterDispatch(_request);
-            _request.setDispatcherType(null);
-        }
-    }
-
-    /**
-     * <p>Sends an error 500, performing a special logic to detect whether the request is suspended,
-     * to avoid concurrent writes from the application.</p>
-     * <p>It may happen that the application suspends, and then throws an exception, while an application
-     * spawned thread writes the response content; in such case, we attempt to commit the error directly
-     * bypassing the {@link ErrorHandler} mechanisms and the response OutputStream.</p>
-     *
-     * @param failure the Throwable that caused the problem
-     */
-    protected void handleException(Throwable failure)
-    {
-        // Unwrap wrapping Jetty and Servlet exceptions.
-        Throwable quiet = unwrap(failure, QuietException.class);
-        Throwable noStack = unwrap(failure, BadMessageException.class, IOException.class, TimeoutException.class);
-
-        if (quiet != null || !getServer().isRunning())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug(_request.getRequestURI(), failure);
-        }
-        else if (noStack != null)
-        {
-            // No stack trace unless there is debug turned on
-            if (LOG.isDebugEnabled())
-                LOG.warn("handleException {}", _request.getRequestURI(), failure);
-            else
-                LOG.warn("handleException {} {}", _request.getRequestURI(), noStack.toString());
-        }
-        else
-        {
-            LOG.warn(_request.getRequestURI(), failure);
-        }
-
-        if (isCommitted())
-        {
-            abort(failure);
-        }
-        else
-        {
-            try
-            {
-                _state.onError(failure);
-            }
-            catch (IllegalStateException e)
-            {
-                abort(failure);
-            }
-        }
-    }
-
-    /**
-     * Unwrap failure causes to find target class
-     *
-     * @param failure The throwable to have its causes unwrapped
-     * @param targets Exception classes that we should not unwrap
-     * @return A target throwable or null
-     */
-    protected Throwable unwrap(Throwable failure, Class<?>... targets)
-    {
-        while (failure != null)
-        {
-            for (Class<?> x : targets)
-            {
-                if (x.isInstance(failure))
-                    return failure;
-            }
-            failure = failure.getCause();
-        }
-        return null;
-    }
-
-    public void sendResponseAndComplete()
-    {
-        try
-        {
-            _request.setHandled(true);
-            _state.completing();
-            sendResponse(null, _response.getHttpOutput().getBuffer(), true, Callback.from(() -> _state.completed(null), _state::completed));
-        }
-        catch (Throwable x)
-        {
-            abort(x);
-        }
-    }
-
-    public boolean isExpecting100Continue()
-    {
-        return false;
-    }
-
-    public boolean isExpecting102Processing()
-    {
-        return false;
-    }
-
-    @Override
-    public String toString()
-    {
-        long timeStamp = _request.getTimeStamp();
-        return String.format("%s@%x{s=%s,r=%s,c=%b/%b,a=%s,uri=%s,age=%d}",
-            getClass().getSimpleName(),
-            hashCode(),
-            _state,
-            _requests,
-            isRequestCompleted(),
-            isResponseCompleted(),
-            _state.getState(),
-            _request.getHttpURI(),
-            timeStamp == 0 ? 0 : System.currentTimeMillis() - timeStamp);
-    }
-
-    public void onRequest(MetaData.Request request)
-    {
-        _requests.incrementAndGet();
-        _request.setTimeStamp(System.currentTimeMillis());
-        HttpFields.Mutable fields = _response.getHttpFields();
-        if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
-            fields.put(_connector.getServer().getDateField());
-
-        long idleTO = _configuration.getIdleTimeout();
-        _oldIdleTimeout = getIdleTimeout();
-        if (idleTO >= 0 && _oldIdleTimeout != idleTO)
-            setIdleTimeout(idleTO);
-
-        _request.setMetaData(request);
-
-        _combinedListener.onRequestBegin(_request);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("REQUEST for {} on {}{}{} {} {}{}{}", request.getURIString(), this, System.lineSeparator(),
-                request.getMethod(), request.getURIString(), request.getHttpVersion(), System.lineSeparator(),
-                request.getFields());
-    }
-
-    public boolean onContent(HttpInput.Content content)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onContent {} {}", this, content);
-        _combinedListener.onRequestContent(_request, content.getByteBuffer());
-        return false;
-    }
-
-    public boolean onContentComplete()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onContentComplete {}", this);
-        _combinedListener.onRequestContentEnd(_request);
-        return false;
-    }
-
-    public void onTrailers(HttpFields trailers)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onTrailers {} {}", this, trailers);
-        _request.setTrailerHttpFields(trailers);
-        _combinedListener.onRequestTrailers(_request);
-    }
-
-    public boolean onRequestComplete()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onRequestComplete {}", this);
-        boolean result = eof();
-        _combinedListener.onRequestEnd(_request);
-        return result;
-    }
-
-    /**
-     * <p>Checks whether the processing of the request resulted in an upgrade,
-     * and if so performs upgrade preparation steps <em>before</em> the upgrade
-     * response is sent back to the client.</p>
-     * <p>This avoids a race where the server is unprepared if the client sends
-     * data immediately after having received the upgrade response.</p>
-     * @return true if the channel is not complete and more processing is required,
-     * typically because sendError has been called.
-     */
-    protected boolean checkAndPrepareUpgrade()
-    {
-        return false;
-    }
-
-    public void onCompleted()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("onCompleted for {} written={}", getRequest().getRequestURI(), getBytesWritten());
-
-        if (_requestLog != null)
-            _requestLog.log(_request, _response);
-
-        long idleTO = _configuration.getIdleTimeout();
-        if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
-            setIdleTimeout(_oldIdleTimeout);
-
-        _request.onCompleted();
-        _combinedListener.onComplete(_request);
-        _transport.onCompleted();
-    }
-
-    public void onBadMessage(BadMessageException failure)
-    {
-        int status = failure.getCode();
-        String reason = failure.getReason();
-        if (status < HttpStatus.BAD_REQUEST_400 || status > 599)
-            failure = new BadMessageException(HttpStatus.BAD_REQUEST_400, reason, failure);
-
-        _combinedListener.onRequestFailure(_request, failure);
-
-        Action action;
-        try
-        {
-            action = _state.handling();
-        }
-        catch (Throwable e)
-        {
-            // The bad message cannot be handled in the current state,
-            // so rethrow, hopefully somebody will be able to handle.
-            abort(e);
-            throw failure;
-        }
-
-        try
-        {
-            if (action == Action.DISPATCH)
-            {
-                ByteBuffer content = null;
-                HttpFields.Mutable fields = HttpFields.build();
-
-                ErrorHandler handler = getServer().getBean(ErrorHandler.class);
-                if (handler != null)
-                    content = handler.badMessageError(status, reason, fields);
-
-                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1, status, null, fields, BufferUtil.length(content)), content, true);
-            }
-        }
-        catch (IOException e)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to send bad message response", e);
-        }
-        finally
-        {
-            try
-            {
-                onCompleted();
-            }
-            catch (Throwable e)
-            {
-                LOG.debug("Unable to complete bad message", e);
-                abort(e);
-            }
-        }
-    }
-
-    protected boolean sendResponse(MetaData.Response response, ByteBuffer content, boolean complete, final Callback callback)
-    {
-        boolean committing = _state.commitResponse();
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("sendResponse info={} content={} complete={} committing={} callback={}",
-                response,
-                BufferUtil.toDetailString(content),
-                complete,
-                committing,
-                callback);
-
-        if (committing)
-        {
-            // We need an info to commit
-            if (response == null)
-                response = _response.newResponseMetaData();
-            commit(response);
-            _combinedListener.onResponseBegin(_request);
-            _request.onResponseCommit();
-
-            // wrap callback to process 100 responses
-            final int status = response.getStatus();
-            final Callback committed = (status < HttpStatus.OK_200 && status >= HttpStatus.CONTINUE_100)
-                ? new Send100Callback(callback)
-                : new SendCallback(callback, content, true, complete);
-
-            // committing write
-            _transport.send(_request.getMetaData(), response, content, complete, committed);
-        }
-        else if (response == null)
-        {
-            // This is a normal write
-            _transport.send(_request.getMetaData(), null, content, complete, new SendCallback(callback, content, false, complete));
-        }
-        else
-        {
-            callback.failed(new IllegalStateException("committed"));
-        }
-        return committing;
-    }
-
-    public boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException
-    {
-        try (Blocker blocker = _response.getHttpOutput().acquireWriteBlockingCallback())
-        {
-            boolean committing = sendResponse(info, content, complete, blocker);
-            blocker.block();
-            return committing;
-        }
-        catch (Throwable failure)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to send response", failure);
-            abort(failure);
-            throw failure;
-        }
-    }
-
-    protected void commit(MetaData.Response info)
-    {
-        _committedMetaData = info;
-        if (LOG.isDebugEnabled())
-            LOG.debug("COMMIT for {} on {}{}{} {} {}{}{}", getRequest().getRequestURI(), this, System.lineSeparator(),
-                info.getStatus(), info.getReason(), info.getHttpVersion(), System.lineSeparator(),
-                info.getFields());
-    }
-
-    public boolean isCommitted()
-    {
-        return _state.isResponseCommitted();
-    }
-
-    /**
-     * @return True if the request lifecycle is completed
-     */
-    public boolean isRequestCompleted()
-    {
-        return _state.isCompleted();
-    }
-
-    /**
-     * @return True if the response is completely written.
-     */
-    public boolean isResponseCompleted()
-    {
-        return _state.isResponseCompleted();
-    }
-
-    public boolean isPersistent()
-    {
-        return _endPoint.isOpen();
-    }
-
-    /**
-     * <p>Non-Blocking write, committing the response if needed.</p>
-     * Called as last link in HttpOutput.Filter chain
-     *
-     * @param content the content buffer to write
-     * @param complete whether the content is complete for the response
-     * @param callback Callback when complete or failed
-     */
-    @Override
-    public void write(ByteBuffer content, boolean complete, Callback callback)
-    {
-        sendResponse(null, content, complete, callback);
-    }
-
-    @Override
-    public void resetBuffer()
-    {
-        if (isCommitted())
-            throw new IllegalStateException("Committed");
-    }
-
-    @Override
-    public HttpOutput.Interceptor getNextInterceptor()
-    {
-        return null;
-    }
-
-    protected void execute(Runnable task)
-    {
-        _executor.execute(task);
-    }
-
-    public Scheduler getScheduler()
-    {
-        return _connector.getScheduler();
-    }
-
-    public boolean isUseOutputDirectByteBuffers()
-    {
-        return getHttpConfiguration().isUseOutputDirectByteBuffers();
-    }
-
-    /**
-     * If a write or similar operation to this channel fails,
-     * then this method should be called.
-     * <p>
-     * The standard implementation calls {@link HttpTransport#abort(Throwable)}.
-     *
-     * @param failure the failure that caused the abort.
-     */
-    public void abort(Throwable failure)
-    {
-        if (_state.abortResponse())
-        {
-            _combinedListener.onResponseFailure(_request, failure);
-            _transport.abort(failure);
-        }
-    }
-
-    public boolean isTunnellingSupported()
-    {
-        return false;
-    }
-
-    public EndPoint getTunnellingEndPoint()
-    {
-        throw new UnsupportedOperationException("Tunnelling not supported");
-    }
-
-    private void notifyEvent1(Function<Listener, Consumer<Request>> function, Request request)
-    {
-        for (Listener listener : _transientListeners)
-        {
-            try
-            {
-                function.apply(listener).accept(request);
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Failure invoking listener {}", listener, x);
-            }
-        }
-    }
-
-    private void notifyEvent2(Function<Listener, BiConsumer<Request, ByteBuffer>> function, Request request, ByteBuffer content)
-    {
-        for (Listener listener : _transientListeners)
-        {
-            ByteBuffer view = content.slice();
-            try
-            {
-                function.apply(listener).accept(request, view);
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Failure invoking listener {}", listener, x);
-            }
-        }
-    }
-
-    private void notifyEvent2(Function<Listener, BiConsumer<Request, Throwable>> function, Request request, Throwable failure)
-    {
-        for (Listener listener : _transientListeners)
-        {
-            try
-            {
-                function.apply(listener).accept(request, failure);
-            }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Failure invoking listener {}", listener, x);
-            }
-        }
-    }
-
-    interface Dispatchable
-    {
-        void dispatch() throws IOException, ServletException;
-    }
-
-    /**
-     * <p>Listener for {@link HttpChannel} events.</p>
-     * <p>HttpChannel will emit events for the various phases it goes through while
-     * processing an HTTP request and response.</p>
-     * <p>Implementations of this interface may listen to those events to track
-     * timing and/or other values such as request URI, etc.</p>
-     * <p>The events parameters, especially the {@link Request} object, may be
-     * in a transient state depending on the event, and not all properties/features
-     * of the parameters may be available inside a listener method.</p>
-     * <p>It is recommended that the event parameters are <em>not</em> acted upon
-     * in the listener methods, or undefined behavior may result. For example, it
-     * would be a bad idea to try to read some content from the
-     * {@link jakarta.servlet.ServletInputStream} in listener methods. On the other
-     * hand, it is legit to store request attributes in one listener method that
-     * may be possibly retrieved in another listener method in a later event.</p>
-     * <p>Listener methods are invoked synchronously from the thread that is
-     * performing the request processing, and they should not call blocking code
-     * (otherwise the request processing will be blocked as well).</p>
-     * <p>Listener instances that are set as a bean on the {@link Connector} are
-     * efficiently added to {@link HttpChannel}.  If additional listeners are added
-     * using the deprecated {@link HttpChannel#addListener(Listener)}</p> method,
-     * then an instance of {@link TransientListeners} must be added to the connector
-     * in order for them to be invoked.
-     */
-    public interface Listener extends EventListener
-    {
-        /**
-         * Invoked just after the HTTP request line and headers have been parsed.
-         *
-         * @param request the request object
-         */
-        default void onRequestBegin(Request request)
-        {
-        }
-
-        /**
-         * Invoked just before calling the application.
-         *
-         * @param request the request object
-         */
-        default void onBeforeDispatch(Request request)
-        {
-        }
-
-        /**
-         * Invoked when the application threw an exception.
-         *
-         * @param request the request object
-         * @param failure the exception thrown by the application
-         */
-        default void onDispatchFailure(Request request, Throwable failure)
-        {
-        }
-
-        /**
-         * Invoked just after the application returns from the first invocation.
-         *
-         * @param request the request object
-         */
-        default void onAfterDispatch(Request request)
-        {
-        }
-
-        /**
-         * Invoked every time a request content chunk has been parsed, just before
-         * making it available to the application.
-         *
-         * @param request the request object
-         * @param content a {@link ByteBuffer#slice() slice} of the request content chunk
-         */
-        default void onRequestContent(Request request, ByteBuffer content)
-        {
-        }
-
-        /**
-         * Invoked when the end of the request content is detected.
-         *
-         * @param request the request object
-         */
-        default void onRequestContentEnd(Request request)
-        {
-        }
-
-        /**
-         * Invoked when the request trailers have been parsed.
-         *
-         * @param request the request object
-         */
-        default void onRequestTrailers(Request request)
-        {
-        }
-
-        /**
-         * Invoked when the request has been fully parsed.
-         *
-         * @param request the request object
-         */
-        default void onRequestEnd(Request request)
-        {
-        }
-
-        /**
-         * Invoked when the request processing failed.
-         *
-         * @param request the request object
-         * @param failure the request failure
-         */
-        default void onRequestFailure(Request request, Throwable failure)
-        {
-        }
-
-        /**
-         * Invoked just before the response line is written to the network.
-         *
-         * @param request the request object
-         */
-        default void onResponseBegin(Request request)
-        {
-        }
-
-        /**
-         * Invoked just after the response is committed (that is, the response
-         * line, headers and possibly some content have been written to the
-         * network).
-         *
-         * @param request the request object
-         */
-        default void onResponseCommit(Request request)
-        {
-        }
-
-        /**
-         * Invoked after a response content chunk has been written to the network.
-         *
-         * @param request the request object
-         * @param content a {@link ByteBuffer#slice() slice} of the response content chunk
-         */
-        default void onResponseContent(Request request, ByteBuffer content)
-        {
-        }
-
-        /**
-         * Invoked when the response has been fully written.
-         *
-         * @param request the request object
-         */
-        default void onResponseEnd(Request request)
-        {
-        }
-
-        /**
-         * Invoked when the response processing failed.
-         *
-         * @param request the request object
-         * @param failure the response failure
-         */
-        default void onResponseFailure(Request request, Throwable failure)
-        {
-        }
-
-        /**
-         * Invoked when the request <em>and</em> response processing are complete.
-         *
-         * @param request the request object
-         */
-        default void onComplete(Request request)
-        {
-        }
-    }
-
-    private class SendCallback extends Callback.Nested
-    {
-        private final ByteBuffer _content;
-        private final int _length;
-        private final boolean _commit;
-        private final boolean _complete;
-
-        private SendCallback(Callback callback, ByteBuffer content, boolean commit, boolean complete)
-        {
-            super(callback);
-            _content = content == null ? BufferUtil.EMPTY_BUFFER : content.slice();
-            _length = _content.remaining();
-            _commit = commit;
-            _complete = complete;
         }
 
         @Override
-        public void succeeded()
+        public InvocationType getInvocationType()
         {
-            _written += _length;
-            if (_commit)
-                _combinedListener.onResponseCommit(_request);
-            if (_length > 0)
-                _combinedListener.onResponseContent(_request, _content);
-            if (_complete && _state.completeResponse())
-                _combinedListener.onResponseEnd(_request);
-            super.succeeded();
+            return getStream().getInvocationType();
         }
 
         @Override
-        public void failed(final Throwable x)
+        public String toString()
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Commit failed", x);
+            return String.format("%s@%x %s %s", getMethod(), hashCode(), getHttpURI(), _metaData.getHttpVersion());
+        }
+    }
 
-            if (x instanceof BadMessageException)
+    private class ChannelResponse implements Response, Callback
+    {
+        private final ChannelRequest _request;
+        private final ResponseHttpFields _headers = new ResponseHttpFields();
+        private int _status;
+        private ResponseHttpFields _trailers;
+        private Callback _onWriteComplete;
+        private long _written;
+        private long _contentLength = -1L;
+        private Response _wrapper = this;
+
+        private ChannelResponse(ChannelRequest request)
+        {
+            _request = request;
+        }
+
+        @Override
+        public Request getRequest()
+        {
+            return _request.getWrapper();
+        }
+
+        @Override
+        public Response getWrapper()
+        {
+            return _wrapper;
+        }
+
+        @Override
+        public void setWrapper(Response wrapper)
+        {
+            if (wrapper.getWrapped() != _wrapper)
+                throw new IllegalStateException("Bbb b bad rapping!");
+            _wrapper = wrapper;
+        }
+
+        @Override
+        public int getStatus()
+        {
+            return _status;
+        }
+
+        @Override
+        public void setStatus(int code)
+        {
+            if (!isCommitted())
+                _status = code;
+        }
+
+        @Override
+        public HttpFields.Mutable getHeaders()
+        {
+            return _headers;
+        }
+
+        @Override
+        public HttpFields.Mutable getTrailers()
+        {
+            try (AutoLock ignored = _lock.lock())
             {
-                _transport.send(_request.getMetaData(), HttpGenerator.RESPONSE_500_INFO, null, true, new Callback.Nested(this)
+                // TODO check if trailers allowed in version and transport?
+                if (_trailers == null)
+                    _trailers = new ResponseHttpFields();
+                return _trailers;
+            }
+        }
+
+        private HttpFields takeTrailers()
+        {
+            try (AutoLock ignored = _lock.lock())
+            {
+                ResponseHttpFields trailers = _trailers;
+                if (trailers != null)
+                    trailers.toReadOnly();
+                return trailers;
+            }
+        }
+
+        @Override
+        public void write(boolean last, Callback callback, ByteBuffer... content)
+        {
+            MetaData.Response commit;
+            long contentLength;
+            long written;
+            try (AutoLock ignored = _lock.lock())
+            {
+                if (_onWriteComplete != null)
+                    throw new IllegalStateException("Write pending");
+
+                if (_request._error != null)
                 {
-                    @Override
-                    public void succeeded()
-                    {
-                        _response.getHttpOutput().completed(null);
-                        super.failed(x);
-                    }
+                    _serializedInvoker.run(() -> callback.failed(_request._error.getCause()));
+                    return;
+                }
 
-                    @Override
-                    public void failed(Throwable th)
-                    {
-                        abort(x);
-                        super.failed(x);
-                    }
-                });
+                _onWriteComplete = callback;
+                for (ByteBuffer b : content)
+                    _written += b.remaining();
+
+                commit = commitResponse(last);
+                contentLength = _contentLength;
+                written = _written;
             }
-            else
+
+            // If the content lengths were not compatible with what was written, then we need to abort
+            if (contentLength >= 0)
             {
-                abort(x);
-                super.failed(x);
+                if (contentLength < written)
+                {
+                    fail(callback, "content-length %d < %d", contentLength, written);
+                    return;
+                }
+                if (last && contentLength > written)
+                {
+                    fail(callback, "content-length %d > %d", contentLength, written);
+                    return;
+                }
             }
-        }
-    }
 
-    private class Send100Callback extends SendCallback
-    {
-        private Send100Callback(Callback callback)
-        {
-            super(callback, null, false, false);
+            // Do the write
+            _request.getStream().send(commit, last, this, content);
         }
 
         @Override
         public void succeeded()
         {
-            if (_state.partialResponse())
-                super.succeeded();
-            else
-                super.failed(new IllegalStateException());
-        }
-    }
-
-    /**
-     * A Listener instance that can be added as a bean to {@link AbstractConnector} so that
-     * the listeners obtained from HttpChannel{@link #getTransientListeners()}
-     */
-    @Deprecated
-    public static class TransientListeners implements Listener
-    {
-        @Override
-        public void onRequestBegin(Request request)
-        {
-            request.getHttpChannel().notifyEvent1(listener -> listener::onRequestBegin, request);
+            // Called when an individual write succeeds
+            Callback callback;
+            try (AutoLock ignored = _lock.lock())
+            {
+                callback = _onWriteComplete;
+                _onWriteComplete = null;
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("write succeeded {}", callback);
+            if (callback != null)
+                callback.succeeded();
         }
 
         @Override
-        public void onBeforeDispatch(Request request)
+        public void failed(Throwable x)
         {
-            request.getHttpChannel().notifyEvent1(listener -> listener::onBeforeDispatch, request);
+            // Called when an individual write fails
+            Callback callback;
+            try (AutoLock ignored = _lock.lock())
+            {
+                callback = _onWriteComplete;
+                _onWriteComplete = null;
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("write failed {}", callback, x);
+            if (callback != null)
+                callback.failed(x);
         }
 
         @Override
-        public void onDispatchFailure(Request request, Throwable failure)
+        public InvocationType getInvocationType()
         {
-            request.getHttpChannel().notifyEvent2(listener -> listener::onDispatchFailure, request, failure);
+            try (AutoLock ignored = _lock.lock())
+            {
+                return Invocable.getInvocationType(_onWriteComplete);
+            }
+        }
+
+        private void fail(Callback callback, String reason, Object... args)
+        {
+            String message = String.format(reason, args);
+            if (LOG.isDebugEnabled())
+                LOG.debug("fail {} {}", callback, message);
+            IOException failure = new IOException(message);
+            if (callback != null)
+                callback.failed(failure);
+            if (!getRequest().isComplete())
+                getRequest().failed(failure);
         }
 
         @Override
-        public void onAfterDispatch(Request request)
+        public void push(MetaData.Request request)
         {
-            request.getHttpChannel().notifyEvent1(listener -> listener::onAfterDispatch, request);
+            _request.getStream().push(request);
         }
 
         @Override
-        public void onRequestContent(Request request, ByteBuffer content)
+        public boolean isCommitted()
         {
-            request.getHttpChannel().notifyEvent2(listener -> listener::onRequestContent, request, content);
+            try (AutoLock ignored = _lock.lock())
+            {
+                return _headers.isReadOnly();
+            }
         }
 
         @Override
-        public void onRequestContentEnd(Request request)
+        public void reset()
         {
-            request.getHttpChannel().notifyEvent1(listener -> listener::onRequestContentEnd, request);
+            try (AutoLock ignored = _lock.lock())
+            {
+                if (_headers.isReadOnly())
+                    throw new IllegalStateException("Committed");
+
+                _headers.clear(); // TODO re-add or don't delete default fields
+                if (_trailers != null)
+                    _trailers.clear();
+                _status = 0;
+            }
         }
 
-        @Override
-        public void onRequestTrailers(Request request)
+        private MetaData.Response commitResponse(boolean last)
         {
-            request.getHttpChannel().notifyEvent1(listener -> listener::onRequestTrailers, request);
-        }
+            if (!_lock.isHeldByCurrentThread())
+                throw new IllegalStateException();
 
-        @Override
-        public void onRequestEnd(Request request)
-        {
-            request.getHttpChannel().notifyEvent1(listener -> listener::onRequestEnd, request);
-        }
+            // Are we already committed?
+            if (_headers.isReadOnly())
+                return null;
 
-        @Override
-        public void onRequestFailure(Request request, Throwable failure)
-        {
-            request.getHttpChannel().notifyEvent2(listener -> listener::onRequestFailure, request, failure);
-        }
+            // Assume 200 unless told otherwise
+            if (_status == 0)
+                _status = HttpStatus.OK_200;
 
-        @Override
-        public void onResponseBegin(Request request)
-        {
-            request.getHttpChannel().notifyEvent1(listener -> listener::onResponseBegin, request);
-        }
+            // Can we set the content length?
+            _contentLength = _headers.getLongField(HttpHeader.CONTENT_LENGTH);
+            if (last && _contentLength < 0L)
+            {
+                _contentLength = _written;
+                if (_contentLength == 0)
+                    _headers.put(CONTENT_LENGTH_0);
+                else
+                    _headers.putLongField(HttpHeader.CONTENT_LENGTH, _contentLength);
+            }
 
-        @Override
-        public void onResponseCommit(Request request)
-        {
-            request.getHttpChannel().notifyEvent1(listener -> listener::onResponseCommit, request);
-        }
+            // Add the date header
+            if (_configuration.getSendDateHeader() && !_headers.contains(HttpHeader.DATE))
+                _headers.put(getServer().getDateField());
 
-        @Override
-        public void onResponseContent(Request request, ByteBuffer content)
-        {
-            request.getHttpChannel().notifyEvent2(listener -> listener::onResponseContent, request, content);
-        }
+            // Freeze the headers and mark this response as committed
+            _headers.toReadOnly();
 
-        @Override
-        public void onResponseEnd(Request request)
-        {
-            request.getHttpChannel().notifyEvent1(listener -> listener::onResponseEnd, request);
-        }
+            // Provide trailers if they exist
+            Supplier<HttpFields> trailers = _trailers == null ? null : this::takeTrailers;
 
-        @Override
-        public void onResponseFailure(Request request, Throwable failure)
-        {
-            request.getHttpChannel().notifyEvent2(listener -> listener::onResponseFailure, request, failure);
-        }
-
-        @Override
-        public void onComplete(Request request)
-        {
-            request.getHttpChannel().notifyEvent1(listener -> listener::onComplete, request);
+            return new MetaData.Response(
+                getMetaConnection().getVersion(),
+                _status,
+                null,
+                _headers,
+                -1,
+                trailers);
         }
     }
 }
