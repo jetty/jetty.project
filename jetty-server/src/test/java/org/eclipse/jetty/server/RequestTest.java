@@ -66,6 +66,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -1002,7 +1003,7 @@ public class RequestTest
         assertEquals("[::1]", results.get(i++));
         assertEquals("8888", results.get(i++));
         assertEquals("0.0.0.0", results.get(i++));
-        assertEquals("-1", results.get(i)); // local connector has no local port
+        assertEquals(String.valueOf(HostPort.NO_PORT), results.get(i)); // local connector has no local port
 
         _normalizeAddress = false;
         results.clear();
@@ -1019,7 +1020,7 @@ public class RequestTest
         assertEquals("[::1]", results.get(i++));
         assertEquals("8888", results.get(i++));
         assertEquals("0.0.0.0", results.get(i++));
-        assertEquals("-1", results.get(i)); // local connector has no local port
+        assertEquals(String.valueOf(HostPort.NO_PORT), results.get(i)); // local connector has no local port
     }
 
     @Test

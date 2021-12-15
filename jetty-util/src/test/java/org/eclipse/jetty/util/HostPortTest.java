@@ -51,9 +51,9 @@ public class HostPortTest
             Arguments.of("    host   :   777", "host", 777),
             Arguments.of("    host   :777   ", "host", 777),
             Arguments.of("    host   :   777   ", "host", 777),
+            Arguments.of("host:   ", "host", null),
             // scheme based normalization https://datatracker.ietf.org/doc/html/rfc3986#section-6.2.3
             Arguments.of("host:", "host", null),
-            Arguments.of("host:   ", "host", null),
             Arguments.of("127.0.0.1:", "127.0.0.1", null),
             // Localhost tests
             Arguments.of("localhost:80", "localhost", 80),

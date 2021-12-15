@@ -645,7 +645,7 @@ public class ForwardedRequestCustomizer implements Customizer
     private static class MutableHostPort
     {
         public static final int UNSET = HostPort.NO_PORT;
-        public static final int IMPLIED = -2;
+        public static final int IMPLIED = HostPort.NO_PORT - 1;
 
         String _host;
         Source _hostSource = Source.UNSET;

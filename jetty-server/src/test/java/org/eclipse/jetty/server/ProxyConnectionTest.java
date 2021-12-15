@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.toolchain.test.Net;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.hamcrest.Matchers;
@@ -180,7 +181,7 @@ public class ProxyConnectionTest
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInfo=/path"));
-        assertThat(response, Matchers.containsString("local=0.0.0.0:-1")); // LocalConnector has no local host or local port
+        assertThat(response, Matchers.containsString("local=0.0.0.0:" + HostPort.NO_PORT)); // LocalConnector has no local name or local port
         assertThat(response, Matchers.containsString("remote=0.0.0.0:0"));
     }
 
