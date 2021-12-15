@@ -21,6 +21,9 @@ package org.eclipse.jetty.server;
 import java.util.Objects;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpVersion;
+
 /**
  * Customizes requests that lack the {@code Host} header (for example, HTTP 1.0 requests).
  * <p>
@@ -38,15 +41,14 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class HostHeaderCustomizer implements HttpConfiguration.Customizer
 {
-    private final String serverName;
-    private final int serverPort;
+    private final String hostValue;
 
     /**
      * @param serverName the {@code serverName} to set on the request (the {@code serverPort} will not be set)
      */
     public HostHeaderCustomizer(String serverName)
     {
-        this(serverName, 0);
+        this(serverName, -1);
     }
 
     /**
@@ -55,14 +57,29 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
      */
     public HostHeaderCustomizer(String serverName, int serverPort)
     {
-        this.serverName = Objects.requireNonNull(serverName);
-        this.serverPort = serverPort;
+        String host = Objects.requireNonNull(serverName);
+        if (serverPort > 0)
+            host += ":" + serverPort;
+        hostValue = host;
     }
 
     @Override
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
-        if (request.getHeader("Host") == null)
-            request.setAuthority(serverName, serverPort);  // TODO set the field as well?
+        String hostHeaderValue = request.getHeader("Host");
+
+        // No Host Header
+        if (request.getHttpVersion().getVersion() != HttpVersion.HTTP_1_1.getVersion() &&
+            hostHeaderValue == null)
+        {
+            if (request.getHttpURI().isAbsolute())
+            {
+                request.getHttpFields().put(HttpHeader.HOST, request.getHttpURI().getAuthority());
+            }
+            else
+            {
+                request.getHttpFields().put(HttpHeader.HOST, hostValue);
+            }
+        }
     }
 }
