@@ -75,7 +75,7 @@ public class HttpChannel extends AttributesMap
     private final Server _server;
     private final ConnectionMetaData _connectionMetaData;
     private final HttpConfiguration _configuration;
-    private final SerializedInvoker _serializedExecutor;
+    private final SerializedInvoker _serializedInvoker;
     private int _requests;
 
     private HttpStream _stream;
@@ -87,7 +87,8 @@ public class HttpChannel extends AttributesMap
         _server = server;
         _connectionMetaData = connectionMetaData;
         _configuration = configuration;
-        _serializedExecutor = new SerializedInvoker()
+        // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
+        _serializedInvoker = new SerializedInvoker()
         {
             @Override
             protected void onError(Runnable task, Throwable t)
@@ -210,7 +211,7 @@ public class HttpChannel extends AttributesMap
                 return null;
             Runnable onContent = _request._onContentAvailable;
             _request._onContentAvailable = null;
-            return _serializedExecutor.offer(onContent);
+            return _serializedInvoker.offer(onContent);
         }
     }
 
@@ -269,7 +270,7 @@ public class HttpChannel extends AttributesMap
             Runnable invokeOnError = onError == null ? null : () -> onError.accept(x);
 
             // Serialize all the error actions.
-            return _serializedExecutor.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError, () -> request.failed(x));
+            return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError, () -> request.failed(x));
         }
     }
 
@@ -284,9 +285,9 @@ public class HttpChannel extends AttributesMap
             _onConnectionComplete = null;
         }
 
-        return _serializedExecutor.offer(
-            hasStream ? () -> _serializedExecutor.run(() -> onError(failed)) : null,
-            onConnectionClose == null ? null : () -> onConnectionClose.accept(failed));
+        Runnable runStreamOnError = hasStream ? () -> _serializedInvoker.run(() -> onError(failed)) : null;
+        Runnable runOnConnectionClose = onConnectionClose == null ? null : () -> onConnectionClose.accept(failed);
+        return _serializedInvoker.offer(runStreamOnError, runOnConnectionClose);
     }
 
     public void addStreamWrapper(Function<HttpStream, HttpStream.Wrapper> onStreamEvent)
@@ -520,7 +521,7 @@ public class HttpChannel extends AttributesMap
             }
 
             if (error)
-                _serializedExecutor.run(onContentAvailable);
+                _serializedInvoker.run(onContentAvailable);
             else
                 getStream().demandContent();
         }
@@ -532,7 +533,7 @@ public class HttpChannel extends AttributesMap
             {
                 if (_error != null)
                 {
-                    _serializedExecutor.run(() -> onError.accept(_error.getCause()));
+                    _serializedInvoker.run(() -> onError.accept(_error.getCause()));
                     return;
                 }
 
@@ -806,7 +807,7 @@ public class HttpChannel extends AttributesMap
 
                 if (_request._error != null)
                 {
-                    _serializedExecutor.run(() -> callback.failed(_request._error.getCause()));
+                    _serializedInvoker.run(() -> callback.failed(_request._error.getCause()));
                     return;
                 }
 
