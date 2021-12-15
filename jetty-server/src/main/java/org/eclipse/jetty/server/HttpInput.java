@@ -55,8 +55,12 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public void recycle()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("recycle {}", this);
+        try (AutoLock lock = _contentProducer.lock())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("recycle {}", this);
+            _blockingContentProducer.recycle();
+        }
     }
 
     public void reopen()
@@ -65,7 +69,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("reopen {}", this);
-            _blockingContentProducer.recycle();
+            _blockingContentProducer.reopen();
             _contentProducer = _blockingContentProducer;
             _consumedEof = false;
             _readListener = null;

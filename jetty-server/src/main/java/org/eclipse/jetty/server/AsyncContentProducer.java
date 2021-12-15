@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
+    private static final HttpInput.ErrorContent RECYCLED_ERROR_CONTENT = new HttpInput.ErrorContent(new IllegalStateException("ContentProducer has been recycled"));
     private static final Throwable UNCONSUMED_CONTENT_EXCEPTION = new IOException("Unconsumed content")
     {
         @Override
@@ -66,9 +67,30 @@ class AsyncContentProducer implements ContentProducer
         assertLocked();
         if (LOG.isDebugEnabled())
             LOG.debug("recycling {}", this);
+
+        // Make sure that the content has been fully consumed before destroying the interceptor and also make sure
+        // that asking this instance for content between recycle and reopen will only produce error'ed content.
+        if (_rawContent == null)
+            _rawContent = RECYCLED_ERROR_CONTENT;
+        else if (!_rawContent.isSpecial())
+            throw new IllegalStateException("ContentProducer with unconsumed content cannot be recycled");
+
+        if (_transformedContent == null)
+            _transformedContent = RECYCLED_ERROR_CONTENT;
+        else if (!_transformedContent.isSpecial())
+            throw new IllegalStateException("ContentProducer with unconsumed content cannot be recycled");
+
         if (_interceptor instanceof Destroyable)
             ((Destroyable)_interceptor).destroy();
         _interceptor = null;
+    }
+
+    @Override
+    public void reopen()
+    {
+        assertLocked();
+        if (LOG.isDebugEnabled())
+            LOG.debug("reopening {}", this);
         _rawContent = null;
         _transformedContent = null;
         _error = false;
