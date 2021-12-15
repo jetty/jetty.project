@@ -38,7 +38,7 @@ public interface Attributes
     /**
      * Set an attribute
      * @param name the attribute to set
-     * @param attribute the value to set
+     * @param attribute the value to set. A null value is equivalent to removing the attribute.
      * @return the previous value of the attribute if set, else null
      */
     Object setAttribute(String name, Object attribute);
@@ -248,7 +248,15 @@ public interface Attributes
      */
     class Layer implements Attributes
     {
-        private static final Object REMOVED = "REMOVED";
+        private static final Object REMOVED = new Object()
+        {
+            @Override
+            public String toString()
+            {
+                return "REMOVED";
+            }
+        };
+
         private final Attributes _persistent;
         // TODO it is probably not correct to have a concurrent map over another concurrent map as some
         //      of the operations are not atomic and will suffer from test then act issues if the underlying
