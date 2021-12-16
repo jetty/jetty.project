@@ -1,5 +1,5 @@
 [description]
-Enables the support for the HTTP/3 protocol.
+Enables experimental support for the HTTP/3 protocol.
 
 [tags]
 connector

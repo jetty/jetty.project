@@ -24,12 +24,19 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A HTTP/3 specific {@link QuicServerConnector} that configures QUIC parameters according to HTTP/3 requirements.</p>
+ *
+ * @apiNote HTTP/3+QUIC support is experimental and not suited for production use.
+ * APIs may change incompatibly between releases.
  */
 public class HTTP3ServerConnector extends QuicServerConnector
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HTTP3ServerConnector.class);
+
     private HttpField altSvcHttpField;
 
     public HTTP3ServerConnector(Server server, SslContextFactory.Server sslContextFactory, ConnectionFactory... factories)
@@ -50,6 +57,7 @@ public class HTTP3ServerConnector extends QuicServerConnector
     @Override
     protected void doStart() throws Exception
     {
+        LOG.info("HTTP/3+QUIC support is experimental and not suited for production use.");
         super.doStart();
         altSvcHttpField = new PreEncodedHttpField(HttpHeader.ALT_SVC, String.format("h3=\":%d\"", getLocalPort()));
     }
