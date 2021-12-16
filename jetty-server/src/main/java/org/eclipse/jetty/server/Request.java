@@ -1039,8 +1039,12 @@ public class Request implements HttpServletRequest
     @Override
     public int getLocalPort()
     {
-        if (_channel == null)
-            return 0;
+        if (_channel != null)
+        {
+            int localPort = _channel.getLocalPort();
+            if (localPort > 0)
+                return localPort;
+        }
         InetSocketAddress local = _channel.getLocalAddress();
         return local == null ? 0 : local.getPort();
     }
@@ -1463,19 +1467,18 @@ public class Request implements HttpServletRequest
         HttpField host = metadata == null ? null : metadata.getFields().getField(HttpHeader.HOST);
         if (host != null)
         {
-            // TODO is this needed now?
             HostPortHttpField authority = (host instanceof HostPortHttpField)
                 ? ((HostPortHttpField)host)
                 : new HostPortHttpField(host.getValue());
-            metadata.getURI().setAuthority(authority.getHost(), authority.getPort());
-            return authority.getPort();
+            if (authority.getHostPort().hasHost() && authority.getHostPort().hasPort())
+            {
+                metadata.getURI().setAuthority(authority.getHost(), authority.getPort());
+                return authority.getPort();
+            }
         }
 
         // Return host from connection
-        if (_channel != null)
-            return getLocalPort();
-
-        return -1;
+        return getLocalPort();
     }
 
     @Override

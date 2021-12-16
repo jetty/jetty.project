@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -163,8 +164,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private ConnectionFactory _defaultConnectionFactory;
     /* The name used to link up virtual host configuration to named connectors */
     private String _name;
-    /* The name used to override the connection local name (see ServletRequest.getLocalName()) */
-    private String _localName;
+    /* The authority used to override the connection local name/port (see ServletRequest.getLocalName(), and ServletRequest.getLocalPort()) */
+    private HostPort _localAuthority;
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
     private ThreadPoolBudget.Lease _lease;
@@ -302,21 +303,39 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     /**
-     * @return Returns the optional local name override
+     * @return Returns the optional local authority override
      */
-    @ManagedAttribute("local name")
-    public String getLocalName()
+    @ManagedAttribute("local authority")
+    public HostPort getLocalAuthority()
     {
-        return _localName;
+        return _localAuthority;
     }
 
     /**
-     * Optional override of connection local name used within application API layer
-     * when identifying the local host name of a connected endpoint.
+     * Optional override of connection local name/port used within application API layer
+     * when identifying the local host name/port of a connected endpoint.
+     *
+     * @param authority the full authority including host and port, or null to unset
      */
-    public void setLocalName(String localName)
+    public void setLocalAuthority(String authority)
     {
-        this._localName = localName;
+        setLocalAuthority(new HostPort(authority));
+    }
+
+    /**
+     * Optional override of connection local name/port used within application API layer
+     * when identifying the local host name/port of a connected endpoint.
+     *
+     * @param authority the full authority including host and port, or null to unset
+     */
+    public void setLocalAuthority(HostPort authority)
+    {
+        if (authority == null)
+            _localAuthority = null;
+        else if (!authority.hasHost() || !authority.hasPort())
+            throw new IllegalStateException("Local Authority must have host and port declared");
+        else
+            _localAuthority = authority;
     }
 
     @Override

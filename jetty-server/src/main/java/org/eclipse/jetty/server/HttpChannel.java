@@ -308,14 +308,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * if the local address is unavailable.
      * </p>
      * <p>
-     * Value can be overridden by {@link AbstractConnector#setLocalName(String)} for
+     * Value can be overridden by {@link AbstractConnector#setLocalAuthority(HostPort)} for
      * scenarios where Jetty is being an intermediary and the local name
      * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
      * such as absolute-URI creation (eg: Location response header).
      * </p>
      *
      * @return the local name if overridden, or the local address, or
-     * the local host name.
+     * null in the case of no local address (usually seen in connectors not based on IP networking).
      */
     public String getLocalName()
     {
@@ -323,9 +323,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         if (connector instanceof AbstractConnector)
         {
-            String localName = ((AbstractConnector)connector).getLocalName();
-            if (localName != null)
-                return localName;
+            HostPort localAuthority = ((AbstractConnector)connector).getLocalAuthority();
+            if (localAuthority != null)
+                return localAuthority.getHost();
         }
 
         InetSocketAddress local = getLocalAddress();
@@ -333,6 +333,37 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             return local.getHostString();
 
         return null;
+    }
+
+    /**
+     * <p>Return the Local Port of the connected channel.</p>
+     *
+     * <p>
+     * This is the port the connector is bound to and is accepting connection on.
+     * </p>
+     * <p>
+     * Value can be overridden by {@link AbstractConnector#setLocalAuthority(HostPort)} for
+     * scenarios where Jetty is being an intermediary and the local port
+     * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
+     * such as absolute-URI creation (eg: Location response header).
+     * </p>
+     *
+     * @return the local authority port if overridden, or the local address port, or
+     * 0 in the case of no local address (usually seen in connectors not based on IP networking).
+     */
+    public int getLocalPort()
+    {
+        Connector connector = getConnector();
+
+        if (connector instanceof AbstractConnector)
+        {
+            HostPort localAuthority = ((AbstractConnector)connector).getLocalAuthority();
+            if (localAuthority != null)
+                return localAuthority.getPort();
+        }
+
+        InetSocketAddress local = getLocalAddress();
+        return local == null ? 0 : local.getPort();
     }
 
     public InetSocketAddress getLocalAddress()

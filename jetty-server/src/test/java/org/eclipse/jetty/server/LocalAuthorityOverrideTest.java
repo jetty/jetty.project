@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,7 +39,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class LocalNameOverrideTest
+public class LocalAuthorityOverrideTest
 {
     private static class DumpHandler extends AbstractHandler
     {
@@ -54,18 +53,19 @@ public class LocalNameOverrideTest
             out.printf("ServerName=[%s]%n", request.getServerName());
             out.printf("ServerPort=[%d]%n", request.getServerPort());
             out.printf("LocalName=[%s]%n", request.getLocalName());
+            out.printf("LocalPort=[%s]%n", request.getLocalPort());
             out.printf("RequestURL=[%s]%n", request.getRequestURL());
         }
     }
 
     @Test
-    public void testOverrideLocalNameHttp10NoHost() throws Exception
+    public void testOverrideLocalAuthorityHttp10NoHost() throws Exception
     {
         Server server = new Server();
         try
         {
             ServerConnector connector = new ServerConnector(server);
-            connector.setLocalName("FooLocalName");
+            connector.setLocalAuthority("FooLocalName:80");
             connector.setPort(0);
 
             server.addConnector(connector);
@@ -90,9 +90,10 @@ public class LocalNameOverrideTest
                 String responseContent = response.getContent();
                 assertThat("response content", responseContent, allOf(
                     containsString("ServerName=[FooLocalName]"),
-                    containsString("ServerPort=[" + connector.getLocalPort() + "]"),
+                    containsString("ServerPort=[80]"),
                     containsString("LocalName=[FooLocalName]"),
-                    containsString("RequestURL=[http://FooLocalName:" + connector.getLocalPort() + "/]")
+                    containsString("LocalPort=[80]"),
+                    containsString("RequestURL=[http://FooLocalName/]")
                 ));
             }
         }
@@ -103,14 +104,13 @@ public class LocalNameOverrideTest
     }
 
     @Test
-    @Disabled("Port override is not possible yet")
-    public void testOverrideLocalNameHttp11NoHost() throws Exception
+    public void testOverrideLocalAuthorityHttp11NoHost() throws Exception
     {
         Server server = new Server();
         try
         {
             ServerConnector connector = new ServerConnector(server);
-            connector.setLocalName("BarLocalName");
+            connector.setLocalAuthority("BarLocalName:9999");
             connector.setPort(0);
 
             server.addConnector(connector);
@@ -122,7 +122,7 @@ public class LocalNameOverrideTest
                  InputStream input = socket.getInputStream())
             {
                 String request =
-                    "GET / HTTP/1.1\r\n" +
+                    "GET /foo HTTP/1.1\r\n" +
                         "Host: \r\n" +
                         "Connection: close\r\n" +
                         "\r\n";
@@ -139,11 +139,11 @@ public class LocalNameOverrideTest
                     containsString("ServerName=[BarLocalName]"),
                     // request uri is not absolute, so it's assumed to be the scheme from HttpConfiguration (default: "http")
                     // which has an assumed port if unspecified. (like in the above request)
-                    containsString("ServerPort=[80]"),
-                    // However the Host is empty, so the authority is unspecified for the request, so it uses the local name
+                    containsString("ServerPort=[9999]"),
+                    // However the Host is empty, so the authority is unspecified for the request, so it uses the local name/port
                     containsString("LocalName=[BarLocalName]"),
-                    // TODO: shouldn't this port also be overridable?
-                    containsString("RequestURL=[http://BarLocalName:" + connector.getLocalPort() + "/]")
+                    containsString("LocalPort=[9999]"),
+                    containsString("RequestURL=[http://BarLocalName:9999/foo]")
                 ));
             }
         }
@@ -154,13 +154,13 @@ public class LocalNameOverrideTest
     }
 
     @Test
-    public void testOverrideLocalNameHttp11ValidHost() throws Exception
+    public void testOverrideLocalAuthorityHttp11ValidHost() throws Exception
     {
         Server server = new Server();
         try
         {
             ServerConnector connector = new ServerConnector(server);
-            connector.setLocalName("BarLocalName");
+            connector.setLocalAuthority("ZedLocalName:7777");
             connector.setPort(0);
 
             server.addConnector(connector);
@@ -191,7 +191,7 @@ public class LocalNameOverrideTest
                     // which has an assumed port if unspecified. (like in the above request)
                     containsString("ServerPort=[80]"),
                     // Local name was overridden, so it remains the name seen by the handler
-                    containsString("LocalName=[BarLocalName]"),
+                    containsString("LocalName=[ZedLocalName]"),
                     // ServerName is used for RequestURL
                     containsString("RequestURL=[http://jetty.eclipse.org/]")
                 ));
