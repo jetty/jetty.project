@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
@@ -27,16 +28,23 @@ import org.eclipse.jetty.util.thread.AutoLock;
 public interface ContentProducer
 {
     /**
-     * Lock this instance. The lock must be held before any method of this instance's
-     * method be called, and must be manually released afterward.
+     * Lock this instance. The lock must be held before any of this instance's
+     * method can be called, and must be released afterward.
      * @return the lock that is guarding this instance.
      */
     AutoLock lock();
 
     /**
-     * Reset all internal state and clear any held resources.
+     * Clear the interceptor and call {@link Destroyable#destroy()} on it if it implements {@link Destroyable}.
+     * A recycled {@link ContentProducer} will only produce special content with a non-null error until
+     * {@link #reopen()} is called.
      */
     void recycle();
+
+    /**
+     * Reset all internal state, making this is instance logically equivalent to a freshly allocated one.
+     */
+    void reopen();
 
     /**
      * Fail all content currently available in this {@link ContentProducer} instance
