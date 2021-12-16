@@ -339,34 +339,11 @@ class AsyncContentProducer implements ContentProducer
 
         while (_transformedContent == null)
         {
-            if (_rawContent.isSpecial())
-            {
-                // TODO does EOF need to be passed to the interceptors?
-
-                // In case the _rawContent was set by consumeAll(), check the httpChannel
-                // to see if it has a more precise error. Otherwise, the exact same
-                // special content will be returned by the httpChannel; do not do that
-                // if the _error flag was set, meaning the current error is definitive.
-                if (!_error)
-                {
-                    HttpInput.Content refreshedRawContent = produceRawContent();
-                    if (refreshedRawContent != null)
-                        _rawContent = refreshedRawContent;
-                    _error = _rawContent.getError() != null;
-                }
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("raw content is special (with error = {}), returning it {}", _error, this);
-                return _rawContent;
-            }
-
             if (_interceptor != null)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("using interceptor to transform raw content {}", this);
                 _transformedContent = intercept();
-                if (_error)
-                    return _rawContent;
             }
             else
             {
@@ -386,18 +363,40 @@ class AsyncContentProducer implements ContentProducer
 
             if (_transformedContent == null)
             {
-                if (_rawContent.isEmpty())
+                if (_rawContent.isSpecial())
                 {
-                    _rawContent.succeeded();
-                    _rawContent = null;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("using special raw content as transformed content {}", this);
+
+                    // In case the _rawContent was set by consumeAll(), check the httpChannel
+                    // to see if it has a more precise error. Otherwise, the exact same
+                    // special content will be returned by the httpChannel; do not do that
+                    // if the _error flag was set, meaning the current error is definitive.
+                    if (!_error)
+                    {
+                        HttpInput.Content refreshedRawContent = produceRawContent();
+                        if (refreshedRawContent != null)
+                            _rawContent = refreshedRawContent;
+                        _error = _rawContent.getError() != null;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("refreshed raw content: {} {}", _rawContent, this);
+                    }
+
+                    _transformedContent = _rawContent;
+                    break;
+                }
+                else if (_rawContent.isEmpty())
+                {
                     if (LOG.isDebugEnabled())
                         LOG.debug("nulling depleted raw content {}", this);
+                    _rawContent.succeeded();
+                    _rawContent = null;
                     _rawContent = produceRawContent();
                     if (_rawContent == null)
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("produced null raw content, returning null, {}", this);
-                        return null;
+                        break;
                     }
                 }
                 else
