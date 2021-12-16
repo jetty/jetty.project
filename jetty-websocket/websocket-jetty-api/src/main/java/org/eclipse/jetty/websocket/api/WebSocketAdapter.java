@@ -34,7 +34,7 @@ public class WebSocketAdapter implements WebSocketListener
 
     public boolean isConnected()
     {
-        return session.isOpen();
+        return session != null && session.isOpen();
     }
 
     public boolean isNotConnected()
