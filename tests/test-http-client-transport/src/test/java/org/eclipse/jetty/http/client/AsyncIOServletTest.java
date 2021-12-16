@@ -1459,6 +1459,8 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                 httpInput.addInterceptor(new GzipHttpInputInterceptor(new InflaterPool(-1, true), ((Request)request).getHttpChannel().getByteBufferPool(), 1024));
                 httpInput.addInterceptor(content ->
                 {
+                    if (content.isSpecial())
+                        return content;
                     ByteBuffer byteBuffer = content.getByteBuffer();
                     byte[] bytes = new byte[2];
                     bytes[1] = byteBuffer.get();

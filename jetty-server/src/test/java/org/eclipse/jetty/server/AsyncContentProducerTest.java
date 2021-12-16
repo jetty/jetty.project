@@ -17,6 +17,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
@@ -116,6 +118,74 @@ public class AsyncContentProducerTest
             Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
             assertThat(error, Is.is(expectedError));
         }
+    }
+
+    @Test
+    public void testAsyncContentProducerEofContentIsPassedToInterceptor() throws Exception
+    {
+        ByteBuffer[] buffers = new ByteBuffer[3];
+        buffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
+        buffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
+        buffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
+        final int totalContentBytesCount = countRemaining(buffers);
+        final String originalContentString = asString(buffers);
+
+        CyclicBarrier barrier = new CyclicBarrier(2);
+
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new HttpInput.EofContent(), scheduledExecutorService, barrier));
+        AccountingInterceptor interceptor = new AccountingInterceptor();
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(interceptor);
+
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
+            assertThat(error, nullValue());
+
+            HttpInput.Content lastContent = contentProducer.nextContent();
+            assertThat(lastContent.isSpecial(), is(true));
+            assertThat(lastContent.isEof(), is(true));
+        }
+
+        assertThat(interceptor.contents.size(), is(4));
+        assertThat(interceptor.contents.get(0).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(1).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(2).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(3).isSpecial(), is(true));
+        assertThat(interceptor.contents.get(3).isEof(), is(true));
+    }
+
+    @Test
+    public void testAsyncContentProducerErrorContentIsPassedToInterceptor() throws Exception
+    {
+        ByteBuffer[] buffers = new ByteBuffer[3];
+        buffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
+        buffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
+        buffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
+        final int totalContentBytesCount = countRemaining(buffers);
+        final String originalContentString = asString(buffers);
+
+        CyclicBarrier barrier = new CyclicBarrier(2);
+
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new HttpInput.ErrorContent(new Throwable("testAsyncContentProducerErrorContentIsPassedToInterceptor error")), scheduledExecutorService, barrier));
+        AccountingInterceptor interceptor = new AccountingInterceptor();
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(interceptor);
+
+            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
+            assertThat(error.getMessage(), is("testAsyncContentProducerErrorContentIsPassedToInterceptor error"));
+
+            HttpInput.Content lastContent = contentProducer.nextContent();
+            assertThat(lastContent.isSpecial(), is(true));
+            assertThat(lastContent.getError().getMessage(), is("testAsyncContentProducerErrorContentIsPassedToInterceptor error"));
+        }
+
+        assertThat(interceptor.contents.size(), is(4));
+        assertThat(interceptor.contents.get(0).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(1).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(2).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(3).isSpecial(), is(true));
+        assertThat(interceptor.contents.get(3).getError().getMessage(), is("testAsyncContentProducerErrorContentIsPassedToInterceptor error"));
     }
 
     @Test
@@ -379,6 +449,19 @@ public class AsyncContentProducerTest
         public HttpInput.Content readFrom(HttpInput.Content content)
         {
             return null;
+        }
+    }
+
+    private static class AccountingInterceptor implements HttpInput.Interceptor
+    {
+        private List<HttpInput.Content> contents = new ArrayList<>();
+
+        @Override
+        public HttpInput.Content readFrom(HttpInput.Content content)
+        {
+            if (!contents.contains(content))
+                contents.add(content);
+            return content;
         }
     }
 }

@@ -38,6 +38,9 @@ public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroya
     @Override
     public Content readFrom(Content content)
     {
+        if (content.isSpecial())
+            return content;
+
         _decoder.decodeChunks(content.getByteBuffer());
         final ByteBuffer chunk = _chunk;
 
