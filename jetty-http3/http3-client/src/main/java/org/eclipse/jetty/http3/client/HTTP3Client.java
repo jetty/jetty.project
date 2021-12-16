@@ -125,8 +125,8 @@ import org.slf4j.LoggerFactory;
  * HTTP3Client - dgramEP - ClientQuiConnection - ClientQuicSession - ClientHTTP3Session -* HTTP3Streams
  * </pre>
  *
- * @apiNote HTTP/3+QUIC support is experimental and not suited for production use.
- * APIs may change incompatibly between releases.
+ * <p>HTTP/3+QUIC support is experimental and not suited for production use.
+ * APIs may change incompatibly between releases.</p>
  */
 public class HTTP3Client extends ContainerLifeCycle
 {

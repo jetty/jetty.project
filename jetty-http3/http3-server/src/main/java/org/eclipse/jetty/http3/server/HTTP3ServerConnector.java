@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
 /**
  * <p>A HTTP/3 specific {@link QuicServerConnector} that configures QUIC parameters according to HTTP/3 requirements.</p>
  *
- * @apiNote HTTP/3+QUIC support is experimental and not suited for production use.
- * APIs may change incompatibly between releases.
+ * <p>HTTP/3+QUIC support is experimental and not suited for production use.
+ * APIs may change incompatibly between releases.</p>
  */
 public class HTTP3ServerConnector extends QuicServerConnector
 {
