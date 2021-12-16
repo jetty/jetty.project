@@ -124,6 +124,9 @@ import org.slf4j.LoggerFactory;
  *                                                                                      /- [Control|Decoder|Encoder]Stream
  * HTTP3Client - dgramEP - ClientQuiConnection - ClientQuicSession - ClientHTTP3Session -* HTTP3Streams
  * </pre>
+ *
+ * @apiNote HTTP/3+QUIC support is experimental and not suited for production use.
+ * APIs may change incompatibly between releases.
  */
 public class HTTP3Client extends ContainerLifeCycle
 {
@@ -165,6 +168,13 @@ public class HTTP3Client extends ContainerLifeCycle
     public HTTP3Configuration getHTTP3Configuration()
     {
         return http3Configuration;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        LOG.info("HTTP/3+QUIC support is experimental and not suited for production use.");
+        super.doStart();
     }
 
     public CompletableFuture<Session.Client> connect(SocketAddress address, Session.Client.Listener listener)
