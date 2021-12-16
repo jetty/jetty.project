@@ -1044,9 +1044,11 @@ public class Request implements HttpServletRequest
             int localPort = _channel.getLocalPort();
             if (localPort > 0)
                 return localPort;
+            InetSocketAddress local = _channel.getLocalAddress();
+            if (local != null)
+                return local.getPort();
         }
-        InetSocketAddress local = _channel.getLocalAddress();
-        return local == null ? 0 : local.getPort();
+        return 0;
     }
 
     /*
