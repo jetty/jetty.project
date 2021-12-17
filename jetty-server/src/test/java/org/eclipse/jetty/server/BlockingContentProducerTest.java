@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
@@ -116,6 +117,90 @@ public class BlockingContentProducerTest
             Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
             assertThat(error, is(expectedError));
         }
+    }
+
+    @Test
+    public void testBlockingContentProducerInterceptorGeneratesError()
+    {
+        AtomicInteger contentSucceededCount = new AtomicInteger();
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(ByteBuffer.allocate(1))
+        {
+            @Override
+            public void succeeded()
+            {
+                contentSucceededCount.incrementAndGet();
+            }
+        })));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(content -> new HttpInput.ErrorContent(new Throwable("testBlockingContentProducerInterceptorGeneratesError interceptor error")));
+
+            HttpInput.Content content1 = contentProducer.nextContent();
+            assertThat(content1.isSpecial(), Matchers.is(true));
+            assertThat(content1.getError().getMessage(), Matchers.is("testBlockingContentProducerInterceptorGeneratesError interceptor error"));
+
+            HttpInput.Content content2 = contentProducer.nextContent();
+            assertThat(content2.isSpecial(), Matchers.is(true));
+            assertThat(content2.getError().getMessage(), Matchers.is("testBlockingContentProducerInterceptorGeneratesError interceptor error"));
+        }
+        assertThat(contentSucceededCount.get(), Matchers.is(1));
+    }
+
+    @Test
+    public void testBlockingContentProducerInterceptorGeneratesEof()
+    {
+        AtomicInteger contentSucceededCount = new AtomicInteger();
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(ByteBuffer.allocate(1))
+        {
+            @Override
+            public void succeeded()
+            {
+                contentSucceededCount.incrementAndGet();
+            }
+        })));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(content -> new HttpInput.EofContent());
+
+            HttpInput.Content content1 = contentProducer.nextContent();
+            assertThat(content1.isSpecial(), Matchers.is(true));
+            assertThat(content1.isEof(), Matchers.is(true));
+
+            HttpInput.Content content2 = contentProducer.nextContent();
+            assertThat(content2.isSpecial(), Matchers.is(true));
+            assertThat(content2.isEof(), Matchers.is(true));
+        }
+        assertThat(contentSucceededCount.get(), Matchers.is(1));
+    }
+
+    @Test
+    public void testBlockingContentProducerInterceptorThrows()
+    {
+        AtomicInteger contentFailedCount = new AtomicInteger();
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(ByteBuffer.allocate(1))
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                contentFailedCount.incrementAndGet();
+            }
+        })));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(content ->
+            {
+                throw new RuntimeException("testBlockingContentProducerInterceptorThrows error");
+            });
+
+            HttpInput.Content content1 = contentProducer.nextContent();
+            assertThat(content1.isSpecial(), Matchers.is(true));
+            assertThat(content1.getError().getCause().getMessage(), Matchers.is("testBlockingContentProducerInterceptorThrows error"));
+
+            HttpInput.Content content2 = contentProducer.nextContent();
+            assertThat(content2.isSpecial(), Matchers.is(true));
+            assertThat(content1.getError().getCause().getMessage(), Matchers.is("testBlockingContentProducerInterceptorThrows error"));
+        }
+        assertThat(contentFailedCount.get(), Matchers.is(1));
     }
 
     @Test
@@ -368,6 +453,47 @@ public class BlockingContentProducerTest
         private void setContentProducer(ContentProducer contentProducer)
         {
             this.contentProducer = contentProducer;
+        }
+    }
+
+    private static class StaticContentHttpChannel extends HttpChannel
+    {
+        private final HttpInput.Content content;
+
+        public StaticContentHttpChannel(HttpInput.Content content)
+        {
+            super(new MockConnector(), new HttpConfiguration(), null, null);
+            this.content = content;
+        }
+
+        @Override
+        public boolean needContent()
+        {
+            return true;
+        }
+
+        @Override
+        public HttpInput.Content produceContent()
+        {
+            return content;
+        }
+
+        @Override
+        public boolean failAllContent(Throwable failure)
+        {
+            return false;
+        }
+
+        @Override
+        public boolean failed(Throwable failure)
+        {
+            return false;
+        }
+
+        @Override
+        protected boolean eof()
+        {
+            return false;
         }
     }
 
