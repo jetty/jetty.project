@@ -1414,7 +1414,7 @@ public class Request implements HttpServletRequest
         if (name != null)
             return formatAddrOrHost(name);
 
-        return null;
+        return getLocalAddr();
     }
 
     /*
