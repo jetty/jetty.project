@@ -406,7 +406,6 @@ public class Request implements HttpServletRequest
      * A response is being committed for a session,
      * potentially write the session out before the
      * client receives the response.
-     *
      * @param session the session
      */
     private void commitSession(Session session)
