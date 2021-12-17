@@ -271,7 +271,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.quic.libquiche</includeGroupIds>
+              <includeGroupIds>org.eclipse.jetty.http3,org.eclipse.jetty.quic,org.eclipse.jetty.quiche</includeGroupIds>
               <includeArtifactIds>http3-server,http3-common,http3-qpack,quic-server,quic-common,quic-quiche-common,quic-quiche-jna,quic-quiche-foreign-incubator,jetty-quiche-native</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/http3</outputDirectory>

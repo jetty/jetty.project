@@ -25,7 +25,7 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.mortbay.jetty.quic.libquiche</groupId>
+      <groupId>org.mortbay.jetty.quiche</groupId>
       <artifactId>jetty-quiche-native</artifactId>
     </dependency>
     <dependency>
