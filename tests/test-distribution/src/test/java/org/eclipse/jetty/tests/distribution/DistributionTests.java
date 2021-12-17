@@ -1119,7 +1119,7 @@ public class DistributionTests extends AbstractJettyHomeTest
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 
-        try (JettyHomeTester.Run run1 = distribution.start("--add-modules=http3,test-keystore"))
+        try (JettyHomeTester.Run run1 = distribution.start("--approve-all-licenses", "--add-modules=http3,test-keystore"))
         {
             assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
             assertEquals(0, run1.getExitValue());
