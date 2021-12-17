@@ -343,7 +343,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
 
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _acceptors.length);
-
         super.doStart();
 
         _stopping = new CountDownLatch(_acceptors.length);
