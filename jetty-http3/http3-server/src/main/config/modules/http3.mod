@@ -10,10 +10,8 @@ experimental
 
 [depend]
 http2
-
-[files]
-maven://net.java.dev.jna/jna-jpms/${jna.version}|lib/http3/jna-jpms-${jna.version}.jar
-maven://org.mortbay.jetty.quic.libquiche/jetty-quiche-native/${jetty-quiche-native.version}|lib/http3/jetty-quiche-native-${jetty-quiche-native.version}.jar
+jna
+quiche
 
 [lib]
 lib/http3/*.jar
@@ -44,7 +42,3 @@ etc/jetty-http3.xml
 ## Specifies the stream idle timeout, in milliseconds.
 # jetty.http3.streamIdleTimeout=30000
 # end::documentation[]
-
-[ini]
-jna.version?=@jna.version@
-jetty-quiche-native.version?=@jetty-quiche-native.version@

@@ -1909,7 +1909,7 @@
         <version>${jsp.impl.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.mortbay.jetty.quic.libquiche</groupId>
+        <groupId>org.mortbay.jetty.quiche</groupId>
         <artifactId>jetty-quiche-native</artifactId>
         <version>${jetty-quiche-native.version}</version>
       </dependency>
