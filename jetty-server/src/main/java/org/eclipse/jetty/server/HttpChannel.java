@@ -97,7 +97,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
     private long _oldIdleTimeout;
-    private String overriddenLocalName;
 
     /**
      * Bytes written after interception (eg after compression)
@@ -308,7 +307,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * if the local address is unavailable.
      * </p>
      * <p>
-     * Value can be overridden by {@link AbstractConnector#setLocalAuthority(HostPort)} for
+     * Value can be overridden by {@link Connector#setLocalAuthority(HostPort)} for
      * scenarios where Jetty is being an intermediary and the local name
      * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
      * such as absolute-URI creation (eg: Location response header).
@@ -319,14 +318,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public String getLocalName()
     {
-        Connector connector = getConnector();
-
-        if (connector instanceof AbstractConnector)
-        {
-            HostPort localAuthority = ((AbstractConnector)connector).getLocalAuthority();
-            if (localAuthority != null)
-                return localAuthority.getHost();
-        }
+        HostPort localAuthority = getConnector().getLocalAuthority();
+        if (localAuthority != null)
+            return localAuthority.getHost();
 
         InetSocketAddress local = getLocalAddress();
         if (local != null)
@@ -342,7 +336,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * This is the port the connector is bound to and is accepting connection on.
      * </p>
      * <p>
-     * Value can be overridden by {@link AbstractConnector#setLocalAuthority(HostPort)} for
+     * Value can be overridden by {@link Connector#setLocalAuthority(HostPort)} for
      * scenarios where Jetty is being an intermediary and the local port
      * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
      * such as absolute-URI creation (eg: Location response header).
@@ -353,14 +347,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public int getLocalPort()
     {
-        Connector connector = getConnector();
-
-        if (connector instanceof AbstractConnector)
-        {
-            HostPort localAuthority = ((AbstractConnector)connector).getLocalAuthority();
-            if (localAuthority != null)
-                return localAuthority.getPort();
-        }
+        HostPort localAuthority = getConnector().getLocalAuthority();
+        if (localAuthority != null)
+            return localAuthority.getPort();
 
         InetSocketAddress local = getLocalAddress();
         return local == null ? 0 : local.getPort();

@@ -24,12 +24,17 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
 
@@ -46,160 +51,367 @@ public class LocalAuthorityOverrideTest
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            baseRequest.setHandled(true);
-            response.setCharacterEncoding("utf-8");
-            response.setContentType("text/plain");
-            PrintWriter out = response.getWriter();
-            out.printf("ServerName=[%s]%n", request.getServerName());
-            out.printf("ServerPort=[%d]%n", request.getServerPort());
-            out.printf("LocalName=[%s]%n", request.getLocalName());
-            out.printf("LocalPort=[%s]%n", request.getLocalPort());
-            out.printf("RequestURL=[%s]%n", request.getRequestURL());
+            if (target.startsWith("/dump"))
+            {
+                baseRequest.setHandled(true);
+                response.setCharacterEncoding("utf-8");
+                response.setContentType("text/plain");
+                PrintWriter out = response.getWriter();
+                out.printf("ServerName=[%s]%n", request.getServerName());
+                out.printf("ServerPort=[%d]%n", request.getServerPort());
+                out.printf("LocalName=[%s]%n", request.getLocalName());
+                out.printf("LocalPort=[%s]%n", request.getLocalPort());
+                out.printf("RequestURL=[%s]%n", request.getRequestURL());
+            }
+        }
+    }
+
+    private static class RedirectHandler extends AbstractHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            if (target.startsWith("/redirect"))
+            {
+                baseRequest.setHandled(true);
+                response.sendRedirect("/dump");
+            }
+        }
+    }
+
+    private static class CloseableServer implements AutoCloseable
+    {
+        private final Server server;
+        private final ServerConnector connector;
+
+        public CloseableServer(Server server, ServerConnector connector)
+        {
+            this.server = Objects.requireNonNull(server, "Server");
+            this.connector = Objects.requireNonNull(connector, "Connector");
+        }
+
+        public String getConnectorLocalName()
+        {
+            return HostPort.normalizeHost(this.connector.getLocalName());
+        }
+
+        public int getConnectorLocalPort()
+        {
+            return this.connector.getLocalPort();
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            LifeCycle.stop(this.server);
+        }
+    }
+
+    private CloseableServer startServer() throws Exception
+    {
+        return startServer(null);
+    }
+
+    private CloseableServer startServer(HostPort localAuthority) throws Exception
+    {
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        if (localAuthority != null)
+            connector.setLocalAuthority(localAuthority);
+        connector.setPort(0);
+
+        server.addConnector(connector);
+        HandlerList handlers = new HandlerList();
+        handlers.addHandler(new RedirectHandler());
+        handlers.addHandler(new DumpHandler());
+        server.setHandler(handlers);
+        server.start();
+
+        return new CloseableServer(server, connector);
+    }
+
+    private HttpTester.Response issueRequest(CloseableServer server, String rawRequest) throws Exception
+    {
+        try (Socket socket = new Socket("localhost", server.getConnectorLocalPort());
+             OutputStream output = socket.getOutputStream();
+             InputStream input = socket.getInputStream())
+        {
+            output.write(rawRequest.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
+            assertNotNull(response, "response");
+            return response;
         }
     }
 
     @Test
-    public void testOverrideLocalAuthorityHttp10NoHost() throws Exception
+    public void testLocalAuthorityNoPortHttp10NoHostRedirect() throws Exception
     {
-        Server server = new Server();
-        try
+        HostPort localAuthority = new HostPort("FooLocalName");
+
+        try (CloseableServer server = startServer(localAuthority))
         {
-            ServerConnector connector = new ServerConnector(server);
-            connector.setLocalAuthority("FooLocalName:80");
-            connector.setPort(0);
+            String rawRequest = "GET /redirect HTTP/1.0\r\n" +
+                "\r\n";
 
-            server.addConnector(connector);
-            server.setHandler(new DumpHandler());
-            server.start();
+            HttpTester.Response response = issueRequest(server, rawRequest);
 
-            try (Socket socket = new Socket("localhost", connector.getLocalPort());
-                 OutputStream output = socket.getOutputStream();
-                 InputStream input = socket.getInputStream())
-            {
-                String request =
-                    "GET / HTTP/1.0\r\n" +
-                        "\r\n";
-                output.write(request.getBytes(StandardCharsets.UTF_8));
-                output.flush();
-
-                HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
-
-                assertNotNull(response, "response");
-
-                assertThat("response.status", response.getStatus(), is(200));
-                String responseContent = response.getContent();
-                assertThat("response content", responseContent, allOf(
-                    containsString("ServerName=[FooLocalName]"),
-                    containsString("ServerPort=[80]"),
-                    containsString("LocalName=[FooLocalName]"),
-                    containsString("LocalPort=[80]"),
-                    containsString("RequestURL=[http://FooLocalName/]")
-                ));
-            }
-        }
-        finally
-        {
-            LifeCycle.stop(server);
+            assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+            String location = response.get(HttpHeader.LOCATION);
+            assertThat(location, is("http://FooLocalName/dump"));
         }
     }
 
     @Test
-    public void testOverrideLocalAuthorityHttp11NoHost() throws Exception
+    public void testLocalAuthorityNoPortHttp10NoHostDump() throws Exception
     {
-        Server server = new Server();
-        try
+        HostPort localAuthority = new HostPort("FooLocalName");
+
+        try (CloseableServer server = startServer(localAuthority))
         {
-            ServerConnector connector = new ServerConnector(server);
-            connector.setLocalAuthority("BarLocalName:9999");
-            connector.setPort(0);
+            String rawRequest = "GET /dump HTTP/1.0\r\n" +
+                "\r\n";
 
-            server.addConnector(connector);
-            server.setHandler(new DumpHandler());
-            server.start();
+            HttpTester.Response response = issueRequest(server, rawRequest);
 
-            try (Socket socket = new Socket("localhost", connector.getLocalPort());
-                 OutputStream output = socket.getOutputStream();
-                 InputStream input = socket.getInputStream())
-            {
-                String request =
-                    "GET /foo HTTP/1.1\r\n" +
-                        "Host: \r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n";
-                output.write(request.getBytes(StandardCharsets.UTF_8));
-                output.flush();
-
-                HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
-
-                assertNotNull(response, "response");
-
-                assertThat("response.status", response.getStatus(), is(200));
-                String responseContent = response.getContent();
-                assertThat("response content", responseContent, allOf(
-                    containsString("ServerName=[BarLocalName]"),
-                    // request uri is not absolute, so it's assumed to be the scheme from HttpConfiguration (default: "http")
-                    // which has an assumed port if unspecified. (like in the above request)
-                    containsString("ServerPort=[9999]"),
-                    // However the Host is empty, so the authority is unspecified for the request, so it uses the local name/port
-                    containsString("LocalName=[BarLocalName]"),
-                    containsString("LocalPort=[9999]"),
-                    containsString("RequestURL=[http://BarLocalName:9999/foo]")
-                ));
-            }
-        }
-        finally
-        {
-            LifeCycle.stop(server);
+            assertThat("response.status", response.getStatus(), is(200));
+            String responseContent = response.getContent();
+            assertThat("response content", responseContent, allOf(
+                containsString("ServerName=[FooLocalName]"),
+                containsString("ServerPort=[80]"),
+                containsString("LocalName=[FooLocalName]"),
+                containsString("LocalPort=[0]"),
+                containsString("RequestURL=[http://FooLocalName/dump]")
+            ));
         }
     }
 
     @Test
-    public void testOverrideLocalAuthorityHttp11ValidHost() throws Exception
+    public void testLocalAuthorityWithPortHttp10NoHostRedirect() throws Exception
     {
-        Server server = new Server();
-        try
+        HostPort localAuthority = new HostPort("BarLocalName:9999");
+
+        try (CloseableServer server = startServer(localAuthority))
         {
-            ServerConnector connector = new ServerConnector(server);
-            connector.setLocalAuthority("ZedLocalName:7777");
-            connector.setPort(0);
+            String rawRequest = "GET /redirect HTTP/1.0\r\n" +
+                "\r\n";
 
-            server.addConnector(connector);
-            server.setHandler(new DumpHandler());
-            server.start();
+            HttpTester.Response response = issueRequest(server, rawRequest);
 
-            try (Socket socket = new Socket("localhost", connector.getLocalPort());
-                 OutputStream output = socket.getOutputStream();
-                 InputStream input = socket.getInputStream())
-            {
-                String request =
-                    "GET / HTTP/1.1\r\n" +
-                        "Host: jetty.eclipse.org\r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n";
-                output.write(request.getBytes(StandardCharsets.UTF_8));
-                output.flush();
-
-                HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(input));
-
-                assertNotNull(response, "response");
-
-                assertThat("response.status", response.getStatus(), is(200));
-                String responseContent = response.getContent();
-                assertThat("response content", responseContent, allOf(
-                    containsString("ServerName=[jetty.eclipse.org]"),
-                    // request uri is not absolute, so it's assumed to be the scheme from HttpConfiguration (default: "http")
-                    // which has an assumed port if unspecified. (like in the above request)
-                    containsString("ServerPort=[80]"),
-                    // Local name was overridden, so it remains the name seen by the handler
-                    containsString("LocalName=[ZedLocalName]"),
-                    // ServerName is used for RequestURL
-                    containsString("RequestURL=[http://jetty.eclipse.org/]")
-                ));
-            }
+            assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+            String location = response.get(HttpHeader.LOCATION);
+            assertThat(location, is("http://BarLocalName:9999/dump"));
         }
-        finally
+    }
+
+    @Test
+    public void testLocalAuthorityWithPortHttp10NoHostDump() throws Exception
+    {
+        HostPort localAuthority = new HostPort("BarLocalName:9999");
+
+        try (CloseableServer server = startServer(localAuthority))
         {
-            LifeCycle.stop(server);
+            String rawRequest = "GET /dump HTTP/1.0\r\n" +
+                "\r\n";
+
+            HttpTester.Response response = issueRequest(server, rawRequest);
+
+            assertThat("response.status", response.getStatus(), is(200));
+            String responseContent = response.getContent();
+            assertThat("response content", responseContent, allOf(
+                containsString("ServerName=[BarLocalName]"),
+                containsString("ServerPort=[9999]"),
+                containsString("LocalName=[BarLocalName]"),
+                containsString("LocalPort=[9999]"),
+                containsString("RequestURL=[http://BarLocalName:9999/dump]")
+            ));
+        }
+    }
+
+    @Test
+    public void testLocalAuthorityNoPortHttp11EmptyHostRedirect() throws Exception
+    {
+        HostPort localAuthority = new HostPort("FooLocalName");
+
+        try (CloseableServer server = startServer(localAuthority))
+        {
+            String rawRequest = "GET /redirect HTTP/1.1\r\n" +
+                "Host: \r\n" +
+                "Connect: close\r\n" +
+                "\r\n";
+
+            HttpTester.Response response = issueRequest(server, rawRequest);
+
+            assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+            String location = response.get(HttpHeader.LOCATION);
+            assertThat(location, is("http://FooLocalName/dump"));
+        }
+    }
+
+    @Test
+    public void testLocalAuthorityNoPortHttp11EmptyHostDump() throws Exception
+    {
+        HostPort localAuthority = new HostPort("FooLocalName");
+
+        try (CloseableServer server = startServer(localAuthority))
+        {
+            String rawRequest = "GET /dump HTTP/1.1\r\n" +
+                "Host: \r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+            HttpTester.Response response = issueRequest(server, rawRequest);
+
+            assertThat("response.status", response.getStatus(), is(200));
+            String responseContent = response.getContent();
+            assertThat("response content", responseContent, allOf(
+                containsString("ServerName=[FooLocalName]"),
+                containsString("ServerPort=[80]"),
+                containsString("LocalName=[FooLocalName]"),
+                containsString("LocalPort=[0]"),
+                containsString("RequestURL=[http://FooLocalName/dump]")
+            ));
+        }
+    }
+
+    @Test
+    public void testLocalAuthorityWithPortHttp11EmptyHostRedirect() throws Exception
+    {
+        HostPort localAuthority = new HostPort("BarLocalName:9999");
+
+        try (CloseableServer server = startServer(localAuthority))
+        {
+            String rawRequest = "GET /redirect HTTP/1.1\r\n" +
+                "Host: \r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+            HttpTester.Response response = issueRequest(server, rawRequest);
+
+            assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+            String location = response.get(HttpHeader.LOCATION);
+            assertThat(location, is("http://BarLocalName:9999/dump"));
+        }
+    }
+
+    @Test
+    public void testLocalAuthorityWithPortHttp11EmptyHostDump() throws Exception
+    {
+        HostPort localAuthority = new HostPort("BarLocalName:9999");
+
+        try (CloseableServer server = startServer(localAuthority))
+        {
+            String rawRequest = "GET /dump HTTP/1.1\r\n" +
+                "Host: \r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+            HttpTester.Response response = issueRequest(server, rawRequest);
+
+            assertThat("response.status", response.getStatus(), is(200));
+            String responseContent = response.getContent();
+            assertThat("response content", responseContent, allOf(
+                containsString("ServerName=[BarLocalName]"),
+                containsString("ServerPort=[9999]"),
+                containsString("LocalName=[BarLocalName]"),
+                containsString("LocalPort=[9999]"),
+                containsString("RequestURL=[http://BarLocalName:9999/dump]")
+            ));
+        }
+    }
+
+    @Test
+    public void testUnsetLocalAuthorityHttp11EmptyHostRedirect() throws Exception
+    {
+        try (CloseableServer server = startServer())
+        {
+            String rawRequest = "GET /redirect HTTP/1.1\r\n" +
+                "Host: \r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+            HttpTester.Response response = issueRequest(server, rawRequest);
+
+            assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+            String location = response.get(HttpHeader.LOCATION);
+            assertThat(location, is("http://" + server.getConnectorLocalName() + ":" + server.getConnectorLocalPort() + "/dump"));
+        }
+    }
+
+    @Test
+    public void testUnsetLocalAuthorityHttp11EmptyHostDump() throws Exception
+    {
+        try (CloseableServer server = startServer())
+        {
+            String rawRequest = "GET /dump HTTP/1.1\r\n" +
+                "Host: \r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+            HttpTester.Response response = issueRequest(server, rawRequest);
+
+            assertThat("response.status", response.getStatus(), is(200));
+            String responseContent = response.getContent();
+            assertThat("response content", responseContent, allOf(
+                containsString("ServerName=[" + server.getConnectorLocalName() + "]"),
+                containsString("ServerPort=[" + server.getConnectorLocalPort() + "]"),
+                containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
+                containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
+                containsString("RequestURL=[http://" + server.getConnectorLocalName() + ":" + server.getConnectorLocalPort() + "/dump]")
+            ));
+        }
+    }
+
+    @Test
+    public void testLocalAuthorityNoPortHttp11ValidHostDump() throws Exception
+    {
+        HostPort localAuthority = new HostPort("ZedLocalName");
+
+        try (CloseableServer server = startServer(localAuthority))
+        {
+            String rawRequest = "GET /dump HTTP/1.1\r\n" +
+                "Host: jetty.eclipse.org:8888\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+            HttpTester.Response response = issueRequest(server, rawRequest);
+
+            assertThat("response.status", response.getStatus(), is(200));
+            String responseContent = response.getContent();
+            assertThat("response content", responseContent, allOf(
+                containsString("ServerName=[jetty.eclipse.org]"),
+                containsString("ServerPort=[8888]"),
+                containsString("LocalName=[ZedLocalName]"),
+                containsString("LocalPort=[0]"),
+                containsString("RequestURL=[http://jetty.eclipse.org:8888/dump]")
+            ));
+        }
+    }
+
+    @Test
+    public void testLocalAuthorityWithPortHttp11ValidHostDump() throws Exception
+    {
+        HostPort localAuthority = new HostPort("ZedLocalName:9999");
+
+        try (CloseableServer server = startServer(localAuthority))
+        {
+            String rawRequest = "GET /dump HTTP/1.1\r\n" +
+                "Host: jetty.eclipse.org:8888\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+            HttpTester.Response response = issueRequest(server, rawRequest);
+
+            assertThat("response.status", response.getStatus(), is(200));
+            String responseContent = response.getContent();
+            assertThat("response content", responseContent, allOf(
+                containsString("ServerName=[jetty.eclipse.org]"),
+                containsString("ServerPort=[8888]"),
+                containsString("LocalName=[ZedLocalName]"),
+                containsString("LocalPort=[9999]"),
+                containsString("RequestURL=[http://jetty.eclipse.org:8888/dump]")
+            ));
         }
     }
 }

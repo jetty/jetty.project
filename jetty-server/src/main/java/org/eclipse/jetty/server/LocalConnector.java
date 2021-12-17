@@ -35,6 +35,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayOutputStream2;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -219,6 +220,14 @@ public class LocalConnector extends AbstractConnector
         onEndPointOpened(endPoint);
 
         connection.onOpen();
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        // Change the default authority name here so that it's obvious during testing
+        setLocalAuthority(new HostPort("connector.local."));
+        super.doStart();
     }
 
     /**

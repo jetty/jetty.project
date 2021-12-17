@@ -164,7 +164,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private ConnectionFactory _defaultConnectionFactory;
     /* The name used to link up virtual host configuration to named connectors */
     private String _name;
-    /* The authority used to override the connection local name/port (see ServletRequest.getLocalName(), and ServletRequest.getLocalPort()) */
+    /* The authority used to define the connection local name/port (see ServletRequest.getLocalName(), and ServletRequest.getLocalPort()). */
     private HostPort _localAuthority;
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
@@ -302,40 +302,21 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         return _acceptors.length;
     }
 
-    /**
-     * @return Returns the optional local authority override
-     */
     @ManagedAttribute("local authority")
     public HostPort getLocalAuthority()
     {
         return _localAuthority;
     }
 
-    /**
-     * Optional override of connection local name/port used within application API layer
-     * when identifying the local host name/port of a connected endpoint.
-     *
-     * @param authority the full authority including host and port, or null to unset
-     */
-    public void setLocalAuthority(String authority)
-    {
-        setLocalAuthority(new HostPort(authority));
-    }
-
-    /**
-     * Optional override of connection local name/port used within application API layer
-     * when identifying the local host name/port of a connected endpoint.
-     *
-     * @param authority the full authority including host and port, or null to unset
-     */
     public void setLocalAuthority(HostPort authority)
     {
-        if (authority == null)
-            _localAuthority = null;
-        else if (!authority.hasHost() || !authority.hasPort())
-            throw new IllegalStateException("Local Authority must have host and port declared");
-        else
-            _localAuthority = authority;
+        if (isStarted())
+            throw new IllegalStateException(getState());
+
+        if (!authority.hasHost())
+            throw new IllegalStateException("Local Authority must have host declared");
+
+        _localAuthority = authority;
     }
 
     @Override
@@ -358,6 +339,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
 
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _acceptors.length);
+
+        // default the local authority if unset by connector implementation or user
+        if (_localAuthority == null)
+            setLocalAuthority(new HostPort("localhost"));
 
         super.doStart();
 

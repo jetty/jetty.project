@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.net.SocketException;
 import java.nio.channels.Channel;
 import java.nio.channels.SelectableChannel;
@@ -80,6 +81,7 @@ public class ServerConnector extends AbstractNetworkConnector
     private final AtomicReference<Closeable> _acceptor = new AtomicReference<>();
     private volatile ServerSocketChannel _acceptChannel;
     private volatile boolean _inheritChannel = false;
+    private volatile String _localName = "localhost";
     private volatile int _localPort = -1;
     private volatile int _acceptQueueSize = 0;
     private volatile boolean _reuseAddress = true;
@@ -283,6 +285,19 @@ public class ServerConnector extends AbstractNetworkConnector
         _inheritChannel = inheritChannel;
     }
 
+    private void setAcceptChannel(ServerSocketChannel acceptChannel) throws IOException
+    {
+        _acceptChannel = acceptChannel;
+        _localPort = _acceptChannel.socket().getLocalPort();
+        SocketAddress localAddress = _acceptChannel.socket().getLocalSocketAddress();
+        if (localAddress instanceof InetSocketAddress)
+            _localName = ((InetSocketAddress)localAddress).getHostString();
+        else
+            _localName = localAddress.toString();
+        if (_localPort <= 0)
+            throw new IOException("Server channel not bound");
+    }
+
     /**
      * Open the connector using the passed ServerSocketChannel.
      * This open method can be called before starting the connector to pass it a ServerSocketChannel
@@ -295,11 +310,8 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         if (isStarted())
             throw new IllegalStateException(getState());
+        setAcceptChannel(acceptChannel);
         updateBean(_acceptChannel, acceptChannel);
-        _acceptChannel = acceptChannel;
-        _localPort = _acceptChannel.socket().getLocalPort();
-        if (_localPort <= 0)
-            throw new IOException("Server channel not bound");
     }
 
     @Override
@@ -307,11 +319,8 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         if (_acceptChannel == null)
         {
-            _acceptChannel = openAcceptChannel();
+            setAcceptChannel(openAcceptChannel());
             _acceptChannel.configureBlocking(true);
-            _localPort = _acceptChannel.socket().getLocalPort();
-            if (_localPort <= 0)
-                throw new IOException("Server channel not bound");
             addBean(_acceptChannel);
         }
     }
@@ -424,6 +433,13 @@ public class ServerConnector extends AbstractNetworkConnector
     public Object getTransport()
     {
         return _acceptChannel;
+    }
+
+    @Override
+    @ManagedAttribute("local name")
+    protected String getLocalName()
+    {
+        return _localName;
     }
 
     @Override

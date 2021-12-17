@@ -23,6 +23,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -35,7 +36,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 @ManagedObject("AbstractNetworkConnector")
 public abstract class AbstractNetworkConnector extends AbstractConnector implements NetworkConnector
 {
-
     private volatile String _host;
     private volatile int _port = 0;
 
@@ -74,10 +74,18 @@ public abstract class AbstractNetworkConnector extends AbstractConnector impleme
         return -1;
     }
 
+    /**
+     * @return the local address host name, never null
+     */
+    protected abstract String getLocalName();
+
     @Override
     protected void doStart() throws Exception
     {
         open();
+        // define a default local authority if unspecified by user
+        if (getLocalAuthority() == null)
+            setLocalAuthority(new HostPort(getLocalName(), getLocalPort()));
         super.doStart();
     }
 

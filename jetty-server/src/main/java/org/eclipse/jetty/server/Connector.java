@@ -25,6 +25,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
@@ -102,4 +103,17 @@ public interface Connector extends LifeCycle, Container, Graceful
      * @return The connector name or null.
      */
     String getName();
+
+    /**
+     * @return Returns the connection local authority (name/port).
+     */
+    HostPort getLocalAuthority();
+
+    /**
+     * Specify the connection local authority (name/port) used within application API layer
+     * when identifying the local host name/port of a connected endpoint.
+     *
+     * @param authority the full authority including host and port, or null to reset to default
+     */
+    void setLocalAuthority(HostPort authority);
 }
