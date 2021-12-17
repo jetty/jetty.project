@@ -238,12 +238,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * This is equivalent to a listener that iterates over the individual
      * listeners returned from <code>getBeans(HttpChannel.Listener.class);</code>,
      * except that: <ul>
-     *     <li>The result is precomputed, so it is more efficient</li>
-     *     <li>The result is ordered by the order added.</li>
-     *     <li>The result is immutable.</li>
+     * <li>The result is precomputed, so it is more efficient</li>
+     * <li>The result is ordered by the order added.</li>
+     * <li>The result is immutable.</li>
      * </ul>
-     * @see #getBeans(Class)
+     *
      * @return An unmodifiable list of EventListener beans
+     * @see #getBeans(Class)
      */
     public HttpChannel.Listener getHttpChannelListeners()
     {
@@ -313,10 +314,13 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         if (isStarted())
             throw new IllegalStateException(getState());
 
-        if (!authority.hasHost())
+        // Unset the local authority to use default behaviors
+        if (authority == null)
+            _localAuthority = null;
+        else if (!authority.hasHost())
             throw new IllegalStateException("Local Authority must have host declared");
-
-        _localAuthority = authority;
+        else
+            _localAuthority = authority;
     }
 
     @Override
@@ -339,10 +343,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
 
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _acceptors.length);
-
-        // default the local authority if unset by connector implementation or user
-        if (_localAuthority == null)
-            setLocalAuthority(new HostPort("localhost"));
 
         super.doStart();
 

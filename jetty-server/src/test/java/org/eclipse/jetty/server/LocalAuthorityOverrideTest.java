@@ -92,7 +92,7 @@ public class LocalAuthorityOverrideTest
 
         public String getConnectorLocalName()
         {
-            return HostPort.normalizeHost(this.connector.getLocalName());
+            return "127.0.0.1";
         }
 
         public int getConnectorLocalPort()
