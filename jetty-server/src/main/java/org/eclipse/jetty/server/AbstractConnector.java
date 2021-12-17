@@ -238,13 +238,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * This is equivalent to a listener that iterates over the individual
      * listeners returned from <code>getBeans(HttpChannel.Listener.class);</code>,
      * except that: <ul>
-     * <li>The result is precomputed, so it is more efficient</li>
-     * <li>The result is ordered by the order added.</li>
-     * <li>The result is immutable.</li>
+     *     <li>The result is precomputed, so it is more efficient</li>
+     *     <li>The result is ordered by the order added.</li>
+     *     <li>The result is immutable.</li>
      * </ul>
-     *
-     * @return An unmodifiable list of EventListener beans
      * @see #getBeans(Class)
+     * @return An unmodifiable list of EventListener beans
      */
     public HttpChannel.Listener getHttpChannelListeners()
     {
