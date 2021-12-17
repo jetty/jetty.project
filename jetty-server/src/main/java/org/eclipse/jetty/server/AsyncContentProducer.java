@@ -352,13 +352,26 @@ class AsyncContentProducer implements ContentProducer
                 _transformedContent = _rawContent;
             }
 
-            if (_transformedContent != null && _transformedContent.isEmpty())
+            if (_transformedContent != null)
             {
-                if (_transformedContent != _rawContent)
-                    _transformedContent.succeeded();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("nulling depleted transformed content {}", this);
-                _transformedContent = null;
+                if (_transformedContent.isSpecial())
+                {
+                    if (_transformedContent != _rawContent)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("making special transformed content the new raw content {}", this);
+                        _rawContent.succeeded();
+                        _rawContent = _transformedContent;
+                    }
+                }
+                else if (_transformedContent.isEmpty())
+                {
+                    if (_transformedContent != _rawContent)
+                        _transformedContent.succeeded();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("nulling depleted transformed content {}", this);
+                    _transformedContent = null;
+                }
             }
 
             if (_transformedContent == null)
@@ -366,7 +379,7 @@ class AsyncContentProducer implements ContentProducer
                 if (_rawContent.isSpecial())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("using special raw content as transformed content {}", this);
+                        LOG.debug("checking if special raw content should be refreshed {}", this);
 
                     // In case the _rawContent was set by consumeAll(), check the httpChannel
                     // to see if it has a more precise error. Otherwise, the exact same
@@ -382,7 +395,6 @@ class AsyncContentProducer implements ContentProducer
                             LOG.debug("refreshed raw content: {} {}", _rawContent, this);
                     }
 
-                    _transformedContent = _rawContent;
                     break;
                 }
                 else if (_rawContent.isEmpty())
@@ -433,7 +445,7 @@ class AsyncContentProducer implements ContentProducer
             Response response = _httpChannel.getResponse();
             if (response.isCommitted())
                 _httpChannel.abort(failure);
-            return null;
+            return _transformedContent;
         }
     }
 
