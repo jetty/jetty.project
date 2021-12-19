@@ -20,7 +20,7 @@ The `server` module depends on the xref:og-module-threadpool[`threadpool` module
 
 [NOTE]
 ====
-The `server` module configures the shared parameters for generic HTTP handline, but does not enable any specific network protocol.  You have to explicitly enable the protocols you want to support by enabling, for example, the xref:og-module-http[`http` module] for clear-text HTTP/1.1 support, or the xref:og-module-http2[`http2` module] for secure HTTP/2 support, etc.
+The `server` module configures the shared parameters for generic HTTP handling, but does not enable any specific network protocol.  You have to explicitly enable the protocols you want to support by enabling, for example, the xref:og-module-http[`http` module] for clear-text HTTP/1.1 support, or the xref:og-module-http2[`http2` module] for secure HTTP/2 support, etc.
 
 See also the xref:og-protocols[protocols section] for more information about the supported protocols.
 ====
@@ -28,7 +28,7 @@ See also the xref:og-protocols[protocols section] for more information about the
 [[og-module-server-http-config]]
 ====== HTTP Configuration Properties
 
-The module properties to configure generic HTTP properties are listed below. Mostly they frequently apply to both HTTP/1 and HTTP/2, but some parameters are version specific:
+The module properties to configure generic HTTP properties are listed below. Mostly they frequently apply to HTTP/1, HTTP/2 and HTTP/3, but some parameters are version specific:
 
 ----
 include::{JETTY_HOME}/modules/server.mod[tags=documentation-http-config]

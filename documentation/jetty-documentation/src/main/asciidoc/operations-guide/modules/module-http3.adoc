@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-[[og-howtos]]
-=== Eclipse Jetty How-Tos
+[[og-module-http3]]
+===== Module `http3`
 
-* xref:og-protocols-http[Configure Clear-Text HTTP/1.1]
-* xref:og-protocols-https[Configure Secure HTTP/1.1 (https)]
-* xref:og-protocols-http2c[Configure Clear-Text HTTP/2]
-* xref:og-protocols-http2s[Configure Secure HTTP/2]
-* xref:og-protocols-http3[Configure HTTP/3]
-* xref:og-protocols-proxy[Configure Jetty Behind a Load Balancer or Reverse Proxy]
-* xref:og-logging[Configure Jetty Logging]
-* xref:og-troubleshooting[Troubleshooting]
+The `http3` module enables support for the HTTP/3 protocol.
+
+The module properties are:
+
+----
+include::{JETTY_HOME}/modules/http3.mod[tags=documentation]
+----

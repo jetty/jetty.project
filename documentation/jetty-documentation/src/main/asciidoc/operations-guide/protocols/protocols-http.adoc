@@ -48,7 +48,7 @@ The `http.ini` file is the file that you want to edit to configure network and p
 
 Note that the `http` Jetty module depends on the `server` Jetty module.
 
-Some parameters that you may want to configure are in fact common HTTP parameters that are applied not only for clear-text HTTP/1.1, but also for secure HTTP/1.1 or for clear-text HTTP/2 or for encrypted HTTP/2, and these configuration parameters may be present in the `server` module configuration file.
+Some parameters that you may want to configure are in fact common HTTP parameters that are applied not only for clear-text HTTP/1.1, but also for secure HTTP/1.1 or for clear-text HTTP/2 or for encrypted HTTP/2, or for HTTP/3, and these configuration parameters may be present in the `server` module configuration file.
 
 You can force the creation of the `server.ini` file via:
 

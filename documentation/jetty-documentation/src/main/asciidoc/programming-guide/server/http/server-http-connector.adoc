@@ -139,6 +139,51 @@ The fact that the HTTP/2 protocol comes before the HTTP/1.1 protocol indicates t
 
 Note also that the default protocol set in the ALPN ``ConnectionFactory``, which is used in case ALPN is not supported by the client, is HTTP/1.1 -- if the client does not support ALPN is probably an old client so HTTP/1.1 is the safest choice.
 
+[[pg-server-http-connector-protocol-http3]]
+====== HTTP/3
+
+HTTP/3 is based on UDP, differently from HTTP/1 and HTTP/2 that are based on TCP.
+
+An HTTP/3 client may initiate a connection (using the QUIC protocol via UDP) on the canonical HTTP secure port `443`, but chances are that the connection may not succeed (for example, the server does not listen for UDP on port `443`, only listens for TCP).
+
+For this reason, HTTP servers typically listen on the canonical HTTP secure port `443` for HTTP/1 and HTTP/2, and advertise the availability HTTP/3 as an link:https://datatracker.ietf.org/doc/html/rfc7838[_HTTP alternate service_] on a different port (and possibly a different host).
+
+For example, an HTTP/2 response may include the following header:
+
+[source]
+----
+Alt-Svc: h3=":843"
+----
+
+The presence of this header indicates that protocol `h3` is available on the same host (since no host is defined before the port), but on port `843`.
+The HTTP/3 client may now initiate a QUIC connection on port `843` and make HTTP/3 requests.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+
+participant client
+participant "server:443" as h2server
+participant "server:843" as h3server
+
+client -> h2server : HTTP/2 request
+h2server -> client : HTTP/2 response\nAlt-Svc: h3=":843"
+client -> h3server : HTTP/3 requests
+h3server -> client : HTTP/3 responses
+...
+----
+
+The code necessary to configure HTTP/2 is described in xref:pg-server-http-connector-protocol-http2-tls[this section].
+
+To setup HTTP/3, for example on port `843`, you need the following code (some of which could be shared with other connectors such as HTTP/2's):
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=h3]
+----
+
 [[pg-server-http-connector-protocol-proxy-http11]]
 ====== Jetty Behind a Load Balancer
 

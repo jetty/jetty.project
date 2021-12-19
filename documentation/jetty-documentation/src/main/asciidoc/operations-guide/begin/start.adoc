@@ -126,7 +126,7 @@ include::jetty[args="--module=http jetty.http.port=9999",highlight="(\{.*:9999})
 
 Note how Jetty is now listening on port `9999` for clear-text HTTP/1.1 connections.
 
-NOTE: If you want to enable support for different protocols such as secure HTTP/1.1 or HTTP/2, or configured Jetty behind a load balancer, read xref:og-protocols[this section].
+NOTE: If you want to enable support for different protocols such as secure HTTP/1.1 or HTTP/2 or HTTP/3, or configure Jetty behind a load balancer, read xref:og-protocols[this section].
 
 The Jetty server is now up and running, but it has no web applications deployed, so it just replies with `404 Not Found` to every request.
 It is time to xref:og-begin-deploy[deploy your web applications] to Jetty.
