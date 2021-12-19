@@ -72,7 +72,7 @@ A Jetty module may be dependent on other Jetty modules: for example, the `http` 
 Every feature in a Jetty server is enabled by enabling the corresponding Jetty module(s).
 
 For example, if you enable only the `http` Jetty module, then your Jetty standalone server will only be able to listen to a network port for clear-text HTTP requests.
-It will not be able to process secure HTTP (i.e. `https`) requests, it will not be able to process WebSocket, or HTTP/2 or any other protocol because the correspondent modules have not been enabled.
+It will not be able to process secure HTTP (i.e. `https`) requests, it will not be able to process WebSocket, or HTTP/2, or HTTP/3 or any other protocol because the correspondent modules have not been enabled.
 
 You can even start a Jetty server _without_ listening on a network port -- for example because you have enabled a custom module you wrote that provides the features you need.
 

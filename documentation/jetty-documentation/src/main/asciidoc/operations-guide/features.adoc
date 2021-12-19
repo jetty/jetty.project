@@ -19,6 +19,7 @@ If you know Eclipse Jetty already, jump to a feature:
 Protocols::
 * xref:og-protocols-http[HTTP/1.1 Support]
 * xref:og-protocols-http2[HTTP/2 Support]
+* xref:og-protocols-http3[HTTP/3 Support]
 * xref:og-protocols-websocket[WebSocket Support]
 
 Technologies::

@@ -30,7 +30,7 @@ You specify the proxy host and proxy port, and optionally also the addresses tha
 
 Configured in this way, `HttpClient` makes requests to the HTTP proxy (for plain-text HTTP requests) or establishes a tunnel via HTTP `CONNECT` (for encrypted HTTPS requests).
 
-Proxying is supported for both HTTP/1.1 and HTTP/2.
+Proxying is supported for HTTP/1.1 and HTTP/2.
 
 [[pg-client-http-proxy-authentication]]
 ===== Proxy Authentication Support

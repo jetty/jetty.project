@@ -63,7 +63,7 @@ The `deploy` module creates the `$JETTY_BASE/webapps` directory, the directory w
 ====
 The `deploy` module only provides the feature of deploying web applications.
 
-Whether these web applications are served via clear-text HTTP/1.1, or secure HTTP/1.1, or secure HTTP/2 (or even all of these protocols) depends on whether the correspondent Jetty modules have been enabled.
+Whether these web applications are served via clear-text HTTP/1.1, or secure HTTP/1.1, or secure HTTP/2, or HTTP/3 (or even all of these protocols) depends on whether the correspondent Jetty modules have been enabled.
 Refer to the xref:og-protocols[section about protocols] for further information.
 ====
 

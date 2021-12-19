@@ -52,7 +52,7 @@ Server -- Handlers
 
 The components that accept connections from clients are `org.eclipse.jetty.server.Connector` implementations.
 
-When a Jetty server interprets the HTTP protocol (both HTTP/1.1 and HTTP/2), it uses `org.eclipse.jetty.server.Handler` instances to process incoming requests and eventually produce responses.
+When a Jetty server interprets the HTTP protocol (HTTP/1.1, HTTP/2 or HTTP/3), it uses `org.eclipse.jetty.server.Handler` instances to process incoming requests and eventually produce responses.
 
 A `Server` must be created, configured and started:
 
@@ -108,7 +108,7 @@ Server -> Handlers : handle()
 First, the Jetty I/O layer emits an event that a socket has data to read.
 This event is converted to a call to `AbstractConnection.onFillable()`, where the `Connection` first reads from the `EndPoint` into a `ByteBuffer`, and then calls a protocol specific parser to parse the bytes in the `ByteBuffer`.
 
-The parser emit events that are protocol specific; the HTTP/2 parser, for example, emits events for each HTTP/2 frame that has been parsed.
+The parser emit events that are protocol specific; the HTTP/2 parser, for example, emits events for each HTTP/2 frame that has been parsed, and similarly does the HTTP/3 parser.
 The parser events are then converted to protocol independent events such as _"request start"_, _"request headers"_, _"request content chunk"_, etc.
 that in turn are converted into method calls to `HttpChannel`.
 
@@ -118,7 +118,7 @@ When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.
 ===== HttpChannel Events
 
 The central component processing HTTP requests is `HttpChannel`.
-There is a 1-to-1 relationship between an HTTP request/response and an `HttpChannel`, no matter what is the specific protocol that carries the HTTP request over the network (HTTP/1.1, HTTP/2 or FastCGI).
+There is a 1-to-1 relationship between an HTTP request/response and an `HttpChannel`, no matter what is the specific protocol that carries the HTTP request over the network (HTTP/1.1, HTTP/2, HTTP/3 or FastCGI).
 
 Advanced server applications may be interested in the progress of the processing of an HTTP request/response by `HttpChannel`.
 A typical case is to know exactly _when_ the HTTP request/response processing is complete, for example to monitor processing times.
