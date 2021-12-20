@@ -420,7 +420,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * When {@link Content} instances are generated, they are passed to the registered interceptor (if any)
      * that is then responsible for providing the actual content that is consumed by {@link #read(byte[], int, int)} and its
      * sibling methods.</p>
-     * <p>A minimal implementation could be as simple as:
+     * A minimal implementation could be as simple as:
      * <pre>
      * public HttpInput.Content readFrom(HttpInput.Content content)
      * {
@@ -453,11 +453,11 @@ public class HttpInput extends ServletInputStream implements Runnable
      *     occur only after the contained byte buffer is empty (see above) or at any time if the returned content was special.</li>
      *     <li>Once {@link #readFrom(Content)} returned a special content, subsequent calls to {@link #readFrom(Content)} must
      *     always return the same special content.</li>
+     *     <li>When {@link #readFrom(Content)} gets passed a non-special content, it must either return the content it was
+     *     passed or fully consume the contained byte buffer.</li>
      *     <li>Implementations implementing both this interface and {@link Destroyable} will have their
      *     {@link Destroyable#destroy()} method called when {@link #recycle()} is called.</li>
      * </ul>
-     * </p>
-     * <p></p>
      * @see org.eclipse.jetty.server.handler.gzip.GzipHttpInputInterceptor
      */
     public interface Interceptor
@@ -612,7 +612,9 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
 
         /**
-         * Check if the content is special.
+         * Check if the content is special. A content is deemed special
+         * if it does not hold bytes but rather conveys a special event,
+         * like when EOF has been reached or an error has occurred.
          * @return true if the content is special, false otherwise.
          */
         public boolean isSpecial()
