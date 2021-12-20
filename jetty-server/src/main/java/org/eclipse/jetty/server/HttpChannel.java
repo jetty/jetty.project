@@ -543,7 +543,7 @@ public class HttpChannel extends Attributes.Lazy
                 error = _error != null;
                 if (!error)
                 {
-                    if (_onContentAvailable != null && _onContentAvailable != onContentAvailable)
+                    if (_onContentAvailable != null)
                         throw new IllegalArgumentException("Demand pending");
                     _onContentAvailable = onContentAvailable;
                 }
