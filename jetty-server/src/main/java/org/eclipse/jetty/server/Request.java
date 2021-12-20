@@ -1409,6 +1409,19 @@ public class Request implements HttpServletRequest
             }
         }
 
+        if (_channel != null)
+        {
+            Connector connector = _channel.getConnector();
+            if (connector != null)
+            {
+                HostPort serverAuth = connector.getServerUriAuthority();
+                if (serverAuth != null)
+                {
+                    return formatAddrOrHost(serverAuth.getHost());
+                }
+            }
+        }
+
         // Return host from connection
         String name = getLocalName();
         if (name != null)
@@ -1454,6 +1467,17 @@ public class Request implements HttpServletRequest
             {
                 metadata.getURI().setAuthority(authority.getHost(), authority.getPort());
                 return authority.getPort();
+            }
+        }
+
+        if (_channel != null)
+        {
+            Connector connector = _channel.getConnector();
+            if (connector != null)
+            {
+                HostPort serverAuth = connector.getServerUriAuthority();
+                if (serverAuth != null)
+                    return serverAuth.getPort();
             }
         }
 

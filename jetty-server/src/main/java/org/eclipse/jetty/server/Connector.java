@@ -105,6 +105,8 @@ public interface Connector extends LifeCycle, Container, Graceful
     String getName();
 
     /**
+     * Get the Local Authority of the connection
+     *
      * @return Returns the connection local authority (name/port).
      */
     HostPort getLocalAuthority();
@@ -113,7 +115,22 @@ public interface Connector extends LifeCycle, Container, Graceful
      * Specify the connection local authority (name/port) used within application API layer
      * when identifying the local host name/port of a connected endpoint.
      *
-     * @param authority the full authority including host and port, or null to reset to default
+     * @param authority the full authority including host and port, or null to reset to default behavior
      */
     void setLocalAuthority(HostPort authority);
+
+    /**
+     * Get the optional Server URI authority default
+     *
+     * @return Returns the connection server authority (name/port).
+     */
+    HostPort getServerUriAuthority();
+
+    /**
+     * Specify the connection server uri authority (name/port) used within application API layer
+     * when identifying the server host name/port of a connected endpoint.
+     *
+     * @param authority the authority host (and optional port), or null to reset to default behavior
+     */
+    void setServerUriAuthority(HostPort authority);
 }

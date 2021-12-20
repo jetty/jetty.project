@@ -315,6 +315,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      *
      * @return the local name if overridden, or the local address, or
      * null in the case of no local address (usually seen in connectors not based on IP networking).
+
      */
     public String getLocalName()
     {
