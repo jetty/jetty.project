@@ -316,7 +316,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
             return false; // TODO 404? 500? Error dispatch ???
 
         // TODO make the lambda part of the scope request to save allocation?
-        _context.call(() -> next.handle(scoped, new ScopedResponse(response)));
+        _context.call(() -> next.handle(scoped, new ContextResponse(response)));
         return true;
     }
 
@@ -449,9 +449,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
         }
     }
 
-    private class ScopedResponse extends Response.Wrapper
+    private class ContextResponse extends Response.Wrapper
     {
-        public ScopedResponse(Response response)
+        public ContextResponse(Response response)
         {
             super(response);
         }
