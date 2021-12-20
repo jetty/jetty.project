@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 
@@ -29,6 +31,7 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -55,6 +58,8 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     private String name;
     private int port;
     private long idleTimeout;
+    private HostPort serverAuthority;
+    private SocketAddress localAddress;
 
     public MavenServerConnector()
     {
@@ -251,6 +256,43 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     public String getName()
     {
         return this.name;
+    }
+
+    @Override
+    public SocketAddress getLocalAddress()
+    {
+        return this.localAddress;
+    }
+
+    @Override
+    public void setLocalAddress(SocketAddress localAddress)
+    {
+        Objects.requireNonNull(localAddress, "Local Address");
+
+        if (isStarted())
+            throw new IllegalStateException(getState());
+
+        this.localAddress = localAddress;
+    }
+
+    @Override
+    public HostPort getServerAuthority()
+    {
+        return this.serverAuthority;
+    }
+
+    @Override
+    public void setServerAuthority(HostPort authority)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+
+        if (authority == null)
+            this.serverAuthority = null;
+        else if (!authority.hasHost())
+            throw new IllegalStateException("Server URI Authority must have host declared");
+        else
+            this.serverAuthority = authority;
     }
 
     public int getLocalPort()
