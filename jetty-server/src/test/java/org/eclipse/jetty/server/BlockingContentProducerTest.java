@@ -136,14 +136,14 @@ public class BlockingContentProducerTest
             contentProducer.setInterceptor(content -> new HttpInput.ErrorContent(new Throwable("testBlockingContentProducerInterceptorGeneratesError interceptor error")));
 
             HttpInput.Content content1 = contentProducer.nextContent();
-            assertThat(content1.isSpecial(), Matchers.is(true));
-            assertThat(content1.getError().getMessage(), Matchers.is("testBlockingContentProducerInterceptorGeneratesError interceptor error"));
+            assertThat(content1.isSpecial(), is(true));
+            assertThat(content1.getError().getMessage(), is("testBlockingContentProducerInterceptorGeneratesError interceptor error"));
 
             HttpInput.Content content2 = contentProducer.nextContent();
-            assertThat(content2.isSpecial(), Matchers.is(true));
-            assertThat(content2.getError().getMessage(), Matchers.is("testBlockingContentProducerInterceptorGeneratesError interceptor error"));
+            assertThat(content2.isSpecial(), is(true));
+            assertThat(content2.getError().getMessage(), is("testBlockingContentProducerInterceptorGeneratesError interceptor error"));
         }
-        assertThat(contentSucceededCount.get(), Matchers.is(1));
+        assertThat(contentSucceededCount.get(), is(1));
     }
 
     @Test
@@ -163,14 +163,14 @@ public class BlockingContentProducerTest
             contentProducer.setInterceptor(content -> new HttpInput.EofContent());
 
             HttpInput.Content content1 = contentProducer.nextContent();
-            assertThat(content1.isSpecial(), Matchers.is(true));
-            assertThat(content1.isEof(), Matchers.is(true));
+            assertThat(content1.isSpecial(), is(true));
+            assertThat(content1.isEof(), is(true));
 
             HttpInput.Content content2 = contentProducer.nextContent();
-            assertThat(content2.isSpecial(), Matchers.is(true));
-            assertThat(content2.isEof(), Matchers.is(true));
+            assertThat(content2.isSpecial(), is(true));
+            assertThat(content2.isEof(), is(true));
         }
-        assertThat(contentSucceededCount.get(), Matchers.is(1));
+        assertThat(contentSucceededCount.get(), is(1));
     }
 
     @Test
@@ -193,14 +193,14 @@ public class BlockingContentProducerTest
             });
 
             HttpInput.Content content1 = contentProducer.nextContent();
-            assertThat(content1.isSpecial(), Matchers.is(true));
-            assertThat(content1.getError().getCause().getMessage(), Matchers.is("testBlockingContentProducerInterceptorThrows error"));
+            assertThat(content1.isSpecial(), is(true));
+            assertThat(content1.getError().getCause().getMessage(), is("testBlockingContentProducerInterceptorThrows error"));
 
             HttpInput.Content content2 = contentProducer.nextContent();
-            assertThat(content2.isSpecial(), Matchers.is(true));
-            assertThat(content1.getError().getCause().getMessage(), Matchers.is("testBlockingContentProducerInterceptorThrows error"));
+            assertThat(content2.isSpecial(), is(true));
+            assertThat(content1.getError().getCause().getMessage(), is("testBlockingContentProducerInterceptorThrows error"));
         }
-        assertThat(contentFailedCount.get(), Matchers.is(1));
+        assertThat(contentFailedCount.get(), is(1));
     }
 
     @Test
@@ -226,16 +226,16 @@ public class BlockingContentProducerTest
             assertThat(error, nullValue());
 
             HttpInput.Content lastContent = contentProducer.nextContent();
-            assertThat(lastContent.isSpecial(), Matchers.is(true));
-            assertThat(lastContent.isEof(), Matchers.is(true));
+            assertThat(lastContent.isSpecial(), is(true));
+            assertThat(lastContent.isEof(), is(true));
         }
 
-        assertThat(interceptor.contents.size(), Matchers.is(4));
-        assertThat(interceptor.contents.get(0).isSpecial(), Matchers.is(false));
-        assertThat(interceptor.contents.get(1).isSpecial(), Matchers.is(false));
-        assertThat(interceptor.contents.get(2).isSpecial(), Matchers.is(false));
-        assertThat(interceptor.contents.get(3).isSpecial(), Matchers.is(true));
-        assertThat(interceptor.contents.get(3).isEof(), Matchers.is(true));
+        assertThat(interceptor.contents.size(), is(4));
+        assertThat(interceptor.contents.get(0).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(1).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(2).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(3).isSpecial(), is(true));
+        assertThat(interceptor.contents.get(3).isEof(), is(true));
     }
 
     @Test
@@ -258,19 +258,19 @@ public class BlockingContentProducerTest
             contentProducer.setInterceptor(interceptor);
 
             Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
-            assertThat(error.getMessage(), Matchers.is("testBlockingContentProducerErrorContentIsPassedToInterceptor error"));
+            assertThat(error.getMessage(), is("testBlockingContentProducerErrorContentIsPassedToInterceptor error"));
 
             HttpInput.Content lastContent = contentProducer.nextContent();
-            assertThat(lastContent.isSpecial(), Matchers.is(true));
-            assertThat(lastContent.getError().getMessage(), Matchers.is("testBlockingContentProducerErrorContentIsPassedToInterceptor error"));
+            assertThat(lastContent.isSpecial(), is(true));
+            assertThat(lastContent.getError().getMessage(), is("testBlockingContentProducerErrorContentIsPassedToInterceptor error"));
         }
 
-        assertThat(interceptor.contents.size(), Matchers.is(4));
-        assertThat(interceptor.contents.get(0).isSpecial(), Matchers.is(false));
-        assertThat(interceptor.contents.get(1).isSpecial(), Matchers.is(false));
-        assertThat(interceptor.contents.get(2).isSpecial(), Matchers.is(false));
-        assertThat(interceptor.contents.get(3).isSpecial(), Matchers.is(true));
-        assertThat(interceptor.contents.get(3).getError().getMessage(), Matchers.is("testBlockingContentProducerErrorContentIsPassedToInterceptor error"));
+        assertThat(interceptor.contents.size(), is(4));
+        assertThat(interceptor.contents.get(0).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(1).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(2).isSpecial(), is(false));
+        assertThat(interceptor.contents.get(3).isSpecial(), is(true));
+        assertThat(interceptor.contents.get(3).getError().getMessage(), is("testBlockingContentProducerErrorContentIsPassedToInterceptor error"));
     }
 
     @Test

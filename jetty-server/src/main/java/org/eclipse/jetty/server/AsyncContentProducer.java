@@ -324,33 +324,35 @@ class AsyncContentProducer implements ContentProducer
 
         while (true)
         {
-            if (_transformedContent != null && (_transformedContent.isSpecial() || !_transformedContent.isEmpty()))
+            if (_transformedContent != null)
             {
-                if (_transformedContent.isSpecial() && !_error)
+                if (_transformedContent.isSpecial() || !_transformedContent.isEmpty())
                 {
-                    // In case the _rawContent was set by consumeAll(), check the httpChannel
-                    // to see if it has a more precise error. Otherwise, the exact same
-                    // special content will be returned by the httpChannel; do not do that
-                    // if the _error flag was set, meaning the current error is definitive.
-                    HttpInput.Content refreshedRawContent = produceRawContent();
-                    if (refreshedRawContent != null)
-                        _rawContent = _transformedContent = refreshedRawContent;
-                    _error = _rawContent.getError() != null;
+                    if (_transformedContent.isSpecial() && !_error)
+                    {
+                        // In case the _rawContent was set by consumeAll(), check the httpChannel
+                        // to see if it has a more precise error. Otherwise, the exact same
+                        // special content will be returned by the httpChannel; do not do that
+                        // if the _error flag was set, meaning the current error is definitive.
+                        HttpInput.Content refreshedRawContent = produceRawContent();
+                        if (refreshedRawContent != null)
+                            _rawContent = _transformedContent = refreshedRawContent;
+                        _error = _rawContent.getError() != null;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("refreshed raw content: {} {}", _rawContent, this);
+                    }
+
                     if (LOG.isDebugEnabled())
-                        LOG.debug("refreshed raw content: {} {}", _rawContent, this);
+                        LOG.debug("transformed content not yet depleted, returning it {}", this);
+                    return _transformedContent;
                 }
-
-                if (LOG.isDebugEnabled())
-                    LOG.debug("transformed content not yet depleted, returning it {}", this);
-                return _transformedContent;
-            }
-
-            if (_transformedContent != null && _transformedContent.isEmpty() && !_transformedContent.isSpecial())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("current transformed content depleted {}", this);
-                _transformedContent.succeeded();
-                _transformedContent = null;
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("current transformed content depleted {}", this);
+                    _transformedContent.succeeded();
+                    _transformedContent = null;
+                }
             }
 
             if (_rawContent == null)
@@ -390,7 +392,7 @@ class AsyncContentProducer implements ContentProducer
                 return;
             }
 
-            // If the interceptor generated a null content, recycle the raw content now if its empty.
+            // If the interceptor generated a null content, recycle the raw content now if it is empty.
             if (_transformedContent == null && _rawContent.isEmpty() && !_rawContent.isSpecial())
             {
                 if (LOG.isDebugEnabled())
@@ -400,14 +402,13 @@ class AsyncContentProducer implements ContentProducer
                 return;
             }
 
-            // If the interceptor returned the raw content, recycle the raw content now if its empty.
+            // If the interceptor returned the raw content, recycle the raw content now if it is empty.
             if (_transformedContent == _rawContent && _rawContent.isEmpty() && !_rawContent.isSpecial())
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("interceptor returned the raw content, recycle the empty raw content now {}", this);
                 _rawContent.succeeded();
                 _rawContent = _transformedContent = null;
-                return;
             }
         }
         else
