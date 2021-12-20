@@ -124,7 +124,7 @@ public interface Connector extends LifeCycle, Container, Graceful
      *
      * @return Returns the connection server authority (name/port).
      */
-    HostPort getServerUriAuthority();
+    HostPort getServerAuthority();
 
     /**
      * Specify the connection server uri authority (name/port) used within application API layer
@@ -132,5 +132,5 @@ public interface Connector extends LifeCycle, Container, Graceful
      *
      * @param authority the authority host (and optional port), or null to reset to default behavior
      */
-    void setServerUriAuthority(HostPort authority);
+    void setServerAuthority(HostPort authority);
 }

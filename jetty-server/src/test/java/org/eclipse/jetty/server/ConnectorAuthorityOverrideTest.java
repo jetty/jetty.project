@@ -375,8 +375,6 @@ public class ConnectorAuthorityOverrideTest
             HttpTester.Response response = issueRequest(server, rawRequest);
 
             assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
-            String location = response.get(HttpHeader.LOCATION);
-            assertThat(location, is("http://foo.server.authority:9999/dump"));
         }
     }
 
@@ -603,7 +601,7 @@ public class ConnectorAuthorityOverrideTest
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         if (serverUriAuthority != null)
-            connector.setServerUriAuthority(serverUriAuthority);
+            connector.setServerAuthority(serverUriAuthority);
         if (localAuthority != null)
             connector.setLocalAuthority(localAuthority);
         connector.setPort(0);

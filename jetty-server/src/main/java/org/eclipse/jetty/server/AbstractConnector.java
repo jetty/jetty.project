@@ -330,12 +330,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     }
 
     @ManagedAttribute("server uri authority")
-    public HostPort getServerUriAuthority()
+    public HostPort getServerAuthority()
     {
         return _serverUriAuthority;
     }
 
-    public void setServerUriAuthority(HostPort authority)
+    public void setServerAuthority(HostPort authority)
     {
         if (isStarted())
             throw new IllegalStateException(getState());

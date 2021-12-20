@@ -1414,7 +1414,7 @@ public class Request implements HttpServletRequest
             Connector connector = _channel.getConnector();
             if (connector != null)
             {
-                HostPort serverAuth = connector.getServerUriAuthority();
+                HostPort serverAuth = connector.getServerAuthority();
                 if (serverAuth != null)
                 {
                     return formatAddrOrHost(serverAuth.getHost());
@@ -1475,7 +1475,7 @@ public class Request implements HttpServletRequest
             Connector connector = _channel.getConnector();
             if (connector != null)
             {
-                HostPort serverAuth = connector.getServerUriAuthority();
+                HostPort serverAuth = connector.getServerAuthority();
                 if (serverAuth != null)
                     return serverAuth.getPort();
             }
