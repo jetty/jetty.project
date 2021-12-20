@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -50,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * Note how Runnables are returned to indicate that further work is needed. These
  * can be given to an ExecutionStrategy instead of calling known methods like HttpChannel.handle().
  */
-public class HttpChannel extends AttributesMap
+public class HttpChannel extends Attributes.Lazy
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
@@ -76,6 +77,7 @@ public class HttpChannel extends AttributesMap
     private final ConnectionMetaData _connectionMetaData;
     private final HttpConfiguration _configuration;
     private final SerializedInvoker _serializedInvoker;
+    private final Attributes _requestAttributes = new Attributes.Lazy();
     private int _requests;
 
     private HttpStream _stream;
@@ -366,7 +368,7 @@ public class HttpChannel extends AttributesMap
         }
     }
 
-    private class ChannelRequest extends AttributesMap implements Request
+    private class ChannelRequest implements Attributes, Request
     {
         final MetaData.Request _metaData;
         final String _id;
@@ -380,6 +382,7 @@ public class HttpChannel extends AttributesMap
         ChannelRequest(MetaData.Request metaData)
         {
             _requests++;
+            _requestAttributes.clearAttributes();
             _id = Integer.toString(_requests);
             _metaData = metaData;
             _response = new ChannelResponse(this);
@@ -437,7 +440,33 @@ public class HttpChannel extends AttributesMap
                     getConnectionMetaData().getConnection() instanceof HttpConnection)
                     return getConnectionMetaData().getConnection();
             }
-            return super.getAttribute(name);
+            return _requestAttributes.getAttribute(name);
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            return _requestAttributes.removeAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            if (Server.class.getName().equals(name) || HttpChannel.class.getName().equals(name) || HttpConnection.class.getName().equals(name))
+                return null;
+            return _requestAttributes.setAttribute(name, attribute);
+        }
+
+        @Override
+        public Set<String> getAttributeNames()
+        {
+            return _requestAttributes.getAttributeNames();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            _requestAttributes.clearAttributes();
         }
 
         @Override

@@ -26,7 +26,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.component.Dumpable;
 
-// TODO rename to Attributes.Lazy or perhaps remove? or make it a LazyLayer?
+/**
+ * @deprecated use {@link Attributes.Lazy}
+ */
+@Deprecated
 public class AttributesMap implements Attributes, Dumpable
 {
     private final AtomicReference<ConcurrentMap<String, Object>> _map = new AtomicReference<>();

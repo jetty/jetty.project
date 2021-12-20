@@ -28,6 +28,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
+// TODO lots of javadoc
 public interface Request extends Attributes, Callback, Executor, Content.Provider
 {
     String getId();

@@ -29,7 +29,7 @@ import java.util.Map;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
@@ -763,7 +763,7 @@ public class ProxyConnectionFactory extends DetectorConnectionFactory
         }
     }
 
-    public static class ProxyEndPoint extends AttributesMap implements EndPoint, EndPoint.Wrapper
+    public static class ProxyEndPoint extends Attributes.Lazy implements EndPoint, EndPoint.Wrapper
     {
         private static final int PP2_TYPE_NOOP = 0x04;
         private static final int PP2_TYPE_SSL = 0x20;

@@ -13,14 +13,17 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.AbstractSet;
+import java.io.IOException;
 import java.util.Collections;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.eclipse.jetty.util.component.Dumpable;
 
 /**
  * Attributes.
@@ -243,6 +246,109 @@ public interface Attributes
     }
 
     /**
+     * An {@link Attributes} implementation that lazily creates a backing map iff it is actually needed.
+     */
+    class Lazy implements Attributes, Dumpable
+    {
+        private final AtomicReference<ConcurrentMap<String, Object>> _map = new AtomicReference<>();
+
+        public Lazy()
+        {
+        }
+
+        private ConcurrentMap<String, Object> map()
+        {
+            return _map.get();
+        }
+
+        private ConcurrentMap<String, Object> ensureMap()
+        {
+            while (true)
+            {
+                ConcurrentMap<String, Object> map = map();
+                if (map != null)
+                    return map;
+                map = new ConcurrentHashMap<>();
+                if (_map.compareAndSet(null, map))
+                    return map;
+            }
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            Map<String, Object> map = map();
+            return map == null ? null : map.remove(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            if (attribute == null)
+                return removeAttribute(name);
+            return ensureMap().put(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            Map<String, Object> map = map();
+            return map == null ? null : map.get(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNames()
+        {
+            return Collections.unmodifiableSet(keySet());
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            Map<String, Object> map = map();
+            if (map != null)
+                map.clear();
+        }
+
+        public int size()
+        {
+            Map<String, Object> map = map();
+            return map == null ? 0 : map.size();
+        }
+
+        @Override
+        public String toString()
+        {
+            Map<String, Object> map = map();
+            return map == null ? "{}" : map.toString();
+        }
+
+        private Set<String> keySet()
+        {
+            Map<String, Object> map = map();
+            return map == null ? Collections.emptySet() : map.keySet();
+        }
+
+        public void addAll(Attributes attributes)
+        {
+            for (String name : attributes.getAttributeNames())
+                setAttribute(name, attributes.getAttribute(name));
+        }
+
+        @Override
+        public String dump()
+        {
+            return Dumpable.dump(this);
+        }
+
+        @Override
+        public void dump(Appendable out, String indent) throws IOException
+        {
+            Dumpable.dumpObjects(out, indent, String.format("%s@%x", this.getClass().getSimpleName(), hashCode()), map());
+        }
+    }
+
+    /**
      * An {@link Attributes} implementation backed by another {@link Attributes} instance, which is treated as immutable, but with a
      * ConcurrentHashMap used as a mutable layer over it.
      */
@@ -258,32 +364,31 @@ public interface Attributes
         };
 
         private final Attributes _persistent;
-        // TODO it is probably not correct to have a concurrent map over another concurrent map as some
-        //      of the operations are not atomic and will suffer from test then act issues if the underlying
-        //      map is mutated.   Need to review if hard atomic locking needed here?
         private final java.util.concurrent.ConcurrentMap<String, Object> _map = new ConcurrentHashMap<>();
-        private final Set<String> _names;
 
         public Layer(Attributes persistent)
         {
             _persistent = persistent;
-            _names = new LayeredNamesSet();
         }
 
         @Override
         public Object removeAttribute(String name)
         {
-            if (_persistent.getAttributeNames().contains(name))
+            Object p = _persistent.getAttribute(name);
+            try
             {
                 Object v = _map.put(name, REMOVED);
                 if (v == REMOVED)
                     return null;
                 if (v != null)
                     return v;
-                return _persistent.getAttribute(name);
+                return p;
             }
-            Object v = _map.remove(name);
-            return v == REMOVED ? null : v;
+            finally
+            {
+                if (p == null)
+                    _map.remove(name);
+            }
         }
 
         @Override
@@ -307,7 +412,15 @@ public interface Attributes
         @Override
         public Set<String> getAttributeNames()
         {
-            return _names;
+            Set<String> names = new HashSet<>(_persistent.getAttributeNames());
+            for (Map.Entry<String, Object> entry : _map.entrySet())
+            {
+                if (entry.getValue() == REMOVED)
+                    names.remove(entry.getKey());
+                else
+                    names.add(entry.getKey());
+            }
+            return Collections.unmodifiableSet(names);
         }
 
         @Override
@@ -346,78 +459,6 @@ public interface Attributes
                 return true;
             }
             return false;
-        }
-
-        private class LayeredNamesSet extends AbstractSet<String>
-        {
-            @Override
-            public void clear()
-            {
-                clearAttributes();
-            }
-
-            @Override
-            public Iterator<String> iterator()
-            {
-                Iterator<Map.Entry<String, Object>> m = _map.entrySet().iterator();
-                Iterator<String> p = _persistent.getAttributeNames().iterator();
-                return new Iterator<>()
-                {
-                    Object _next;
-
-                    @Override
-                    public boolean hasNext()
-                    {
-                        if (_next == null)
-                        {
-                            while (m.hasNext())
-                            {
-                                Map.Entry<String, Object> next = m.next();
-                                if (next.getValue() != REMOVED)
-                                {
-                                    _next = next.getKey();
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (_next == null)
-                        {
-                            while (p.hasNext())
-                            {
-                                Object next = p.next();
-                                if (_map.containsKey(next))
-                                    continue;
-                                _next = next;
-                                break;
-                            }
-                        }
-
-                        return _next != null;
-                    }
-
-                    @Override
-                    public String next()
-                    {
-                        if (hasNext())
-                        {
-                            String next = String.valueOf(_next);
-                            _next = null;
-                            return next;
-                        }
-                        throw new NoSuchElementException();
-                    }
-                };
-            }
-
-            @Override
-            public int size()
-            {
-                int s = 0;
-                for (Iterator<String> i = iterator(); i.hasNext(); i.next())
-                    s++;
-                return s;
-            }
         }
     }
 }
