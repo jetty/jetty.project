@@ -170,7 +170,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * The authority used to define the server uri authority fallback for the connection
      * (see ServletRequest.getServerName(), and ServletRequest.getServerPort()).
      */
-    private HostPort _serverUriAuthority;
+    private HostPort _serverAuthority;
     /**
      * The address used to define the local address for the connection
      * (see ServletRequest.getLocalName(), ServletRequest.getLocalAddr(), and ServletRequest.getLocalPort()).
@@ -330,7 +330,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @ManagedAttribute("server authority")
     public HostPort getServerAuthority()
     {
-        return _serverUriAuthority;
+        return _serverAuthority;
     }
 
     public void setServerAuthority(HostPort authority)
@@ -339,11 +339,11 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             throw new IllegalStateException(getState());
 
         if (authority == null)
-            _serverUriAuthority = null;
+            _serverAuthority = null;
         else if (!authority.hasHost())
             throw new IllegalStateException("Server URI Authority must have host declared");
         else
-            _serverUriAuthority = authority;
+            _serverAuthority = authority;
     }
 
     @Override
