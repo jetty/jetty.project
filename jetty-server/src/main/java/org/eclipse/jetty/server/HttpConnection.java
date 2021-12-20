@@ -19,7 +19,6 @@ import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -265,11 +264,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     public Set<String> getAttributeNames()
     {
         return _attributes.getAttributeNames();
-    }
-
-    public Set<Map.Entry<String, Object>> getAttributeEntrySet()
-    {
-        return _attributes.getAttributeEntrySet();
     }
 
     @Override
