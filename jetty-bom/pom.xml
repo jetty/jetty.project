@@ -173,6 +173,31 @@
         <version>11.0.8-SNAPSHOT</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>http3-client</artifactId>
+        <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>http3-common</artifactId>
+        <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>http3-http-client-transport</artifactId>
+        <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>http3-qpack</artifactId>
+        <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>http3-server</artifactId>
+        <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http-spi</artifactId>
         <version>11.0.8-SNAPSHOT</version>
@@ -248,6 +273,31 @@
         <version>11.0.8-SNAPSHOT</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-client</artifactId>
+        <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-common</artifactId>
+        <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-quiche-common</artifactId>
+        <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-quiche-jna</artifactId>
+        <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-server</artifactId>
+        <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-httpservice</artifactId>
         <version>11.0.8-SNAPSHOT</version>
@@ -300,7 +350,7 @@
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-unixdomain-server</artifactId>
-        <version>10.0.8-SNAPSHOT</version>
+        <version>11.0.8-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -394,4 +444,22 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
+
+  <profiles>
+    <profile>
+      <id>jdk17</id>
+      <activation>
+        <jdk>[17,)</jdk>
+      </activation>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>org.eclipse.jetty.quic</groupId>
+            <artifactId>quic-quiche-foreign-incubator</artifactId>
+            <version>11.0.8-SNAPSHOT</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
+    </profile>
+  </profiles>
 </project>

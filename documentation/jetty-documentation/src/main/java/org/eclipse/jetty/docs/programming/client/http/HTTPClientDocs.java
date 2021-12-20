@@ -62,6 +62,8 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.http3.client.HTTP3Client;
+import org.eclipse.jetty.http3.client.http.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
@@ -723,6 +725,21 @@ public class HTTPClientDocs
         HttpClient client = new HttpClient(transport);
         client.start();
         // end::http2Transport[]
+    }
+
+    public void http3Transport() throws Exception
+    {
+        // tag::http3Transport[]
+        // The HTTP3Client powers the HTTP/3 transport.
+        HTTP3Client h3Client = new HTTP3Client();
+        h3Client.getQuicConfiguration().setSessionRecvWindow(64 * 1024 * 1024);
+
+        // Create and configure the HTTP/3 transport.
+        HttpClientTransportOverHTTP3 transport = new HttpClientTransportOverHTTP3(h3Client);
+
+        HttpClient client = new HttpClient(transport);
+        client.start();
+        // end::http3Transport[]
     }
 
     public void fcgiTransport() throws Exception

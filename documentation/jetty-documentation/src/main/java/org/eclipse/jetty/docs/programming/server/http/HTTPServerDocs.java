@@ -33,6 +33,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
 import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
@@ -392,6 +394,27 @@ public class HTTPServerDocs
         server.addConnector(connector);
         server.start();
         // end::tlsALPNHTTP[]
+    }
+
+    public void h3() throws Exception
+    {
+        // tag::h3[]
+        Server server = new Server();
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // Create and configure the HTTP/3 connector.
+        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(httpConfig));
+        connector.setPort(843);
+        server.addConnector(connector);
+
+        server.start();
+        // end::h3[]
     }
 
     public void handlerTree()

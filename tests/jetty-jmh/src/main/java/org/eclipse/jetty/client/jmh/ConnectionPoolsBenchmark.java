@@ -64,7 +64,7 @@ public class ConnectionPoolsBenchmark
                 promise.succeeded(new MockConnection());
             }
         };
-        HttpDestination httpDestination = new HttpDestination(httpClient, new Origin("http", "localhost", 8080))
+        HttpDestination httpDestination = new HttpDestination(httpClient, new Origin("http", "localhost", 8080), false)
         {
         };
 

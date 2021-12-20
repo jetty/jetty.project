@@ -14,12 +14,12 @@
 package org.eclipse.jetty.client.dynamic;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -124,10 +124,9 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     private static ClientConnector findClientConnector(ClientConnectionFactory.Info[] infos)
     {
         return Arrays.stream(infos)
-            .map(info -> info.getBean(ClientConnector.class))
-            .filter(Objects::nonNull)
+            .flatMap(info -> info.getContainedBeans(ClientConnector.class).stream())
             .findFirst()
-            .orElse(new ClientConnector());
+            .orElseGet(ClientConnector::new);
     }
 
     @Override
@@ -179,7 +178,8 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return new MultiplexHttpDestination(getHttpClient(), origin);
+        SocketAddress address = origin.getAddress().getSocketAddress();
+        return new MultiplexHttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure(address));
     }
 
     @Override
@@ -195,7 +195,9 @@ public class HttpClientTransportDynamic extends AbstractConnectorHttpClientTrans
         }
         else
         {
-            if (destination.isSecure() && protocol.isNegotiate())
+            SocketAddress address = destination.getOrigin().getAddress().getSocketAddress();
+            boolean intrinsicallySecure = getClientConnector().isIntrinsicallySecure(address);
+            if (!intrinsicallySecure && destination.isSecure() && protocol.isNegotiate())
             {
                 factory = new ALPNClientConnectionFactory(getClientConnector().getExecutor(), this::newNegotiatedConnection, protocol.getProtocols());
             }

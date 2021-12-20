@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addConnector">
+    <Arg>
+      <New id="http3Connector" class="org.eclipse.jetty.http3.server.HTTP3ServerConnector">
+        <Arg><Ref refid="Server" /></Arg>
+        <Arg><Ref refid="sslContextFactory" /></Arg>
+        <Arg>
+          <Array type="org.eclipse.jetty.server.ConnectionFactory">
+            <Item>
+              <New class="org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory">
+                <Arg><Ref refid="sslHttpConfig" /></Arg>
+                <Get name="HTTP3Configuration">
+                  <Set name="streamIdleTimeout" property="jetty.http3.streamIdleTimeout" />
+                </Get>
+              </New>
+            </Item>
+          </Array>
+        </Arg>
+        <Set name="host" property="jetty.quic.host" />
+        <Set name="port"><Property name="jetty.quic.port" default="8444" /></Set>
+        <Set name="idleTimeout" property="jetty.quic.idleTimeout" />
+        <Get name="quicConfiguration">
+          <Set name="maxBidirectionalRemoteStreams" property="jetty.quic.maxBidirectionalRemoteStreams" />
+          <Set name="sessionRecvWindow" property="jetty.quic.sessionRecvWindow" />
+          <Set name="bidirectionalStreamRecvWindow" property="jetty.quic.bidirectionalStreamRecvWindow" />
+        </Get>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

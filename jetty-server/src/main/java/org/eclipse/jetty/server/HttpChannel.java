@@ -140,10 +140,11 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
     /**
      * Notify the channel that content is needed. If some content is immediately available, true is returned and
      * {@link #produceContent()} has to be called and will return a non-null object.
-     * If no content is immediately available, {@link HttpInput#onContentProducible()} is called once some content arrives
-     * and {@link #produceContent()} can be called without returning null.
-     * If a failure happens, then {@link HttpInput#onContentProducible()} will be called and an error content will return the
-     * error on the next call to {@link #produceContent()}.
+     * If no content is immediately available, an attempt to produce content must be made; if new content has been
+     * produced, true is returned; otherwise {@link HttpInput#onContentProducible()} is called once some content
+     * arrives and {@link #produceContent()} can be called without returning {@code null}.
+     * If a failure happens, then {@link HttpInput#onContentProducible()} will be called and an error content will
+     * return the error on the next call to {@link #produceContent()}.
      * @return true if content is immediately available.
      */
     public abstract boolean needContent();

@@ -94,8 +94,10 @@
                 org.eclipse.jetty.fcgi,
                 org.eclipse.jetty.gcloud,
                 org.eclipse.jetty.http2,
+                org.eclipse.jetty.http3,
                 org.eclipse.jetty.memcached,
                 org.eclipse.jetty.osgi,
+                org.eclipse.jetty.quic,
                 org.eclipse.jetty.websocket
               </includeGroupIds>
               <excludeGroupIds>
@@ -143,6 +145,19 @@
             <configuration>
               <doctitle>Eclipse Jetty API Doc - v${project.version}</doctitle>
               <windowtitle>Eclipse Jetty API Doc - v${project.version}</windowtitle>
+              <excludePackageNames>
+                org.eclipse.jetty.http3.client.http.internal;
+                org.eclipse.jetty.http3.client.internal;
+                org.eclipse.jetty.http3.internal;
+                org.eclipse.jetty.http3.internal.*;
+                org.eclipse.jetty.http3.qpack.internal;
+                org.eclipse.jetty.http3.qpack.internal.*;
+                org.eclipse.jetty.http3.server.internal;
+                org.eclipse.jetty.quic.common.internal;
+                org.eclipse.jetty.quic.quiche;
+                org.eclipse.jetty.quic.quiche.*;
+                org.eclipse.jetty.quic.server.internal;
+              </excludePackageNames>
             </configuration>
           </execution>
         </executions>
@@ -233,12 +248,32 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-server</artifactId>
+      <artifactId>http2-client</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-client</artifactId>
+      <artifactId>http2-http-client-transport</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-server</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http3</groupId>
+      <artifactId>http3-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http3</groupId>
+      <artifactId>http3-http-client-transport</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http3</groupId>
+      <artifactId>http3-server</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -269,6 +304,16 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-proxy</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>quic-client</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.quic</groupId>
+      <artifactId>quic-server</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

@@ -81,6 +81,7 @@
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
     <jetty.servlet.api.version>5.0.2</jetty.servlet.api.version>
+    <jetty-quiche-native.version>0.10.0</jetty-quiche-native.version>
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty.test.version>5.9</jetty.test.version>
     <jmh.version>1.33</jmh.version>
@@ -98,7 +99,7 @@
     <kerb-simplekdc.version>2.0.1</kerb-simplekdc.version>
     <log4j.version>1.2.17</log4j.version>
     <log4j2.version>2.16.0</log4j2.version>
-    <logback.version>1.3.0-alpha10</logback.version>
+    <logback.version>1.3.0-alpha11</logback.version>
     <mariadb.version>2.7.4</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
     <maven.version>3.8.4</maven.version>
@@ -132,7 +133,7 @@
     <license.maven.plugin.version>4.1</license.maven.plugin.version>
     <maven.antrun.plugin.version>3.0.0</maven.antrun.plugin.version>
     <maven.assembly.plugin.version>3.3.0</maven.assembly.plugin.version>
-    <maven.bundle.plugin.version>5.1.2</maven.bundle.plugin.version>
+    <maven.bundle.plugin.version>5.1.3</maven.bundle.plugin.version>
     <maven.clean.plugin.version>3.1.0</maven.clean.plugin.version>
     <maven.checkstyle.plugin.version>3.1.2</maven.checkstyle.plugin.version>
     <maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
@@ -199,8 +200,10 @@
     <module>jetty-util</module>
     <module>jetty-jmx</module>
     <module>jetty-io</module>
+    <module>jetty-quic</module>
     <module>jetty-http</module>
     <module>jetty-http2</module>
+    <module>jetty-http3</module>
     <module>jetty-server</module>
     <module>jetty-xml</module>
     <module>jetty-security</module>
@@ -1155,7 +1158,7 @@
       </dependency>
       <dependency>
         <groupId>net.java.dev.jna</groupId>
-        <artifactId>jna</artifactId>
+        <artifactId>jna-jpms</artifactId>
         <version>${jna.version}</version>
       </dependency>
       <dependency>
@@ -1665,6 +1668,31 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>http3-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>http3-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>http3-qpack</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>http3-http-client-transport</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.http3</groupId>
+        <artifactId>http3-server</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty.memcached</groupId>
         <artifactId>jetty-memcached-sessions</artifactId>
         <version>${project.version}</version>
@@ -1672,6 +1700,36 @@
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
         <artifactId>jetty-osgi-boot</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-quiche-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-quiche-jna</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-quiche-foreign-incubator</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.quic</groupId>
+        <artifactId>quic-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -1862,6 +1920,11 @@
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-jsp</artifactId>
         <version>${jsp.impl.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.mortbay.jetty.quiche</groupId>
+        <artifactId>jetty-quiche-native</artifactId>
+        <version>${jetty-quiche-native.version}</version>
       </dependency>
       <dependency>
         <groupId>org.mortbay.jasper</groupId>

@@ -55,7 +55,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.opentest4j.TestAbortedException;
 
-import static org.eclipse.jetty.http.client.Transport.UNIX_SOCKET;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -181,7 +180,6 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testTimeoutOnListenerWithExplicitConnection(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
         init(transport);
 
         long timeout = 1000;
@@ -208,7 +206,6 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testTimeoutIsCancelledOnSuccessWithExplicitConnection(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
         init(transport);
 
         long timeout = 1000;
@@ -287,7 +284,8 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
         init(transport);
         testConnectTimeoutFailsRequest(true);
     }
@@ -296,7 +294,8 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testNonBlockingConnectTimeoutFailsRequest(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
         init(transport);
         testConnectTimeoutFailsRequest(false);
     }
@@ -332,7 +331,9 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testConnectTimeoutIsCancelledByShorterRequestTimeout(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
+
         init(transport);
 
         String host = "10.255.255.1";
@@ -364,9 +365,11 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    public void retryAfterConnectTimeout(Transport transport) throws Exception
+    public void testRetryAfterConnectTimeout(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
+
         init(transport);
 
         final String host = "10.255.255.1";
@@ -421,15 +424,14 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testTimeoutCancelledWhenSendingThrowsException(Transport transport) throws Exception
     {
-        assumeRealNetwork(transport);
         init(transport);
 
         scenario.start(new EmptyServerHandler());
 
         long timeout = 1000;
         String uri = "badscheme://0.0.0.1";
-        if (scenario.getNetworkConnectorLocalPort().isPresent())
-            uri += ":" + scenario.getNetworkConnectorLocalPort().get();
+        if (scenario.getServerPort().isPresent())
+            uri += ":" + scenario.getServerPort().getAsInt();
         Request request = scenario.client.newRequest(uri);
 
         // TODO: assert a more specific Throwable
@@ -445,11 +447,6 @@ public class HttpClientTimeoutTest extends AbstractTest<TransportScenario>
 
         // If the task was not cancelled, it aborted the request.
         assertNull(request.getAbortCause());
-    }
-
-    private void assumeRealNetwork(Transport transport)
-    {
-        Assumptions.assumeTrue(transport != UNIX_SOCKET);
     }
 
     @ParameterizedTest

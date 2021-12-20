@@ -15,9 +15,11 @@
 ==== Configuring Secure Protocols
 
 Secure protocols are normal protocols such as HTTP/1.1, HTTP/2 or WebSocket that are wrapped by the link:https://en.wikipedia.org/wiki/Transport_Layer_Security[TLS protocol].
-Any network protocol can be wrapped with TLS.
+Any network protocol based on TCP can be wrapped with TLS.
 
-The `https` scheme used in URIs really means `tls+http/1.1` (or `tls+http/2`) and similarly the `wss` scheme used in URIs really means `tls+websocket`, etc.
+QUIC, the protocol based on UDP that transports HTTP/3, uses TLS messages but not the TLS protocol framing.
+
+The `https` scheme used in URIs really means `tls+http/1.1` (or `tls+http/2`, or `quic+http/3`) and similarly the `wss` scheme used in URIs really means `tls+websocket`, etc.
 Senders wrap the underlying protocol bytes (e.g. HTTP bytes or WebSocket bytes) with the TLS protocol, while receivers first interpret the TLS protocol to obtain the underlying protocol bytes, and then interpret the wrapped bytes.
 
 The xref:og-module-ssl[`ssl` Jetty module] allows you to configure a secure network connector; if other modules require encryption, they declare a dependency on the `ssl` module.

@@ -1,0 +1,146 @@
+@startuml
+title "H3 Quic Server"
+
+participant QuicConnector as "Quic\nConnector"
+participant SelectorManager as "Selector\nManager"
+participant QuicConnection as "Server\nQuic\nConnection"
+participant Quiche as "Quiche\nConnection"
+participant QuicSession as "Server\nQuic\nSession"
+participant ProtoSession as "H3 Proto\nSession"
+participant Decoder as "QPack\nDecoder"
+participant QuicStream as "Quic\nStream"
+participant HttpChannel as "Http\nChannel"
+autoactivate on
+
+
+QuicConnector -> SelectorManager ** : new
+
+== New Connection ==
+...
+SelectorManager -> QuicConnector : newConnection
+  QuicConnector -> QuicConnection ** : new
+return
+loop as packets received
+  ...
+  SelectorManager -> QuicConnection : onFillable
+    alt if unknown sessionId
+      QuicConnection -> Quiche ** : tryAcquire
+      QuicConnection -> QuicSession ** : newSession
+    end
+    QuicConnection -> QuicSession : process
+      QuicSession -> Quiche : feedCipherText
+      return
+      alt if established && protoSession==null
+        QuicSession -> Quiche : getNegotiatedProtocol
+        return protocol
+        QuicSession -> QuicConnector : getProtocolFactory
+        return factory
+        QuicSession -> ProtoSession **
+        activate ProtoSession
+        ProtoSession -> Decoder **
+        deactivate ProtoSession
+      end
+      QuicSession -> ProtoSession : produce
+        note right
+          This is an ExecutionStrategy.process call,
+          so it is mutually excluded from any other
+          thread still processing.
+        end note
+        alt if no stream iterator
+          ProtoSession -> Quiche : getReadableStreamIds
+          return readableStreamIds
+          ProtoSession -> Quiche : getWriteableStreamIds
+          return writeableStreamIds
+          ProtoSession -> ProtoSession : combineStreamIterators
+          return
+        else the current stream produces nothing
+          ProtoSession -> ProtoSession : next stream
+            note right
+              Keep calling produce on each stream until
+              a null task is returned, then move iterator
+              to next stream and produce on it.
+            end note
+          return
+        else
+          alt if stream does not exist
+            ProtoSession -> QuicStream **
+            ProtoSession -> HttpChannel **
+          end
+          ProtoSession -> QuicStream : produce
+            alt if writable
+              note over QuicStream
+                Note sure, but
+                probably ask generic stream
+                for a completeWrite task
+              end note
+            else if settings stream
+              QuicStream -> QuicSession : fill
+                QuicSession -> Quiche : drainClearText\nForStream
+                return bytes filled
+              return bytes filled
+              QuicStream -> QuicStream : parseSettings
+              return task
+            else if instruction stream
+              loop while task==null
+                alt if instruction available
+                  QuicSession -> Decoder : takeInstruction
+                    note right
+                      I'm not sure how we ensure a taken instruction
+                      is always written?  Do we queue them or only take them
+                      when writable?  If we queue, then perhaps they are just
+                      queued during production rather than returned as produced
+                      tasks
+                    end note
+                  return task
+                else if metadata available
+                  QuicStream -> Decoder : takeMetaData
+                  return task
+                else
+                  QuicStream -> QuicSession : fill
+                    QuicSession -> Quiche : drainClearText\nForStream
+                    return bytes filled
+                  return bytes filled
+                  QuicStream -> Decoder : parseInstruction
+                  return
+                end
+              end
+            else normal stream
+              loop task==null
+                alt if instruction available
+                  QuicStream -> Decoder : takeInstruction
+                  return task
+                else if metadata available
+                  QuicStream -> Decoder : takeMetaData
+                  return task
+                else
+                  QuicStream -> QuicSession : fill
+                    QuicSession -> Quiche : drainClearText\nForStream
+                    return bytes filled
+                  return bytes filled
+                  QuicStream -> QuicStream : parse
+                    alt if header frame
+                      QuicStream -> Decoder : decode
+                      return
+                    else data frame
+                      QuicStream -> HttpChannel : getCallback
+                      return task
+                    end
+                  return
+                end
+              end
+            end
+          return task
+        end
+      return task
+      QuicSession -> QuicSession : execute(task)
+        note right
+          This is an ExecutionStrategy execute, so maybe
+          EPC, PEC, PC etc.
+          A producer will loop here and try to produce again
+          A task executor will also try to produce again when done
+        end note
+      return
+    return
+  return
+end
+@enduml
