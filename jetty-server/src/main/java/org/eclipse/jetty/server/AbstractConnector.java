@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
@@ -171,10 +172,10 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      */
     private HostPort _serverUriAuthority;
     /**
-     * The authority used to define the local authority for the connection
+     * The address used to define the local address for the connection
      * (see ServletRequest.getLocalName(), ServletRequest.getLocalAddr(), and ServletRequest.getLocalPort()).
      */
-    private HostPort _localAuthority;
+    private SocketAddress _localAddress;
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
     private ThreadPoolBudget.Lease _lease;
@@ -311,25 +312,22 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         return _acceptors.length;
     }
 
-    public HostPort getLocalAuthority()
+    public SocketAddress getLocalAddress()
     {
-        return _localAuthority;
+        return _localAddress;
     }
 
-    public void setLocalAuthority(HostPort authority)
+    public void setLocalAddress(SocketAddress localAddress)
     {
-        Objects.requireNonNull(authority, "Authority");
+        Objects.requireNonNull(localAddress, "Local Address");
 
         if (isStarted())
             throw new IllegalStateException(getState());
 
-        if (!authority.hasHost() || !authority.hasPort())
-            throw new IllegalStateException("Local Authority must have both host and port declared");
-        else
-            _localAuthority = authority;
+        _localAddress = localAddress;
     }
 
-    @ManagedAttribute("server uri authority")
+    @ManagedAttribute("server authority")
     public HostPort getServerAuthority()
     {
         return _serverUriAuthority;

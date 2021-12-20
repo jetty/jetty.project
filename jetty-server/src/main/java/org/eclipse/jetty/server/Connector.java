@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -105,19 +106,19 @@ public interface Connector extends LifeCycle, Container, Graceful
     String getName();
 
     /**
-     * Get the Local Authority of the connection
+     * Get the Local Address of the connection
      *
-     * @return Returns the connection local authority (name/port).
+     * @return Returns the connection local address.
      */
-    HostPort getLocalAuthority();
+    SocketAddress getLocalAddress();
 
     /**
-     * Specify the connection local authority (name/port) used within application API layer
+     * Specify the connection local address used within application API layer
      * when identifying the local host name/port of a connected endpoint.
      *
-     * @param authority the full authority including host and port, or null to reset to default behavior
+     * @param localAddress the address to use for host/addr/port, or null to reset to default behavior
      */
-    void setLocalAuthority(HostPort authority);
+    void setLocalAddress(SocketAddress localAddress);
 
     /**
      * Get the optional Server URI authority default

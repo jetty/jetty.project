@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EventListener;
@@ -307,7 +308,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * if the local address is unavailable.
      * </p>
      * <p>
-     * Value can be overridden by {@link Connector#setLocalAuthority(HostPort)} for
+     * Value can be overridden by {@link Connector#setLocalAddress(SocketAddress)} for
      * scenarios where Jetty is being an intermediary and the local name
      * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
      * such as absolute-URI creation (eg: Location response header).
@@ -319,9 +320,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public String getLocalName()
     {
-        HostPort localAuthority = getConnector().getLocalAuthority();
-        if (localAuthority != null)
-            return localAuthority.getHost();
+        SocketAddress localAddress = getConnector().getLocalAddress();
+        if (localAddress != null)
+        {
+            if (localAddress instanceof InetSocketAddress)
+                return ((InetSocketAddress)localAddress).getHostName();
+        }
 
         InetSocketAddress local = getLocalAddress();
         if (local != null)
@@ -337,7 +341,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * This is the port the connector is bound to and is accepting connection on.
      * </p>
      * <p>
-     * Value can be overridden by {@link Connector#setLocalAuthority(HostPort)} for
+     * Value can be overridden by {@link Connector#setLocalAddress(SocketAddress)} for
      * scenarios where Jetty is being an intermediary and the local port
      * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
      * such as absolute-URI creation (eg: Location response header).
@@ -348,9 +352,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public int getLocalPort()
     {
-        HostPort localAuthority = getConnector().getLocalAuthority();
-        if (localAuthority != null)
-            return localAuthority.getPort();
+        SocketAddress localAddress = getConnector().getLocalAddress();
+        if (localAddress instanceof InetSocketAddress)
+            return ((InetSocketAddress)localAddress).getPort();
 
         InetSocketAddress local = getLocalAddress();
         return local == null ? 0 : local.getPort();
@@ -358,6 +362,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public InetSocketAddress getLocalAddress()
     {
+        SocketAddress localAddress = getConnector().getLocalAddress();
+        if (localAddress instanceof InetSocketAddress)
+            return ((InetSocketAddress)localAddress);
+
         return _endPoint.getLocalAddress();
     }
 

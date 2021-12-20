@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
@@ -50,9 +51,9 @@ public class ConnectorAuthorityOverrideTest
     @Test
     public void testLocalAuthorityHttp10NoHostDump() throws Exception
     {
-        HostPort localAuthority = new HostPort("foo.local.authority:80");
+        InetSocketAddress localAddress = InetSocketAddress.createUnresolved("foo.local.authority", 80);
 
-        try (CloseableServer server = startServer(null, localAuthority))
+        try (CloseableServer server = startServer(null, localAddress))
         {
             String rawRequest = "GET /dump HTTP/1.0\r\n" +
                 "\r\n";
@@ -64,7 +65,7 @@ public class ConnectorAuthorityOverrideTest
             assertThat("response content", responseContent, allOf(
                 containsString("ServerName=[foo.local.authority]"),
                 containsString("ServerPort=[80]"),
-                containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"), // TODO: how to modify address?
+                containsString("LocalAddr=[foo.local.authority]"),
                 containsString("LocalName=[foo.local.authority]"),
                 containsString("LocalPort=[80]"),
                 containsString("RequestURL=[http://foo.local.authority/dump]")
@@ -75,9 +76,9 @@ public class ConnectorAuthorityOverrideTest
     @Test
     public void testLocalAuthorityHttp10NoHostRedirect() throws Exception
     {
-        HostPort localAuthority = new HostPort("foo.local.authority:80");
+        InetSocketAddress localAddress = InetSocketAddress.createUnresolved("foo.local.authority", 80);
 
-        try (CloseableServer server = startServer(null, localAuthority))
+        try (CloseableServer server = startServer(null, localAddress))
         {
             String rawRequest = "GET /redirect HTTP/1.0\r\n" +
                 "\r\n";
@@ -93,9 +94,9 @@ public class ConnectorAuthorityOverrideTest
     @Test
     public void testLocalAuthorityHttp10NotFound() throws Exception
     {
-        HostPort localAuthority = new HostPort("foo.local.authority:7777");
+        InetSocketAddress localAddress = InetSocketAddress.createUnresolved("foo.local.authority", 777);
 
-        try (CloseableServer server = startServer(null, localAuthority))
+        try (CloseableServer server = startServer(null, localAddress))
         {
             String rawRequest = "GET /bogus HTTP/1.0\r\n" +
                 "\r\n";
@@ -105,16 +106,16 @@ public class ConnectorAuthorityOverrideTest
             // because of the custom error handler, we actually expect a redirect
             assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
             String location = response.get(HttpHeader.LOCATION);
-            assertThat(location, is("http://foo.local.authority:7777/error"));
+            assertThat(location, is("http://foo.local.authority:777/error"));
         }
     }
 
     @Test
     public void testLocalAuthorityHttp11EmptyHostDump() throws Exception
     {
-        HostPort localAuthority = new HostPort("foo.local.authority:80");
+        InetSocketAddress localAddress = InetSocketAddress.createUnresolved("foo.local.authority", 80);
 
-        try (CloseableServer server = startServer(null, localAuthority))
+        try (CloseableServer server = startServer(null, localAddress))
         {
             String rawRequest = "GET /dump HTTP/1.1\r\n" +
                 "Host: \r\n" +
@@ -128,7 +129,7 @@ public class ConnectorAuthorityOverrideTest
             assertThat("response content", responseContent, allOf(
                 containsString("ServerName=[foo.local.authority]"),
                 containsString("ServerPort=[80]"),
-                containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"), // TODO: how to modify address?
+                containsString("LocalAddr=[foo.local.authority]"),
                 containsString("LocalName=[foo.local.authority]"),
                 containsString("LocalPort=[80]"),
                 containsString("RequestURL=[http://foo.local.authority/dump]")
@@ -139,9 +140,9 @@ public class ConnectorAuthorityOverrideTest
     @Test
     public void testLocalAuthorityHttp11EmptyHostRedirect() throws Exception
     {
-        HostPort localAuthority = new HostPort("foo.local.authority:80");
+        InetSocketAddress localAddress = InetSocketAddress.createUnresolved("foo.local.authority", 80);
 
-        try (CloseableServer server = startServer(null, localAuthority))
+        try (CloseableServer server = startServer(null, localAddress))
         {
             String rawRequest = "GET /redirect HTTP/1.1\r\n" +
                 "Host: \r\n" +
@@ -159,9 +160,9 @@ public class ConnectorAuthorityOverrideTest
     @Test
     public void testLocalAuthorityHttp11ValidHostDump() throws Exception
     {
-        HostPort localAuthority = new HostPort("zed.local.authority:9999");
+        InetSocketAddress localAddress = InetSocketAddress.createUnresolved("zed.local.authority", 9999);
 
-        try (CloseableServer server = startServer(null, localAuthority))
+        try (CloseableServer server = startServer(null, localAddress))
         {
             String rawRequest = "GET /dump HTTP/1.1\r\n" +
                 "Host: jetty.eclipse.org:8888\r\n" +
@@ -175,7 +176,7 @@ public class ConnectorAuthorityOverrideTest
             assertThat("response content", responseContent, allOf(
                 containsString("ServerName=[jetty.eclipse.org]"),
                 containsString("ServerPort=[8888]"),
-                containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"), // TODO: how to modify address?
+                containsString("LocalAddr=[zed.local.authority]"),
                 containsString("LocalName=[zed.local.authority]"),
                 containsString("LocalPort=[9999]"),
                 containsString("RequestURL=[http://jetty.eclipse.org:8888/dump]")
@@ -186,9 +187,9 @@ public class ConnectorAuthorityOverrideTest
     @Test
     public void testLocalAuthorityHttp11ValidHostRedirect() throws Exception
     {
-        HostPort localAuthority = new HostPort("zed.local.authority:9999");
+        InetSocketAddress localAddress = InetSocketAddress.createUnresolved("zed.local.authority", 9999);
 
-        try (CloseableServer server = startServer(null, localAuthority))
+        try (CloseableServer server = startServer(null, localAddress))
         {
             String rawRequest = "GET /redirect HTTP/1.1\r\n" +
                 "Host: jetty.eclipse.org:8888\r\n" +
@@ -596,14 +597,14 @@ public class ConnectorAuthorityOverrideTest
         }
     }
 
-    private CloseableServer startServer(HostPort serverUriAuthority, HostPort localAuthority) throws Exception
+    private CloseableServer startServer(HostPort serverUriAuthority, InetSocketAddress localAddress) throws Exception
     {
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server);
         if (serverUriAuthority != null)
             connector.setServerAuthority(serverUriAuthority);
-        if (localAuthority != null)
-            connector.setLocalAuthority(localAuthority);
+        if (localAddress != null)
+            connector.setLocalAddress(localAddress);
         connector.setPort(0);
         server.addConnector(connector);
 
