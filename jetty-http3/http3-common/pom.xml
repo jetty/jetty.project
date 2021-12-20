@@ -10,6 +10,10 @@
   <artifactId>http3-common</artifactId>
   <name>Jetty :: HTTP3 :: Common</name>
 
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -18,22 +22,18 @@
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
       <artifactId>http3-qpack</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
       <artifactId>quic-common</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-io</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
