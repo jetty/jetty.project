@@ -28,7 +28,8 @@ public class HandleOnContentHandler extends Handler.Wrapper
         if (request.getContentLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
             return super.handle(request, response);
 
-        request.demandContent(new OnContentRunner(request, response));
+        request.setOnContentListener(new OnContentRunner(request, response));
+        request.demandContent();
         return true;
     }
 
@@ -48,6 +49,7 @@ public class HandleOnContentHandler extends Handler.Wrapper
         {
             try
             {
+                _request.setOnContentListener(null);
                 if (!HandleOnContentHandler.super.handle(_request, _response))
                     _request.failed(new IllegalStateException());
             }

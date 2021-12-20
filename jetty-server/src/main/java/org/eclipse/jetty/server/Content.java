@@ -245,7 +245,9 @@ public interface Content
     {
         Content readContent();
 
-        void demandContent(Runnable onContentAvailable);
+        void setOnContentListener(Runnable onContentAvailable);
+
+        void demandContent();
     }
 
     // TODO should these static methods be instance methods?   They are not very buffer efficient
@@ -263,9 +265,10 @@ public interface Content
                     Content c = provider.readContent();
                     if (c == null)
                     {
-                        provider.demandContent(this);
+                        provider.demandContent();
                         return;
                     }
+
                     if (c.hasRemaining())
                     {
                         out.copyBuffer(c.getByteBuffer());
@@ -273,6 +276,7 @@ public interface Content
                     }
                     if (c.isLast())
                     {
+                        provider.setOnContentListener(null);
                         if (c instanceof Content.Error)
                             content.failed(((Content.Error)c).getCause());
                         else
@@ -282,6 +286,7 @@ public interface Content
                 }
             }
         };
+        provider.setOnContentListener(onDataAvailable);
         onDataAvailable.run();
     }
 
@@ -312,7 +317,7 @@ public interface Content
                     Content c = provider.readContent();
                     if (c == null)
                     {
-                        provider.demandContent(this);
+                        provider.demandContent();
                         return;
                     }
                     if (c.hasRemaining())
@@ -322,6 +327,7 @@ public interface Content
                     }
                     if (c.isLast())
                     {
+                        provider.setOnContentListener(null);
                         if (c instanceof Content.Error)
                             content.failed(((Content.Error)c).getCause());
                         else
@@ -331,6 +337,7 @@ public interface Content
                 }
             }
         };
+        provider.setOnContentListener(onDataAvailable);
         onDataAvailable.run();
     }
 

@@ -192,9 +192,10 @@ public class ContextHandlerTest
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
 
-                request.demandContent(() ->
+                request.setOnContentListener(() ->
                 {
                     assertInContext(request);
+                    request.setOnContentListener(null);
                     Content content = request.readContent();
                     assertTrue(content.hasRemaining());
                     assertTrue(content.isLast());
@@ -211,6 +212,7 @@ public class ContextHandlerTest
                             throw new IllegalStateException();
                         }), content.getByteBuffer());
                 });
+                request.demandContent();
                 return true;
             }
         };
@@ -261,14 +263,16 @@ public class ContextHandlerTest
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
 
                 CountDownLatch latch = new CountDownLatch(1);
-                request.demandContent(() ->
+                request.setOnContentListener(() ->
                 {
                     assertInContext(request);
                     latch.countDown();
                 });
+                request.demandContent();
 
                 blocking.countDown();
                 assertTrue(latch.await(10, TimeUnit.SECONDS));
+                request.setOnContentListener(null);
                 Content content = request.readContent();
                 assertNotNull(content);
                 assertTrue(content.hasRemaining());

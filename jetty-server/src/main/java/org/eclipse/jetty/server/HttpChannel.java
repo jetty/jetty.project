@@ -212,7 +212,6 @@ public class HttpChannel extends Attributes.Lazy
             if (_request == null)
                 return null;
             Runnable onContent = _request._onContentAvailable;
-            _request._onContentAvailable = null;
             return _serializedInvoker.offer(onContent);
         }
     }
@@ -259,7 +258,6 @@ public class HttpChannel extends Attributes.Lazy
 
             // invoke onDataAvailable if we are currently demanding
             Runnable invokeOnContentAvailable = request._onContentAvailable;
-            request._onContentAvailable = null;
 
             // if a write is in progress, break the linkage and fail the callback
             Callback onWriteComplete = request._response._onWriteComplete;
@@ -535,18 +533,26 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        public void demandContent(Runnable onContentAvailable)
+        public void setOnContentListener(Runnable onContentAvailable)
+        {
+            try (AutoLock ignored = _lock.lock())
+            {
+                _onContentAvailable = onContentAvailable;
+            }
+        }
+
+        @Override
+        public void demandContent()
         {
             boolean error;
+            Runnable onContentAvailable;
             try (AutoLock ignored = _lock.lock())
             {
                 error = _error != null;
-                if (!error)
-                {
-                    if (_onContentAvailable != null)
-                        throw new IllegalArgumentException("Demand pending");
-                    _onContentAvailable = onContentAvailable;
-                }
+                if (_onContentAvailable == null)
+                    throw new IllegalStateException();
+
+                onContentAvailable = _onContentAvailable;
             }
 
             if (error)

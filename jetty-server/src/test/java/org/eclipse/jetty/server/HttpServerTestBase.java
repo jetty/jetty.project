@@ -335,8 +335,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     {
                         try (Blocking.Runnable blocker = Blocking.runnable())
                         {
-                            request.demandContent(blocker);
+                            request.setOnContentListener(blocker);
+                            request.demandContent();
                             blocker.block();
+                        }
+                        finally
+                        {
+                            request.setOnContentListener(null);
                         }
                         continue;
                     }

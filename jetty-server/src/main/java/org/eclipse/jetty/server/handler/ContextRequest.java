@@ -37,9 +37,12 @@ public class ContextRequest extends Request.Wrapper
     }
 
     @Override
-    public void demandContent(Runnable onContentAvailable)
+    public void setOnContentListener(Runnable onContentAvailable)
     {
-        super.demandContent(() -> _context.run(onContentAvailable));
+        if (onContentAvailable == null)
+            super.setOnContentListener(null);
+        else
+            super.setOnContentListener(() -> _context.run(onContentAvailable));
     }
 
     @Override

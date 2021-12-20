@@ -53,6 +53,7 @@ public class EchoHandler extends Handler.Abstract
         {
             _request = request;
             _response = response;
+            _request.setOnContentListener(this::succeeded);
         }
 
         @Override
@@ -61,7 +62,7 @@ public class EchoHandler extends Handler.Abstract
             Content content = _request.readContent();
             if (content == null)
             {
-                _request.demandContent(this::succeeded);
+                _request.demandContent();
                 return Action.SCHEDULED;
             }
 
@@ -75,7 +76,10 @@ public class EchoHandler extends Handler.Abstract
             }
 
             if (!content.hasRemaining() && content.isLast())
+            {
+                _request.setOnContentListener(null);
                 return Action.SUCCEEDED;
+            }
 
             _response.write(content.isLast(), this, content.getByteBuffer());
             return Action.SCHEDULED;

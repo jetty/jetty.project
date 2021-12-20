@@ -1298,12 +1298,17 @@ public class HttpConnectionTest
                         try
                         {
                             CountDownLatch blocker = new CountDownLatch(1);
-                            request.demandContent(blocker::countDown);
+                            request.setOnContentListener(blocker::countDown);
+                            request.demandContent();
                             blocker.await();
                         }
                         catch (InterruptedException e)
                         {
                             // ignored
+                        }
+                        finally
+                        {
+                            request.setOnContentListener(null);
                         }
                         continue;
                     }
