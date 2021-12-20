@@ -1019,7 +1019,7 @@ public class Request implements HttpServletRequest
             return formatAddrOrHost(localName);
         }
 
-        return null;
+        return ""; // not allowed to be null
     }
 
     /*
@@ -1427,7 +1427,7 @@ public class Request implements HttpServletRequest
         if (name != null)
             return formatAddrOrHost(name);
 
-        return null;
+        return ""; // not allowed to be null
     }
 
     /*
