@@ -446,7 +446,7 @@ class AsyncContentProducer implements ContentProducer
                 if (LOG.isDebugEnabled())
                     LOG.debug("interceptor generated special content {}", this);
             }
-            else if (content != _rawContent && !_rawContent.isSpecial() && _rawContent.remaining() == remainingBeforeInterception)
+            else if (content != _rawContent && !_rawContent.isSpecial() && !_rawContent.isEmpty() && _rawContent.remaining() == remainingBeforeInterception)
             {
                 IOException failure = new IOException("Interceptor " + _interceptor + " did not consume any of the " + _rawContent.remaining() + " remaining byte(s) of content");
                 failCurrentContent(failure);

@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.handler.gzip.GzipHttpInputInterceptor;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.hamcrest.core.Is;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -118,7 +117,7 @@ public class AsyncContentProducerTest
         try (AutoLock lock = contentProducer.lock())
         {
             Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
-            assertThat(error, Is.is(expectedError));
+            assertThat(error, is(expectedError));
         }
     }
 
@@ -310,6 +309,46 @@ public class AsyncContentProducerTest
     }
 
     @Test
+    public void testBlockingContentProducerInterceptorDoesNotConsumeEmptyContent()
+    {
+        AtomicInteger contentSucceededCount = new AtomicInteger();
+        AtomicInteger specialContentInterceptedCount = new AtomicInteger();
+        AtomicInteger nullContentInterceptedCount = new AtomicInteger();
+        ContentProducer contentProducer = new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(ByteBuffer.allocate(0))
+        {
+            @Override
+            public void succeeded()
+            {
+                contentSucceededCount.incrementAndGet();
+            }
+        }));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(content ->
+            {
+                if (content.isSpecial())
+                {
+                    specialContentInterceptedCount.incrementAndGet();
+                    return content;
+                }
+                nullContentInterceptedCount.incrementAndGet();
+                return null;
+            });
+
+            HttpInput.Content content1 = contentProducer.nextContent();
+            assertThat(content1.isSpecial(), is(true));
+            assertThat(content1.isEof(), is(true));
+
+            HttpInput.Content content2 = contentProducer.nextContent();
+            assertThat(content2.isSpecial(), is(true));
+            assertThat(content2.isEof(), is(true));
+        }
+        assertThat(contentSucceededCount.get(), is(1));
+        assertThat(specialContentInterceptedCount.get(), is(1));
+        assertThat(nullContentInterceptedCount.get(), is(1));
+    }
+
+    @Test
     public void testAsyncContentProducerGzipInterceptor() throws Exception
     {
         ByteBuffer[] uncompressedBuffers = new ByteBuffer[3];
@@ -387,7 +426,7 @@ public class AsyncContentProducerTest
             contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
 
             Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
-            assertThat(error, Is.is(expectedError));
+            assertThat(error, is(expectedError));
         }
     }
 
@@ -484,7 +523,7 @@ public class AsyncContentProducerTest
 
     private static class StaticContentHttpChannel extends HttpChannel
     {
-        private final HttpInput.Content content;
+        private HttpInput.Content content;
 
         public StaticContentHttpChannel(HttpInput.Content content)
         {
@@ -495,13 +534,15 @@ public class AsyncContentProducerTest
         @Override
         public boolean needContent()
         {
-            return true;
+            return content != null;
         }
 
         @Override
         public HttpInput.Content produceContent()
         {
-            return content;
+            HttpInput.Content c = content;
+            content = new HttpInput.EofContent();
+            return c;
         }
 
         @Override
