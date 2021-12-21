@@ -40,6 +40,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -275,6 +276,35 @@ public class AsyncContentProducerTest
             HttpInput.Content content2 = contentProducer.nextContent();
             assertThat(content2.isSpecial(), is(true));
             assertThat(content1.getError().getCause().getMessage(), is("testAsyncContentProducerInterceptorThrows error"));
+        }
+        assertThat(contentFailedCount.get(), is(1));
+    }
+
+    @Test
+    public void testAsyncContentProducerInterceptorDoesNotConsume()
+    {
+        AtomicInteger contentFailedCount = new AtomicInteger();
+        ContentProducer contentProducer = new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(ByteBuffer.allocate(1))
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                contentFailedCount.incrementAndGet();
+            }
+        }));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(content -> null);
+
+            assertThat(contentProducer.isReady(), is(true));
+
+            HttpInput.Content content1 = contentProducer.nextContent();
+            assertThat(content1.isSpecial(), is(true));
+            assertThat(content1.getError().getMessage(), endsWith("did not consume any of the 1 remaining byte(s) of content"));
+
+            HttpInput.Content content2 = contentProducer.nextContent();
+            assertThat(content2.isSpecial(), is(true));
+            assertThat(content1.getError().getMessage(), endsWith("did not consume any of the 1 remaining byte(s) of content"));
         }
         assertThat(contentFailedCount.get(), is(1));
     }
