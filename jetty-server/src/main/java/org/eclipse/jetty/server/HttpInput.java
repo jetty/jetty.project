@@ -453,8 +453,6 @@ public class HttpInput extends ServletInputStream implements Runnable
      *     occur only after the contained byte buffer is empty (see above) or at any time if the returned content was special.</li>
      *     <li>Once {@link #readFrom(Content)} returned a special content, subsequent calls to {@link #readFrom(Content)} must
      *     always return the same special content.</li>
-     *     <li>When {@link #readFrom(Content)} gets passed a non-special content, it must either return the content it was
-     *     passed or fully consume the contained byte buffer.</li>
      *     <li>Implementations implementing both this interface and {@link Destroyable} will have their
      *     {@link Destroyable#destroy()} method called when {@link #recycle()} is called.</li>
      * </ul>
@@ -464,8 +462,9 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         /**
          * @param content The content to be intercepted.
-         * The content will be modified with any data the interceptor consumes, but there is no requirement
-         * that all the data is consumed by the interceptor.
+         * The content will be modified with any data the interceptor consumes. There is no requirement
+         * that all the data is consumed by the interceptor but at least one byte must be consumed
+         * unless the returned content is the passed content instance.
          * @return The intercepted content or null if interception is completed for that content.
          */
         Content readFrom(Content content);
