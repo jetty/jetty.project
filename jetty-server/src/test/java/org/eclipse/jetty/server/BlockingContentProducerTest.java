@@ -37,8 +37,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.core.Is.is;
 
 public class BlockingContentProducerTest
 {
@@ -198,7 +198,7 @@ public class BlockingContentProducerTest
 
             HttpInput.Content content2 = contentProducer.nextContent();
             assertThat(content2.isSpecial(), is(true));
-            assertThat(content1.getError().getCause().getMessage(), is("testBlockingContentProducerInterceptorThrows error"));
+            assertThat(content2.getError().getCause().getMessage(), is("testBlockingContentProducerInterceptorThrows error"));
         }
         assertThat(contentFailedCount.get(), is(1));
     }
@@ -295,9 +295,49 @@ public class BlockingContentProducerTest
 
             HttpInput.Content content2 = contentProducer.nextContent();
             assertThat(content2.isSpecial(), is(true));
-            assertThat(content1.getError().getMessage(), endsWith("did not consume any of the 1 remaining byte(s) of content"));
+            assertThat(content2.getError().getMessage(), endsWith("did not consume any of the 1 remaining byte(s) of content"));
         }
         assertThat(contentFailedCount.get(), is(1));
+    }
+
+    @Test
+    public void testBlockingContentProducerInterceptorDoesNotConsumeEmptyContent()
+    {
+        AtomicInteger contentSucceededCount = new AtomicInteger();
+        AtomicInteger specialContentInterceptedCount = new AtomicInteger();
+        AtomicInteger nullContentInterceptedCount = new AtomicInteger();
+        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(new StaticContentHttpChannel(new HttpInput.Content(ByteBuffer.allocate(0))
+        {
+            @Override
+            public void succeeded()
+            {
+                contentSucceededCount.incrementAndGet();
+            }
+        })));
+        try (AutoLock lock = contentProducer.lock())
+        {
+            contentProducer.setInterceptor(content ->
+            {
+                if (content.isSpecial())
+                {
+                    specialContentInterceptedCount.incrementAndGet();
+                    return content;
+                }
+                nullContentInterceptedCount.incrementAndGet();
+                return null;
+            });
+
+            HttpInput.Content content1 = contentProducer.nextContent();
+            assertThat(content1.isSpecial(), is(true));
+            assertThat(content1.isEof(), is(true));
+
+            HttpInput.Content content2 = contentProducer.nextContent();
+            assertThat(content2.isSpecial(), is(true));
+            assertThat(content2.isEof(), is(true));
+        }
+        assertThat(contentSucceededCount.get(), is(1));
+        assertThat(specialContentInterceptedCount.get(), is(1));
+        assertThat(nullContentInterceptedCount.get(), is(1));
     }
 
     @Test
@@ -485,7 +525,7 @@ public class BlockingContentProducerTest
 
     private static class StaticContentHttpChannel extends HttpChannel
     {
-        private final HttpInput.Content content;
+        private HttpInput.Content content;
 
         public StaticContentHttpChannel(HttpInput.Content content)
         {
@@ -496,13 +536,15 @@ public class BlockingContentProducerTest
         @Override
         public boolean needContent()
         {
-            return true;
+            return content != null;
         }
 
         @Override
         public HttpInput.Content produceContent()
         {
-            return content;
+            HttpInput.Content c = content;
+            content = new HttpInput.EofContent();
+            return c;
         }
 
         @Override
