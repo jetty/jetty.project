@@ -106,7 +106,6 @@ public class Server extends HandlerWrapper implements Attributes
         ServerConnector connector = new ServerConnector(this);
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
-        addBean(_attributes);
     }
 
     /**
@@ -129,6 +128,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
+        addBean(_attributes);
         setServer(this);
     }
 
