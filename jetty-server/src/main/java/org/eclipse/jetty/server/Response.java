@@ -15,17 +15,22 @@ package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * Response is the absolute minimum to efficiently communicate a request.
+ * An asynchronous HTTP response.
+ * TODO Javadoc
  */
 public interface Response
 {
@@ -34,8 +39,6 @@ public interface Response
     int getStatus();
 
     void setStatus(int code);
-
-    // TODO do we need getHeaders and getMutableHeaders? or just a way to switch a Mutable HttpFields to be Immutable?
 
     HttpFields.Mutable getHeaders();
 
@@ -93,7 +96,7 @@ public interface Response
         getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
     }
 
-    default void sendError(int status, String reason, Callback callback)
+    default void writeError(int status, String message, Callback callback)
     {
         if (isCommitted())
         {
@@ -103,12 +106,17 @@ public interface Response
 
         setStatus(status);
         ByteBuffer content = BufferUtil.EMPTY_BUFFER;
+        HttpField errorCacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store"); // TODO static
+        getHeaders().put(errorCacheControl);
         if (!HttpStatus.hasNoBody(status))
         {
+            // TODO generalize the error handling
+            List<String> acceptable = getRequest().getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
+            List<String> charset = getRequest().getHeaders().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
             getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_8859_1.asString());
-            if (reason == null)
-                reason = HttpStatus.getMessage(status);
-            content = BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + reason + "</pre>");
+            if (message == null)
+                message = HttpStatus.getMessage(status);
+            content = BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + message + "</pre>");
         }
 
         write(true, callback, content);

@@ -47,6 +47,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -345,8 +346,8 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(404));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), nullValue());
-        assertThat(stream.getResponse().getFields().getLongField(HttpHeader.CONTENT_LENGTH), equalTo(0L));
+        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), notNullValue());
+        assertThat(stream.getResponse().getFields().getLongField(HttpHeader.CONTENT_LENGTH), greaterThan(0L));
     }
 
     @Test
@@ -380,8 +381,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), notNullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(500));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), nullValue());
-        assertThat(stream.getResponse().getFields().getLongField(HttpHeader.CONTENT_LENGTH), equalTo(0L));
+        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), containsString("text/html"));
     }
 
     @Test

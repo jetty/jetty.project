@@ -173,8 +173,8 @@ public class HttpChannel extends Attributes.Lazy
 
             _request = new ChannelRequest(request);
 
-            if (!_request.getPath().startsWith("/") && !HttpMethod.OPTIONS.is(request.getMethod()) && !HttpMethod.CONNECT.is(request.getMethod()))
-                throw new BadMessageException();
+            if (!HttpMethod.CONNECT.is(request.getMethod()) && !_request.getPath().startsWith("/") && !HttpMethod.OPTIONS.is(request.getMethod()))
+                throw new BadMessageException("Bad URI path");
 
             HttpURI uri = request.getURI();
             if (uri.hasViolations())

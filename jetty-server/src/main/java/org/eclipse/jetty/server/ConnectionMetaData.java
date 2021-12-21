@@ -18,6 +18,7 @@ import java.net.SocketAddress;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.HostPort;
 
 public interface ConnectionMetaData extends Attributes
 {
@@ -35,9 +36,23 @@ public interface ConnectionMetaData extends Attributes
 
     boolean isSecure();
 
-    SocketAddress getRemote();
+    /**
+     * @return The address of the remote end of this connection.  By default, this is the first hop of the underlying
+     *         network connection, but it may be wrapped to represent a more remote end point.
+     */
+    SocketAddress getRemoteAddress();
 
-    SocketAddress getLocal();
+    /**
+     * @return The address of the local end of this connection. By default, this is the address of the underlying
+     *         network connection, but it may be wrapped if the deployment wishes to hide all local details.
+     */
+    SocketAddress getLocalAddress();
+
+    /**
+     * @return The URI authority that this server represents. By default, this is the address of the network socket on
+     *         which the connection was accepted, but it may be wrapped to represent a virtual address.
+     */
+    HostPort getServerAuthority();
 
     class Wrapper extends Attributes.Wrapper implements ConnectionMetaData
     {
@@ -96,15 +111,21 @@ public interface ConnectionMetaData extends Attributes
         }
 
         @Override
-        public SocketAddress getRemote()
+        public SocketAddress getRemoteAddress()
         {
-            return _wrapped.getRemote();
+            return _wrapped.getRemoteAddress();
         }
 
         @Override
-        public SocketAddress getLocal()
+        public SocketAddress getLocalAddress()
         {
-            return _wrapped.getLocal();
+            return _wrapped.getLocalAddress();
+        }
+
+        @Override
+        public HostPort getServerAuthority()
+        {
+            return _wrapped.getServerAuthority();
         }
     }
 }

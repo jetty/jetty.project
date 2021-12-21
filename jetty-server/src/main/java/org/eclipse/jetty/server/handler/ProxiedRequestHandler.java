@@ -20,6 +20,7 @@ import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.HostPort;
 
 public class ProxiedRequestHandler extends Handler.Wrapper
 {
@@ -36,17 +37,24 @@ public class ProxiedRequestHandler extends Handler.Wrapper
             }
 
             @Override
-            public SocketAddress getRemote()
+            public SocketAddress getRemoteAddress()
             {
                 // TODO replace with value determined from headers
-                return super.getRemote();
+                return super.getRemoteAddress();
             }
 
             @Override
-            public SocketAddress getLocal()
+            public SocketAddress getLocalAddress()
             {
                 // TODO replace with value determined from headers
-                return super.getLocal();
+                return super.getLocalAddress();
+            }
+
+            @Override
+            public HostPort getServerAuthority()
+            {
+                // TODO replace with value determined from headers
+                return super.getServerAuthority();
             }
         };
 

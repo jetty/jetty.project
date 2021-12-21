@@ -31,6 +31,8 @@ import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.invoke.MethodType.methodType;
 
@@ -47,7 +49,7 @@ import static java.lang.invoke.MethodType.methodType;
  * <li>{@code X-Forwarded-Proto}</li>
  * <li>{@code X-Proxied-Https}</li>
  * </ul>
- * <p>If these headers are present, then the {@link Request} object is updated
+ * <p>If these headers are present, then the {@link Request} object is wrapped
  * so that the proxy is not seen as the other end point of the connection on which
  * the request came</p>
  * <p>Headers can also be defined so that forwarded SSL Session IDs and Cipher
@@ -140,6 +142,8 @@ import static java.lang.invoke.MethodType.methodType;
  */
 public class ForwardedRequestCustomizer implements Customizer
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
+
     private HostPortHttpField _forcedHost;
     private boolean _proxyAsAuthority = false;
     private boolean _forwardedPortAsAuthority = true;
@@ -476,7 +480,6 @@ public class ForwardedRequestCustomizer implements Customizer
             }
         }
 
-
         if (!match)
             return request;
 
@@ -487,6 +490,9 @@ public class ForwardedRequestCustomizer implements Customizer
 
         HttpURI.Mutable builder = HttpURI.build(request.getHttpURI());
         boolean httpUriChanged = false;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("forwarded {} {}", builder, forwarded);
 
         // Is secure status configured from headers?
         secure = forwarded.isSecure();
@@ -522,6 +528,8 @@ public class ForwardedRequestCustomizer implements Customizer
             }
 
             // Don't change port if port == IMPLIED.
+            if (request.getHttpURI().getPort() == 0 && port > 0 && port == HttpScheme.CACHE.get(config.getSecureScheme()).getDefaultPort())
+                port = 0;
 
             // Update authority if different from metadata
             if (!host.equalsIgnoreCase(builder.getHost()) ||
@@ -541,7 +549,7 @@ public class ForwardedRequestCustomizer implements Customizer
             authority = null;
         }
 
-        uri = httpUriChanged ? builder.asImmutable() : null;
+        uri = httpUriChanged ? builder.asImmutable() : request.getHttpURI();
 
         // Set Remote Address
         if (forwarded.hasFor())
@@ -550,7 +558,7 @@ public class ForwardedRequestCustomizer implements Customizer
             if (forPort <= 0)
             {
                 // TODO utility methods for this would be nice.
-                SocketAddress addr = request.getConnectionMetaData().getRemote();
+                SocketAddress addr = request.getConnectionMetaData().getRemoteAddress();
                 if (addr instanceof InetSocketAddress)
                     forPort = ((InetSocketAddress)addr).getPort();
             }
@@ -564,16 +572,18 @@ public class ForwardedRequestCustomizer implements Customizer
         ConnectionMetaData connectionMetaData = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
         {
             @Override
-            public SocketAddress getRemote()
+            public SocketAddress getRemoteAddress()
             {
-                return remote != null ? remote : super.getRemote();
+                return remote != null ? remote : super.getRemoteAddress();
             }
 
             @Override
-            public SocketAddress getLocal()
+            public HostPort getServerAuthority()
             {
-                // TODO should this be from the authority?
-                return super.getLocal();
+                if (authority != null)
+                    return authority.getHostPort();
+
+                return super.getServerAuthority();
             }
         };
 
@@ -599,6 +609,12 @@ public class ForwardedRequestCustomizer implements Customizer
             public boolean isSecure()
             {
                 return secure || super.isSecure();
+            }
+
+            @Override
+            public ConnectionMetaData getConnectionMetaData()
+            {
+                return connectionMetaData;
             }
         };
     }
@@ -1011,6 +1027,19 @@ public class ForwardedRequestCustomizer implements Customizer
                     _secure = true;
                 }
             }
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("Forwarded@%x[req=%s,auth=%s,for=%s,proto=%s,sec=%s/%s]",
+                hashCode(),
+                _request,
+                _authority,
+                _for,
+                _proto,
+                _secure,
+                _secureScheme);
         }
     }
 }

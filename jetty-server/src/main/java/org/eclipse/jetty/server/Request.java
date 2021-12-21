@@ -21,9 +21,11 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -49,7 +51,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     default boolean isSecure()
     {
-        return getConnectionMetaData().isSecure();
+        return HttpScheme.HTTPS.is(getHttpURI().getScheme());
     }
 
     long getContentLength();
@@ -75,10 +77,9 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     void setWrapper(Request request);
 
-    // TODO probably inline this once all converted or replace with safer convenience method
     default String getLocalAddr()
     {
-        SocketAddress local = getConnectionMetaData().getLocal();
+        SocketAddress local = getWrapper().getConnectionMetaData().getLocalAddress();
         if (local instanceof InetSocketAddress)
         {
             InetAddress address = ((InetSocketAddress)local).getAddress();
@@ -91,19 +92,17 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         return local.toString();
     }
 
-    // TODO probably inline this once all converted or replace with safer convenience method
     default int getLocalPort()
     {
-        SocketAddress local = getConnectionMetaData().getLocal();
+        SocketAddress local = getWrapper().getConnectionMetaData().getLocalAddress();
         if (local instanceof InetSocketAddress)
             return ((InetSocketAddress)local).getPort();
         return -1;
     }
 
-    // TODO probably inline this once all converted or replace with safer convenience method
     default String getRemoteAddr()
     {
-        SocketAddress remote = getConnectionMetaData().getRemote();
+        SocketAddress remote = getWrapper().getConnectionMetaData().getRemoteAddress();
         if (remote instanceof InetSocketAddress)
         {
             InetAddress address = ((InetSocketAddress)remote).getAddress();
@@ -116,48 +115,65 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         return remote.toString();
     }
 
-    // TODO probably inline this once all converted or replace with safer convenience method
     default int getRemotePort()
     {
-        SocketAddress remote = getConnectionMetaData().getRemote();
+        SocketAddress remote = getWrapper().getConnectionMetaData().getRemoteAddress();
         if (remote instanceof InetSocketAddress)
             return ((InetSocketAddress)remote).getPort();
         return -1;
     }
 
-    // TODO review
     default String getServerName()
     {
-        HttpURI uri = getHttpURI();
+        HttpURI uri = getWrapper().getHttpURI();
         if (uri.hasAuthority())
             return getChannel().formatAddrOrHost(uri.getHost());
 
-        SocketAddress local = getConnectionMetaData().getLocal();
+        HostPort authority = getWrapper().getConnectionMetaData().getServerAuthority();
+        if (authority != null)
+            return getChannel().formatAddrOrHost(authority.getHost());
+
+        SocketAddress local = getWrapper().getConnectionMetaData().getLocalAddress();
         if (local instanceof InetSocketAddress)
             return getChannel().formatAddrOrHost(((InetSocketAddress)local).getHostString());
 
         return local.toString();
     }
 
-    // TODO review
     default int getServerPort()
     {
-        HttpURI uri = getHttpURI();
+        int port = -1;
+
+        HttpURI uri = getWrapper().getHttpURI();
         if (uri.hasAuthority())
-            return uri.getPort();
+            port = uri.getPort();
+        else
+        {
+            HostPort authority = getWrapper().getConnectionMetaData().getServerAuthority();
+            if (authority != null)
+                port = authority.getPort();
+            else
+            {
+                SocketAddress local = getWrapper().getConnectionMetaData().getLocalAddress();
+                if (local instanceof InetSocketAddress)
+                    port = ((InetSocketAddress)local).getPort();
+            }
+        }
 
-        SocketAddress local = getConnectionMetaData().getLocal();
-        if (local instanceof InetSocketAddress)
-            return ((InetSocketAddress)local).getPort();
+        if (port <= 0)
+        {
+            HttpScheme scheme = HttpScheme.CACHE.get(getWrapper().getHttpURI().getScheme());
+            if (scheme != null)
+                return scheme.getDefaultPort();
+        }
 
-        return -1;
+        return port;
     }
 
-    // TODO review
     default MultiMap<String> extractQueryParameters()
     {
         MultiMap<String> params = new MultiMap<>();
-        String query = getHttpURI().getQuery();
+        String query = getWrapper().getHttpURI().getQuery();
         if (StringUtil.isNotBlank(query))
             UrlEncoded.decodeUtf8To(query, params);
         return params;

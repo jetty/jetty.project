@@ -231,15 +231,27 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     }
 
     @Override
-    public SocketAddress getRemote()
+    public SocketAddress getRemoteAddress()
     {
         return getEndPoint().getRemoteSocketAddress();
     }
 
     @Override
-    public SocketAddress getLocal()
+    public SocketAddress getLocalAddress()
     {
         return getEndPoint().getLocalSocketAddress();
+    }
+
+    @Override
+    public HostPort getServerAuthority()
+    {
+        SocketAddress addr = getLocalAddress();
+        if (addr instanceof InetSocketAddress)
+        {
+            InetSocketAddress inet = (InetSocketAddress)addr;
+            return new HostPort(inet.getHostString(), inet.getPort());
+        }
+        return new HostPort(addr.toString(), -1);
     }
 
     @Override
@@ -1011,7 +1023,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         private final HttpURI.Mutable _uri;
         private final HttpVersion _version;
         private long _contentLength = -1;
-        private HostPortHttpField _authority;
+        private HostPortHttpField _hostField;
         private MetaData.Request _request;
         private HttpField _upgrade = null;
 
@@ -1026,7 +1038,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         protected Http1Stream(String method, String uri, HttpVersion version)
         {
             _method = method;
-            _uri = uri == null ? null : HttpURI.build(uri);
+            _uri = uri == null ? null : HttpURI.build(method, uri);
             _version = version;
 
             if (_uri != null && _uri.getPath() == null && _uri.getScheme() != null && _uri.hasAuthority())
@@ -1048,10 +1060,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         break;
 
                     case HOST:
+                        if (value == null)
+                            value = "";
                         if (field instanceof HostPortHttpField)
-                            _authority = (HostPortHttpField)field;
-                        else if (StringUtil.isNotBlank(value))
-                            field = _authority = new HostPortHttpField(value);
+                            _hostField = (HostPortHttpField)field;
+                        else
+                            field = _hostField = new HostPortHttpField(value);
                         break;
 
                     case EXPECT:
@@ -1104,13 +1118,29 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     throw new BadMessageException(badMessage);
             }
 
-            _uri.scheme(getEndPoint() instanceof SslConnection.DecryptedEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
-
-            if (!HttpMethod.CONNECT.is(_method))
+            // Check host field matches the authority in the any absolute URI or is not blank
+            if (_hostField != null)
             {
-                if (_authority != null)
-                    _uri.authority(HostPort.normalizeHost(_authority.getHost()), _authority.getPort());
+                if (_uri.isAbsolute())
+                {
+                    if (!_hostField.getValue().equals(_uri.getAuthority()))
+                        throw new BadMessageException("Authority!=Host ");
+                }
                 else
+                {
+                    if (StringUtil.isBlank(_hostField.getHostPort().getHost()))
+                        throw new BadMessageException("Blank Host");
+                }
+            }
+
+            // Set the scheme in the URI
+            if (!_uri.isAbsolute())
+                _uri.scheme(getEndPoint() instanceof SslConnection.DecryptedEndPoint ? HttpScheme.HTTPS : HttpScheme.HTTP);
+
+            // Set the authority (if not already set) in the URI
+            if (!HttpMethod.CONNECT.is(_method) && _uri.getAuthority() == null)
+            {
+                if (_hostField == null)
                 {
                     SocketAddress addr = getConnection().getEndPoint().getLocalSocketAddress();
                     if (addr instanceof InetSocketAddress)
@@ -1118,6 +1148,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         InetSocketAddress inet = (InetSocketAddress)addr;
                         _uri.authority(HostPort.normalizeHost(inet.getHostString()), inet.getPort());
                     }
+                }
+                else
+                {
+                    _uri.authority(HostPort.normalizeHost(_hostField.getHost()), _hostField.getPort());
                 }
             }
 

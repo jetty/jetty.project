@@ -64,7 +64,7 @@ public class ProxyProtocolTest
             @Override
             public boolean handle(Request request, Response response) throws Exception
             {
-                SocketAddress addr = request.getConnectionMetaData().getRemote();
+                SocketAddress addr = request.getConnectionMetaData().getRemoteAddress();
                 if (addr instanceof InetSocketAddress)
                 {
                     InetSocketAddress iAddr = (InetSocketAddress)addr;

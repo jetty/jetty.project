@@ -125,7 +125,7 @@ public class HttpServerTestFixture
         @Override
         public boolean handle(Request request, Response response) throws Exception
         {
-            response.sendError(code, message, request);
+            response.writeError(code, message, request);
             return true;
         }
     }

@@ -30,12 +30,10 @@ import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.Uptime;
@@ -134,39 +132,20 @@ public class Server extends Handler.Wrapper implements Attributes
             if (!super.handle(customizedRequest, customizedRequest.getResponse()))
             {
                 if (response.isCommitted())
-                {
-                    request.failed(new IllegalStateException("Not Completed"));
-                }
+                    request.failed(new IllegalStateException("No Handler for committed request"));
                 else
-                {
-                    // TODO error page?
-                    response.reset();
-                    response.setStatus(404);
-                    request.succeeded();
-                }
+                    response.writeError(404, null, request);
             }
         }
         catch (Throwable t)
         {
             // Let's be less verbose with BadMessageExceptions
             if (!LOG.isDebugEnabled() && t instanceof BadMessageException)
-                LOG.warn("bad message {}", t.getMessage()); // TODO be even less verbose
+                LOG.warn("bad message {}", t.getMessage());
             else
                 LOG.warn("handle failed {}", this, t);
 
-            // TODO can this all be moved into request.failed?
-            if (response.isCommitted())
-            {
-                request.failed(t);
-            }
-            else
-            {
-                // TODO error page?
-                response.reset();
-                response.setStatus(500);
-                response.addHeader(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-                response.write(true, Callback.from(() -> request.failed(t)));
-            }
+            request.failed(t);
         }
 
         return true;

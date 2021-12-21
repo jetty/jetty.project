@@ -788,6 +788,17 @@ public class HttpConnectionTest
         response = connector.getResponse("GET / HTTP/1.1\r\n" +
             "Host:\r\n" +
             "\r\n");
+        checkContains(response, 0, "HTTP/1.1 400");
+    }
+
+    @Test
+    public void testEmptyHostAbsolute() throws Exception
+    {
+        String response;
+
+        response = connector.getResponse("GET scheme:/// HTTP/1.1\r\n" +
+            "Host:\r\n" +
+            "\r\n");
         checkContains(response, 0, "HTTP/1.1 200");
     }
 
@@ -1020,7 +1031,6 @@ public class HttpConnectionTest
             LOG.info("EXPECTING: java.lang.IllegalStateException...");
             String response = connector.getResponse(requests);
             offset = checkContains(response, offset, "HTTP/1.1 500");
-            offset = checkContains(response, offset, "Connection: close");
             checkNotContained(response, offset, "HTTP/1.1 200");
         }
     }

@@ -112,8 +112,8 @@ public class DefaultHandler extends Handler.Abstract
 
         if (!_showContexts || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
         {
-            response.sendError(HttpStatus.NOT_FOUND_404, null, request);
-            return false;
+            response.writeError(HttpStatus.NOT_FOUND_404, null, request);
+            return true;
         }
 
         response.setStatus(HttpStatus.NOT_FOUND_404);
