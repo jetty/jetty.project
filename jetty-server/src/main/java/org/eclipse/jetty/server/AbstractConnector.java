@@ -166,15 +166,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private ConnectionFactory _defaultConnectionFactory;
     /* The name used to link up virtual host configuration to named connectors */
     private String _name;
-    /**
-     * The authority used to define the server uri authority fallback for the connection
-     * (see ServletRequest.getServerName(), and ServletRequest.getServerPort()).
-     */
     private HostPort _serverAuthority;
-    /**
-     * The address used to define the local address for the connection
-     * (see ServletRequest.getLocalName(), ServletRequest.getLocalAddr(), and ServletRequest.getLocalPort()).
-     */
     private SocketAddress _localAddress;
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
