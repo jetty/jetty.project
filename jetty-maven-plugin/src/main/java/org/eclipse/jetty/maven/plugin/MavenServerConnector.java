@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -253,30 +251,6 @@ public class MavenServerConnector extends ContainerLifeCycle implements Connecto
     public String getName()
     {
         return this.name;
-    }
-
-    @Override
-    public SocketAddress getLocalAddress()
-    {
-        return checkDelegate().getLocalAddress();
-    }
-
-    @Override
-    public void setLocalAddress(SocketAddress localAddress)
-    {
-        checkDelegate().setLocalAddress(localAddress);
-    }
-
-    @Override
-    public HostPort getServerAuthority()
-    {
-        return checkDelegate().getServerAuthority();
-    }
-
-    @Override
-    public void setServerAuthority(HostPort authority)
-    {
-        checkDelegate().setServerAuthority(authority);
     }
 
     public int getLocalPort()

@@ -46,7 +46,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class ConnectorAuthorityOverrideTest
+public class HttpConfigurationAuthorityOverrideTest
 {
     @Test
     public void testLocalAuthorityHttp10NoHostDump() throws Exception
@@ -655,11 +655,14 @@ public class ConnectorAuthorityOverrideTest
     private CloseableServer startServer(HostPort serverUriAuthority, InetSocketAddress localAddress) throws Exception
     {
         Server server = new Server();
-        ServerConnector connector = new ServerConnector(server);
+
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
         if (serverUriAuthority != null)
-            connector.setServerAuthority(serverUriAuthority);
+            httpConfiguration.setServerAuthority(serverUriAuthority);
         if (localAddress != null)
-            connector.setLocalAddress(localAddress);
+            httpConfiguration.setLocalAddress(localAddress);
+
+        ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfiguration));
         connector.setPort(0);
         server.addConnector(connector);
 

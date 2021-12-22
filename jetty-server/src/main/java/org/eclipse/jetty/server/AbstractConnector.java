@@ -30,7 +30,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -302,40 +301,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     public int getAcceptors()
     {
         return _acceptors.length;
-    }
-
-    public SocketAddress getLocalAddress()
-    {
-        return _localAddress;
-    }
-
-    public void setLocalAddress(SocketAddress localAddress)
-    {
-        Objects.requireNonNull(localAddress, "Local Address");
-
-        if (isStarted())
-            throw new IllegalStateException(getState());
-
-        _localAddress = localAddress;
-    }
-
-    @ManagedAttribute("server authority")
-    public HostPort getServerAuthority()
-    {
-        return _serverAuthority;
-    }
-
-    public void setServerAuthority(HostPort authority)
-    {
-        if (isStarted())
-            throw new IllegalStateException(getState());
-
-        if (authority == null)
-            _serverAuthority = null;
-        else if (!authority.hasHost())
-            throw new IllegalStateException("Server URI Authority must have host declared");
-        else
-            _serverAuthority = authority;
     }
 
     @Override

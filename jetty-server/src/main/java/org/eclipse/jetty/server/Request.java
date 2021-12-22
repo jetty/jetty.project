@@ -1411,10 +1411,10 @@ public class Request implements HttpServletRequest
 
         if (_channel != null)
         {
-            Connector connector = _channel.getConnector();
-            if (connector != null)
+            HttpConfiguration httpConfiguration = _channel.getHttpConfiguration();
+            if (httpConfiguration != null)
             {
-                HostPort serverAuth = connector.getServerAuthority();
+                HostPort serverAuth = httpConfiguration.getServerAuthority();
                 if (serverAuth != null)
                 {
                     return formatAddrOrHost(serverAuth.getHost());
@@ -1472,10 +1472,10 @@ public class Request implements HttpServletRequest
 
         if (_channel != null)
         {
-            Connector connector = _channel.getConnector();
-            if (connector != null)
+            HttpConfiguration httpConfiguration = _channel.getHttpConfiguration();
+            if (httpConfiguration != null)
             {
-                HostPort serverAuth = connector.getServerAuthority();
+                HostPort serverAuth = httpConfiguration.getServerAuthority();
                 if (serverAuth != null)
                     return serverAuth.getPort();
             }

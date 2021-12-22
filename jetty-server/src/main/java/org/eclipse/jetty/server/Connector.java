@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -26,7 +25,6 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Container;
@@ -104,48 +102,4 @@ public interface Connector extends LifeCycle, Container, Graceful
      * @return The connector name or null.
      */
     String getName();
-
-    /**
-     * Get the Local Address of the connection
-     *
-     * @return Returns the connection local address.
-     */
-    SocketAddress getLocalAddress();
-
-    /**
-     * <p>
-     * Specify the connection local address used within application API layer
-     * when identifying the local host name/port of a connected endpoint.
-     * </p>
-     * <p>
-     * This allows an override of higher level APIs, such as
-     * {@code ServletRequest.getLocalName()}, {@code ServletRequest.getLocalAddr()},
-     * and {@code ServletRequest.getLocalPort()}.
-     * </p>
-     *
-     * @param localAddress the address to use for host/addr/port, or null to reset to default behavior
-     */
-    void setLocalAddress(SocketAddress localAddress);
-
-    /**
-     * Get the optional Server URI authority default
-     *
-     * @return Returns the connection server authority (name/port).
-     */
-    HostPort getServerAuthority();
-
-    /**
-     * <p>
-     * Specify the connection server uri authority (name/port) used within application API layer
-     * when identifying the server host name/port of a connected endpoint.
-     * </p>
-     *
-     * <p>
-     * This allows an override of higher level APIs, such as
-     * {@code ServletRequest.getServerName()}, and {@code ServletRequest.getServerPort()}.
-     * </p>
-     *
-     * @param authority the authority host (and optional port), or null to reset to default behavior
-     */
-    void setServerAuthority(HostPort authority);
 }

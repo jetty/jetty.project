@@ -19,13 +19,16 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.TreeTrie;
 import org.eclipse.jetty.util.Trie;
@@ -77,6 +80,9 @@ public class HttpConfiguration implements Dumpable
     private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.LEGACY; // TODO change default in jetty-10
     private boolean _notifyRemoteAsyncErrors = true;
     private boolean _relativeRedirectAllowed;
+
+    private HostPort _serverAuthority;
+    private SocketAddress _localAddress;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -660,6 +666,71 @@ public class HttpConfiguration implements Dumpable
     public boolean isRelativeRedirectAllowed()
     {
         return _relativeRedirectAllowed;
+    }
+
+    /**
+     * Get the Local Address of the connection
+     *
+     * @return Returns the connection local address.
+     */
+    @ManagedAttribute("Local address override")
+    public SocketAddress getLocalAddress()
+    {
+        return _localAddress;
+    }
+
+    /**
+     * <p>
+     * Specify the connection local address used within application API layer
+     * when identifying the local host name/port of a connected endpoint.
+     * </p>
+     * <p>
+     * This allows an override of higher level APIs, such as
+     * {@code ServletRequest.getLocalName()}, {@code ServletRequest.getLocalAddr()},
+     * and {@code ServletRequest.getLocalPort()}.
+     * </p>
+     *
+     * @param localAddress the address to use for host/addr/port, or null to reset to default behavior
+     */
+    public void setLocalAddress(SocketAddress localAddress)
+    {
+        Objects.requireNonNull(localAddress, "Local Address");
+
+        _localAddress = localAddress;
+    }
+
+    /**
+     * Get the optional Server URI authority default
+     *
+     * @return Returns the connection server authority (name/port).
+     */
+    @ManagedAttribute("Server authority override")
+    public HostPort getServerAuthority()
+    {
+        return _serverAuthority;
+    }
+
+    /**
+     * <p>
+     * Specify the connection server uri authority (name/port) used within application API layer
+     * when identifying the server host name/port of a connected endpoint.
+     * </p>
+     *
+     * <p>
+     * This allows an override of higher level APIs, such as
+     * {@code ServletRequest.getServerName()}, and {@code ServletRequest.getServerPort()}.
+     * </p>
+     *
+     * @param authority the authority host (and optional port), or null to reset to default behavior
+     */
+    public void setServerAuthority(HostPort authority)
+    {
+        if (authority == null)
+            _serverAuthority = null;
+        else if (!authority.hasHost())
+            throw new IllegalStateException("Server URI Authority must have host declared");
+        else
+            _serverAuthority = authority;
     }
 
     @Override

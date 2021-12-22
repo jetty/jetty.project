@@ -308,7 +308,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * if the local address is unavailable.
      * </p>
      * <p>
-     * Value can be overridden by {@link Connector#setLocalAddress(SocketAddress)} for
+     * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)} for
      * scenarios where Jetty is being an intermediary and the local name
      * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
      * such as absolute-URI creation (eg: Location response header).
@@ -320,7 +320,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public String getLocalName()
     {
-        SocketAddress localAddress = getConnector().getLocalAddress();
+        SocketAddress localAddress = getHttpConfiguration().getLocalAddress();
         if (localAddress != null)
         {
             if (localAddress instanceof InetSocketAddress)
@@ -341,7 +341,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * This is the port the connector is bound to and is accepting connection on.
      * </p>
      * <p>
-     * Value can be overridden by {@link Connector#setLocalAddress(SocketAddress)} for
+     * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)} for
      * scenarios where Jetty is being an intermediary and the local port
      * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
      * such as absolute-URI creation (eg: Location response header).
@@ -352,7 +352,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public int getLocalPort()
     {
-        SocketAddress localAddress = getConnector().getLocalAddress();
+        SocketAddress localAddress = getHttpConfiguration().getLocalAddress();
         if (localAddress instanceof InetSocketAddress)
             return ((InetSocketAddress)localAddress).getPort();
 
@@ -362,7 +362,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public InetSocketAddress getLocalAddress()
     {
-        SocketAddress localAddress = getConnector().getLocalAddress();
+        SocketAddress localAddress = getHttpConfiguration().getLocalAddress();
         if (localAddress instanceof InetSocketAddress)
             return ((InetSocketAddress)localAddress);
 
