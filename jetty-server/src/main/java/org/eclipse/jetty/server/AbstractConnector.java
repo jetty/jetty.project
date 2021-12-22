@@ -20,7 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.ArrayList;
@@ -43,7 +42,6 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -165,8 +163,6 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private ConnectionFactory _defaultConnectionFactory;
     /* The name used to link up virtual host configuration to named connectors */
     private String _name;
-    private HostPort _serverAuthority;
-    private SocketAddress _localAddress;
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
     private ThreadPoolBudget.Lease _lease;
