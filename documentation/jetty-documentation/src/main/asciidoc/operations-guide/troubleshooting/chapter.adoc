@@ -35,3 +35,4 @@ IMPORTANT: Make sure you read about how to secure the access to Jetty when using
 
 include::troubleshooting-dump.adoc[]
 include::troubleshooting-logging.adoc[]
+include::troubleshooting-debugging.adoc[]
