@@ -64,7 +64,7 @@
     <jsp.version>8.5.70</jsp.version>
     <junit.version>5.8.2</junit.version>
     <log4j2.version>2.17.0</log4j2.version>
-    <logback.version>1.2.9</logback.version>
+    <logback.version>1.2.10</logback.version>
     <maven.version>3.8.4</maven.version>
     <maven.plugin-tools.version>3.6.2</maven.plugin-tools.version>
     <maven.resolver.version>1.7.3</maven.resolver.version>
