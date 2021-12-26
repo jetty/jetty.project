@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 
@@ -51,9 +52,42 @@ public class MimeTypes
         MULTIPART_BYTERANGES("multipart/byteranges"),
         MULTIPART_FORM_DATA("multipart/form-data"),
 
-        TEXT_HTML("text/html"),
-        TEXT_PLAIN("text/plain"),
-        TEXT_XML("text/xml"),
+        TEXT_HTML("text/html")
+        {
+            @Override
+            public HttpField getContentTypeField(Charset charset)
+            {
+                if (Objects.equals(charset, StandardCharsets.UTF_8))
+                    return TEXT_HTML_UTF_8.getContentTypeField();
+                if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
+                    return TEXT_HTML_8859_1.getContentTypeField();
+                return super.getContentTypeField(charset);
+            }
+        },
+        TEXT_PLAIN("text/plain")
+        {
+            @Override
+            public HttpField getContentTypeField(Charset charset)
+            {
+                if (Objects.equals(charset, StandardCharsets.UTF_8))
+                    return TEXT_PLAIN_UTF_8.getContentTypeField();
+                if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
+                    return TEXT_PLAIN_8859_1.getContentTypeField();
+                return super.getContentTypeField(charset);
+            }
+        },
+        TEXT_XML("text/xml")
+        {
+            @Override
+            public HttpField getContentTypeField(Charset charset)
+            {
+                if (Objects.equals(charset, StandardCharsets.UTF_8))
+                    return TEXT_XML_UTF_8.getContentTypeField();
+                if (Objects.equals(charset, StandardCharsets.ISO_8859_1))
+                    return TEXT_XML_8859_1.getContentTypeField();
+                return super.getContentTypeField(charset);
+            }
+        },
         TEXT_JSON("text/json", StandardCharsets.UTF_8),
         APPLICATION_JSON("application/json", StandardCharsets.UTF_8),
 
@@ -153,6 +187,13 @@ public class MimeTypes
         public HttpField getContentTypeField()
         {
             return _field;
+        }
+
+        public HttpField getContentTypeField(Charset charset)
+        {
+            if (Objects.equals(_charset, charset))
+                return _field;
+            return new HttpField(HttpHeader.CONTENT_TYPE, getContentTypeWithoutCharset(_string) + ";charset=" + charset.name());
         }
 
         public Type getBaseType()

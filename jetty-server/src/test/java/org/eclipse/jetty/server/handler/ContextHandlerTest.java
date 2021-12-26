@@ -92,7 +92,7 @@ public class ContextHandlerTest
         _contextHandler.setHandler(helloHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
         MockHttpStream stream = new MockHttpStream(channel);
 
@@ -326,14 +326,7 @@ public class ContextHandlerTest
             }
         };
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData()
-        {
-            @Override
-            public Connector getConnector()
-            {
-                return connector;
-            }
-        };
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(connector);
         HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
         HttpFields fields = HttpFields.build().asImmutable();
 

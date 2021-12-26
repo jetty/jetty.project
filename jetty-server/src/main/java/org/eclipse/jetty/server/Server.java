@@ -32,7 +32,9 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
@@ -59,6 +61,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
+    private ErrorHandler _errorHandler;
     private RequestLog _requestLog;
     private boolean _dryRun;
     private final AutoLock _dateLock = new AutoLock();
@@ -139,8 +142,8 @@ public class Server extends Handler.Wrapper implements Attributes
         }
         catch (Throwable t)
         {
-            // Let's be less verbose with BadMessageExceptions
-            if (!LOG.isDebugEnabled() && t instanceof BadMessageException)
+            // Let's be less verbose with BadMessageExceptions & QuietExceptions
+            if (!LOG.isDebugEnabled() && (t instanceof BadMessageException || t instanceof QuietException))
                 LOG.warn("bad message {}", t.getMessage());
             else
                 LOG.warn("handle failed {}", this, t);
@@ -166,10 +169,23 @@ public class Server extends Handler.Wrapper implements Attributes
         return _requestLog;
     }
 
+    public ErrorHandler getErrorHandler()
+    {
+        return _errorHandler;
+    }
+
     public void setRequestLog(RequestLog requestLog)
     {
         updateBean(_requestLog, requestLog);
         _requestLog = requestLog;
+    }
+
+    public void setErrorHandler(ErrorHandler errorHandler)
+    {
+        updateBean(_errorHandler, errorHandler);
+        _errorHandler = errorHandler;
+        if (errorHandler != null)
+            ((Handler.Abstract)errorHandler).setServer(this);
     }
 
     @ManagedAttribute("version of this server")
@@ -372,6 +388,9 @@ public class Server extends Handler.Wrapper implements Attributes
             //Start a thread waiting to receive "stop" commands.
             ShutdownMonitor.getInstance().start(); // initialize
 
+            if (_errorHandler == null)
+                setErrorHandler(new DynamicErrorHandler());
+
             String gitHash = Jetty.GIT_HASH;
             String timestamp = Jetty.BUILD_TIMESTAMP;
 
@@ -515,6 +534,9 @@ public class Server extends Handler.Wrapper implements Attributes
             mex.add(e);
         }
 
+        if (getErrorHandler() instanceof DynamicErrorHandler)
+            setErrorHandler(null);
+
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
 
@@ -652,4 +674,6 @@ public class Server extends Handler.Wrapper implements Attributes
             _dateField = dateField;
         }
     }
+
+    private static class DynamicErrorHandler extends ErrorHandler {}
 }

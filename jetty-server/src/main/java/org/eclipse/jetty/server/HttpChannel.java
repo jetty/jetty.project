@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -27,13 +28,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -70,7 +70,7 @@ public class HttpChannel extends Attributes.Lazy
             return 0L;
         }
     };
-
+    private static final MetaData.Request ERROR_REQUEST = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
     private final AutoLock _lock = new AutoLock();
     private final Runnable _handle = new RunHandle();
     private final Server _server;
@@ -246,7 +246,7 @@ public class HttpChannel extends Attributes.Lazy
 
             // If the channel doesn't have a request, then the error must have occurred during parsing the request header
             // Make a temp request for logging and producing 400 response.
-            ChannelRequest request = _request == null ? _request = new ChannelRequest(null) : _request;
+            ChannelRequest request = _request == null ? _request = new ChannelRequest(ERROR_REQUEST) : _request;
 
             // Remember the error and arrange for any subsequent reads, demands or writes to fail with this error
             if (request._error == null)
@@ -381,6 +381,9 @@ public class HttpChannel extends Attributes.Lazy
 
         ChannelRequest(MetaData.Request metaData)
         {
+            if (metaData == null)
+                new Throwable().printStackTrace();
+            Objects.requireNonNull(metaData);
             _requests++;
             _requestAttributes.clearAttributes();
             _id = Integer.toString(_requests);
@@ -649,7 +652,7 @@ public class HttpChannel extends Attributes.Lazy
                 written = _response._written;
             }
 
-            // ensure the request is consumed
+            // is the request fully consumed?
             Throwable unconsumed = stream.consumeAll();
             if (LOG.isDebugEnabled())
                 LOG.debug("consumeAll {} ", this, unconsumed);
@@ -665,44 +668,27 @@ public class HttpChannel extends Attributes.Lazy
         public void failed(Throwable x)
         {
             // Called when the request/response cycle is completing with a failure.
-            // This is equivalent to the previous HttpTransport.abort(Throwable), so we don't need to do much clean up
-            // as channel will be shutdown and thrown away.
             HttpStream stream;
-            MetaData.Response commit = null;
-            ByteBuffer content = BufferUtil.EMPTY_BUFFER;
+            boolean committed;
+            ChannelRequest request;
             try (AutoLock ignored = _lock.lock())
             {
                 if (_stream == null || _request != this)
                     return;
 
                 // Can we write out an error response
-                if (!_stream.isCommitted())
-                {
-                    int status = HttpStatus.INTERNAL_SERVER_ERROR_500;
-                    String reason = x.toString();
-                    if (x instanceof BadMessageException)
-                    {
-                        BadMessageException bme = (BadMessageException)x;
-                        status = bme.getCode();
-                        reason = bme.getReason();
-                    }
-                    if (reason == null)
-                        reason = HttpStatus.getMessage(status);
-
-                    _response._headers.recycle();
-                    _response._status = status;
-
-                    if (!HttpStatus.hasNoBody(_response._status))
-                    {
-                        _response.getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_8859_1.asString());
-                        content = BufferUtil.toBuffer("<h1>Bad Message " + _response._status + "</h1>\n<pre>reason: " + reason + "</pre>");
-                        _response._written = content.remaining();
-                        commit = _response.commitResponse(true);
-                    }
-                }
+                committed = _stream.isCommitted();
                 stream = _stream;
                 _stream = null;
+                request = _request;
                 _request = null;
+
+                // reset response;
+                if (!committed)
+                {
+                    _response._status = HttpStatus.INTERNAL_SERVER_ERROR_500;
+                    _response._headers.recycle();
+                }
 
                 // Cancel any callbacks
                 _onError = null;
@@ -713,22 +699,42 @@ public class HttpChannel extends Attributes.Lazy
             if (LOG.isDebugEnabled())
                 LOG.debug("failed {} {}", stream, x);
 
-            // committed, but the stream is still able to send a response
-            if (commit == null)
+            if (committed)
                 stream.failed(x);
             else
             {
-                stream.send(commit,
-                    true,
-                    Callback.from(
-                        () -> stream.failed(x),
-                        t ->
+                Response response = new Response.Wrapper(getResponse())
+                {
+                    @Override
+                    public boolean isCommitted()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public void write(boolean last, Callback callback, ByteBuffer... content)
+                    {
+                        MetaData.Response commit;
+                        try (AutoLock ignored = _lock.lock())
                         {
-                            if (t != x)
-                                x.addSuppressed(t);
-                            stream.failed(x);
+                            for (ByteBuffer b : content)
+                                request._response._written += b.remaining();
+                            commit = request._response.commitResponse(last);
                         }
-                    ), content);
+
+                        // Do the write
+                        stream.send(commit, last, callback, content);
+                    }
+                };
+                response.writeError(x, Callback.from(
+                    () -> stream.failed(x), // TODO could succeed the stream here ?
+                    t ->
+                    {
+                        if (t != x)
+                            x.addSuppressed(t);
+                        stream.failed(x);
+                    }
+                ));
             }
         }
 
@@ -827,12 +833,13 @@ public class HttpChannel extends Attributes.Lazy
         public void write(boolean last, Callback callback, ByteBuffer... content)
         {
             MetaData.Response commit;
+            HttpStream stream;
             long contentLength;
             long written;
             try (AutoLock ignored = _lock.lock())
             {
                 if (_onWriteComplete != null)
-                    throw new IllegalStateException("Write pending");
+                    throw new IllegalStateException("write pending");
 
                 if (_request._error != null)
                 {
@@ -845,8 +852,15 @@ public class HttpChannel extends Attributes.Lazy
                     _written += b.remaining();
 
                 commit = commitResponse(last);
+                stream = _stream;
                 contentLength = _contentLength;
                 written = _written;
+            }
+
+            if (stream == null)
+            {
+                callback.failed(new IllegalStateException("completed"));
+                return;
             }
 
             // If the content lengths were not compatible with what was written, then we need to abort
@@ -865,7 +879,7 @@ public class HttpChannel extends Attributes.Lazy
             }
 
             // Do the write
-            _request.getStream().send(commit, last, this, content);
+            stream.send(commit, last, this, content);
         }
 
         @Override

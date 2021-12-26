@@ -25,8 +25,6 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.thread.Invocable;
-import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,10 +55,6 @@ public interface Handler extends LifeCycle, Destroyable
 
     /**
      * Handle an HTTP request and produce a response.
-     * Implementations of this method should strive to be non-blocking, but may block subject on if
-     * {@link Invocable#isNonBlockingInvocation()} returns false.  Thus tasks calling this method
-     * may be scheduled with type {@link InvocationType#EITHER}. The {@link Blocking} sub-class
-     * will execute blocking handling if the invocation type is non-blocking.
      * @param request The immutable request, which is also a {@link Callback} used to signal success or failure.
      * @param response The muttable response
      * @return True if this handle has or will handle the request. This is a commitment to ultimately call
@@ -133,7 +127,7 @@ public interface Handler extends LifeCycle, Destroyable
             return _server;
         }
 
-        void setServer(Server server)
+        protected void setServer(Server server)
         {
             if (_server == server)
                 return;
@@ -220,7 +214,7 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        void setServer(Server server)
+        protected void setServer(Server server)
         {
             super.setServer(server);
             for (Handler h : getHandlers())
@@ -279,7 +273,7 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        void setServer(Server server)
+        protected void setServer(Server server)
         {
             super.setServer(server);
             if (_handler instanceof Abstract)

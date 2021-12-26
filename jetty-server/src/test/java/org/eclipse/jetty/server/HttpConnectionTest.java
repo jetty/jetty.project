@@ -150,13 +150,13 @@ public class HttpConnectionTest
         String request = "GET / HTTP/0.9\r\n\r\n";
         String response = connector.getResponse(request);
         assertThat(response, containsString("505 HTTP Version Not Supported"));
-        assertThat(response, containsString("reason: Unsupported Version"));
+        assertThat(response, containsString("<th>MESSAGE:</th><td>Unsupported Version</td>"));
 
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC7230);
         request = "GET / HTTP/0.9\r\n\r\n";
         response = connector.getResponse(request);
         assertThat(response, containsString("505 HTTP Version Not Supported"));
-        assertThat(response, containsString("reason: Unsupported Version"));
+        assertThat(response, containsString("<th>MESSAGE:</th><td>Unsupported Version</td>"));
     }
 
     /**
@@ -216,7 +216,7 @@ public class HttpConnectionTest
         String response = connector.getResponse(request);
         assertThat(response, containsString(" 400 Bad Request"));
         assertThat(response, containsString("Connection: close"));
-        assertThat(response, containsString("reason: Early EOF"));
+        assertThat(response, containsString("<th>MESSAGE:</th><td>Early EOF</td>"));
     }
 
     public static Stream<int[]> contentLengths()
@@ -488,7 +488,7 @@ public class HttpConnectionTest
     {
         String response = connector.getResponse("GET /ooops/../../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
         checkContains(response, 0, "HTTP/1.1 400 ");
-        checkContains(response, 0, "reason: Bad Request");
+        checkContains(response, 0, "<th>MESSAGE:</th><td>Bad Request</td>");
     }
 
     @Test
@@ -496,7 +496,7 @@ public class HttpConnectionTest
     {
         String response = connector.getResponse("GET ../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
         checkContains(response, 0, "HTTP/1.1 400 ");
-        checkContains(response, 0, "reason: Bad Request");
+        checkContains(response, 0, "<th>MESSAGE:</th><td>Bad Request</td>");
     }
 
     @Test
@@ -504,7 +504,7 @@ public class HttpConnectionTest
     {
         String response = connector.getResponse("GET /../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
         checkContains(response, 0, "HTTP/1.1 400 ");
-        checkContains(response, 0, "reason: Bad Request");
+        checkContains(response, 0, "<th>MESSAGE:</th><td>Bad Request</td>");
     }
 
     @Test
@@ -1116,7 +1116,7 @@ public class HttpConnectionTest
 
         String response = connector.getResponse(request.toString());
         offset = checkContains(response, offset, "HTTP/1.1 431");
-        checkContains(response, offset, "<h1>Bad Message 431</h1>");
+        checkContains(response, offset, "<h2>HTTP ERROR 431 Request Header Fields Too Large</h2>");
     }
 
     @Test

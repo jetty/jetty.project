@@ -20,11 +20,13 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.NullByteBufferPool;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 public class MockConnector extends ContainerLifeCycle implements Connector
 {
+    private static final ByteBufferPool BUFFER_POOL = new NullByteBufferPool();
     private final Server _server;
 
     public MockConnector(Server server)
@@ -53,7 +55,10 @@ public class MockConnector extends ContainerLifeCycle implements Connector
     @Override
     public ByteBufferPool getByteBufferPool()
     {
-        return _server.getBean(ByteBufferPool.class);
+        ByteBufferPool pool = _server.getBean(ByteBufferPool.class);
+        if (pool == null)
+            pool = BUFFER_POOL;
+        return pool;
     }
 
     @Override

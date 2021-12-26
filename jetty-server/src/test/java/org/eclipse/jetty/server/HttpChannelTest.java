@@ -333,7 +333,7 @@ public class HttpChannelTest
         _server.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
         MockHttpStream stream = new MockHttpStream(channel);
 
@@ -364,7 +364,7 @@ public class HttpChannelTest
         _server.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
         MockHttpStream stream = new MockHttpStream(channel);
 
@@ -470,7 +470,7 @@ public class HttpChannelTest
         _server.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
         MockHttpStream stream = new MockHttpStream(channel);
 
@@ -484,7 +484,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure().getMessage(), containsString("content-length 10 > 5"));
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), is(500));
-        assertThat(stream.getResponseContentAsString(), containsString("IOException: content-length 10 > 5"));
+        assertThat(stream.getResponseContentAsString(), containsString("IOException: content-length 10 &gt; 5"));
     }
 
     @Test
@@ -535,7 +535,7 @@ public class HttpChannelTest
         _server.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
         MockHttpStream stream = new MockHttpStream(channel);
 
@@ -549,7 +549,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure().getMessage(), containsString("content-length 5 < 10"));
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), is(500));
-        assertThat(stream.getResponseContentAsString(), containsString("IOException: content-length 5 < 10"));
+        assertThat(stream.getResponseContentAsString(), containsString("IOException: content-length 5 &lt; 10"));
     }
 
     @Test
@@ -1058,7 +1058,7 @@ public class HttpChannelTest
         _server.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
         HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
         MockHttpStream stream = new MockHttpStream(channel);
 

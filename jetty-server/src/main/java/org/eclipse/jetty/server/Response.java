@@ -13,18 +13,18 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 
-import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.QuotedQualityCSV;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextRequest;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
@@ -96,7 +96,32 @@ public interface Response
         getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
     }
 
+    default void writeError(Throwable cause, Callback callback)
+    {
+        if (cause == null)
+            cause = new Throwable("unknown cause");
+        int status = HttpStatus.INTERNAL_SERVER_ERROR_500;
+        String message = cause.toString();
+        if (cause instanceof BadMessageException)
+        {
+            BadMessageException bad = (BadMessageException)cause;
+            status = bad.getCode();
+            message = bad.getReason();
+        }
+        writeError(status, message, cause, callback);
+    }
+
+    default void writeError(int status, Callback callback)
+    {
+        writeError(status, null, null, callback);
+    }
+
     default void writeError(int status, String message, Callback callback)
+    {
+        writeError(status, message, null, callback);
+    }
+
+    default void writeError(int status, String message, Throwable cause, Callback callback)
     {
         if (isCommitted())
         {
@@ -104,22 +129,34 @@ public interface Response
             return;
         }
 
+        if (status <= 0)
+            status = HttpStatus.INTERNAL_SERVER_ERROR_500;
+        if (message == null)
+            message = HttpStatus.getMessage(status);
+
         setStatus(status);
-        ByteBuffer content = BufferUtil.EMPTY_BUFFER;
-        HttpField errorCacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store"); // TODO static
-        getHeaders().put(errorCacheControl);
-        if (!HttpStatus.hasNoBody(status))
+
+        ContextHandler.Context context = getRequest().getWrapper().get(ContextRequest.class, ContextRequest::getContext);
+        ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getRequest().getChannel().getServer(), context == null ? null : context.getContextHandler());
+
+        if (errorHandler != null)
         {
-            // TODO generalize the error handling
-            List<String> acceptable = getRequest().getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
-            List<String> charset = getRequest().getHeaders().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
-            getHeaders().put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_8859_1.asString());
-            if (message == null)
-                message = HttpStatus.getMessage(status);
-            content = BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + message + "</pre>");
+            Request request = new ErrorHandler.ErrorRequest(getRequest().getWrapper(), status, message, cause, callback);
+            try
+            {
+                if (errorHandler.handle(request, this))
+                    return;
+            }
+            catch (IOException e)
+            {
+                if (cause != null && cause != e)
+                    cause.addSuppressed(e);
+            }
         }
 
-        write(true, callback, content);
+        // fall back to very empty error page
+        getHeaders().put(ErrorHandler.ERROR_CACHE_CONTROL);
+        write(true, callback);
     }
 
     class Wrapper implements Response
@@ -130,6 +167,11 @@ public interface Response
         {
             _wrapped = wrapped;
             _wrapped.setWrapper(this);
+        }
+
+        public void unwrap()
+        {
+            _wrapped.setWrapper(_wrapped);
         }
 
         @Override

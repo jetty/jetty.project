@@ -380,7 +380,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         client.close();
 
         assertThat(response, Matchers.containsString(" 400 "));
-        assertThat(response, Matchers.containsString("reason: Early EOF"));
+        assertThat(response, Matchers.containsString("<th>MESSAGE:</th><td>Early EOF</td>"));
         assertThat("The 4th byte (-1) has not been passed to the handler", fourBytesRead.get(), is(false));
         assertTrue(earlyEOFException.await(10, TimeUnit.SECONDS));
     }

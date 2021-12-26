@@ -23,7 +23,18 @@ import org.eclipse.jetty.util.HostPort;
 
 public class MockConnectionMetaData extends Attributes.Mapped implements ConnectionMetaData
 {
+    private final Connector _connector;
     boolean _persistent = true;
+
+    public MockConnectionMetaData()
+    {
+        this(null);
+    }
+
+    public MockConnectionMetaData(Connector connector)
+    {
+        _connector = connector;
+    }
 
     public void notPersistent()
     {
@@ -57,7 +68,7 @@ public class MockConnectionMetaData extends Attributes.Mapped implements Connect
     @Override
     public Connector getConnector()
     {
-        return null;
+        return _connector;
     }
 
     @Override

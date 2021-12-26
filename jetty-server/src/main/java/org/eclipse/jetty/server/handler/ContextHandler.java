@@ -58,6 +58,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
     private String _contextPath = "/";
     private Path _resourceBase;
     private ClassLoader _contextLoader;
+    private ErrorHandler _errorHandler;
 
     public ContextHandler()
     {
@@ -131,6 +132,26 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
         if (isStarted())
             throw new IllegalStateException(getState());
         _contextLoader = contextLoader;
+    }
+
+    /**
+     * @return Returns the errorHandler.
+     */
+    @ManagedAttribute("The error handler to use for the context")
+    public ErrorHandler getErrorHandler()
+    {
+        return _errorHandler;
+    }
+
+    /**
+     * @param errorHandler The errorHandler to set.
+     */
+    public void setErrorHandler(ErrorHandler errorHandler)
+    {
+        if (errorHandler != null)
+            errorHandler.setServer(getServer());
+        updateBean(_errorHandler, errorHandler, true);
+        _errorHandler = errorHandler;
     }
 
     public List<String> getVirtualHosts()

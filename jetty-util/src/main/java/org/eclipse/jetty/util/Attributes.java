@@ -72,7 +72,7 @@ public interface Attributes
     {
         while (attributes instanceof Wrapper)
         {
-            attributes = ((Wrapper)attributes).getAttributes();
+            attributes = ((Wrapper)attributes).getWrapped();
         }
         return attributes;
     }
@@ -90,7 +90,7 @@ public interface Attributes
         {
             if (target.isAssignableFrom(attributes.getClass()))
                 return (T)attributes;
-            attributes = ((Wrapper)attributes).getAttributes();
+            attributes = ((Wrapper)attributes).getWrapped();
         }
         return null;
     }
@@ -107,7 +107,7 @@ public interface Attributes
             _attributes = attributes;
         }
 
-        public Attributes getAttributes()
+        public Attributes getWrapped()
         {
             return _attributes;
         }

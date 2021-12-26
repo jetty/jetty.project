@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -179,7 +180,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         return params;
     }
 
-    default Request unwrap()
+    default Request getBaseRequest()
     {
         Request r = this;
         while (true)
@@ -194,7 +195,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
     @SuppressWarnings("unchecked")
     default <R extends Request> R as(Class<R> type)
     {
-        Request r = this;
+        Request r = getWrapper();
         while (r != null)
         {
             if (type.isInstance(r))
@@ -206,7 +207,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     default <T extends Request, R> R get(Class<T> type, Function<T, R> getter)
     {
-        Request r = this;
+        Request r = getWrapper();
         while (r != null)
         {
             if (type.isInstance(r))
@@ -216,15 +217,19 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         return null;
     }
 
-    class Wrapper extends Attributes.Wrapper implements Request
+    class Wrapper implements Request
     {
         private final Request _wrapped;
 
         protected Wrapper(Request wrapped)
         {
-            super(wrapped);
-            this._wrapped = wrapped;
+            _wrapped = wrapped;
             wrapped.setWrapper(this);
+        }
+
+        public void unwrap()
+        {
+            _wrapped.setWrapper(_wrapped);
         }
 
         @Override
@@ -351,6 +356,36 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         public InvocationType getInvocationType()
         {
             return _wrapped.getInvocationType();
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            return _wrapped.removeAttribute(name);
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return _wrapped.setAttribute(name, attribute);
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return _wrapped.getAttribute(name);
+        }
+
+        @Override
+        public Set<String> getAttributeNames()
+        {
+            return _wrapped.getAttributeNames();
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+            _wrapped.clearAttributes();
         }
     }
 }
