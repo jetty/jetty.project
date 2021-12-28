@@ -168,6 +168,17 @@ public interface Content
         {
             return null;
         }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x{s=%b,l=%b,%s}",
+                getClass().getName(),
+                hashCode(),
+                isSpecial(),
+                isLast(),
+                BufferUtil.toDetailString(getByteBuffer()));
+        }
     }
 
     Content EOF = new Abstract(true, true)

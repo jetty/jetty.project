@@ -497,7 +497,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     private int fillRequestBuffer()
     {
         if (_retainableByteBuffer != null && _retainableByteBuffer.isRetained())
-            throw new IllegalStateException("fill with unconsumed content on " + this);
+        {
+            // TODO this is almost certainly wrong
+            _retainableByteBuffer = _retainableByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            // throw new IllegalStateException("fill with unconsumed content on " + this);
+        }
 
         if (isRequestBufferEmpty())
         {
@@ -945,9 +949,25 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public boolean content(ByteBuffer buffer)
         {
-            if (_stream.get()._content != null)
+            if (_stream.get()._content != null || _retainableByteBuffer == null)
                 throw new IllegalStateException();
-            _stream.get()._content = Content.from(buffer, false);
+
+            _retainableByteBuffer.retain();
+            _stream.get()._content = new Content.Abstract(false, false)
+            {
+                final RetainableByteBuffer _retainable = _retainableByteBuffer;
+                @Override
+                public void release()
+                {
+                    _retainable.release();
+                }
+
+                @Override
+                public ByteBuffer getByteBuffer()
+                {
+                    return buffer;
+                }
+            };
             return true;
         }
 

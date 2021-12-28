@@ -599,7 +599,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             int[] points = new int[]{i};
             StringBuilder message = new StringBuilder();
 
-            message.append("iteration #").append(i + 1);
+            message.append("iteration #").append(i).append("/").append(splits - 1);
 
             try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
             {
@@ -1257,7 +1257,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
      */
     protected static String readResponse(Socket client) throws IOException
     {
-
         StringBuilder sb = new StringBuilder();
         try (BufferedReader br = new BufferedReader(new InputStreamReader(client.getInputStream())))
         {

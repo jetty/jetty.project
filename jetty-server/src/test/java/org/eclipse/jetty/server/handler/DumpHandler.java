@@ -26,9 +26,9 @@ import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.MultiMap;
-import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.slf4j.Logger;
@@ -124,6 +124,8 @@ public class DumpHandler extends Handler.Abstract
                         content = null;
                 }
             }
+            if (content != null)
+                content.release();
         }
 
         if (params.getValue("date") != null)

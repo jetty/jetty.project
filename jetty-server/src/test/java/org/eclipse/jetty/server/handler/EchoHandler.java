@@ -18,6 +18,7 @@ import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -70,14 +71,18 @@ public class EchoHandler extends Handler.Abstract
                 _response.getTrailers()
                     .add("Echo", "Trailers")
                     .add(((Content.Trailers)content).getTrailers());
+                content.release();
                 this.succeeded();
                 return Action.SCHEDULED;
             }
 
             if (!content.hasRemaining() && content.isLast())
+            {
+                content.release();
                 return Action.SUCCEEDED;
+            }
 
-            _response.write(content.isLast(), this, content.getByteBuffer());
+            _response.write(content.isLast(), Callback.from(this, content::release), content.getByteBuffer());
             return Action.SCHEDULED;
         }
 
