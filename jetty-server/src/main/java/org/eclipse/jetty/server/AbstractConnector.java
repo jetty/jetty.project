@@ -188,7 +188,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
         addBean(_byteBufferPool);
         RetainableByteBufferPool retainableByteBufferPool = _server.getBean(RetainableByteBufferPool.class);
-        addBean(retainableByteBufferPool == null ? new ArrayRetainableByteBufferPool() : retainableByteBufferPool, retainableByteBufferPool == null);
+        addBean(retainableByteBufferPool == null ? new ArrayRetainableByteBufferPool.ExponentialPool() : retainableByteBufferPool, retainableByteBufferPool == null);
 
         for (ConnectionFactory factory : factories)
         {

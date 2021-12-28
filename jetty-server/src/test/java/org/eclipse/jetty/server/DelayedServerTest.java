@@ -35,7 +35,10 @@ public class DelayedServerTest extends HttpServerTestBase
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new DelayedHttpConnection(getHttpConfiguration(), connector, endPoint), connector, endPoint);
+                DelayedHttpConnection connection = new DelayedHttpConnection(getHttpConfiguration(), connector, endPoint);
+                connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+                connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
+                return configure(connection, connector, endPoint);
             }
         }));
     }

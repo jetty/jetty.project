@@ -499,8 +499,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         if (_retainableByteBuffer != null && _retainableByteBuffer.isRetained())
         {
             // TODO this is almost certainly wrong
-            _retainableByteBuffer = _retainableByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
-            // throw new IllegalStateException("fill with unconsumed content on " + this);
+            RetainableByteBuffer newBuffer = _retainableByteBufferPool.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
+            if (LOG.isDebugEnabled())
+                LOG.debug("replace buffer {} <- {} in {}", _retainableByteBuffer, newBuffer, this);
+            _retainableByteBuffer.release();
+            _retainableByteBuffer = newBuffer;
         }
 
         if (isRequestBufferEmpty())
@@ -615,10 +618,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public void onClose(Throwable cause)
     {
-        if (cause == null)
-            _sendCallback.close();
-        else
-            _sendCallback.failed(cause);
+        try
+        {
+            if (cause == null)
+                _sendCallback.close();
+            else
+                _sendCallback.failed(cause);
+        }
+        finally
+        {
+            Runnable todo = _channel.onConnectionClose(cause);
+            if (todo != null)
+                todo.run();
+        }
         super.onClose(cause);
     }
 
@@ -953,6 +965,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 throw new IllegalStateException();
 
             _retainableByteBuffer.retain();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
+
             _stream.get()._content = new Content.Abstract(false, false)
             {
                 final RetainableByteBuffer _retainable = _retainableByteBuffer;
@@ -960,6 +976,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 public void release()
                 {
                     _retainable.release();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("release {}/{} for {}", BufferUtil.toDetailString(buffer), _retainable, HttpConnection.this);
                 }
 
                 @Override

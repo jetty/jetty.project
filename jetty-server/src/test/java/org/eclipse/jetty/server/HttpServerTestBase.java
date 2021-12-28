@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.IOException;
@@ -24,12 +25,15 @@ import java.net.Socket;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.EchoHandler;
@@ -45,12 +49,15 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1515,6 +1522,97 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Read the close
             assertThat(client.getInputStream().read(), is(-1));
         }
+    }
+
+    @Test
+    public void testHoldContent() throws Exception
+    {
+        Queue<Content> contents = new ConcurrentLinkedQueue<>();
+        final int bufferSize = 1024;
+        _connector.getConnectionFactory(HttpConnectionFactory.class).setInputBufferSize(bufferSize);
+        CountDownLatch closed = new CountDownLatch(1);
+        configureServer(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response) throws Exception
+            {
+                request.getChannel().addConnectionCloseListener(t -> closed.countDown());
+                while (true)
+                {
+                    Content content = request.readContent();
+
+                    if (content == null)
+                    {
+                        try (Blocking.Runnable blocker = Blocking.runnable())
+                        {
+                            request.demandContent(blocker);
+                            blocker.block();
+                            continue;
+                        }
+                    }
+
+                    if (content.hasRemaining())
+                        contents.add(content);
+
+                    if (content.isLast())
+                        break;
+                }
+
+                response.setStatus(200);
+                request.succeeded();
+                return true;
+            }
+        });
+
+        byte[] chunk = new byte[bufferSize / 2];
+        Arrays.fill(chunk, (byte)'X');
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+            BufferedOutputStream out = new BufferedOutputStream(os, bufferSize);
+            out.write(("POST / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "Connection: close\r\n" +
+                "Transfer-Encoding: chunked\r\n" +
+                "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+
+            // single chunk
+            out.write((Integer.toHexString(chunk.length) + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            out.write(chunk);
+            out.write("\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            out.flush();
+
+            // double chunk (will overflow)
+            out.write((Integer.toHexString(chunk.length * 2) + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            out.write(chunk);
+            out.write(chunk);
+            out.write("\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            out.flush();
+
+            // single chunk and end chunk
+            out.write((Integer.toHexString(chunk.length) + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            out.write(chunk);
+            out.write("\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            out.flush();
+
+            // check the response
+            HttpTester.Response response = HttpTester.parseResponse(client.getInputStream());
+            assertNotNull(response);
+            assertThat(response.getStatus(), is(200));
+        }
+
+        assertTrue(closed.await(10, TimeUnit.SECONDS));
+
+        long total = contents.stream().mapToLong(Content::remaining).sum();
+        assertThat(total, equalTo(chunk.length * 4L));
+
+        ArrayRetainableByteBufferPool pool = _connector.getBean(ArrayRetainableByteBufferPool.class);
+        long buffersBeforeRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+        contents.forEach(Content::release);
+        long buffersAfterRelease = pool.getAvailableDirectByteBufferCount() + pool.getAvailableHeapByteBufferCount();
+        assertThat(buffersAfterRelease, greaterThan(buffersBeforeRelease));
+        assertThat(pool.getAvailableDirectMemory() + pool.getAvailableHeapMemory(), greaterThanOrEqualTo(chunk.length * 4L));
     }
 
     public static class TestHandler extends EchoHandler

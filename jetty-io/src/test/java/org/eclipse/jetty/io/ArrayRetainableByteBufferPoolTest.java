@@ -320,7 +320,7 @@ public class ArrayRetainableByteBufferPoolTest
     @Test
     public void testExponentialPool() throws IOException
     {
-        ArrayRetainableByteBufferPool pool = new ExponentialPool();
+        ArrayRetainableByteBufferPool pool = new ArrayRetainableByteBufferPool.ExponentialPool();
         assertThat(pool.acquire(1, false).capacity(), is(1));
         assertThat(pool.acquire(2, false).capacity(), is(2));
         RetainableByteBuffer b3 = pool.acquire(3, false);
@@ -348,35 +348,5 @@ public class ArrayRetainableByteBufferPoolTest
         b3.release();
         b4.getBuffer().limit(b4.getBuffer().capacity() - 2);
         assertThat(pool.dump(), containsString("]{capacity=4,inuse=3(75%)"));
-    }
-
-    /**
-     * A variant of the {@link ArrayRetainableByteBufferPool} that
-     * uses buckets of buffers that increase in size by a power of
-     * 2 (eg 1k, 2k, 4k, 8k, etc.).
-     */
-    public static class ExponentialPool extends ArrayRetainableByteBufferPool
-    {
-        public ExponentialPool()
-        {
-            this(0, -1, Integer.MAX_VALUE);
-        }
-
-        public ExponentialPool(int minCapacity, int maxCapacity, int maxBucketSize)
-        {
-            this(minCapacity, maxCapacity, maxBucketSize, -1L, -1L);
-        }
-
-        public ExponentialPool(int minCapacity, int maxCapacity, int maxBucketSize, long maxHeapMemory, long maxDirectMemory)
-        {
-            super(minCapacity,
-                -1,
-                maxCapacity,
-                maxBucketSize,
-                maxHeapMemory,
-                maxDirectMemory,
-                c -> 32 - Integer.numberOfLeadingZeros(c - 1),
-                i -> 1 << i);
-        }
     }
 }

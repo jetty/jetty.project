@@ -287,7 +287,7 @@ public class HttpChannel extends Attributes.Lazy
             _onConnectionComplete = null;
         }
 
-        Runnable runStreamOnError = hasStream ? () -> _serializedInvoker.run(() -> onError(failed)) : null;
+        Runnable runStreamOnError = hasStream && failed != null ? () -> _serializedInvoker.run(() -> onError(failed)) : null;
         Runnable runOnConnectionClose = onConnectionClose == null ? null : () -> onConnectionClose.accept(failed);
         return _serializedInvoker.offer(runStreamOnError, runOnConnectionClose);
     }
@@ -639,7 +639,7 @@ public class HttpChannel extends Attributes.Lazy
                 if (_response._onWriteComplete != null)
                     throw new IllegalStateException("write pending");
                 if (_error != null)
-                    throw new IllegalStateException("error " + _error);
+                    throw (IllegalStateException)(new IllegalStateException("error " + _error).initCause(_error.getCause()));
 
                 if (_stream == null | _request != this)
                     return;
