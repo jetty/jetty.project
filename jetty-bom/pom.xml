@@ -209,8 +209,18 @@
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
+        <artifactId>infinispan-remote</artifactId>
+        <version>10.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>infinispan-remote-query</artifactId>
         <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>infinispan-embedded</artifactId>
+        <version>10.0.8-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
@@ -248,6 +258,11 @@
         <version>11.0.8-SNAPSHOT</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-keystore</artifactId>
+        <version>10.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty.memcached</groupId>
         <artifactId>jetty-memcached-sessions</artifactId>
         <version>11.0.8-SNAPSHOT</version>
@@ -256,6 +271,11 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-nosql</artifactId>
         <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.osgi</groupId>
+        <artifactId>jetty-osgi-alpn</artifactId>
+        <version>10.0.8-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty.osgi</groupId>
@@ -346,6 +366,11 @@
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-servlets</artifactId>
         <version>11.0.8-SNAPSHOT</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-slf4j-impl</artifactId>
+        <version>10.0.8-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.eclipse.jetty</groupId>
