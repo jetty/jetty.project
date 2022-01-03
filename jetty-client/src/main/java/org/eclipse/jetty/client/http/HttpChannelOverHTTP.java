@@ -136,6 +136,7 @@ public class HttpChannelOverHTTP extends HttpChannel
     {
         super.exchangeTerminated(exchange, result);
 
+        String method = exchange.getRequest().getMethod();
         Response response = result.getResponse();
         HttpFields responseHeaders = response.getHeaders();
 
@@ -154,7 +155,7 @@ public class HttpChannelOverHTTP extends HttpChannel
                 // HTTP 1.0 must close the connection unless it has
                 // an explicit keep alive or it's a CONNECT method.
                 boolean keepAlive = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
-                boolean connect = HttpMethod.CONNECT.is(exchange.getRequest().getMethod());
+                boolean connect = HttpMethod.CONNECT.is(method);
                 if (!keepAlive && !connect)
                     closeReason = "http/1.0";
             }
@@ -174,7 +175,8 @@ public class HttpChannelOverHTTP extends HttpChannel
         }
         else
         {
-            if (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
+            int status = response.getStatus();
+            if (status == HttpStatus.SWITCHING_PROTOCOLS_101 || isTunnel(method, status))
                 connection.remove();
             else
                 release();
@@ -189,6 +191,11 @@ public class HttpChannelOverHTTP extends HttpChannel
     protected long getMessagesOut()
     {
         return outMessages.longValue();
+    }
+
+    boolean isTunnel(String method, int status)
+    {
+        return HttpMethod.CONNECT.is(method) && HttpStatus.isSuccess(status);
     }
 
     @Override

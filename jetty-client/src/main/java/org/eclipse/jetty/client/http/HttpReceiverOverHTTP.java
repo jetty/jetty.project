@@ -231,7 +231,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                 // Connection upgrade due to CONNECT + 200, bail out.
                 String method = this.method;
                 this.method = null;
-                if (status == HttpStatus.OK_200 && HttpMethod.CONNECT.is(method))
+                if (getHttpChannel().isTunnel(method, status))
                     return true;
             }
 
@@ -291,8 +291,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         this.method = exchange.getRequest().getMethod();
         this.status = status;
-        parser.setHeadResponse(HttpMethod.HEAD.is(method) ||
-            (HttpMethod.CONNECT.is(method) && status == HttpStatus.OK_200));
+        parser.setHeadResponse(HttpMethod.HEAD.is(method) || getHttpChannel().isTunnel(method, status));
         exchange.getResponse().version(version).status(status).reason(reason);
 
         return !responseBegin(exchange);

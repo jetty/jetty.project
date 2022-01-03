@@ -807,7 +807,6 @@ public class ForwardProxyTLSServerTest
                 @Override
                 public void onSuccess(org.eclipse.jetty.client.api.Request request)
                 {
-                    System.err.println("SIMON: request = " + request);
                     if (HttpMethod.CONNECT.is(request.getMethod()))
                         sleep(250);
                 }
