@@ -58,8 +58,6 @@ Specifies the timezone ID (such as `PST`, or `America/Los_Angeles` or `GMT-8:00`
 The empty string specifies the `UTC` timezone.
 Default value is the local timezone.
 
-// TODO: add a xref to the console-capture module.
-
 The `logging-jetty` Jetty module, enabled transitively, provides the configuration file `$JETTY_BASE/resources/jetty-logging.properties` to configure the logging levels, for example:
 
 ----
@@ -107,7 +105,7 @@ See the xref:og-module-console-capture[`console-capture` module] for more inform
 
 [NOTE]
 ====
-The `console-capture` Jetty module should be used only in conjunction with the `logging-jetty` module, as other SLF4J bindings such as LogBack or Log4J2 have their own, more sophisticated, rolling file appenders.
+The `console-capture` Jetty module should be used only in conjunction with the `logging-jetty` module, as other SLF4J bindings such as LogBack or Log4j2 have their own, more sophisticated, rolling file appenders.
 ====
 
 [[og-logging-server-custom]]
@@ -117,8 +115,8 @@ You can use a different SLF4J binding if you are more familiar with other loggin
 There are a number of out-of-the-box Jetty modules that you can use:
 
 * `logging-logback`, to use the link:http://logback.qos.ch/[LogBack] binding
-* `logging-log4j2`, to use the link:https://logging.apache.org/log4j/2.x/[Log4J2] binding
-* `logging-log4j1`, to use the link:https://logging.apache.org/log4j/1.2/[Log4J1] binding (note that Log4J 1.x is end-of-life)
+* `logging-log4j2`, to use the link:https://logging.apache.org/log4j/2.x/[Log4j2] binding
+* `logging-log4j1`, to use the link:https://logging.apache.org/log4j/1.2/[Log4j1] binding (note that Log4j 1.x is end-of-life)
 * `logging-jul`, to use the `java.util.logging` binding
 * `logging-noop`, to use the SLF4J no-operation binding (discards all logging)
 
@@ -151,7 +149,7 @@ As you can see, the Jetty module system downloaded the required LogBack `+*.jar+
 Please refer to the link:http://logback.qos.ch/manual/configuration.html[LogBack configuration manual] for more information about how to configure LogBack.
 
 [[og-logging-server-custom-log4j2]]
-====== Logging with Log4J2
+====== Logging with Log4j2
 
 Similarly to xref:og-logging-server-custom-logback[logging with LogBack], you can enable the `logging-log4j2` Jetty module in this way (from the `$JETTY_BASE` directory):
 
@@ -159,7 +157,7 @@ Similarly to xref:og-logging-server-custom-logback[logging with LogBack], you ca
 $ java -jar $JETTY_HOME/start.jar --add-modules=logging-log4j2,http
 ----
 
-After accepting the Log4J2 license, you will have the following directory structure:
+After accepting the Log4j2 license, you will have the following directory structure:
 
 ----
 $JETTY_BASE
@@ -175,7 +173,7 @@ $JETTY_BASE
     └── logging-log4j2.ini
 ----
 
-The Jetty module system downloaded the required Log4J2 `+*.jar+` files, and created a `$JETTY_BASE/resources/log4j2.xml` file that you can configure to customize your Log4J2 logging.
+The Jetty module system downloaded the required Log4j2 `+*.jar+` files, and created a `$JETTY_BASE/resources/log4j2.xml` file that you can configure to customize your Log4j2 logging.
 
 [[og-logging-server-bridges]]
 ===== Bridging Logging to SLF4J
