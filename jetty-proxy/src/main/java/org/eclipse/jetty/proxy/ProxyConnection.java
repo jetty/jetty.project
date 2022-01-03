@@ -79,11 +79,12 @@ public abstract class ProxyConnection extends AbstractConnection
     @Override
     public String toConnectionString()
     {
-        return String.format("%s@%x[l:%d<=>r:%d]",
+        EndPoint endPoint = getEndPoint();
+        return String.format("%s@%x[l:%s<=>r:%s]",
             getClass().getSimpleName(),
             hashCode(),
-            getEndPoint().getLocalAddress().getPort(),
-            getEndPoint().getRemoteAddress().getPort());
+            endPoint.getLocalAddress(),
+            endPoint.getRemoteAddress());
     }
 
     private class ProxyIteratingCallback extends IteratingCallback
