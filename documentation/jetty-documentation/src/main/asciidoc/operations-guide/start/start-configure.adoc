@@ -24,7 +24,7 @@ Within the Jetty start mechanism, the source of configurations is layered in thi
 [[og-start-configure-enable]]
 ===== Enabling Modules
 
-You can enable Jetty modules with the `--add-modules` command:
+You can enable Jetty modules persistently across restarts with the `--add-modules` command:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=server,http
@@ -107,6 +107,29 @@ jetty.http.port=9876
 ----
 
 When Jetty is started (or re-started) this configuration is applied and Jetty will listen for clear-text HTTP/1.1 on port `9876`.
+
+[[og-start-configure-enable-command-line]]
+===== Enabling Modules on Command Line
+
+You can also enable a module transiently, only for the current execution of the `java -jar $JETTY_HOME/start.jar` command.
+
+If you have an empty `$JETTY_BASE`, the following command enables the `server` and `http` modules, but does not create any `+$JETTY_BASE/start.d/*.ini+` files.
+
+----
+$ java -jar $JETTY_HOME/start.jar --module=server,http
+----
+
+Since there are no `+$JETTY_BASE/start.d/*.ini+` files, you can only customize the properties via the command line, for example:
+
+----
+$ java -jar $JETTY_HOME/start.jar --module=server,http jetty.http.port=9876
+----
+
+Enabling modules on the command line is useful to verify that the modules work as expected, or to try different configurations.
+
+NOTE: It is possible to enable some module persistently via `--add-modules` and some other module transiently via `--module`.
+
+Remember that once the current execution terminates, the modules enabled transiently on the command line via `--module` and their configuration are not saved and will not be enabled on the next execution (unless you specify them again on the command line).
 
 [[og-start-configure-custom-module]]
 ===== Adding Your Own Modules
