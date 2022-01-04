@@ -19,6 +19,11 @@ import java.util.function.Supplier;
 
 public class MetaData implements Iterable<HttpField>
 {
+    public static boolean isTunnel(String method, int status)
+    {
+        return HttpMethod.CONNECT.is(method) && HttpStatus.isSuccess(status);
+    }
+
     private final HttpVersion _httpVersion;
     private final HttpFields _fields;
     private final long _contentLength;

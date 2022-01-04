@@ -261,7 +261,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
     private boolean isTunnel(MetaData.Request request, MetaData.Response response)
     {
-        return HttpMethod.CONNECT.is(request.getMethod()) && response.getStatus() == HttpStatus.OK_200;
+        return MetaData.isTunnel(request.getMethod(), response.getStatus());
     }
 
     @Override
