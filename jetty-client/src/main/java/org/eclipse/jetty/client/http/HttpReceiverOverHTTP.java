@@ -47,6 +47,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private boolean shutdown;
     private boolean complete;
     private boolean unsolicited;
+    private String method;
     private int status;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
@@ -119,6 +120,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     protected ByteBuffer onUpgradeFrom()
     {
+        RetainableByteBuffer networkBuffer = this.networkBuffer;
+        if (networkBuffer == null)
+            return null;
+
         ByteBuffer upgradeBuffer = null;
         if (networkBuffer.hasRemaining())
         {
@@ -127,7 +132,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             BufferUtil.put(networkBuffer.getBuffer(), upgradeBuffer);
             BufferUtil.flipToFlush(upgradeBuffer, 0);
         }
-
         releaseNetworkBuffer();
         return upgradeBuffer;
     }
@@ -215,13 +219,19 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             boolean complete = this.complete;
             this.complete = false;
             if (LOG.isDebugEnabled())
-                LOG.debug("Parse complete={}, remaining {} {}", complete, networkBuffer.remaining(), parser);
+                LOG.debug("Parse complete={}, {} {}", complete, networkBuffer, parser);
 
             if (complete)
             {
                 int status = this.status;
                 this.status = 0;
+                // Connection upgrade due to 101, bail out.
                 if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
+                    return true;
+                // Connection upgrade due to CONNECT + 200, bail out.
+                String method = this.method;
+                this.method = null;
+                if (getHttpChannel().isTunnel(method, status))
                     return true;
             }
 
@@ -279,10 +289,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return false;
 
+        this.method = exchange.getRequest().getMethod();
         this.status = status;
-        String method = exchange.getRequest().getMethod();
-        parser.setHeadResponse(HttpMethod.HEAD.is(method) ||
-            (HttpMethod.CONNECT.is(method) && status == HttpStatus.OK_200));
+        parser.setHeadResponse(HttpMethod.HEAD.is(method) || getHttpChannel().isTunnel(method, status));
         exchange.getResponse().version(version).status(status).reason(reason);
 
         return !responseBegin(exchange);
