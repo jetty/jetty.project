@@ -1,0 +1,25 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-conscrypt]]
+=== Conscrypt Java Security Provider
+
+Conscrypt is a Java Secure Socket Extension (JSSE) can be used with Jetty instead of the default provider from the JVM to provide TLS and the ALPN extension.
+
+Google maintains BoringSSL as a fork of the OpenSSL project that is used in their Chrome and Android products, thus it is an excellent well maintained library with good security and performance. Google have also built on the work of the Netty project to develop Conscrypt as the Java library that maps the native BoringSSL API to be a compliant JSSE SecurityProvider.
+
+When configuring Conscrypt for the Server, instantiate an instance of Conscrypt’s `OpenSSLProvider` to be registered with the static method on the `java.security.Security` class.
+
+Do not use `Security.addProvider(new OpenSSLProvider())` when registering the Conscrypt provider, instead use `Security.insertProviderAt(new OpenSSLProvider(), 1)`.
+This is because the Conscrypt provider internally reaches for other component factories (such as TrustManagerFactory).
+By putting the Conscrypt provider in the first position the default for these component factories will be from Conscrypt and not from the OpenJDK provider.

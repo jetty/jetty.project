@@ -1,0 +1,22 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-client-conscrypt]]
+=== Conscrypt Java Security Provider
+
+Conscrypt is a Java Secure Socket Extension (JSSE) can be used with Jetty instead of the default provider from the JVM to provide TLS and the ALPN extension.
+
+See relevant information xref:pg-server-conscrypt[Conscrypt Server Configuration].
+
+In order to use the `HTTPS` endpointIdentificationAlgorithm, you must also set a `HostnameVerifier`, either via `HttpsURLConnection.setDefaultHostnameVerifier()` or `Conscrypt.setHostnameVerifier` / `Conscrypt.setDefaultHostnameVerifier()`.
+This is because Conscrypt implementation defers directly to the hostname verifier unlike OpenJDK which first delegates to an internal verification and only if that fails tries the hostname verifier.
