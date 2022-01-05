@@ -13,10 +13,10 @@ Use 'unixdomain-http' instead (requires Java 16 or later).
 
 [tags]
 connector
+deprecated
 
 [depend]
 unixsocket-http
-deprecated
 
 [xml]
 etc/jetty-unixsocket-secure.xml
