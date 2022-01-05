@@ -27,7 +27,6 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
@@ -373,10 +372,10 @@ public class Request implements HttpServletRequest
         if (listener instanceof AsyncListener)
             throw new IllegalArgumentException(listener.getClass().toString());
     }
-    
+
     /**
      * Remember a session that this request has just entered.
-     * 
+     *
      * @param s the session
      */
     public void enterSession(HttpSession s)
@@ -404,9 +403,10 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * A response is being committed for a session, 
+     * A response is being committed for a session,
      * potentially write the session out before the
      * client receives the response.
+     *
      * @param session the session
      */
     private void commitSession(Session session)
@@ -991,30 +991,20 @@ public class Request implements HttpServletRequest
     @Override
     public String getLocalAddr()
     {
-        if (_channel == null)
+        if (_channel != null)
         {
-            try
-            {
-                String name = InetAddress.getLocalHost().getHostAddress();
-                if (StringUtil.ALL_INTERFACES.equals(name))
-                    return null;
-                return formatAddrOrHost(name);
-            }
-            catch (UnknownHostException e)
-            {
-                LOG.ignore(e);
-                return null;
-            }
+            InetSocketAddress local = _channel.getLocalAddress();
+            if (local == null)
+                return "";
+            InetAddress address = local.getAddress();
+            String result = address == null
+                ? local.getHostString()
+                : address.getHostAddress();
+
+            return formatAddrOrHost(result);
         }
 
-        InetSocketAddress local = _channel.getLocalAddress();
-        if (local == null)
-            return "";
-        InetAddress address = local.getAddress();
-        String result = address == null
-            ? local.getHostString()
-            : address.getHostAddress();
-        return formatAddrOrHost(result);
+        return "";
     }
 
     /*
@@ -1025,23 +1015,11 @@ public class Request implements HttpServletRequest
     {
         if (_channel != null)
         {
-            InetSocketAddress local = _channel.getLocalAddress();
-            if (local != null)
-                return formatAddrOrHost(local.getHostString());
+            String localName = _channel.getLocalName();
+            return formatAddrOrHost(localName);
         }
 
-        try
-        {
-            String name = InetAddress.getLocalHost().getHostName();
-            if (StringUtil.ALL_INTERFACES.equals(name))
-                return null;
-            return formatAddrOrHost(name);
-        }
-        catch (UnknownHostException e)
-        {
-            LOG.ignore(e);
-        }
-        return null;
+        return ""; // not allowed to be null
     }
 
     /*
@@ -1050,10 +1028,13 @@ public class Request implements HttpServletRequest
     @Override
     public int getLocalPort()
     {
-        if (_channel == null)
-            return 0;
-        InetSocketAddress local = _channel.getLocalAddress();
-        return local == null ? 0 : local.getPort();
+        if (_channel != null)
+        {
+            int localPort = _channel.getLocalPort();
+            if (localPort > 0)
+                return localPort;
+        }
+        return 0;
     }
 
     /*
@@ -1428,21 +1409,19 @@ public class Request implements HttpServletRequest
             }
         }
 
+        if (_channel != null)
+        {
+            HostPort serverAuthority = _channel.getServerAuthority();
+            if (serverAuthority != null)
+                return formatAddrOrHost(serverAuthority.getHost());
+        }
+
         // Return host from connection
         String name = getLocalName();
         if (name != null)
             return formatAddrOrHost(name);
 
-        // Return the local host
-        try
-        {
-            return formatAddrOrHost(InetAddress.getLocalHost().getHostAddress());
-        }
-        catch (UnknownHostException e)
-        {
-            LOG.ignore(e);
-        }
-        return null;
+        return ""; // not allowed to be null
     }
 
     /*
@@ -1458,9 +1437,10 @@ public class Request implements HttpServletRequest
         // If no port specified, return the default port for the scheme
         if (port <= 0)
         {
-            if (getScheme().equalsIgnoreCase(URIUtil.HTTPS))
+            if (HttpScheme.HTTPS.is(getScheme()))
                 return 443;
-            return 80;
+            else
+                return 80;
         }
 
         // return a specific port
@@ -1474,19 +1454,25 @@ public class Request implements HttpServletRequest
         HttpField host = metadata == null ? null : metadata.getFields().getField(HttpHeader.HOST);
         if (host != null)
         {
-            // TODO is this needed now?
             HostPortHttpField authority = (host instanceof HostPortHttpField)
                 ? ((HostPortHttpField)host)
                 : new HostPortHttpField(host.getValue());
-            metadata.getURI().setAuthority(authority.getHost(), authority.getPort());
-            return authority.getPort();
+            if (authority.getHostPort().hasHost() && authority.getHostPort().hasPort())
+            {
+                metadata.getURI().setAuthority(authority.getHost(), authority.getPort());
+                return authority.getPort();
+            }
+        }
+
+        if (_channel != null)
+        {
+            HostPort serverAuthority = _channel.getServerAuthority();
+            if (serverAuthority != null)
+                return serverAuthority.getPort();
         }
 
         // Return host from connection
-        if (_channel != null)
-            return getLocalPort();
-
-        return -1;
+        return getLocalPort();
     }
 
     @Override
@@ -1551,7 +1537,7 @@ public class Request implements HttpServletRequest
                 leaveSession(s);
         }
     }
-    
+
     /**
      * Called when a response is about to be committed, ie sent
      * back to the client
@@ -1567,7 +1553,7 @@ public class Request implements HttpServletRequest
 
     /**
      * Find a session that this request has already entered for the
-     * given SessionHandler 
+     * given SessionHandler
      *
      * @param sessionHandler the SessionHandler (ie context) to check
      * @return
@@ -1576,9 +1562,9 @@ public class Request implements HttpServletRequest
     {
         if (_sessions == null || _sessions.size() == 0 || sessionHandler == null)
             return null;
-        
+
         HttpSession session = null;
-        
+
         for (HttpSession s:_sessions)
         {
             Session ss =  Session.class.cast(s);
@@ -1591,7 +1577,7 @@ public class Request implements HttpServletRequest
         }
         return session;
     }
-    
+
     /*
      * @see javax.servlet.http.HttpServletRequest#getSession()
      */
@@ -1627,7 +1613,7 @@ public class Request implements HttpServletRequest
         _session = _sessionHandler.newHttpSession(this);
         if (_session == null)
             throw new IllegalStateException("Create session failed");
-        
+
         HttpCookie cookie = _sessionHandler.getSessionCookie(_session, getContextPath(), isSecure());
         if (cookie != null)
             _channel.getResponse().replaceCookie(cookie);
