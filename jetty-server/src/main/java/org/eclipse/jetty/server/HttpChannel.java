@@ -335,18 +335,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     /**
-     * @return return the HttpConfiguration server authority override
-     */
-    public HostPort getServerAuthority()
-    {
-        HttpConfiguration httpConfiguration = getHttpConfiguration();
-        if (httpConfiguration != null)
-            return httpConfiguration.getServerAuthority();
-
-        return null;
-    }
-
-    /**
      * <p>Return the Local Port of the connected channel.</p>
      *
      * <p>
@@ -379,9 +367,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public InetSocketAddress getLocalAddress()
     {
-        SocketAddress localAddress = getHttpConfiguration().getLocalAddress();
-        if (localAddress instanceof InetSocketAddress)
-            return ((InetSocketAddress)localAddress);
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+        {
+            SocketAddress localAddress = httpConfiguration.getLocalAddress();
+            if (localAddress instanceof InetSocketAddress)
+                return ((InetSocketAddress)localAddress);
+        }
 
         return _endPoint.getLocalAddress();
     }
@@ -389,6 +381,18 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public InetSocketAddress getRemoteAddress()
     {
         return _endPoint.getRemoteAddress();
+    }
+
+    /**
+     * @return return the HttpConfiguration server authority override
+     */
+    public HostPort getServerAuthority()
+    {
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+            return httpConfiguration.getServerAuthority();
+
+        return null;
     }
 
     /**
