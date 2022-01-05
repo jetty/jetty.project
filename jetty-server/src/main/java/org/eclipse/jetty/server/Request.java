@@ -1411,15 +1411,9 @@ public class Request implements HttpServletRequest
 
         if (_channel != null)
         {
-            HttpConfiguration httpConfiguration = _channel.getHttpConfiguration();
-            if (httpConfiguration != null)
-            {
-                HostPort serverAuth = httpConfiguration.getServerAuthority();
-                if (serverAuth != null)
-                {
-                    return formatAddrOrHost(serverAuth.getHost());
-                }
-            }
+            HostPort serverAuthority = _channel.getServerAuthority();
+            if (serverAuthority != null)
+                return formatAddrOrHost(serverAuthority.getHost());
         }
 
         // Return host from connection
@@ -1472,13 +1466,9 @@ public class Request implements HttpServletRequest
 
         if (_channel != null)
         {
-            HttpConfiguration httpConfiguration = _channel.getHttpConfiguration();
-            if (httpConfiguration != null)
-            {
-                HostPort serverAuth = httpConfiguration.getServerAuthority();
-                if (serverAuth != null)
-                    return serverAuth.getPort();
-            }
+            HostPort serverAuthority = _channel.getServerAuthority();
+            if (serverAuthority != null)
+                return serverAuthority.getPort();
         }
 
         // Return host from connection

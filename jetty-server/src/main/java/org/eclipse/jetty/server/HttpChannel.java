@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -107,7 +108,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
     {
         _connector = connector;
-        _configuration = configuration;
+        _configuration = Objects.requireNonNull(configuration);
         _endPoint = endPoint;
         _transport = transport;
 
@@ -300,29 +301,28 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     /**
-     * <p>Return the Local Name of the connected channel.</p>
+     * <p>Return the local name of the connected channel.</p>
      *
      * <p>
-     * This is the name after the connector is bound and the connection is accepted.
-     * The value is typically the local address and optionally the local host name
-     * if the local address is unavailable.
+     * This is the host name after the connector is bound and the connection is accepted.
      * </p>
      * <p>
-     * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)} for
-     * scenarios where Jetty is being an intermediary and the local name
-     * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
-     * such as absolute-URI creation (eg: Location response header).
+     * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)}.
+     * </p>
+     * <p>
+     * Note: some connectors are not based on IP networking, and default behavior here will
+     * result in a null return.  Use {@link HttpConfiguration#setLocalAddress(SocketAddress)}
+     * to set the value to an acceptable host name.
      * </p>
      *
-     * @return the local name if overridden, or the local address, or
-     * null in the case of no local address (usually seen in connectors not based on IP networking).
-
+     * @return the local name, or null
      */
     public String getLocalName()
     {
-        SocketAddress localAddress = getHttpConfiguration().getLocalAddress();
-        if (localAddress != null)
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
         {
+            SocketAddress localAddress = httpConfiguration.getLocalAddress();
             if (localAddress instanceof InetSocketAddress)
                 return ((InetSocketAddress)localAddress).getHostName();
         }
@@ -335,26 +335,43 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     /**
+     * @return return the HttpConfiguration server authority override
+     */
+    public HostPort getServerAuthority()
+    {
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+            return httpConfiguration.getServerAuthority();
+
+        return null;
+    }
+
+    /**
      * <p>Return the Local Port of the connected channel.</p>
      *
      * <p>
-     * This is the port the connector is bound to and is accepting connection on.
+     * This is the port the connector is bound to and is accepting connections on.
      * </p>
      * <p>
-     * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)} for
-     * scenarios where Jetty is being an intermediary and the local port
-     * needs to be changed to satisfy public (pre-intermediary) HTTP behaviors
-     * such as absolute-URI creation (eg: Location response header).
+     * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)}.
+     * </p>
+     * <p>
+     * Note: some connectors are not based on IP networking, and default behavior here will
+     * result in a value of 0 returned.  Use {@link HttpConfiguration#setLocalAddress(SocketAddress)}
+     * to set the value to an acceptable port.
      * </p>
      *
-     * @return the local authority port if overridden, or the local address port, or
-     * 0 in the case of no local address (usually seen in connectors not based on IP networking).
+     * @return the local port, or 0 if unspecified
      */
     public int getLocalPort()
     {
-        SocketAddress localAddress = getHttpConfiguration().getLocalAddress();
-        if (localAddress instanceof InetSocketAddress)
-            return ((InetSocketAddress)localAddress).getPort();
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+        {
+            SocketAddress localAddress = httpConfiguration.getLocalAddress();
+            if (localAddress instanceof InetSocketAddress)
+                return ((InetSocketAddress)localAddress).getPort();
+        }
 
         InetSocketAddress local = getLocalAddress();
         return local == null ? 0 : local.getPort();
@@ -611,7 +628,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                             }
                         }
-                        
+
                         // Set a close callback on the HttpOutput to make it an async callback
                         _response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
 
@@ -977,7 +994,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             commit(info);
             _combinedListener.onResponseBegin(_request);
             _request.onResponseCommit();
-            
+
             // wrap callback to process 100 responses
             final int status = info.getStatus();
             final Callback committed = (status < HttpStatus.OK_200 && status >= HttpStatus.CONTINUE_100)

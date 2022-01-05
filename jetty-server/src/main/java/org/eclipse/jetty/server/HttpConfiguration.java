@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -80,7 +79,6 @@ public class HttpConfiguration implements Dumpable
     private MultiPartFormDataCompliance _multiPartCompliance = MultiPartFormDataCompliance.LEGACY; // TODO change default in jetty-10
     private boolean _notifyRemoteAsyncErrors = true;
     private boolean _relativeRedirectAllowed;
-
     private HostPort _serverAuthority;
     private SocketAddress _localAddress;
 
@@ -150,6 +148,8 @@ public class HttpConfiguration implements Dumpable
         _multiPartCompliance = config._multiPartCompliance;
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
         _relativeRedirectAllowed = config._relativeRedirectAllowed;
+        _serverAuthority = config._serverAuthority;
+        _localAddress = config._localAddress;
     }
 
     /**
@@ -669,11 +669,11 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * Get the Local Address of the connection
+     * Get the SocketAddress override to be reported as the local address of all connections
      *
-     * @return Returns the connection local address.
+     * @return Returns the connection local address override or null.
      */
-    @ManagedAttribute("Local address override")
+    @ManagedAttribute("Local SocketAddress override")
     public SocketAddress getLocalAddress()
     {
         return _localAddress;
@@ -694,17 +694,15 @@ public class HttpConfiguration implements Dumpable
      */
     public void setLocalAddress(SocketAddress localAddress)
     {
-        Objects.requireNonNull(localAddress, "Local Address");
-
         _localAddress = localAddress;
     }
 
     /**
-     * Get the optional Server URI authority default
+     * Get the Server authority override to be used if no authority is provided by a request.
      *
-     * @return Returns the connection server authority (name/port).
+     * @return Returns the connection server authority (name/port) or null
      */
-    @ManagedAttribute("Server authority override")
+    @ManagedAttribute("The server authority if none provided by requests")
     public HostPort getServerAuthority()
     {
         return _serverAuthority;
@@ -712,7 +710,7 @@ public class HttpConfiguration implements Dumpable
 
     /**
      * <p>
-     * Specify the connection server uri authority (name/port) used within application API layer
+     * Specify the connection server authority (name/port) used within application API layer
      * when identifying the server host name/port of a connected endpoint.
      * </p>
      *
@@ -728,7 +726,7 @@ public class HttpConfiguration implements Dumpable
         if (authority == null)
             _serverAuthority = null;
         else if (!authority.hasHost())
-            throw new IllegalStateException("Server URI Authority must have host declared");
+            throw new IllegalStateException("Server Authority must have host declared");
         else
             _serverAuthority = authority;
     }
