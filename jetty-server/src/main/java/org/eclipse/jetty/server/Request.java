@@ -1305,7 +1305,10 @@ public class Request implements HttpServletRequest
     @Override
     public String getServerName()
     {
-        return _uri == null ? findServerName() : formatAddrOrHost(_uri.getHost());
+        if ((_uri != null) && StringUtil.isNotBlank(_uri.getAuthority()))
+            return formatAddrOrHost(_uri.getHost());
+        else
+            return findServerName();
     }
 
     private String findServerName()
@@ -1328,7 +1331,12 @@ public class Request implements HttpServletRequest
     @Override
     public int getServerPort()
     {
-        int port = _uri == null ? -1 : _uri.getPort();
+        int port = -1;
+
+        if ((_uri != null) && StringUtil.isNotBlank(_uri.getAuthority()))
+            port = _uri.getPort();
+        else
+            port = findServerPort();
 
         // If no port specified, return the default port for the scheme
         if (port <= 0)
