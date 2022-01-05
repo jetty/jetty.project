@@ -105,6 +105,8 @@ public class DumpHandler extends AbstractHandler
         writer.write("<pre>\ncontentType=" + request.getContentType() + "\n</pre>\n");
         writer.write("<pre>\nencoding=" + request.getCharacterEncoding() + "\n</pre>\n");
         writer.write("<pre>\nservername=" + request.getServerName() + "\n</pre>\n");
+        writer.write("<pre>\nserverport=" + request.getServerPort() + "\n</pre>\n");
+        writer.write("<pre>\nlocalname=" + request.getLocalName() + "\n</pre>\n");
         writer.write("<pre>\nlocal=" + request.getLocalAddr() + ":" + request.getLocalPort() + "\n</pre>\n");
         writer.write("<pre>\nremote=" + request.getRemoteAddr() + ":" + request.getRemotePort() + "\n</pre>\n");
         writer.write("<h3>Header:</h3><pre>");
