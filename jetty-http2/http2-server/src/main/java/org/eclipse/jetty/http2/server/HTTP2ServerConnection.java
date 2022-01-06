@@ -28,7 +28,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Request;
 import org.eclipse.jetty.http2.ErrorCode;
@@ -355,7 +354,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
 
         private boolean isTunnel()
         {
-            return HttpMethod.CONNECT.is(getRequest().getMethod()) && getResponse().getStatus() == HttpStatus.OK_200;
+            return MetaData.isTunnel(getRequest().getMethod(), getResponse().getStatus());
         }
 
         @Override
