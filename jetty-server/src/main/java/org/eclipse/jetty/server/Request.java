@@ -22,7 +22,6 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
@@ -420,6 +419,7 @@ public class Request implements HttpServletRequest
      * A response is being committed for a session,
      * potentially write the session out before the
      * client receives the response.
+     *
      * @param session the session
      */
     private void commitSession(Session session)
@@ -978,63 +978,47 @@ public class Request implements HttpServletRequest
     @Override
     public String getLocalAddr()
     {
-        if (_channel == null)
+        if (_channel != null)
         {
-            try
-            {
-                String name = InetAddress.getLocalHost().getHostAddress();
-                if (StringUtil.ALL_INTERFACES.equals(name))
-                    return null;
-                return formatAddrOrHost(name);
-            }
-            catch (UnknownHostException e)
-            {
-                LOG.trace("IGNORED", e);
-                return null;
-            }
+            InetSocketAddress local = _channel.getLocalAddress();
+            if (local == null)
+                return "";
+            InetAddress address = local.getAddress();
+            String result = address == null
+                ? local.getHostString()
+                : address.getHostAddress();
+
+            return formatAddrOrHost(result);
         }
 
-        InetSocketAddress local = _channel.getLocalAddress();
-        if (local == null)
-            return "";
-        InetAddress address = local.getAddress();
-        String result = address == null
-            ? local.getHostString()
-            : address.getHostAddress();
-        return formatAddrOrHost(result);
+        return "";
     }
 
+    /*
+     * @see javax.servlet.ServletRequest#getLocalName()
+     */
     @Override
     public String getLocalName()
     {
         if (_channel != null)
         {
-            InetSocketAddress local = _channel.getLocalAddress();
-            if (local != null)
-                return formatAddrOrHost(local.getHostString());
+            String localName = _channel.getLocalName();
+            return formatAddrOrHost(localName);
         }
 
-        try
-        {
-            String name = InetAddress.getLocalHost().getHostName();
-            if (StringUtil.ALL_INTERFACES.equals(name))
-                return null;
-            return formatAddrOrHost(name);
-        }
-        catch (UnknownHostException e)
-        {
-            LOG.trace("IGNORED", e);
-        }
-        return null;
+        return ""; // not allowed to be null
     }
 
     @Override
     public int getLocalPort()
     {
-        if (_channel == null)
-            return 0;
-        InetSocketAddress local = _channel.getLocalAddress();
-        return local == null ? 0 : local.getPort();
+        if (_channel != null)
+        {
+            int localPort = _channel.getLocalPort();
+            if (localPort > 0)
+                return localPort;
+        }
+        return 0;
     }
 
     @Override
@@ -1321,32 +1305,38 @@ public class Request implements HttpServletRequest
     @Override
     public String getServerName()
     {
-        return _uri == null ? findServerName() : formatAddrOrHost(_uri.getHost());
+        if ((_uri != null) && StringUtil.isNotBlank(_uri.getAuthority()))
+            return formatAddrOrHost(_uri.getHost());
+        else
+            return findServerName();
     }
 
     private String findServerName()
     {
+        if (_channel != null)
+        {
+            HostPort serverAuthority = _channel.getServerAuthority();
+            if (serverAuthority != null)
+                return formatAddrOrHost(serverAuthority.getHost());
+        }
+
         // Return host from connection
         String name = getLocalName();
         if (name != null)
             return formatAddrOrHost(name);
 
-        // Return the local host
-        try
-        {
-            return formatAddrOrHost(InetAddress.getLocalHost().getHostAddress());
-        }
-        catch (UnknownHostException e)
-        {
-            LOG.trace("IGNORED", e);
-        }
-        return null;
+        return ""; // not allowed to be null
     }
 
     @Override
     public int getServerPort()
     {
-        int port = _uri == null ? -1 : _uri.getPort();
+        int port = -1;
+
+        if ((_uri != null) && StringUtil.isNotBlank(_uri.getAuthority()))
+            port = _uri.getPort();
+        else
+            port = findServerPort();
 
         // If no port specified, return the default port for the scheme
         if (port <= 0)
@@ -1358,11 +1348,15 @@ public class Request implements HttpServletRequest
 
     private int findServerPort()
     {
-        // Return host from connection
         if (_channel != null)
-            return getLocalPort();
+        {
+            HostPort serverAuthority = _channel.getServerAuthority();
+            if (serverAuthority != null)
+                return serverAuthority.getPort();
+        }
 
-        return -1;
+        // Return host from connection
+        return getLocalPort();
     }
 
     @Override
@@ -1532,7 +1526,7 @@ public class Request implements HttpServletRequest
         _session = _sessionHandler.newHttpSession(this);
         if (_session == null)
             throw new IllegalStateException("Create session failed");
-        
+
         HttpCookie cookie = _sessionHandler.getSessionCookie(_session, getContextPath(), isSecure());
         if (cookie != null)
             _channel.getResponse().replaceCookie(cookie);
@@ -2563,7 +2557,7 @@ public class Request implements HttpServletRequest
         // which we recover from the IncludeAttributes wrapper.
         return findServletPathMapping();
     }
-    
+
     private String formatAddrOrHost(String name)
     {
         return _channel == null ? HostPort.normalizeHost(name) : _channel.formatAddrOrHost(name);

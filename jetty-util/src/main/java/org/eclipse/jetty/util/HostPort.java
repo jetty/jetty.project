@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+
 /**
  * <p>Parse an authority string (in the form {@code host:port}) into
  * {@code host} and {@code port}, handling IPv4 and IPv6 host formats
@@ -99,6 +101,7 @@ public class HostPort
      *
      * @return the host
      */
+    @ManagedAttribute("host")
     public String getHost()
     {
         return _host;
@@ -109,6 +112,7 @@ public class HostPort
      *
      * @return the port
      */
+    @ManagedAttribute("port")
     public int getPort()
     {
         return _port;
@@ -123,6 +127,16 @@ public class HostPort
     public int getPort(int defaultPort)
     {
         return _port > 0 ? _port : defaultPort;
+    }
+
+    public boolean hasHost()
+    {
+        return StringUtil.isNotBlank(_host);
+    }
+
+    public boolean hasPort()
+    {
+        return _port > 0;
     }
 
     @Override
