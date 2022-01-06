@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Objects;
 import java.util.Set;
@@ -88,7 +90,7 @@ public class HttpChannel extends Attributes.Lazy
     {
         _server = server;
         _connectionMetaData = connectionMetaData;
-        _configuration = configuration;
+        _configuration = Objects.requireNonNull(configuration);
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
         _serializedInvoker = new SerializedInvoker()
         {
@@ -156,6 +158,7 @@ public class HttpChannel extends Attributes.Lazy
 
     /**
      * Start request handling by returning a Runnable that will call {@link Server#handle(Request, Response)}.
+     *
      * @param request The request metadata to handle.
      * @return A Runnable that will call {@link Server#handle(Request, Response)}.  Unlike all other Runnables
      * returned by {@link HttpChannel} methods, this runnable is not mutually excluded or serialized against the other
@@ -334,7 +337,9 @@ public class HttpChannel extends Attributes.Lazy
         }
     }
 
-    /** Format the address or host returned from Request methods
+    /**
+     * Format the address or host returned from Request methods
+     *
      * @param addr The address or host
      * @return Default implementation returns {@link HostPort#normalizeHost(String)}
      */
@@ -460,6 +465,84 @@ public class HttpChannel extends Attributes.Lazy
             return _requestAttributes.setAttribute(name, attribute);
         }
 
+        /**
+         * <p>Return the local name of the connected channel.</p>
+         *
+         * <p>
+         * This is the host name after the connector is bound and the connection is accepted.
+         * </p>
+         * <p>
+         * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)}.
+         * </p>
+         * <p>
+         * Note: some connectors are not based on IP networking, and default behavior here will
+         * result in a null return.  Use {@link HttpConfiguration#setLocalAddress(SocketAddress)}
+         * to set the value to an acceptable host name.
+         * </p>
+         *
+         * @return the local name, or null
+         */
+        public String getLocalName()
+        {
+            HttpConfiguration httpConfiguration = getHttpConfiguration();
+            if (httpConfiguration != null)
+            {
+                SocketAddress localAddress = httpConfiguration.getLocalAddress();
+                if (localAddress instanceof InetSocketAddress)
+                    return ((InetSocketAddress)localAddress).getHostName();
+            }
+
+            InetSocketAddress local = getLocalAddress();
+            if (local != null)
+                return local.getHostString();
+
+            return null;
+        }
+
+        /**
+         * <p>Return the Local Port of the connected channel.</p>
+         *
+         * <p>
+         * This is the port the connector is bound to and is accepting connections on.
+         * </p>
+         * <p>
+         * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)}.
+         * </p>
+         * <p>
+         * Note: some connectors are not based on IP networking, and default behavior here will
+         * result in a value of 0 returned.  Use {@link HttpConfiguration#setLocalAddress(SocketAddress)}
+         * to set the value to an acceptable port.
+         * </p>
+         *
+         * @return the local port, or 0 if unspecified
+         */
+        public int getLocalPort()
+        {
+            HttpConfiguration httpConfiguration = getHttpConfiguration();
+            if (httpConfiguration != null)
+            {
+                SocketAddress localAddress = httpConfiguration.getLocalAddress();
+                if (localAddress instanceof InetSocketAddress)
+                    return ((InetSocketAddress)localAddress).getPort();
+            }
+
+            InetSocketAddress local = getLocalAddress();
+            return local == null ? 0 : local.getPort();
+        }
+
+        public InetSocketAddress getLocalAddress()
+        {
+            HttpConfiguration httpConfiguration = getHttpConfiguration();
+            if (httpConfiguration != null)
+            {
+                SocketAddress localAddress = httpConfiguration.getLocalAddress();
+                if (localAddress instanceof InetSocketAddress)
+                    return ((InetSocketAddress)localAddress);
+            }
+
+            return getLocalAddress();
+        }
+
         @Override
         public Set<String> getAttributeNames()
         {
@@ -476,6 +559,18 @@ public class HttpChannel extends Attributes.Lazy
         public void execute(Runnable task)
         {
             _server.getThreadPool().execute(task);
+        }
+
+        /**
+         * @return return the HttpConfiguration server authority override
+         */
+        public HostPort getServerAuthority()
+        {
+            HttpConfiguration httpConfiguration = getHttpConfiguration();
+            if (httpConfiguration != null)
+                return httpConfiguration.getServerAuthority();
+
+            return null;
         }
 
         @Override
@@ -718,7 +813,9 @@ public class HttpChannel extends Attributes.Lazy
                         try (AutoLock ignored = _lock.lock())
                         {
                             for (ByteBuffer b : content)
+                            {
                                 request._response._written += b.remaining();
+                            }
                             commit = request._response.commitResponse(last);
                         }
 
@@ -849,7 +946,9 @@ public class HttpChannel extends Attributes.Lazy
 
                 _onWriteComplete = callback;
                 for (ByteBuffer b : content)
+                {
                     _written += b.remaining();
+                }
 
                 commit = commitResponse(last);
                 stream = _stream;
