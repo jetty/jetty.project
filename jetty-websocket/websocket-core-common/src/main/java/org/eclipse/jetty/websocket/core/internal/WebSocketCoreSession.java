@@ -20,16 +20,20 @@ import java.net.URI;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -67,6 +71,8 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private final Negotiated negotiated;
     private final boolean demanding;
     private final Flusher flusher = new Flusher(this);
+    private final AutoLock _lock = new AutoLock();
+    private final Deque<LongConsumer> _demandHandlers = new ArrayDeque<>();
 
     private int maxOutgoingFrames = -1;
     private final AtomicInteger numOutgoingFrames = new AtomicInteger();
@@ -422,7 +428,31 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     {
         if (!demanding)
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
-        connection.demand(n);
+
+        LongConsumer consumer = popDemandHandler();
+        if (consumer != null)
+            consumer.accept(n);
+        else
+            connection.demand(n);
+    }
+
+    public LongConsumer popDemandHandler()
+    {
+        LongConsumer consumer = null;
+        try (AutoLock l = _lock.lock())
+        {
+            if (!_demandHandlers.isEmpty())
+                consumer = _demandHandlers.pop();
+        }
+        return consumer;
+    }
+
+    public void pushDemandHandler(LongConsumer demand)
+    {
+        try (AutoLock l = _lock.lock())
+        {
+            _demandHandlers.push(demand);
+        }
     }
 
     @Override
