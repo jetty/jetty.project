@@ -104,6 +104,7 @@ public class WebSocketClientServerTest
                 else
                 {
                     callback.succeeded();
+                    coreSession.demand(1);
                 }
             }
         };

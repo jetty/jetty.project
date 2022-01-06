@@ -396,7 +396,10 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
                 case OpCode.CONTINUATION:
                     if (_frame.isRsv1())
-                        throw new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame");
+                    {
+                        callback.failed(new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame"));
+                        return;
+                    }
                     break;
 
                 default:
@@ -463,7 +466,6 @@ public class PerMessageDeflateExtension extends AbstractExtension
             chunk.setRsv1(false);
             chunk.setPayload(payload);
             chunk.setFin(_frame.isFin() && finished);
-            Frame f = _frame;
 
             if (finished)
             {
