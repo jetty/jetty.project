@@ -19,6 +19,19 @@ import java.util.function.Supplier;
 
 public class MetaData implements Iterable<HttpField>
 {
+    /**
+     * <p>Returns whether the given HTTP request method and HTTP response status code
+     * identify a successful HTTP CONNECT tunnel.</p>
+     *
+     * @param method the HTTP request method
+     * @param status the HTTP response status code
+     * @return whether method and status identify a successful HTTP CONNECT tunnel
+     */
+    public static boolean isTunnel(String method, int status)
+    {
+        return HttpMethod.CONNECT.is(method) && HttpStatus.isSuccess(status);
+    }
+
     private final HttpVersion _httpVersion;
     private final HttpFields _fields;
     private final long _contentLength;

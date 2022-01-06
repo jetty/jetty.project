@@ -1535,8 +1535,18 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
                 ContentResponse response = listener.get(5, TimeUnit.SECONDS);
                 assertEquals(200, response.getStatus());
+                assertThat(connection, Matchers.instanceOf(HttpConnectionOverHTTP.class));
+                HttpConnectionOverHTTP httpConnection = (HttpConnectionOverHTTP)connection;
+                EndPoint endPoint = httpConnection.getEndPoint();
+                assertTrue(endPoint.isOpen());
 
-                // Test that I can send another request on the same connection.
+                // After a CONNECT+200, this connection is in "tunnel mode",
+                // and applications that want to deal with tunnel bytes must
+                // likely access the underlying EndPoint.
+                // For the purpose of this test, we just re-enable fill interest
+                // so that we can send another clear-text HTTP request.
+                httpConnection.fillInterested();
+
                 request = client.newRequest(host, port);
                 listener = new FutureResponseListener(request);
                 connection.send(request, listener);
