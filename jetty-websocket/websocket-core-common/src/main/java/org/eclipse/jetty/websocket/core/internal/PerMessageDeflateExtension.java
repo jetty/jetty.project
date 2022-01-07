@@ -429,7 +429,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
             if (_finished)
             {
                 clear();
-                coreSession.demand(1);
+                coreSession.internalDemand(1);
                 return Action.IDLE;
             }
 
@@ -478,17 +478,18 @@ public class PerMessageDeflateExtension extends AbstractExtension
             coreSession.pushDemandHandler(d -> this.succeeded());
 
             boolean succeedCallback = _finished;
+            Callback frameCallback = _frameCallback;
             Callback payloadCallback = Callback.from(() ->
             {
                 getBufferPool().release(payload);
                 if (succeedCallback)
                 {
-                    _frameCallback.succeeded();
+                    frameCallback.succeeded();
                 }
                 else
                 {
                     if (!coreSession.isDemanding())
-                        coreSession.demand(1);
+                        coreSession.internalDemand(1);
                 }
             }, t ->
             {
@@ -520,7 +521,10 @@ public class PerMessageDeflateExtension extends AbstractExtension
         {
             _failure.set(cause);
             if (_frameCallback != null)
+            {
+                System.err.println("failing frame callback " + _frameCallback);
                 _frameCallback.failed(cause);
+            }
             clear();
         }
 

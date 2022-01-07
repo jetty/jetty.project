@@ -272,7 +272,7 @@ public class WebSocketConnection extends AbstractConnection implements Connectio
                     referenced.release();
 
                 if (!coreSession.isDemanding())
-                    coreSession.demand(1);
+                    coreSession.internalDemand(1);
             }
 
             @Override

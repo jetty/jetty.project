@@ -428,7 +428,11 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     {
         if (!demanding)
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
+        internalDemand(n);
+    }
 
+    public void internalDemand(long n)
+    {
         LongConsumer consumer = popDemandHandler();
         if (consumer != null)
             consumer.accept(n);

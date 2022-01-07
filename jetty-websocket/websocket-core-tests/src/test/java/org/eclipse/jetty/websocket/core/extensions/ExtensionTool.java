@@ -16,6 +16,7 @@ package org.eclipse.jetty.websocket.core.extensions;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.concurrent.ExecutionException;
+import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -51,6 +52,7 @@ public class ExtensionTool
         private Extension ext;
         private final Parser parser;
         private final IncomingFramesCapture capture;
+        private final WebSocketCoreSession coreSession = newWebSocketCoreSession();
 
         private Tester(String parameterizedExtension)
         {
@@ -72,7 +74,7 @@ public class ExtensionTool
         {
             this.ext = components.getExtensionRegistry().newInstance(extConfig, components);
             this.ext.setNextIncomingFrames(capture);
-            this.ext.setCoreSession(newWebSocketCoreSession());
+            this.ext.setCoreSession(coreSession);
         }
 
         public void parseIncomingHex(String... rawhex)
@@ -92,7 +94,16 @@ public class ExtensionTool
                     if (frame == null)
                         break;
 
-                    FutureCallback callback = new FutureCallback();
+                    FutureCallback callback = new FutureCallback()
+                    {
+                        @Override
+                        public void succeeded()
+                        {
+                            super.succeeded();
+                            if (!coreSession.isDemanding())
+                                coreSession.internalDemand(1);
+                        }
+                    };
                     ext.onFrame(frame, callback);
 
                     // Throw if callback fails.
@@ -161,7 +172,16 @@ public class ExtensionTool
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
         exStack.negotiate(new LinkedList<>(), new LinkedList<>());
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
-        return coreSession;
+        return new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components)
+        {
+            @Override
+            public void internalDemand(long n)
+            {
+                // Never delegate to WebSocketConnection as it is null for this test.
+                LongConsumer consumer = popDemandHandler();
+                if (consumer != null)
+                    consumer.accept(n);
+            }
+        };
     }
 }
