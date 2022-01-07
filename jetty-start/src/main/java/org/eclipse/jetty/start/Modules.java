@@ -72,7 +72,7 @@ public class Modules implements Iterable<Module>
             {
                 try (FileInputStream inputStream = new FileInputStream(deprecatedPath.toFile()))
                 {
-                     _deprecated.load(inputStream);
+                    _deprecated.load(inputStream);
                 }
             }
         }
