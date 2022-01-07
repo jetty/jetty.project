@@ -340,6 +340,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
     private class IncomingFlusher extends IteratingCallback
     {
         private final AtomicReference<Throwable> _failure = new AtomicReference<>();
+        private boolean _finished;
         private boolean _first;
         private Frame _frame;
         private ByteBuffer _framePayload;
@@ -355,15 +356,14 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
             try
             {
-                inflate();
+                Action action = inflate();
                 _first = false;
+                return action;
             }
             catch (DataFormatException e)
             {
                 throw new BadPayloadException(e);
             }
-
-            return Action.IDLE;
         }
 
         public void onFrame(Frame frame, Callback callback)
@@ -406,7 +406,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
                     break;
             }
 
-            if (_first && !incomingCompressed)
+            if (!incomingCompressed)
             {
                 nextIncomingFrame(_frame, callback);
                 return;
@@ -422,8 +422,17 @@ public class PerMessageDeflateExtension extends AbstractExtension
             iterate();
         }
 
-        private boolean inflate() throws DataFormatException
+        private Action inflate() throws DataFormatException
         {
+            WebSocketCoreSession coreSession = (WebSocketCoreSession)getCoreSession();
+
+            if (_finished)
+            {
+                clear();
+                coreSession.demand(1);
+                return Action.IDLE;
+            }
+
             // Get a buffer for the inflated payload.
             long maxFrameSize = getConfiguration().getMaxFrameSize();
             int bufferSize = (maxFrameSize <= 0) ? inflateBufferSize : (int)Math.min(maxFrameSize, inflateBufferSize);
@@ -431,7 +440,6 @@ public class PerMessageDeflateExtension extends AbstractExtension
             BufferUtil.clear(payload);
 
             // Fill up the ByteBuffer with a max length of bufferSize;
-            boolean finished = false;
             Inflater inflater = getInflater();
             while (true)
             {
@@ -457,7 +465,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
                         continue;
                     }
 
-                    finished = true;
+                    _finished = true;
                     break;
                 }
             }
@@ -465,35 +473,41 @@ public class PerMessageDeflateExtension extends AbstractExtension
             Frame chunk = new Frame(_first ? _frame.getOpCode() : OpCode.CONTINUATION);
             chunk.setRsv1(false);
             chunk.setPayload(payload);
-            chunk.setFin(_frame.isFin() && finished);
+            chunk.setFin(_frame.isFin() && _finished);
 
-            if (finished)
-            {
-                _frameCallback.succeeded();
-                clear();
-            }
-            else
-            {
-                ((WebSocketCoreSession)getCoreSession()).pushDemandHandler(d -> this.iterate());
-            }
+            coreSession.pushDemandHandler(d -> this.succeeded());
 
-            Callback payloadCallback = Callback.from(() -> getBufferPool().release(payload), t ->
+            boolean succeedCallback = _finished;
+            Callback payloadCallback = Callback.from(() ->
+            {
+                getBufferPool().release(payload);
+                if (succeedCallback)
+                {
+                    _frameCallback.succeeded();
+                }
+                else
+                {
+                    if (!coreSession.isDemanding())
+                        coreSession.demand(1);
+                }
+            }, t ->
             {
                 // The error needs to be forwarded to the CoreSession if callback is failed.
                 getBufferPool().release(payload);
                 failFlusher(t);
-                ((WebSocketCoreSession)getCoreSession()).processHandlerError(t, NOOP);
+                coreSession.processHandlerError(t, NOOP);
             });
             nextIncomingFrame(chunk, payloadCallback);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Decompress finished: {} {}", finished, chunk);
+                LOG.debug("Decompress finished: {} {}", _finished, chunk);
 
-            return finished;
+            return Action.SCHEDULED;
         }
 
         private void clear()
         {
+            _finished = false;
             _first = false;
             _frame = null;
             _framePayload = null;

@@ -48,7 +48,7 @@ public class AutoFragmentTest
     @BeforeEach
     public void setup() throws Exception
     {
-        serverHandler = new AutoDemandingTestFrameHandler();
+        serverHandler = new TestFrameHandler();
 
         server = new WebSocketServer(serverHandler);
         server.start();

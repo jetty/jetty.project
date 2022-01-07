@@ -26,7 +26,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.websocket.core.AutoDemandingTestFrameHandler;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
@@ -53,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class PerMessageDeflaterBufferSizeTest
 {
     private WebSocketServer server;
-    private final TestFrameHandler serverHandler = new AutoDemandingTestFrameHandler();
+    private final TestFrameHandler serverHandler = new TestFrameHandler();
     private final TestNegotiator testNegotiator = new TestNegotiator();
     private URI serverUri;
 
@@ -156,7 +155,7 @@ public class PerMessageDeflaterBufferSizeTest
     public void testClientInflateBufferSize() throws Exception
     {
         int inflateBufferSize = 6;
-        TestFrameHandler clientHandler = new AutoDemandingTestFrameHandler();
+        TestFrameHandler clientHandler = new TestFrameHandler();
         CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(client, serverUri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate; @inflate_buffer_size=" + inflateBufferSize);
 
