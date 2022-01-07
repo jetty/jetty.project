@@ -521,10 +521,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
         {
             _failure.set(cause);
             if (_frameCallback != null)
-            {
-                System.err.println("failing frame callback " + _frameCallback);
                 _frameCallback.failed(cause);
-            }
             clear();
         }
 
