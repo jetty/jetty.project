@@ -442,13 +442,10 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
 
     public LongConsumer popDemandHandler()
     {
-        LongConsumer consumer = null;
         try (AutoLock l = _lock.lock())
         {
-            if (!_demandHandlers.isEmpty())
-                consumer = _demandHandlers.pop();
+            return _demandHandlers.poll();
         }
-        return consumer;
     }
 
     public void pushDemandHandler(LongConsumer demand)

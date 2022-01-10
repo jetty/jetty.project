@@ -519,7 +519,9 @@ public class PerMessageDeflateExtension extends AbstractExtension
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
-            _failure.set(cause);
+            Throwable suppressed = _failure.getAndSet(cause);
+            if (suppressed != null && suppressed != cause)
+                cause.addSuppressed(suppressed);
             if (_frameCallback != null)
                 _frameCallback.failed(cause);
             clear();
