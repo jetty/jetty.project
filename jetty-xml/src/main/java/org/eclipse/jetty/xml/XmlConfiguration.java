@@ -1823,7 +1823,12 @@ public class XmlConfiguration
                         properties.put(arg.substring(0, i), arg.substring(i + 1));
                     }
                     else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
-                        properties.load(Resource.newResource(arg).getInputStream());
+                    {
+                        try (InputStream inputStream = Resource.newResource(arg).getInputStream())
+                        {
+                            properties.load(inputStream);
+                        }
+                    }
                 }
 
                 // For all arguments, parse XMLs

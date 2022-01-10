@@ -70,7 +70,10 @@ public class Modules implements Iterable<Module>
             Path deprecatedPath = _baseHome.getPath("modules/deprecated.properties");
             if (deprecatedPath != null && FS.exists(deprecatedPath))
             {
-                _deprecated.load(new FileInputStream(deprecatedPath.toFile()));
+                try (FileInputStream inputStream = new FileInputStream(deprecatedPath.toFile()))
+                {
+                    _deprecated.load(inputStream);
+                }
             }
         }
         catch (IOException e)
