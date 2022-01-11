@@ -394,7 +394,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
                 if (!demanding)
-                    connection.demand(1);
+                    autoDemand();
             },
             x ->
             {
@@ -424,12 +424,12 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     {
         if (!demanding)
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
-        internalDemand(n);
+        getExtensionStack().demand(n, connection::demand);
     }
 
-    public void internalDemand(long n)
+    public void autoDemand()
     {
-        getExtensionStack().demand(n, connection::demand);
+        getExtensionStack().demand(1, connection::demand);
     }
 
     @Override
@@ -647,7 +647,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private class IncomingAdaptor implements IncomingFrames
     {
         @Override
-        public void onFrame(Frame frame, final Callback callback)
+        public void onFrame(Frame frame, Callback callback)
         {
             Callback closeCallback = null;
             try
@@ -660,7 +660,14 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
                 // Handle inbound frame
                 if (frame.getOpCode() != OpCode.CLOSE)
                 {
-                    handle(() -> handler.onFrame(frame, callback));
+                    Callback handlerCallback = isDemanding() ? callback : Callback.from(() ->
+                    {
+                        callback.succeeded();
+                        if (!isDemanding())
+                            autoDemand();
+                    }, callback::failed);
+
+                    handle(() -> handler.onFrame(frame, handlerCallback));
                     return;
                 }
 

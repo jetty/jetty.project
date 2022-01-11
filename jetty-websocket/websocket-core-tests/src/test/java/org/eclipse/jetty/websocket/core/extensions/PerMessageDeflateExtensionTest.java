@@ -17,7 +17,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -368,16 +368,18 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     @Test
     public void testIncomingFrameNoPayload()
     {
-        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, components);
-        ext.setCoreSession(newSession());
+        WebSocketCoreSession coreSession = newSession(config);
+        PerMessageDeflateExtension ext = (PerMessageDeflateExtension)coreSession.getExtensionStack().getExtensions().get(0);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         // Wire up stack
         ext.setNextIncomingFrames(capture);
+
+        // Simulate initial demand from onOpen().
+        coreSession.autoDemand();
 
         Frame ping = new Frame(OpCode.TEXT);
         ping.setRsv1(true);
@@ -592,15 +594,28 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     private WebSocketCoreSession newSession()
     {
-        return newSessionFromConfig(new ConfigurationCustomizer());
+        return newSession(null);
     }
 
-    private WebSocketCoreSession newSessionFromConfig(ConfigurationCustomizer configuration)
+    private WebSocketCoreSession newSession(ExtensionConfig config)
+    {
+        return newSessionFromConfig(new ConfigurationCustomizer(), config == null ? Collections.emptyList() : Collections.singletonList(config));
+    }
+
+    private WebSocketCoreSession newSessionFromConfig(ConfigurationCustomizer configuration, List<ExtensionConfig> configs)
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
-        exStack.negotiate(new LinkedList<>(), new LinkedList<>());
+        exStack.negotiate(configs, configs);
 
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components)
+        {
+            @Override
+            public void autoDemand()
+            {
+                // Never delegate to WebSocketConnection as it is null for this test.
+                getExtensionStack().demand(1, l -> {});
+            }
+        };
         configuration.customize(configuration);
         return coreSession;
     }

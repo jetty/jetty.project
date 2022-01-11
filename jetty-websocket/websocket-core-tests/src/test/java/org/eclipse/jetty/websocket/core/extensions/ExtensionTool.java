@@ -82,6 +82,9 @@ public class ExtensionTool
             int parts = rawhex.length;
             byte[] net;
 
+            // Simulate initial demand from onOpen().
+            coreSession.autoDemand();
+
             for (int i = 0; i < parts; i++)
             {
                 String hex = rawhex[i].replaceAll("\\s*(0x)?", "");
@@ -101,7 +104,7 @@ public class ExtensionTool
                         {
                             super.succeeded();
                             if (!coreSession.isDemanding())
-                                coreSession.internalDemand(1);
+                                coreSession.autoDemand();
                         }
                     };
                     ext.onFrame(frame, callback);
@@ -175,9 +178,10 @@ public class ExtensionTool
         return new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components)
         {
             @Override
-            public void internalDemand(long n)
+            public void autoDemand()
             {
-                getExtensionStack().demand(n, l -> {});
+                // Never delegate to WebSocketConnection as it is null for this test.
+                getExtensionStack().demand(1, l -> {});
             }
         };
     }

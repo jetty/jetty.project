@@ -16,6 +16,7 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
 import java.util.zip.DataFormatException;
@@ -243,15 +244,9 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
     @Override
     public void demand(long n, LongConsumer nextDemand)
     {
-        if (!incomingFlusher.isFinished())
-        {
-            // TODO: what to do with n?
-            incomingFlusher.succeeded();
-        }
-        else
-        {
-            nextDemand.accept(n);
-        }
+        incomingFlusher._demand.addAndGet(n);
+        incomingFlusher.setNextDemand(nextDemand);
+        incomingFlusher.iterate();
     }
 
     private class OutgoingFlusher extends TransformingFlusher
@@ -309,7 +304,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
 
                 if (buffer.limit() == bufferSize)
                 {
-                    // We need to fragment. TODO: what if there was only bufferSize of content?
+                    // We need to fragment.
                     if (!getConfiguration().isAutoFragment())
                         throw new MessageTooLargeException("Deflated payload exceeded the compress buffer size");
                     break;
@@ -355,6 +350,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
 
     private class IncomingFlusher extends IteratingCallback
     {
+        private final AtomicLong _demand = new AtomicLong();
         private final AtomicReference<Throwable> _failure = new AtomicReference<>();
         private boolean _complete = true;
         private boolean _finished = true;
@@ -363,29 +359,24 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
         private ByteBuffer _framePayload;
         private Callback _frameCallback;
         private boolean _tailBytes;
+        private LongConsumer _nextDemand;
 
         public boolean isFinished()
         {
             return _finished;
         }
 
-        @Override
-        protected Action process() throws Throwable
+        public void setNextDemand(LongConsumer nextDemand)
         {
-            Throwable failure = _failure.get();
-            if (failure != null)
-                throw failure;
+            _nextDemand = nextDemand;
+        }
 
-            try
-            {
-                Action action = inflate();
-                _first = false;
-                return action;
-            }
-            catch (DataFormatException e)
-            {
-                throw new BadPayloadException(e);
-            }
+        public void demand(long n)
+        {
+            if (n <= 0)
+                throw new IllegalArgumentException("Demand must be positive");
+            _demand.addAndGet(n);
+            iterate();
         }
 
         public void onFrame(Frame frame, Callback callback)
@@ -445,15 +436,40 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
             iterate();
         }
 
-        private Action inflate() throws DataFormatException
+        @Override
+        protected Action process() throws Throwable
         {
-            WebSocketCoreSession coreSession = (WebSocketCoreSession)getCoreSession();
+            while (_demand.get() > 0)
+            {
+                Throwable failure = _failure.get();
+                if (failure != null)
+                    throw failure;
 
+                try
+                {
+                    inflate();
+                    _first = false;
+                    if (_finished)
+                    {
+                        if (_demand.get() > 0)
+                            _nextDemand.accept(1);
+                        break;
+                    }
+                }
+                catch (DataFormatException e)
+                {
+                    throw new BadPayloadException(e);
+                }
+            }
+            return Action.IDLE;
+        }
+
+        private void inflate() throws DataFormatException
+        {
             if (_complete)
             {
                 clear();
-                coreSession.internalDemand(1);
-                return Action.IDLE;
+                return;
             }
 
             // Get a buffer for the inflated payload.
@@ -500,18 +516,12 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
 
             boolean succeedCallback = _complete;
             Callback frameCallback = _frameCallback;
+            WebSocketCoreSession coreSession = (WebSocketCoreSession)getCoreSession();
             Callback payloadCallback = Callback.from(() ->
             {
                 getBufferPool().release(payload);
                 if (succeedCallback)
-                {
                     frameCallback.succeeded();
-                }
-                else
-                {
-                    if (!coreSession.isDemanding())
-                        coreSession.internalDemand(1);
-                }
             }, t ->
             {
                 // The error needs to be forwarded to the CoreSession if callback is failed.
@@ -519,18 +529,17 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
                 failFlusher(t);
                 coreSession.processHandlerError(t, NOOP);
             });
+            _demand.decrementAndGet();
             nextIncomingFrame(chunk, payloadCallback);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Decompress finished: {} {}", _complete, chunk);
-
-            return Action.SCHEDULED;
         }
 
         private void clear()
         {
             _finished = true;
-            _complete = false;
+            _complete = true;
             _first = false;
             _frame = null;
             _framePayload = null;
@@ -552,10 +561,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
         private void failFlusher(Throwable t)
         {
             if (_failure.compareAndSet(null, t))
-            {
-                // TODO: if the callback is pending then this will be noop.
                 iterate();
-            }
         }
     }
 }
