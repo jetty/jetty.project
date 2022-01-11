@@ -76,8 +76,8 @@ public class PermessageDeflateDemandTest
     @Test
     public void test() throws Exception
     {
-        ServerHandler _serverHandler = new ServerHandler();
-        _upgradeHandler.addMapping("/", WebSocketNegotiator.from(n -> _serverHandler));
+        ServerHandler serverHandler = new ServerHandler();
+        _upgradeHandler.addMapping("/", WebSocketNegotiator.from(n -> serverHandler));
 
         TestFrameHandler clientHandler = new TestFrameHandler();
         URI uri = URI.create("ws://localhost:" + _connector.getLocalPort());
@@ -96,8 +96,8 @@ public class PermessageDeflateDemandTest
         assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
         assertThat(clientHandler.closeStatus.getCode(), equalTo(CloseStatus.NORMAL));
 
-        assertThat(_serverHandler.binaryMessages.size(), equalTo(1));
-        ByteBuffer recvMessage = _serverHandler.binaryMessages.poll();
+        assertThat(serverHandler.binaryMessages.size(), equalTo(1));
+        ByteBuffer recvMessage = serverHandler.binaryMessages.poll();
         assertThat(recvMessage, equalTo(message));
     }
 

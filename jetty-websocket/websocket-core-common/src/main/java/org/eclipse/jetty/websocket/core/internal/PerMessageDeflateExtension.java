@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongConsumer;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
@@ -27,6 +28,7 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
+import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -42,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Attempts to follow <a href="https://tools.ietf.org/html/rfc7692">Compression Extensions for WebSocket</a>
  */
-public class PerMessageDeflateExtension extends AbstractExtension
+public class PerMessageDeflateExtension extends AbstractExtension implements Extension.Demanding
 {
     private static final byte[] TAIL_BYTES = new byte[]{0x00, 0x00, (byte)0xFF, (byte)0xFF};
     private static final ByteBuffer TAIL_BYTES_BUF = ByteBuffer.wrap(TAIL_BYTES);
@@ -238,6 +240,20 @@ public class PerMessageDeflateExtension extends AbstractExtension
         super.nextOutgoingFrame(frame, callback, batch);
     }
 
+    @Override
+    public void demand(long n, LongConsumer nextDemand)
+    {
+        if (!incomingFlusher.isFinished())
+        {
+            // TODO: what to do with n?
+            incomingFlusher.succeeded();
+        }
+        else
+        {
+            nextDemand.accept(n);
+        }
+    }
+
     private class OutgoingFlusher extends TransformingFlusher
     {
         private boolean _first;
@@ -340,12 +356,18 @@ public class PerMessageDeflateExtension extends AbstractExtension
     private class IncomingFlusher extends IteratingCallback
     {
         private final AtomicReference<Throwable> _failure = new AtomicReference<>();
-        private boolean _finished;
+        private boolean _complete = true;
+        private boolean _finished = true;
         private boolean _first;
         private Frame _frame;
         private ByteBuffer _framePayload;
         private Callback _frameCallback;
         private boolean _tailBytes;
+
+        public boolean isFinished()
+        {
+            return _finished;
+        }
 
         @Override
         protected Action process() throws Throwable
@@ -375,27 +397,23 @@ public class PerMessageDeflateExtension extends AbstractExtension
                 return;
             }
 
-            _tailBytes = false;
-            _first = true;
-            _frame = frame;
-
-            if (OpCode.isControlFrame(_frame.getOpCode()))
+            if (OpCode.isControlFrame(frame.getOpCode()))
             {
-                nextIncomingFrame(_frame, callback);
+                nextIncomingFrame(frame, callback);
                 return;
             }
 
             // This extension requires the RSV1 bit set only in the first frame.
             // Subsequent continuation frames don't have RSV1 set, but are compressed.
-            switch (_frame.getOpCode())
+            switch (frame.getOpCode())
             {
                 case OpCode.TEXT:
                 case OpCode.BINARY:
-                    incomingCompressed = _frame.isRsv1();
+                    incomingCompressed = frame.isRsv1();
                     break;
 
                 case OpCode.CONTINUATION:
-                    if (_frame.isRsv1())
+                    if (frame.isRsv1())
                     {
                         callback.failed(new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame"));
                         return;
@@ -408,14 +426,19 @@ public class PerMessageDeflateExtension extends AbstractExtension
 
             if (!incomingCompressed)
             {
-                nextIncomingFrame(_frame, callback);
+                nextIncomingFrame(frame, callback);
                 return;
             }
 
-            if (_frame.isFin())
+            if (frame.isFin())
                 incomingCompressed = false;
 
             // Provide the frames payload as input to the Inflater.
+            _complete = false;
+            _finished = false;
+            _tailBytes = false;
+            _first = true;
+            _frame = frame;
             _framePayload = _frame.getPayload().slice();
             _frameCallback = callback;
             getInflater().setInput(_framePayload);
@@ -426,7 +449,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
         {
             WebSocketCoreSession coreSession = (WebSocketCoreSession)getCoreSession();
 
-            if (_finished)
+            if (_complete)
             {
                 clear();
                 coreSession.internalDemand(1);
@@ -465,7 +488,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
                         continue;
                     }
 
-                    _finished = true;
+                    _complete = true;
                     break;
                 }
             }
@@ -473,11 +496,9 @@ public class PerMessageDeflateExtension extends AbstractExtension
             Frame chunk = new Frame(_first ? _frame.getOpCode() : OpCode.CONTINUATION);
             chunk.setRsv1(false);
             chunk.setPayload(payload);
-            chunk.setFin(_frame.isFin() && _finished);
+            chunk.setFin(_frame.isFin() && _complete);
 
-            coreSession.pushDemandHandler(d -> this.succeeded());
-
-            boolean succeedCallback = _finished;
+            boolean succeedCallback = _complete;
             Callback frameCallback = _frameCallback;
             Callback payloadCallback = Callback.from(() ->
             {
@@ -501,14 +522,15 @@ public class PerMessageDeflateExtension extends AbstractExtension
             nextIncomingFrame(chunk, payloadCallback);
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Decompress finished: {} {}", _finished, chunk);
+                LOG.debug("Decompress finished: {} {}", _complete, chunk);
 
             return Action.SCHEDULED;
         }
 
         private void clear()
         {
-            _finished = false;
+            _finished = true;
+            _complete = false;
             _first = false;
             _frame = null;
             _framePayload = null;
@@ -531,6 +553,7 @@ public class PerMessageDeflateExtension extends AbstractExtension
         {
             if (_failure.compareAndSet(null, t))
             {
+                // TODO: if the callback is pending then this will be noop.
                 iterate();
             }
         }

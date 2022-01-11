@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.websocket.core;
 
+import java.util.function.LongConsumer;
+
 /**
  * Interface for WebSocket Extensions.
  * <p>
@@ -84,4 +86,9 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      * @param coreSession the {@link CoreSession} for this Extension.
      */
     void setCoreSession(CoreSession coreSession);
+
+    interface Demanding extends Extension
+    {
+        void demand(long n, LongConsumer nextDemand);
+    }
 }

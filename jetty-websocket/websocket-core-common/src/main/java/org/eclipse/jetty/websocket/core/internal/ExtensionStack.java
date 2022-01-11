@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -50,6 +51,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     private IncomingFrames incoming;
     private OutgoingFrames outgoing;
     private final Extension[] rsvClaims = new Extension[3];
+    private final List<Extension.Demanding> demanding = new ArrayList<>();
 
     public ExtensionStack(WebSocketComponents components, Behavior behavior)
     {
@@ -218,6 +220,9 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                 Extension ext = exts.previous();
                 ext.setNextIncomingFrames(incoming);
                 incoming = ext;
+
+                if (ext instanceof Extension.Demanding)
+                    demanding.add((Extension.Demanding)ext);
             }
         }
     }
@@ -251,6 +256,22 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         {
             extension.setCoreSession(coreSession);
         }
+    }
+
+    public void demand(long n, LongConsumer ultimateDemand)
+    {
+        if (demanding.isEmpty())
+            ultimateDemand.accept(n);
+        else
+            demand(demanding.size() - 1, n, ultimateDemand);
+    }
+
+    private void demand(int i, long n, LongConsumer ultimateDemand)
+    {
+        if (i == 0)
+            demanding.get(0).demand(n, ultimateDemand);
+        else
+            demanding.get(i).demand(n, l -> demand(i - 1, l, ultimateDemand));
     }
 
     public Extension getRsv1User()

@@ -20,14 +20,11 @@ import java.net.URI;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
 import java.time.Duration;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.LongConsumer;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
@@ -72,7 +69,6 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private final boolean demanding;
     private final Flusher flusher = new Flusher(this);
     private final AutoLock _lock = new AutoLock();
-    private final Deque<LongConsumer> _demandHandlers = new ArrayDeque<>();
 
     private int maxOutgoingFrames = -1;
     private final AtomicInteger numOutgoingFrames = new AtomicInteger();
@@ -433,27 +429,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
 
     public void internalDemand(long n)
     {
-        LongConsumer consumer = popDemandHandler();
-        if (consumer != null)
-            consumer.accept(n);
-        else
-            connection.demand(n);
-    }
-
-    public LongConsumer popDemandHandler()
-    {
-        try (AutoLock l = _lock.lock())
-        {
-            return _demandHandlers.poll();
-        }
-    }
-
-    public void pushDemandHandler(LongConsumer demand)
-    {
-        try (AutoLock l = _lock.lock())
-        {
-            _demandHandlers.push(demand);
-        }
+        getExtensionStack().demand(n, connection::demand);
     }
 
     @Override
