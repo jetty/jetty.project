@@ -174,15 +174,8 @@ public class ExtensionTool
     private WebSocketCoreSession newWebSocketCoreSession(List<ExtensionConfig> configs)
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
+        exStack.setLastDemand(l -> {}); // Never delegate to WebSocketConnection as it is null for this test.
         exStack.negotiate(configs, configs);
-        return new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components)
-        {
-            @Override
-            public void autoDemand()
-            {
-                // Never delegate to WebSocketConnection as it is null for this test.
-                getExtensionStack().demand(1, l -> {});
-            }
-        };
+        return new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
     }
 }

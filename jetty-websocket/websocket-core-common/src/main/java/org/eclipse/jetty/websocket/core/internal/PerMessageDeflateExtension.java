@@ -29,7 +29,6 @@ import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
-import org.eclipse.jetty.websocket.core.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
@@ -45,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Attempts to follow <a href="https://tools.ietf.org/html/rfc7692">Compression Extensions for WebSocket</a>
  */
-public class PerMessageDeflateExtension extends AbstractExtension implements Extension.Demanding
+public class PerMessageDeflateExtension extends AbstractExtension implements DemandChain
 {
     private static final byte[] TAIL_BYTES = new byte[]{0x00, 0x00, (byte)0xFF, (byte)0xFF};
     private static final ByteBuffer TAIL_BYTES_BUF = ByteBuffer.wrap(TAIL_BYTES);
@@ -242,10 +241,17 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
     }
 
     @Override
-    public void demand(long n, LongConsumer nextDemand)
+    public void setNextDemand(LongConsumer nextDemand)
     {
-        incomingFlusher._demand.addAndGet(n);
         incomingFlusher.setNextDemand(nextDemand);
+    }
+
+    @Override
+    public void demand(long n)
+    {
+        if (n <= 0)
+            throw new IllegalArgumentException("Demand must be positive");
+        incomingFlusher._demand.addAndGet(n);
         incomingFlusher.iterate();
     }
 
@@ -352,7 +358,6 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
     {
         private final AtomicLong _demand = new AtomicLong();
         private final AtomicReference<Throwable> _failure = new AtomicReference<>();
-        private boolean _complete = true;
         private boolean _finished = true;
         private boolean _first;
         private Frame _frame;
@@ -425,7 +430,6 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
                 incomingCompressed = false;
 
             // Provide the frames payload as input to the Inflater.
-            _complete = false;
             _finished = false;
             _tailBytes = false;
             _first = true;
@@ -445,16 +449,16 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
                 if (failure != null)
                     throw failure;
 
+                if (_finished)
+                {
+                    _nextDemand.accept(1);
+                    break;
+                }
+
                 try
                 {
                     inflate();
                     _first = false;
-                    if (_finished)
-                    {
-                        if (_demand.get() > 0)
-                            _nextDemand.accept(1);
-                        break;
-                    }
                 }
                 catch (DataFormatException e)
                 {
@@ -466,12 +470,6 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
 
         private void inflate() throws DataFormatException
         {
-            if (_complete)
-            {
-                clear();
-                return;
-            }
-
             // Get a buffer for the inflated payload.
             long maxFrameSize = getConfiguration().getMaxFrameSize();
             int bufferSize = (maxFrameSize <= 0) ? inflateBufferSize : (int)Math.min(maxFrameSize, inflateBufferSize);
@@ -480,6 +478,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
 
             // Fill up the ByteBuffer with a max length of bufferSize;
             Inflater inflater = getInflater();
+            boolean complete = false;
             while (true)
             {
                 int decompressed = inflater.inflate(payload.array(), payload.arrayOffset() + payload.position(), bufferSize - payload.position());
@@ -504,7 +503,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
                         continue;
                     }
 
-                    _complete = true;
+                    complete = true;
                     break;
                 }
             }
@@ -512,9 +511,9 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
             Frame chunk = new Frame(_first ? _frame.getOpCode() : OpCode.CONTINUATION);
             chunk.setRsv1(false);
             chunk.setPayload(payload);
-            chunk.setFin(_frame.isFin() && _complete);
+            chunk.setFin(_frame.isFin() && complete);
 
-            boolean succeedCallback = _complete;
+            boolean succeedCallback = complete;
             Callback frameCallback = _frameCallback;
             WebSocketCoreSession coreSession = (WebSocketCoreSession)getCoreSession();
             Callback payloadCallback = Callback.from(() ->
@@ -531,15 +530,16 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Ext
             });
             _demand.decrementAndGet();
             nextIncomingFrame(chunk, payloadCallback);
+            if (complete)
+                clear();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Decompress finished: {} {}", _complete, chunk);
+                LOG.debug("Decompress finished: {} {}", complete, chunk);
         }
 
         private void clear()
         {
             _finished = true;
-            _complete = true;
             _first = false;
             _frame = null;
             _framePayload = null;

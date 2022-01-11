@@ -51,7 +51,8 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     private IncomingFrames incoming;
     private OutgoingFrames outgoing;
     private final Extension[] rsvClaims = new Extension[3];
-    private final List<Extension.Demanding> demanding = new ArrayList<>();
+    private LongConsumer lastDemand;
+    private DemandChain demandChain = n -> lastDemand.accept(n);
 
     public ExtensionStack(WebSocketComponents components, Behavior behavior)
     {
@@ -201,7 +202,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                 rsvClaims[2] = ext;
         }
 
-        // Wire up Extensions
+        // Wire up Extensions and DemandChain.
         if ((extensions != null) && (extensions.size() > 0))
         {
             ListIterator<Extension> exts = extensions.listIterator();
@@ -212,6 +213,14 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                 Extension ext = exts.next();
                 ext.setNextOutgoingFrames(outgoing);
                 outgoing = ext;
+
+                if (ext instanceof DemandChain)
+                {
+                    DemandChain demandingExtension = (DemandChain)ext;
+                    if (demandChain != null)
+                        demandingExtension.setNextDemand(demandChain::demand);
+                    demandChain = demandingExtension;
+                }
             }
 
             // Connect incomingFrames
@@ -220,9 +229,6 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                 Extension ext = exts.previous();
                 ext.setNextIncomingFrames(incoming);
                 incoming = ext;
-
-                if (ext instanceof Extension.Demanding)
-                    demanding.add((Extension.Demanding)ext);
             }
         }
     }
@@ -258,20 +264,14 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         }
     }
 
-    public void demand(long n, LongConsumer ultimateDemand)
+    public void demand(long n)
     {
-        if (demanding.isEmpty())
-            ultimateDemand.accept(n);
-        else
-            demand(demanding.size() - 1, n, ultimateDemand);
+        demandChain.demand(n);
     }
 
-    private void demand(int i, long n, LongConsumer ultimateDemand)
+    public void setLastDemand(LongConsumer lastDemand)
     {
-        if (i == 0)
-            demanding.get(0).demand(n, ultimateDemand);
-        else
-            demanding.get(i).demand(n, l -> demand(i - 1, l, ultimateDemand));
+        this.lastDemand = lastDemand;
     }
 
     public Extension getRsv1User()

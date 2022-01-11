@@ -30,7 +30,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Utf8Appendable;
 import org.eclipse.jetty.util.component.Dumpable;
-import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -68,7 +67,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private final Negotiated negotiated;
     private final boolean demanding;
     private final Flusher flusher = new Flusher(this);
-    private final AutoLock _lock = new AutoLock();
+    private final ExtensionStack extensionStack;
 
     private int maxOutgoingFrames = -1;
     private final AtomicInteger numOutgoingFrames = new AtomicInteger();
@@ -92,7 +91,8 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
         this.behavior = behavior;
         this.negotiated = negotiated;
         this.demanding = handler.isDemanding();
-        negotiated.getExtensions().initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
+        extensionStack = negotiated.getExtensions();
+        extensionStack.initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
     }
 
     public ClassLoader getClassLoader()
@@ -206,6 +206,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     {
         connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
         connection.getFrameFlusher().setIdleTimeout(writeTimeout.toMillis());
+        extensionStack.setLastDemand(connection::demand);
         this.connection = connection;
     }
 
@@ -424,12 +425,12 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     {
         if (!demanding)
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
-        getExtensionStack().demand(n, connection::demand);
+        getExtensionStack().demand(n);
     }
 
     public void autoDemand()
     {
-        getExtensionStack().demand(1, connection::demand);
+        getExtensionStack().demand(1);
     }
 
     @Override
@@ -663,8 +664,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
                     Callback handlerCallback = isDemanding() ? callback : Callback.from(() ->
                     {
                         callback.succeeded();
-                        if (!isDemanding())
-                            autoDemand();
+                        autoDemand();
                     }, callback::failed);
 
                     handle(() -> handler.onFrame(frame, handlerCallback));

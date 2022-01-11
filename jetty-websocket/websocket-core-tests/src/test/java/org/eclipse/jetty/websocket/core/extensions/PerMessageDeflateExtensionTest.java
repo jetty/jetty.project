@@ -606,16 +606,8 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     {
         ExtensionStack exStack = new ExtensionStack(components, Behavior.SERVER);
         exStack.negotiate(configs, configs);
-
-        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components)
-        {
-            @Override
-            public void autoDemand()
-            {
-                // Never delegate to WebSocketConnection as it is null for this test.
-                getExtensionStack().demand(1, l -> {});
-            }
-        };
+        exStack.setLastDemand(l -> {}); // Never delegate to WebSocketConnection as it is null for this test.
+        WebSocketCoreSession coreSession = new WebSocketCoreSession(new TestMessageHandler(), Behavior.SERVER, Negotiated.from(exStack), components);
         configuration.customize(configuration);
         return coreSession;
     }
