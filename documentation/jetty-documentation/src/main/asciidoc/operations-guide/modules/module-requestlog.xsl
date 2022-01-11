@@ -4,10 +4,11 @@
   <xsl:strip-space elements="*" />
 
   <xsl:template match="//table">
+    <xsl:text>&#10;</xsl:text>
     <xsl:if test="caption != ''">
       .<xsl:value-of select="caption" />
     </xsl:if>
-    [cols="1,2a"]
+    [cols="1,3a"]
     |===
     <xsl:apply-templates select="tr/th" />
     <xsl:apply-templates select="tr" />

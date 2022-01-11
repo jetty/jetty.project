@@ -55,7 +55,8 @@ import static java.lang.invoke.MethodType.methodType;
  * headers. Where local and remote refer to the physical addresses which may be a proxy between the
  * end-user and the server.</p>
  *
- * <p>Percent codes are specified in the format <code>%MODIFIERS{PARAM}CODE</code> as follows:</p>
+ * <!-- tag::documentation[] -->
+ * <p>Format codes are specified with the syntax <code>%MODIFIERS{PARAM}CODE</code> as follows:</p>
  * <dl>
  * <dt>MODIFIERS</dt>
  * <dd>Optional list of comma separated HTTP status codes which may be preceded by a single "!" to indicate
@@ -67,9 +68,8 @@ import static java.lang.invoke.MethodType.methodType;
  * <dd>A one or two character code specified by the table of format codes below.</dd>
  * </dl>
  *
- * <!-- tag::documentation[] -->
  * <table>
- * <caption>Format Syntax</caption>
+ * <caption>Format Codes</caption>
  * <tr>
  * <th>Format String</th>
  * <th>Description</th>
@@ -85,7 +85,7 @@ import static java.lang.invoke.MethodType.methodType;
  * <tr>
  * <td>%%</td>
  * <td>
- * <p>The percent sign.</p>
+ * <p>The percent character.</p>
  * </td>
  * </tr>
  *
@@ -93,7 +93,7 @@ import static java.lang.invoke.MethodType.methodType;
  * <td>%{format}a</td>
  * <td>
  * <p>The address or host name.</p>
- * <p>Valid formats are: "server", "client", "local", "remote".
+ * <p>Valid format values are: "server", "client", "local", "remote".
  * The format parameter is optional and defaults to "server".</p>
  * <p>Values "server" and "client" are the logical addresses which can be modified in the request headers,
  * while "local" and "remote" are the physical addresses so may be the addresses of a proxy between
@@ -105,7 +105,7 @@ import static java.lang.invoke.MethodType.methodType;
  * <td>%{format}p</td>
  * <td>
  * <p>The port.</p>
- * <p>Valid formats are: "server", "client", "local", "remote".
+ * <p>Valid format values are: "server", "client", "local", "remote".
  * The format parameter is optional and defaults to "server".</p>
  * <p>Values "server" and "client" are the logical ports which can be modified in the request headers,
  * while "local" and "remote" are the physical ports so may be the ports of a proxy between

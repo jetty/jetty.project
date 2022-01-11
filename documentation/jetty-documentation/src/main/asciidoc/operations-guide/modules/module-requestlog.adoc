@@ -22,6 +22,6 @@ The module properties are:
 include::{JETTY_HOME}/modules/requestlog.mod[tags=documentation]
 ----
 
-The property `jetty.requestlog.formatString` can be customized using the following format codes:
+The property `jetty.requestlog.formatString` can be customized using format codes.
 
 include::javadoc[file=jetty-server/src/main/java/org/eclipse/jetty/server/CustomRequestLog.java,xsl=src/main/asciidoc/operations-guide/modules/module-requestlog.xsl,tags=documentation,replace="\|,\\|"]
