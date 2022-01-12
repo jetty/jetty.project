@@ -59,7 +59,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[foo.local.name]"),
                 containsString("LocalName=[foo.local.name]"),
                 containsString("LocalPort=[80]"),
-                containsString("RequestURL=[http://foo.local.name/dump]")
+                containsString("HttpURI=[http://foo.local.name/dump]")
             ));
         }
     }
@@ -123,7 +123,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[foo.local.name]"),
                 containsString("LocalName=[foo.local.name]"),
                 containsString("LocalPort=[80]"),
-                containsString("RequestURL=[http://foo.local.name/dump]")
+                containsString("HttpURI=[http://foo.local.name/dump]")
             ));
         }
     }
@@ -170,7 +170,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[bar.local.name]"),
                 containsString("LocalName=[bar.local.name]"),
                 containsString("LocalPort=[9999]"),
-                containsString("RequestURL=[mobile://bar.local.name:9999/dump]")
+                containsString("HttpURI=[mobile://bar.local.name:9999/dump]")
             ));
         }
     }
@@ -197,7 +197,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[zed.local.name]"),
                 containsString("LocalName=[zed.local.name]"),
                 containsString("LocalPort=[9999]"),
-                containsString("RequestURL=[http://jetty.eclipse.org:8888/dump]")
+                containsString("HttpURI=[http://jetty.eclipse.org:8888/dump]")
             ));
         }
     }
@@ -245,7 +245,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
                 containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
                 containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("RequestURL=[http://foo.server.authority/dump]")
+                containsString("HttpURI=[http://foo.server.authority/dump]")
             ));
         }
     }
@@ -293,7 +293,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
                 containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
                 containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("RequestURL=[http://foo.server.authority:7777/dump]")
+                containsString("HttpURI=[http://foo.server.authority:7777/dump]")
             ));
         }
     }
@@ -339,7 +339,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
                 containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
                 containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("RequestURL=[http://foo.server.authority/dump]")
+                containsString("HttpURI=[http://foo.server.authority/dump]")
             ));
         }
     }
@@ -420,7 +420,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
                 containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
                 containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("RequestURL=[http://jetty.eclipse.org:8888/dump]")
+                containsString("HttpURI=[http://jetty.eclipse.org:8888/dump]")
             ));
         }
     }
@@ -466,7 +466,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
                 containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
                 containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("RequestURL=[http://bar.server.authority:9999/dump]")
+                containsString("HttpURI=[http://bar.server.authority:9999/dump]")
             ));
         }
     }
@@ -531,7 +531,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
                 containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
                 containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("RequestURL=[http://jetty.eclipse.org:8888/dump]")
+                containsString("HttpURI=[http://jetty.eclipse.org:8888/dump]")
             ));
         }
     }
@@ -559,7 +559,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
                 containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
                 containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("RequestURL=[mobile://zed.server.authority:7777/dump]")
+                containsString("HttpURI=[mobile://zed.server.authority:7777/dump]")
             ));
         }
     }
@@ -605,7 +605,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
                 containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
                 containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("RequestURL=[http://" + server.getConnectorLocalName() + ":" + server.getConnectorLocalPort() + "/dump]")
+                containsString("HttpURI=[http://" + server.getConnectorLocalName() + ":" + server.getConnectorLocalPort() + "/dump]")
             ));
         }
     }
@@ -683,6 +683,7 @@ public class HttpConfigurationAuthorityOverrideTest
                     out.printf("ServerName=[%s]%n", request.getServerName());
                     out.printf("ServerPort=[%d]%n", request.getServerPort());
                     out.printf("LocalAddr=[%s]%n", request.getLocalAddr());
+                    out.printf("LocalName=[%s]%n", request.getLocalAddr());
                     out.printf("LocalPort=[%s]%n", request.getLocalPort());
                     out.printf("HttpURI=[%s]%n", request.getHttpURI());
                     response.write(true, request, stringWriter.getBuffer().toString());

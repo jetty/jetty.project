@@ -239,12 +239,28 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public SocketAddress getLocalAddress()
     {
+        HttpConfiguration config = getHttpConfiguration();
+        if (config != null)
+        {
+            SocketAddress override = config.getLocalAddress();
+            if (override != null)
+                return override;
+        }
         return getEndPoint().getLocalSocketAddress();
     }
 
     @Override
     public HostPort getServerAuthority()
     {
+        HttpConfiguration config = getHttpConfiguration();
+        if (config != null)
+        {
+            HostPort override = config.getServerAuthority();
+            if (override != null)
+                return override;
+        }
+
+        // TODO cache the HostPort?
         SocketAddress addr = getLocalAddress();
         if (addr instanceof InetSocketAddress)
         {
@@ -1178,19 +1194,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             // Set the authority (if not already set) in the URI
             if (!HttpMethod.CONNECT.is(_method) && _uri.getAuthority() == null)
             {
-                if (_hostField == null)
-                {
-                    SocketAddress addr = getConnection().getEndPoint().getLocalSocketAddress();
-                    if (addr instanceof InetSocketAddress)
-                    {
-                        InetSocketAddress inet = (InetSocketAddress)addr;
-                        _uri.authority(HostPort.normalizeHost(inet.getHostString()), inet.getPort());
-                    }
-                }
-                else
-                {
-                    _uri.authority(HostPort.normalizeHost(_hostField.getHost()), _hostField.getPort());
-                }
+                HostPort hostPort = _hostField == null ? getServerAuthority() : _hostField.getHostPort();
+                int port = hostPort.getPort();
+                if (port == HttpScheme.getDefaultPort(_uri.getScheme()))
+                    port = -1;
+                _uri.authority(hostPort.getHost(), port);
             }
 
             _request = new MetaData.Request(_method, _uri.asImmutable(), _version, _headerBuilder, _contentLength);
