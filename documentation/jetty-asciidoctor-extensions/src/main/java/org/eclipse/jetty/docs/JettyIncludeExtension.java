@@ -127,12 +127,12 @@ public class JettyIncludeExtension implements ExtensionRegistry
                 {
                     run.awaitFor(15, TimeUnit.SECONDS);
                     String output = captureOutput(document, attributes, run);
-                    reader.push_include(output, "jettyHome_run", target, 1, attributes);
+                    reader.pushInclude(output, "jettyHome_run", target, 1, attributes);
                 }
             }
             catch (Throwable x)
             {
-                reader.push_include(x.toString(), "jettyHome_run", target, 1, attributes);
+                reader.pushInclude(x.toString(), "jettyHome_run", target, 1, attributes);
                 x.printStackTrace();
             }
         }
