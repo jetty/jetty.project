@@ -283,15 +283,18 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     @Test
     public void testIncomingPing()
     {
-        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, components);
+        WebSocketCoreSession coreSession = newSession(config);
+        PerMessageDeflateExtension ext = (PerMessageDeflateExtension)coreSession.getExtensionStack().getExtensions().get(0);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         // Wire up stack
         ext.setNextIncomingFrames(capture);
+
+        // Simulate initial demand from onOpen().
+        coreSession.autoDemand();
 
         String payload = "Are you there?";
         Frame ping = new Frame(OpCode.PING).setPayload(payload);
@@ -318,15 +321,18 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     @Test
     public void testIncomingUncompressedFrames()
     {
-        PerMessageDeflateExtension ext = new PerMessageDeflateExtension();
         ExtensionConfig config = ExtensionConfig.parse("permessage-deflate");
-        ext.init(config, components);
+        WebSocketCoreSession coreSession = newSession(config);
+        PerMessageDeflateExtension ext = (PerMessageDeflateExtension)coreSession.getExtensionStack().getExtensions().get(0);
 
         // Setup capture of incoming frames
         IncomingFramesCapture capture = new IncomingFramesCapture();
 
         // Wire up stack
         ext.setNextIncomingFrames(capture);
+
+        // Simulate initial demand from onOpen().
+        coreSession.autoDemand();
 
         // Quote
         List<String> quote = new ArrayList<>();

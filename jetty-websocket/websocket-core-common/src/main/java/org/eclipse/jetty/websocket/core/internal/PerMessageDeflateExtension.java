@@ -383,57 +383,9 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
 
         public void onFrame(Frame frame, Callback callback)
         {
-            Throwable failure = _failure.get();
-            if (failure != null)
-            {
-                callback.failed(failure);
-                return;
-            }
-
-            if (OpCode.isControlFrame(frame.getOpCode()))
-            {
-                nextIncomingFrame(frame, callback);
-                return;
-            }
-
-            // This extension requires the RSV1 bit set only in the first frame.
-            // Subsequent continuation frames don't have RSV1 set, but are compressed.
-            switch (frame.getOpCode())
-            {
-                case OpCode.TEXT:
-                case OpCode.BINARY:
-                    incomingCompressed = frame.isRsv1();
-                    break;
-
-                case OpCode.CONTINUATION:
-                    if (frame.isRsv1())
-                    {
-                        callback.failed(new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame"));
-                        return;
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
-            if (!incomingCompressed)
-            {
-                nextIncomingFrame(frame, callback);
-                return;
-            }
-
-            if (frame.isFin())
-                incomingCompressed = false;
-
-            // Provide the frames payload as input to the Inflater.
-            _finished = false;
-            _tailBytes = false;
             _first = true;
             _frame = frame;
-            _framePayload = _frame.getPayload().slice();
             _frameCallback = callback;
-            getInflater().setInput(_framePayload);
             succeeded();
         }
 
@@ -445,6 +397,50 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
                 Throwable failure = _failure.get();
                 if (failure != null)
                     throw failure;
+
+                if (_first)
+                {
+                    _first = false;
+
+                    if (OpCode.isControlFrame(_frame.getOpCode()))
+                    {
+                        nextIncomingFrame(_frame, _frameCallback);
+                        clear();
+                        continue;
+                    }
+
+                    // This extension requires the RSV1 bit set only in the first frame.
+                    // Subsequent continuation frames don't have RSV1 set, but are compressed.
+                    switch (_frame.getOpCode())
+                    {
+                        case OpCode.TEXT:
+                        case OpCode.BINARY:
+                            incomingCompressed = _frame.isRsv1();
+                            break;
+
+                        case OpCode.CONTINUATION:
+                            if (_frame.isRsv1())
+                                throw new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame");
+                            break;
+
+                        default:
+                            break;
+                    }
+
+                    if (!incomingCompressed)
+                    {
+                        nextIncomingFrame(_frame, _frameCallback);
+                        clear();
+                        continue;
+                    }
+
+                    // Provide the frames payload as input to the Inflater.
+                    _finished = false;
+                    _tailBytes = false;
+                    _first = true;
+                    _framePayload = _frame.getPayload().slice();
+                    getInflater().setInput(_framePayload);
+                }
 
                 if (_finished)
                 {
