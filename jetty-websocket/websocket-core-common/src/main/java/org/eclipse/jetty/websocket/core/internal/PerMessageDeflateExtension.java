@@ -249,10 +249,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
     @Override
     public void demand(long n)
     {
-        if (n <= 0)
-            throw new IllegalArgumentException("Demand must be positive");
-        incomingFlusher._demand.addAndGet(n);
-        incomingFlusher.iterate();
+        incomingFlusher.demand(n);
     }
 
     private class OutgoingFlusher extends TransformingFlusher
@@ -380,7 +377,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         {
             if (n <= 0)
                 throw new IllegalArgumentException("Demand must be positive");
-            _demand.addAndGet(n);
+            _demand.getAndUpdate(d -> Math.addExact(d, n));
             iterate();
         }
 
@@ -473,7 +470,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             // Get a buffer for the inflated payload.
             long maxFrameSize = getConfiguration().getMaxFrameSize();
             int bufferSize = (maxFrameSize <= 0) ? inflateBufferSize : (int)Math.min(maxFrameSize, inflateBufferSize);
-            final ByteBuffer payload = getBufferPool().acquire(bufferSize, false);
+            ByteBuffer payload = getBufferPool().acquire(bufferSize, false);
             BufferUtil.clear(payload);
 
             // Fill up the ByteBuffer with a max length of bufferSize;

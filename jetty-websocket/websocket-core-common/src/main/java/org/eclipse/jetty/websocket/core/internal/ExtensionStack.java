@@ -217,8 +217,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                 if (ext instanceof DemandChain)
                 {
                     DemandChain demandingExtension = (DemandChain)ext;
-                    if (demandChain != null)
-                        demandingExtension.setNextDemand(demandChain::demand);
+                    demandingExtension.setNextDemand(demandChain::demand);
                     demandChain = demandingExtension;
                 }
             }

@@ -15,6 +15,13 @@ package org.eclipse.jetty.websocket.core.internal;
 
 import java.util.function.LongConsumer;
 
+import org.eclipse.jetty.websocket.core.Extension;
+
+/**
+ * This is extended by an {@link Extension} so it can intercept demand calls.
+ * Demand is called by the application and the call is forwarded through the {@link ExtensionStack}
+ * for every {@link Extension} which implements this interface.
+ */
 public interface DemandChain
 {
     void demand(long n);
