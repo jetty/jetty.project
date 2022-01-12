@@ -19,6 +19,9 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -72,38 +75,125 @@ public class JettyStopMojo extends AbstractWebAppMojo
 
         String command = "forcestop";
 
-        try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort);)
+        if (stopWait > 0)
         {
-            OutputStream out = s.getOutputStream();
-            out.write((stopKey + "\r\n" + command + "\r\n").getBytes());
-            out.flush();
-
-            if (stopWait > 0)
+            //try to get the pid
+            Long pid = null;
+            try
             {
-                s.setSoTimeout(stopWait * 1000);
-                s.getInputStream();
+                String response = send(stopKey + "\r\n" + "pid" + "\r\n", true, stopWait);
+                pid = Long.valueOf(response);
+            }
+            catch (NumberFormatException e)
+            {
+                getLog().info("Server returned bad pid");
+            }
+            catch (ConnectException e)
+            {
+                //jetty not running, no point continuing
+                getLog().info("Jetty not running!");
+                return;
+            }
+            catch (Exception e)
+            {
+                //jetty running, try to stop it regarless of error
+                getLog().error(e);
+            }
 
-                getLog().info("Waiting " + stopWait + " seconds for jetty to stop");
-                LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));
-                String response;
-                boolean stopped = false;
-                while (!stopped && ((response = lin.readLine()) != null))
+            //send the stop command
+            try
+            {
+                if (pid == null)
                 {
+                    //no pid, so just wait until jetty reports itself stopped
+                    getLog().info("Waiting " + stopWait + " seconds for jetty to stop");
+                    String response = send(stopKey + "\r\n" + command + "\r\n", true, stopWait);
+
                     if ("Stopped".equals(response))
-                    {
-                        stopped = true;
                         getLog().info("Server reports itself as stopped");
+                    else
+                        getLog().info("Couldn't verify server as stopped, received " + response);
+                }
+                else
+                {
+                    //wait for pid to stop
+                    getLog().info("Waiting " + stopWait + " seconds for jetty " + pid + " to stop");
+                    send(stopKey + "\r\n" + command + "\r\n", false, 0);
+                    Optional<ProcessHandle> optional = ProcessHandle.of(pid);
+                    ProcessHandle handle = optional.orElse(null);
+                    if (handle != null)
+                    {
+                        try
+                        {
+                            CompletableFuture<ProcessHandle> future = handle.onExit();
+                            if (handle.isAlive())
+                            {
+                                handle = future.get(stopWait, TimeUnit.SECONDS);
+                            }
+
+                            if (handle.isAlive())
+                                getLog().info("Couldn't verify server process stop");
+                            else
+                                getLog().info("Server process stopped");
+                        }
+                        catch (Throwable e)
+                        {
+                            e.printStackTrace();
+                        }
                     }
                 }
             }
+            catch (ConnectException e)
+            {
+                getLog().info("Jetty not running!");
+            }
+            catch (Exception e)
+            {
+                getLog().error(e);
+            }
         }
-        catch (ConnectException e)
+        else
         {
-            getLog().info("Jetty not running!");
+            //send the stop command but don't wait to verify the stop
+            getLog().info("Stopping jetty");
+            try
+            {
+                send(stopKey + "\r\n" + command + "\r\n", false, 0);
+            }
+            catch (ConnectException e)
+            {
+                getLog().info("Jetty not running!");
+            }
+            catch (Exception e)
+            {
+                getLog().error(e);
+            }
+
         }
-        catch (Exception e)
+    }
+    
+    private String send(String command, boolean expectResponse, int wait)
+        throws Exception
+    {
+        String response = null;
+        try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort); OutputStream out = s.getOutputStream();)
         {
-            getLog().error(e);
+            //send the command
+            out.write(command.getBytes());
+            out.flush();
+
+            if (expectResponse)
+            {   
+                if (wait > 0)
+                    s.setSoTimeout(wait * 1000);
+                
+                try (LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));)
+                {
+                    //read the response
+                    response = lin.readLine();
+                }
+            }
+            return response;
         }
     }
 }

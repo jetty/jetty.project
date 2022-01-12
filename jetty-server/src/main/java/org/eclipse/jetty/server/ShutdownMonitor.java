@@ -407,6 +407,10 @@ public class ShutdownMonitor
                             // Reply to client
                             informClient(out, "OK\r\n");
                         }
+                        else if ("pid".equalsIgnoreCase(cmd))
+                        {
+                            informClient(out, Long.toString(ProcessHandle.current().pid()));
+                        }
                     }
                     catch (Throwable x)
                     {
