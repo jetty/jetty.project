@@ -423,8 +423,8 @@ public class ErrorHandlerTest
     public void testBadMessage() throws Exception
     {
         String rawResponse = connector.getResponse(
-            "GET\r\n" +
-                "Host: Localhost\r\n" +
+            "GET / HTTP/1.1\r\n" +
+                "Host:\r\n" +
                 "\r\n");
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
@@ -435,6 +435,36 @@ public class ErrorHandlerTest
         assertThat(response.getContent(), containsString("content=\"text/html;charset=ISO-8859-1\""));
 
         assertContent(response);
+    }
+
+    @Test
+    public void testNoBodyErrorHandler() throws Exception
+    {
+        server.setErrorHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response)
+            {
+                response.setHeader(HttpHeader.LOCATION, "/error");
+                response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
+                response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
+                response.setStatus(302);
+                request.succeeded();
+                return true;
+            }
+        });
+        String rawResponse = connector.getResponse(
+            "GET / HTTP/1.1\r\n" +
+                "Host:\r\n" +
+                "\r\n");
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(302));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), is(0));
+        assertThat(response.get(HttpHeader.LOCATION), is("/error"));
+        assertThat(response.get("X-Error-Status"), is("400"));
+        assertThat(response.get("X-Error-Message"), is("Blank Host"));
     }
 
     @ParameterizedTest

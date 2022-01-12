@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handler for Error pages
- * An ErrorHandler is registered with {@link Server#setErrorHandler(ErrorHandler)}.
+ * An ErrorHandler is registered with {@link Server#setErrorHandler(Handler)}.
  * It is called by the {@link Response#writeError(int, String, Callback)}
  * to generate an error page.
  */
@@ -78,12 +78,6 @@ public class ErrorHandler extends Handler.Abstract
 
     public ErrorHandler()
     {
-    }
-
-    @Override
-    protected void setServer(Server server)
-    {
-        super.setServer(server);
     }
 
     public boolean errorPageForMethod(String method)
@@ -519,9 +513,9 @@ public class ErrorHandler extends Handler.Abstract
         writer.write(StringUtil.sanitizeXmlString(string));
     }
 
-    public static ErrorHandler getErrorHandler(Server server, ContextHandler context)
+    public static Handler getErrorHandler(Server server, ContextHandler context)
     {
-        ErrorHandler errorHandler = null;
+        Handler errorHandler = null;
         if (context != null)
             errorHandler = context.getErrorHandler();
         if (errorHandler == null && server != null)

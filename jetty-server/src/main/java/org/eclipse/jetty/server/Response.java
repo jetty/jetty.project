@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -137,7 +136,7 @@ public interface Response
         setStatus(status);
 
         ContextHandler.Context context = getRequest().getWrapper().get(ContextRequest.class, ContextRequest::getContext);
-        ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getRequest().getChannel().getServer(), context == null ? null : context.getContextHandler());
+        Handler errorHandler = ErrorHandler.getErrorHandler(getRequest().getChannel().getServer(), context == null ? null : context.getContextHandler());
 
         if (errorHandler != null)
         {
@@ -147,7 +146,7 @@ public interface Response
                 if (errorHandler.handle(request, this))
                     return;
             }
-            catch (IOException e)
+            catch (Exception e)
             {
                 if (cause != null && cause != e)
                     cause.addSuppressed(e);

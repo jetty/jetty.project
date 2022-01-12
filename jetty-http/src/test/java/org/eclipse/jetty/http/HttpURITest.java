@@ -824,4 +824,13 @@ public class HttpURITest
         HttpURI httpURI = HttpURI.build(input);
         assertThat("[" + input + "] .query", httpURI.getQuery(), is(expectedQuery));
     }
+
+    @Test
+    public void testKnownPort()
+    {
+        assertThat(HttpURI.from("http", "server", 80, "/path").toString(), is("http://server/path"));
+        assertThat(HttpURI.from("http", "server", 8888, "/path").toString(), is("http://server:8888/path"));
+        assertThat(HttpURI.from("https", "server", 443, "/path").toString(), is("https://server/path"));
+        assertThat(HttpURI.from("https", "server", 8443, "/path").toString(), is("https://server:8443/path"));
+    }
 }

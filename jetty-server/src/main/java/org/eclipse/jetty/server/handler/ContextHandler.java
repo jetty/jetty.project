@@ -58,7 +58,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
     private String _contextPath = "/";
     private Path _resourceBase;
     private ClassLoader _contextLoader;
-    private ErrorHandler _errorHandler;
+    private Handler _errorHandler;
 
     public ContextHandler()
     {
@@ -138,7 +138,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
      * @return Returns the errorHandler.
      */
     @ManagedAttribute("The error handler to use for the context")
-    public ErrorHandler getErrorHandler()
+    public Handler getErrorHandler()
     {
         return _errorHandler;
     }
@@ -146,10 +146,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
     /**
      * @param errorHandler The errorHandler to set.
      */
-    public void setErrorHandler(ErrorHandler errorHandler)
+    public void setErrorHandler(Handler errorHandler)
     {
-        if (errorHandler != null)
-            errorHandler.setServer(getServer());
+        if (errorHandler instanceof Abstract)
+            ((Abstract)errorHandler).setServer(getServer());
         updateBean(_errorHandler, errorHandler, true);
         _errorHandler = errorHandler;
     }

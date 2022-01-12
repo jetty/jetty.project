@@ -61,7 +61,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
-    private ErrorHandler _errorHandler;
+    private Handler _errorHandler;
     private RequestLog _requestLog;
     private boolean _dryRun;
     private final AutoLock _dateLock = new AutoLock();
@@ -169,7 +169,7 @@ public class Server extends Handler.Wrapper implements Attributes
         return _requestLog;
     }
 
-    public ErrorHandler getErrorHandler()
+    public Handler getErrorHandler()
     {
         return _errorHandler;
     }
@@ -180,7 +180,7 @@ public class Server extends Handler.Wrapper implements Attributes
         _requestLog = requestLog;
     }
 
-    public void setErrorHandler(ErrorHandler errorHandler)
+    public void setErrorHandler(Handler errorHandler)
     {
         updateBean(_errorHandler, errorHandler);
         _errorHandler = errorHandler;

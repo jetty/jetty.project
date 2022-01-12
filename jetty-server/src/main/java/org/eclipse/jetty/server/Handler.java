@@ -127,7 +127,7 @@ public interface Handler extends LifeCycle, Destroyable
             return _server;
         }
 
-        protected void setServer(Server server)
+        public void setServer(Server server)
         {
             if (_server == server)
                 return;
@@ -214,7 +214,7 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        protected void setServer(Server server)
+        public void setServer(Server server)
         {
             super.setServer(server);
             for (Handler h : getHandlers())
@@ -273,7 +273,7 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        protected void setServer(Server server)
+        public void setServer(Server server)
         {
             super.setServer(server);
             if (_handler instanceof Abstract)

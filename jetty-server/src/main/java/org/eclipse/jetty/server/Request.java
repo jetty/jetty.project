@@ -143,32 +143,26 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     default int getServerPort()
     {
-        int port = -1;
-
         HttpURI uri = getWrapper().getHttpURI();
-        if (uri.hasAuthority())
-            port = uri.getPort();
-        else
+        if (uri.hasAuthority() && uri.getPort() > 0)
+            return uri.getPort();
+
+        HostPort authority = getWrapper().getConnectionMetaData().getServerAuthority();
+        if (authority != null && authority.getPort() > 0)
+            return authority.getPort();
+
+        if (authority == null)
         {
-            HostPort authority = getWrapper().getConnectionMetaData().getServerAuthority();
-            if (authority != null)
-                port = authority.getPort();
-            else
-            {
-                SocketAddress local = getWrapper().getConnectionMetaData().getLocalAddress();
-                if (local instanceof InetSocketAddress)
-                    port = ((InetSocketAddress)local).getPort();
-            }
+            SocketAddress local = getWrapper().getConnectionMetaData().getLocalAddress();
+            if (local instanceof InetSocketAddress)
+                return ((InetSocketAddress)local).getPort();
         }
 
-        if (port <= 0)
-        {
-            HttpScheme scheme = HttpScheme.CACHE.get(getWrapper().getHttpURI().getScheme());
-            if (scheme != null)
-                return scheme.getDefaultPort();
-        }
+        HttpScheme scheme = HttpScheme.CACHE.get(getWrapper().getHttpURI().getScheme());
+        if (scheme != null)
+            return scheme.getDefaultPort();
 
-        return port;
+        return -1;
     }
 
     default MultiMap<String> extractQueryParameters()

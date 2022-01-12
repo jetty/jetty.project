@@ -1616,15 +1616,11 @@ public class HttpParser
         }
         catch (BadMessageException x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.warn("parser failed", x);
             BufferUtil.clear(buffer);
             badMessage(x);
         }
         catch (Throwable x)
         {
-            if (LOG.isDebugEnabled())
-                LOG.warn("parser failed", x);
             BufferUtil.clear(buffer);
             badMessage(new BadMessageException(HttpStatus.BAD_REQUEST_400, _requestHandler != null ? "Bad Request" : "Bad Response", x));
         }

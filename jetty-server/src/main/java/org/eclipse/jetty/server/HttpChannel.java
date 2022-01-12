@@ -236,11 +236,10 @@ public class HttpChannel extends Attributes.Lazy
 
     public Runnable onError(Throwable x)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("onError {}", this, x);
         try (AutoLock ignored = _lock.lock())
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("onError {} {}", this, x);
-
             // If the channel doesn't have a stream, then the error is ignored
             if (_stream == null)
                 return null;
@@ -481,18 +480,6 @@ public class HttpChannel extends Attributes.Lazy
             _server.getThreadPool().execute(task);
         }
 
-        /**
-         * @return return the HttpConfiguration server authority override
-         */
-        public HostPort getServerAuthority()
-        {
-            HttpConfiguration httpConfiguration = getHttpConfiguration();
-            if (httpConfiguration != null)
-                return httpConfiguration.getServerAuthority();
-
-            return null;
-        }
-
         @Override
         public String getId()
         {
@@ -712,7 +699,7 @@ public class HttpChannel extends Attributes.Lazy
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("failed {} {}", stream, x);
+                LOG.debug("failed {}", stream, x);
 
             if (committed)
                 stream.failed(x);
@@ -744,7 +731,22 @@ public class HttpChannel extends Attributes.Lazy
                     }
                 };
                 response.writeError(x, Callback.from(
-                    () -> stream.failed(x), // TODO could succeed the stream here ?
+                    () ->
+                    {
+                        // ErrorHandler has succeeded the ErrorRequest, so we need to ensure
+                        // the ErrorResponse is committed before we fail the stream.
+                        if (stream.isCommitted())
+                            stream.failed(x);
+                        else
+                        {
+                            response.write(true, Callback.from(() -> stream.failed(x), t ->
+                            {
+                                if (t != x)
+                                    x.addSuppressed(t);
+                                stream.failed(x);
+                            }));
+                        }
+                    },
                     t ->
                     {
                         if (t != x)
@@ -1026,5 +1028,11 @@ public class HttpChannel extends Attributes.Lazy
                 -1,
                 trailers);
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{r=%s}", this.getClass().getSimpleName(), hashCode(), _request);
     }
 }

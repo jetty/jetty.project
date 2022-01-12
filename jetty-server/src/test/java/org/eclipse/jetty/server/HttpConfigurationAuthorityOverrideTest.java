@@ -26,6 +26,7 @@ import java.util.Objects;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -114,7 +115,7 @@ public class HttpConfigurationAuthorityOverrideTest
                 "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
-
+            
             assertThat("response.status", response.getStatus(), is(200));
             String responseContent = response.getContent();
             assertThat("response content", responseContent, allOf(
@@ -702,7 +703,7 @@ public class HttpConfigurationAuthorityOverrideTest
             if (request.getPath().startsWith("/redirect"))
             {
                 response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-                response.setHeader(HttpHeader.LOCATION, "/dump"); // TODO: absolute uri?
+                response.setHeader(HttpHeader.LOCATION, HttpURI.build(request.getHttpURI(), "/dump").toString());
                 request.succeeded();
                 return true;
             }
@@ -731,8 +732,11 @@ public class HttpConfigurationAuthorityOverrideTest
         public boolean handle(Request request, Response response) throws IOException
         {
             response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-            response.setHeader(HttpHeader.LOCATION, "/error"); // TODO: absolute uri?
-            request.succeeded();
+            String scheme = request.getHttpURI().getScheme();
+            if (scheme == null)
+                scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
+            response.setHeader(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
+            response.write(true, request);
             return true;
         }
     }

@@ -137,6 +137,11 @@ public interface HttpURI
         return HttpURI.from(uri);
     }
 
+    static Immutable from(String scheme, HostPort hostPort, String pathQuery)
+    {
+        return new Mutable(scheme, hostPort.getHost(), hostPort.getPort(), pathQuery).asImmutable();
+    }
+
     static Immutable from(String scheme, String host, int port, String pathQuery)
     {
         return new Mutable(scheme, host, port, pathQuery).asImmutable();
@@ -611,6 +616,10 @@ public interface HttpURI
 
         private Mutable(String scheme, String host, int port, String pathQuery)
         {
+            // TODO review if this should be here
+            if (port == HttpScheme.getDefaultPort(scheme))
+                port = 0;
+
             _uri = null;
 
             _scheme = scheme;
