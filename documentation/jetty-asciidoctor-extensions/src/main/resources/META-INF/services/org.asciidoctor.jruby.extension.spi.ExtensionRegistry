@@ -1,1 +1,2 @@
 org.eclipse.jetty.docs.JettyIncludeExtension
+org.eclipse.jetty.docs.JavadocIncludeExtension
