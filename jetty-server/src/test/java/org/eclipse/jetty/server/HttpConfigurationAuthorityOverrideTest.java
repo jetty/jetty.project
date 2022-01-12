@@ -685,6 +685,7 @@ public class HttpConfigurationAuthorityOverrideTest
                     out.printf("LocalAddr=[%s]%n", request.getLocalAddr());
                     out.printf("LocalPort=[%s]%n", request.getLocalPort());
                     out.printf("HttpURI=[%s]%n", request.getHttpURI());
+                    response.write(true, request, stringWriter.getBuffer().toString());
                 }
                 return true;
             }
@@ -701,6 +702,7 @@ public class HttpConfigurationAuthorityOverrideTest
             {
                 response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
                 response.setHeader(HttpHeader.LOCATION, "/dump"); // TODO: absolute uri?
+                request.succeeded();
                 return true;
             }
             return false;
@@ -715,7 +717,7 @@ public class HttpConfigurationAuthorityOverrideTest
             if (request.getPath().startsWith("/error"))
             {
                 response.setContentType("text/plain; charset=utf-8");
-                response.write(true, null, "Generic Error Page.");
+                response.write(true, request, "Generic Error Page.");
                 return true;
             }
             return false;
@@ -729,6 +731,7 @@ public class HttpConfigurationAuthorityOverrideTest
         {
             response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
             response.setHeader(HttpHeader.LOCATION, "/error"); // TODO: absolute uri?
+            request.succeeded();
             return true;
         }
     }
