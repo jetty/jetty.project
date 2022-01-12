@@ -434,7 +434,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             _framePayload = _frame.getPayload().slice();
             _frameCallback = callback;
             getInflater().setInput(_framePayload);
-            iterate();
+            succeeded();
         }
 
         @Override
@@ -449,7 +449,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
                 if (_finished)
                 {
                     _nextDemand.accept(1);
-                    break;
+                    return Action.SCHEDULED;
                 }
 
                 try
@@ -558,7 +558,11 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         private void failFlusher(Throwable t)
         {
             if (_failure.compareAndSet(null, t))
+            {
+                // The iterating callback might be in IDLE or PENDING state so do both failed and iterate.
+                failed(t);
                 iterate();
+            }
         }
     }
 }
