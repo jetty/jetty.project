@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.Configuration.ConfigurationCustomizer;
+import org.eclipse.jetty.websocket.core.DemandingIncomingFramesCapture;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.IncomingFramesCapture;
@@ -326,7 +327,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
         PerMessageDeflateExtension ext = (PerMessageDeflateExtension)coreSession.getExtensionStack().getExtensions().get(0);
 
         // Setup capture of incoming frames
-        IncomingFramesCapture capture = new IncomingFramesCapture();
+        IncomingFramesCapture capture = new DemandingIncomingFramesCapture(coreSession);
 
         // Wire up stack
         ext.setNextIncomingFrames(capture);

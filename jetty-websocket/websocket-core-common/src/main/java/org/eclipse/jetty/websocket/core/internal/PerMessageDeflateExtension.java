@@ -16,7 +16,6 @@ package org.eclipse.jetty.websocket.core.internal;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
 import java.util.zip.DataFormatException;
@@ -25,7 +24,6 @@ import java.util.zip.Inflater;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.core.AbstractExtension;
@@ -351,122 +349,73 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
         }
     }
 
-    private class IncomingFlusher extends IteratingCallback
+    private class IncomingFlusher extends DemandingFlusher
     {
-        private final AtomicLong _demand = new AtomicLong();
-        private final AtomicReference<Throwable> _failure = new AtomicReference<>();
-        private boolean _finished = true;
-        private boolean _first;
-        private Frame _frame;
-        private ByteBuffer _framePayload;
-        private Callback _frameCallback;
         private boolean _tailBytes;
-        private LongConsumer _nextDemand;
+        private AtomicReference<ByteBuffer> _payloadRef = new AtomicReference<>();
 
-        public boolean isFinished()
+        public IncomingFlusher()
         {
-            return _finished;
-        }
-
-        public void setNextDemand(LongConsumer nextDemand)
-        {
-            _nextDemand = nextDemand;
-        }
-
-        public void demand(long n)
-        {
-            if (n <= 0)
-                throw new IllegalArgumentException("Demand must be positive");
-            _demand.getAndUpdate(d -> Math.addExact(d, n));
-            iterate();
-        }
-
-        public void onFrame(Frame frame, Callback callback)
-        {
-            _first = true;
-            _frame = frame;
-            _frameCallback = callback;
-            succeeded();
+            super(PerMessageDeflateExtension.this::nextIncomingFrame);
         }
 
         @Override
-        protected Action process() throws Throwable
+        protected boolean handle(Frame frame, Callback callback, boolean first)
         {
-            while (_demand.get() > 0)
+            if (first)
             {
-                Throwable failure = _failure.get();
-                if (failure != null)
-                    throw failure;
-
-                if (_first)
+                if (OpCode.isControlFrame(frame.getOpCode()))
                 {
-                    _first = false;
-
-                    if (OpCode.isControlFrame(_frame.getOpCode()))
-                    {
-                        nextIncomingFrame(_frame, _frameCallback);
-                        clear();
-                        continue;
-                    }
-
-                    // This extension requires the RSV1 bit set only in the first frame.
-                    // Subsequent continuation frames don't have RSV1 set, but are compressed.
-                    switch (_frame.getOpCode())
-                    {
-                        case OpCode.TEXT:
-                        case OpCode.BINARY:
-                            incomingCompressed = _frame.isRsv1();
-                            break;
-
-                        case OpCode.CONTINUATION:
-                            if (_frame.isRsv1())
-                                throw new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame");
-                            break;
-
-                        default:
-                            break;
-                    }
-
-                    if (!incomingCompressed)
-                    {
-                        nextIncomingFrame(_frame, _frameCallback);
-                        clear();
-                        continue;
-                    }
-
-                    // Provide the frames payload as input to the Inflater.
-                    _finished = false;
-                    _tailBytes = false;
-                    _first = true;
-                    _framePayload = _frame.getPayload().slice();
-                    getInflater().setInput(_framePayload);
+                    forwardFrame(frame, callback);
+                    return true;
                 }
 
-                if (_finished)
+                // This extension requires the RSV1 bit set only in the first frame.
+                // Subsequent continuation frames don't have RSV1 set, but are compressed.
+                switch (frame.getOpCode())
                 {
-                    _nextDemand.accept(1);
-                    return Action.SCHEDULED;
+                    case OpCode.TEXT:
+                    case OpCode.BINARY:
+                        incomingCompressed = frame.isRsv1();
+                        break;
+
+                    case OpCode.CONTINUATION:
+                        if (frame.isRsv1())
+                            throw new ProtocolException("Invalid RSV1 set on permessage-deflate CONTINUATION frame");
+                        break;
+
+                    default:
+                        break;
                 }
 
-                try
+                if (!incomingCompressed)
                 {
-                    inflate();
-                    _first = false;
+                    forwardFrame(frame, callback);
+                    return true;
                 }
-                catch (DataFormatException e)
-                {
-                    throw new BadPayloadException(e);
-                }
+
+                // Provide the frames payload as input to the Inflater.
+                _tailBytes = false;
+                getInflater().setInput(frame.getPayload().slice());
             }
-            return Action.IDLE;
+
+            try
+            {
+                return inflate(frame, callback, first);
+            }
+            catch (DataFormatException e)
+            {
+                throw new BadPayloadException(e);
+            }
         }
 
-        private void inflate() throws DataFormatException
+        private boolean inflate(Frame frame, Callback callback, boolean first) throws DataFormatException
         {
             // Get a buffer for the inflated payload.
             long maxFrameSize = getConfiguration().getMaxFrameSize();
             int bufferSize = (maxFrameSize <= 0) ? inflateBufferSize : (int)Math.min(maxFrameSize, inflateBufferSize);
             ByteBuffer payload = getBufferPool().acquire(bufferSize, false);
+            _payloadRef = new AtomicReference<>(payload);
             BufferUtil.clear(payload);
 
             // Fill up the ByteBuffer with a max length of bufferSize;
@@ -489,7 +438,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
 
                 if (decompressed == 0)
                 {
-                    if (!_tailBytes && _frame.isFin())
+                    if (!_tailBytes && frame.isFin())
                     {
                         inflater.setInput(TAIL_BYTES_BUF.slice());
                         _tailBytes = true;
@@ -501,64 +450,35 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
                 }
             }
 
-            Frame chunk = new Frame(_first ? _frame.getOpCode() : OpCode.CONTINUATION);
+            Frame chunk = new Frame(first ? frame.getOpCode() : OpCode.CONTINUATION);
             chunk.setRsv1(false);
             chunk.setPayload(payload);
-            chunk.setFin(_frame.isFin() && complete);
+            chunk.setFin(frame.isFin() && complete);
 
             boolean succeedCallback = complete;
-            Callback frameCallback = _frameCallback;
-            WebSocketCoreSession coreSession = (WebSocketCoreSession)getCoreSession();
+            AtomicReference<ByteBuffer> payloadRef = _payloadRef;
             Callback payloadCallback = Callback.from(() ->
             {
-                getBufferPool().release(payload);
+                getBufferPool().release(payloadRef.getAndSet(null));
                 if (succeedCallback)
-                    frameCallback.succeeded();
+                    callback.succeeded();
             }, t ->
             {
-                // The error needs to be forwarded to the CoreSession if callback is failed.
-                getBufferPool().release(payload);
+                getBufferPool().release(payloadRef.getAndSet(null));
                 failFlusher(t);
-                coreSession.processHandlerError(t, NOOP);
             });
-            _demand.decrementAndGet();
-            nextIncomingFrame(chunk, payloadCallback);
-            if (complete)
-                clear();
 
+            forwardFrame(chunk, payloadCallback);
             if (LOG.isDebugEnabled())
                 LOG.debug("Decompress finished: {} {}", complete, chunk);
-        }
-
-        private void clear()
-        {
-            _finished = true;
-            _first = false;
-            _frame = null;
-            _framePayload = null;
-            _frameCallback = null;
-            _tailBytes = false;
+            return complete;
         }
 
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
-            Throwable suppressed = _failure.getAndSet(cause);
-            if (suppressed != null && suppressed != cause)
-                cause.addSuppressed(suppressed);
-            if (_frameCallback != null)
-                _frameCallback.failed(cause);
-            clear();
-        }
-
-        private void failFlusher(Throwable t)
-        {
-            if (_failure.compareAndSet(null, t))
-            {
-                // The iterating callback might be in IDLE or PENDING state so do both failed and iterate.
-                failed(t);
-                iterate();
-            }
+            getBufferPool().release(_payloadRef.getAndSet(null));
+            super.onCompleteFailure(cause);
         }
     }
 }
