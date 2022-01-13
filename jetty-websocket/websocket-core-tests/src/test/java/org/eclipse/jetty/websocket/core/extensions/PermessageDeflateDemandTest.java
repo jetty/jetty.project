@@ -85,16 +85,15 @@ public class PermessageDeflateDemandTest
         CoreClientUpgradeRequest upgradeRequest = CoreClientUpgradeRequest.from(_client, uri, clientHandler);
         upgradeRequest.addExtensions("permessage-deflate");
 
-        CoreSession coreSession = _client.connect(upgradeRequest).get(500000, TimeUnit.SECONDS);
+        CoreSession coreSession = _client.connect(upgradeRequest).get(5, TimeUnit.SECONDS);
         assertNotNull(coreSession);
-        coreSession.setIdleTimeout(Duration.ofDays(1));
         // Set max frame size to autoFragment the message into multiple frames.
-        ByteBuffer message = randomBytes(16);
-        coreSession.setMaxFrameSize(10);
+        ByteBuffer message = randomBytes(1024);
+        coreSession.setMaxFrameSize(64);
         coreSession.sendFrame(new Frame(OpCode.BINARY, message).setFin(true), Callback.NOOP, false);
 
         coreSession.close(CloseStatus.NORMAL, null, Callback.NOOP);
-        assertTrue(clientHandler.closed.await(50000, TimeUnit.SECONDS));
+        assertTrue(clientHandler.closed.await(5, TimeUnit.SECONDS));
         assertThat(clientHandler.closeStatus.getCode(), equalTo(CloseStatus.NORMAL));
 
         assertThat(serverHandler.binaryMessages.size(), equalTo(1));
@@ -122,7 +121,6 @@ public class PermessageDeflateDemandTest
         public void onOpen(CoreSession coreSession, Callback callback)
         {
             _coreSession = coreSession;
-            coreSession.setIdleTimeout(Duration.ofDays(1));
             callback.succeeded();
             coreSession.demand(1);
         }
@@ -150,6 +148,7 @@ public class PermessageDeflateDemandTest
                 {
                     case OpCode.TEXT:
                         _stringBuilder.append(frame.getPayloadAsUTF8());
+                        callback.succeeded();
                         if (frame.isFin())
                         {
                             textMessages.add(_stringBuilder.toString());
