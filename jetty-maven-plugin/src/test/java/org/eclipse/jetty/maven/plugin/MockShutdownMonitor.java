@@ -17,14 +17,23 @@ import java.net.ServerSocket;
 
 import org.eclipse.jetty.toolchain.test.IO;
 
-public class Tester
+/**
+ * MockShutdownMonitor
+ * 
+ * A helper class that grabs a ServerSocket, spawns a thread and then
+ * passes the ServerSocket to the Runnable. This class has a main so
+ * that it can be used for forking, to mimic the actions of the
+ * org.eclipse.jetty.server.ShutdownMonitor.
+ *
+ */
+public class MockShutdownMonitor
 {
     String key;
-    TesterRunnable testerRunnable;
+    MockShutdownMonitorRunnable testerRunnable;
     ServerSocket serverSocket;
     boolean join;
 
-    public Tester(String key, TesterRunnable testerRunnable, boolean join)
+    public MockShutdownMonitor(String key, MockShutdownMonitorRunnable testerRunnable, boolean join)
         throws Exception
     {
         this.key = key;
@@ -73,10 +82,12 @@ public class Tester
     {
         try
         {
-            ForkableTesterRunnable testerRunnable = new ForkableTesterRunnable();
-            Tester tester = new Tester(args[0], testerRunnable, true);
-            System.err.println(tester.getPort());
-            tester.start();
+            MockShutdownMonitorRunnable runnable = new MockShutdownMonitorRunnable();
+            runnable.setPidResponse(String.valueOf(ProcessHandle.current().pid()));
+            runnable.setExit(true); //ensure process exits
+            MockShutdownMonitor monitor = new MockShutdownMonitor(args[0], runnable, true);
+            System.err.println(monitor.getPort()); //communicate the chosen port
+            monitor.start();
         }
         catch (Exception e)
         {

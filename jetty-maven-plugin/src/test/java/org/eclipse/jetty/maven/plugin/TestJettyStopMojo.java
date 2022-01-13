@@ -147,16 +147,15 @@ public class TestJettyStopMojo
         String stopKey = "foo";
         
         //start the responder
-        TesterRunnable testerRunnable = new TesterRunnable();
-        testerRunnable.setPidResponse("abcd");
-        testerRunnable.setForceStopResponse("Stopped");
-        Tester tester = new Tester(stopKey, testerRunnable, false);
-        tester.start();
+        MockShutdownMonitorRunnable runnable = new MockShutdownMonitorRunnable();
+        runnable.setPidResponse("abcd");
+        MockShutdownMonitor monitor = new MockShutdownMonitor(stopKey, runnable, false);
+        monitor.start();
         
         TestLog log = new TestLog();
         JettyStopMojo mojo = new JettyStopMojo();
         mojo.stopKey = "foo";
-        mojo.stopPort = tester.getPort();
+        mojo.stopPort = monitor.getPort();
         mojo.setLog(log);
         
         mojo.execute();
@@ -170,17 +169,16 @@ public class TestJettyStopMojo
         //test what happens if we get back a bad pid
         String stopKey = "foo";
         //start the responder
-        TesterRunnable testerRunnable = new TesterRunnable();
-        testerRunnable.setPidResponse("abcd");
-        testerRunnable.setForceStopResponse("Stopped");
-        Tester tester = new Tester(stopKey, testerRunnable, false);
-        tester.start();
+        MockShutdownMonitorRunnable runnable = new MockShutdownMonitorRunnable();
+        runnable.setPidResponse("abcd");
+        MockShutdownMonitor monitor = new MockShutdownMonitor(stopKey, runnable, false);
+        monitor.start();
         
         TestLog log = new TestLog();
         JettyStopMojo mojo = new JettyStopMojo();
         mojo.stopWait = 5;
         mojo.stopKey = stopKey;
-        mojo.stopPort = tester.getPort();
+        mojo.stopPort = monitor.getPort();
         mojo.setLog(log);
 
         mojo.execute();
@@ -209,11 +207,11 @@ public class TestJettyStopMojo
         cmd.add(java);
         cmd.add("-cp");
         cmd.add(System.getProperty("java.class.path"));
-        cmd.add(Tester.class.getCanonicalName());
+        cmd.add(MockShutdownMonitor.class.getCanonicalName());
         cmd.add(stopKey);    
         
         ProcessBuilder command = new ProcessBuilder(cmd);
-        File file = MavenTestingUtils.getTargetFile("stop.port");
+        File file = MavenTestingUtils.getTargetFile("tester.out");
         command.redirectOutput(file);
         command.redirectErrorStream(true);
         command.directory(MavenTestingUtils.getTargetDir());

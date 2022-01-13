@@ -28,7 +28,6 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
-
 /**
  * This goal stops a running instance of jetty.
  *
@@ -77,7 +76,7 @@ public class JettyStopMojo extends AbstractWebAppMojo
 
         if (stopWait > 0)
         {
-            //try to get the pid
+            //try to get the pid of the forked jetty process
             Long pid = null;
             try
             {
@@ -96,11 +95,12 @@ public class JettyStopMojo extends AbstractWebAppMojo
             }
             catch (Exception e)
             {
-                //jetty running, try to stop it regarless of error
+                //jetty running, try to stop it regardless of error
                 getLog().error(e);
             }
 
-            //send the stop command
+            //now send the stop command and wait for confirmation - either an ack from jetty, or
+            //that the process has stopped
             try
             {
                 if (pid == null)
@@ -138,7 +138,7 @@ public class JettyStopMojo extends AbstractWebAppMojo
                         }
                         catch (Throwable e)
                         {
-                            e.printStackTrace();
+                            getLog().error(e);
                         }
                     }
                 }
@@ -168,17 +168,24 @@ public class JettyStopMojo extends AbstractWebAppMojo
             {
                 getLog().error(e);
             }
-
         }
     }
     
+    /**
+     * Send a command to a jetty process, optionally waiting for a response.
+     * 
+     * @param command the command to send
+     * @param expectResponse if true, we will wait for a response
+     * @param wait length of time in sec to wait for a response
+     * @return the response, if any, to the command
+     * @throws Exception
+     */
     private String send(String command, boolean expectResponse, int wait)
         throws Exception
     {
         String response = null;
         try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"), stopPort); OutputStream out = s.getOutputStream();)
         {
-            //send the command
             out.write(command.getBytes());
             out.flush();
 
@@ -189,7 +196,6 @@ public class JettyStopMojo extends AbstractWebAppMojo
                 
                 try (LineNumberReader lin = new LineNumberReader(new InputStreamReader(s.getInputStream()));)
                 {
-                    //read the response
                     response = lin.readLine();
                 }
             }

@@ -16,14 +16,58 @@ package org.eclipse.jetty.maven.plugin;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.toolchain.test.IO;
 
-public class ForkableTesterRunnable extends TesterRunnable
+/**
+ * MockShutdownMonitorRunnable
+ * 
+ * Mimics the actions of the org.eclipse.jetty.server.ShutdownMonitor.ShutdownMonitorRunnable
+ * to aid testing.
+ *
+ */
+public class MockShutdownMonitorRunnable implements Runnable
 {
-    @Override
+    ServerSocket serverSocket;
+    String key;
+    String statusResponse = "OK";
+    String pidResponse;
+    String defaultResponse = "Stopped";
+    boolean exit;
+    
+    public void setExit(boolean exit)
+    {
+        this.exit = exit;
+    }
+
+    public void setKey(String key)
+    {
+        this.key = key;
+    }
+    
+    public void setServerSocket(ServerSocket serverSocket)
+    {
+        this.serverSocket = serverSocket;
+    }
+    
+    public void setDefaultResponse(String response)
+    {
+        this.defaultResponse = response;
+    }
+
+    public void setStatusResponse(String statusResponse)
+    {
+        this.statusResponse = statusResponse;
+    }
+
+    public void setPidResponse(String pidResponse)
+    {
+        this.pidResponse = pidResponse;
+    }
+
     public void run()
     {
         try
@@ -42,39 +86,22 @@ public class ForkableTesterRunnable extends TesterRunnable
                     String cmd = reader.readLine();
                     OutputStream out = socket.getOutputStream();
 
-                    if ("stop".equalsIgnoreCase(cmd)) 
+                    if ("status".equalsIgnoreCase(cmd))
                     {
-                        out.write((stopResponse + "\r\n").getBytes(StandardCharsets.UTF_8));
-                        out.flush();
-                        System.exit(0);
-                    }
-                    else if ("forcestop".equalsIgnoreCase(cmd))
-                    {
-                        out.write((forceStopResponse + "\r\n").getBytes(StandardCharsets.UTF_8));
-                        out.flush();
-                        System.exit(0);
-                    }
-                    else if ("stopexit".equalsIgnoreCase(cmd))
-                    {
-                        out.write((stopExitResponse + "\r\n").getBytes(StandardCharsets.UTF_8));
-                        out.flush();
-                        System.exit(0);
-                    }
-                    else if ("exit".equalsIgnoreCase(cmd))
-                    {
-                        out.write((exitResponse + "\r\n").getBytes(StandardCharsets.UTF_8));
-                        out.flush();
-                        System.exit(0);
-                    }
-                    else if ("status".equalsIgnoreCase(cmd))
-                    {
-                        out.write(("OK\r\n").getBytes(StandardCharsets.UTF_8));
+                        out.write((statusResponse + "\r\n").getBytes(StandardCharsets.UTF_8));
                         out.flush();
                     }
                     else if ("pid".equalsIgnoreCase(cmd))
                     { 
-                        out.write((String.valueOf(ProcessHandle.current().pid()) + "\r\n").getBytes(StandardCharsets.UTF_8));
+                        out.write((pidResponse + "\r\n").getBytes(StandardCharsets.UTF_8));
                         out.flush();
+                    }
+                    else
+                    {
+                        out.write((defaultResponse + "\r\n").getBytes(StandardCharsets.UTF_8));
+                        out.flush();
+                        if (exit)
+                            System.exit(0);
                     }
                 }
                 catch (Throwable x)
@@ -90,6 +117,6 @@ public class ForkableTesterRunnable extends TesterRunnable
         finally
         {
             IO.close(serverSocket);
-        } 
+        }
     }
 }
