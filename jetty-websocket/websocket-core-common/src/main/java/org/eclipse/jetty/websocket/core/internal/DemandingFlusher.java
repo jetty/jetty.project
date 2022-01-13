@@ -62,14 +62,6 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
         succeeded();
     }
 
-    public void needContent()
-    {
-        _frame = null;
-        _callback = null;
-        _needContent = true;
-        _first = true;
-    }
-
     public void failFlusher(Throwable t)
     {
         if (_failure.compareAndSet(null, t))
@@ -88,16 +80,14 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
     @Override
     protected Action process() throws Throwable
     {
-        // Check for failure here in case process is called with no demand.
-        Throwable failure = _failure.get();
-        if (failure != null)
-            throw failure;
-
-        while (_demand.get() > 0)
+        while (true)
         {
-            failure = _failure.get();
+            Throwable failure = _failure.get();
             if (failure != null)
                 throw failure;
+
+            if (_demand.get() <= 0)
+                break;
 
             if (_needContent)
             {
@@ -106,14 +96,16 @@ public abstract class DemandingFlusher extends IteratingCallback implements Dema
                 return Action.SCHEDULED;
             }
 
-            if (_frame == null)
-                throw new IllegalStateException();
-
             boolean first = _first;
             _first = false;
-            boolean finished = handle(_frame, _callback, first);
-            if (finished)
-                needContent();
+            boolean needContent = handle(_frame, _callback, first);
+            if (needContent)
+            {
+                _needContent = true;
+                _first = true;
+                _frame = null;
+                _callback = null;
+            }
         }
 
         return Action.IDLE;
