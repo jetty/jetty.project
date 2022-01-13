@@ -32,7 +32,7 @@ public abstract class IteratingDemand<I, O>
     }
 
     private final AutoLock _lock = new AutoLock();
-    private State _state = State.IDLE;;
+    private State _state = State.IDLE;
     private long _demand;
     private I _input;
 
