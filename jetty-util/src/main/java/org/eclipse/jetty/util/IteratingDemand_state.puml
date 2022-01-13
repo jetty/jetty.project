@@ -1,0 +1,29 @@
+@startuml
+
+IDLE:
+DEMANDING:
+DEMANDING: demandInput()
+ITERATING:
+STALLED:
+
+[*] --> IDLE
+
+IDLE --> ITERATING: demand(n)
+DEMANDING --> DEMANDING: demand(n)
+ITERATING --> ITERATING: demand(n)
+STALLED --> ITERATING: demand(n)
+
+DEMANDING --> ITERATING: onInput(I)
+
+ITERATING --> STALLED: produced!=null\ninput!=null\n--demand==0
+ITERATING --> ITERATING: produced!=null\n--demand>0
+ITERATING --> ITERATING: produced==null\ninput!=null
+
+
+ITERATING --> IDLE: produced==null\ninput==null\ndemand==0
+ITERATING --> DEMANDING: produced==null\ninput==null\ndemand>0
+
+
+
+
+@enduml

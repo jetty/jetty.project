@@ -1,0 +1,35 @@
+@startuml
+
+IDLE:
+PROCESSING:
+PENDING:
+CALLED:
+SUCCEEDED:
+FAILED:
+CLOSED:
+
+
+[*] --> IDLE
+
+IDLE --> PROCESSING: on(task,callback)\niterate()
+
+PROCESSING --> IDLE: IDLE
+PROCESSING --> PENDING: do(subtask,this)\nSCHEDULED
+PROCESSING --> SUCCEEDED: SUCCEEDED\ncallback.succeeded()
+
+CALLED --> PROCESSING: SCHEDULED
+
+PROCESSING --> CALLED: do(subtask,this)\nsucceeded()
+PENDING --> PROCESSING: succeeded()
+
+PENDING --> FAILED: failed(x)\ncallback.failed(x)
+PROCESSING --> FAILED: failed(x)\ncallback.failed(x)
+
+IDLE --> CLOSED: close()
+SUCCEEDED --> CLOSED: close()
+FAILED --> CLOSED: close()
+
+SUCCEEDED --> IDLE: reset()
+FAILED --> IDLE: reset()
+
+@enduml
