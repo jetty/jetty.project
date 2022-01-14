@@ -83,7 +83,7 @@
     <!-- some maven plugins versions -->
     <asciidoctor.plugin.version>2.2.1</asciidoctor.plugin.version>
     <appassembler.plugin.version>2.1.0</appassembler.plugin.version>
-    <build-helper.plugin.version>3.2.0</build-helper.plugin.version>
+    <build-helper.plugin.version>3.3.0</build-helper.plugin.version>
     <buildnumber.plugin.version>3.0.0</buildnumber.plugin.version>
     <docbkx.plugin.version>2.0.17</docbkx.plugin.version>
     <exec.plugin.version>3.0.0</exec.plugin.version>
