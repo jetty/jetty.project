@@ -80,7 +80,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     default String getLocalAddr()
     {
-        SocketAddress local = getWrapper().getConnectionMetaData().getLocalAddress();
+        SocketAddress local = getConnectionMetaData().getLocalAddress();
         if (local instanceof InetSocketAddress)
         {
             InetAddress address = ((InetSocketAddress)local).getAddress();
@@ -95,7 +95,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     default int getLocalPort()
     {
-        SocketAddress local = getWrapper().getConnectionMetaData().getLocalAddress();
+        SocketAddress local = getConnectionMetaData().getLocalAddress();
         if (local instanceof InetSocketAddress)
             return ((InetSocketAddress)local).getPort();
         return -1;
@@ -103,7 +103,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     default String getRemoteAddr()
     {
-        SocketAddress remote = getWrapper().getConnectionMetaData().getRemoteAddress();
+        SocketAddress remote = getConnectionMetaData().getRemoteAddress();
         if (remote instanceof InetSocketAddress)
         {
             InetAddress address = ((InetSocketAddress)remote).getAddress();
@@ -118,7 +118,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     default int getRemotePort()
     {
-        SocketAddress remote = getWrapper().getConnectionMetaData().getRemoteAddress();
+        SocketAddress remote = getConnectionMetaData().getRemoteAddress();
         if (remote instanceof InetSocketAddress)
             return ((InetSocketAddress)remote).getPort();
         return -1;
@@ -126,15 +126,15 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     default String getServerName()
     {
-        HttpURI uri = getWrapper().getHttpURI();
+        HttpURI uri = getHttpURI();
         if (uri.hasAuthority())
             return getChannel().formatAddrOrHost(uri.getHost());
 
-        HostPort authority = getWrapper().getConnectionMetaData().getServerAuthority();
+        HostPort authority = getConnectionMetaData().getServerAuthority();
         if (authority != null)
             return getChannel().formatAddrOrHost(authority.getHost());
 
-        SocketAddress local = getWrapper().getConnectionMetaData().getLocalAddress();
+        SocketAddress local = getConnectionMetaData().getLocalAddress();
         if (local instanceof InetSocketAddress)
             return getChannel().formatAddrOrHost(((InetSocketAddress)local).getHostString());
 
@@ -143,22 +143,22 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     default int getServerPort()
     {
-        HttpURI uri = getWrapper().getHttpURI();
+        HttpURI uri = getHttpURI();
         if (uri.hasAuthority() && uri.getPort() > 0)
             return uri.getPort();
 
-        HostPort authority = getWrapper().getConnectionMetaData().getServerAuthority();
+        HostPort authority = getConnectionMetaData().getServerAuthority();
         if (authority != null && authority.getPort() > 0)
             return authority.getPort();
 
         if (authority == null)
         {
-            SocketAddress local = getWrapper().getConnectionMetaData().getLocalAddress();
+            SocketAddress local = getConnectionMetaData().getLocalAddress();
             if (local instanceof InetSocketAddress)
                 return ((InetSocketAddress)local).getPort();
         }
 
-        HttpScheme scheme = HttpScheme.CACHE.get(getWrapper().getHttpURI().getScheme());
+        HttpScheme scheme = HttpScheme.CACHE.get(getHttpURI().getScheme());
         if (scheme != null)
             return scheme.getDefaultPort();
 
@@ -168,7 +168,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
     default MultiMap<String> extractQueryParameters()
     {
         MultiMap<String> params = new MultiMap<>();
-        String query = getWrapper().getHttpURI().getQuery();
+        String query = getHttpURI().getQuery();
         if (StringUtil.isNotBlank(query))
             UrlEncoded.decodeUtf8To(query, params);
         return params;
@@ -179,7 +179,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         Request r = this;
         while (true)
         {
-            Request w = r.getWrapper();
+            Request w = r.getWrapped();
             if (w == null)
                 return r;
             r = w;
@@ -211,7 +211,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         return null;
     }
 
-    class Wrapper implements Request
+    public class Wrapper implements Request
     {
         private final Request _wrapped;
 
