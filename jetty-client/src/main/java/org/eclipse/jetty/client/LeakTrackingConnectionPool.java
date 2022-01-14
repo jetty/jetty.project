@@ -42,8 +42,8 @@ public class LeakTrackingConnectionPool extends DuplexConnectionPool
     @Override
     public void close()
     {
-        LifeCycle.stop(this);
         super.close();
+        LifeCycle.stop(this);
     }
 
     @Override

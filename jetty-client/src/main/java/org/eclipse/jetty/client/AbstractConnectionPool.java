@@ -459,6 +459,14 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public void close()
     {
+        // Manually release and remove entries to do our best effort calling the listeners.
+        for (Pool<Connection>.Entry entry : pool.values())
+        {
+            if (entry.release())
+                released(entry.getPooled());
+            if (entry.remove())
+                removed(entry.getPooled());
+        }
         pool.close();
     }
 
