@@ -412,7 +412,13 @@ public class Request implements HttpServletRequest
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Request {} leaving session {}", this, session);
-        session.getSessionHandler().complete(session);
+        //try and scope to a request and context before leaving the session
+        ServletContext ctx = session.getServletContext();
+        ContextHandler handler = ContextHandler.getContextHandler(ctx);
+        if (handler == null)
+            session.getSessionHandler().complete(session);
+        else
+            handler.handle(this, () ->  session.getSessionHandler().complete(session));
     }
 
     /**
@@ -426,7 +432,14 @@ public class Request implements HttpServletRequest
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Response {} committing for session {}", this, session);
-        session.getSessionHandler().commit(session);
+        
+        //try and scope to a request and context before committing the session
+        ServletContext ctx = session.getServletContext();
+        ContextHandler handler = ContextHandler.getContextHandler(ctx);
+        if (handler == null)
+            session.getSessionHandler().commit(session);
+        else
+            handler.handle(this, () -> session.getSessionHandler().commit(session));
     }
 
     private MultiMap<String> getParameters()
@@ -1466,7 +1479,9 @@ public class Request implements HttpServletRequest
         if (_sessions != null)
         {
             for (Session s:_sessions)
+            {
                 commitSession(s);
+            }
         }
     }
 
