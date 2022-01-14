@@ -26,7 +26,7 @@
     <ant.version>1.10.12</ant.version>
     <apache.httpclient.version>4.5.13</apache.httpclient.version>
     <apache.httpcore.version>4.4.15</apache.httpcore.version>
-    <asciidoctorj.version>2.5.2</asciidoctorj.version>
+    <asciidoctorj.version>2.5.3</asciidoctorj.version>
     <asciidoctorj-diagram.version>2.2.1</asciidoctorj-diagram.version>
     <asm.version>9.2</asm.version>
     <awaitility.version>4.1.1</awaitility.version>
