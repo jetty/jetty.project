@@ -16,6 +16,7 @@ package org.eclipse.jetty.docs.programming.server.http;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.servlet.DispatcherType;
@@ -40,14 +41,17 @@ import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.RequestLogWriter;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -56,6 +60,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
@@ -153,6 +158,57 @@ public class HTTPServerDocs
 
         server.start();
         // end::httpChannelListener[]
+    }
+
+    public void serverRequestLogSLF4J()
+    {
+        // tag::serverRequestLogSLF4J[]
+        Server server = new Server();
+
+        // Sets the RequestLog to log to an SLF4J logger named "org.eclipse.jetty.server.RequestLog" at INFO level.
+        server.setRequestLog(new CustomRequestLog(new Slf4jRequestLogWriter(), CustomRequestLog.EXTENDED_NCSA_FORMAT));
+        // end::serverRequestLogSLF4J[]
+    }
+
+    public void serverRequestLogFile()
+    {
+        // tag::serverRequestLogFile[]
+        Server server = new Server();
+
+        // Use a file name with the pattern 'yyyy_MM_dd' so rolled over files retain their date.
+        RequestLogWriter logWriter = new RequestLogWriter("/var/log/yyyy_MM_dd.jetty.request.log");
+        // Retain rolled over files for 2 weeks.
+        logWriter.setRetainDays(14);
+        // Log times are in the current time zone.
+        logWriter.setTimeZone(TimeZone.getDefault().getID());
+
+        // Set the RequestLog to log to the given file, rolling over at midnight.
+        server.setRequestLog(new CustomRequestLog(logWriter, CustomRequestLog.EXTENDED_NCSA_FORMAT));
+        // end::serverRequestLogFile[]
+    }
+
+    public void contextRequestLog()
+    {
+        // tag::contextRequestLog[]
+        Server server = new Server();
+
+        // Create a first ServletContextHandler for your main application.
+        ServletContextHandler mainContext = new ServletContextHandler();
+        mainContext.setContextPath("/main");
+
+        // Create a RequestLogHandler to log requests for your main application.
+        RequestLogHandler requestLogHandler = new RequestLogHandler();
+        requestLogHandler.setRequestLog(new CustomRequestLog());
+        // Wrap the main application with the request log handler.
+        requestLogHandler.setHandler(mainContext);
+
+        // Create a second ServletContextHandler for your other application.
+        // No request logging for this application.
+        ServletContextHandler otherContext = new ServletContextHandler();
+        mainContext.setContextPath("/other");
+
+        server.setHandler(new HandlerList(requestLogHandler, otherContext));
+        // end::contextRequestLog[]
     }
 
     public void configureConnector() throws Exception

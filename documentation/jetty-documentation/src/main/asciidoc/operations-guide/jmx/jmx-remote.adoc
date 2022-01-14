@@ -242,7 +242,7 @@ If you are using self-signed certificates, the KeyStore already contains the sel
 
 JMX compliant tools that offer a graphical user interface also must be started specifying the TrustStore path and password.
 
-For example, to launch link:https://adoptopenjdk.net/jmc.html[Java Mission Control (JMC)]:
+For example, to launch link:https://adoptium.net/jmc.html[Java Mission Control (JMC)]:
 
 ----
 $ jmc -vmargs -Djavax.net.ssl.trustStore=/path/to/trustStore.p12 -Djavax.net.ssl.trustStorePassword=password
