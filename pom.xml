@@ -142,7 +142,7 @@
     <maven.gpg.plugin.version>3.0.1</maven.gpg.plugin.version>
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.2.2</maven.invoker.plugin.version>
-    <maven.jar.plugin.version>3.2.0</maven.jar.plugin.version>
+    <maven.jar.plugin.version>3.2.2</maven.jar.plugin.version>
     <maven.javadoc.plugin.version>3.3.1</maven.javadoc.plugin.version>
     <maven.jxr.plugin.version>3.1.1</maven.jxr.plugin.version>
     <maven.plugin-tools.version>3.6.2</maven.plugin-tools.version>
