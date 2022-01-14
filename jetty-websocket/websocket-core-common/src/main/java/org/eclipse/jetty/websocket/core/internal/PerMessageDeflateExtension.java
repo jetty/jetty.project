@@ -366,7 +366,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
             {
                 if (OpCode.isControlFrame(frame.getOpCode()))
                 {
-                    forwardFrame(frame, callback);
+                    emitFrame(frame, callback);
                     return true;
                 }
 
@@ -390,7 +390,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
 
                 if (!incomingCompressed)
                 {
-                    forwardFrame(frame, callback);
+                    emitFrame(frame, callback);
                     return true;
                 }
 
@@ -468,7 +468,7 @@ public class PerMessageDeflateExtension extends AbstractExtension implements Dem
                 failFlusher(t);
             });
 
-            forwardFrame(chunk, payloadCallback);
+            emitFrame(chunk, payloadCallback);
             if (LOG.isDebugEnabled())
                 LOG.debug("Decompress finished: {} {}", complete, chunk);
             return complete;

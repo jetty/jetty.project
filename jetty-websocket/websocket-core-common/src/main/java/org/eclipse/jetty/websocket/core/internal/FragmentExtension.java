@@ -103,7 +103,7 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
             {
                 if (OpCode.isControlFrame(frame.getOpCode()))
                 {
-                    forwardFrame(frame, callback);
+                    emitFrame(frame, callback);
                     return true;
                 }
             }
@@ -148,7 +148,7 @@ public class FragmentExtension extends AbstractExtension implements DemandChain
                 failFlusher(t);
             });
 
-            forwardFrame(fragment, payloadCallback);
+            emitFrame(fragment, payloadCallback);
             return finished;
         }
     }
