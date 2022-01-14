@@ -19,7 +19,6 @@ import org.eclipse.jetty.util.thread.AutoLock;
  * This specialized demand handling implements a pattern that allows
  * a large job to be broken into smaller tasks using iteration
  * rather than recursion.
- * </p>
  */
 public abstract class IteratingDemand<I, O>
 {
