@@ -22,6 +22,7 @@ import java.net.Socket;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -120,27 +121,30 @@ public class JettyStopMojo extends AbstractWebAppMojo
                     getLog().info("Waiting " + stopWait + " seconds for jetty " + pid + " to stop");
                     send(stopKey + "\r\n" + command + "\r\n", false, 0);
                     Optional<ProcessHandle> optional = ProcessHandle.of(pid);
-                    ProcessHandle handle = optional.orElse(null);
-                    if (handle != null)
+                    optional.ifPresentOrElse(p -> 
                     {
                         try
                         {
-                            CompletableFuture<ProcessHandle> future = handle.onExit();
-                            if (handle.isAlive())
+                            CompletableFuture<ProcessHandle> future = p.onExit();
+                            if (p.isAlive())
                             {
-                                handle = future.get(stopWait, TimeUnit.SECONDS);
+                                p = future.get(stopWait, TimeUnit.SECONDS);
                             }
 
-                            if (handle.isAlive())
+                            if (p.isAlive())
                                 getLog().info("Couldn't verify server process stop");
                             else
                                 getLog().info("Server process stopped");
+                        }
+                        catch (TimeoutException e)
+                        {
+                            getLog().error("Timeout expired while waiting for server process to stop");
                         }
                         catch (Throwable e)
                         {
                             getLog().error(e);
                         }
-                    }
+                    }, () -> getLog().info("Process not running"));
                 }
             }
             catch (ConnectException e)
