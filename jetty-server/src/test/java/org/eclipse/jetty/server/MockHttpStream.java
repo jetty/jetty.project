@@ -123,7 +123,7 @@ public class MockHttpStream implements HttpStream
         if (content == null || content == DEMAND)
             return null;
 
-        _content.set(content.next());
+        _content.set(Content.next(content));
 
         return content;
     }

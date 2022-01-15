@@ -1017,15 +1017,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         public boolean messageComplete()
         {
             Http1Stream stream = _stream.get();
-            if (_trailers == null)
-            {
-                stream._content = stream._content == null ? Content.EOF : Content.from(stream._content, Content.EOF);
-            }
+            stream._content = Content.last(stream._content);
+            if (_trailers != null && (stream._content == null || stream._content == Content.EOF))
+                stream._content = new Content.Trailers(_trailers.asImmutable());
             else
-            {
-                Content trailers = new Content.Trailers(_trailers.asImmutable());
-                stream._content = stream._content == null ? trailers : Content.from(stream._content, trailers);
-            }
+                stream._content = Content.last(stream._content);
             return false;
         }
 
@@ -1304,12 +1300,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 parseAndFillForContent();
 
             Content content = _content;
-            if (content != null)
-            {
-                _content = content.next();
-                if (_expect100Continue && content.hasRemaining())
-                    _expect100Continue = false;
-            }
+            _content = Content.next(content);
+            if (content != null && _expect100Continue && content.hasRemaining())
+                _expect100Continue = false;
+
             return content;
         }
 

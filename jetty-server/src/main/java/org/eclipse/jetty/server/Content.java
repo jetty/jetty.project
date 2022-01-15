@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -80,43 +79,6 @@ public interface Content
         return length;
     }
 
-    /**
-     * Get the next content if known from the current content
-     * @return The next content, which may be null if not known, EOF or the current content if persistent
-     */
-    default Content next()
-    {
-        return isSpecial() ? this : isLast() ? Content.EOF : null;
-    }
-
-    static Content from(Content content, Content next)
-    {
-        if (Objects.equals(content.next(), next))
-            return content;
-        return new Abstract(content.isSpecial(), content.isLast())
-        {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return content.getByteBuffer();
-            }
-
-            @Override
-            public void release()
-            {
-                content.release();
-            }
-
-            @Override
-            public Content next()
-            {
-                if (content.next() == null)
-                    return next;
-                return from(content.next(), next);
-            }
-        };
-    }
-
     static Content from(ByteBuffer buffer)
     {
         return () -> buffer;
@@ -138,6 +100,47 @@ public interface Content
                 return String.format("[%s, l=%b]", BufferUtil.toDetailString(getByteBuffer()), isLast());
             }
         };
+    }
+
+    static Content last(Content content)
+    {
+        if (content == null)
+            return EOF;
+        if (content.isLast())
+            return content;
+        return new Abstract(content.isSpecial(), true)
+        {
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return content.getByteBuffer();
+            }
+
+            @Override
+            public void release()
+            {
+                content.release();
+            }
+        };
+    }
+
+    /**
+     * Compute the next content from the current content.
+     * @param content The current content
+     * @return The next content if known, else null
+     */
+    static Content next(Content content)
+    {
+        if (content != null)
+        {
+            if (content instanceof Trailers)
+                return EOF;
+            if (content.isSpecial())
+                return content;
+            if (content.isLast())
+                return EOF;
+        }
+        return null;
     }
 
     abstract class Abstract implements Content
@@ -237,12 +240,6 @@ public interface Content
         public HttpFields getTrailers()
         {
             return _trailers;
-        }
-
-        @Override
-        public Content next()
-        {
-            return EOF;
         }
 
         @Override
