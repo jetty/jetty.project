@@ -474,7 +474,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     public String toString()
     {
         StringBuilder buf = new StringBuilder();
-        for (int r = 0; r <= _rows; r++)
+        for (int r = 0; r < _rows; r++)
         {
             if (_key[r] != null && _value[r] != null)
             {
@@ -497,7 +497,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     {
         Set<String> keys = new HashSet<>();
 
-        for (int r = 0; r <= _rows; r++)
+        for (int r = 0; r < _rows; r++)
         {
             if (_key[r] != null && _value[r] != null)
                 keys.add(_key[r]);
@@ -508,7 +508,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     public int size()
     {
         int s = 0;
-        for (int r = 0; r <= _rows; r++)
+        for (int r = 0; r < _rows; r++)
         {
             if (_key[r] != null && _value[r] != null)
                 s++;
@@ -518,7 +518,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
 
     public boolean isEmpty()
     {
-        for (int r = 0; r <= _rows; r++)
+        for (int r = 0; r < _rows; r++)
         {
             if (_key[r] != null && _value[r] != null)
                 return false;
@@ -529,7 +529,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     public Set<Map.Entry<String, V>> entrySet()
     {
         Set<Map.Entry<String, V>> entries = new HashSet<>();
-        for (int r = 0; r <= _rows; r++)
+        for (int r = 0; r < _rows; r++)
         {
             if (_key[r] != null && _value[r] != null)
                 entries.add(new AbstractMap.SimpleEntry<>(_key[r], _value[r]));
@@ -648,7 +648,10 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
             boolean added = _trie.put(s, v);
             while (!added && _growby > 0)
             {
-                ArrayTernaryTrie<V> bigger = new ArrayTernaryTrie<>(_trie.isCaseInsensitive(), _trie._key.length + _growby);
+                int newCapacity = _trie._key.length + _growby;
+                if (newCapacity > MAX_CAPACITY)
+                    return false;
+                ArrayTernaryTrie<V> bigger = new ArrayTernaryTrie<>(_trie.isCaseInsensitive(), newCapacity);
                 for (Map.Entry<String, V> entry : _trie.entrySet())
                 {
                     bigger.put(entry.getKey(), entry.getValue());

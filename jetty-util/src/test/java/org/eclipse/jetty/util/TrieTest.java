@@ -69,6 +69,7 @@ public class TrieTest
         List<Function<Integer, Trie>> tries = new ArrayList<>();
         tries.add(ArrayTrie::new);
         tries.add(ArrayTernaryTrie::new);
+        tries.add(capacity -> new ArrayTernaryTrie.Growing<>(capacity, capacity));
         return tries.stream().map(Arguments::of);
     }
 
