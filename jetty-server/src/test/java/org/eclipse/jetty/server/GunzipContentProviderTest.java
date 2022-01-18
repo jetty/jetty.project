@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
 
@@ -47,7 +48,7 @@ public class GunzipContentProviderTest
 
     @ParameterizedTest
     @MethodSource("providers")
-    public void testProviders(Content.Provider contentProvider)
+    public void testReadContent(Content.Provider contentProvider)
     {
         StringBuilder result = new StringBuilder();
         while (true)
@@ -66,7 +67,51 @@ public class GunzipContentProviderTest
         assertThat(contentEnd.isLast(), is(true));
     }
 
-    static class StaticContentProvider implements Content.Provider
+    @ParameterizedTest
+    @MethodSource("providers")
+    public void testDemandContent(Content.Provider contentProvider)
+    {
+        StringBuilder result = new StringBuilder();
+        ContentPuller puller = new ContentPuller(contentProvider, content ->
+        {
+            if (content != null && !content.isSpecial())
+                result.append(consumeToString(content.getByteBuffer()));
+        });
+        puller.run();
+
+        assertThat(result.toString(), is(TEXT));
+        Content contentEnd = contentProvider.readContent();
+        assertThat(contentEnd.isLast(), is(true));
+    }
+
+    static class ContentPuller
+    {
+        private final Content.Provider contentProvider;
+        private final Consumer<Content> contentConsumer;
+
+        public ContentPuller(Content.Provider contentProvider, Consumer<Content> contentConsumer)
+        {
+            this.contentProvider = contentProvider;
+            this.contentConsumer = contentConsumer;
+        }
+
+        public void run()
+        {
+            onContentAvailable();
+            // or:
+            // contentProvider.demandContent(this::onContentAvailable);
+        }
+
+        private void onContentAvailable()
+        {
+            Content c = contentProvider.readContent();
+            contentConsumer.accept(c);
+            if (c != null && !c.isSpecial())
+                contentProvider.demandContent(this::onContentAvailable);
+        }
+    }
+
+    static class StaticContentProvider extends AbstractSerializingDemandContentProvider
     {
         private final List<Content> contents;
         private int index;
@@ -86,7 +131,7 @@ public class GunzipContentProviderTest
         }
 
         @Override
-        public void demandContent(Runnable onContentAvailable)
+        protected void serviceDemand(Runnable onContentAvailable)
         {
             onContentAvailable.run();
         }
@@ -98,11 +143,10 @@ public class GunzipContentProviderTest
         }
     }
 
-    static class DelayingContentProvider implements Content.Provider
+    static class DelayingContentProvider extends AbstractSerializingDemandContentProvider
     {
         private final Content.Provider source;
         private Content currentContent;
-        private boolean nullCase;
 
         public DelayingContentProvider(Content.Provider source)
         {
@@ -115,15 +159,6 @@ public class GunzipContentProviderTest
             // always return special content as-is
             if (currentContent != null && currentContent.isSpecial())
                 return currentContent;
-
-            // return null every other call
-            if (nullCase)
-            {
-                nullCase = false;
-                return null;
-            }
-            nullCase = true;
-
 
             while (true)
             {
@@ -149,7 +184,7 @@ public class GunzipContentProviderTest
         }
 
         @Override
-        public void demandContent(Runnable onContentAvailable)
+        protected void serviceDemand(Runnable onContentAvailable)
         {
             onContentAvailable.run();
         }

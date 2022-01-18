@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.GZIPContentDecoder;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class GunzipContentProvider implements Content.Provider
+public class GunzipContentProvider extends AbstractSerializingDemandContentProvider
 {
     private final GZIPContentDecoder decoder = new GZIPContentDecoder();
     private final Content.Provider deflatedProvider;
@@ -80,7 +80,7 @@ public class GunzipContentProvider implements Content.Provider
     }
 
     @Override
-    public void demandContent(Runnable onContentAvailable)
+    protected void serviceDemand(Runnable onContentAvailable)
     {
         deflatedProvider.demandContent(onContentAvailable);
     }
