@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.nio.channels.ReadPendingException;
 import java.util.Objects;
 
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -38,7 +39,7 @@ public abstract class ContentProcessor extends Content.Processor
         try (AutoLock ignored = _lock.lock())
         {
             if (_reading)
-                return null;
+                throw new ReadPendingException();
 
             if (_output != null)
             {
@@ -56,12 +57,12 @@ public abstract class ContentProcessor extends Content.Processor
         {
             while (true)
             {
-                Content output = available ? null : produce(null);
+                Content output = available ? null : process(null);
                 if (output != null)
                     return output;
                 available = false;
                 Content input = getProvider().readContent();
-                output = produce(input);
+                output = process(input);
                 if (output != null)
                     return output;
                 if (input == null)
@@ -153,11 +154,11 @@ public abstract class ContentProcessor extends Content.Processor
                 Content input = null;
                 try
                 {
-                    output = available ? null : produce(null);
+                    output = available ? null : process(null);
                     if (output == null)
                     {
                         input = getProvider().readContent();
-                        output = produce(input);
+                        output = process(input);
                         available = false;
                         if (output == null && input == null)
                             getProvider().demandContent(this::onContentAvailable);
@@ -201,5 +202,5 @@ public abstract class ContentProcessor extends Content.Processor
         iterate(true, null);
     }
 
-    protected abstract Content produce(Content content);
+    protected abstract Content process(Content content);
 }

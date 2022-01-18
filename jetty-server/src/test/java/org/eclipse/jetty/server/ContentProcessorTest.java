@@ -361,7 +361,7 @@ public class ContentProcessorTest
         }
 
         @Override
-        protected Content produce(Content content)
+        protected Content process(Content content)
         {
             if (content != null)
             {
