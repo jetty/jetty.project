@@ -211,7 +211,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         return null;
     }
 
-    public class Wrapper implements Request
+    class Wrapper implements Request
     {
         private final Request _wrapped;
 
