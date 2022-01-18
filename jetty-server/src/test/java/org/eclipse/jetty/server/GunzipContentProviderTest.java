@@ -21,6 +21,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.zip.GZIPOutputStream;
@@ -38,11 +42,13 @@ public class GunzipContentProviderTest
 {
     public static Stream<Arguments> providers() throws Exception
     {
+        ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
+
         List<Arguments> data = new ArrayList<>();
         data.add(Arguments.of(new StaticContentProvider(Arrays.asList(new StaticContent(toBuffer(TEXT)), Content.EOF))));
         data.add(Arguments.of(new GunzipContentProvider(new StaticContentProvider(Arrays.asList(new StaticContent(toGzippedBuffer(TEXT)), Content.EOF)))));
-        data.add(Arguments.of(new DelayingContentProvider(new StaticContentProvider(Arrays.asList(new StaticContent(toBuffer(TEXT)), Content.EOF)))));
-        data.add(Arguments.of(new GunzipContentProvider(new DelayingContentProvider(new StaticContentProvider(Arrays.asList(new StaticContent(toGzippedBuffer(TEXT)), Content.EOF))))));
+        data.add(Arguments.of(new DelayingContentProvider(scheduledExecutorService, new StaticContentProvider(Arrays.asList(new StaticContent(toBuffer(TEXT)), Content.EOF)))));
+        data.add(Arguments.of(new GunzipContentProvider(new DelayingContentProvider(scheduledExecutorService, new StaticContentProvider(Arrays.asList(new StaticContent(toGzippedBuffer(TEXT)), Content.EOF))))));
         return data.stream();
     }
 
@@ -69,7 +75,7 @@ public class GunzipContentProviderTest
 
     @ParameterizedTest
     @MethodSource("providers")
-    public void testDemandContent(Content.Provider contentProvider)
+    public void testDemandContent(Content.Provider contentProvider) throws Exception
     {
         StringBuilder result = new StringBuilder();
         ContentPuller puller = new ContentPuller(contentProvider, content ->
@@ -77,7 +83,7 @@ public class GunzipContentProviderTest
             if (content != null && !content.isSpecial())
                 result.append(consumeToString(content.getByteBuffer()));
         });
-        puller.run();
+        puller.pullUntilEnd();
 
         assertThat(result.toString(), is(TEXT));
         Content contentEnd = contentProvider.readContent();
@@ -88,6 +94,7 @@ public class GunzipContentProviderTest
     {
         private final Content.Provider contentProvider;
         private final Consumer<Content> contentConsumer;
+        private volatile CountDownLatch latch;
 
         public ContentPuller(Content.Provider contentProvider, Consumer<Content> contentConsumer)
         {
@@ -95,19 +102,30 @@ public class GunzipContentProviderTest
             this.contentConsumer = contentConsumer;
         }
 
-        public void run()
+        public void pullUntilEnd() throws InterruptedException
         {
+            if (latch != null)
+                throw new IllegalStateException();
+            latch = new CountDownLatch(1);
+
             onContentAvailable();
             // or:
             // contentProvider.demandContent(this::onContentAvailable);
+
+            latch.await();
+            latch = null;
         }
 
         private void onContentAvailable()
         {
             Content c = contentProvider.readContent();
             contentConsumer.accept(c);
-            if (c != null && !c.isSpecial())
+            if (c == null || !c.isSpecial())
                 contentProvider.demandContent(this::onContentAvailable);
+
+            // Special content marks the end -> count down latch.
+            if (c != null && c.isSpecial())
+                latch.countDown();
         }
     }
 
@@ -145,11 +163,13 @@ public class GunzipContentProviderTest
 
     static class DelayingContentProvider extends AbstractSerializingDemandContentProvider
     {
+        private final ScheduledExecutorService scheduledExecutorService;
         private final Content.Provider source;
         private Content currentContent;
 
-        public DelayingContentProvider(Content.Provider source)
+        public DelayingContentProvider(ScheduledExecutorService scheduledExecutorService, Content.Provider source)
         {
+            this.scheduledExecutorService = scheduledExecutorService;
             this.source = source;
         }
 
@@ -186,7 +206,8 @@ public class GunzipContentProviderTest
         @Override
         protected void serviceDemand(Runnable onContentAvailable)
         {
-            onContentAvailable.run();
+            // Schedule a call to onContentAvailable after a 1 ms delay.
+            scheduledExecutorService.schedule(onContentAvailable, 1, TimeUnit.MILLISECONDS);
         }
 
         @Override
