@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.function.LongConsumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -50,6 +51,8 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
     private IncomingFrames incoming;
     private OutgoingFrames outgoing;
     private final Extension[] rsvClaims = new Extension[3];
+    private LongConsumer lastDemand;
+    private DemandChain demandChain = n -> lastDemand.accept(n);
 
     public ExtensionStack(WebSocketComponents components, Behavior behavior)
     {
@@ -199,7 +202,7 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                 rsvClaims[2] = ext;
         }
 
-        // Wire up Extensions
+        // Wire up Extensions and DemandChain.
         if ((extensions != null) && (extensions.size() > 0))
         {
             ListIterator<Extension> exts = extensions.listIterator();
@@ -210,6 +213,13 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
                 Extension ext = exts.next();
                 ext.setNextOutgoingFrames(outgoing);
                 outgoing = ext;
+
+                if (ext instanceof DemandChain)
+                {
+                    DemandChain demandingExtension = (DemandChain)ext;
+                    demandingExtension.setNextDemand(demandChain::demand);
+                    demandChain = demandingExtension;
+                }
             }
 
             // Connect incomingFrames
@@ -251,6 +261,16 @@ public class ExtensionStack implements IncomingFrames, OutgoingFrames, Dumpable
         {
             extension.setCoreSession(coreSession);
         }
+    }
+
+    public void demand(long n)
+    {
+        demandChain.demand(n);
+    }
+
+    public void setLastDemand(LongConsumer lastDemand)
+    {
+        this.lastDemand = lastDemand;
     }
 
     public Extension getRsv1User()
