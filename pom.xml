@@ -72,9 +72,9 @@
     <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
     <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version>
     <javax.servlet.jsp.jstl.impl.version>1.2.5</javax.servlet.jsp.jstl.impl.version>
-    <jboss.logging.version>3.4.2.Final</jboss.logging.version>
+    <jboss.logging.version>3.4.3.Final</jboss.logging.version>
     <jboss-logging.version>2.2.1.Final</jboss-logging.version>
-    <jboss-logmanager.version>2.1.15.Final</jboss-logmanager.version>
+    <jboss-logmanager.version>2.1.18.Final</jboss-logmanager.version>
     <jboss-threads.version>3.1.0.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
     <jetty.perf-helper.version>1.0.7</jetty.perf-helper.version>
