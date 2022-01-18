@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,30 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class TestJettyStopMojo
-{   
+{
+    /**
+     * ShutdownMonitorMain
+     *
+     * Kick off the ShutdownMonitor and wait for it to exit.
+     */
+    public static final class ShutdownMonitorMain
+    {
+        public static void main(String[] args)
+        {
+            try
+            {
+                ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+                monitor.setPort(0);
+                monitor.start();
+                monitor.await();
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public static class TestLog implements org.apache.maven.plugin.logging.Log
     {
         List<String> sink = new ArrayList<String>();
@@ -140,21 +164,20 @@ public class TestJettyStopMojo
             }
         }
     }
-    
+
     @Test
     public void testStopNoWait() throws Exception
     {
+        //send a stop message and don't wait for the reply or the process to shutdown
         String stopKey = "foo";
-        
-        //start the responder
         MockShutdownMonitorRunnable runnable = new MockShutdownMonitorRunnable();
         runnable.setPidResponse("abcd");
-        MockShutdownMonitor monitor = new MockShutdownMonitor(stopKey, runnable, false);
+        MockShutdownMonitor monitor = new MockShutdownMonitor(stopKey, runnable);
         monitor.start();
         
         TestLog log = new TestLog();
         JettyStopMojo mojo = new JettyStopMojo();
-        mojo.stopKey = "foo";
+        mojo.stopKey = stopKey;
         mojo.stopPort = monitor.getPort();
         mojo.setLog(log);
         
@@ -166,12 +189,12 @@ public class TestJettyStopMojo
     @Test
     public void testStopWaitBadPid() throws Exception
     {
-        //test what happens if we get back a bad pid
+        //test that even if we receive a bad pid, we still send the stop command and wait to
+        //receive acknowledgement, but we don't wait for the process to exit
         String stopKey = "foo";
-        //start the responder
         MockShutdownMonitorRunnable runnable = new MockShutdownMonitorRunnable();
         runnable.setPidResponse("abcd");
-        MockShutdownMonitor monitor = new MockShutdownMonitor(stopKey, runnable, false);
+        MockShutdownMonitor monitor = new MockShutdownMonitor(stopKey, runnable);
         monitor.start();
         
         TestLog log = new TestLog();
@@ -190,9 +213,9 @@ public class TestJettyStopMojo
     @Test
     public void testStopWait() throws Exception
     {
+        //test that we will communicate with a remote process and wait for it to exit
         String stopKey = "foo";
-
-        List<String> cmd = new ArrayList<String>();
+        List<String> cmd = new ArrayList<>();
         String java = "java";
         String[] javaexes = new String[]{"java", "java.exe"};
         File javaHomeDir = new File(System.getProperty("java.home"));
@@ -205,42 +228,52 @@ public class TestJettyStopMojo
         }
 
         cmd.add(java);
+        cmd.add("-DSTOP.KEY=" + stopKey);
+        cmd.add("-DDEBUG=true");
         cmd.add("-cp");
         cmd.add(System.getProperty("java.class.path"));
-        cmd.add(MockShutdownMonitor.class.getCanonicalName());
-        cmd.add(stopKey);    
-        
+        cmd.add(ShutdownMonitorMain.class.getName());
+
         ProcessBuilder command = new ProcessBuilder(cmd);
         File file = MavenTestingUtils.getTargetFile("tester.out");
         command.redirectOutput(file);
         command.redirectErrorStream(true);
         command.directory(MavenTestingUtils.getTargetDir());
         Process fork = command.start();
-        
+
         Thread.sleep(500);
         while (!file.exists() && file.length() == 0)
         {
             Thread.sleep(300);
         }
 
-        String str = null;
+        String tmp = "";
+        String port = null;
         try (LineNumberReader reader = new LineNumberReader(new FileReader(file));)
         {
-            str = reader.readLine();
+            while (port == null && tmp != null)
+            {
+                tmp = reader.readLine();
+                if (tmp != null)
+                {
+                    if (tmp.startsWith("STOP.PORT="))
+                        port = tmp.substring(10);
+                }
+            }
         }
-        assertNotNull(str);
+
+        assertNotNull(port);
 
         TestLog log = new TestLog();
         JettyStopMojo mojo = new JettyStopMojo();
         mojo.stopWait = 5;
         mojo.stopKey = stopKey;
-        mojo.stopPort = Integer.valueOf(str).intValue();
+        mojo.stopPort = Integer.parseInt(port);
         mojo.setLog(log);
-        
+
         mojo.execute();
-        
+
         log.dumpStdErr();
-        
         log.assertContains("Waiting " + mojo.stopWait + " seconds for jetty " + fork.pid() + " to stop");
         log.assertContains("Server process stopped");
     }

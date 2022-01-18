@@ -27,7 +27,6 @@ import org.eclipse.jetty.toolchain.test.IO;
  * 
  * Mimics the actions of the org.eclipse.jetty.server.ShutdownMonitor.ShutdownMonitorRunnable
  * to aid testing.
- *
  */
 public class MockShutdownMonitorRunnable implements Runnable
 {
@@ -51,16 +50,6 @@ public class MockShutdownMonitorRunnable implements Runnable
     public void setServerSocket(ServerSocket serverSocket)
     {
         this.serverSocket = serverSocket;
-    }
-    
-    public void setDefaultResponse(String response)
-    {
-        this.defaultResponse = response;
-    }
-
-    public void setStatusResponse(String statusResponse)
-    {
-        this.statusResponse = statusResponse;
     }
 
     public void setPidResponse(String pidResponse)
