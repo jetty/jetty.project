@@ -13,31 +13,48 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 public abstract class AbstractSerializingDemandContentProvider implements Content.Provider
 {
-    private final AtomicBoolean demanding = new AtomicBoolean();
-    private final AtomicBoolean extraDemand = new AtomicBoolean();
+    private final AutoLock lock = new AutoLock();
+    private boolean demanding;
+    private Runnable extraDemand;
 
     @Override
     public final void demandContent(Runnable onContentAvailable)
     {
         while (true)
         {
-            if (demanding.compareAndSet(false, true))
+            try (AutoLock ignore = this.lock.lock())
             {
-                serviceDemand(onContentAvailable);
-                demanding.set(false);
-            }
-            else
-            {
-                extraDemand.set(true);
-                break;
+                if (!demanding)
+                {
+                    demanding = true;
+                }
+                else
+                {
+                    extraDemand = onContentAvailable;
+                    break;
+                }
             }
 
-            if (!extraDemand.compareAndSet(true, false))
-                break;
+            serviceDemand(onContentAvailable);
+
+            try (AutoLock ignore = this.lock.lock())
+            {
+                demanding = false;
+
+                if (extraDemand != null)
+                {
+                    onContentAvailable = extraDemand;
+                    extraDemand = null;
+                }
+                else
+                {
+                    break;
+                }
+            }
         }
     }
 
