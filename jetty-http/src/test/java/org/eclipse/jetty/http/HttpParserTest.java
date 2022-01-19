@@ -2105,6 +2105,41 @@ public class HttpParserTest
     }
 
     @Test
+    public void testRequestMaxHeaderBytesURITooLong()
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "GET /long/nested/path/uri HTTP/1.1\r\n" +
+                "Host: example.com\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+
+        int maxHeaderBytes = 5;
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, maxHeaderBytes);
+
+        parseAll(parser, buffer);
+        assertEquals("414", _bad);
+    }
+
+    @Test
+    public void testRequestMaxHeaderBytesCumulative()
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "GET /nested/path/uri HTTP/1.1\r\n" +
+                "Host: example.com\r\n" +
+                "X-Large-Header: lorem-ipsum-dolor-sit\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+
+        int maxHeaderBytes = 64;
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, maxHeaderBytes);
+
+        parseAll(parser, buffer);
+        assertEquals("431", _bad);
+    }
+
+    @Test
     @SuppressWarnings("ReferenceEquality")
     public void testCachedField()
     {
