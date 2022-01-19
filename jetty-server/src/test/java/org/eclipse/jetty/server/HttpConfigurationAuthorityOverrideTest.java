@@ -115,17 +115,10 @@ public class HttpConfigurationAuthorityOverrideTest
                 "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
-            
-            assertThat("response.status", response.getStatus(), is(200));
-            String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[foo.local.name]"),
-                containsString("ServerPort=[80]"),
-                containsString("LocalAddr=[foo.local.name]"),
-                containsString("LocalName=[foo.local.name]"),
-                containsString("LocalPort=[80]"),
-                containsString("HttpURI=[http://foo.local.name/dump]")
-            ));
+
+            assertThat("response.status", response.getStatus(), is(302));
+            assertThat(response.get("X-Error-Status"), is("400"));
+            assertThat(response.get("X-Error-Message"), is("Blank Host"));
         }
     }
 
@@ -145,7 +138,9 @@ public class HttpConfigurationAuthorityOverrideTest
 
             assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
             String location = response.get(HttpHeader.LOCATION);
-            assertThat(location, is("http://foo.local.name/dump"));
+            assertThat(location, is("http://foo.local.name/error"));
+            assertThat(response.get("X-Error-Status"), is("400"));
+            assertThat(response.get("X-Error-Message"), is("Blank Host"));
         }
     }
 
@@ -166,12 +161,12 @@ public class HttpConfigurationAuthorityOverrideTest
             assertThat("response.status", response.getStatus(), is(200));
             String responseContent = response.getContent();
             assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[bar.local.name]"),
+                containsString("ServerName=[null]"),
                 containsString("ServerPort=[9999]"),
                 containsString("LocalAddr=[bar.local.name]"),
                 containsString("LocalName=[bar.local.name]"),
                 containsString("LocalPort=[9999]"),
-                containsString("HttpURI=[mobile://bar.local.name:9999/dump]")
+                containsString("HttpURI=[mobile:///dump]")
             ));
         }
     }
@@ -236,18 +231,9 @@ public class HttpConfigurationAuthorityOverrideTest
                 "\r\n";
 
             HttpTester.Response response = issueRequest(server, rawRequest);
-
-            assertThat("response.status", response.getStatus(), is(200));
-            String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[foo.server.authority]"),
-                containsString("ServerPort=[80]"),
-                // expect default locals
-                containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
-                containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
-                containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("HttpURI=[http://foo.server.authority/dump]")
-            ));
+            assertThat("response.status", response.getStatus(), is(302));
+            assertThat(response.get("X-Error-Status"), is("400"));
+            assertThat(response.get("X-Error-Message"), is("Blank Host"));
         }
     }
 
@@ -267,7 +253,9 @@ public class HttpConfigurationAuthorityOverrideTest
 
             assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
             String location = response.get(HttpHeader.LOCATION);
-            assertThat(location, is("http://foo.server.authority/dump"));
+            assertThat(location, is("http://foo.server.authority/error"));
+            assertThat(response.get("X-Error-Status"), is("400"));
+            assertThat(response.get("X-Error-Message"), is("Blank Host"));
         }
     }
 
@@ -285,17 +273,9 @@ public class HttpConfigurationAuthorityOverrideTest
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
-            assertThat("response.status", response.getStatus(), is(200));
-            String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[foo.server.authority]"),
-                containsString("ServerPort=[7777]"),
-                // expect default locals
-                containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
-                containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
-                containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("HttpURI=[http://foo.server.authority:7777/dump]")
-            ));
+            assertThat("response.status", response.getStatus(), is(302));
+            assertThat(response.get("X-Error-Status"), is("400"));
+            assertThat(response.get("X-Error-Message"), is("Blank Host"));
         }
     }
 
@@ -315,7 +295,9 @@ public class HttpConfigurationAuthorityOverrideTest
 
             assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
             String location = response.get(HttpHeader.LOCATION);
-            assertThat(location, is("http://foo.server.authority:7777/dump"));
+            assertThat(location, is("http://foo.server.authority:7777/error"));
+            assertThat(response.get("X-Error-Status"), is("400"));
+            assertThat(response.get("X-Error-Message"), is("Blank Host"));
         }
     }
 
@@ -394,7 +376,9 @@ public class HttpConfigurationAuthorityOverrideTest
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
-            assertThat(response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
+            assertThat("response.status", response.getStatus(), is(302));
+            assertThat(response.get("X-Error-Status"), is("400"));
+            assertThat(response.get("X-Error-Message"), is("Bad Request"));
         }
     }
 
@@ -554,13 +538,13 @@ public class HttpConfigurationAuthorityOverrideTest
             assertThat("response.status", response.getStatus(), is(200));
             String responseContent = response.getContent();
             assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[zed.server.authority]"),
+                containsString("ServerName=[null]"),
                 containsString("ServerPort=[7777]"),
                 // expect default locals
                 containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
                 containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
                 containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("HttpURI=[mobile://zed.server.authority:7777/dump]")
+                containsString("HttpURI=[mobile:///dump]")
             ));
         }
     }
@@ -597,17 +581,9 @@ public class HttpConfigurationAuthorityOverrideTest
 
             HttpTester.Response response = issueRequest(server, rawRequest);
 
-            assertThat("response.status", response.getStatus(), is(200));
-            String responseContent = response.getContent();
-            assertThat("response content", responseContent, allOf(
-                containsString("ServerName=[" + server.getConnectorLocalName() + "]"),
-                containsString("ServerPort=[" + server.getConnectorLocalPort() + "]"),
-                // expect default locals
-                containsString("LocalAddr=[" + server.getConnectorLocalAddr() + "]"),
-                containsString("LocalName=[" + server.getConnectorLocalName() + "]"),
-                containsString("LocalPort=[" + server.getConnectorLocalPort() + "]"),
-                containsString("HttpURI=[http://" + server.getConnectorLocalName() + ":" + server.getConnectorLocalPort() + "/dump]")
-            ));
+            assertThat("response.status", response.getStatus(), is(302));
+            assertThat(response.get("X-Error-Status"), is("400"));
+            assertThat(response.get("X-Error-Message"), is("Blank Host"));
         }
     }
 
@@ -625,7 +601,9 @@ public class HttpConfigurationAuthorityOverrideTest
 
             assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
             String location = response.get(HttpHeader.LOCATION);
-            assertThat(location, is("http://" + server.getConnectorLocalName() + ":" + server.getConnectorLocalPort() + "/dump"));
+            assertThat(location, is("http://" + server.getConnectorLocalName() + ":" + server.getConnectorLocalPort() + "/error"));
+            assertThat(response.get("X-Error-Status"), is("400"));
+            assertThat(response.get("X-Error-Message"), is("Blank Host"));
         }
     }
 
@@ -731,6 +709,8 @@ public class HttpConfigurationAuthorityOverrideTest
         @Override
         public boolean handle(Request request, Response response) throws IOException
         {
+            response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
+            response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
             response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
             String scheme = request.getHttpURI().getScheme();
             if (scheme == null)
