@@ -258,6 +258,6 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         // Opening p5 and p6 was delayed, so the opening of p7 was triggered
         // to replace p4 while p5 and p6 were busy sending their requests.
         if (transport != Transport.UNIX_DOMAIN)
-            assertThat(remotePorts.toString(), count / maxUsage, lessThanOrEqualTo(results.size()));
+            assertThat(remotePorts.toString(), results.size(), lessThanOrEqualTo(count / maxUsage));
     }
 }
