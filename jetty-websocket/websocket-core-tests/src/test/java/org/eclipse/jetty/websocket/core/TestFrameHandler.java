@@ -28,8 +28,8 @@ public class TestFrameHandler implements SynchronousFrameHandler
 
     protected CoreSession coreSession;
     public BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
-    protected CloseStatus closeStatus;
-    protected Throwable failure;
+    public CloseStatus closeStatus;
+    public Throwable failure;
 
     public CountDownLatch open = new CountDownLatch(1);
     public CountDownLatch error = new CountDownLatch(1);
