@@ -34,6 +34,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -191,6 +192,182 @@ public class ContentProcessorTest
         assertTrue(consumer.last.get());
         assertFalse(consumer.notReEntrant.get());
         assertThat(consumer.output, contains("one", "two", "three", "four", "five"));
+    }
+
+    @Test
+    public void testProducerThrowsInRead()
+    {
+        _provider.add("one", false);
+        _provider.add("THROW", false);
+        _provider.add("two", false);
+        _provider.add("THROW", true);
+
+        Content content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(BufferUtil.toString(content.getByteBuffer()), is("one"));
+        content.release();
+
+        content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(content, instanceOf(Content.Error.class));
+
+        content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(BufferUtil.toString(content.getByteBuffer()), is("two"));
+        content.release();
+
+        content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(content, instanceOf(Content.Error.class));
+
+        assertThat(_processor.readContent(), sameInstance(Content.EOF));
+    }
+
+    @Test
+    public void testProducerThrowsInDemand()
+    {
+        _provider.add("one", false);
+        _provider.add("THROW", false);
+        _provider.add("two", false);
+        _provider.add("THROW", true);
+
+        Content content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(BufferUtil.toString(content.getByteBuffer()), is("one"));
+        content.release();
+
+        FutureCallback oca = new FutureCallback();
+        _processor.demandContent(oca::succeeded);
+        assertTrue(oca.isDone());
+        content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(content, instanceOf(Content.Error.class));
+
+        content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(BufferUtil.toString(content.getByteBuffer()), is("two"));
+        content.release();
+
+        oca = new FutureCallback();
+        _processor.demandContent(oca::succeeded);
+        assertTrue(oca.isDone());
+        content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(content, instanceOf(Content.Error.class));
+
+        assertThat(_processor.readContent(), sameInstance(Content.EOF));
+    }
+
+    @Test
+    public void testProducerThrowsInAvailable()
+    {
+        _provider.add("one", false);
+
+        Content content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(BufferUtil.toString(content.getByteBuffer()), is("one"));
+        content.release();
+
+        FutureCallback oca = new FutureCallback();
+        _processor.demandContent(oca::succeeded);
+        assertFalse(oca.isDone());
+        Runnable demand = _provider.takeDemand();
+        assertNotNull(demand);
+
+        _provider.add("THROW", false);
+        _provider.add("two", false);
+        demand.run();
+        assertTrue(oca.isDone());
+        content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(content, instanceOf(Content.Error.class));
+
+        content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(BufferUtil.toString(content.getByteBuffer()), is("two"));
+        content.release();
+
+        oca = new FutureCallback();
+        _processor.demandContent(oca::succeeded);
+        assertFalse(oca.isDone());
+        demand = _provider.takeDemand();
+        assertNotNull(demand);
+
+        _provider.add("THROW", true);
+        demand.run();
+        assertTrue(oca.isDone());
+        content = _processor.readContent();
+        assertNotNull(content);
+        assertThat(content, instanceOf(Content.Error.class));
+
+        assertThat(_processor.readContent(), sameInstance(Content.EOF));
+    }
+
+    @Test
+    public void testAvailableThrows()
+    {
+        AtomicReference<Throwable> error = new AtomicReference<>();
+        Deque<String> output = new ConcurrentLinkedDeque<>();
+        Runnable onAvailable = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Content content = _processor.readContent();
+                if (content != null)
+                {
+                    if (content.hasRemaining())
+                    {
+                        String s = BufferUtil.toString(content.getByteBuffer());
+                        content.release();
+                        if ("throw".equals(s))
+                            throw new RuntimeException("testing");
+                        if ("dthrow".equals(s))
+                        {
+                            _processor.demandContent(this);
+                            throw new RuntimeException("testing");
+                        }
+                        output.add(s);
+                    }
+                    if (content instanceof Content.Error)
+                        error.set(((Content.Error)content).getCause());
+                    if (content.isLast())
+                        return;
+                }
+                _processor.demandContent(this);
+            }
+        };
+
+        _processor.demandContent(onAvailable);
+        Runnable demand = _provider.takeDemand();
+        assertNotNull(demand);
+        _provider.add("one", false);
+        demand.run();
+        assertThat(output, contains("one"));
+        assertNull(error.get());
+
+        demand = _provider.takeDemand();
+        assertNotNull(demand);
+        _provider.add("throw", false);
+        demand.run();
+        assertThat(output, contains("one"));
+        assertNull(error.get());
+
+        _processor.demandContent(onAvailable);
+        assertThat(output, contains("one"));
+        assertThat(error.getAndSet(null), instanceOf(RuntimeException.class));
+
+        _provider.add("two", false);
+        _provider.takeDemand().run();
+        assertThat(output, contains("one", "two"));
+        assertNull(error.get());
+
+        _provider.add("dthrow", true);
+        _provider.takeDemand().run();
+        assertThat(output, contains("one", "two"));
+        assertThat(error.getAndSet(null), instanceOf(RuntimeException.class));
+
+        assertThat(_processor.readContent(), sameInstance(Content.EOF));
     }
 
     @Test
@@ -401,6 +578,8 @@ public class ContentProcessorTest
                     return null;
                 if ("NOOP".equals(word))
                     continue;
+                if ("THROW".equals(word))
+                    throw new RuntimeException("testing");
                 return Content.from(BufferUtil.toBuffer(word.toLowerCase()), _last && _words.isEmpty());
             }
         }

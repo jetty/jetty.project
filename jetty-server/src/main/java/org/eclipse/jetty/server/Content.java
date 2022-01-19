@@ -199,7 +199,12 @@ public interface Content
 
         public Error(Throwable cause)
         {
-            super(true, true);
+            this (cause, true);
+        }
+
+        public Error(Throwable cause, boolean last)
+        {
+            super(true, last);
             _cause = cause == null ? new IOException("unknown") : cause;
         }
 

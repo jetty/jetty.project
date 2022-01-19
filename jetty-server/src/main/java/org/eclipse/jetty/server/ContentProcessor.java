@@ -53,6 +53,7 @@ public abstract class ContentProcessor extends Content.Processor
             _reading = true;
         }
 
+        Content input = null;
         try
         {
             while (true)
@@ -61,13 +62,17 @@ public abstract class ContentProcessor extends Content.Processor
                 if (output != null)
                     return output;
                 available = false;
-                Content input = getProvider().readContent();
+                input = getProvider().readContent();
                 output = process(input);
                 if (output != null)
                     return output;
                 if (input == null)
                     return null;
             }
+        }
+        catch (Throwable t)
+        {
+            return new Content.Error(t, input != null && input.isLast());
         }
         finally
         {
@@ -125,26 +130,33 @@ public abstract class ContentProcessor extends Content.Processor
         {
             if (onContentAvailable != null)
             {
+                Throwable error = null;
                 try
                 {
                     onContentAvailable.run();
-                    iterating = false;
+                }
+                catch (Throwable t)
+                {
+                    error = t;
                 }
                 finally
                 {
+                    onContentAvailable = null;
                     try (AutoLock ignored = _lock.lock())
                     {
-                        if (iterating)
-                            // exception must have been thrown
-                            _iterating = iterating = false;
-                        else if (_onContentAvailable != null)
+                        if (error != null)
                         {
-                            iterating = true;
-                            onContentAvailable = null;
+                            if (_output != null)
+                                _output.release();
+                            _output = new Content.Error(error, false);
                         }
-                        else
+
+                        if (_onContentAvailable == null)
+                            _iterating = iterating = false;
+                        else if (_output != null)
                         {
-                            _iterating = iterating;
+                            onContentAvailable = _onContentAvailable;
+                            _onContentAvailable = null;
                         }
                     }
                 }
@@ -163,6 +175,13 @@ public abstract class ContentProcessor extends Content.Processor
                         if (output == null && input == null)
                             getProvider().demandContent(this::onContentAvailable);
                     }
+                }
+                catch (Throwable t)
+                {
+                    if (output != null)
+                        output.release();
+                    output = new Content.Error(t, input != null && input.isLast());
+                    available = false;
                 }
                 finally
                 {
