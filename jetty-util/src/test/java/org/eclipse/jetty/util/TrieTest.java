@@ -22,9 +22,13 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -42,7 +46,7 @@ public class TrieTest
 {
     public static Stream<Arguments> implementations()
     {
-        List<Trie> impls = new ArrayList<>();
+        List<Trie<Integer>> impls = new ArrayList<>();
 
         impls.add(new ArrayTrie<Integer>(128));
         impls.add(new TreeTrie<Integer>());
@@ -64,9 +68,9 @@ public class TrieTest
         return impls.stream().map(Arguments::of);
     }
 
-    public static Stream<Arguments> arrayTrieConstructors()
+    public static Stream<Arguments> trieConstructors()
     {
-        List<Function<Integer, Trie>> tries = new ArrayList<>();
+        List<Function<Integer, Trie<?>>> tries = new ArrayList<>();
         tries.add(ArrayTrie::new);
         tries.add(ArrayTernaryTrie::new);
         tries.add(capacity -> new ArrayTernaryTrie.Growing<>(capacity, capacity));
@@ -265,15 +269,15 @@ public class TrieTest
     }
 
     @ParameterizedTest
-    @MethodSource("arrayTrieConstructors")
-    public void testArrayTrieCapacityOverflow(Function<Integer, Trie<?>> constructor)
+    @MethodSource("trieConstructors")
+    public void testTrieCapacityOverflow(Function<Integer, Trie<?>> constructor)
     {
         assertThrows(IllegalArgumentException.class, () -> constructor.apply((int)Character.MAX_VALUE));
     }
 
     @ParameterizedTest
-    @MethodSource("arrayTrieConstructors")
-    public void testArrayTrieCapacity(Function<Integer, Trie<String>> constructor)
+    @MethodSource("trieConstructors")
+    public void testTrieCapacity(Function<Integer, Trie<String>> constructor)
     {
         Trie<String> trie = constructor.apply(Character.MAX_VALUE - 1);
 
@@ -285,8 +289,8 @@ public class TrieTest
     }
 
     @ParameterizedTest
-    @MethodSource("arrayTrieConstructors")
-    public void testArrayTrieOverflowReject(Function<Integer, Trie<String>> constructor)
+    @MethodSource("trieConstructors")
+    public void testTrieOverflowReject(Function<Integer, Trie<String>> constructor)
     {
         Trie<String> trie = constructor.apply(Character.MAX_VALUE - 1);
         assertTrue(trie.put("X", "/"));
@@ -300,5 +304,54 @@ public class TrieTest
 
         // The previous entry was not overridden
         assertThat(trie.getBest("X", 0, 1), is("/"));
+    }
+
+    @Test
+    public void testArrayTernaryTrieSize()
+    {
+        ArrayTernaryTrie<String> trie = new ArrayTernaryTrie<>();
+
+        assertTrue(trie.put("abc", "X"));
+        assertTrue(trie.put("def", "Y"));
+        assertTrue(trie.put("dee", "Z"));
+
+        assertEquals(3, trie.size());
+    }
+
+    @Test
+    public void testArrayTernaryTrieKeySet()
+    {
+        ArrayTernaryTrie<String> trie = new ArrayTernaryTrie<>();
+
+        assertTrue(trie.put("abc", "X"));
+        assertTrue(trie.put("def", "Y"));
+        assertTrue(trie.put("dee", "Z"));
+
+        Set<String> keys = trie.keySet();
+        assertEquals(3, keys.size());
+        assertTrue(keys.contains("abc"));
+        assertTrue(keys.contains("def"));
+        assertTrue(keys.contains("dee"));
+    }
+
+    @Test
+    public void testArrayTernaryTrieEntrySet()
+    {
+        ArrayTernaryTrie<String> trie = new ArrayTernaryTrie<>();
+
+        assertTrue(trie.put("abc", "X"));
+        assertTrue(trie.put("def", "Y"));
+        assertTrue(trie.put("dee", "Z"));
+
+        Set<Map.Entry<String, String>> entries = trie.entrySet();
+        assertEquals(3, entries.size());
+        Set<String> keys = entries.stream().map(Map.Entry::getKey).collect(Collectors.toSet());
+        assertTrue(keys.contains("abc"));
+        assertTrue(keys.contains("def"));
+        assertTrue(keys.contains("dee"));
+        Set<String> values = entries.stream().map(Map.Entry::getValue).collect(Collectors.toSet());
+        assertTrue(values.contains("X"));
+        assertTrue(values.contains("Y"));
+        assertTrue(values.contains("Z"));
     }
 }
