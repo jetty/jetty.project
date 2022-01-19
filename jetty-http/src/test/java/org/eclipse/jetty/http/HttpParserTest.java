@@ -2113,7 +2113,7 @@ public class HttpParserTest
                 "Connection: close\r\n" +
                 "\r\n");
 
-        int maxHeaderBytes = 20;
+        int maxHeaderBytes = 5;
         HttpParser.RequestHandler handler = new Handler();
         HttpParser parser = new HttpParser(handler, maxHeaderBytes);
 

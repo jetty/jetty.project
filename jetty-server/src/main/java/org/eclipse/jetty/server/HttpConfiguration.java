@@ -193,7 +193,7 @@ public class HttpConfiguration implements Dumpable
         return _outputAggregationSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for the combined content of all HTTP request headers and the request URI")
+    @ManagedAttribute("The maximum allowed size in bytes for the HTTP request line and HTTP request headers")
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
@@ -406,13 +406,13 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
-     * Set the maximum allowable size for the cumulative content of all request headers and the URI.
+     * <p>Sets the maximum allowed size in bytes for the HTTP request line and HTTP request headers.</p>
      *
      * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded
      * in a URL. However, larger headers consume more memory and can make a server more vulnerable to denial of service
      * attacks.</p>
      *
-     * @param requestHeaderSize the maximum size in bytes for the cumulative content of all request headers and the URI
+     * @param requestHeaderSize the maximum allowed size in bytes for the HTTP request line and HTTP request headers
      */
     public void setRequestHeaderSize(int requestHeaderSize)
     {
