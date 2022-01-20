@@ -986,9 +986,11 @@ Here is a configuration example:
 <configuration>
   <webApp>
     <contextPath>/${build.finalName}</contextPath>
-    <baseResource implementation="org.eclipse.jetty.util.resource.ResourceCollection">
-      <resourcesAsCSV>src/main/webapp,/home/johndoe/path/to/my/other/source,/yet/another/folder</resourcesAsCSV>
-    </baseResource>
+    <resourceBases>
+      <resourceBase>src/main/webapp</resourceBase>
+      <resourceBase>/home/johndoe/path/to/my/other/source</resourceBase>
+      <resourceBase>/yet/another/folder</resourceBase>
+    </resourceBases>
   </webApp>
 </configuration>
 ----
