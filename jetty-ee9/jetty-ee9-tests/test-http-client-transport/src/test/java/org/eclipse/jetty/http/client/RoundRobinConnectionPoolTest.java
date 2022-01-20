@@ -249,6 +249,14 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         assertTrue(clientLatch.await(count, TimeUnit.SECONDS));
         assertEquals(count, remotePorts.size());
 
+        // Unix Domain does not have ports.
+        if (transport == Transport.UNIX_DOMAIN)
+            return;
+
+        // UDP does not have TIME_WAIT so ports may be reused by different connections.
+        if (transport == Transport.H3)
+            return;
+
         // Maps {remote_port -> number_of_times_port_was_used}.
         Map<Integer, Long> results = remotePorts.stream()
             .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
@@ -257,7 +265,6 @@ public class RoundRobinConnectionPoolTest extends AbstractTest<TransportScenario
         // [p1, p2, p3 | p1, p2, p3 | p4, p4, p5 | p6, p5, p7]
         // Opening p5 and p6 was delayed, so the opening of p7 was triggered
         // to replace p4 while p5 and p6 were busy sending their requests.
-        if (transport != Transport.UNIX_DOMAIN)
-            assertThat(remotePorts.toString(), results.size(), lessThanOrEqualTo(count / maxUsage));
+        assertThat(results.toString(), count / maxUsage, lessThanOrEqualTo(results.size()));
     }
 }
