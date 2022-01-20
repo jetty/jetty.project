@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.autobahn;
+package org.eclipse.jetty.websocket.tests;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,110 +31,19 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.Xpp3DomWriter;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.IO;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.startupcheck.StartupCheckStrategy;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.DockerStatus;
-import org.testcontainers.utility.MountableFile;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-@Disabled("Disable this test so it doesn't run locally as it takes 1h+ to run.")
-@Testcontainers
-public class AutobahnTests
+public class AutobahnUtils
 {
-    private static final Logger LOG = LoggerFactory.getLogger(AutobahnTests.class);
-    private static final Path USER_DIR = Paths.get(System.getProperty("user.dir"));
+    private static final Logger LOG = LoggerFactory.getLogger(AutobahnUtils.class);
 
-    private static Path reportDir;
-    private static Path fuzzingServer;
-    private static Path fuzzingClient;
-
-    @BeforeAll
-    public static void before() throws Exception
-    {
-        fuzzingServer = USER_DIR.resolve("fuzzingserver.json");
-        assertTrue(Files.exists(fuzzingServer), fuzzingServer + " not exists");
-
-        fuzzingClient = USER_DIR.resolve("fuzzingclient.json");
-        assertTrue(Files.exists(fuzzingClient), fuzzingClient + " not exists");
-
-        reportDir = USER_DIR.resolve("target/reports");
-        IO.delete(reportDir.toFile());
-        Files.createDirectory(reportDir);
-    }
-
-    @Test
-    public void testClient() throws Exception
-    {
-        try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("jettyproject/autobahn-testsuite:latest"))
-            .withCommand("/bin/bash", "-c", "wstest -m fuzzingserver -s /config/fuzzingserver.json")
-            .withExposedPorts(9001)
-            .withCopyFileToContainer(MountableFile.forHostPath(fuzzingServer), "/config/fuzzingserver.json")
-            .withLogConsumer(new Slf4jLogConsumer(LOG))
-            .withStartupTimeout(Duration.ofHours(2)))
-        {
-            container.start();
-            Integer mappedPort = container.getMappedPort(9001);
-            CoreAutobahnClient.main(new String[]{container.getContainerIpAddress(), mappedPort.toString()});
-
-            DockerClient dockerClient = container.getDockerClient();
-            String containerId = container.getContainerId();
-            copyFromContainer(dockerClient, containerId, reportDir, Paths.get("/target/reports/clients"));
-        }
-
-        LOG.info("Test Result Overview {}", reportDir.resolve("clients/index.html").toUri());
-
-        List<AutobahnCaseResult> results = parseResults(Paths.get("target/reports/clients/index.json"));
-        String className = getClass().getName();
-        writeJUnitXmlReport(results, "autobahn-client", className + ".client");
-        throwIfFailed(results);
-    }
-
-    @Test
-    public void testServer() throws Exception
-    {
-        // We need to expose the host port of the server to the Autobahn Client in docker container.
-        final int port = 9001;
-        org.testcontainers.Testcontainers.exposeHostPorts(port);
-        Server server = CoreAutobahnServer.startAutobahnServer(port);
-
-        FileSignalWaitStrategy strategy = new FileSignalWaitStrategy(reportDir, Paths.get("/target/reports/servers"));
-        try (GenericContainer<?> container = new GenericContainer<>(DockerImageName.parse("jettyproject/autobahn-testsuite:latest"))
-            .withCommand("/bin/bash", "-c", "wstest -m fuzzingclient -s /config/fuzzingclient.json" + FileSignalWaitStrategy.END_COMMAND)
-            .withLogConsumer(new Slf4jLogConsumer(LOG))
-            .withCopyFileToContainer(MountableFile.forHostPath(fuzzingClient), "/config/fuzzingclient.json")
-            .withStartupCheckStrategy(strategy)
-            .withStartupTimeout(Duration.ofHours(2)))
-        {
-            container.start();
-        }
-        finally
-        {
-            server.stop();
-        }
-
-        LOG.info("Test Result Overview {}", reportDir.resolve("servers/index.html").toUri());
-
-        List<AutobahnCaseResult> results = parseResults(Paths.get("target/reports/servers/index.json"));
-        String className = getClass().getName();
-        writeJUnitXmlReport(results, "autobahn-server", className + ".server");
-        throwIfFailed(results);
-    }
-
-    private void throwIfFailed(List<AutobahnCaseResult> results) throws Exception
+    public static void throwIfFailed(List<AutobahnCaseResult> results) throws Exception
     {
         StringBuilder message = new StringBuilder();
         for (AutobahnCaseResult result : results)
@@ -147,7 +56,7 @@ public class AutobahnTests
             throw new Exception("Failed Test Cases: " + message);
     }
 
-    private static class FileSignalWaitStrategy extends StartupCheckStrategy
+    public static class FileSignalWaitStrategy extends StartupCheckStrategy
     {
         public static final String SIGNAL_FILE = "/signalComplete";
         public static final String END_COMMAND = " && touch " + SIGNAL_FILE + " && sleep infinity";
@@ -163,7 +72,7 @@ public class AutobahnTests
         }
 
         @Override
-        public StartupCheckStrategy.StartupStatus checkStartupState(DockerClient dockerClient, String containerId)
+        public StartupStatus checkStartupState(DockerClient dockerClient, String containerId)
         {
             // If the container was stopped then we have failed to copy out the file.
             if (DockerStatus.isContainerStopped(getCurrentState(dockerClient, containerId)))
@@ -196,7 +105,7 @@ public class AutobahnTests
         }
     }
 
-    private static void copyFromContainer(DockerClient dockerClient, String containerId, Path target, Path source) throws Exception
+    public static void copyFromContainer(DockerClient dockerClient, String containerId, Path target, Path source) throws Exception
     {
         try (TarArchiveInputStream tarArchiveInputStream = new TarArchiveInputStream(dockerClient
             .copyArchiveFromContainerCmd(containerId, source.toString())
@@ -217,8 +126,7 @@ public class AutobahnTests
         }
     }
 
-    private void writeJUnitXmlReport(List<AutobahnCaseResult> results, String surefireFileName, String testName)
-        throws Exception
+    public static void writeJUnitXmlReport(List<AutobahnCaseResult> results, String surefireFileName, String testName) throws Exception
     {
         int failures = 0;
         long suiteDuration = 0;
@@ -259,8 +167,7 @@ public class AutobahnTests
         }
     }
 
-    private void addFailure(Xpp3Dom testCase, AutobahnCaseResult result) throws IOException,
-        ParseException
+    public static void addFailure(Xpp3Dom testCase, AutobahnCaseResult result) throws IOException, ParseException
     {
 
         JSONParser parser = new JSONParser();
@@ -292,7 +199,7 @@ public class AutobahnTests
         }
     }
 
-    private static List<AutobahnCaseResult> parseResults(Path jsonPath) throws Exception
+    public static List<AutobahnCaseResult> parseResults(Path jsonPath) throws Exception
     {
         List<AutobahnCaseResult> results = new ArrayList<>();
         JSONParser parser = new JSONParser();

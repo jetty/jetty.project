@@ -11,12 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.tests.autobahn;
+package org.eclipse.jetty.websocket.tests.javax;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.tests.AutobahnServer;
 
 /**
  * WebSocket Server for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
@@ -52,7 +53,7 @@ import org.eclipse.jetty.websocket.javax.server.config.JavaxWebSocketServletCont
  *     $ ls target/reports/servers/
  * </pre>
  */
-public class JavaxAutobahnServer
+public class JavaxAutobahnServer implements AutobahnServer
 {
     public static void main(String[] args) throws Exception
     {
@@ -60,18 +61,38 @@ public class JavaxAutobahnServer
         if (args != null && args.length > 0)
             port = Integer.parseInt(args[0]);
 
-        Server server = new Server(port);
-        ServerConnector connector = new ServerConnector(server);
-        connector.setIdleTimeout(10000);
-        server.addConnector(connector);
+        JavaxAutobahnServer server = new JavaxAutobahnServer();
+        server.startAutobahnServer(port);
+        server.join();
+    }
+
+    private Server _server;
+
+    public void startAutobahnServer(int port) throws Exception
+    {
+        _server = new Server();
+        ServerConnector connector = new ServerConnector(_server);
+        connector.setPort(port);
+        _server.addConnector(connector);
+
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        server.setHandler(context);
+        _server.setHandler(context);
 
         JavaxWebSocketServletContainerInitializer.configure(context, (servletContext, container) ->
             container.addEndpoint(JavaxAutobahnSocket.class));
 
-        server.start();
-        server.join();
+        _server.start();
+    }
+
+    @Override
+    public void stopAutobahnServer() throws Exception
+    {
+        _server.stop();
+    }
+
+    public void join() throws InterruptedException
+    {
+        _server.join();
     }
 }

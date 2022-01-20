@@ -11,28 +11,25 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.autobahn;
+package org.eclipse.jetty.websocket.tests.jetty;
 
-import java.io.IOException;
 import java.net.URI;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.tests.EchoSocket;
-import org.eclipse.jetty.websocket.tests.EventSocket;
+import org.eclipse.jetty.websocket.tests.AutobahnClient;
+import org.junit.jupiter.api.Assertions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * WebSocket Client for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
@@ -68,7 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *     $ ls target/reports/clients/
  * </pre>
  */
-public class JettyAutobahnClient
+public class JettyAutobahnClient implements AutobahnClient
 {
     public static void main(String[] args)
     {
@@ -93,46 +90,8 @@ public class JettyAutobahnClient
             }
         }
 
-        JettyAutobahnClient client = null;
-        try
-        {
-            String userAgent = "JettyWebsocketClient/" + Jetty.VERSION;
-            client = new JettyAutobahnClient(hostname, port, userAgent);
-
-            LOG.info("Running test suite...");
-            LOG.info("Using Fuzzing Server: {}:{}", hostname, port);
-            LOG.info("User Agent: {}", userAgent);
-
-            if (caseNumbers == null)
-            {
-                int caseCount = client.getCaseCount();
-                LOG.info("Will run all {} cases ...", caseCount);
-                for (int caseNum = 1; caseNum <= caseCount; caseNum++)
-                {
-                    LOG.info("Running case {} (of {}) ...", caseNum, caseCount);
-                    client.runCaseByNumber(caseNum);
-                }
-            }
-            else
-            {
-                LOG.info("Will run {} cases ...", caseNumbers.length);
-                for (int caseNum : caseNumbers)
-                {
-                    client.runCaseByNumber(caseNum);
-                }
-            }
-            LOG.info("All test cases executed.");
-            client.updateReports();
-        }
-        catch (Throwable t)
-        {
-            LOG.warn("Test Failed", t);
-        }
-        finally
-        {
-            if (client != null)
-                client.shutdown();
-        }
+        JettyAutobahnClient client = new JettyAutobahnClient();
+        client.runAutobahnClient(hostname, port, caseNumbers);
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(JettyAutobahnClient.class);
@@ -140,38 +99,76 @@ public class JettyAutobahnClient
     private WebSocketClient client;
     private String userAgent;
 
-    public JettyAutobahnClient(String hostname, int port, String userAgent) throws Exception
+    @Override
+    public void runAutobahnClient(String hostname, int port, int[] caseNumbers)
     {
-        this.userAgent = userAgent;
-        this.baseWebsocketUri = new URI("ws://" + hostname + ":" + port);
-        this.client = new WebSocketClient();
-        this.client.start();
+        try
+        {
+            String userAgent = "JettyWebsocketClient/" + Jetty.VERSION;
+            this.userAgent = userAgent;
+            this.baseWebsocketUri = new URI("ws://" + hostname + ":" + port);
+            this.client = new WebSocketClient();
+            this.client.start();
+
+            LOG.info("Running test suite...");
+            LOG.info("Using Fuzzing Server: {}:{}", hostname, port);
+            LOG.info("User Agent: {}", userAgent);
+
+            if (caseNumbers == null)
+            {
+                int caseCount = getCaseCount();
+                LOG.info("Will run all {} cases ...", caseCount);
+                for (int caseNum = 1; caseNum <= caseCount; caseNum++)
+                {
+                    LOG.info("Running case {} (of {}) ...", caseNum, caseCount);
+                    runCaseByNumber(caseNum);
+                }
+            }
+            else
+            {
+                LOG.info("Will run {} cases ...", caseNumbers.length);
+                for (int caseNum : caseNumbers)
+                {
+                    runCaseByNumber(caseNum);
+                }
+            }
+            LOG.info("All test cases executed.");
+            updateReports();
+        }
+        catch (Throwable t)
+        {
+            LOG.warn("Test Failed", t);
+        }
+        finally
+        {
+            shutdown();
+        }
     }
 
-    public int getCaseCount() throws IOException, InterruptedException
+    public int getCaseCount() throws Exception
     {
         URI wsUri = baseWebsocketUri.resolve("/getCaseCount");
         EventSocket onCaseCount = new EventSocket();
-        CompletableFuture<Session> response = client.connect(onCaseCount, wsUri);
+        Future<Session> response = upgrade(onCaseCount, wsUri);
 
         if (waitForUpgrade(wsUri, response))
         {
             String msg = onCaseCount.textMessages.poll(10, TimeUnit.SECONDS);
             onCaseCount.session.close(StatusCode.SHUTDOWN, null);
-            assertTrue(onCaseCount.closeLatch.await(2, TimeUnit.SECONDS));
+            Assertions.assertTrue(onCaseCount.closeLatch.await(2, TimeUnit.SECONDS));
             assertNotNull(msg);
             return Integer.decode(msg);
         }
         throw new IllegalStateException("Unable to get Case Count");
     }
 
-    public void runCaseByNumber(int caseNumber) throws IOException, InterruptedException
+    public void runCaseByNumber(int caseNumber) throws Exception
     {
         URI wsUri = baseWebsocketUri.resolve("/runCase?case=" + caseNumber + "&agent=" + UrlEncoded.encodeString(userAgent));
         LOG.info("test uri: {}", wsUri);
 
         EchoSocket echoHandler = new JettyAutobahnSocket();
-        Future<Session> response = client.connect(echoHandler, wsUri);
+        Future<Session> response = upgrade(echoHandler, wsUri);
         if (waitForUpgrade(wsUri, response))
         {
             // Wait up to 5 min as some of the tests can take a while
@@ -195,13 +192,21 @@ public class JettyAutobahnClient
         }
     }
 
-    public void updateReports() throws IOException, InterruptedException, ExecutionException, TimeoutException
+    public Future<Session> upgrade(Object handler, URI uri) throws Exception
+    {
+        // We manually set the port as we run the server in docker container.
+        ClientUpgradeRequest upgradeRequest = new ClientUpgradeRequest();
+        upgradeRequest.setHeader(HttpHeader.HOST.asString(), "localhost:9001");
+        return client.connect(handler, uri, upgradeRequest);
+    }
+
+    public void updateReports() throws Exception
     {
         URI wsUri = baseWebsocketUri.resolve("/updateReports?agent=" + UrlEncoded.encodeString(userAgent));
         EventSocket onUpdateReports = new EventSocket();
-        Future<Session> response = client.connect(onUpdateReports, wsUri);
+        Future<Session> response = upgrade(onUpdateReports, wsUri);
         response.get(5, TimeUnit.SECONDS);
-        assertTrue(onUpdateReports.closeLatch.await(15, TimeUnit.SECONDS));
+        Assertions.assertTrue(onUpdateReports.closeLatch.await(15, TimeUnit.SECONDS));
         LOG.info("Reports updated.");
         LOG.info("Test suite finished!");
     }

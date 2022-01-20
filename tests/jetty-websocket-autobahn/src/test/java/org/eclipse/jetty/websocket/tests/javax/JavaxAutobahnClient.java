@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.tests.autobahn;
+package org.eclipse.jetty.websocket.tests.javax;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
@@ -21,7 +21,8 @@ import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
-import org.eclipse.jetty.websocket.javax.tests.EventSocket;
+import org.eclipse.jetty.websocket.tests.AutobahnClient;
+import org.eclipse.jetty.websocket.tests.jetty.JettyAutobahnClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *     $ ls target/reports/clients/
  * </pre>
  */
-public class JavaxAutobahnClient
+public class JavaxAutobahnClient implements AutobahnClient
 {
     public static void main(String[] args)
     {
@@ -87,46 +88,8 @@ public class JavaxAutobahnClient
             }
         }
 
-        JavaxAutobahnClient client = null;
-        try
-        {
-            String userAgent = "JettyWebsocketClient/" + Jetty.VERSION;
-            client = new JavaxAutobahnClient(hostname, port, userAgent);
-
-            LOG.info("Running test suite...");
-            LOG.info("Using Fuzzing Server: {}:{}", hostname, port);
-            LOG.info("User Agent: {}", userAgent);
-
-            if (caseNumbers == null)
-            {
-                int caseCount = client.getCaseCount();
-                LOG.info("Will run all {} cases ...", caseCount);
-                for (int caseNum = 1; caseNum <= caseCount; caseNum++)
-                {
-                    LOG.info("Running case {} (of {}) ...", caseNum, caseCount);
-                    client.runCaseByNumber(caseNum);
-                }
-            }
-            else
-            {
-                LOG.info("Will run {} cases ...", caseNumbers.length);
-                for (int caseNum : caseNumbers)
-                {
-                    client.runCaseByNumber(caseNum);
-                }
-            }
-            LOG.info("All test cases executed.");
-            client.updateReports();
-        }
-        catch (Throwable t)
-        {
-            LOG.warn("Test Failed", t);
-        }
-        finally
-        {
-            if (client != null)
-                client.stop();
-        }
+        JettyAutobahnClient client = new JettyAutobahnClient();
+        client.runAutobahnClient(hostname, port, caseNumbers);
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(JavaxAutobahnClient.class);
@@ -134,15 +97,53 @@ public class JavaxAutobahnClient
     private JavaxWebSocketClientContainer clientContainer;
     private String userAgent;
 
-    public JavaxAutobahnClient(String hostname, int port, String userAgent) throws Exception
+    @Override
+    public void runAutobahnClient(String hostname, int port, int[] caseNumbers)
     {
-        this.userAgent = userAgent;
-        this.baseWebsocketUri = new URI("ws://" + hostname + ":" + port);
-        this.clientContainer = new JavaxWebSocketClientContainer();
-        clientContainer.start();
+        try
+        {
+            String userAgent = "JavaxWebsocketClient/" + Jetty.VERSION;
+            this.userAgent = userAgent;
+            this.baseWebsocketUri = new URI("ws://" + hostname + ":" + port);
+            this.clientContainer = new JavaxWebSocketClientContainer();
+            clientContainer.start();
+
+            LOG.info("Running test suite...");
+            LOG.info("Using Fuzzing Server: {}:{}", hostname, port);
+            LOG.info("User Agent: {}", userAgent);
+
+            if (caseNumbers == null)
+            {
+                int caseCount = getCaseCount();
+                LOG.info("Will run all {} cases ...", caseCount);
+                for (int caseNum = 1; caseNum <= caseCount; caseNum++)
+                {
+                    LOG.info("Running case {} (of {}) ...", caseNum, caseCount);
+                    runCaseByNumber(caseNum);
+                }
+            }
+            else
+            {
+                LOG.info("Will run {} cases ...", caseNumbers.length);
+                for (int caseNum : caseNumbers)
+                {
+                    runCaseByNumber(caseNum);
+                }
+            }
+            LOG.info("All test cases executed.");
+            updateReports();
+        }
+        catch (Throwable t)
+        {
+            LOG.warn("Test Failed", t);
+        }
+        finally
+        {
+            shutdown();
+        }
     }
 
-    public void stop()
+    public void shutdown()
     {
         LifeCycle.stop(clientContainer);
     }

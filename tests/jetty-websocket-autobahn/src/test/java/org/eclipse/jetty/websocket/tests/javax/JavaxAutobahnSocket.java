@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.javax.tests.autobahn;
+package org.eclipse.jetty.websocket.tests.javax;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,7 +27,7 @@ import javax.websocket.server.ServerEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ClientEndpoint
+@ClientEndpoint(configurator = HostConfigurator.class)
 @ServerEndpoint("/")
 public class JavaxAutobahnSocket
 {

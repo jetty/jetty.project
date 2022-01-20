@@ -11,12 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.autobahn;
+package org.eclipse.jetty.websocket.tests.jetty;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.websocket.tests.AutobahnServer;
 
 /**
  * WebSocket Server for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
@@ -52,7 +53,7 @@ import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerI
  *     $ ls target/reports/servers/
  * </pre>
  */
-public class JettyAutobahnServer
+public class JettyAutobahnServer implements AutobahnServer
 {
     public static void main(String[] args) throws Exception
     {
@@ -60,18 +61,39 @@ public class JettyAutobahnServer
         if (args != null && args.length > 0)
             port = Integer.parseInt(args[0]);
 
-        Server server = new Server(port);
-        ServerConnector connector = new ServerConnector(server);
-        connector.setIdleTimeout(10000);
-        server.addConnector(connector);
+        JettyAutobahnServer server = new JettyAutobahnServer();
+        server.startAutobahnServer(port);
+        server.join();
+    }
+
+    private Server _server;
+
+    @Override
+    public void startAutobahnServer(int port) throws Exception
+    {
+        _server = new Server();
+        ServerConnector connector = new ServerConnector(_server);
+        connector.setPort(port);
+        _server.addConnector(connector);
+
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
-        server.setHandler(context);
+        _server.setHandler(context);
 
         JettyWebSocketServletContainerInitializer.configure(context, (servletContext, container) ->
             container.addMapping("/", (req, resp) -> new JettyAutobahnSocket()));
 
-        server.start();
-        server.join();
+        _server.start();
+    }
+
+    @Override
+    public void stopAutobahnServer() throws Exception
+    {
+        _server.stop();
+    }
+
+    public void join() throws InterruptedException
+    {
+        _server.join();
     }
 }
