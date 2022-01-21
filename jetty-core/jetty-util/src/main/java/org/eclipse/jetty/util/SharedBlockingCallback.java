@@ -40,7 +40,9 @@ import org.slf4j.LoggerFactory;
  *     }
  * }
  * </pre>
+ * @deprecated Use {@link Blocking.Shared#callback()}
  */
+@Deprecated
 public class SharedBlockingCallback
 {
     private static final Logger LOG = LoggerFactory.getLogger(SharedBlockingCallback.class);
@@ -111,7 +113,7 @@ public class SharedBlockingCallback
      * callback do not blocak, rather they wakeup the thread that is blocked
      * in {@link #block()}
      */
-    public class Blocker implements Callback, Closeable
+    public class Blocker implements Callback, Closeable, Runnable
     {
         private Throwable _state = IDLE;
 
@@ -123,6 +125,12 @@ public class SharedBlockingCallback
         public InvocationType getInvocationType()
         {
             return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
+        public void run()
+        {
+            succeeded();
         }
 
         @Override
@@ -223,7 +231,7 @@ public class SharedBlockingCallback
             catch (final InterruptedException e)
             {
                 _state = e;
-                throw new InterruptedIOException();
+                throw (InterruptedIOException)new InterruptedIOException().initCause(e);
             }
             finally
             {
@@ -272,7 +280,7 @@ public class SharedBlockingCallback
             _lock.lock();
             try
             {
-                return String.format("%s@%x{%s}", Blocker.class.getSimpleName(), hashCode(), _state);
+                return String.format("%s@%x{%s}", Blocker.class.getSimpleName(), hashCode(), _state == null ? "WAIT" : _state);
             }
             finally
             {

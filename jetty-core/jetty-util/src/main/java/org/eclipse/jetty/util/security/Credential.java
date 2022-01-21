@@ -19,9 +19,12 @@ import java.security.MessageDigest;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Credentials. The Credential class represents an abstract mechanism for checking authentication credentials. A credential instance either represents a secret,
@@ -36,12 +39,10 @@ import org.eclipse.jetty.util.thread.AutoLock;
  */
 public abstract class Credential implements Serializable
 {
-    // NOTE: DO NOT INTRODUCE LOGGING TO THIS CLASS
     private static final long serialVersionUID = -7760551052768181572L;
-    // Intentionally NOT using TypeUtil.serviceProviderStream
-    // as that introduces a Logger requirement that command line Password cannot use.
-    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = ServiceLoader.load(CredentialProvider.class).stream()
-        .map(ServiceLoader.Provider::get)
+    private static final Logger LOG = LoggerFactory.getLogger(Credential.class);
+    private static final List<CredentialProvider> CREDENTIAL_PROVIDERS = TypeUtil.serviceProviderStream(ServiceLoader.load(CredentialProvider.class))
+        .flatMap(p -> Stream.of(p.get()))
         .collect(Collectors.toList());
 
     /**
@@ -153,7 +154,8 @@ public abstract class Credential implements Serializable
         {
             if (credentials instanceof char[])
                 credentials = new String((char[])credentials);
-
+            if (!(credentials instanceof String) && !(credentials instanceof Password))
+                LOG.warn("Can't check {} against CRYPT", credentials.getClass());
             return stringEquals(_cooked, UnixCrypt.crypt(credentials.toString(), _cooked));
         }
 
@@ -187,7 +189,7 @@ public abstract class Credential implements Serializable
         MD5(String digest)
         {
             digest = digest.startsWith(__TYPE) ? digest.substring(__TYPE.length()) : digest;
-            _digest = StringUtil.fromHexString(digest);
+            _digest = TypeUtil.parseBytes(digest, 16);
         }
 
         public byte[] getDigest()
@@ -227,12 +229,13 @@ public abstract class Credential implements Serializable
                 }
                 else
                 {
-                    // Not a MD5 or Credential class
+                    LOG.warn("Can't check {} against MD5", credentials.getClass());
                     return false;
                 }
             }
             catch (Exception e)
             {
+                LOG.warn("Failed message digest", e);
                 return false;
             }
         }
@@ -245,9 +248,6 @@ public abstract class Credential implements Serializable
             return false;
         }
 
-        /**
-         * Used only by Command Line Password utility
-         */
         public static String digest(String password)
         {
             try
@@ -263,8 +263,7 @@ public abstract class Credential implements Serializable
                         }
                         catch (Exception e)
                         {
-                            System.err.println("Unable to access MD5 message digest");
-                            e.printStackTrace();
+                            LOG.warn("Unable to access MD5 message digest", e);
                             return null;
                         }
                     }
@@ -274,12 +273,11 @@ public abstract class Credential implements Serializable
                     digest = __md.digest();
                 }
 
-                return __TYPE + StringUtil.toHexString(digest);
+                return __TYPE + TypeUtil.toString(digest, 16);
             }
             catch (Exception e)
             {
-                System.err.println("Message Digest Failure");
-                e.printStackTrace();
+                LOG.warn("Message Digest failure", e);
                 return null;
             }
         }

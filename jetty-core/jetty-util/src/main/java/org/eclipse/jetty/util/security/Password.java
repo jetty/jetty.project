@@ -17,6 +17,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Password utility class.
  *
@@ -44,7 +47,8 @@ import java.util.Locale;
  */
 public class Password extends Credential
 {
-    // NOTE: DO NOT INTRODUCE LOGGING TO THIS CLASS
+    private static final Logger LOG = LoggerFactory.getLogger(Password.class);
+
     private static final long serialVersionUID = 5062906681431569445L;
 
     public static final String __OBFUSCATE = "OBF:";
@@ -220,9 +224,7 @@ public class Password extends Credential
             }
             catch (IOException e)
             {
-                // only seen with command line input style
-                System.err.println("ERROR: Bad/Invalid password.");
-                e.printStackTrace();
+                LOG.warn("EXCEPTION", e);
             }
             if (passwd == null || passwd.length() == 0)
                 passwd = promptDft;
@@ -245,6 +247,5 @@ public class Password extends Credential
         System.err.println(Credential.MD5.digest(p));
         if (arg.length == 2)
             System.err.println(Credential.Crypt.crypt(arg[0], pw.toString()));
-        System.exit(0);
     }
 }

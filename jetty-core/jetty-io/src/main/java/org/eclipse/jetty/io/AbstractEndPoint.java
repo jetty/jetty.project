@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.WritePendingException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -27,9 +26,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * <p>Partial implementation of EndPoint that uses {@link FillInterest} and {@link WriteFlusher}.</p>
- */
 public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractEndPoint.class);
@@ -37,6 +33,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     private final AtomicReference<State> _state = new AtomicReference<>(State.OPEN);
     private final long _created = System.currentTimeMillis();
     private volatile Connection _connection;
+
     private final FillInterest _fillInterest = new FillInterest()
     {
         @Override
@@ -45,6 +42,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
             AbstractEndPoint.this.needsFillInterest();
         }
     };
+
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
@@ -301,7 +299,41 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public boolean isOpen()
     {
-        return _state.get() != State.CLOSED;
+        switch (_state.get())
+        {
+            case CLOSED:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    public void checkFlush() throws IOException
+    {
+        State s = _state.get();
+        switch (s)
+        {
+            case OSHUT:
+            case OSHUTTING:
+            case CLOSED:
+                throw new IOException(s.toString());
+            default:
+                break;
+        }
+    }
+
+    public void checkFill() throws IOException
+    {
+        State s = _state.get();
+        switch (s)
+        {
+            case ISHUT:
+            case ISHUTTING:
+            case CLOSED:
+                throw new IOException(s.toString());
+            default:
+                break;
+        }
     }
 
     @Override
@@ -381,7 +413,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
-    public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    public void write(Callback callback, ByteBuffer... buffers) throws IllegalStateException
     {
         _writeFlusher.write(callback, buffers);
     }
@@ -454,12 +486,22 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public String toString()
     {
-        return String.format("%s@%x[%s]->[%s]", getClass().getSimpleName(), hashCode(), toEndPointString(), toConnectionString());
+        return String.format("%s->%s", toEndPointString(), toConnectionString());
     }
 
     public String toEndPointString()
     {
-        return String.format("{l=%s,r=%s,%s,fill=%s,flush=%s,to=%d/%d}",
+        Class<?> c = getClass();
+        String name = c.getSimpleName();
+        while (name.length() == 0 && c.getSuperclass() != null)
+        {
+            c = c.getSuperclass();
+            name = c.getSimpleName();
+        }
+
+        return String.format("%s@%h{l=%s,r=%s,%s,fill=%s,flush=%s,to=%d/%d}",
+            name,
+            this,
             getLocalSocketAddress(),
             getRemoteSocketAddress(),
             _state.get(),

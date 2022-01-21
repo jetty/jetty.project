@@ -296,26 +296,26 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
             case EITHER:
                 // The produced task may be run either as blocking or non blocking.
 
-                // If the calling producing thread is already non-blocking, use PC.
-                if (nonBlocking)
-                    return SubStrategy.PRODUCE_CONSUME;
-
-                // Take the lock to atomically check if a pending producer is available.
-                try (AutoLock l = _lock.lock())
+                // If the calling producing thread may also block
+                if (!nonBlocking)
                 {
-                    // If a pending producer is available or one can be started
-                    if (_pending || _tryExecutor.tryExecute(_runPendingProducer))
+                    // Take the lock to atomically check if a pending producer is available.
+                    try (AutoLock l = _lock.lock())
                     {
-                        // Use EPC: the producer directly consumes the task, which may block
-                        // and then races with the pending producer to resume production.
-                        _pending = true;
-                        _state = State.IDLE;
-                        return SubStrategy.EXECUTE_PRODUCE_CONSUME;
+                        // If a pending producer is available or one can be started
+                        if (_pending || _tryExecutor.tryExecute(_runPendingProducer))
+                        {
+                            // use EPC: The producer directly consumes the task, which may block
+                            // and then races with the pending producer to resume production.
+                            _pending = true;
+                            _state = State.IDLE;
+                            return SubStrategy.EXECUTE_PRODUCE_CONSUME;
+                        }
                     }
                 }
 
-                // Otherwise use PIC: the producer consumes the task
-                // in non-blocking mode and then resumes production.
+                // otherwise use PIC: The producer consumers the task in non-blocking mode
+                // and then resumes production.
                 return SubStrategy.PRODUCE_INVOKE_CONSUME;
 
             case BLOCKING:
@@ -358,7 +358,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         // Consume and/or execute task according to the selected mode.
         if (LOG.isDebugEnabled())
-            LOG.debug("ss={} t={}/{} {}", subStrategy, task, Invocable.getInvocationType(task), this);
+            LOG.debug("ss={}/{}/{} t={} {}", subStrategy, Invocable.isNonBlockingInvocation(), Invocable.getInvocationType(task), task, this);
         switch (subStrategy)
         {
             case PRODUCE_CONSUME:

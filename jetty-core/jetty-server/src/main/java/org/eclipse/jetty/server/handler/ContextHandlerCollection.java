@@ -13,22 +13,19 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Index;
@@ -39,28 +36,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This {@link org.eclipse.jetty.server.handler.HandlerCollection} is creates a
+ * Creates a
  * Map of contexts to it's contained handlers based
- * on the context path and virtual hosts of any contained {@link org.eclipse.jetty.server.handler.ContextHandler}s.
+ * on the context path and virtual hosts of any contained {@link ContextHandler}s.
  * The contexts do not need to be directly contained, only children of the contained handlers.
  * Multiple contexts may have the same context path and they are called in order until one
  * handles the request.
  */
 @ManagedObject("Context Handler Collection")
-public class ContextHandlerCollection extends HandlerCollection
+public class ContextHandlerCollection extends Handler.Collection
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandlerCollection.class);
     private final SerializedExecutor _serializedExecutor = new SerializedExecutor();
 
-    public ContextHandlerCollection()
-    {
-        super(true);
-    }
-
     public ContextHandlerCollection(ContextHandler... contexts)
     {
-        super(true);
-        setHandlers(contexts);
+        if (contexts.length > 0)
+            setHandlers(contexts);
     }
 
     /**
@@ -78,20 +70,19 @@ public class ContextHandlerCollection extends HandlerCollection
         {
             while (true)
             {
-                Handlers handlers = _handlers.get();
+                List<Handler> handlers = getHandlers();
                 if (handlers == null)
                     break;
-                if (updateHandlers(handlers, newHandlers(handlers.getHandlers())))
-                    break;
+                super.setHandlers(newHandlers(handlers));
             }
         });
     }
 
     @Override
-    protected Handlers newHandlers(Handler[] handlers)
+    protected List<Handler> newHandlers(List<Handler> handlers)
     {
-        if (handlers == null || handlers.length == 0)
-            return null;
+        if (handlers == null || handlers.size() == 0)
+            return Collections.emptyList();
 
         // Create map of contextPath to handler Branch
         // A branch is a Handler that could contain 0 or more ContextHandlers
@@ -132,88 +123,63 @@ public class ContextHandlerCollection extends HandlerCollection
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(Request request, Response response) throws Exception
     {
-        Mapping mapping = (Mapping)_handlers.get();
+        List<Handler> handlers = getHandlers();
 
         // Handle no contexts
-        if (mapping == null)
-            return;
-        Handler[] handlers = mapping.getHandlers();
-        if (handlers == null || handlers.length == 0)
-            return;
+        if (handlers == null || handlers.isEmpty())
+            return false;
+
+        if (!(handlers instanceof Mapping))
+            return super.handle(request, response);
+
+        Mapping mapping = (Mapping)getHandlers();
 
         // handle only a single context.
-        if (handlers.length == 1)
-        {
-            handlers[0].handle(target, baseRequest, request, response);
-            return;
-        }
-
-        // handle async dispatch to specific context
-        HttpChannelState async = baseRequest.getHttpChannelState();
-        if (async.isAsync())
-        {
-            ContextHandler context = async.getContextHandler();
-            if (context != null)
-            {
-                Handler branch = mapping._contextBranches.get(context);
-
-                if (branch == null)
-                    context.handle(target, baseRequest, request, response);
-                else
-                    branch.handle(target, baseRequest, request, response);
-                return;
-            }
-        }
+        if (handlers.size() == 1)
+            return handlers.get(0).handle(request, response);
 
         // handle many contexts
-        if (target.startsWith("/"))
+        Index<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
+        if (pathBranches == null)
+            return false;
+
+        String path = request.getPath();
+        if (!path.startsWith("/"))
+            return super.handle(request, response);
+
+        int limit = path.length() - 1;
+
+        while (limit >= 0)
         {
-            Index<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
-            if (pathBranches == null)
-                return;
+            // Get best match
+            Map.Entry<String, Branch[]> branches = pathBranches.getBest(path, 1, limit);
 
-            int limit = target.length() - 1;
+            if (branches == null)
+                break;
 
-            while (limit >= 0)
+            int l = branches.getKey().length();
+            if (l == 1 || path.length() == l || path.charAt(l) == '/')
             {
-                // Get best match
-                Map.Entry<String, Branch[]> branches = pathBranches.getBest(target, 1, limit);
-
-                if (branches == null)
-                    break;
-
-                int l = branches.getKey().length();
-                if (l == 1 || target.length() == l || target.charAt(l) == '/')
+                for (Branch branch : branches.getValue())
                 {
-                    for (Branch branch : branches.getValue())
-                    {
-                        branch.getHandler().handle(target, baseRequest, request, response);
-                        if (baseRequest.isHandled())
-                            return;
-                    }
+                    if (branch.getHandler().handle(request, response))
+                        return true;
                 }
+            }
 
-                limit = l - 2;
-            }
+            limit = l - 2;
         }
-        else
-        {
-            for (Handler handler : handlers)
-            {
-                handler.handle(target, baseRequest, request, response);
-                if (baseRequest.isHandled())
-                    return;
-            }
-        }
+
+        return false;
     }
 
     /**
      * Thread safe deploy of a Handler.
      * <p>
      * This method is the equivalent of {@link #addHandler(Handler)},
-     * but its execution is non-block and mutually excluded from all
+     * but its execution is non-blocking and mutually excluded from all
      * other calls to {@link #deployHandler(Handler, Callback)} and
      * {@link #undeployHandler(Handler, Callback)}.
      * The handler may be added after this call returns.
@@ -224,9 +190,6 @@ public class ContextHandlerCollection extends HandlerCollection
      */
     public void deployHandler(Handler handler, Callback callback)
     {
-        if (handler.getServer() != getServer())
-            handler.setServer(getServer());
-
         _serializedExecutor.execute(new SerializedExecutor.ErrorHandlingTask()
         {
             @Override
@@ -289,11 +252,11 @@ public class ContextHandlerCollection extends HandlerCollection
             {
                 _contexts = new ContextHandler[]{(ContextHandler)handler};
             }
-            else if (handler instanceof HandlerContainer)
+            else if (handler instanceof Handler.Container)
             {
-                Handler[] contexts = ((HandlerContainer)handler).getChildHandlersByClass(ContextHandler.class);
-                _contexts = new ContextHandler[contexts.length];
-                System.arraycopy(contexts, 0, _contexts, 0, contexts.length);
+                List<ContextHandler> contexts = ((Handler.Container)handler).getChildHandlersByClass(ContextHandler.class);
+                _contexts = new ContextHandler[contexts.size()];
+                System.arraycopy(contexts, 0, _contexts, 0, contexts.size());
             }
             else
                 _contexts = new ContextHandler[0];
@@ -313,7 +276,7 @@ public class ContextHandlerCollection extends HandlerCollection
         {
             for (ContextHandler context : _contexts)
             {
-                if (context.getVirtualHosts() != null && context.getVirtualHosts().length > 0)
+                if (context.getVirtualHosts() != null && context.getVirtualHosts().size() > 0)
                     return true;
             }
             return false;
@@ -336,12 +299,12 @@ public class ContextHandlerCollection extends HandlerCollection
         }
     }
 
-    private static class Mapping extends Handlers
+    private static class Mapping extends ArrayList<Handler>
     {
         private final Map<ContextHandler, Handler> _contextBranches;
         private final Index<Map.Entry<String, Branch[]>> _pathBranches;
 
-        private Mapping(Handler[] handlers, Map<String, Branch[]> path2Branches)
+        private Mapping(List<Handler> handlers, Map<String, Branch[]> path2Branches)
         {
             super(handlers);
             _pathBranches = new Index.Builder<Map.Entry<String, Branch[]>>()

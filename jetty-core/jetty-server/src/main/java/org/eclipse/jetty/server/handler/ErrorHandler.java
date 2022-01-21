@@ -22,25 +22,33 @@ import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
+import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
-import org.eclipse.jetty.server.Dispatcher;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -48,24 +56,25 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handler for Error pages
- * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or
- * {@link Server#setErrorHandler(ErrorHandler)}.
- * It is called by the HttpResponse.sendError method to write an error page via {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
- * or via {@link #badMessageError(int, String, HttpFields.Mutable)} for bad requests for which a dispatch cannot be done.
+ * An ErrorHandler is registered with {@link Server#setErrorHandler(Handler)}.
+ * It is called by the {@link Response#writeError(int, String, Callback)}
+ * to generate an error page.
  */
-public class ErrorHandler extends AbstractHandler
+public class ErrorHandler extends Handler.Abstract
 {
     // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
     private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
-    public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
+    public static final String ERROR_STATUS = "org.eclipse.jetty.server.error_status";
+    public static final String ERROR_MESSAGE = "org.eclipse.jetty.server.error_message";
+    public static final String ERROR_EXCEPTION = "org.eclipse.jetty.server.error_exception";
     public static final String ERROR_CONTEXT = "org.eclipse.jetty.server.error_context";
-    public static final String ERROR_CHARSET = "org.eclipse.jetty.server.error_charset";
+    public static final Set<String> ERROR_METHODS = Set.of("GET", "POST", "HEAD");
+    public static final HttpField ERROR_CACHE_CONTROL = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
     boolean _showServlet = true;
     boolean _showStacks = true;
-    boolean _disableStacks = false;
     boolean _showMessageInTitle = true;
-    String _cacheControl = "must-revalidate,no-cache,no-store";
+    HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
     public ErrorHandler()
     {
@@ -73,247 +82,144 @@ public class ErrorHandler extends AbstractHandler
 
     public boolean errorPageForMethod(String method)
     {
-        switch (method)
-        {
-            case "GET":
-            case "POST":
-            case "HEAD":
-                return true;
-            default:
-                return false;
-        }
+        return ERROR_METHODS.contains(method);
     }
 
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public boolean handle(Request request, Response response) throws IOException
     {
-        String cacheControl = getCacheControl();
-        if (cacheControl != null)
-            response.setHeader(HttpHeader.CACHE_CONTROL.asString(), cacheControl);
+        if (_cacheControl != null)
+            response.getHeaders().put(_cacheControl);
 
-        // Look for an error page dispatcher
-        // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
-        // and implement ErrorPageMapper directly, so we do this here in the base class.
-        String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(request) : null;
-        ContextHandler.Context context = baseRequest.getErrorContext();
-        Dispatcher errorDispatcher = (errorPage != null && context != null)
-            ? (Dispatcher)context.getRequestDispatcher(errorPage) : null;
-
-        try
+        int code = response.getStatus();
+        String message = (String)request.getAttribute(ERROR_MESSAGE);
+        Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
+        if (cause instanceof BadMessageException)
         {
-            if (errorDispatcher != null)
-            {
-                try
-                {
-                    errorDispatcher.error(request, response);
-                    return;
-                }
-                catch (ServletException e)
-                {
-                    LOG.debug("Unable to call error dispatcher", e);
-                    if (response.isCommitted())
-                        return;
-                }
-            }
-
-            String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
+            BadMessageException bad = (BadMessageException)cause;
+            response.setStatus(code = bad.getCode());
             if (message == null)
-                message = baseRequest.getResponse().getReason();
-            generateAcceptableResponse(baseRequest, request, response, response.getStatus(), message);
+                message = bad.getReason();
         }
-        finally
-        {
-            baseRequest.setHandled(true);
-        }
-    }
 
-    /**
-     * Generate an acceptable error response.
-     * <p>This method is called to generate an Error page of a mime type that is
-     * acceptable to the user-agent.  The Accept header is evaluated in
-     * quality order and the method
-     * {@link #generateAcceptableResponse(Request, HttpServletRequest, HttpServletResponse, int, String, String)}
-     * is called for each mimetype until the response is written to or committed.</p>
-     *
-     * @param baseRequest The base request
-     * @param request The servlet request (may be wrapped)
-     * @param response The response (may be wrapped)
-     * @param code the http error code
-     * @param message the http error message
-     * @throws IOException if the response cannot be generated
-     */
-    protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message)
-        throws IOException
-    {
-        List<String> acceptable = baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
-
-        if (acceptable.isEmpty() && !baseRequest.getHttpFields().contains(HttpHeader.ACCEPT))
+        if (!errorPageForMethod(request.getMethod()) || HttpStatus.hasNoBody(code))
         {
-            generateAcceptableResponse(baseRequest, request, response, code, message, MimeTypes.Type.TEXT_HTML.asString());
+            request.succeeded();
         }
         else
         {
-            for (String mimeType : acceptable)
-            {
-                generateAcceptableResponse(baseRequest, request, response, code, message, mimeType);
-                if (response.isCommitted() || baseRequest.getResponse().isWritingOrStreaming())
-                    break;
-            }
+            if (message == null)
+                message = cause == null ? HttpStatus.getMessage(code) : cause.toString();
+
+            generateAcceptableResponse(request, response, code, message, cause);
         }
+        return true;
     }
 
-    /**
-     * Returns an acceptable writer for an error page.
-     * <p>Uses the user-agent's <code>Accept-Charset</code> to get response
-     * {@link Writer}.  The acceptable charsets are tested in quality order
-     * if they are known to the JVM and the first known is set on
-     * {@link HttpServletResponse#setCharacterEncoding(String)} and the
-     * {@link HttpServletResponse#getWriter()} method used to return a writer.
-     * If there is no <code>Accept-Charset</code> header then
-     * <code>ISO-8859-1</code> is used.  If '*' is the highest quality known
-     * charset, then <code>utf-8</code> is used.
-     * </p>
-     *
-     * @param baseRequest The base request
-     * @param request The servlet request (may be wrapped)
-     * @param response The response (may be wrapped)
-     * @return A {@link Writer} if there is a known acceptable charset or null
-     * @throws IOException if a Writer cannot be returned
-     */
-    @Deprecated
-    protected Writer getAcceptableWriter(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    protected void generateAcceptableResponse(Request request, Response response, int code, String message, Throwable cause)
         throws IOException
     {
-        List<String> acceptable = baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
+        List<String> acceptable = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
         if (acceptable.isEmpty())
         {
-            response.setCharacterEncoding(StandardCharsets.ISO_8859_1.name());
-            return response.getWriter();
-        }
-
-        for (String charset : acceptable)
-        {
-            try
+            if (request.getHeaders().contains(HttpHeader.ACCEPT))
             {
-                if ("*".equals(charset))
-                    response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-                else
-                    response.setCharacterEncoding(Charset.forName(charset).name());
-                return response.getWriter();
+                request.succeeded();
+                return;
             }
-            catch (Exception e)
-            {
-                LOG.trace("IGNORED", e);
-            }
+            acceptable = Collections.singletonList(Type.TEXT_HTML.asString());
         }
-        return null;
-    }
-
-    /**
-     * Generate an acceptable error response for a mime type.
-     * <p>This method is called for each mime type in the users agent's
-     * <code>Accept</code> header, until {@link Request#isHandled()} is true and a
-     * response of the appropriate type is generated.
-     * </p>
-     * <p>The default implementation handles "text/html", "text/*" and "*&#47;*".
-     * The method can be overridden to handle other types.  Implementations must
-     * immediate produce a response and may not be async.
-     * </p>
-     *
-     * @param baseRequest The base request
-     * @param request The servlet request (may be wrapped)
-     * @param response The response (may be wrapped)
-     * @param code the http error code
-     * @param message the http error message
-     * @param contentType The mimetype to generate (may be *&#47;*or other wildcard)
-     * @throws IOException if a response cannot be generated
-     */
-    protected void generateAcceptableResponse(Request baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String contentType)
-        throws IOException
-    {
-        // We can generate an acceptable contentType, but can we generate an acceptable charset?
-        // TODO refactor this in jetty-10 to be done in the other calling loop
-        Charset charset = null;
-        List<String> acceptable = baseRequest.getHttpFields().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
-        if (!acceptable.isEmpty())
-        {
-            for (String name : acceptable)
+        List<Charset> charsets = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT_CHARSET).stream()
+            .map(s ->
             {
-                if ("*".equals(name))
-                {
-                    charset = StandardCharsets.UTF_8;
-                    break;
-                }
-
                 try
                 {
-                    charset = Charset.forName(name);
+                    if ("*".equals(s))
+                        return StandardCharsets.UTF_8;
+                    return Charset.forName(s);
                 }
-                catch (Exception e)
+                catch (Throwable t)
                 {
-                    LOG.trace("IGNORED", e);
+                    return null;
                 }
-            }
-            if (charset == null)
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+        if (charsets.isEmpty())
+        {
+            charsets = List.of(StandardCharsets.ISO_8859_1, StandardCharsets.UTF_8);
+            if (request.getHeaders().contains(HttpHeader.ACCEPT_CHARSET))
+            {
+                request.succeeded();
                 return;
+            }
         }
 
-        MimeTypes.Type type;
+        for (String mimeType : acceptable)
+        {
+            if (generateAcceptableResponse(request, response, mimeType, charsets, code, message, cause))
+                return;
+        }
+        request.succeeded();
+    }
+
+    protected boolean generateAcceptableResponse(Request request, Response response, String contentType, List<Charset> charsets, int code, String message, Throwable cause)
+        throws IOException
+    {
+        Type type;
+        Charset charset;
         switch (contentType)
         {
             case "text/html":
             case "text/*":
             case "*/*":
-                type = MimeTypes.Type.TEXT_HTML;
-                if (charset == null)
-                    charset = StandardCharsets.ISO_8859_1;
+                type = Type.TEXT_HTML;
+                charset = charsets.stream().findFirst().orElse(StandardCharsets.ISO_8859_1);
                 break;
 
             case "text/json":
             case "application/json":
-                type = MimeTypes.Type.TEXT_JSON;
-                if (charset == null)
+                if (charsets.contains(StandardCharsets.UTF_8))
                     charset = StandardCharsets.UTF_8;
+                else if (charsets.contains(StandardCharsets.ISO_8859_1))
+                    charset = StandardCharsets.ISO_8859_1;
+                else
+                    return false;
+                type = Type.TEXT_JSON.is(contentType) ? Type.TEXT_JSON : Type.APPLICATION_JSON;
                 break;
 
             case "text/plain":
-                type = MimeTypes.Type.TEXT_PLAIN;
-                if (charset == null)
-                    charset = StandardCharsets.ISO_8859_1;
+                type = Type.TEXT_PLAIN;
+                charset = charsets.stream().findFirst().orElse(StandardCharsets.ISO_8859_1);
                 break;
 
             default:
-                return;
+                return false;
         }
 
+        int bufferSize = request.getChannel().getHttpConfiguration().getOutputBufferSize();
+        ByteBuffer buffer = request.getConnectionMetaData().getConnector().getByteBufferPool().acquire(bufferSize, false);
+
         // write into the response aggregate buffer and flush it asynchronously.
+        // Looping to reduce size if buffer overflows
+        boolean showStacks = _showStacks;
         while (true)
         {
             try
             {
-                // TODO currently the writer used here is of fixed size, so a large
-                // TODO error page may cause a BufferOverflow.  In which case we try
-                // TODO again with stacks disabled. If it still overflows, it is
-                // TODO written without a body.
-                ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getBuffer();
+                BufferUtil.clear(buffer);
                 ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
 
                 switch (type)
                 {
                     case TEXT_HTML:
-                        response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
-                        response.setCharacterEncoding(charset.name());
-                        request.setAttribute(ERROR_CHARSET, charset);
-                        handleErrorPage(request, writer, code, message);
+                        writeErrorHtml(request, writer, charset, code, message, cause, showStacks);
                         break;
                     case TEXT_JSON:
-                        response.setContentType(contentType);
-                        writeErrorJson(request, writer, code, message);
+                        writeErrorJson(request, writer, code, message, cause, showStacks);
                         break;
                     case TEXT_PLAIN:
-                        response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
-                        response.setCharacterEncoding(charset.name());
-                        writeErrorPlain(request, writer, code, message);
+                        writeErrorPlain(request, writer, code, message, cause, showStacks);
                         break;
                     default:
                         throw new IllegalStateException();
@@ -328,52 +234,69 @@ public class ErrorHandler extends AbstractHandler
                     LOG.warn("Error page too large: {} {} {}", code, message, request, e);
                 else
                     LOG.warn("Error page too large: {} {} {}", code, message, request);
-                baseRequest.getResponse().resetContent();
-                if (!_disableStacks)
+
+                if (showStacks)
                 {
-                    LOG.info("Disabling showsStacks for {}", this);
-                    _disableStacks = true;
+                    showStacks = false;
                     continue;
                 }
                 break;
             }
         }
 
-        // Do an asynchronous completion.
-        baseRequest.getHttpChannel().sendResponseAndComplete();
+        if (!buffer.hasRemaining())
+        {
+            request.succeeded();
+            return true;
+        }
+
+        response.getHeaders().put(type.getContentTypeField(charset));
+        response.write(true, new Callback()
+        {
+            @Override
+            public void succeeded()
+            {
+                request.getConnectionMetaData().getConnector().getByteBufferPool().release(buffer);
+                request.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                request.getConnectionMetaData().getConnector().getByteBufferPool().release(buffer);
+                request.failed(x);
+            }
+        }, buffer);
+
+        return true;
     }
 
-    protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)
-        throws IOException
-    {
-        writeErrorPage(request, writer, code, message, _showStacks);
-    }
-
-    protected void writeErrorPage(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks)
+    protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause, boolean showStacks)
         throws IOException
     {
         if (message == null)
             message = HttpStatus.getMessage(code);
 
         writer.write("<html>\n<head>\n");
-        writeErrorPageHead(request, writer, code, message);
-        writer.write("</head>\n<body>");
-        writeErrorPageBody(request, writer, code, message, showStacks);
+        writeErrorHtmlMeta(request, writer, charset);
+        writeErrorHtmlHead(request, writer, code, message);
+        writer.write("</head>\n<body>\n");
+        writeErrorHtmlBody(request, writer, code, message, cause, showStacks);
         writer.write("\n</body>\n</html>\n");
     }
-
-    protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message)
+    
+    protected void writeErrorHtmlMeta(Request request, Writer writer, Charset charset)
         throws IOException
     {
-        Charset charset = (Charset)request.getAttribute(ERROR_CHARSET);
-        if (charset != null)
-        {
-            writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=");
-            writer.write(charset.name());
-            writer.write("\"/>\n");
-        }
+        writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=");
+        writer.write(charset.name());
+        writer.write("\"/>\n");
+    }
+    
+    protected void writeErrorHtmlHead(Request request, Writer writer, int code, String message)
+        throws IOException
+    {
         writer.write("<title>Error ");
-        // TODO this code is duplicated in writeErrorPageMessage
         String status = Integer.toString(code);
         writer.write(status);
         if (message != null && !message.equals(status))
@@ -384,20 +307,20 @@ public class ErrorHandler extends AbstractHandler
         writer.write("</title>\n");
     }
 
-    protected void writeErrorPageBody(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks)
+    protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks)
         throws IOException
     {
-        String uri = request.getRequestURI();
+        String uri = request.getHttpURI().toString();
 
-        writeErrorPageMessage(request, writer, code, message, uri);
-        if (showStacks && !_disableStacks)
-            writeErrorPageStacks(request, writer);
-
-        Request.getBaseRequest(request).getHttpChannel().getHttpConfiguration()
+        writeErrorHtmlMessage(request, writer, code, message, cause, uri);
+        if (showStacks)
+            writeErrorHtmlStacks(request, writer);
+        
+        request.getChannel().getHttpConfiguration()
             .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 
-    protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri)
+    protected void writeErrorHtmlMessage(Request request, Writer writer, int code, String message, Throwable cause, String uri)
         throws IOException
     {
         writer.write("<h2>HTTP ERROR ");
@@ -413,11 +336,6 @@ public class ErrorHandler extends AbstractHandler
         htmlRow(writer, "URI", uri);
         htmlRow(writer, "STATUS", status);
         htmlRow(writer, "MESSAGE", message);
-        if (isShowServlet())
-        {
-            htmlRow(writer, "SERVLET", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
-        }
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         while (cause != null)
         {
             htmlRow(writer, "CAUSED BY", cause);
@@ -439,45 +357,32 @@ public class ErrorHandler extends AbstractHandler
         writer.write("</td></tr>\n");
     }
 
-    private void writeErrorPlain(HttpServletRequest request, PrintWriter writer, int code, String message)
+    private void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
     {
         writer.write("HTTP ERROR ");
         writer.write(Integer.toString(code));
         writer.write(' ');
         writer.write(StringUtil.sanitizeXmlString(message));
         writer.write("\n");
-        writer.printf("URI: %s%n", request.getRequestURI());
+        writer.printf("URI: %s%n", request.getHttpURI());
         writer.printf("STATUS: %s%n", code);
         writer.printf("MESSAGE: %s%n", message);
-        if (isShowServlet())
-        {
-            writer.printf("SERVLET: %s%n", request.getAttribute(Dispatcher.ERROR_SERVLET_NAME));
-        }
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
         while (cause != null)
         {
             writer.printf("CAUSED BY %s%n", cause);
-            if (isShowStacks() && !_disableStacks)
-            {
+            if (showStacks)
                 cause.printStackTrace(writer);
-            }
             cause = cause.getCause();
         }
     }
 
-    private void writeErrorJson(HttpServletRequest request, PrintWriter writer, int code, String message)
+    private void writeErrorJson(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
     {
-        Throwable cause = (Throwable)request.getAttribute(Dispatcher.ERROR_EXCEPTION);
-        Object servlet = request.getAttribute(Dispatcher.ERROR_SERVLET_NAME);
         Map<String, String> json = new HashMap<>();
 
-        json.put("url", request.getRequestURI());
+        json.put("url", request.getHttpURI().toString());
         json.put("status", Integer.toString(code));
         json.put("message", message);
-        if (isShowServlet() && servlet != null)
-        {
-            json.put("servlet", servlet.toString());
-        }
         int c = 0;
         while (cause != null)
         {
@@ -492,10 +397,10 @@ public class ErrorHandler extends AbstractHandler
                 .collect(Collectors.joining(",\n", "{\n", "\n}")));
     }
 
-    protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)
+    protected void writeErrorHtmlStacks(Request request, Writer writer)
         throws IOException
     {
-        Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+        Throwable th = (Throwable)request.getAttribute(ERROR_EXCEPTION);
         if (th != null)
         {
             writer.write("<h3>Caused by:</h3><pre>");
@@ -530,7 +435,7 @@ public class ErrorHandler extends AbstractHandler
             reason = HttpStatus.getMessage(status);
         if (HttpStatus.hasNoBody(status))
             return BufferUtil.EMPTY_BUFFER;
-        fields.put(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_HTML_8859_1.asString());
+        fields.put(HttpHeader.CONTENT_TYPE, Type.TEXT_HTML_8859_1.asString());
         return BufferUtil.toBuffer("<h1>Bad Message " + status + "</h1><pre>reason: " + reason + "</pre>");
     }
 
@@ -541,7 +446,7 @@ public class ErrorHandler extends AbstractHandler
      */
     public String getCacheControl()
     {
-        return _cacheControl;
+        return _cacheControl == null ? null : _cacheControl.getValue();
     }
 
     /**
@@ -551,7 +456,7 @@ public class ErrorHandler extends AbstractHandler
      */
     public void setCacheControl(String cacheControl)
     {
-        _cacheControl = cacheControl;
+        _cacheControl = cacheControl == null ? null : new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cacheControl);
     }
 
     /**
@@ -608,18 +513,134 @@ public class ErrorHandler extends AbstractHandler
         writer.write(StringUtil.sanitizeXmlString(string));
     }
 
-    public interface ErrorPageMapper
+    public static Handler getErrorHandler(Server server, ContextHandler context)
     {
-        String getErrorPage(HttpServletRequest request);
-    }
-
-    public static ErrorHandler getErrorHandler(Server server, ContextHandler context)
-    {
-        ErrorHandler errorHandler = null;
+        Handler errorHandler = null;
         if (context != null)
             errorHandler = context.getErrorHandler();
         if (errorHandler == null && server != null)
-            errorHandler = server.getBean(ErrorHandler.class);
+            errorHandler = server.getErrorHandler();
         return errorHandler;
+    }
+
+    public static class ErrorRequest extends Request.Wrapper
+    {
+        private final Callback _callback;
+        private final int _status;
+        private final String _message;
+        private final Throwable _cause;
+
+        public ErrorRequest(Request request, int status, String message, Throwable cause, Callback callback)
+        {
+            super(request);
+            _callback = callback;
+            _status = status;
+            _message = message;
+            _cause = cause;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            _callback.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            _callback.failed(x);
+        }
+
+        @Override
+        public boolean isComplete()
+        {
+            return false;
+        }
+
+        @Override
+        public Content readContent()
+        {
+            return Content.EOF;
+        }
+
+        @Override
+        public void demandContent(Runnable onContentAvailable)
+        {
+            onContentAvailable.run();
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            switch (name)
+            {
+                case ERROR_MESSAGE:
+                    return _message;
+
+                case ERROR_EXCEPTION:
+                    return _cause;
+
+                case ERROR_STATUS:
+                    return _status;
+
+                default:
+                    return super.getAttribute(name);
+            }
+        }
+
+        @Override
+        public Set<String> getAttributeNames()
+        {
+            Set<String> names = new HashSet<>(super.getAttributeNames());
+            if (_message != null)
+                names.add(ERROR_MESSAGE);
+            if (_status > 0)
+                names.add(ERROR_STATUS);
+            if (_cause != null)
+                names.add(ERROR_EXCEPTION);
+            return names;
+        }
+    }
+
+    public static class ErrorResponse extends Response.Wrapper
+    {
+        private final ByteBufferAccumulator _accumulator;
+
+        public ErrorResponse(Response wrapped)
+        {
+            super(wrapped);
+            _accumulator = new ByteBufferAccumulator(wrapped.getRequest().getConnectionMetaData().getConnector().getByteBufferPool(), false);
+        }
+
+        @Override
+        public void write(boolean last, Callback callback, ByteBuffer... content)
+        {
+            for (ByteBuffer buffer : content)
+            {
+                _accumulator.copyBuffer(buffer);
+                BufferUtil.clear(buffer);
+            }
+            if (last)
+                _accumulator.close();
+            callback.succeeded();
+        }
+
+        @Override
+        public void push(MetaData.Request request)
+        {
+            super.push(request);
+        }
+
+        @Override
+        public boolean isCommitted()
+        {
+            return false;
+        }
+
+        @Override
+        public void reset()
+        {
+            super.reset();
+        }
     }
 }

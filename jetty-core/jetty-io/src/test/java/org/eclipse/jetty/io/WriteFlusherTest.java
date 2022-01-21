@@ -15,7 +15,6 @@ package org.eclipse.jetty.io;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.Arrays;
@@ -372,13 +371,13 @@ public class WriteFlusherTest
         WriteFlusher flusher = new WriteFlusher(endPoint)
         {
             @Override
-            protected ByteBuffer[] flush(SocketAddress address, ByteBuffer[] buffers) throws IOException
+            protected ByteBuffer[] flush(ByteBuffer[] buffers) throws IOException
             {
                 try
                 {
                     flushLatch.countDown();
                     Thread.sleep(2000);
-                    return super.flush(address, buffers);
+                    return super.flush(buffers);
                 }
                 catch (InterruptedException x)
                 {
@@ -413,9 +412,10 @@ public class WriteFlusherTest
             WriteFlusher flusher = new WriteFlusher(endPoint)
             {
                 @Override
-                protected ByteBuffer[] flush(SocketAddress address, ByteBuffer[] buffers) throws IOException
+                protected ByteBuffer[] flush(ByteBuffer[] buffers)
+                    throws IOException
                 {
-                    ByteBuffer[] result = super.flush(address, buffers);
+                    ByteBuffer[] result = super.flush(buffers);
                     boolean notified = onFail(new Throwable());
                     assertTrue(notified);
                     return result;

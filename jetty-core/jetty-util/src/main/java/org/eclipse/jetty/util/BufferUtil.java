@@ -21,7 +21,6 @@ import java.io.RandomAccessFile;
 import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.charset.Charset;
@@ -168,27 +167,10 @@ public class BufferUtil
     }
 
     /**
-     * Resets the buffer's endianness to {@link ByteOrder#BIG_ENDIAN}
-     * and clears the buffer to be empty in flush mode.
-     * The position and limit are set to 0.
+     * Clear the buffer to be empty in flush mode.
+     * The position and limit are set to 0;
      *
-     * @param buffer the buffer to reset.
-     */
-    public static void reset(ByteBuffer buffer)
-    {
-        if (buffer != null)
-        {
-            buffer.order(ByteOrder.BIG_ENDIAN);
-            buffer.position(0);
-            buffer.limit(0);
-        }
-    }
-
-    /**
-     * Clears the buffer to be empty in flush mode.
-     * The position and limit are set to 0.
-     *
-     * @param buffer the buffer to clear.
+     * @param buffer The buffer to clear.
      */
     public static void clear(ByteBuffer buffer)
     {

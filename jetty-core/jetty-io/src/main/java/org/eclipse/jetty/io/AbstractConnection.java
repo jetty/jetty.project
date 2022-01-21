@@ -301,14 +301,12 @@ public abstract class AbstractConnection implements Connection
     @Override
     public final String toString()
     {
-        return String.format("%s@%h::%s", getClass().getSimpleName(), this, getEndPoint());
+        return String.format("%s@%h::%s", getClass().getSimpleName(), hashCode(), getEndPoint());
     }
 
     public String toConnectionString()
     {
-        return String.format("%s@%h",
-            getClass().getSimpleName(),
-            this);
+        return String.format("%s@%h", getClass().getSimpleName(), hashCode());
     }
 
     private class ReadCallback implements Callback

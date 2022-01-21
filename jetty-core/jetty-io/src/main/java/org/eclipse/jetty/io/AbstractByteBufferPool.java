@@ -16,7 +16,6 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.function.IntConsumer;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -28,24 +27,16 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
     private final int _factor;
     private final int _maxQueueLength;
     private final long _maxHeapMemory;
-    private final long _maxDirectMemory;
     private final AtomicLong _heapMemory = new AtomicLong();
+    private final long _maxDirectMemory;
     private final AtomicLong _directMemory = new AtomicLong();
 
-    /**
-     * Creates a new ByteBufferPool with the given configuration.
-     *
-     * @param factor the capacity factor
-     * @param maxQueueLength the maximum ByteBuffer queue length
-     * @param maxHeapMemory the max heap memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
-     * @param maxDirectMemory the max direct memory in bytes, -1 for unlimited memory or 0 to use default heuristic.
-     */
     protected AbstractByteBufferPool(int factor, int maxQueueLength, long maxHeapMemory, long maxDirectMemory)
     {
         _factor = factor <= 0 ? 1024 : factor;
         _maxQueueLength = maxQueueLength;
-        _maxHeapMemory = (maxHeapMemory != 0) ? maxHeapMemory : Runtime.getRuntime().maxMemory() / 4;
-        _maxDirectMemory = (maxDirectMemory != 0) ? maxDirectMemory : Runtime.getRuntime().maxMemory() / 4;
+        _maxHeapMemory = maxHeapMemory;
+        _maxDirectMemory = maxDirectMemory;
     }
 
     protected int getCapacityFactor()
@@ -58,13 +49,11 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         return _maxQueueLength;
     }
 
-    @Deprecated
     protected void decrementMemory(ByteBuffer buffer)
     {
         updateMemory(buffer, false);
     }
 
-    @Deprecated
     protected void incrementMemory(ByteBuffer buffer)
     {
         updateMemory(buffer, true);
@@ -101,27 +90,10 @@ abstract class AbstractByteBufferPool implements ByteBufferPool
         return getMemory(false);
     }
 
-    @ManagedAttribute("The max num of bytes that can be retained from direct ByteBuffers")
-    public long getMaxDirectMemory()
-    {
-        return _maxDirectMemory;
-    }
-
-    @ManagedAttribute("The max num of bytes that can be retained from heap ByteBuffers")
-    public long getMaxHeapMemory()
-    {
-        return _maxHeapMemory;
-    }
-
     public long getMemory(boolean direct)
     {
         AtomicLong memory = direct ? _directMemory : _heapMemory;
         return memory.get();
-    }
-
-    IntConsumer updateMemory(boolean direct)
-    {
-        return (direct) ? _directMemory::addAndGet : _heapMemory::addAndGet;
     }
 
     @ManagedOperation(value = "Clears this ByteBufferPool", impact = "ACTION")

@@ -21,7 +21,7 @@
               <Arg>
                 <Property name="jetty.requestlog.filePath">
                   <Default>
-                    <Property name="jetty.requestlog.dir" default="logs"/>/yyyy_MM_dd.request.log
+                    <Property name="jetty.requestlog.dir" default="logs"/>/yyyy_mm_dd.request.log
                   </Default>
                 </Property>
               </Arg>

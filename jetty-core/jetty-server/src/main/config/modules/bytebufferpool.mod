@@ -1,8 +1,8 @@
 [description]
 Configures the ByteBufferPool used by ServerConnectors.
 
-[tags]
-bytebufferpool
+[depends]
+logging
 
 [xml]
 etc/jetty-bytebufferpool.xml
@@ -24,8 +24,8 @@ etc/jetty-bytebufferpool.xml
 ## Maximum queue length for each bucket (-1 for unbounded).
 #jetty.byteBufferPool.maxQueueLength=-1
 
-## Maximum heap memory retainable by the pool (0 for heuristic, -1 for unlimited).
-#jetty.byteBufferPool.maxHeapMemory=0
+## Maximum heap memory retainable by the pool (-1 for unlimited).
+#jetty.byteBufferPool.maxHeapMemory=-1
 
-## Maximum direct memory retainable by the pool (0 for heuristic, -1 for unlimited).
-#jetty.byteBufferPool.maxDirectMemory=0
+## Maximum direct memory retainable by the pool (-1 for unlimited).
+#jetty.byteBufferPool.maxDirectMemory=-1

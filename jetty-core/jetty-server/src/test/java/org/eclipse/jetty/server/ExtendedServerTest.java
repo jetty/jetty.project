@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.channels.SelectionKey;
@@ -21,15 +20,12 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +46,11 @@ public class ExtendedServerTest extends HttpServerTestBase
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new ExtendedHttpConnection(getHttpConfiguration(), connector, endPoint), connector, endPoint);
+                HttpConnection connection = new ExtendedHttpConnection(getHttpConfiguration(), connector, endPoint);
+                connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
+                connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
+                configure(connection, connector, endPoint);
+                return connection;
             }
         })
         {
@@ -92,15 +92,16 @@ public class ExtendedServerTest extends HttpServerTestBase
         }
 
         @Override
-        protected HttpChannelOverHttp newHttpChannel()
+        protected HttpChannel newHttpChannel(Server server, HttpConfiguration configuration)
         {
-            return new HttpChannelOverHttp(this, getConnector(), getHttpConfiguration(), getEndPoint(), this)
+            return new HttpChannel(server, ExtendedHttpConnection.this, configuration)
             {
                 @Override
-                public void startRequest(String method, String uri, HttpVersion version)
+                public Runnable onRequest(MetaData.Request request)
                 {
+                    Runnable todo =  super.onRequest(request);
                     getRequest().setAttribute("DispatchedAt", ((ExtendedEndPoint)getEndPoint()).getLastSelected());
-                    super.startRequest(method, uri, version);
+                    return todo;
                 }
             };
         }
@@ -119,11 +120,11 @@ public class ExtendedServerTest extends HttpServerTestBase
             os.write("GET / HTTP/1.0\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
             Thread.sleep(200);
-            long end = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
             os.write("\r\n".getBytes(StandardCharsets.ISO_8859_1));
 
             // Read the response.
             String response = readResponse(client);
+            long end = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
 
             assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
             assertThat(response, Matchers.containsString("DispatchedAt="));
@@ -133,18 +134,18 @@ public class ExtendedServerTest extends HttpServerTestBase
             long dispatched = Long.parseLong(s);
 
             assertThat(dispatched, Matchers.greaterThanOrEqualTo(start));
-            assertThat(dispatched, Matchers.lessThan(end));
+            assertThat(dispatched, Matchers.lessThanOrEqualTo(end));
         }
     }
 
-    protected static class DispatchedAtHandler extends AbstractHandler
+    protected static class DispatchedAtHandler extends Handler.Abstract
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public boolean handle(Request request, Response response) throws Exception
         {
-            baseRequest.setHandled(true);
             response.setStatus(200);
-            response.getOutputStream().print("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n");
+            response.write(true, request, BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"));
+            return true;
         }
     }
 }
