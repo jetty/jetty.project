@@ -85,7 +85,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx8g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline"
+          sh "mvn -Denforcer.skip=true -Dlicense.skip=true -Dspotbugs.skip=true -Dcheckstyle.skip=true --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline"
         }
       }
     }
