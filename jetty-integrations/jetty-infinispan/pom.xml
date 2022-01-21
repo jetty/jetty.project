@@ -7,8 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty</groupId>
-  <artifactId>infinispan-parent</artifactId>
+  <artifactId>jetty-infinispan-parent</artifactId>
   <packaging>pom</packaging>
   <name>Jetty :: Infinispan</name>
 

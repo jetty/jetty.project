@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.gcloud</groupId>
-  <artifactId>gcloud-parent</artifactId>
+  <artifactId>jetty-gcloud-parent</artifactId>
   <packaging>pom</packaging>
   <name>Jetty :: GCloud</name>
 
