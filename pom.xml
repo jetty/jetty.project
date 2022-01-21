@@ -77,7 +77,7 @@
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <weld.version>3.1.5.Final</weld.version>
-    <testcontainers.version>1.16.2</testcontainers.version>
+    <testcontainers.version>1.16.3</testcontainers.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
