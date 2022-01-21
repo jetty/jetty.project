@@ -1662,6 +1662,7 @@
       <build>
         <pluginManagement>
           <plugins>
+            <!-- FIXME: Not compatible with JDK 17
             <plugin>
               <groupId>org.apache.maven.plugins</groupId>
               <artifactId>maven-compiler-plugin</artifactId>
@@ -1680,6 +1681,7 @@
                 </annotationProcessorPaths>
               </configuration>
             </plugin>
+             -->
           </plugins>
         </pluginManagement>
       </build>
