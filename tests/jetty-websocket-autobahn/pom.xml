@@ -8,11 +8,8 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-websocket-autobahn</artifactId>
-  <name>Jetty :: WebSocket Autobahn Tests</name>
+  <name>Jetty Tests :: WebSocket Autobahn Tests</name>
   <description>Run of Autobahn Testsuite for Jetty</description>
-
-  <properties>
-  </properties>
 
   <dependencies>
     <dependency>
@@ -69,8 +66,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-slf4j-impl</artifactId>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -85,22 +82,6 @@
             <excludes>
               <exclude>**/AutobahnTests**</exclude>
             </excludes>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <configuration>
-            <!-- No point deploying testing projects -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <configuration>
-            <!-- No point building javadoc on testing projects -->
-            <skip>true</skip>
           </configuration>
         </plugin>
       </plugins>
@@ -125,13 +106,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
-        </configuration>
       </plugin>
     </plugins>
   </build>

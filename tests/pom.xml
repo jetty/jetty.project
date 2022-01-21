@@ -59,4 +59,5 @@
     <module>test-jpms</module>
     <module>jetty-websocket-autobahn</module>
   </modules>
+
 </project>

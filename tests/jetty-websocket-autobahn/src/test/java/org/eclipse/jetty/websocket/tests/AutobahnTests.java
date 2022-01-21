@@ -45,8 +45,7 @@ import static org.eclipse.jetty.websocket.tests.AutobahnUtils.throwIfFailed;
 import static org.eclipse.jetty.websocket.tests.AutobahnUtils.writeJUnitXmlReport;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled("Disable this test so it doesn't run locally as it takes 1h+ to run.")
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 public class AutobahnTests
 {
     private static final Logger LOG = LoggerFactory.getLogger(AutobahnTests.class);
