@@ -1924,7 +1924,9 @@
         <spotbugs.onlyAnalyze>org.eclipse.jetty.*</spotbugs.onlyAnalyze>
       </properties>
       <modules>
+      <!-- FIXME: Do we want to keep this?
         <module>javadoc</module>
+        -->
       </modules>
       <build>
         <pluginManagement>
