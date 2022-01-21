@@ -81,7 +81,7 @@ public interface Content
 
     static Content from(ByteBuffer buffer)
     {
-        return () -> buffer;
+        return from(buffer, false);
     }
 
     static Content from(ByteBuffer buffer, boolean last)
@@ -92,12 +92,6 @@ public interface Content
             public ByteBuffer getByteBuffer()
             {
                 return buffer;
-            }
-
-            @Override
-            public String toString()
-            {
-                return String.format("[%s, l=%b]", BufferUtil.toDetailString(getByteBuffer()), isLast());
             }
         };
     }
@@ -175,12 +169,12 @@ public interface Content
         @Override
         public String toString()
         {
-            return String.format("%s@%x{s=%b,l=%b,%s}",
+            return String.format("%s@%x{%s,s=%b,l=%b}",
                 getClass().getName(),
                 hashCode(),
+                BufferUtil.toDetailString(getByteBuffer()),
                 isSpecial(),
-                isLast(),
-                BufferUtil.toDetailString(getByteBuffer()));
+                isLast());
         }
     }
 
@@ -205,7 +199,12 @@ public interface Content
 
         public Error(Throwable cause)
         {
-            super(true, true);
+            this (cause, true);
+        }
+
+        public Error(Throwable cause, boolean last)
+        {
+            super(true, last);
             _cause = cause == null ? new IOException("unknown") : cause;
         }
 
@@ -245,7 +244,12 @@ public interface Content
         @Override
         public String toString()
         {
-            return "TRAILERS";
+            return String.format("%s@%x{t=%d,s=%b,l=%b}",
+                getClass().getName(),
+                hashCode(),
+                _trailers.size(),
+                isSpecial(),
+                isLast());
         }
     }
 
@@ -353,6 +357,21 @@ public interface Content
         catch (ExecutionException e)
         {
             throw IO.rethrow(e.getCause());
+        }
+    }
+
+    abstract class Processor implements Provider
+    {
+        private final Provider _provider;
+
+        protected Processor(Provider provider)
+        {
+            _provider = provider;
+        }
+
+        public Content.Provider getProvider()
+        {
+            return _provider;
         }
     }
 }
