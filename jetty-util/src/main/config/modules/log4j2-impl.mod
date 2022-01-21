@@ -23,5 +23,9 @@ maven://com.lmax/disruptor/${disruptor.version}|lib/log4j2/disruptor-${disruptor
 basehome:modules/log4j2-impl
 
 [lib]
-lib/log4j2/*.jar
+lib/log4j2/log4j-core-${log4j2.version}.jar
+lib/log4j2/disruptor-${disruptor.version}.jar
+
+[ini]
+disruptor.version?=@disruptor.version@
 
