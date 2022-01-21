@@ -7,12 +7,12 @@ pipeline {
   stages {
     stage("Parallel Stage") {
       parallel {
-        stage("Build / Test - JDK11") {
+        stage("Build / Test - JDK17") {
           agent { node { label 'linux' } }
           steps {
             container('jetty-build') {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "clean install -Perrorprone", "maven3")
+                mavenBuild( "jdk17", "clean install -Perrorprone", "maven3")
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                        exclusionPattern: '' +
@@ -36,49 +36,7 @@ pipeline {
             }
           }
         }
-
-        stage("Build / Test - JDK17") {
-          agent { node { label 'linux' } }
-          steps {
-            container( 'jetty-build' ) {
-              timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk17", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
-                recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser()]
-              }
-            }
-          }
-        }
-
       }
-    }
-  }
-  post {
-    failure {
-      slackNotif()
-    }
-    unstable {
-      slackNotif()
-    }
-    fixed {
-      slackNotif()
-    }
-  }
-}
-
-def slackNotif() {
-  script {
-    try {
-      if ( env.BRANCH_NAME == 'jetty-10.0.x' || env.BRANCH_NAME == 'jetty-11.0.x') {
-        //BUILD_USER = currentBuild.rawBuild.getCause(Cause.UserIdCause).getUserId()
-        // by ${BUILD_USER}
-        COLOR_MAP = ['SUCCESS': 'good', 'FAILURE': 'danger', 'UNSTABLE': 'danger', 'ABORTED': 'danger']
-        slackSend channel: '#jenkins',
-                  color: COLOR_MAP[currentBuild.currentResult],
-                  message: "*${currentBuild.currentResult}:* Job ${env.JOB_NAME} build ${env.BUILD_NUMBER} - ${env.BUILD_URL}"
-      }
-    } catch (Exception e) {
-      e.printStackTrace()
-      echo "skip failure slack notification: " + e.getMessage()
     }
   }
 }
