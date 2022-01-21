@@ -18,7 +18,7 @@ pipeline {
   stages {
     stage("Checkout Jetty Branch") {
       steps {
-        git url: 'https://github.com/eclipse/jetty.project', branch: '${JETTY_BRANCH}'
+        git url: 'https://github.com/eclipse/jetty.project/', branch: '${JETTY_BRANCH}'
       }
     }
     stage( "Build / Test - JDK11" ) {
