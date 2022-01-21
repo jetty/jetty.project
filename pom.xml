@@ -1847,7 +1847,9 @@
     <profile>
       <id>eclipse-release</id>
       <modules>
+        <!-- FIXME: Do we want to keep this?
         <module>javadoc</module>
+          -->
       </modules>
       <build>
         <plugins>
