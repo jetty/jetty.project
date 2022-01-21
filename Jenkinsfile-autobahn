@@ -30,6 +30,7 @@ pipeline {
           timeout( time: 120, unit: 'MINUTES' ) {
             mavenBuild( "jdk11", "-T3 clean install -Djacoco.skip=true -pl :test-websocket-autobahn -am -Pautobahn -Dtest=AutobahnTests", "maven3" ) //
             junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
+            publishHTML([allowMissing: false, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/target/reports/core/servers", reportFiles: 'index.html', reportName: 'Autobahn Report', reportTitles: ''])
           }
         }
       }
@@ -79,19 +80,13 @@ def slackNotif() {
  */
 def mavenBuild(jdk, cmdline, mvnName) {
   script {
-    try {
-      withEnv(["JAVA_HOME=${ tool "$jdk" }",
-               "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
-               "MAVEN_OPTS=-Xms2g -Xmx8g -Djava.awt.headless=true"]) {
-        configFileProvider(
-                [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn -Denforcer.skip=true -Dlicense.skip=true -Dspotbugs.skip=true -Dcheckstyle.skip=true --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline"
-        }
+    withEnv(["JAVA_HOME=${ tool "$jdk" }",
+             "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
+             "MAVEN_OPTS=-Xms2g -Xmx8g -Djava.awt.headless=true"]) {
+      configFileProvider(
+              [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
+        sh "mvn -Denforcer.skip=true -Dlicense.skip=true -Dspotbugs.skip=true -Dcheckstyle.skip=true --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci -V -B -e -Djetty.testtracker.log=true $cmdline"
       }
-    }
-    finally
-    {
-      junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml', allowEmptyResults: true
     }
   }
 }
