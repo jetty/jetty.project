@@ -2,11 +2,11 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>11.0.8-SNAPSHOT</version>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-jaas</artifactId>
+  <artifactId>jetty-ee9-jaas</artifactId>
   <name>Jetty :: JAAS</name>
   <description>Jetty JAAS support</description>
 
@@ -39,8 +39,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-security</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-security</artifactId>
     </dependency>
 
     <dependency>

@@ -2,10 +2,10 @@
   <parent>
     <groupId>org.eclipse.jetty.ee9</groupId>
     <artifactId>jetty-ee9</artifactId>
-    <version>11.0.8-SNAPSHOT</version>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>glassfish-jstl</artifactId>
+  <artifactId>jetty-ee9-glassfish-jstl</artifactId>
   <name>Glassfish :: JSTL module</name>
   <url>https://projects.eclipse.org/projects/ee4j.glassfish</url>
   <packaging>jar</packaging>
@@ -51,20 +51,20 @@
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jsp</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-apache-jsp</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-annotations</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-webapp</artifactId>
       <scope>test</scope>
     </dependency>
 

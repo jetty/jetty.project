@@ -1,8 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
-    <artifactId>jetty-osgi-project</artifactId>
-    <version>11.0.8-SNAPSHOT</version>
+    <artifactId>jetty-ee9-osgi-project</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot-jsp</artifactId>
@@ -37,8 +37,8 @@
     </dependency>
     <!-- JSP Deps -->
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>apache-jsp</artifactId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-apache-jsp</artifactId>
     </dependency>
   </dependencies>
 
