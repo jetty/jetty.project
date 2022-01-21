@@ -10,8 +10,17 @@ pipeline {
     // save some io during the build
     durabilityHint( 'PERFORMANCE_OPTIMIZED' )
   }
+  parameters {
+    string( defaultValue: 'jetty-10.0.x', description: 'GIT branch name to build (jetty-10.0.x/jetty-11.0.x/etc.)',
+            name: 'JETTY_BRANCH' )
+  }
 
   stages {
+    stage("Checkout Jetty Branch") {
+      steps {
+        git url: 'https://github.com/eclipse/jetty.project', branch: '${JETTY_BRANCH}'
+      }
+    }
     stage( "Build / Test - JDK11" ) {
       agent {
         node { label 'linux' }
@@ -19,7 +28,7 @@ pipeline {
       steps {
         container( 'jetty-build' ) {
           timeout( time: 120, unit: 'MINUTES' ) {
-            mavenBuild( "jdk11", "-T3 clean install -Djacoco.skip=true -pl :jetty-websocket-autobahn -am -Pautobahn", "maven3", true ) //
+            mavenBuild( "jdk11", "-T3 clean install -Djacoco.skip=true -pl :test-websocket-autobahn -am -Pautobahn -Dtest=AutobahnTests", "maven3", true ) //
             junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml,**/target/autobahntestsuite-reports/*.xml'
           }
         }

@@ -57,7 +57,7 @@
     <module>test-distribution</module>
     <module>test-cdi</module>
     <module>test-jpms</module>
-    <module>jetty-websocket-autobahn</module>
+    <module>test-websocket-autobahn</module>
   </modules>
 
 </project>

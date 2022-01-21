@@ -7,7 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-websocket-autobahn</artifactId>
+  <artifactId>test-websocket-autobahn</artifactId>
   <name>Jetty Tests :: WebSocket Autobahn Tests</name>
   <description>Run of Autobahn Testsuite for Jetty</description>
 
