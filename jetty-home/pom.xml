@@ -682,11 +682,6 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-unixsocket-server</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
       <artifactId>fcgi-server</artifactId>
       <optional>true</optional>

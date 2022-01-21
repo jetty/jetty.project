@@ -36,7 +36,7 @@
               <providerImplementations>
                 <git>jgit</git>
               </providerImplementations>
-              <scmDirectory>../</scmDirectory>
+              <scmDirectory>../../</scmDirectory>
             </configuration>
           </execution>
         </executions>
