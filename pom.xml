@@ -30,7 +30,7 @@
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>9.2.1</checkstyle.version>
     <conscrypt.version>2.5.2</conscrypt.version>
-    <disruptor.version>3.4.2</disruptor.version>
+    <disruptor.version>3.4.4</disruptor.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
     <google.errorprone.version>2.10.0</google.errorprone.version>
     <grpc.version>1.43.2</grpc.version>
@@ -63,7 +63,7 @@
     <jolokia.version>1.3.3</jolokia.version>
     <jsp.version>8.5.70</jsp.version>
     <junit.version>5.8.2</junit.version>
-    <log4j2.version>2.17.0</log4j2.version>
+    <log4j2.version>2.17.1</log4j2.version>
     <logback.version>1.2.10</logback.version>
     <maven.version>3.8.4</maven.version>
     <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>

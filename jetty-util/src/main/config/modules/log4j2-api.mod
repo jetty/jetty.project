@@ -24,5 +24,4 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 
 [ini]
 log4j2.version?=@log4j2.version@
-disruptor.version=3.4.2
 jetty.webapp.addServerClasses+=,${jetty.base.uri}/lib/log4j2/
