@@ -54,12 +54,12 @@
       <artifactId>jetty-server</artifactId>
       <scope>provided</scope>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-security</artifactId>
       <scope>provided</scope>
-    </dependency>
-    <dependency>
+    </dependency>-->
+    <!--<dependency>
       <groupId>jakarta.activation</groupId>
       <artifactId>jakarta.activation-api</artifactId>
       <optional>true</optional>
@@ -68,6 +68,6 @@
       <groupId>jakarta.mail</groupId>
       <artifactId>jakarta.mail-api</artifactId>
       <optional>true</optional>
-    </dependency>
+    </dependency>-->
   </dependencies>
 </project>

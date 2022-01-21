@@ -65,7 +65,7 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet</artifactId>
       <scope>test</scope>
@@ -74,7 +74,7 @@
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet-extras</artifactId>
       <scope>test</scope>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-server</artifactId>

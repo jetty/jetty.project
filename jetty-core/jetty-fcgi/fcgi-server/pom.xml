@@ -19,19 +19,19 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-jakarta-servlet-api</artifactId>
       <optional>true</optional>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
       <artifactId>fcgi-client</artifactId>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-proxy</artifactId>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
@@ -42,11 +42,11 @@
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet</artifactId>
       <scope>test</scope>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>http2-server</artifactId>
@@ -57,11 +57,11 @@
       <artifactId>jetty-alpn-java-server</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-annotations</artifactId>
       <scope>test</scope>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-unixdomain-server</artifactId>

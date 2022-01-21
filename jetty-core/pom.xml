@@ -20,7 +20,6 @@
     <module>jetty-http</module>
     <module>jetty-http2</module>
     <module>jetty-http3</module>
-    <module>jetty-http-spi</module>
     <module>jetty-io</module>
     <module>jetty-jmx</module>
     <module>jetty-jndi</module>
@@ -36,4 +35,20 @@
     <module>jetty-websocket</module>
     <module>jetty-xml</module>
   </modules>
+
+  <!-- FIXME: Remove once Servlet API usage is totally removed from jetty-core -->
+  <!--
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+   -->
+
 </project>

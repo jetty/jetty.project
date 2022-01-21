@@ -27,11 +27,11 @@
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-core-common</artifactId>
     </dependency>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet</artifactId>
       <scope>test</scope>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>

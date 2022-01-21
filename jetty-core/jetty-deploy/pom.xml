@@ -29,10 +29,10 @@
   </build>
 
   <dependencies>
-    <dependency>
+    <!--<dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-webapp</artifactId>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-xml</artifactId>
