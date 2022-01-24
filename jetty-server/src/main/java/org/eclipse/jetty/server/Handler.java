@@ -41,11 +41,15 @@ import org.slf4j.LoggerFactory;
  * <p>
  * A call to {@link #handle(Request, Response)} may:
  * <ul>
- * <li>return false to indicate that it will not handle the request</li>
- * <li>Completely generate the HTTP Response and call {@link Request#succeeded()}</li>
- * <li>Arrange for an async process to generate the HTTP Response and call {@link Request#succeeded()}</li>
+ * <li>Do nothing</li>
+ * <li>Completely generate the HTTP Response and call {@link Callback#succeeded()} on the {@link Callback}
+ * returned from {@link Request#setHandling()}.</li>
+ * <li>Call {@link Request#setHandling()} and arrange for an async process to generate the HTTP Response and call
+ * {@link Callback#succeeded()} or {@link Callback#failed(Throwable)} on the {@link Callback} returned.</li>
  * <li>Pass the request to one or more other Handlers.</li>
  * <li>Wrap the request and/or response and pass them to one or more other Handlers.</li>
+ * <li>Fail the request by calling {@link Callback#failed(Throwable)} on the {@link Callback} returned from
+ * {@link Request#setHandling()}.</li>
  * </ul>
  *
  */
@@ -55,13 +59,14 @@ public interface Handler extends LifeCycle, Destroyable
 
     /**
      * Handle an HTTP request and produce a response.
-     * @param request The immutable request, which is also a {@link Callback} used to signal success or failure.
+     * @param request The immutable request, which is also a {@link Callback} used to signal success or failure. The Handler
+     * or one of it's nested Handlers must call {@link Request#setHandling()} to indicate that it will ultimately succeed or
+     * fail the {@link Callback} returned.
+     *
      * @param response The muttable response
-     * @return True if this handle has or will handle the request. This is a commitment to ultimately call
-     *         either {@link Request#succeeded()} or {@link Request#failed(Throwable)}.
      * @throws Exception Thrown if there is a problem handling.
      */
-    boolean handle(Request request, Response response) throws Exception;
+    void handle(Request request, Response response) throws Exception;
 
     @ManagedAttribute(value = "the jetty server for this handler", readonly = true)
     Server getServer();
@@ -281,10 +286,11 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
             Handler next = getHandler();
-            return next != null && next.handle(request, response);
+            if (next != null)
+                next.handle(request, response);
         }
     }
 
@@ -330,14 +336,13 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
             for (Handler h : _handlers)
             {
-                if (h.handle(request, response))
-                    return true;
+                if (!request.isHandling())
+                    h.handle(request, response);
             }
-            return false;
         }
 
         @Override

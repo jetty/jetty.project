@@ -64,7 +64,7 @@ public class ServerConnectorTest
     public static class ReuseInfoHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
             response.setContentType("text/plain");
 
@@ -92,8 +92,7 @@ public class ServerConnectorTest
             }
             out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
             out.flush();
-            response.write(true, request, BufferUtil.toBuffer(buffer.toByteArray()));
-            return true;
+            response.write(true, request.setHandling(), BufferUtil.toBuffer(buffer.toByteArray()));
         }
     }
 
@@ -242,10 +241,9 @@ public class ServerConnectorTest
             server.setHandler(new Handler.Abstract()
             {
                 @Override
-                public boolean handle(Request request, Response response) throws Exception
+                public void handle(Request request, Response response)
                 {
-                    request.succeeded();
-                    return true;
+                    request.setHandling().succeeded();
                 }
             });
 

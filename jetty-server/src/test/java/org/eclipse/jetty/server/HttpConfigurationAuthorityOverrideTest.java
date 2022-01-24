@@ -651,7 +651,7 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class DumpHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
             if (request.getPath().startsWith("/dump"))
             {
@@ -665,49 +665,43 @@ public class HttpConfigurationAuthorityOverrideTest
                     out.printf("LocalName=[%s]%n", request.getLocalAddr());
                     out.printf("LocalPort=[%s]%n", request.getLocalPort());
                     out.printf("HttpURI=[%s]%n", request.getHttpURI());
-                    response.write(true, request, stringWriter.getBuffer().toString());
+                    response.write(true, request.setHandling(), stringWriter.getBuffer().toString());
                 }
-                return true;
             }
-            return false;
         }
     }
 
     private static class RedirectHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
             if (request.getPath().startsWith("/redirect"))
             {
                 response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
                 response.setHeader(HttpHeader.LOCATION, HttpURI.build(request.getHttpURI(), "/dump").toString());
-                request.succeeded();
-                return true;
+                request.setHandling().succeeded();
             }
-            return false;
         }
     }
 
     private static class ErrorMsgHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
             if (request.getPath().startsWith("/error"))
             {
                 response.setContentType("text/plain; charset=utf-8");
-                response.write(true, request, "Generic Error Page.");
-                return true;
+                response.write(true, request.setHandling(), "Generic Error Page.");
             }
-            return false;
         }
     }
 
     public static class RedirectErrorHandler extends ErrorHandler
     {
         @Override
-        public boolean handle(Request request, Response response) throws IOException
+        public void handle(Request request, Response response) throws IOException
         {
             response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
             response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
@@ -716,8 +710,7 @@ public class HttpConfigurationAuthorityOverrideTest
             if (scheme == null)
                 scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
             response.setHeader(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
-            response.write(true, request);
-            return true;
+            response.write(true, request.setHandling());
         }
     }
 

@@ -25,6 +25,7 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ProxyConnectionFactory.ProxyEndPoint;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -62,23 +63,22 @@ public class ProxyProtocolTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 SocketAddress addr = request.getConnectionMetaData().getRemoteAddress();
+                Callback callback = request.setHandling();
                 if (addr instanceof InetSocketAddress)
                 {
                     InetSocketAddress iAddr = (InetSocketAddress)addr;
                     if (iAddr.getHostString().equals(remoteAddr) && iAddr.getPort() == remotePort)
-                        request.succeeded();
+                        callback.succeeded();
                     else
-                        request.failed(new Throwable("wrong address"));
+                        callback.failed(new Throwable("wrong address"));
                 }
                 else
                 {
-                    request.failed(new Throwable("no inet address"));
+                    callback.failed(new Throwable("no inet address"));
                 }
-
-                return true;
             }
         });
 
@@ -133,15 +133,15 @@ public class ProxyProtocolTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
+                Callback callback = request.setHandling();
                 if (validateEndPoint(request) &&
                     remoteAddr.equals(request.getRemoteAddr()) &&
                     remotePort == request.getRemotePort())
-                    request.succeeded();
+                    callback.succeeded();
                 else
-                    request.failed(new Throwable());
-                return true;
+                    callback.failed(new Throwable());
             }
 
             private boolean validateEndPoint(Request request) 
@@ -232,10 +232,9 @@ public class ProxyProtocolTest
         start(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
-                request.succeeded();
-                return true;
+                request.setHandling().succeeded();
             }
         });
 

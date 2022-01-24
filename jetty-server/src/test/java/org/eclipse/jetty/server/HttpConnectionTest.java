@@ -859,11 +859,10 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 response.setStatus(200);
-                response.write(false, request);
-                return true;
+                response.write(false, request.setHandling());
             }
         });
         server.start();
@@ -1133,19 +1132,18 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.setHeader("LongStr", longstr);
-
+                Callback callback = request.setHandling();
                 response.write(false,
-                    Callback.from(request::succeeded, t ->
+                    Callback.from(callback::succeeded, t ->
                     {
                         checkError.countDown();
-                        request.failed(t);
+                        callback.failed(t);
                     }),
                     BufferUtil.toBuffer("<html><h1>FOO</h1></html>"));
-                return true;
             }
         });
         server.start();
@@ -1184,19 +1182,19 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.setHeader("LongStr", longstr);
 
+                Callback callback = request.setHandling();
                 response.write(false,
-                    Callback.from(request::succeeded, t ->
+                    Callback.from(callback::succeeded, t ->
                     {
                         checkError.countDown();
-                        request.failed(t);
+                        callback.failed(t);
                     }),
                     BufferUtil.toBuffer("<html><h1>FOO</h1></html>"));
-                return true;
             }
         });
         server.start();
@@ -1298,7 +1296,7 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 while (true)
                 {
@@ -1329,8 +1327,7 @@ public class HttpConnectionTest
                 long bytesIn = connection.getBytesIn();
                 assertThat(bytesIn, greaterThan(dataLength));
 
-                request.succeeded();
-                return true;
+                request.setHandling().succeeded();
             }
         });
         server.start();

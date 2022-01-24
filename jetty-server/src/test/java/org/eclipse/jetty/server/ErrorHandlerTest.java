@@ -67,7 +67,7 @@ public class ErrorHandlerTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response)
+            public void handle(Request request, Response response)
             {
                 if (request.getPath().startsWith("/badmessage/"))
                 {
@@ -109,8 +109,7 @@ public class ErrorHandlerTest
                     throw new TestException(message);
                 }
 
-                response.writeError(404, request);
-                return true;
+                response.writeError(404, request.setHandling());
             }
         });
         server.start();
@@ -443,14 +442,13 @@ public class ErrorHandlerTest
         server.setErrorHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response)
+            public void handle(Request request, Response response)
             {
                 response.setHeader(HttpHeader.LOCATION, "/error");
                 response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
                 response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
                 response.setStatus(302);
-                request.succeeded();
-                return true;
+                request.setHandling().succeeded();
             }
         });
         String rawResponse = connector.getResponse(
@@ -649,29 +647,26 @@ public class ErrorHandlerTest
         context.setErrorHandler(new ErrorHandler()
         {
             @Override
-            public boolean handle(Request request, Response response)
+            public void handle(Request request, Response response)
             {
-                response.write(true, request, BufferUtil.toBuffer("Context Error"));
-                return true;
+                response.write(true, request.setHandling(), BufferUtil.toBuffer("Context Error"));
             }
         });
         context.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response)
+            public void handle(Request request, Response response)
             {
-                response.writeError(444, request);
-                return true;
+                response.writeError(444, request.setHandling());
             }
         });
 
         server.setErrorHandler(new ErrorHandler()
         {
             @Override
-            public boolean handle(Request request, Response response)
+            public void handle(Request request, Response response)
             {
-                response.write(true, request, BufferUtil.toBuffer("Server Error"));
-                return true;
+                response.write(true, request.setHandling(), BufferUtil.toBuffer("Server Error"));
             }
         });
 

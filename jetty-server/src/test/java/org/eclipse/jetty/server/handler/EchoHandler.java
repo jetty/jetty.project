@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.StringUtil;
 public class EchoHandler extends Handler.Abstract
 {
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request, Response response) throws Exception
     {
         response.setStatus(200);
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
@@ -41,19 +41,20 @@ public class EchoHandler extends Handler.Abstract
             response.setContentLength(contentLength);
         if (request.getHeaders().contains(HttpHeader.TRAILER))
             response.getTrailers();
-        new Echo(request, response).iterate();
-        return true;
+        new Echo(request, response, request.setHandling()).iterate();
     }
 
     static class Echo extends IteratingCallback
     {
         private final Request _request;
         private final Response _response;
+        private final Callback _callback;
 
-        Echo(Request request, Response response)
+        Echo(Request request, Response response, Callback callback)
         {
             _request = request;
             _response = response;
+            _callback = callback;
         }
 
         @Override
@@ -89,13 +90,13 @@ public class EchoHandler extends Handler.Abstract
         @Override
         protected void onCompleteSuccess()
         {
-            _request.succeeded();
+            _callback.succeeded();
         }
 
         @Override
         protected void onCompleteFailure(Throwable cause)
         {
-            _request.failed(cause);
+            _callback.failed(cause);
         }
     }
 }

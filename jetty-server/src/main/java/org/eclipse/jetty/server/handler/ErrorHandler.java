@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -85,7 +86,7 @@ public class ErrorHandler extends Handler.Abstract
         return ERROR_METHODS.contains(method);
     }
 
-    public boolean handle(Request request, Response response) throws IOException
+    public void handle(Request request, Response response) throws IOException
     {
         if (_cacheControl != null)
             response.getHeaders().put(_cacheControl);
@@ -103,7 +104,7 @@ public class ErrorHandler extends Handler.Abstract
 
         if (!errorPageForMethod(request.getMethod()) || HttpStatus.hasNoBody(code))
         {
-            request.succeeded();
+            request.setHandling().succeeded();
         }
         else
         {
@@ -112,7 +113,6 @@ public class ErrorHandler extends Handler.Abstract
 
             generateAcceptableResponse(request, response, code, message, cause);
         }
-        return true;
     }
 
     protected void generateAcceptableResponse(Request request, Response response, int code, String message, Throwable cause)
@@ -123,7 +123,7 @@ public class ErrorHandler extends Handler.Abstract
         {
             if (request.getHeaders().contains(HttpHeader.ACCEPT))
             {
-                request.succeeded();
+                request.setHandling().succeeded();
                 return;
             }
             acceptable = Collections.singletonList(Type.TEXT_HTML.asString());
@@ -149,7 +149,7 @@ public class ErrorHandler extends Handler.Abstract
             charsets = List.of(StandardCharsets.ISO_8859_1, StandardCharsets.UTF_8);
             if (request.getHeaders().contains(HttpHeader.ACCEPT_CHARSET))
             {
-                request.succeeded();
+                request.setHandling().succeeded();
                 return;
             }
         }
@@ -159,7 +159,7 @@ public class ErrorHandler extends Handler.Abstract
             if (generateAcceptableResponse(request, response, mimeType, charsets, code, message, cause))
                 return;
         }
-        request.succeeded();
+        request.setHandling().succeeded();
     }
 
     protected boolean generateAcceptableResponse(Request request, Response response, String contentType, List<Charset> charsets, int code, String message, Throwable cause)
@@ -246,25 +246,25 @@ public class ErrorHandler extends Handler.Abstract
 
         if (!buffer.hasRemaining())
         {
-            request.succeeded();
+            request.setHandling().succeeded();
             return true;
         }
 
         response.getHeaders().put(type.getContentTypeField(charset));
-        response.write(true, new Callback()
+        response.write(true, new Callback.Nested(request.setHandling())
         {
             @Override
             public void succeeded()
             {
                 request.getConnectionMetaData().getConnector().getByteBufferPool().release(buffer);
-                request.succeeded();
+                super.succeeded();
             }
 
             @Override
             public void failed(Throwable x)
             {
                 request.getConnectionMetaData().getConnector().getByteBufferPool().release(buffer);
-                request.failed(x);
+                super.failed(x);
             }
         }, buffer);
 
@@ -529,6 +529,7 @@ public class ErrorHandler extends Handler.Abstract
         private final int _status;
         private final String _message;
         private final Throwable _cause;
+        private final AtomicBoolean _handled = new AtomicBoolean();
 
         public ErrorRequest(Request request, int status, String message, Throwable cause, Callback callback)
         {
@@ -540,15 +541,16 @@ public class ErrorHandler extends Handler.Abstract
         }
 
         @Override
-        public void succeeded()
+        public Callback setHandling()
         {
-            _callback.succeeded();
+            _handled.set(true);
+            return _callback;
         }
 
         @Override
-        public void failed(Throwable x)
+        public boolean isHandling()
         {
-            _callback.failed(x);
+            return _handled.get();
         }
 
         @Override

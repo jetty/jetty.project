@@ -156,12 +156,11 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 assertInContext(request);
                 response.setStatus(200);
-                request.succeeded();
-                return true;
+                request.setHandling().succeeded();
             }
         };
         _contextHandler.setHandler(handler);
@@ -188,10 +187,11 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
 
+                Callback callback = request.setHandling();
                 request.demandContent(() ->
                 {
                     assertInContext(request);
@@ -204,14 +204,13 @@ public class ContextHandlerTest
                         {
                             content.release();
                             assertInContext(request);
-                            request.succeeded();
+                            callback.succeeded();
                         },
                         t ->
                         {
                             throw new IllegalStateException();
                         }), content.getByteBuffer());
                 });
-                return true;
             }
         };
         _contextHandler.setHandler(handler);
@@ -256,7 +255,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
 
@@ -275,8 +274,7 @@ public class ContextHandlerTest
                 assertTrue(content.isLast());
                 content.release();
                 response.setStatus(200);
-                request.succeeded();
-                return true;
+                request.setHandling().succeeded();
             }
         };
         _contextHandler.setHandler(handler);

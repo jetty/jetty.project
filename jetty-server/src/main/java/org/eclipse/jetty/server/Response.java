@@ -140,10 +140,11 @@ public interface Response
 
         if (errorHandler != null)
         {
-            Request request = new ErrorHandler.ErrorRequest(getRequest().getWrapper(), status, message, cause, callback);
+            Request errorRequest = new ErrorHandler.ErrorRequest(getRequest().getWrapper(), status, message, cause, callback);
             try
             {
-                if (errorHandler.handle(request, this))
+                errorHandler.handle(errorRequest, this);
+                if (errorRequest.isHandling())
                     return;
             }
             catch (Exception e)

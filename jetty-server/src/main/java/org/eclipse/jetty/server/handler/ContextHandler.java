@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +28,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -228,7 +226,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
         // TODO is this correct?
         String host = request.getHttpURI().getHost();
 
-        String connectorName = request.getChannel().getMetaConnection().getConnector().getName();
+        String connectorName = request.getConnectionMetaData().getConnector().getName();
 
         for (VHost vhost : _vhosts)
         {
@@ -304,18 +302,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
     }
 
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request, Response response) throws Exception
     {
-        Handler next = getHandler();
-        if (next == null)
-            return false;
+        if (getHandler() == null)
+            return;
 
         if (!checkVirtualHost(request))
-            return false;
+            return;
 
         String pathInContext = getPathInContext(request);
         if (pathInContext == null)
-            return false;
+            return;
 
         if (pathInContext.isEmpty())
         {
@@ -326,24 +323,22 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
                 location += ";" + request.getHttpURI().getQuery();
             response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
             response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
-            request.succeeded();
-            return true;
+            request.setHandling().succeeded();
+            return;
         }
 
         // TODO check availability and maybe return a 503
 
         ContextRequest scoped = wrap(request, response, pathInContext);
         if (scoped == null)
-            return false; // TODO 404? 500? Error dispatch ???
+            return; // TODO 404? 500? Error dispatch ???
 
-        // TODO make the lambda part of the scope request to save allocation?
-        _context.call(() -> next.handle(scoped, new ContextResponse(response)));
-        return true;
+        _context.call(scoped);
     }
 
     protected ContextRequest wrap(Request request, Response response, String pathInContext)
     {
-        return new ContextRequest(_context, request, pathInContext);
+        return new ContextRequest(this, request, response, pathInContext);
     }
 
     @Override
@@ -467,34 +462,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
                 LOG.warn("Failed to run in {}", _displayName, e);
                 throw new RuntimeException(e);
             }
-        }
-    }
-
-    private class ContextResponse extends Response.Wrapper
-    {
-        public ContextResponse(Response response)
-        {
-            super(response);
-        }
-
-        @Override
-        public void write(boolean last, Callback callback, ByteBuffer... content)
-        {
-            Callback contextCallback = new Callback()
-            {
-                @Override
-                public void succeeded()
-                {
-                    _context.run(callback::succeeded);
-                }
-
-                @Override
-                public void failed(Throwable t)
-                {
-                    _context.accept(callback::failed, t);
-                }
-            };
-            super.write(last, contextCallback, content);
         }
     }
 }

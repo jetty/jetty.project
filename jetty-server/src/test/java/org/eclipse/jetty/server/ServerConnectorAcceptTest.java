@@ -44,10 +44,9 @@ public class ServerConnectorAcceptTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response)
             {
-                request.succeeded();
-                return true;
+                request.setHandling().succeeded();
             }
         });
         server.start();

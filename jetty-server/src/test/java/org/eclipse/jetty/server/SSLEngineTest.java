@@ -355,7 +355,7 @@ public class SSLEngineTest
     private static class TestHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
             // System.err.println("HANDLE "+request.getRequestURI());
             SecureRequestCustomizer.SslSessionData sslData = (SecureRequestCustomizer.SslSessionData)
@@ -372,13 +372,12 @@ public class SSLEngineTest
                 {
                     buf[i] = (byte)('0' + (i % 10));
                 }
-                response.write(true, request, BufferUtil.toBuffer(buf));
+                response.write(true, request.setHandling(), BufferUtil.toBuffer(buf));
             }
             else
             {
-                response.write(true, request, BufferUtil.toBuffer(HELLO_WORLD));
+                response.write(true, request.setHandling(), BufferUtil.toBuffer(HELLO_WORLD));
             }
-            return true;
         }
     }
 }

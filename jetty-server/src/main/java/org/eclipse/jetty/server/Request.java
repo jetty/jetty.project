@@ -32,8 +32,12 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
 // TODO lots of javadoc
-public interface Request extends Attributes, Callback, Executor, Content.Provider
+public interface Request extends Attributes, Executor, Content.Provider
 {
+    Callback setHandling();
+
+    boolean isHandling();
+
     String getId();
 
     HttpChannel getChannel();
@@ -335,21 +339,15 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         }
 
         @Override
-        public void succeeded()
+        public Callback setHandling()
         {
-            _wrapped.succeeded();
+            return _wrapped.setHandling();
         }
 
         @Override
-        public void failed(Throwable x)
+        public boolean isHandling()
         {
-            _wrapped.failed(x);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return _wrapped.getInvocationType();
+            return _wrapped.isHandling();
         }
 
         @Override

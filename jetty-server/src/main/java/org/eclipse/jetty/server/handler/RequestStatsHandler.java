@@ -36,7 +36,7 @@ public class RequestStatsHandler extends Handler.Wrapper
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
 
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request, Response response) throws Exception
     {
         Object connectionStats = _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {
@@ -97,7 +97,7 @@ public class RequestStatsHandler extends Handler.Wrapper
 
         try
         {
-            return super.handle(new Request.Wrapper(request)
+            super.handle(new Request.Wrapper(request)
             {
                 // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
                 @Override
@@ -118,7 +118,8 @@ public class RequestStatsHandler extends Handler.Wrapper
         }
         finally
         {
-            _handleTimeStats.record(System.nanoTime() - request.getChannel().getStream().getNanoTimeStamp());
+            if (request.isHandling())
+                _handleTimeStats.record(System.nanoTime() - request.getChannel().getStream().getNanoTimeStamp());
             // TODO initial dispatch duration stats collected here.
         }
     }

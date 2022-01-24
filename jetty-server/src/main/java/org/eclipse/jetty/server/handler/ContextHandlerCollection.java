@@ -123,31 +123,40 @@ public class ContextHandlerCollection extends Handler.Collection
     }
 
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request, Response response) throws Exception
     {
         List<Handler> handlers = getHandlers();
 
         // Handle no contexts
         if (handlers == null || handlers.isEmpty())
-            return false;
+            return;
 
         if (!(handlers instanceof Mapping))
-            return super.handle(request, response);
+        {
+            super.handle(request, response);
+            return;
+        }
 
         Mapping mapping = (Mapping)getHandlers();
 
         // handle only a single context.
         if (handlers.size() == 1)
-            return handlers.get(0).handle(request, response);
+        {
+            handlers.get(0).handle(request, response);
+            return;
+        }
 
         // handle many contexts
         Index<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
         if (pathBranches == null)
-            return false;
+            return;
 
         String path = request.getPath();
         if (!path.startsWith("/"))
-            return super.handle(request, response);
+        {
+            super.handle(request, response);
+            return;
+        }
 
         int limit = path.length() - 1;
 
@@ -164,15 +173,14 @@ public class ContextHandlerCollection extends Handler.Collection
             {
                 for (Branch branch : branches.getValue())
                 {
-                    if (branch.getHandler().handle(request, response))
-                        return true;
+                    branch.getHandler().handle(request, response);
+                    if (request.isHandling())
+                        return;
                 }
             }
 
             limit = l - 2;
         }
-
-        return false;
     }
 
     /**

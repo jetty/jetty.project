@@ -30,13 +30,16 @@ public class GzipHandler extends Handler.Wrapper
     private static final HttpField CONTENT_ENCODING_GZIP = new HttpField(HttpHeader.CONTENT_ENCODING, "gzip");
 
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request, Response response) throws Exception
     {
         // TODO more conditions than this
         // TODO handle other encodings
         // TODO more efficient than this
         if (!request.getHeaders().contains(ACCEPT_GZIP) && !request.getHeaders().contains(CONTENT_ENCODING_GZIP))
-            return super.handle(request, response);
+        {
+            super.handle(request, response);
+            return;
+        }
 
         HttpFields updated = HttpFields.from(request.getHeaders(), f ->
         {
@@ -54,7 +57,7 @@ public class GzipHandler extends Handler.Wrapper
         // TODO look up cached or pool inflaters / deflated
         final Object inflaterAndOrDeflator = request.getChannel().getAttribute("o.e.j.s.h.gzip.cachedCompression");
 
-        return super.handle(
+        super.handle(
             new Request.Wrapper(request)
             {
                 @Override

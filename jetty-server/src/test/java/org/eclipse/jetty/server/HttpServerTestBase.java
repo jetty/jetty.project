@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -271,13 +272,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
         });
 
-        StringBuffer request = new StringBuffer("GET / HTTP/1.0\r\n");
+        StringBuilder request = new StringBuilder("GET / HTTP/1.0\r\n");
         request.append("Host: localhost\r\n\r\n");
 
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -300,13 +301,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
         });
 
-        StringBuffer request = new StringBuffer("GET / HTTP/1.0\r\n");
+        StringBuilder request = new StringBuilder("GET / HTTP/1.0\r\n");
         request.append("Host: localhost\r\n\r\n");
 
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -331,7 +332,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 long contentLength = request.getContentLength();
                 long read = 0;
@@ -365,11 +366,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                     if (content.isLast())
                     {
-                        request.succeeded();
+                        request.setHandling().succeeded();
                         break;
                     }
                 }
-                return true;
             }
         });
 
@@ -1003,7 +1003,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
             response.setStatus(200);
             response.setContentType("text/plain");
@@ -1025,8 +1025,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             for (long t : times)
                 out.append(t).append(",");
 
-            response.write(true, request, BufferUtil.toBuffer(out.toString()));
-            return true;
+            response.write(true, request.setHandling(), BufferUtil.toBuffer(out.toString()));
         }
     }
 
@@ -1037,10 +1036,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new HelloHandler("Hello\n")
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 served.incrementAndGet();
-                return super.handle(request, response);
+                super.handle(request, response);
             }
         });
 
@@ -1213,7 +1212,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public EndPoint _endp;
 
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
             _endp = request.getConnectionMetaData().getConnection().getEndPoint();
             response.setHeader("test", "value");
@@ -1421,23 +1420,21 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
             response.setStatus(304);
-            response.write(false, request, BufferUtil.toBuffer("yuck"));
-            return true;
+            response.write(false, request.setHandling(), BufferUtil.toBuffer("yuck"));
         }
     }
 
     public static class NoopHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
             //don't read the input, just send something back
             response.setStatus(200);
-            request.succeeded();
-            return true;
+            request.setHandling().succeeded();
         }
     }
 
@@ -1534,7 +1531,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request, Response response) throws Exception
             {
                 request.getChannel().addConnectionCloseListener(t -> closed.countDown());
                 while (true)
@@ -1559,8 +1556,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
 
                 response.setStatus(200);
-                request.succeeded();
-                return true;
+                request.setHandling().succeeded();
             }
         });
 
@@ -1629,9 +1625,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request, Response response) throws Exception
         {
-            return super.handle(new Request.Wrapper(request)
+            super.handle(new Request.Wrapper(request)
             {
                 volatile boolean hasContent = false;
                 @Override
@@ -1644,13 +1640,21 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
 
                 @Override
-                public void succeeded()
+                public Callback setHandling()
                 {
-                    if (_musthavecontent && !hasContent)
-                        super.failed(new IllegalStateException("No Test Content"));
-                    else
-                        super.succeeded();
+                    return new Callback.Nested(super.setHandling())
+                    {
+                        @Override
+                        public void succeeded()
+                        {
+                            if (_musthavecontent && !hasContent)
+                                super.failed(new IllegalStateException("No Test Content"));
+                            else
+                                super.succeeded();
+                        }
+                    };
                 }
+
             }, response);
         }
     }
