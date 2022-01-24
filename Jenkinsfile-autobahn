@@ -34,7 +34,7 @@ pipeline {
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/core/clients", reportFiles: 'index.html', reportName: 'Autobahn Report Core Client', reportTitles: ''])
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/javax/servers", reportFiles: 'index.html', reportName: 'Autobahn Report Javax Server', reportTitles: ''])
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/javax/clients", reportFiles: 'index.html', reportName: 'Autobahn Report Javax Client', reportTitles: ''])
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/jetty/server", reportFiles: 'index.html', reportName: 'Autobahn Report Jetty Server', reportTitles: ''])
+            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/jetty/servers", reportFiles: 'index.html', reportName: 'Autobahn Report Jetty Server', reportTitles: ''])
             publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: "${env.WORKSPACE}/tests/test-websocket-autobahn/target/reports/jetty/clients", reportFiles: 'index.html', reportName: 'Autobahn Report Jetty Client', reportTitles: ''])
           }
         }
