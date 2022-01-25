@@ -29,18 +29,22 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
@@ -2093,12 +2097,20 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             addBean(check);
     }
 
+    private boolean removeAliasCheck(AliasCheck check)
+    {
+        boolean removed = _aliasChecks.remove(check);
+        if (removed)
+            removeBean(check);
+        return removed;
+    }
+
     /**
      * @return Immutable list of Alias checks
      */
     public List<AliasCheck> getAliasChecks()
     {
-        return Collections.unmodifiableList(_aliasChecks);
+        return new AliasChecksList();
     }
 
     /**
@@ -3043,6 +3055,241 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (classContext.length <= depth)
                 return null;
             return classContext[depth].getClassLoader();
+        }
+    }
+
+    /**
+     * <p>A wrapper list that intercepts add/remove/clear to call correspondent methods of ContextHandler.</p>
+     * <p>The goal is to make this list as unmodifiable as possible, but redirect direct list operations
+     * such as add/remove/clear to correspondent ContextHandler methods for backwards compatibility.</p>
+     */
+    private class AliasChecksList implements List<AliasCheck>
+    {
+        @Override
+        public int size()
+        {
+            return _aliasChecks.size();
+        }
+
+        @Override
+        public boolean isEmpty()
+        {
+            return _aliasChecks.isEmpty();
+        }
+
+        @Override
+        public boolean contains(Object o)
+        {
+            return _aliasChecks.contains(o);
+        }
+
+        @Override
+        public Iterator<AliasCheck> iterator()
+        {
+            return new Iterator<AliasCheck>()
+            {
+                private final Iterator<AliasCheck> _iterator = _aliasChecks.iterator();
+
+                @Override
+                public boolean hasNext()
+                {
+                    return _iterator.hasNext();
+                }
+
+                @Override
+                public AliasCheck next()
+                {
+                    return _iterator.next();
+                }
+
+                @Override
+                public void remove()
+                {
+                    // Don't support removal via Iterator.
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void forEachRemaining(Consumer<? super AliasCheck> action)
+                {
+                    _iterator.forEachRemaining(action);
+                }
+            };
+        }
+
+        @Override
+        public Object[] toArray()
+        {
+            return _aliasChecks.toArray();
+        }
+
+        @Override
+        public <T> T[] toArray(T[] a)
+        {
+            return _aliasChecks.toArray(a);
+        }
+
+        @Override
+        public boolean add(AliasCheck aliasCheck)
+        {
+            // Forward to ContextHandler.
+            addAliasCheck(aliasCheck);
+            return true;
+        }
+
+        @Override
+        public boolean remove(Object o)
+        {
+            // Forward to ContextHandler.
+            return removeAliasCheck((AliasCheck)o);
+        }
+
+        @Override
+        public boolean containsAll(Collection<?> c)
+        {
+            return _aliasChecks.containsAll(c);
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends AliasCheck> c)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean addAll(int index, Collection<? extends AliasCheck> c)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean removeAll(Collection<?> c)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean retainAll(Collection<?> c)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void clear()
+        {
+            // Forward to ContextHandler.
+            clearAliasChecks();
+        }
+
+        @Override
+        public AliasCheck get(int index)
+        {
+            return _aliasChecks.get(index);
+        }
+
+        @Override
+        public AliasCheck set(int index, AliasCheck element)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void add(int index, AliasCheck element)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public AliasCheck remove(int index)
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int indexOf(Object o)
+        {
+            return _aliasChecks.indexOf(o);
+        }
+
+        @Override
+        public int lastIndexOf(Object o)
+        {
+            return _aliasChecks.lastIndexOf(o);
+        }
+
+        @Override
+        public ListIterator<AliasCheck> listIterator()
+        {
+            return listIterator(0);
+        }
+
+        @Override
+        public ListIterator<AliasCheck> listIterator(int index)
+        {
+            return new ListIterator<AliasCheck>()
+            {
+                private final ListIterator<AliasCheck> _iterator = _aliasChecks.listIterator(index);
+
+                @Override
+                public boolean hasNext()
+                {
+                    return _iterator.hasNext();
+                }
+
+                @Override
+                public AliasCheck next()
+                {
+                    return _iterator.next();
+                }
+
+                @Override
+                public boolean hasPrevious()
+                {
+                    return _iterator.hasPrevious();
+                }
+
+                @Override
+                public AliasCheck previous()
+                {
+                    return _iterator.previous();
+                }
+
+                @Override
+                public int nextIndex()
+                {
+                    return _iterator.nextIndex();
+                }
+
+                @Override
+                public int previousIndex()
+                {
+                    return _iterator.previousIndex();
+                }
+
+                @Override
+                public void remove()
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void set(AliasCheck check)
+                {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void add(AliasCheck check)
+                {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+
+        @Override
+        public List<AliasCheck> subList(int fromIndex, int toIndex)
+        {
+            throw new UnsupportedOperationException();
         }
     }
 }
