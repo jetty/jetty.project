@@ -34,9 +34,9 @@ import org.eclipse.jetty.util.UrlEncoded;
 // TODO lots of javadoc
 public interface Request extends Attributes, Executor, Content.Provider
 {
-    Callback setHandling();
+    Callback accept();
 
-    boolean isHandling();
+    boolean isAccepted();
 
     String getId();
 
@@ -339,15 +339,15 @@ public interface Request extends Attributes, Executor, Content.Provider
         }
 
         @Override
-        public Callback setHandling()
+        public Callback accept()
         {
-            return _wrapped.setHandling();
+            return _wrapped.accept();
         }
 
         @Override
-        public boolean isHandling()
+        public boolean isAccepted()
         {
-            return _wrapped.isHandling();
+            return _wrapped.isAccepted();
         }
 
         @Override

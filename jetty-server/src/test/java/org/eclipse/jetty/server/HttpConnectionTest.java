@@ -862,7 +862,7 @@ public class HttpConnectionTest
             public void handle(Request request, Response response) throws Exception
             {
                 response.setStatus(200);
-                response.write(false, request.setHandling());
+                response.write(false, request.accept());
             }
         });
         server.start();
@@ -1136,7 +1136,7 @@ public class HttpConnectionTest
             {
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.setHeader("LongStr", longstr);
-                Callback callback = request.setHandling();
+                Callback callback = request.accept();
                 response.write(false,
                     Callback.from(callback::succeeded, t ->
                     {
@@ -1187,7 +1187,7 @@ public class HttpConnectionTest
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.setHeader("LongStr", longstr);
 
-                Callback callback = request.setHandling();
+                Callback callback = request.accept();
                 response.write(false,
                     Callback.from(callback::succeeded, t ->
                     {
@@ -1327,7 +1327,7 @@ public class HttpConnectionTest
                 long bytesIn = connection.getBytesIn();
                 assertThat(bytesIn, greaterThan(dataLength));
 
-                request.setHandling().succeeded();
+                request.accept().succeeded();
             }
         });
         server.start();

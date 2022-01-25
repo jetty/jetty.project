@@ -25,7 +25,7 @@ public class RewriteHandler extends Handler.Wrapper
     public void handle(Request request, Response response) throws Exception
     {
         Request rewritten = rewrite(request, response);
-        if (request.isHandling())
+        if (request.isAccepted())
             return;
         super.handle(request, response);
     }

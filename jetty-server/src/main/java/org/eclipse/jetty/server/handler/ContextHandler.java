@@ -323,7 +323,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
                 location += ";" + request.getHttpURI().getQuery();
             response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
             response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
-            request.setHandling().succeeded();
+            request.accept().succeeded();
             return;
         }
 

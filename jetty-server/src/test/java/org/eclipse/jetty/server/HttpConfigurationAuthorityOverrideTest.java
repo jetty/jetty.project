@@ -665,7 +665,7 @@ public class HttpConfigurationAuthorityOverrideTest
                     out.printf("LocalName=[%s]%n", request.getLocalAddr());
                     out.printf("LocalPort=[%s]%n", request.getLocalPort());
                     out.printf("HttpURI=[%s]%n", request.getHttpURI());
-                    response.write(true, request.setHandling(), stringWriter.getBuffer().toString());
+                    response.write(true, request.accept(), stringWriter.getBuffer().toString());
                 }
             }
         }
@@ -680,7 +680,7 @@ public class HttpConfigurationAuthorityOverrideTest
             {
                 response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
                 response.setHeader(HttpHeader.LOCATION, HttpURI.build(request.getHttpURI(), "/dump").toString());
-                request.setHandling().succeeded();
+                request.accept().succeeded();
             }
         }
     }
@@ -693,7 +693,7 @@ public class HttpConfigurationAuthorityOverrideTest
             if (request.getPath().startsWith("/error"))
             {
                 response.setContentType("text/plain; charset=utf-8");
-                response.write(true, request.setHandling(), "Generic Error Page.");
+                response.write(true, request.accept(), "Generic Error Page.");
             }
         }
     }
@@ -710,7 +710,7 @@ public class HttpConfigurationAuthorityOverrideTest
             if (scheme == null)
                 scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
             response.setHeader(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
-            response.write(true, request.setHandling());
+            response.write(true, request.accept());
         }
     }
 

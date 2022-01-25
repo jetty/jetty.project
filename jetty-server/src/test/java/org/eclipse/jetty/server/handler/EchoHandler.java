@@ -41,7 +41,7 @@ public class EchoHandler extends Handler.Abstract
             response.setContentLength(contentLength);
         if (request.getHeaders().contains(HttpHeader.TRAILER))
             response.getTrailers();
-        new Echo(request, response, request.setHandling()).iterate();
+        new Echo(request, response, request.accept()).iterate();
     }
 
     static class Echo extends IteratingCallback

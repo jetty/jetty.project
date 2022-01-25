@@ -76,7 +76,7 @@ public class SSLReadEOFAfterResponseTest
                         c.release();
                     }
                     if (c == Content.EOF)
-                        request.setHandling().failed(new IllegalStateException());
+                        request.accept().failed(new IllegalStateException());
                 }
 
                 // Second: write the response.
@@ -93,7 +93,7 @@ public class SSLReadEOFAfterResponseTest
                 Content content = request.readContent();
                 if (!content.isLast())
                     throw new IllegalStateException();
-                request.setHandling().succeeded();
+                request.accept().succeeded();
             }
         });
         server.start();

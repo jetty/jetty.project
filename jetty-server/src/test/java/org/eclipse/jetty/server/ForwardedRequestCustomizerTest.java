@@ -1302,7 +1302,7 @@ public class ForwardedRequestCustomizerTest
         @Override
         public void handle(Request request, Response response) throws Exception
         {
-            Callback callback = request.setHandling();
+            Callback callback = request.accept();
             if (requestTester != null && requestTester.check(request, response))
             {
                 response.setStatus(200);

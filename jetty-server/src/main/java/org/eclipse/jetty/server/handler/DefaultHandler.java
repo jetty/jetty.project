@@ -106,13 +106,13 @@ public class DefaultHandler extends Handler.Abstract
                 response.setHeader(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
                 content = _favicon.slice();
             }
-            response.write(true, request.setHandling(), content);
+            response.write(true, request.accept(), content);
             return;
         }
 
         if (!_showContexts || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
         {
-            response.writeError(HttpStatus.NOT_FOUND_404, null, request.setHandling());
+            response.writeError(HttpStatus.NOT_FOUND_404, null, request.accept());
             return;
         }
 
@@ -193,7 +193,7 @@ public class DefaultHandler extends Handler.Abstract
             writer.flush();
             ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
             response.setContentLength(content.remaining());
-            response.write(true, request.setHandling(), content);
+            response.write(true, request.accept(), content);
         }
     }
 

@@ -72,7 +72,7 @@ public class SlowClientsTest
                 {
                     LOG.info("SERVING {}", request);
                     // Write some big content.
-                    Callback callback = request.setHandling();
+                    Callback callback = request.accept();
                     response.write(true, new Callback()
                         {
                             @Override

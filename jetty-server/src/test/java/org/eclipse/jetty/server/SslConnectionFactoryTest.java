@@ -87,7 +87,7 @@ public class SslConnectionFactoryTest
             public void handle(Request request, Response response) throws Exception
             {
                 response.setStatus(200);
-                response.write(true, request.setHandling(), BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + request.getServerName()));
+                response.write(true, request.accept(), BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + request.getServerName()));
             }
         });
 

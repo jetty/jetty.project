@@ -242,7 +242,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
             out.append("key_size='").append(data == null ? "" : data.getKeySize()).append("'").append('\n');
             out.append("ssl_session_id='").append(data == null ? "" : data.getId()).append("'").append('\n');
             out.append("ssl_session='").append(session).append("'").append('\n');
-            response.write(true, request.setHandling(), out.toString());
+            response.write(true, request.accept(), out.toString());
         }
     }
 }

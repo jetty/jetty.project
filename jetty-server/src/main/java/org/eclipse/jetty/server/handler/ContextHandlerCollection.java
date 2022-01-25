@@ -174,7 +174,7 @@ public class ContextHandlerCollection extends Handler.Collection
                 for (Branch branch : branches.getValue())
                 {
                     branch.getHandler().handle(request, response);
-                    if (request.isHandling())
+                    if (request.isAccepted())
                         return;
                 }
             }

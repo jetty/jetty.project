@@ -57,6 +57,6 @@ public class HelloHandler extends Handler.Abstract
         response.setStatus(200);
         response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
         response.setContentLength(_byteBuffer.remaining());
-        response.write(true, request.setHandling(), _byteBuffer.slice());
+        response.write(true, request.accept(), _byteBuffer.slice());
     }
 }

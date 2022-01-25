@@ -102,7 +102,7 @@ public class HttpServerTestFixture
             else
                 response.setStatus(500);
             response.setHeader("Allow", "GET");
-            request.setHandling().succeeded();
+            request.accept().succeeded();
         }
     }
 
@@ -125,7 +125,7 @@ public class HttpServerTestFixture
         @Override
         public void handle(Request request, Response response) throws Exception
         {
-            response.writeError(code, message, request.setHandling());
+            response.writeError(code, message, request.accept());
         }
     }
 
@@ -178,7 +178,7 @@ public class HttpServerTestFixture
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
             response.setContentLength(reply.length());
-            response.write(true, request.setHandling(), BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
+            response.write(true, request.accept(), BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
         }
     }
 
@@ -188,7 +188,7 @@ public class HttpServerTestFixture
         public void handle(Request request, Response response) throws Exception
         {
             response.setStatus(200);
-            Callback callback = request.setHandling();
+            Callback callback = request.accept();
             Content.readUtf8String(request, Promise.from(
                 s -> response.write(true, callback, "read %d%n" + s.length()),
                 t -> response.write(true, callback, String.format("caught %s%n", t))
@@ -248,7 +248,7 @@ public class HttpServerTestFixture
                     }
                 }
             }
-            request.setHandling().succeeded();
+            request.accept().succeeded();
         }
     }
 }

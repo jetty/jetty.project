@@ -272,7 +272,7 @@ public class HttpChannel extends Attributes.Lazy
             Runnable invokeOnError = onError == null ? null : () -> onError.accept(x);
 
             // Serialize all the error actions.
-            return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError, () -> request.setHandling().failed(x));
+            return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError, () -> request.accept().failed(x));
         }
     }
 
@@ -367,7 +367,7 @@ public class HttpChannel extends Attributes.Lazy
         {
             Request request = _request;
             _server.handle(request, _request._response);
-            if (!request.isHandling())
+            if (!request.isAccepted())
                 throw new IllegalStateException();
         }
     }
@@ -628,7 +628,7 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        public Callback setHandling()
+        public Callback accept()
         {
             try (AutoLock ignored = _lock.lock())
             {
@@ -638,7 +638,7 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        public boolean isHandling()
+        public boolean isAccepted()
         {
             try (AutoLock ignored = _lock.lock())
             {

@@ -43,13 +43,13 @@ import org.slf4j.LoggerFactory;
  * <ul>
  * <li>Do nothing</li>
  * <li>Completely generate the HTTP Response and call {@link Callback#succeeded()} on the {@link Callback}
- * returned from {@link Request#setHandling()}.</li>
- * <li>Call {@link Request#setHandling()} and arrange for an async process to generate the HTTP Response and call
+ * returned from {@link Request#accept()}.</li>
+ * <li>Call {@link Request#accept()} and arrange for an async process to generate the HTTP Response and call
  * {@link Callback#succeeded()} or {@link Callback#failed(Throwable)} on the {@link Callback} returned.</li>
  * <li>Pass the request to one or more other Handlers.</li>
  * <li>Wrap the request and/or response and pass them to one or more other Handlers.</li>
  * <li>Fail the request by calling {@link Callback#failed(Throwable)} on the {@link Callback} returned from
- * {@link Request#setHandling()}.</li>
+ * {@link Request#accept()}.</li>
  * </ul>
  *
  */
@@ -60,7 +60,7 @@ public interface Handler extends LifeCycle, Destroyable
     /**
      * Handle an HTTP request and produce a response.
      * @param request The immutable request, which is also a {@link Callback} used to signal success or failure. The Handler
-     * or one of it's nested Handlers must call {@link Request#setHandling()} to indicate that it will ultimately succeed or
+     * or one of it's nested Handlers must call {@link Request#accept()} to indicate that it will ultimately succeed or
      * fail the {@link Callback} returned.
      *
      * @param response The muttable response
@@ -340,7 +340,7 @@ public interface Handler extends LifeCycle, Destroyable
         {
             for (Handler h : _handlers)
             {
-                if (!request.isHandling())
+                if (!request.isAccepted())
                     h.handle(request, response);
             }
         }

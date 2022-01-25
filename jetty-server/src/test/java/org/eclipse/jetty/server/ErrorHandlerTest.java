@@ -109,7 +109,7 @@ public class ErrorHandlerTest
                     throw new TestException(message);
                 }
 
-                response.writeError(404, request.setHandling());
+                response.writeError(404, request.accept());
             }
         });
         server.start();
@@ -448,7 +448,7 @@ public class ErrorHandlerTest
                 response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
                 response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
                 response.setStatus(302);
-                request.setHandling().succeeded();
+                request.accept().succeeded();
             }
         });
         String rawResponse = connector.getResponse(
@@ -649,7 +649,7 @@ public class ErrorHandlerTest
             @Override
             public void handle(Request request, Response response)
             {
-                response.write(true, request.setHandling(), BufferUtil.toBuffer("Context Error"));
+                response.write(true, request.accept(), BufferUtil.toBuffer("Context Error"));
             }
         });
         context.setHandler(new Handler.Abstract()
@@ -657,7 +657,7 @@ public class ErrorHandlerTest
             @Override
             public void handle(Request request, Response response)
             {
-                response.writeError(444, request.setHandling());
+                response.writeError(444, request.accept());
             }
         });
 
@@ -666,7 +666,7 @@ public class ErrorHandlerTest
             @Override
             public void handle(Request request, Response response)
             {
-                response.write(true, request.setHandling(), BufferUtil.toBuffer("Server Error"));
+                response.write(true, request.accept(), BufferUtil.toBuffer("Server Error"));
             }
         });
 

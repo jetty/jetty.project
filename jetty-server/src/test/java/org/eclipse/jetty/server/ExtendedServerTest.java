@@ -144,7 +144,7 @@ public class ExtendedServerTest extends HttpServerTestBase
         public void handle(Request request, Response response) throws Exception
         {
             response.setStatus(200);
-            response.write(true, request.setHandling(), BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"));
+            response.write(true, request.accept(), BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"));
         }
     }
 }

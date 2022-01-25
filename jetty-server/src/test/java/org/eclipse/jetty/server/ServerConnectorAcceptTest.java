@@ -46,7 +46,7 @@ public class ServerConnectorAcceptTest
             @Override
             public void handle(Request request, Response response)
             {
-                request.setHandling().succeeded();
+                request.accept().succeeded();
             }
         });
         server.start();

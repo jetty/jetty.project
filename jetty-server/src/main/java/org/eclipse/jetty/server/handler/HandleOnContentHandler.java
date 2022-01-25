@@ -32,7 +32,7 @@ public class HandleOnContentHandler extends Handler.Wrapper
             super.handle(request, response);
         else
         {
-            request.setHandling();
+            request.accept();
             request.demandContent(new OnContentRunner(request, response));
         }
     }
@@ -57,21 +57,21 @@ public class HandleOnContentHandler extends Handler.Wrapper
                 Request request = new Request.Wrapper(_request)
                 {
                     @Override
-                    public Callback setHandling()
+                    public Callback accept()
                     {
                         handled.set(true);
-                        return super.setHandling();
+                        return super.accept();
                     }
 
                     @Override
-                    public boolean isHandling()
+                    public boolean isAccepted()
                     {
                         return handled.get();
                     }
                 };
                 HandleOnContentHandler.super.handle(request, _response);
-                if (!request.isHandling())
-                    _request.setHandling().failed(new IllegalStateException());
+                if (!request.isAccepted())
+                    _request.accept().failed(new IllegalStateException());
             }
             catch (Exception e)
             {

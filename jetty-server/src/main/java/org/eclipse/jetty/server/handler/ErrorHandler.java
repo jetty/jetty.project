@@ -104,7 +104,7 @@ public class ErrorHandler extends Handler.Abstract
 
         if (!errorPageForMethod(request.getMethod()) || HttpStatus.hasNoBody(code))
         {
-            request.setHandling().succeeded();
+            request.accept().succeeded();
         }
         else
         {
@@ -123,7 +123,7 @@ public class ErrorHandler extends Handler.Abstract
         {
             if (request.getHeaders().contains(HttpHeader.ACCEPT))
             {
-                request.setHandling().succeeded();
+                request.accept().succeeded();
                 return;
             }
             acceptable = Collections.singletonList(Type.TEXT_HTML.asString());
@@ -149,7 +149,7 @@ public class ErrorHandler extends Handler.Abstract
             charsets = List.of(StandardCharsets.ISO_8859_1, StandardCharsets.UTF_8);
             if (request.getHeaders().contains(HttpHeader.ACCEPT_CHARSET))
             {
-                request.setHandling().succeeded();
+                request.accept().succeeded();
                 return;
             }
         }
@@ -159,7 +159,7 @@ public class ErrorHandler extends Handler.Abstract
             if (generateAcceptableResponse(request, response, mimeType, charsets, code, message, cause))
                 return;
         }
-        request.setHandling().succeeded();
+        request.accept().succeeded();
     }
 
     protected boolean generateAcceptableResponse(Request request, Response response, String contentType, List<Charset> charsets, int code, String message, Throwable cause)
@@ -246,12 +246,12 @@ public class ErrorHandler extends Handler.Abstract
 
         if (!buffer.hasRemaining())
         {
-            request.setHandling().succeeded();
+            request.accept().succeeded();
             return true;
         }
 
         response.getHeaders().put(type.getContentTypeField(charset));
-        response.write(true, new Callback.Nested(request.setHandling())
+        response.write(true, new Callback.Nested(request.accept())
         {
             @Override
             public void succeeded()
@@ -541,14 +541,14 @@ public class ErrorHandler extends Handler.Abstract
         }
 
         @Override
-        public Callback setHandling()
+        public Callback accept()
         {
             _handled.set(true);
             return _callback;
         }
 
         @Override
-        public boolean isHandling()
+        public boolean isAccepted()
         {
             return _handled.get();
         }

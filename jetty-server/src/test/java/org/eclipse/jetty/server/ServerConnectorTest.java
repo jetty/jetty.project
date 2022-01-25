@@ -92,7 +92,7 @@ public class ServerConnectorTest
             }
             out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
             out.flush();
-            response.write(true, request.setHandling(), BufferUtil.toBuffer(buffer.toByteArray()));
+            response.write(true, request.accept(), BufferUtil.toBuffer(buffer.toByteArray()));
         }
     }
 
@@ -243,7 +243,7 @@ public class ServerConnectorTest
                 @Override
                 public void handle(Request request, Response response)
                 {
-                    request.setHandling().succeeded();
+                    request.accept().succeeded();
                 }
             });
 

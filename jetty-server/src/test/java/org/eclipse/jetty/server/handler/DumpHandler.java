@@ -71,7 +71,7 @@ public class DumpHandler extends Handler.Abstract
         if (Boolean.parseBoolean(params.getValue("empty")))
         {
             response.setStatus(200);
-            request.setHandling().succeeded();
+            request.accept().succeeded();
             return;
         }
 
@@ -101,7 +101,7 @@ public class DumpHandler extends Handler.Abstract
 
                 if (content instanceof Content.Error)
                 {
-                    request.setHandling().failed(((Content.Error)content).getCause());
+                    request.accept().failed(((Content.Error)content).getCause());
                     return;
                 }
 
@@ -132,7 +132,7 @@ public class DumpHandler extends Handler.Abstract
         if (params.getValue("error") != null)
         {
             response.setStatus(Integer.parseInt(params.getValue("error")));
-            request.setHandling().succeeded();
+            request.accept().succeeded();
             return;
         }
 
@@ -201,6 +201,6 @@ public class DumpHandler extends Handler.Abstract
             response.write(true, blocker, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)));
         }
 
-        request.setHandling().succeeded();
+        request.accept().succeeded();
     }
 }

@@ -372,11 +372,11 @@ public class SSLEngineTest
                 {
                     buf[i] = (byte)('0' + (i % 10));
                 }
-                response.write(true, request.setHandling(), BufferUtil.toBuffer(buf));
+                response.write(true, request.accept(), BufferUtil.toBuffer(buf));
             }
             else
             {
-                response.write(true, request.setHandling(), BufferUtil.toBuffer(HELLO_WORLD));
+                response.write(true, request.accept(), BufferUtil.toBuffer(HELLO_WORLD));
             }
         }
     }

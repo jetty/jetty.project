@@ -98,7 +98,7 @@ public class ProxyCustomizerTest
                 if (remoteAddress != null)
                     response.addHeader("proxyRemoteAddress", remoteAddress + ":" + request.getAttribute(ProxyCustomizer.REMOTE_PORT_ATTRIBUTE_NAME));
 
-                request.setHandling().succeeded();
+                request.accept().succeeded();
             }
         };
 

@@ -144,7 +144,7 @@ public interface Response
             try
             {
                 errorHandler.handle(errorRequest, this);
-                if (errorRequest.isHandling())
+                if (errorRequest.isAccepted())
                     return;
             }
             catch (Exception e)

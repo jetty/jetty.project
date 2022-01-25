@@ -244,7 +244,7 @@ public class SslContextFactoryReloadTest
             else
             {
                 response.setContentLength(0);
-                request.setHandling().succeeded();
+                request.accept().succeeded();
             }
         }
     }

@@ -366,7 +366,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                     if (content.isLast())
                     {
-                        request.setHandling().succeeded();
+                        request.accept().succeeded();
                         break;
                     }
                 }
@@ -1025,7 +1025,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             for (long t : times)
                 out.append(t).append(",");
 
-            response.write(true, request.setHandling(), BufferUtil.toBuffer(out.toString()));
+            response.write(true, request.accept(), BufferUtil.toBuffer(out.toString()));
         }
     }
 
@@ -1423,7 +1423,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public void handle(Request request, Response response) throws Exception
         {
             response.setStatus(304);
-            response.write(false, request.setHandling(), BufferUtil.toBuffer("yuck"));
+            response.write(false, request.accept(), BufferUtil.toBuffer("yuck"));
         }
     }
 
@@ -1434,7 +1434,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             //don't read the input, just send something back
             response.setStatus(200);
-            request.setHandling().succeeded();
+            request.accept().succeeded();
         }
     }
 
@@ -1556,7 +1556,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
 
                 response.setStatus(200);
-                request.setHandling().succeeded();
+                request.accept().succeeded();
             }
         });
 
@@ -1640,9 +1640,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
 
                 @Override
-                public Callback setHandling()
+                public Callback accept()
                 {
-                    return new Callback.Nested(super.setHandling())
+                    return new Callback.Nested(super.accept())
                     {
                         @Override
                         public void succeeded()

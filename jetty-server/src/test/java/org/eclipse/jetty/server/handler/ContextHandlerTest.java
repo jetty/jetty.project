@@ -160,7 +160,7 @@ public class ContextHandlerTest
             {
                 assertInContext(request);
                 response.setStatus(200);
-                request.setHandling().succeeded();
+                request.accept().succeeded();
             }
         };
         _contextHandler.setHandler(handler);
@@ -191,7 +191,7 @@ public class ContextHandlerTest
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
 
-                Callback callback = request.setHandling();
+                Callback callback = request.accept();
                 request.demandContent(() ->
                 {
                     assertInContext(request);
@@ -274,7 +274,7 @@ public class ContextHandlerTest
                 assertTrue(content.isLast());
                 content.release();
                 response.setStatus(200);
-                request.setHandling().succeeded();
+                request.accept().succeeded();
             }
         };
         _contextHandler.setHandler(handler);

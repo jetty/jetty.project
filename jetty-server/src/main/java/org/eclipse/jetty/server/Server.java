@@ -128,15 +128,15 @@ public class Server extends Handler.Wrapper implements Attributes
             {
                 Request customized = customizer.customize(request.getConnectionMetaData().getConnector(), configuration, customizedRequest);
                 customizedRequest = customized == null ? request : customized;
-                if (request.isHandling())
+                if (request.isAccepted())
                     return;
             }
 
             // Handle
             super.handle(customizedRequest, customizedRequest.getResponse());
-            if (!request.isHandling())
+            if (!request.isAccepted())
             {
-                Callback callback = request.setHandling();
+                Callback callback = request.accept();
                 if (response.isCommitted())
                     callback.failed(new IllegalStateException("No Handler for committed request"));
                 else
@@ -151,7 +151,7 @@ public class Server extends Handler.Wrapper implements Attributes
             else
                 LOG.warn("handle failed {}", this, t);
 
-            request.setHandling().failed(t);
+            request.accept().failed(t);
         }
 
         return;

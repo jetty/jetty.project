@@ -118,7 +118,7 @@ public class RequestStatsHandler extends Handler.Wrapper
         }
         finally
         {
-            if (request.isHandling())
+            if (request.isAccepted())
                 _handleTimeStats.record(System.nanoTime() - request.getChannel().getStream().getNanoTimeStamp());
             // TODO initial dispatch duration stats collected here.
         }

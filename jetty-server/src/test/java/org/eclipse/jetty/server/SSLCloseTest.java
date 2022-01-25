@@ -93,7 +93,7 @@ public class SSLCloseTest
             data = data + data + data + data;
             byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
 
-            Callback callback = request.setHandling();
+            Callback callback = request.accept();
             response.write(false,
                 Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer(bytes)), callback::failed),
                 BufferUtil.toBuffer(bytes));

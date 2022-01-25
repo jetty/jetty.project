@@ -142,7 +142,7 @@ public class SslUploadTest
         public void handle(Request request, Response response) throws Exception
         {
             ByteBuffer input = Content.readBytes(request);
-            response.write(true, request.setHandling(), BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));
+            response.write(true, request.accept(), BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));
         }
     }
 }
