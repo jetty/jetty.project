@@ -99,7 +99,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory implements C
     /**
      * @param ensureSecureRequestCustomizer True if this factory ensures that all {@link HttpConfiguration}s on
      * associated {@link Connector}s have an {@link SecureRequestCustomizer} instance.
-     * @see Configuring
+     * @see ConnectionFactory.Configuring
      */
     public void setEnsureSecureRequestCustomizer(boolean ensureSecureRequestCustomizer)
     {

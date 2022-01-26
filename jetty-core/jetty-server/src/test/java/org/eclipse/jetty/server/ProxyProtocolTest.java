@@ -14,23 +14,24 @@
 package org.eclipse.jetty.server;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ProxyConnectionFactory.ProxyEndPoint;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ProxyProtocolTest
@@ -59,26 +60,14 @@ public class ProxyProtocolTest
     {
         final String remoteAddr = "192.168.0.0";
         final int remotePort = 12345;
-        start(new Handler.Abstract()
+        start(new AbstractHandler()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                SocketAddress addr = request.getConnectionMetaData().getRemoteAddress();
-                if (addr instanceof InetSocketAddress)
-                {
-                    InetSocketAddress iAddr = (InetSocketAddress)addr;
-                    if (iAddr.getHostString().equals(remoteAddr) && iAddr.getPort() == remotePort)
-                        request.succeeded();
-                    else
-                        request.failed(new Throwable("wrong address"));
-                }
-                else
-                {
-                    request.failed(new Throwable("no inet address"));
-                }
-
-                return true;
+                if (remoteAddr.equals(request.getRemoteAddr()) &&
+                    remotePort == request.getRemotePort())
+                    baseRequest.setHandled(true);
             }
         });
 
@@ -130,18 +119,15 @@ public class ProxyProtocolTest
         final byte[] customE0 = new byte[] {1, 2};
         final byte[] customE1 = new byte[] {-1, -1, -1};
 
-        start(new Handler.Abstract()
+        start(new AbstractHandler()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                if (validateEndPoint(request) &&
+                if (validateEndPoint(baseRequest) &&
                     remoteAddr.equals(request.getRemoteAddr()) &&
                     remotePort == request.getRemotePort())
-                    request.succeeded();
-                else
-                    request.failed(new Throwable());
-                return true;
+                    baseRequest.setHandled(true);
             }
 
             private boolean validateEndPoint(Request request) 
@@ -200,7 +186,7 @@ public class ProxyProtocolTest
             InputStream input = socket.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
             String response1 = reader.readLine();
-            assertThat(response1, startsWith("HTTP/1.1 200 "));
+            assertTrue(response1.startsWith("HTTP/1.1 200 "));
             while (true)
             {
                 if (reader.readLine().isEmpty())
@@ -229,13 +215,12 @@ public class ProxyProtocolTest
     @Test
     public void testProxyProtocolV2Local() throws Exception
     {
-        start(new Handler.Abstract()
+        start(new AbstractHandler()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                request.succeeded();
-                return true;
+                baseRequest.setHandled(true);
             }
         });
 

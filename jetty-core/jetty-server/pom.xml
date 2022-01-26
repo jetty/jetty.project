@@ -7,8 +7,8 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-server</artifactId>
-  <name>Jetty :: Server Core</name>
-  <description>The core jetty server artifact.</description>
+  <name>Jetty :: Server Legacy</name>
+  <description>The legacy jetty server artifact.</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
@@ -30,6 +30,10 @@
 
   <dependencies>
     <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
     </dependency>
@@ -46,6 +50,7 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
+
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-xml</artifactId>

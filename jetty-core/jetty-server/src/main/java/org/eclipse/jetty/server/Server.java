@@ -19,27 +19,38 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AttributeContainerMap;
 import org.eclipse.jetty.util.component.Graceful;
@@ -51,17 +62,26 @@ import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Server extends Handler.Wrapper implements Attributes
+/**
+ * Jetty HTTP Servlet Server.
+ * This class is the main class for the Jetty HTTP Servlet server.
+ * It aggregates Connectors (HTTP request receivers) and request Handlers.
+ * The server is itself a handler and a ThreadPool.  Connectors use the ThreadPool methods
+ * to run jobs that will eventually call the handle method.
+ */
+@ManagedObject(value = "Jetty HTTP Servlet server")
+public class Server extends HandlerWrapper implements Attributes
 {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
+    private SessionIdManager _sessionIdManager;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
-    private Handler _errorHandler;
+    private ErrorHandler _errorHandler;
     private RequestLog _requestLog;
     private boolean _dryRun;
     private final AutoLock _dateLock = new AutoLock();
@@ -86,7 +106,6 @@ public class Server extends Handler.Wrapper implements Attributes
         ServerConnector connector = new ServerConnector(this);
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
-        addBean(_attributes);
     }
 
     /**
@@ -109,49 +128,8 @@ public class Server extends Handler.Wrapper implements Attributes
     {
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
+        addBean(_attributes);
         setServer(this);
-    }
-
-    @Override
-    public boolean handle(Request request, Response response)
-    {
-        if (!isStarted())
-            return false;
-
-        try
-        {
-            // Customize
-            Request customizedRequest = request;
-            HttpConfiguration configuration = request.getChannel().getHttpConfiguration();
-            for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
-            {
-                Request customized = customizer.customize(request.getConnectionMetaData().getConnector(), configuration, customizedRequest);
-                customizedRequest = customized == null ? request : customized;
-                if (request.isComplete())
-                    return true;
-            }
-
-            // Handle
-            if (!super.handle(customizedRequest, customizedRequest.getResponse()))
-            {
-                if (response.isCommitted())
-                    request.failed(new IllegalStateException("No Handler for committed request"));
-                else
-                    response.writeError(404, null, request);
-            }
-        }
-        catch (Throwable t)
-        {
-            // Let's be less verbose with BadMessageExceptions & QuietExceptions
-            if (!LOG.isDebugEnabled() && (t instanceof BadMessageException || t instanceof QuietException))
-                LOG.warn("bad message {}", t.getMessage());
-            else
-                LOG.warn("handle failed {}", this, t);
-
-            request.failed(t);
-        }
-
-        return true;
     }
 
     public boolean isDryRun()
@@ -169,7 +147,7 @@ public class Server extends Handler.Wrapper implements Attributes
         return _requestLog;
     }
 
-    public Handler getErrorHandler()
+    public ErrorHandler getErrorHandler()
     {
         return _errorHandler;
     }
@@ -180,12 +158,14 @@ public class Server extends Handler.Wrapper implements Attributes
         _requestLog = requestLog;
     }
 
-    public void setErrorHandler(Handler errorHandler)
+    public void setErrorHandler(ErrorHandler errorHandler)
     {
+        if (errorHandler instanceof ErrorHandler.ErrorPageMapper)
+            throw new IllegalArgumentException("ErrorPageMapper is applicable only to ContextHandler");
         updateBean(_errorHandler, errorHandler);
         _errorHandler = errorHandler;
         if (errorHandler != null)
-            ((Handler.Abstract)errorHandler).setServer(this);
+            errorHandler.setServer(this);
     }
 
     @ManagedAttribute("version of this server")
@@ -376,6 +356,15 @@ public class Server extends Handler.Wrapper implements Attributes
     {
         try
         {
+            // Create an error handler if there is none
+            if (_errorHandler == null)
+                _errorHandler = getBean(ErrorHandler.class);
+            if (_errorHandler == null)
+                setErrorHandler(new ErrorHandler());
+            if (_errorHandler instanceof ErrorHandler.ErrorPageMapper)
+                LOG.warn("ErrorPageMapper not supported for Server level Error Handling");
+            _errorHandler.setServer(this);
+
             //If the Server should be stopped when the jvm exits, register
             //with the shutdown handler thread.
             if (getStopAtShutdown())
@@ -387,9 +376,6 @@ public class Server extends Handler.Wrapper implements Attributes
 
             //Start a thread waiting to receive "stop" commands.
             ShutdownMonitor.getInstance().start(); // initialize
-
-            if (_errorHandler == null)
-                setErrorHandler(new DynamicErrorHandler());
 
             String gitHash = Jetty.GIT_HASH;
             String timestamp = Jetty.BUILD_TIMESTAMP;
@@ -534,9 +520,6 @@ public class Server extends Handler.Wrapper implements Attributes
             mex.add(e);
         }
 
-        if (getErrorHandler() instanceof DynamicErrorHandler)
-            setErrorHandler(null);
-
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
 
@@ -547,21 +530,158 @@ public class Server extends Handler.Wrapper implements Attributes
         mex.ifExceptionThrow();
     }
 
+    /* Handle a request from a connection.
+     * Called to handle a request on the connection when either the header has been received,
+     * or after the entire request has been received (for short requests of known length), or
+     * on the dispatch of an async request.
+     */
+    public void handle(HttpChannel channel) throws IOException, ServletException
+    {
+        final String target = channel.getRequest().getPathInfo();
+        final Request request = channel.getRequest();
+        final Response response = channel.getResponse();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} {} {} ?{} on {}", request.getDispatcherType(), request.getMethod(), target, request.getQueryString(), channel);
+
+        if (HttpMethod.OPTIONS.is(request.getMethod()) || "*".equals(target))
+        {
+            if (!HttpMethod.OPTIONS.is(request.getMethod()))
+            {
+                request.setHandled(true);
+                response.sendError(HttpStatus.BAD_REQUEST_400);
+            }
+            else
+            {
+                handleOptions(request, response);
+                if (!request.isHandled())
+                    handle(target, request, request, response);
+            }
+        }
+        else
+            handle(target, request, request, response);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("handled={} async={} committed={} on {}", request.isHandled(), request.isAsyncStarted(), response.isCommitted(), channel);
+    }
+
+    /* Handle Options request to server
+     */
+    protected void handleOptions(Request request, Response response) throws IOException
+    {
+    }
+
+    /* Handle a request from a connection.
+     * Called to handle a request on the connection when either the header has been received,
+     * or after the entire request has been received (for short requests of known length), or
+     * on the dispatch of an async request.
+     */
+    public void handleAsync(HttpChannel channel) throws IOException, ServletException
+    {
+        final HttpChannelState state = channel.getRequest().getHttpChannelState();
+        final AsyncContextEvent event = state.getAsyncContextEvent();
+        final Request baseRequest = channel.getRequest();
+
+        HttpURI baseUri = event.getBaseURI();
+        String encodedPathQuery = event.getDispatchPath();
+
+        if (encodedPathQuery == null && baseUri == null)
+        {
+            // Simple case, no request modification or merging needed
+            handleAsync(channel, event, baseRequest);
+            return;
+        }
+
+        // this is a dispatch with either a provided URI and/or a dispatched path
+        // We will have to modify the request and then revert
+        final HttpURI oldUri = baseRequest.getHttpURI();
+        final MultiMap<String> oldQueryParams = baseRequest.getQueryParameters();
+        try
+        {
+            if (encodedPathQuery == null)
+            {
+                baseRequest.setHttpURI(baseUri);
+            }
+            else
+            {
+                ServletContext servletContext = event.getServletContext();
+                if (servletContext != null)
+                {
+                    String encodedContextPath = servletContext instanceof ContextHandler.Context
+                        ? ((ContextHandler.Context)servletContext).getContextHandler().getContextPathEncoded()
+                        : URIUtil.encodePath(servletContext.getContextPath());
+                    if (!StringUtil.isEmpty(encodedContextPath))
+                    {
+                        encodedPathQuery = URIUtil.canonicalPath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
+                        if (encodedPathQuery == null)
+                            throw new BadMessageException(500, "Bad dispatch path");
+                    }
+                }
+
+                if (baseUri == null)
+                    baseUri = oldUri;
+                HttpURI.Mutable builder = HttpURI.build(baseUri, encodedPathQuery);
+                if (StringUtil.isEmpty(builder.getParam()))
+                    builder.param(baseUri.getParam());
+                if (StringUtil.isEmpty(builder.getQuery()))
+                    builder.query(baseUri.getQuery());
+                baseRequest.setHttpURI(builder);
+
+                if (baseUri.getQuery() != null && baseRequest.getQueryString() != null)
+                    // TODO why can't the old map be passed?
+                    baseRequest.mergeQueryParameters(oldUri.getQuery(), baseRequest.getQueryString());
+            }
+
+            baseRequest.setContext(null, baseRequest.getHttpURI().getDecodedPath());
+            handleAsync(channel, event, baseRequest);
+        }
+        finally
+        {
+            baseRequest.setHttpURI(oldUri);
+            baseRequest.setQueryParameters(oldQueryParams);
+            baseRequest.resetParameters();
+        }
+    }
+
+    private void handleAsync(HttpChannel channel, AsyncContextEvent event, Request baseRequest) throws IOException, ServletException
+    {
+        final String target = baseRequest.getPathInfo();
+        final HttpServletRequest request = Request.unwrap(event.getSuppliedRequest());
+        final HttpServletResponse response = Response.unwrap(event.getSuppliedResponse());
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} {} {} on {}", request.getDispatcherType(), request.getMethod(), target, channel);
+        handle(target, baseRequest, request, response);
+        if (LOG.isDebugEnabled())
+            LOG.debug("handledAsync={} async={} committed={} on {}", channel.getRequest().isHandled(), request.isAsyncStarted(), response.isCommitted(), channel);
+    }
+
     public void join() throws InterruptedException
     {
         getThreadPool().join();
     }
 
-    @Override
-    public Object setAttribute(String name, Object attribute)
+    /**
+     * @return Returns the sessionIdManager.
+     */
+    public SessionIdManager getSessionIdManager()
     {
-        return _attributes.setAttribute(name, attribute);
+        return _sessionIdManager;
+    }
+
+    /**
+     * @param sessionIdManager The sessionIdManager to set.
+     */
+    public void setSessionIdManager(SessionIdManager sessionIdManager)
+    {
+        updateBean(_sessionIdManager, sessionIdManager);
+        _sessionIdManager = sessionIdManager;
     }
 
     @Override
-    public Object removeAttribute(String name)
+    public void clearAttributes()
     {
-        return _attributes.removeAttribute(name);
+        _attributes.clearAttributes();
     }
 
     @Override
@@ -571,15 +691,27 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     @Override
-    public Set<String> getAttributeNames()
+    public Enumeration<String> getAttributeNames()
     {
         return _attributes.getAttributeNames();
     }
 
     @Override
-    public void clearAttributes()
+    public Set<String> getAttributeNameSet()
     {
-        _attributes.clearAttributes();
+        return _attributes.getAttributeNameSet();
+    }
+
+    @Override
+    public void removeAttribute(String name)
+    {
+        _attributes.removeAttribute(name);
+    }
+
+    @Override
+    public void setAttribute(String name, Object attribute)
+    {
+        _attributes.setAttribute(name, attribute);
     }
 
     /**
@@ -610,39 +742,21 @@ public class Server extends Handler.Wrapper implements Attributes
                 scheme = "https";
 
             String host = connector.getHost();
+            if (context != null && context.getVirtualHosts() != null && context.getVirtualHosts().length > 0)
+                host = context.getVirtualHosts()[0];
             if (host == null)
                 host = InetAddress.getLocalHost().getHostAddress();
-            int port = connector.getLocalPort();
 
-            String path = "/";
-            if (context != null)
-            {
-                Optional<String> vhost = context.getVirtualHosts().stream()
-                    .filter(h -> !h.startsWith("*.") && !h.startsWith("@"))
-                    .findFirst();
-                if (vhost.isPresent())
-                {
-                    host = vhost.get();
-                    int at = host.indexOf('@');
-                    if (at > 0)
-                        host = host.substring(0, at);
-                }
-
-                path = context.getContextPath();
-            }
-            return new URI(scheme, null, host, port, path, null, null);
+            String path = context == null ? null : context.getContextPath();
+            if (path == null)
+                path = "/";
+            return new URI(scheme, null, host, connector.getLocalPort(), path, null, null);
         }
         catch (Exception e)
         {
             LOG.warn("Unable to build server URI", e);
             return null;
         }
-    }
-
-    @Override
-    public Server getServer()
-    {
-        return this;
     }
 
     @Override
@@ -674,6 +788,4 @@ public class Server extends Handler.Wrapper implements Attributes
             _dateField = dateField;
         }
     }
-
-    private static class DynamicErrorHandler extends ErrorHandler {}
 }

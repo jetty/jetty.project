@@ -42,6 +42,7 @@ import org.eclipse.jetty.io.EndPoint;
  */
 public interface ConnectionFactory
 {
+
     /**
      * @return A string representing the primary protocol name.
      */

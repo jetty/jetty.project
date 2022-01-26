@@ -23,8 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.handler.EchoHandler;
-import org.eclipse.jetty.server.handler.HelloHandler;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,7 +53,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         final int requestCount = 32;
         final CountDownLatch latch = new CountDownLatch(requestCount);
 
-        configureServer(new HelloHandler());
+        configureServer(new HelloWorldHandler());
         URI uri = _server.getURI();
 
         try (Socket client = newSocket(uri.getHost(), uri.getPort()))

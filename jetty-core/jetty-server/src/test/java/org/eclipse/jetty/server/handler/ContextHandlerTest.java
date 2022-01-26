@@ -13,357 +13,948 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.ConnectionMetaData;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Content;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.MockConnectionMetaData;
-import org.eclipse.jetty.server.MockConnector;
-import org.eclipse.jetty.server.MockHttpStream;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
+import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.resource.Resource;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith(WorkDirExtension.class)
 public class ContextHandlerTest
 {
-    Server _server;
-    ClassLoader _loader;
-    ContextHandler _contextHandler;
-    ContextHandler.Context _context;
-    AtomicBoolean _inContext;
+    public WorkDir workDir;
 
-    @BeforeEach
-    public void beforeEach() throws Exception
+    @Test
+    public void testGetResourcePathsWhenSuppliedPathEndsInSlash() throws Exception
     {
-        _server = new Server();
-        _loader = new URLClassLoader(new URL[0], this.getClass().getClassLoader());
-        _contextHandler = new ContextHandler();
-        _contextHandler.setDisplayName("Test Context");
-        _contextHandler.setContextPath("/ctx");
-        _contextHandler.setContextLoader(_loader);
-        _context = _contextHandler.getContext();
-        _inContext = new AtomicBoolean(true);
-        _server.setHandler(_contextHandler);
-    }
-
-    @AfterEach
-    public void afterEach() throws Exception
-    {
-        assertTrue(_inContext.get());
-        if (_server != null)
-            _server.stop();
+        checkResourcePathsForExampleWebApp("/WEB-INF/");
     }
 
     @Test
-    public void testMiss() throws Exception
+    public void testGetResourcePathsWhenSuppliedPathDoesNotEndInSlash() throws Exception
     {
-        HelloHandler helloHandler = new HelloHandler();
-        _contextHandler.setHandler(helloHandler);
-        _server.start();
-
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
-        MockHttpStream stream = new MockHttpStream(channel);
-
-        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/other"), HttpVersion.HTTP_1_1, fields, 0);
-        Runnable task = channel.onRequest(request);
-        task.run();
-
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
-        assertThat(stream.getResponse(), notNullValue());
-        assertThat(stream.getResponse().getStatus(), equalTo(404));
+        checkResourcePathsForExampleWebApp("/WEB-INF");
     }
 
     @Test
-    public void testSimpleGET() throws Exception
+    public void testVirtualHostNormalization() throws Exception
     {
-        HelloHandler helloHandler = new HelloHandler();
-        _contextHandler.setHandler(helloHandler);
-        _server.start();
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        server.setConnectors(new Connector[]
+            {connector});
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
-        MockHttpStream stream = new MockHttpStream(channel);
+        ContextHandler contextA = new ContextHandler("/");
+        contextA.setVirtualHosts(new String[]
+            {"www.example.com"});
+        IsHandledHandler handlerA = new IsHandledHandler();
+        contextA.setHandler(handlerA);
 
-        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0);
-        Runnable task = channel.onRequest(request);
-        task.run();
+        ContextHandler contextB = new ContextHandler("/");
+        IsHandledHandler handlerB = new IsHandledHandler();
+        contextB.setHandler(handlerB);
+        contextB.setVirtualHosts(new String[]
+            {"www.example2.com."});
 
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
-        assertThat(stream.getResponse(), notNullValue());
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
-    }
+        ContextHandler contextC = new ContextHandler("/");
+        IsHandledHandler handlerC = new IsHandledHandler();
+        contextC.setHandler(handlerC);
 
-    private void assertInContext(Request request)
-    {
+        HandlerList c = new HandlerList();
+
+        c.addHandler(contextA);
+        c.addHandler(contextB);
+        c.addHandler(contextC);
+
+        server.setHandler(c);
+
         try
         {
-            if (request != null)
-            {
-                assertThat(request.getPath(), equalTo("/path"));
-                assertThat(request.get(ContextRequest.class, ContextRequest::getContext), sameInstance(_context));
-            }
-            assertThat(ContextHandler.getCurrentContext(), sameInstance(_context));
-            assertThat(Thread.currentThread().getContextClassLoader(), sameInstance(_loader));
+            server.start();
+            connector.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
+
+            assertTrue(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
+
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+
+            connector.getResponse("GET / HTTP/1.0\n" + "Host: www.example2.com\n\n");
+
+            assertFalse(handlerA.isHandled());
+            assertTrue(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
         }
-        catch (Throwable t)
+        finally
         {
-            _inContext.set(false);
-            throw t;
+            server.stop();
         }
     }
 
     @Test
-    public void testSimpleInContext() throws Exception
+    public void testNamedConnector() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        LocalConnector connectorN = new LocalConnector(server);
+        connectorN.setName("name");
+        server.setConnectors(new Connector[]{connector, connectorN});
+
+        ContextHandler contextA = new ContextHandler("/");
+        contextA.setDisplayName("A");
+        contextA.setVirtualHosts(new String[]{"www.example.com"});
+        IsHandledHandler handlerA = new IsHandledHandler();
+        contextA.setHandler(handlerA);
+
+        ContextHandler contextB = new ContextHandler("/");
+        contextB.setDisplayName("B");
+        IsHandledHandler handlerB = new IsHandledHandler();
+        contextB.setHandler(handlerB);
+        contextB.setVirtualHosts(new String[]{"@name"});
+
+        ContextHandler contextC = new ContextHandler("/");
+        contextC.setDisplayName("C");
+        IsHandledHandler handlerC = new IsHandledHandler();
+        contextC.setHandler(handlerC);
+
+        ContextHandler contextD = new ContextHandler("/");
+        contextD.setDisplayName("D");
+        IsHandledHandler handlerD = new IsHandledHandler();
+        contextD.setHandler(handlerD);
+        contextD.setVirtualHosts(new String[]{"www.example.com@name"});
+
+        ContextHandler contextE = new ContextHandler("/");
+        contextE.setDisplayName("E");
+        IsHandledHandler handlerE = new IsHandledHandler();
+        contextE.setHandler(handlerE);
+        contextE.setVirtualHosts(new String[]{"*.example.com"});
+
+        ContextHandler contextF = new ContextHandler("/");
+        contextF.setDisplayName("F");
+        IsHandledHandler handlerF = new IsHandledHandler();
+        contextF.setHandler(handlerF);
+        contextF.setVirtualHosts(new String[]{"*.example.com@name"});
+
+        ContextHandler contextG = new ContextHandler("/");
+        contextG.setDisplayName("G");
+        IsHandledHandler handlerG = new IsHandledHandler();
+        contextG.setHandler(handlerG);
+        contextG.setVirtualHosts(new String[]{"*.com@name"});
+
+        ContextHandler contextH = new ContextHandler("/");
+        contextH.setDisplayName("H");
+        IsHandledHandler handlerH = new IsHandledHandler();
+        contextH.setHandler(handlerH);
+        contextH.setVirtualHosts(new String[]{"*.com"});
+
+        HandlerList c = new HandlerList();
+        c.addHandler(contextA);
+        c.addHandler(contextB);
+        c.addHandler(contextC);
+        c.addHandler(contextD);
+        c.addHandler(contextE);
+        c.addHandler(contextF);
+        c.addHandler(contextG);
+        c.addHandler(contextH);
+
+        server.setHandler(c);
+
+        server.start();
+        try
         {
-            @Override
-            public boolean handle(Request request, Response response) throws Exception
-            {
-                assertInContext(request);
-                response.setStatus(200);
-                request.succeeded();
-                return true;
-            }
-        };
-        _contextHandler.setHandler(handler);
-        _server.start();
+            connector.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
+            assertTrue(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
+            assertFalse(handlerD.isHandled());
+            assertFalse(handlerE.isHandled());
+            assertFalse(handlerF.isHandled());
+            assertFalse(handlerG.isHandled());
+            assertFalse(handlerH.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+            handlerD.reset();
+            handlerE.reset();
+            handlerF.reset();
+            handlerG.reset();
+            handlerH.reset();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
-        MockHttpStream stream = new MockHttpStream(channel);
+            connector.getResponse("GET / HTTP/1.0\n" + "Host: localhost\n\n");
+            assertFalse(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertTrue(handlerC.isHandled());
+            assertFalse(handlerD.isHandled());
+            assertFalse(handlerE.isHandled());
+            assertFalse(handlerF.isHandled());
+            assertFalse(handlerG.isHandled());
+            assertFalse(handlerH.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+            handlerD.reset();
+            handlerE.reset();
+            handlerF.reset();
+            handlerG.reset();
+            handlerH.reset();
 
-        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0);
-        Runnable task = channel.onRequest(request);
-        task.run();
+            connectorN.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
+            assertTrue(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
+            assertFalse(handlerD.isHandled());
+            assertFalse(handlerE.isHandled());
+            assertFalse(handlerF.isHandled());
+            assertFalse(handlerG.isHandled());
+            assertFalse(handlerH.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+            handlerD.reset();
+            handlerE.reset();
+            handlerF.reset();
+            handlerG.reset();
+            handlerH.reset();
 
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
-        assertThat(stream.getResponse(), notNullValue());
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
+            connectorN.getResponse("GET / HTTP/1.0\n" + "Host: localhost\n\n");
+            assertFalse(handlerA.isHandled());
+            assertTrue(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
+            assertFalse(handlerD.isHandled());
+            assertFalse(handlerE.isHandled());
+            assertFalse(handlerF.isHandled());
+            assertFalse(handlerG.isHandled());
+            assertFalse(handlerH.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+            handlerD.reset();
+            handlerE.reset();
+            handlerF.reset();
+            handlerG.reset();
+            handlerH.reset();
+        }
+        finally
+        {
+            server.stop();
+        }
+
+        // Reversed order to check priority when multiple matches
+        HandlerList d = new HandlerList();
+        d.addHandler(contextH);
+        d.addHandler(contextG);
+        d.addHandler(contextF);
+        d.addHandler(contextE);
+        d.addHandler(contextD);
+        d.addHandler(contextC);
+        d.addHandler(contextB);
+        d.addHandler(contextA);
+
+        server.setHandler(d);
+
+        server.start();
+        try
+        {
+            connector.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
+            assertFalse(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
+            assertFalse(handlerD.isHandled());
+            assertTrue(handlerE.isHandled());
+            assertFalse(handlerF.isHandled());
+            assertFalse(handlerG.isHandled());
+            assertFalse(handlerH.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+            handlerD.reset();
+            handlerE.reset();
+            handlerF.reset();
+            handlerG.reset();
+            handlerH.reset();
+
+            connector.getResponse("GET / HTTP/1.0\n" + "Host: localhost\n\n");
+            assertFalse(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertTrue(handlerC.isHandled());
+            assertFalse(handlerD.isHandled());
+            assertFalse(handlerE.isHandled());
+            assertFalse(handlerF.isHandled());
+            assertFalse(handlerG.isHandled());
+            assertFalse(handlerH.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+            handlerD.reset();
+            handlerE.reset();
+            handlerF.reset();
+            handlerG.reset();
+            handlerH.reset();
+
+            connectorN.getResponse("GET / HTTP/1.0\n" + "Host: www.example.com.\n\n");
+            assertFalse(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertFalse(handlerC.isHandled());
+            assertFalse(handlerD.isHandled());
+            assertFalse(handlerE.isHandled());
+            assertTrue(handlerF.isHandled());
+            assertFalse(handlerG.isHandled());
+            assertFalse(handlerH.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+            handlerD.reset();
+            handlerE.reset();
+            handlerF.reset();
+            handlerG.reset();
+            handlerH.reset();
+
+            connectorN.getResponse("GET / HTTP/1.0\n" + "Host: localhost\n\n");
+            assertFalse(handlerA.isHandled());
+            assertFalse(handlerB.isHandled());
+            assertTrue(handlerC.isHandled());
+            assertFalse(handlerD.isHandled());
+            assertFalse(handlerE.isHandled());
+            assertFalse(handlerF.isHandled());
+            assertFalse(handlerG.isHandled());
+            assertFalse(handlerH.isHandled());
+            handlerA.reset();
+            handlerB.reset();
+            handlerC.reset();
+            handlerD.reset();
+            handlerE.reset();
+            handlerF.reset();
+            handlerG.reset();
+            handlerH.reset();
+        }
+        finally
+        {
+            server.stop();
+        }
     }
 
     @Test
-    public void testCallbackInContext() throws Exception
+    public void testContextGetContext() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        server.setConnectors(new Connector[]{connector});
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+
+        ContextHandler rootA = new ContextHandler(contexts, "/");
+        ContextHandler fooA = new ContextHandler(contexts, "/foo");
+        ContextHandler foobarA = new ContextHandler(contexts, "/foo/bar");
+
+        server.start();
+
+        // System.err.println(server.dump());
+
+        assertEquals(rootA._scontext, rootA._scontext.getContext("/"));
+        assertEquals(fooA._scontext, rootA._scontext.getContext("/foo"));
+        assertEquals(foobarA._scontext, rootA._scontext.getContext("/foo/bar"));
+        assertEquals(foobarA._scontext, rootA._scontext.getContext("/foo/bar/bob.jsp"));
+        assertEquals(rootA._scontext, rootA._scontext.getContext("/other"));
+        assertEquals(fooA._scontext, rootA._scontext.getContext("/foo/other"));
+
+        assertEquals(rootA._scontext, foobarA._scontext.getContext("/"));
+        assertEquals(fooA._scontext, foobarA._scontext.getContext("/foo"));
+        assertEquals(foobarA._scontext, foobarA._scontext.getContext("/foo/bar"));
+        assertEquals(foobarA._scontext, foobarA._scontext.getContext("/foo/bar/bob.jsp"));
+        assertEquals(rootA._scontext, foobarA._scontext.getContext("/other"));
+        assertEquals(fooA._scontext, foobarA._scontext.getContext("/foo/other"));
+    }
+
+    @Test
+    public void testLifeCycle() throws Exception
+    {
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        server.setConnectors(new Connector[]{connector});
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+
+        ContextHandler root = new ContextHandler(contexts, "/");
+        root.setHandler(new ContextPathHandler());
+        ContextHandler foo = new ContextHandler(contexts, "/foo");
+        foo.setHandler(new ContextPathHandler());
+        ContextHandler foobar = new ContextHandler(contexts, "/foo/bar");
+        foobar.setHandler(new ContextPathHandler());
+
+        // check that all contexts start normally
+        server.start();
+        assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
+
+        // If we make foobar unavailable, then requests will be handled by 503
+        foobar.setAvailable(false);
+        assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString(" 503 "));
+
+        // If we make foobar available, then requests will be handled normally
+        foobar.setAvailable(true);
+        assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
+
+        // If we stop foobar, then requests will be handled by foo
+        foobar.stop();
+        assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+
+        // If we shutdown foo then requests will be 503'd
+        foo.shutdown().get();
+        assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("503"));
+        assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("503"));
+
+        // If we stop foo then requests will be handled by root
+        foo.stop();
+        assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+
+        // If we start foo then foobar requests will be handled by foo
+        foo.start();
+        assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+
+        // If we start foobar then foobar requests will be handled by foobar
+        foobar.start();
+        assertThat(connector.getResponse("GET / HTTP/1.0\n\n"), Matchers.containsString("ctx=''"));
+        assertThat(connector.getResponse("GET /foo/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo'"));
+        assertThat(connector.getResponse("GET /foo/bar/xxx HTTP/1.0\n\n"), Matchers.containsString("ctx='/foo/bar'"));
+    }
+
+    @Test
+    public void testContextInitializationDestruction() throws Exception
+    {
+        Server server = new Server();
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+
+        ContextHandler noServlets = new ContextHandler(contexts, "/noservlets");
+        TestServletContextListener listener = new TestServletContextListener();
+        noServlets.addEventListener(listener);
+        server.start();
+        assertEquals(1, listener.initialized);
+        server.stop();
+        assertEquals(1, listener.destroyed);
+    }
+
+    @Test
+    public void testContextVirtualGetContext() throws Exception
+    {
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        server.setConnectors(new Connector[]{connector});
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        server.setHandler(contexts);
+
+        ContextHandler rootA = new ContextHandler(contexts, "/");
+        rootA.setVirtualHosts(new String[]{"a.com"});
+
+        ContextHandler rootB = new ContextHandler(contexts, "/");
+        rootB.setVirtualHosts(new String[]{"b.com"});
+
+        ContextHandler rootC = new ContextHandler(contexts, "/");
+        rootC.setVirtualHosts(new String[]{"c.com"});
+
+        ContextHandler fooA = new ContextHandler(contexts, "/foo");
+        fooA.setVirtualHosts(new String[]{"a.com"});
+
+        ContextHandler fooB = new ContextHandler(contexts, "/foo");
+        fooB.setVirtualHosts(new String[]{"b.com"});
+
+        ContextHandler foobarA = new ContextHandler(contexts, "/foo/bar");
+        foobarA.setVirtualHosts(new String[]{"a.com"});
+
+        server.start();
+
+        // System.err.println(server.dump());
+
+        assertEquals(rootA._scontext, rootA._scontext.getContext("/"));
+        assertEquals(fooA._scontext, rootA._scontext.getContext("/foo"));
+        assertEquals(foobarA._scontext, rootA._scontext.getContext("/foo/bar"));
+        assertEquals(foobarA._scontext, rootA._scontext.getContext("/foo/bar/bob"));
+
+        assertEquals(rootA._scontext, rootA._scontext.getContext("/other"));
+        assertEquals(rootB._scontext, rootB._scontext.getContext("/other"));
+        assertEquals(rootC._scontext, rootC._scontext.getContext("/other"));
+
+        assertEquals(fooB._scontext, rootB._scontext.getContext("/foo/other"));
+        assertEquals(rootC._scontext, rootC._scontext.getContext("/foo/other"));
+    }
+
+    @Test
+    public void testVirtualHostWildcard() throws Exception
+    {
+        Server server = new Server();
+        LocalConnector connector = new LocalConnector(server);
+        server.setConnectors(new Connector[]{connector});
+
+        ContextHandler context = new ContextHandler("/");
+
+        IsHandledHandler handler = new IsHandledHandler();
+        context.setHandler(handler);
+
+        server.setHandler(context);
+
+        try
+        {
+            server.start();
+            checkWildcardHost(true, server, null, new String[]{"example.com", ".example.com", "vhost.example.com"});
+            checkWildcardHost(false, server, new String[]{null}, new String[]{
+                "example.com", ".example.com", "vhost.example.com"
+            });
+
+            checkWildcardHost(true, server, new String[]{"example.com", "*.example.com"}, new String[]{
+                "example.com", ".example.com", "vhost.example.com"
+            });
+            checkWildcardHost(false, server, new String[]{"example.com", "*.example.com"}, new String[]{
+                "badexample.com", ".badexample.com", "vhost.badexample.com"
+            });
+
+            checkWildcardHost(false, server, new String[]{"*."}, new String[]{"anything.anything"});
+
+            checkWildcardHost(true, server, new String[]{"*.example.com"}, new String[]{"vhost.example.com", ".example.com"});
+            checkWildcardHost(false, server, new String[]{"*.example.com"}, new String[]{
+                "vhost.www.example.com", "example.com", "www.vhost.example.com"
+            });
+
+            checkWildcardHost(true, server, new String[]{"*.sub.example.com"}, new String[]{
+                "vhost.sub.example.com", ".sub.example.com"
+            });
+            checkWildcardHost(false, server, new String[]{"*.sub.example.com"}, new String[]{
+                ".example.com", "sub.example.com", "vhost.example.com"
+            });
+
+            checkWildcardHost(false, server, new String[]{"example.*.com", "example.com.*"}, new String[]{
+                "example.vhost.com", "example.com.vhost", "example.com"
+            });
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+    @Test
+    public void testVirtualHostManagement()
+    {
+        ContextHandler context = new ContextHandler("/");
+
+        // test singular
+        context.setVirtualHosts(new String[]{"www.example.com"});
+        assertEquals(1, context.getVirtualHosts().length);
+
+        // test adding two more
+        context.addVirtualHosts(new String[]{"foo.com@connector1", "*.example2.com"});
+        assertEquals(3, context.getVirtualHosts().length);
+
+        // test adding existing context
+        context.addVirtualHosts(new String[]{"www.example.com"});
+        assertEquals(3, context.getVirtualHosts().length);
+
+        // test removing existing
+        context.removeVirtualHosts(new String[]{"*.example2.com"});
+        assertEquals(2, context.getVirtualHosts().length);
+
+        // test removing non-existent
+        context.removeVirtualHosts(new String[]{"www.example3.com"});
+        assertEquals(2, context.getVirtualHosts().length);
+
+        // test removing all remaining and resets to null
+        context.removeVirtualHosts(new String[]{"www.example.com", "foo.com@connector1"});
+        assertArrayEquals(null, context.getVirtualHosts());
+    }
+
+    @Test
+    public void testAttributes() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setAttribute("aaa", "111");
+        assertEquals("111", handler.getServletContext().getAttribute("aaa"));
+        assertEquals(null, handler.getAttribute("bbb"));
+
+        handler.start();
+
+        handler.getServletContext().setAttribute("aaa", "000");
+        handler.setAttribute("ccc", "333");
+        handler.getServletContext().setAttribute("ddd", "444");
+        assertEquals("111", handler.getServletContext().getAttribute("aaa"));
+        assertEquals(null, handler.getServletContext().getAttribute("bbb"));
+        handler.getServletContext().setAttribute("bbb", "222");
+        assertEquals("333", handler.getServletContext().getAttribute("ccc"));
+        assertEquals("444", handler.getServletContext().getAttribute("ddd"));
+
+        assertEquals("111", handler.getAttribute("aaa"));
+        assertEquals(null, handler.getAttribute("bbb"));
+        assertEquals("333", handler.getAttribute("ccc"));
+        assertEquals(null, handler.getAttribute("ddd"));
+
+        handler.stop();
+
+        assertEquals("111", handler.getServletContext().getAttribute("aaa"));
+        assertEquals(null, handler.getServletContext().getAttribute("bbb"));
+        assertEquals("333", handler.getServletContext().getAttribute("ccc"));
+        assertEquals(null, handler.getServletContext().getAttribute("ddd"));
+    }
+
+    @Test
+    public void testProtected() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        String[] protectedTargets = {"/FOO-INF", "/BAR-INF"};
+        handler.setProtectedTargets(protectedTargets);
+
+        assertTrue(handler.isProtectedTarget("/foo-inf"));
+        assertTrue(handler.isProtectedTarget("/Foo-Inf"));
+        assertTrue(handler.isProtectedTarget("/FOO-INF"));
+        assertTrue(handler.isProtectedTarget("/foo-inf/"));
+        assertTrue(handler.isProtectedTarget("/FOO-inf?"));
+        assertTrue(handler.isProtectedTarget("/FOO-INF;"));
+        assertTrue(handler.isProtectedTarget("/foo-INF#"));
+        assertTrue(handler.isProtectedTarget("//foo-inf"));
+        assertTrue(handler.isProtectedTarget("//foo-inf//some//path"));
+        assertTrue(handler.isProtectedTarget("///foo-inf"));
+        assertTrue(handler.isProtectedTarget("/foo-inf/x/y/z"));
+        assertTrue(handler.isProtectedTarget("/foo-inf?x=y&z=1"));
+
+        assertFalse(handler.isProtectedTarget("/foo/x/y/z"));
+        assertFalse(handler.isProtectedTarget("/foo-inf-bar"));
+
+        protectedTargets = new String[4];
+        System.arraycopy(handler.getProtectedTargets(), 0, protectedTargets, 0, 2);
+        protectedTargets[2] = "/abc";
+        protectedTargets[3] = "/def";
+        handler.setProtectedTargets(protectedTargets);
+
+        assertTrue(handler.isProtectedTarget("/foo-inf/x/y/z"));
+        assertFalse(handler.isProtectedTarget("/foo/x/y/z"));
+        assertTrue(handler.isProtectedTarget("/foo-inf?x=y&z=1"));
+        assertTrue(handler.isProtectedTarget("/abc/124"));
+        assertTrue(handler.isProtectedTarget("//def"));
+
+        assertTrue(handler.isProtectedTarget("/ABC/7777"));
+    }
+
+    @Test
+    public void testIsShutdown()
+    {
+        ContextHandler handler = new ContextHandler();
+        assertEquals(false, handler.isShutdown());
+    }
+
+    @Test
+    public void testLogNameFromDisplayName() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setDisplayName("An Interesting Project: app.tast.ic");
+        try
+        {
+            handler.start();
+            assertThat("handler.get", handler.getLogger().getName(), is(ContextHandler.class.getName() + ".An_Interesting_Project__app_tast_ic"));
+        }
+        finally
+        {
+            handler.stop();
+        }
+    }
+
+    @Test
+    public void testLogNameFromContextPathDeep() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setContextPath("/app/tast/ic");
+        try
+        {
+            handler.start();
+            assertThat("handler.get", handler.getLogger().getName(), is(ContextHandler.class.getName() + ".app_tast_ic"));
+        }
+        finally
+        {
+            handler.stop();
+        }
+    }
+
+    @Test
+    public void testLogNameFromContextPathRoot() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setContextPath("");
+        try
+        {
+            handler.start();
+            assertThat("handler.get", handler.getLogger().getName(), is(ContextHandler.class.getName() + ".ROOT"));
+        }
+        finally
+        {
+            handler.stop();
+        }
+    }
+
+    @Test
+    public void testLogNameFromContextPathUndefined() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        try
+        {
+            handler.start();
+            assertThat("handler.get", handler.getLogger().getName(), is(ContextHandler.class.getName() + ".ROOT"));
+        }
+        finally
+        {
+            handler.stop();
+        }
+    }
+
+    @Test
+    public void testLogNameFromContextPathEmpty() throws Exception
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setContextPath("");
+        try
+        {
+            handler.start();
+            assertThat("handler.get", handler.getLogger().getName(), is(ContextHandler.class.getName() + ".ROOT"));
+        }
+        finally
+        {
+            handler.stop();
+        }
+    }
+
+    @Test
+    public void testClassPathWithSpaces() throws IOException
+    {
+        ContextHandler handler = new ContextHandler();
+        handler.setServer(new Server());
+        handler.setContextPath("/");
+
+        Path baseDir = MavenTestingUtils.getTargetTestingPath("testClassPath_WithSpaces");
+        FS.ensureEmpty(baseDir);
+
+        Path spacey = baseDir.resolve("and extra directory");
+        FS.ensureEmpty(spacey);
+
+        Path jar = spacey.resolve("empty.jar");
+        FS.touch(jar);
+
+        URLClassLoader cl = new URLClassLoader(new URL[]{jar.toUri().toURL()});
+        handler.setClassLoader(cl);
+
+        String classpath = handler.getClassPath();
+        assertThat("classpath", classpath, containsString(jar.toString()));
+    }
+
+    @Test
+    public void testNonDurableContextListener() throws Exception
+    {
+        Server server = new Server();
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
+        AtomicInteger initialized = new AtomicInteger();
+        AtomicInteger destroyed = new AtomicInteger();
+
+        context.addEventListener(new ServletContextListener()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void contextInitialized(ServletContextEvent sce)
             {
-                request.addCompletionListener(Callback.from(() -> assertInContext(request)));
-
-                request.demandContent(() ->
+                initialized.incrementAndGet();
+                context.addEventListener(new ServletContextListener()
                 {
-                    assertInContext(request);
-                    Content content = request.readContent();
-                    assertTrue(content.hasRemaining());
-                    assertTrue(content.isLast());
-                    response.setStatus(200);
-                    response.write(true, Callback.from(
-                        () ->
-                        {
-                            content.release();
-                            assertInContext(request);
-                            request.succeeded();
-                        },
-                        t ->
-                        {
-                            throw new IllegalStateException();
-                        }), content.getByteBuffer());
-                });
-                return true;
-            }
-        };
-        _contextHandler.setHandler(handler);
-        _server.start();
+                    @Override
+                    public void contextInitialized(ServletContextEvent sce)
+                    {
+                        initialized.incrementAndGet();
+                    }
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
-        AtomicReference<Callback> sendCB = new AtomicReference<>();
-        MockHttpStream stream = new MockHttpStream(channel, false)
+                    @Override
+                    public void contextDestroyed(ServletContextEvent sce)
+                    {
+                        destroyed.incrementAndGet();
+                    }
+                });
+            }
+
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                destroyed.incrementAndGet();
+            }
+        });
+
+        LoggerFactory.getLogger(ContextHandler.class).info("Expect WARN ContextListener ... add whilst starting ...");
+        server.start();
+        assertThat(initialized.get(), is(2));
+
+        LoggerFactory.getLogger(ContextHandler.class).info("Expect WARN ContextListener ... add after starting ...");
+        context.addEventListener(new ServletContextListener()
         {
             @Override
-            public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void contextInitialized(ServletContextEvent sce)
             {
-                sendCB.set(callback);
-                super.send(response, last, Callback.NOOP, content);
+                // This should not get called because added after started
+                initialized.incrementAndGet();
             }
-        };
 
-        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0);
-        Runnable todo = channel.onRequest(request);
-        todo.run();
+            @Override
+            public void contextDestroyed(ServletContextEvent sce)
+            {
+                destroyed.incrementAndGet();
+            }
+        });
 
-        todo = stream.addContent(BufferUtil.toBuffer("Hello"), true);
-        todo.run();
+        assertThat(initialized.get(), is(2));
 
-        sendCB.getAndSet(null).succeeded();
-        sendCB.getAndSet(null).succeeded();
-
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
-        assertThat(stream.getResponse(), notNullValue());
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponseContentAsString(), equalTo("Hello"));
+        server.stop();
+        assertThat(destroyed.get(), is(3));
     }
 
-    @Test
-    public void testBlockingInContext() throws Exception
+    private void checkResourcePathsForExampleWebApp(String root) throws IOException
     {
-        CountDownLatch blocking = new CountDownLatch(1);
+        File testDirectory = setupTestDirectory();
 
-        Handler handler = new Handler.Abstract()
-        {
-            @Override
-            public boolean handle(Request request, Response response) throws Exception
-            {
-                request.addCompletionListener(Callback.from(() -> assertInContext(request)));
+        ContextHandler handler = new ContextHandler();
 
-                CountDownLatch latch = new CountDownLatch(1);
-                request.demandContent(() ->
-                {
-                    assertInContext(request);
-                    latch.countDown();
-                });
+        assertTrue(testDirectory.isDirectory(), "Not a directory " + testDirectory);
+        handler.setBaseResource(Resource.newResource(Resource.toURL(testDirectory)));
 
-                blocking.countDown();
-                assertTrue(latch.await(10, TimeUnit.SECONDS));
-                Content content = request.readContent();
-                assertNotNull(content);
-                assertTrue(content.hasRemaining());
-                assertTrue(content.isLast());
-                content.release();
-                response.setStatus(200);
-                request.succeeded();
-                return true;
-            }
-        };
-        _contextHandler.setHandler(handler);
-        _server.start();
+        List<String> paths = new ArrayList<>(handler.getResourcePaths(root));
+        assertEquals(2, paths.size());
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
-        MockHttpStream stream = new MockHttpStream(channel, false);
-
-        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0);
-        Runnable todo = channel.onRequest(request);
-        new Thread(todo).start();
-        assertTrue(blocking.await(5, TimeUnit.SECONDS));
-
-        stream.addContent(BufferUtil.toBuffer("Hello"), true).run();
-
-        assertTrue(stream.waitForComplete(5, TimeUnit.SECONDS));
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
-        assertThat(stream.getResponse(), notNullValue());
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        Collections.sort(paths);
+        assertEquals("/WEB-INF/jsp/", paths.get(0));
+        assertEquals("/WEB-INF/web.xml", paths.get(1));
     }
 
-    @Test
-    public void testVirtualHost() throws Exception
+    private File setupTestDirectory() throws IOException
     {
-        HelloHandler helloHandler = new HelloHandler();
-        _contextHandler.setHandler(helloHandler);
+        Path root = workDir.getEmptyPathDir();
 
-        _contextHandler.setVirtualHosts(Arrays.asList(
-            "example.com",
-            "*.wild.org",
-            "acme.com@special"
-        ));
+        Path webInfDir = root.resolve("WEB-INF");
+        FS.ensureDirExists(webInfDir);
+        FS.ensureDirExists(webInfDir.resolve("jsp"));
+        FS.touch(webInfDir.resolve("web.xml"));
 
-        _server.start();
+        return root.toFile();
+    }
 
-        AtomicReference<String> connectorName = new AtomicReference<>();
+    private void checkWildcardHost(boolean succeed, Server server, String[] contextHosts, String[] requestHosts) throws Exception
+    {
+        LocalConnector connector = (LocalConnector)server.getConnectors()[0];
+        ContextHandler context = (ContextHandler)server.getHandler();
+        context.setVirtualHosts(contextHosts);
 
-        Connector connector = new MockConnector(_server)
+        IsHandledHandler handler = (IsHandledHandler)context.getHandler();
+        for (String host : requestHosts)
         {
-            @Override
-            public String getName()
-            {
-                return connectorName.get();
-            }
-        };
+            connector.getResponse("GET / HTTP/1.1\n" + "Host: " + host + "\nConnection:close\n\n");
+            if (succeed)
+                assertTrue(handler.isHandled(), "'" + host + "' should have been handled.");
+            else
+                assertFalse(handler.isHandled(), "'" + host + "' should not have been handled.");
+            handler.reset();
+        }
+    }
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(connector);
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
-        HttpFields fields = HttpFields.build().asImmutable();
+    private static final class IsHandledHandler extends AbstractHandler
+    {
+        private boolean handled;
 
-        MockHttpStream stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(404));
+        public boolean isHandled()
+        {
+            return handled;
+        }
 
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://nope.example.com/ctx"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(404));
+        @Override
+        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+        {
+            baseRequest.setHandled(true);
+            this.handled = true;
+        }
 
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://example.com/ctx"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        public void reset()
+        {
+            handled = false;
+        }
+    }
 
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://wild.org/ctx"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(404));
+    private static final class ContextPathHandler extends AbstractHandler
+    {
+        @Override
+        public void handle(String s, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+        {
+            baseRequest.setHandled(true);
 
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://match.wild.org/ctx"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
+            response.setStatus(200);
+            response.setContentType("text/plain; charset=utf-8");
+            response.setHeader("Connection", "close");
+            PrintWriter writer = response.getWriter();
+            writer.println("ctx='" + request.getContextPath() + "'");
+        }
+    }
 
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://acme.com/ctx"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(404));
+    private static class TestServletContextListener implements ServletContextListener
+    {
+        public int initialized = 0;
+        public int destroyed = 0;
 
-        connectorName.set("special");
-        stream = new MockHttpStream(channel);
-        channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://acme.com/ctx"), HttpVersion.HTTP_1_1, fields, 0)).run();
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        @Override
+        public void contextInitialized(ServletContextEvent sce)
+        {
+            initialized++;
+        }
+
+        @Override
+        public void contextDestroyed(ServletContextEvent sce)
+        {
+            destroyed++;
+        }
     }
 }

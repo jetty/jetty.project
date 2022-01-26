@@ -22,9 +22,12 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -41,20 +44,23 @@ public class ServerConnectorAcceptTest
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server, acceptors, 1);
         server.addConnector(connector);
-        server.setHandler(new Handler.Abstract()
+        server.setHandler(new AbstractHandler()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                request.succeeded();
-                return true;
+                jettyRequest.setHandled(true);
             }
         });
         server.start();
 
+        int runs = 4;
         try
         {
-            test(acceptors, connector);
+            for (int r = 0; r < runs; ++r)
+            {
+                test(acceptors, connector);
+            }
         }
         finally
         {
@@ -64,9 +70,8 @@ public class ServerConnectorAcceptTest
 
     private void test(int acceptors, ServerConnector connector) throws InterruptedException
     {
-        // TODO this test is way too slow
         int threads = 8;
-        int iterations = 256;
+        int iterations = 4096;
 
         CyclicBarrier barrier = new CyclicBarrier(threads + 1);
         CountDownLatch latch = new CountDownLatch(threads * iterations);

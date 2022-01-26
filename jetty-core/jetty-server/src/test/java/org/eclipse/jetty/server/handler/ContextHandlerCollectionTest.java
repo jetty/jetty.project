@@ -13,9 +13,32 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.IOException;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 public class ContextHandlerCollectionTest
 {
-    /* TODO
     @Test
     public void testVirtualHosts() throws Exception
     {
@@ -370,7 +393,7 @@ public class ContextHandlerCollectionTest
         assertThat(response, containsString("Wrapped: ASYNC"));
     }
 
-    private static final class WrappedHandler extends Handler.Wrapper
+    private static final class WrappedHandler extends HandlerWrapper
     {
         WrappedHandler(Handler handler)
         {
@@ -457,6 +480,4 @@ public class ContextHandlerCollectionTest
             return name;
         }
     }
-
-     */
 }

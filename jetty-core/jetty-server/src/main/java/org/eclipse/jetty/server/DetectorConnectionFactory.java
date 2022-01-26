@@ -66,24 +66,24 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
     }
 
     /**
-     * Performs a detection using multiple {@link Detecting} instances and returns the aggregated outcome.
+     * Performs a detection using multiple {@link ConnectionFactory.Detecting} instances and returns the aggregated outcome.
      * @param buffer the buffer to perform a detection against.
-     * @return A {@link Detection} value with the detection outcome of the {@code detectingConnectionFactories}.
+     * @return A {@link Detecting.Detection} value with the detection outcome of the {@code detectingConnectionFactories}.
      */
     @Override
-    public Detection detect(ByteBuffer buffer)
+    public Detecting.Detection detect(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Detector {} detecting from buffer {} using {}", getProtocol(), BufferUtil.toHexString(buffer), _detectingConnectionFactories);
         boolean needMoreBytes = true;
         for (Detecting detectingConnectionFactory : _detectingConnectionFactories)
         {
-            Detection detection = detectingConnectionFactory.detect(buffer);
-            if (detection == Detection.RECOGNIZED)
+            Detecting.Detection detection = detectingConnectionFactory.detect(buffer);
+            if (detection == Detecting.Detection.RECOGNIZED)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Detector {} recognized bytes using {}", getProtocol(), detection);
-                return Detection.RECOGNIZED;
+                return Detecting.Detection.RECOGNIZED;
             }
             needMoreBytes &= detection == Detection.NEED_MORE_BYTES;
         }
@@ -232,10 +232,10 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
             boolean notRecognized = true;
             for (Detecting detectingConnectionFactory : _detectingConnectionFactories)
             {
-                Detection detection = detectingConnectionFactory.detect(_buffer);
+                Detecting.Detection detection = detectingConnectionFactory.detect(_buffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Detector {} performed detection from {} with {} which returned {}", getProtocol(), BufferUtil.toDetailString(_buffer), detectingConnectionFactory, detection);
-                if (detection == Detection.RECOGNIZED)
+                if (detection == Detecting.Detection.RECOGNIZED)
                 {
                     try
                     {
@@ -267,7 +267,7 @@ public class DetectorConnectionFactory extends AbstractConnectionFactory impleme
                         throw new DetectionFailureException(e);
                     }
                 }
-                notRecognized &= detection == Detection.NOT_RECOGNIZED;
+                notRecognized &= detection == Detecting.Detection.NOT_RECOGNIZED;
             }
 
             if (notRecognized)

@@ -22,12 +22,20 @@ import org.eclipse.jetty.http.HttpVersion;
 
 /**
  * Adds a missing {@code Host} header (for example, HTTP 1.0 or 2.0 requests).
+ * <p>
+ * The host and port may be provided in the constructor or taken from the
+ * {@link Request#getServerName()} and {@link Request#getServerPort()} methods.
+ * </p>
  */
 public class HostHeaderCustomizer implements HttpConfiguration.Customizer
 {
     private final String serverName;
     private final int serverPort;
 
+    /**
+     * Construct customizer that uses {@link Request#getServerName()} and
+     * {@link Request#getServerPort()} to create a host header.
+     */
     public HostHeaderCustomizer()
     {
         this(null, 0);
@@ -52,37 +60,21 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
     }
 
     @Override
-    public Request customize(Connector connector, HttpConfiguration channelConfig, Request request)
+    public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
-        if (request.getConnectionMetaData().getVersion() == HttpVersion.HTTP_1_1 || request.getHeaders().contains(HttpHeader.HOST))
-            return request;
-
-        String host = serverName == null ? request.getServerName() : serverName;
-        int port = HttpScheme.normalizePort(request.getHttpURI().getScheme(), serverPort == 0 ? request.getServerPort() : serverPort);
-
-        HttpURI uri = (serverName != null || serverPort > 0)
-            ? HttpURI.build(request.getHttpURI()).authority(host, port).asImmutable()
-            : request.getHttpURI();
-
-        HttpFields original = request.getHeaders();
-        HttpFields.Mutable builder = HttpFields.build(original.size() + 1);
-        builder.add(new HostPortHttpField(host, port));
-        builder.add(request.getHeaders());
-        HttpFields headers = builder.asImmutable();
-
-        return new Request.Wrapper(request)
+        if (request.getHttpVersion() != HttpVersion.HTTP_1_1 && !request.getHttpFields().contains(HttpHeader.HOST))
         {
-            @Override
-            public HttpURI getHttpURI()
-            {
-                return uri;
-            }
+            String host = serverName == null ? request.getServerName() : serverName;
+            int port = HttpScheme.normalizePort(request.getScheme(), serverPort == 0 ? request.getServerPort() : serverPort);
 
-            @Override
-            public HttpFields getHeaders()
-            {
-                return headers;
-            }
-        };
+            if (serverName != null || serverPort > 0)
+                request.setHttpURI(HttpURI.build(request.getHttpURI()).authority(host, port));
+
+            HttpFields original = request.getHttpFields();
+            HttpFields.Mutable httpFields = HttpFields.build(original.size() + 1);
+            httpFields.add(new HostPortHttpField(host, port));
+            httpFields.add(request.getHttpFields());
+            request.setHttpFields(httpFields);
+        }
     }
 }

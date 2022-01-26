@@ -15,11 +15,11 @@ package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.junit.jupiter.api.BeforeEach;
 
 /**
@@ -35,10 +35,7 @@ public class DelayedServerTest extends HttpServerTestBase
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                DelayedHttpConnection connection = new DelayedHttpConnection(getHttpConfiguration(), connector, endPoint);
-                connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
-                connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());
-                return configure(connection, connector, endPoint);
+                return configure(new DelayedHttpConnection(getHttpConfiguration(), connector, endPoint), connector, endPoint);
             }
         }));
     }
@@ -51,31 +48,27 @@ public class DelayedServerTest extends HttpServerTestBase
         }
 
         @Override
-        protected Http1Stream newHttpStream(String method, String uri, HttpVersion version)
+        public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
         {
-            return new Http1Stream(method, uri, version)
-            {
-                @Override
-                public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
-                {
-                    DelayedCallback delay = new DelayedCallback(callback);
-                    super.send(response, last, delay, content);
-                }
-            };
+            DelayedCallback delay = new DelayedCallback(callback, getServer().getThreadPool());
+            super.send(request, response, content, lastContent, delay);
         }
     }
 
     private static class DelayedCallback extends Callback.Nested
     {
-        public DelayedCallback(Callback callback)
+        final ThreadPool pool;
+
+        public DelayedCallback(Callback callback, ThreadPool threadPool)
         {
             super(callback);
+            pool = threadPool;
         }
 
         @Override
         public void succeeded()
         {
-            new Thread(() ->
+            pool.execute(() ->
             {
                 try
                 {
@@ -89,13 +82,13 @@ public class DelayedServerTest extends HttpServerTestBase
                 {
                     super.succeeded();
                 }
-            }).start();
+            });
         }
 
         @Override
         public void failed(Throwable x)
         {
-            new Thread(() ->
+            pool.execute(() ->
             {
                 try
                 {
@@ -109,13 +102,7 @@ public class DelayedServerTest extends HttpServerTestBase
                 {
                     super.failed(x);
                 }
-            }).start();
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
+            });
         }
     }
 }
