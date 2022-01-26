@@ -785,6 +785,13 @@ public class HttpChannel extends Attributes.Lazy
                     ));
                 }
             }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                // TODO review this as it is probably not correct
+                return getStream().getInvocationType();
+            }
         }
 
         @Override
