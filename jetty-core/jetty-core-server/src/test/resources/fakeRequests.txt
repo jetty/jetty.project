@@ -1,0 +1,27 @@
+GET /foo/bah1 HTTP/1.1
+Host: localhost
+
+
+GET /foo/bah2 HTTP/1.1
+Host: localhost
+Content-Length: 0
+SomeOtherHeader: blah
+
+GET /foo/bah3 HTTP/1.1
+Host: localhost
+Transfer-Encoding: chunked
+
+a
+0123456789
+
+7
+abcdef
+
+
+0
+
+GET /foo/bah4 HTTP/1.1
+Host: localhost
+
+
+

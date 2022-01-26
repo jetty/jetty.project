@@ -1,0 +1,15 @@
+<assembly>
+  <id>site-component</id>
+  <formats>
+    <format>jar</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <directory>${basedir}</directory>
+      <outputDirectory>jetty</outputDirectory>
+      <includes>
+        <include>src/main/resources/org/eclipse/**</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>

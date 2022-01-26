@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- ============================================================= -->
+<!-- Configure the Jetty Server instance with an ID "Server"       -->
+<!-- by adding an HTTP connector.                                   -->
+<!-- This configuration must be used in conjunction with jetty.xml -->
+<!-- ============================================================= -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- =========================================================== -->
+  <!-- Add an HTTP Connector.                                       -->
+  <!-- Configure an o.e.j.server.ServerConnector with a single     -->
+  <!-- HttpConnectionFactory instance using the common httpConfig  -->
+  <!-- instance defined in jetty.xml                               -->
+  <!--                                                             -->
+  <!-- Consult the javadoc of o.e.j.server.ServerConnector and     -->
+  <!-- o.e.j.server.HttpConnectionFactory for all configuration    -->
+  <!-- that may be set here.                                       -->
+  <!-- =========================================================== -->
+  <Call name="addConnector">
+    <Arg>
+      <New id="httpConnector" class="org.eclipse.jetty.server.ServerConnector">
+        <Arg name="server"><Ref refid="Server" /></Arg>
+        <Arg name="acceptors" type="int"><Property name="jetty.http.acceptors" default="1"/></Arg>
+        <Arg name="selectors" type="int"><Property name="jetty.http.selectors" default="-1"/></Arg>
+        <Arg name="factories">
+          <Array type="org.eclipse.jetty.server.ConnectionFactory">
+            <Item>
+              <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                <Arg name="config"><Ref refid="httpConfig" /></Arg>
+              </New>
+            </Item>
+          </Array>
+        </Arg>
+        <Set name="host" property="jetty.http.host" />
+        <Set name="port"><Property name="jetty.http.port" default="8080" /></Set>
+        <Set name="idleTimeout"><Property name="jetty.http.idleTimeout" default="30000"/></Set>
+        <Set name="acceptorPriorityDelta" property="jetty.http.acceptorPriorityDelta" />
+        <Set name="acceptQueueSize" property="jetty.http.acceptQueueSize" />
+        <Set name="reuseAddress"><Property name="jetty.http.reuseAddress" default="true"/></Set>
+        <Set name="reusePort"><Property name="jetty.http.reusePort" default="false"/></Set>
+        <Set name="acceptedTcpNoDelay"><Property name="jetty.http.acceptedTcpNoDelay" default="true"/></Set>
+        <Set name="acceptedReceiveBufferSize" property="jetty.http.acceptedReceiveBufferSize" />
+        <Set name="acceptedSendBufferSize" property="jetty.http.acceptedSendBufferSize" />
+        <Get name="SelectorManager">
+          <Set name="connectTimeout"><Property name="jetty.http.connectTimeout" default="15000"/></Set>
+        </Get>
+      </New>
+    </Arg>
+  </Call>
+
+</Configure>

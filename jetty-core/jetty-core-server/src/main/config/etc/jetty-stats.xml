@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Mixin the Statistics Handler                                    -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New id="StatsHandler" class="org.eclipse.jetty.server.handler.StatisticsHandler">
+        <Set name="gracefulShutdownWaitsForRequests"><Property name="jetty.statistics.gracefulShutdownWaitsForRequests" default="true"/></Set>
+      </New>
+    </Arg>
+  </Call>
+  <Call name="addBeanToAllConnectors">
+    <Arg>
+      <New class="org.eclipse.jetty.io.ConnectionStatistics"/>
+    </Arg>
+  </Call>
+</Configure>
