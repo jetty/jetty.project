@@ -1046,7 +1046,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public boolean handle(Request request, Response response)
             {
                 handling.set(request);
                 request.addErrorListener(t -> {});

@@ -16,36 +16,46 @@ package org.eclipse.jetty.server.handler;
 import java.util.function.Consumer;
 
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 
-public class ContextRequest extends Request.Wrapper
+public class ContextRequest extends Request.Wrapper implements Invocable.Task
 {
+    private final Response _response;
     private final String _pathInContext;
-    private final ContextHandler.Context _context;
+    private final ContextHandler _contextHandler;
 
-    protected ContextRequest(ContextHandler.Context context, Request wrapped, String pathInContext)
+    protected ContextRequest(ContextHandler contextHandler, Request wrapped, Response response, String pathInContext)
     {
         super(wrapped);
+        _response = response;
         _pathInContext = pathInContext;
-        this._context = context;
+        _contextHandler = contextHandler;
+    }
+
+    @Override
+    public void run() throws Exception
+    {
+        _contextHandler.getHandler().handle(this, new ContextResponse(_contextHandler, _response));
     }
 
     @Override
     public void execute(Runnable task)
     {
-        super.execute(() -> _context.run(task));
+        super.execute(() -> _contextHandler.getContext().run(task));
     }
 
     @Override
     public void demandContent(Runnable onContentAvailable)
     {
-        super.demandContent(() -> _context.run(onContentAvailable));
+        super.demandContent(() -> _contextHandler.getContext().run(onContentAvailable));
     }
 
     @Override
     public void addErrorListener(Consumer<Throwable> onError)
     {
-        super.addErrorListener(t -> _context.accept(onError, t));
+        super.addErrorListener(t -> _contextHandler.getContext().accept(onError, t));
     }
 
     @Override
@@ -56,26 +66,20 @@ public class ContextRequest extends Request.Wrapper
             @Override
             public void succeeded()
             {
-                _context.run(onComplete::succeeded);
+                _contextHandler.getContext().run(onComplete::succeeded);
             }
 
             @Override
             public void failed(Throwable t)
             {
-                _context.accept(onComplete::failed, t);
+                _contextHandler.getContext().accept(onComplete::failed, t);
             }
         });
     }
 
-    @Override
-    public InvocationType getInvocationType()
-    {
-        return super.getInvocationType();
-    }
-
     public ContextHandler.Context getContext()
     {
-        return _context;
+        return _contextHandler.getContext();
     }
 
     public String getPath()
@@ -90,7 +94,7 @@ public class ContextRequest extends Request.Wrapper
         switch (name)
         {
             case "o.e.j.s.h.ScopedRequest.contextPath":
-                return _context.getContextPath();
+                return _contextHandler.getContext().getContextPath();
             case "o.e.j.s.h.ScopedRequest.pathInContext":
                 return _pathInContext;
             default:

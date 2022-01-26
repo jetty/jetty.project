@@ -228,7 +228,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
         // TODO is this correct?
         String host = request.getHttpURI().getHost();
 
-        String connectorName = request.getChannel().getMetaConnection().getConnector().getName();
+        String connectorName = request.getConnectionMetaData().getConnector().getName();
 
         for (VHost vhost : _vhosts)
         {
@@ -336,14 +336,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
         if (scoped == null)
             return false; // TODO 404? 500? Error dispatch ???
 
-        // TODO make the lambda part of the scope request to save allocation?
-        _context.call(() -> next.handle(scoped, new ContextResponse(response)));
+        _context.call(scoped);
         return true;
     }
 
     protected ContextRequest wrap(Request request, Response response, String pathInContext)
     {
-        return new ContextRequest(_context, request, pathInContext);
+        return new ContextRequest(this, request, response, pathInContext);
     }
 
     @Override

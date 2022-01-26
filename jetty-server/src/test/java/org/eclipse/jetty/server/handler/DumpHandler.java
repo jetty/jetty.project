@@ -17,8 +17,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
-import java.util.Enumeration;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
@@ -154,13 +154,12 @@ public class DumpHandler extends Handler.Abstract
         writer.write("<pre>remote=" + request.getRemoteAddr() + ":" + request.getRemotePort() + "</pre><br/>\n");
         writer.write("<h3>Header:</h3><pre>");
         writer.write(String.format("%4s %s %s\n", request.getMethod(), httpURI.getPathQuery(), request.getConnectionMetaData().getProtocol()));
-        Enumeration<String> headers = request.getHeaders().getFieldNames();
-        while (headers.hasMoreElements())
+        for (HttpField field : request.getHeaders())
         {
-            String name = headers.nextElement();
+            String name = field.getName();
             writer.write(name);
             writer.write(": ");
-            String value = request.getHeaders().get(name);
+            String value = field.getValue();
             writer.write(value == null ? "" : value);
             writer.write("\n");
         }

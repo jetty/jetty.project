@@ -760,6 +760,7 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public InvocationType getInvocationType()
         {
+            // TODO review this as it is probably not correct
             return getStream().getInvocationType();
         }
 
@@ -887,14 +888,15 @@ public class HttpChannel extends Attributes.Lazy
             // If the content lengths were not compatible with what was written, then we need to abort
             if (contentLength >= 0)
             {
-                if (contentLength < written)
+                String lengthError = (contentLength < written) ? "content-length %d < %d"
+                    : (last && contentLength > written) ? "content-length %d > %d" : null;
+                if (lengthError != null)
                 {
-                    fail(callback, "content-length %d < %d", contentLength, written);
-                    return;
-                }
-                if (last && contentLength > written)
-                {
-                    fail(callback, "content-length %d > %d", contentLength, written);
+                    String message = String.format(lengthError, contentLength, written);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("fail {} {}", callback, message);
+                    IOException failure = new IOException(message);
+                    callback.failed(failure);
                     return;
                 }
             }
@@ -942,18 +944,6 @@ public class HttpChannel extends Attributes.Lazy
             {
                 return Invocable.getInvocationType(_onWriteComplete);
             }
-        }
-
-        private void fail(Callback callback, String reason, Object... args)
-        {
-            String message = String.format(reason, args);
-            if (LOG.isDebugEnabled())
-                LOG.debug("fail {} {}", callback, message);
-            IOException failure = new IOException(message);
-            if (callback != null)
-                callback.failed(failure);
-            if (!getRequest().isComplete())
-                getRequest().failed(failure);
         }
 
         @Override
