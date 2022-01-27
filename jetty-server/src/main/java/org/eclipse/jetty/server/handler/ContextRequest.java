@@ -15,13 +15,18 @@ package org.eclipse.jetty.server.handler;
 
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ContextRequest extends Request.Wrapper implements Invocable.Task
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final Response _response;
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
@@ -37,7 +42,22 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Task
     @Override
     public void run() throws Exception
     {
-        _contextHandler.getHandler().handle(this, new ContextResponse(_contextHandler, _response));
+        try
+        {
+            _contextHandler.getHandler().handle(this, new ContextResponse(this, _response));
+        }
+        catch (Throwable t)
+        {
+            // Let's be less verbose with BadMessageExceptions & QuietExceptions
+            if (!LOG.isDebugEnabled() && (t instanceof BadMessageException || t instanceof QuietException))
+                LOG.warn("bad message {}", t.getMessage());
+            else
+                LOG.warn("context handle failed {}", this, t);
+
+            if (_response.isCommitted())
+                throw t;
+            new Response.Wrapper(this, _response).writeError(t, this);
+        }
     }
 
     @Override

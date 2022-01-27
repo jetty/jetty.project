@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +28,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -466,34 +464,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
                 LOG.warn("Failed to run in {}", _displayName, e);
                 throw new RuntimeException(e);
             }
-        }
-    }
-
-    private class ContextResponse extends Response.Wrapper
-    {
-        public ContextResponse(Response response)
-        {
-            super(response);
-        }
-
-        @Override
-        public void write(boolean last, Callback callback, ByteBuffer... content)
-        {
-            Callback contextCallback = new Callback()
-            {
-                @Override
-                public void succeeded()
-                {
-                    _context.run(callback::succeeded);
-                }
-
-                @Override
-                public void failed(Throwable t)
-                {
-                    _context.accept(callback::failed, t);
-                }
-            };
-            super.write(last, contextCallback, content);
         }
     }
 }

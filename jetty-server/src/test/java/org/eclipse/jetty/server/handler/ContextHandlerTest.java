@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.IOException;
+import java.io.Writer;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteBuffer;
@@ -28,6 +30,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Content;
@@ -47,6 +50,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -365,5 +369,49 @@ public class ContextHandlerTest
         channel.onRequest(new MetaData.Request("GET", HttpURI.from("http://acme.com/ctx"), HttpVersion.HTTP_1_1, fields, 0)).run();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getResponse().getStatus(), equalTo(200));
+    }
+
+    @Test
+    public void testThrownUsesContextErrorHandler() throws Exception
+    {
+        _contextHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public boolean handle(Request request, Response response) throws Exception
+            {
+                throw new RuntimeException("Testing");
+            }
+        });
+        _contextHandler.setErrorHandler(new ErrorHandler()
+        {
+            @Override
+            protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException
+            {
+                ContextHandler.Context context = request.get(ContextRequest.class, ContextRequest::getContext);
+                if (context != null)
+                    writer.write("<h1>Context: " + context.getContextPath() + "</h1>");
+                super.writeErrorHtmlBody(request, writer, code, message, cause, showStacks);
+            }
+        });
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        MockHttpStream stream = new MockHttpStream(channel);
+
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx"), HttpVersion.HTTP_1_1, fields, 0);
+        Runnable task = channel.onRequest(request);
+        try (StacklessLogging ignored = new StacklessLogging(ContextRequest.class))
+        {
+            task.run();
+        }
+        assertThat(stream.isComplete(), is(true));
+        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getResponse(), notNullValue());
+        assertThat(stream.getResponse().getStatus(), equalTo(500));
+        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_HTML_8859_1.asString()));
+        assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("<h1>Context: /ctx</h1>"));
+        assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("java.lang.RuntimeException: Testing"));
     }
 }
