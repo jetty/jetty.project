@@ -51,7 +51,7 @@
     <hazelcast.version>4.2.4</hazelcast.version>
     <infinispan.version>11.0.14.Final</infinispan.version>
     <infinispan.protostream.version>4.3.5.Final</infinispan.protostream.version>
-    <apache.avro.version>1.9.2</apache.avro.version>
+    <apache.avro.version>1.11.0</apache.avro.version>
     <wildfly.elytron.version>1.18.3.Final</wildfly.elytron.version>
     <wildfly.common.version>1.5.4.Final</wildfly.common.version>
     <jackson.core.version>2.13.0</jackson.core.version>
