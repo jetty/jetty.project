@@ -16,7 +16,7 @@
 // Junit test that shows the Jetty SSL bug.
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.core.server;
 
 import java.io.BufferedReader;
 import java.io.IOException;

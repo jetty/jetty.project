@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.jmx;
+package org.eclipse.jetty.core.server.jmx;
 
 import java.util.List;
 

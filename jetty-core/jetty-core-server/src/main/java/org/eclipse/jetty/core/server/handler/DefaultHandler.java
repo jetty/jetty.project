@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.handler;
+package org.eclipse.jetty.core.server.handler;
 
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;

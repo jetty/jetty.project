@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.resource;
+package org.eclipse.jetty.core.server.resource;
 
 import java.io.Closeable;
 import java.io.IOException;

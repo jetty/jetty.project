@@ -18,7 +18,7 @@
  * Window&gt;Preferences&gt;Java&gt;Code Generation&gt;Code and Comments
  */
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.core.server;
 
 import java.io.BufferedReader;
 import java.io.StringReader;

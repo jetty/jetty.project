@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.core.server;
 
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;

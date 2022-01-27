@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.jmx;
+package org.eclipse.jetty.core.server.handler.jmx;
 
 import java.util.HashMap;
 import java.util.Map;

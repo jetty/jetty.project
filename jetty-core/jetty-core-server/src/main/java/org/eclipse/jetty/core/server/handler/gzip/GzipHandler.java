@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.handler.gzip;
+package org.eclipse.jetty.core.server.handler.gzip;
 
 import java.nio.ByteBuffer;
 

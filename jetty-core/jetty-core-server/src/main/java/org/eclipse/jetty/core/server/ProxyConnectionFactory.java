@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.core.server;
 
 import java.io.IOException;
 import java.net.Inet4Address;

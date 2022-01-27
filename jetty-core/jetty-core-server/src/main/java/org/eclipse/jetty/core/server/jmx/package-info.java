@@ -14,5 +14,5 @@
 /**
  * Jetty Server : Server JMX Integration
  */
-package org.eclipse.jetty.server.jmx;
+package org.eclipse.jetty.core.server.jmx;
 
