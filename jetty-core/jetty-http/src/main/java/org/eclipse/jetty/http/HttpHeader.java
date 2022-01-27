@@ -86,7 +86,6 @@ public enum HttpHeader
      */
     ACCEPT_RANGES("Accept-Ranges"),
     AGE("Age"),
-    ALT_SVC("Alt-Svc"),
     ETAG("ETag"),
     LOCATION("Location"),
     PROXY_AUTHENTICATE("Proxy-Authenticate"),

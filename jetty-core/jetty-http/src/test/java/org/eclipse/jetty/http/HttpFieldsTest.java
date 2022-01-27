@@ -145,7 +145,7 @@ public class HttpFieldsTest
     @Test
     public void testMap()
     {
-        Map<HttpFields.Immutable, String> map = new HashMap<>();
+        Map<HttpFields, String> map = new HashMap<>();
         map.put(HttpFields.build().add("X", "1").add(HttpHeader.ETAG, "tag").asImmutable(), "1");
         map.put(HttpFields.build().add("X", "2").add(HttpHeader.ETAG, "other").asImmutable(), "2");
 

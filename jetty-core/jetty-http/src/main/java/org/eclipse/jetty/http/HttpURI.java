@@ -106,6 +106,18 @@ public interface HttpURI
         return new Mutable(uri);
     }
 
+    static Mutable build(String method, String uri)
+    {
+        if (HttpMethod.CONNECT.is(method))
+        {
+            HostPort hostPort = new HostPort(uri);
+            return new Mutable(null, hostPort.getHost(), hostPort.getPort(), null);
+        }
+        if (uri.startsWith("/"))
+            return HttpURI.build().pathQuery(uri);
+        return HttpURI.build(uri);
+    }
+
     static Immutable from(URI uri)
     {
         return new HttpURI.Mutable(uri).asImmutable();
@@ -123,6 +135,11 @@ public interface HttpURI
         if (uri.startsWith("/"))
             return HttpURI.build().pathQuery(uri).asImmutable();
         return HttpURI.from(uri);
+    }
+
+    static Immutable from(String scheme, HostPort hostPort, String pathQuery)
+    {
+        return new Mutable(scheme, hostPort.getHost(), hostPort.getPort(), pathQuery).asImmutable();
     }
 
     static Immutable from(String scheme, String host, int port, String pathQuery)
@@ -599,6 +616,10 @@ public interface HttpURI
 
         private Mutable(String scheme, String host, int port, String pathQuery)
         {
+            // TODO review if this should be here
+            if (port == HttpScheme.getDefaultPort(scheme))
+                port = 0;
+
             _uri = null;
 
             _scheme = scheme;
@@ -783,7 +804,7 @@ public interface HttpURI
         @Override
         public boolean isAbsolute()
         {
-            return _scheme != null && !_scheme.isEmpty();
+            return StringUtil.isNotBlank(_scheme);
         }
 
         @Override

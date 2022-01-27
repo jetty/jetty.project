@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -70,7 +71,12 @@ public interface HttpFields extends Iterable<HttpField>
         return new Immutable(fields);
     }
 
-    Immutable asImmutable();
+    static Immutable from(HttpFields fields, Function<HttpField, HttpField> mutation)
+    {
+        return new Immutable(fields.stream().map(mutation).filter(Objects::nonNull).toArray(HttpField[]::new));
+    }
+
+    HttpFields asImmutable();
 
     default String asString()
     {
@@ -228,7 +234,23 @@ public interface HttpFields extends Iterable<HttpField>
      */
     default long getDateField(String name)
     {
-        HttpField field = getField(name);
+        return parseDateField(getField(name));
+    }
+
+    /**
+     * Get a header as a date value. Returns the value of a date field, or -1 if not found. The case
+     * of the field name is ignored.
+     *
+     * @param header the header
+     * @return the value of the field as a number of milliseconds since unix epoch
+     */
+    default long getDateField(HttpHeader header)
+    {
+        return parseDateField(getField(header));
+    }
+
+    static long parseDateField(HttpField field)
+    {
         if (field == null)
             return -1;
 
@@ -275,7 +297,9 @@ public interface HttpFields extends Iterable<HttpField>
      * _names for this request.
      *
      * @return an enumeration of field names
+     * @deprecated use {@link #getFieldNamesCollection()}
      */
+    @Deprecated
     default Enumeration<String> getFieldNames()
     {
         return Collections.enumeration(getFieldNamesCollection());
@@ -728,7 +752,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Immutable asImmutable()
+        public HttpFields asImmutable()
         {
             return new Immutable(Arrays.copyOf(_fields, _size));
         }
@@ -1434,13 +1458,13 @@ public interface HttpFields extends Iterable<HttpField>
          *
          * @param fields the fields to copy data from
          */
-        public Immutable(HttpField[] fields)
+        Immutable(HttpField[] fields)
         {
             _fields = fields;
         }
 
         @Override
-        public Immutable asImmutable()
+        public HttpFields asImmutable()
         {
             return this;
         }

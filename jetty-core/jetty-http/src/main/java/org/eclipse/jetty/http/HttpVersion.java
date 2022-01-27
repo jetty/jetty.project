@@ -69,6 +69,14 @@ public enum HttpVersion
                         default:
                             return null;
                     }
+                case '3':
+                    switch (bytes[position + 7])
+                    {
+                        case '0':
+                            return HTTP_3;
+                        default:
+                            return null;
+                    }
                 default:
                     return null;
             }
