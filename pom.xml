@@ -56,7 +56,7 @@
     <wildfly.common.version>1.5.4.Final</wildfly.common.version>
     <jackson.core.version>2.13.0</jackson.core.version>
     <jackson.annotations.version>2.13.0</jackson.annotations.version>
-    <jackson-databind.version>2.13.0</jackson-databind.version>
+    <jackson-databind.version>2.13.1</jackson-databind.version>
     <jakarta.activation.api.version>1.2.2</jakarta.activation.api.version>
     <jakarta.annotation.api.version>1.3.5</jakarta.annotation.api.version>
     <jakarta.enterprise.cdi.api.version>2.0.2</jakarta.enterprise.cdi.api.version>
