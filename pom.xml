@@ -54,7 +54,7 @@
     <apache.avro.version>1.9.2</apache.avro.version>
     <wildfly.elytron.version>1.18.3.Final</wildfly.elytron.version>
     <wildfly.common.version>1.5.4.Final</wildfly.common.version>
-    <jackson.core.version>2.13.0</jackson.core.version>
+    <jackson.core.version>2.13.1</jackson.core.version>
     <jackson.annotations.version>2.13.0</jackson.annotations.version>
     <jackson-databind.version>2.13.0</jackson-databind.version>
     <jakarta.activation.api.version>1.2.2</jakarta.activation.api.version>
