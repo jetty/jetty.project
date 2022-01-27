@@ -381,7 +381,6 @@ public class HttpChannel extends Attributes.Lazy
         Consumer<Throwable> _onError;
         Runnable _onContentAvailable;
         boolean _handled;
-        private Request _wrapper = this;
         private final Callback _callback = new RequestCallback();
 
         ChannelRequest(MetaData.Request metaData)
@@ -400,20 +399,6 @@ public class HttpChannel extends Attributes.Lazy
         public Response getResponse()
         {
             return _response;
-        }
-
-        @Override
-        public void setWrapper(Request wrapper)
-        {
-            if (wrapper.getWrapped() != _wrapper)
-                throw new IllegalStateException("B B B Bad rapping!");
-            _wrapper = wrapper;
-        }
-
-        @Override
-        public Request getWrapper()
-        {
-            return _wrapper;
         }
 
         @Override
@@ -734,7 +719,7 @@ public class HttpChannel extends Attributes.Lazy
                     stream.failed(x);
                 else
                 {
-                    Response response = new Response.Wrapper(getResponse())
+                    Response response = new Response.Wrapper(ChannelRequest.this, getResponse())
                     {
                         @Override
                         public boolean isCommitted()
@@ -810,7 +795,6 @@ public class HttpChannel extends Attributes.Lazy
         private Callback _onWriteComplete;
         private long _written;
         private long _contentLength = -1L;
-        private Response _wrapper = this;
 
         private ChannelResponse(ChannelRequest request)
         {
@@ -820,21 +804,7 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public Request getRequest()
         {
-            return _request.getWrapper();
-        }
-
-        @Override
-        public Response getWrapper()
-        {
-            return _wrapper;
-        }
-
-        @Override
-        public void setWrapper(Response wrapper)
-        {
-            if (wrapper.getWrapped() != _wrapper)
-                throw new IllegalStateException("Bbb b bad rapping!");
-            _wrapper = wrapper;
+            return _request;
         }
 
         @Override

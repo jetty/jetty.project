@@ -22,10 +22,10 @@ class ContextResponse extends Response.Wrapper
 {
     private final ContextHandler _contextHandler;
 
-    public ContextResponse(ContextHandler contextHandler, Response response)
+    public ContextResponse(ContextRequest request, Response response)
     {
-        super(response);
-        _contextHandler = contextHandler;
+        super(request, response);
+        _contextHandler = request.getContext().getContextHandler();
     }
 
     @Override

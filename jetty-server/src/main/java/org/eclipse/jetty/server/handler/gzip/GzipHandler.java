@@ -80,7 +80,7 @@ public class GzipHandler extends Handler.Wrapper
                     return super.readContent();
                 }
             },
-            new Response.Wrapper(response)
+            new Response.Wrapper(request, response)
             {
                 @Override
                 public void write(boolean last, Callback callback, ByteBuffer... content)
