@@ -74,10 +74,6 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         return null;
     }
 
-    Request getWrapper();
-
-    void setWrapper(Request request);
-
     default String getLocalAddr()
     {
         SocketAddress local = getConnectionMetaData().getLocalAddress();
@@ -189,7 +185,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
     @SuppressWarnings("unchecked")
     default <R extends Request> R as(Class<R> type)
     {
-        Request r = getWrapper();
+        Request r = this;
         while (r != null)
         {
             if (type.isInstance(r))
@@ -201,7 +197,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     default <T extends Request, R> R get(Class<T> type, Function<T, R> getter)
     {
-        Request r = getWrapper();
+        Request r = this;
         while (r != null)
         {
             if (type.isInstance(r))
@@ -218,12 +214,6 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         protected Wrapper(Request wrapped)
         {
             _wrapped = wrapped;
-            wrapped.setWrapper(this);
-        }
-
-        public void unwrap()
-        {
-            _wrapped.setWrapper(_wrapped);
         }
 
         @Override
@@ -236,12 +226,6 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         public boolean isComplete()
         {
             return _wrapped.isComplete();
-        }
-
-        @Override
-        public void setWrapper(Request request)
-        {
-            _wrapped.setWrapper(request);
         }
 
         @Override
@@ -326,12 +310,6 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         public Request getWrapped()
         {
             return _wrapped;
-        }
-
-        @Override
-        public Request getWrapper()
-        {
-            return _wrapped.getWrapper();
         }
 
         @Override

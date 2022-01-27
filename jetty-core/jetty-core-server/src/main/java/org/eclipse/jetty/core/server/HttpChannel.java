@@ -379,8 +379,6 @@ public class HttpChannel extends Attributes.Lazy
         Consumer<Throwable> _onError;
         Runnable _onContentAvailable;
 
-        private Request _wrapper = this;
-
         ChannelRequest(MetaData.Request metaData)
         {
             if (metaData == null)
@@ -397,20 +395,6 @@ public class HttpChannel extends Attributes.Lazy
         public Response getResponse()
         {
             return _response;
-        }
-
-        @Override
-        public void setWrapper(Request wrapper)
-        {
-            if (wrapper.getWrapped() != _wrapper)
-                throw new IllegalStateException("B B B Bad rapping!");
-            _wrapper = wrapper;
-        }
-
-        @Override
-        public Request getWrapper()
-        {
-            return _wrapper;
         }
 
         @Override
@@ -705,7 +689,7 @@ public class HttpChannel extends Attributes.Lazy
                 stream.failed(x);
             else
             {
-                Response response = new Response.Wrapper(getResponse())
+                Response response = new Response.Wrapper(this, getResponse())
                 {
                     @Override
                     public boolean isCommitted()
@@ -760,6 +744,7 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public InvocationType getInvocationType()
         {
+            // TODO review this as it is probably not correct
             return getStream().getInvocationType();
         }
 
@@ -779,7 +764,6 @@ public class HttpChannel extends Attributes.Lazy
         private Callback _onWriteComplete;
         private long _written;
         private long _contentLength = -1L;
-        private Response _wrapper = this;
 
         private ChannelResponse(ChannelRequest request)
         {
@@ -789,21 +773,7 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public Request getRequest()
         {
-            return _request.getWrapper();
-        }
-
-        @Override
-        public Response getWrapper()
-        {
-            return _wrapper;
-        }
-
-        @Override
-        public void setWrapper(Response wrapper)
-        {
-            if (wrapper.getWrapped() != _wrapper)
-                throw new IllegalStateException("Bbb b bad rapping!");
-            _wrapper = wrapper;
+            return _request;
         }
 
         @Override
@@ -887,14 +857,15 @@ public class HttpChannel extends Attributes.Lazy
             // If the content lengths were not compatible with what was written, then we need to abort
             if (contentLength >= 0)
             {
-                if (contentLength < written)
+                String lengthError = (contentLength < written) ? "content-length %d < %d"
+                    : (last && contentLength > written) ? "content-length %d > %d" : null;
+                if (lengthError != null)
                 {
-                    fail(callback, "content-length %d < %d", contentLength, written);
-                    return;
-                }
-                if (last && contentLength > written)
-                {
-                    fail(callback, "content-length %d > %d", contentLength, written);
+                    String message = String.format(lengthError, contentLength, written);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("fail {} {}", callback, message);
+                    IOException failure = new IOException(message);
+                    callback.failed(failure);
                     return;
                 }
             }
@@ -942,18 +913,6 @@ public class HttpChannel extends Attributes.Lazy
             {
                 return Invocable.getInvocationType(_onWriteComplete);
             }
-        }
-
-        private void fail(Callback callback, String reason, Object... args)
-        {
-            String message = String.format(reason, args);
-            if (LOG.isDebugEnabled())
-                LOG.debug("fail {} {}", callback, message);
-            IOException failure = new IOException(message);
-            if (callback != null)
-                callback.failed(failure);
-            if (!getRequest().isComplete())
-                getRequest().failed(failure);
         }
 
         @Override

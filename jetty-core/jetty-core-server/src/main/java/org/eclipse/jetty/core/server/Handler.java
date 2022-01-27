@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * A call to {@link #handle(Request, Response)} may:
  * <ul>
- * <li>return false to indicate that it will not handle the request</li>
+                        * <li>return false to indicate that it will not handle the request</li>
  * <li>Completely generate the HTTP Response and call {@link Request#succeeded()}</li>
  * <li>Arrange for an async process to generate the HTTP Response and call {@link Request#succeeded()}</li>
  * <li>Pass the request to one or more other Handlers.</li>

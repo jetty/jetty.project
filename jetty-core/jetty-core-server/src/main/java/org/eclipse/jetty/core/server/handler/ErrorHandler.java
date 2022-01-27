@@ -606,10 +606,10 @@ public class ErrorHandler extends Handler.Abstract
     {
         private final ByteBufferAccumulator _accumulator;
 
-        public ErrorResponse(Response wrapped)
+        public ErrorResponse(Request request, Response wrapped)
         {
-            super(wrapped);
-            _accumulator = new ByteBufferAccumulator(wrapped.getRequest().getConnectionMetaData().getConnector().getByteBufferPool(), false);
+            super(request, wrapped);
+            _accumulator = new ByteBufferAccumulator(request.getConnectionMetaData().getConnector().getByteBufferPool(), false);
         }
 
         @Override

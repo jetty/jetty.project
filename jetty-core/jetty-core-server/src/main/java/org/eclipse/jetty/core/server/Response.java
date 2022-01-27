@@ -61,10 +61,6 @@ public interface Response
         return null;
     }
 
-    Response getWrapper();
-
-    void setWrapper(Response response);
-
     default void addHeader(String name, String value)
     {
         getHeaders().add(name, value);
@@ -135,12 +131,12 @@ public interface Response
 
         setStatus(status);
 
-        ContextHandler.Context context = getRequest().getWrapper().get(ContextRequest.class, ContextRequest::getContext);
+        ContextHandler.Context context = getRequest().get(ContextRequest.class, ContextRequest::getContext);
         Handler errorHandler = ErrorHandler.getErrorHandler(getRequest().getChannel().getServer(), context == null ? null : context.getContextHandler());
 
         if (errorHandler != null)
         {
-            Request request = new ErrorHandler.ErrorRequest(getRequest().getWrapper(), status, message, cause, callback);
+            Request request = new ErrorHandler.ErrorRequest(getRequest(), status, message, cause, callback);
             try
             {
                 if (errorHandler.handle(request, this))
@@ -160,17 +156,13 @@ public interface Response
 
     class Wrapper implements Response
     {
+        private final Request _request;
         private final Response _wrapped;
 
-        public Wrapper(Response wrapped)
+        public Wrapper(Request request, Response wrapped)
         {
+            _request = request;
             _wrapped = wrapped;
-            _wrapped.setWrapper(this);
-        }
-
-        public void unwrap()
-        {
-            _wrapped.setWrapper(_wrapped);
         }
 
         @Override
@@ -230,19 +222,7 @@ public interface Response
         @Override
         public Request getRequest()
         {
-            return _wrapped.getRequest();
-        }
-
-        @Override
-        public Response getWrapper()
-        {
-            return _wrapped.getWrapper();
-        }
-
-        @Override
-        public void setWrapper(Response response)
-        {
-            _wrapped.setWrapper(response);
+            return _request;
         }
     }
 }
