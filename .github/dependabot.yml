@@ -21,6 +21,8 @@ updates:
         versions: [ ">=2.0.0" ]
       - dependency-name: "javax.websocket:*"
         versions: [ ">=1.1.0" ]
+      - dependency-name: org.infinispan:*
+        versions: [ ">= 12" ]
 
   - package-ecosystem: "maven"
     directory: "/"
@@ -51,6 +53,8 @@ updates:
         versions: [ ">=3.0.0" ]
       - dependency-name: "jakarta.transaction:*"
         versions: [ ">=2.0.0" ]
+      - dependency-name: org.infinispan:*
+        versions: [ ">= 12" ]
 
 #  - package-ecosystem: "maven"
 #    directory: "/"
