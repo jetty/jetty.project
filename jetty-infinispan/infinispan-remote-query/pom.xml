@@ -104,29 +104,6 @@
       <artifactId>infinispan-client-hotrod</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.wildfly.security</groupId>
-      <artifactId>wildfly-elytron</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.avro</groupId>
-      <artifactId>avro</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.commons</groupId>
-          <artifactId>commons-compress</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-compress</artifactId>
-      <version>${commons.compress.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-core</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.infinispan</groupId>
       <artifactId>infinispan-remote-query-client</artifactId>
     </dependency>

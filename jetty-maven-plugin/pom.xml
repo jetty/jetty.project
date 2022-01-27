@@ -145,20 +145,6 @@
     </dependency>
     <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
-      <artifactId>maven-plugin-tools-api</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>commons-io</groupId>
-          <artifactId>commons-io</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-annotations</artifactId>
       <scope>provided</scope>
     </dependency>
