@@ -1,4 +1,4 @@
-name: "Mark or close stale issues and PRs"
+name: "slate/🪁"
 on:
   schedule:
     - cron: "0 0 * * *"
