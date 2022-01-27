@@ -73,7 +73,6 @@ public class DataSourceLoginServiceTest
 
         //create a datasource and bind to jndi
         MariaDbDataSource ds = new MariaDbDataSource();
-        ds.setDatabaseName(DatabaseLoginServiceTestServer.MARIA_DB_NAME);
         ds.setUser(DatabaseLoginServiceTestServer.MARIA_DB_USER);
         ds.setPassword(DatabaseLoginServiceTestServer.MARIA_DB_PASSWORD);
         ds.setUrl(DatabaseLoginServiceTestServer.MARIA_DB_FULL_URL);
