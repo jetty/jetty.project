@@ -56,7 +56,6 @@ public class DatabaseLoginServiceTestServer
     
     static MariaDBContainer MARIA_DB;
 
-    protected static final String MARIA_DB_NAME = "lstest";
     protected static final String MARIA_DB_USER = "beer";
     protected static final String MARIA_DB_PASSWORD = "pacific_ale";
     public static String MARIA_DB_DRIVER_CLASS;
@@ -80,8 +79,7 @@ public class DatabaseLoginServiceTestServer
             MARIA_DB =
                 new MariaDBContainer("mariadb:" + System.getProperty("mariadb.docker.version", "10.3.6"))
                 .withUsername(MARIA_DB_USER)
-                .withPassword(MARIA_DB_PASSWORD)
-                .withDatabaseName(MARIA_DB_NAME);
+                .withPassword(MARIA_DB_PASSWORD);
             MARIA_DB = (MariaDBContainer)MARIA_DB.withInitScript("createdb.sql");
             MARIA_DB = (MariaDBContainer)MARIA_DB.withLogConsumer(new Slf4jLogConsumer(MARIADB_LOG));
             MARIA_DB.start();
