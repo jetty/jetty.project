@@ -59,7 +59,7 @@ updates:
         versions: [ ">=3.0.0" ]
       - dependency-name: "jakarta.transaction:*"
         versions: [ ">=2.0.0" ]
-      - dependency-name: org.infinispan:*
+      - dependency-name: "org.infinispan:*"
         versions: [ ">= 12" ]
 
 #  - package-ecosystem: "maven"
