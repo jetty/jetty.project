@@ -47,7 +47,7 @@
     <wildfly.elytron.version>1.18.3.Final</wildfly.elytron.version>
     <wildfly.common.version>1.5.4.Final</wildfly.common.version>
     <jackson-databind.version>2.13.0</jackson-databind.version>
-    <jackson.core.version>2.13.0</jackson.core.version>
+    <jackson.core.version>2.13.1</jackson.core.version>
     <jackson.annotations.version>2.13.0</jackson.annotations.version>
     <apache.avro.version>1.9.2</apache.avro.version>
     <jamon.version>2.82</jamon.version>
