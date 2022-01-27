@@ -2,6 +2,7 @@ version: 2
 updates:
   - package-ecosystem: "maven"
     directory: "/"
+    open-pull-requests-limit: 20
     target-branch: "jetty-9.4.x"
     schedule:
       interval: "daily"
@@ -21,11 +22,12 @@ updates:
         versions: [ ">=2.0.0" ]
       - dependency-name: "javax.websocket:*"
         versions: [ ">=1.1.0" ]
-      - dependency-name: org.infinispan:*
+      - dependency-name: "org.infinispan:*"
         versions: [ ">= 12" ]
 
   - package-ecosystem: "maven"
     directory: "/"
+    open-pull-requests-limit: 20
     target-branch: "jetty-10.0.x"
     schedule:
       interval: "daily"
@@ -43,12 +45,16 @@ updates:
         versions: [ ">=4.0.0" ]
       - dependency-name: "jakarta.inject:*"
         versions: [ ">=2.0.0" ]
+      - dependency-name: "jakarta.interceptor:*"
+        versions: [ ">=2.0.0" ]
       - dependency-name: "jakarta.websocket:*"
         versions: [ ">=2.0.0" ]
       - dependency-name: "jakarta.servlet.jsp.jstl:*"
         versions: [ ">=2.0.0" ]
       - dependency-name: "org.jboss.weld.servlet:*"
         versions: [ ">=4.0.0" ]
+      - dependency-name: "jakarta.enterprise:jakarta.enterprise.cdi-api:*"
+        versions: [ ">=3.0.0" ]
       - dependency-name: "com.sun.xml.ws:jaxws*"
         versions: [ ">=3.0.0" ]
       - dependency-name: "jakarta.transaction:*"
