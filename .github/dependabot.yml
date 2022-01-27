@@ -24,6 +24,10 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "jetty-10.0.x"
+    ignore:
+      - dependency-name: org.infinispan:*
+        versions:
+          - ">= 12"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -36,6 +40,10 @@ updates:
     schedule:
       interval: "weekly"
     target-branch: "jetty-11.0.x"
+    ignore:
+      - dependency-name: org.infinispan:*
+        versions:
+          - ">= 12"
 
   - package-ecosystem: "github-actions"
     directory: "/"
