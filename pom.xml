@@ -45,7 +45,7 @@
     <infinispan.version>11.0.14.Final</infinispan.version>
     <infinispan.protostream.version>4.3.5.Final</infinispan.protostream.version>
     <wildfly.elytron.version>1.18.3.Final</wildfly.elytron.version>
-    <wildfly.common.version>1.5.4.Final</wildfly.common.version>
+    <wildfly.common.version>1.5.4.Final-format-001</wildfly.common.version>
     <jackson-databind.version>2.13.0</jackson-databind.version>
     <jackson.core.version>2.13.0</jackson.core.version>
     <jackson.annotations.version>2.13.0</jackson.annotations.version>
