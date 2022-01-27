@@ -58,6 +58,13 @@ public class ArrayTrie<V> extends AbstractTrie<V>
     private static final int ROW_SIZE = 32;
 
     /**
+     * The maximum capacity of the implementation. Over that,
+     * the 16 bit indexes can overflow and the trie
+     * cannot find existing entries anymore.
+     */
+    private static final int MAX_CAPACITY = Character.MAX_VALUE - 1;
+
+    /**
      * The index lookup table, this maps a character as a byte
      * (ISO-8859-1 or UTF8) to an index within a Trie row
      */
@@ -129,9 +136,11 @@ public class ArrayTrie<V> extends AbstractTrie<V>
     public ArrayTrie(int capacity)
     {
         super(true);
-        _value = (V[])new Object[capacity];
-        _rowIndex = new char[capacity * 32];
-        _key = new String[capacity];
+        if (capacity > MAX_CAPACITY)
+            throw new IllegalArgumentException("Capacity " + capacity + " > " + MAX_CAPACITY);
+        _value = (V[])new Object[capacity + 1];
+        _rowIndex = new char[(capacity + 1) * 32];
+        _key = new String[capacity + 1];
     }
 
     @Override
@@ -149,6 +158,8 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         int t = 0;
         int k;
         int limit = s.length();
+        if (limit > MAX_CAPACITY)
+            return false;
         for (k = 0; k < limit; k++)
         {
             char c = s.charAt(k);
@@ -474,6 +485,6 @@ public class ArrayTrie<V> extends AbstractTrie<V>
     @Override
     public boolean isFull()
     {
-        return _rows + 1 >= _key.length;
+        return _rows >= _key.length;
     }
 }
