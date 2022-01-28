@@ -172,7 +172,16 @@ public class ContextHandlerCollection extends Handler.Collection
             {
                 for (Branch branch : branches.getValue())
                 {
-                    branch.getHandler().handle(request);
+                    try
+                    {
+                        branch.getHandler().handle(request);
+                    }
+                    catch (Throwable t)
+                    {
+                        if (request.isAccepted())
+                            throw t;
+                        LOG.warn("Unaccepted error {}", this, t);
+                    }
                     if (request.isAccepted())
                         return;
                 }

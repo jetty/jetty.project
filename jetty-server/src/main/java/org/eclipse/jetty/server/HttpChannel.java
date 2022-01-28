@@ -361,6 +361,12 @@ public class HttpChannel extends Attributes.Lazy
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{r=%s}", this.getClass().getSimpleName(), hashCode(), _request);
+    }
+
     private class RunHandle implements Runnable
     {
         @Override
@@ -762,42 +768,6 @@ public class HttpChannel extends Attributes.Lazy
                 // TODO review this as it is probably not correct
                 return getStream().getInvocationType();
             }
-
-            private class ErrorResponse extends Response.Wrapper
-            {
-                private final ChannelRequest _request;
-                private final HttpStream _stream;
-
-                public ErrorResponse(ChannelRequest request, HttpStream stream)
-                {
-                    super(request, getResponse());
-                    _request = request;
-                    _stream = stream;
-                }
-
-                @Override
-                public boolean isCommitted()
-                {
-                    return false;
-                }
-
-                @Override
-                public void write(boolean last, Callback callback, ByteBuffer... content)
-                {
-                    MetaData.Response commit;
-                    try (AutoLock ignored = _lock.lock())
-                    {
-                        for (ByteBuffer b : content)
-                        {
-                            _request._response._written += b.remaining();
-                        }
-                        commit = _request._response.commitResponse(last);
-                    }
-
-                    // Do the write
-                    _stream.send(commit, last, callback, content);
-                }
-            }
         }
 
         @Override
@@ -1049,9 +1019,39 @@ public class HttpChannel extends Attributes.Lazy
         }
     }
 
-    @Override
-    public String toString()
+    private class ErrorResponse extends Response.Wrapper
     {
-        return String.format("%s@%x{r=%s}", this.getClass().getSimpleName(), hashCode(), _request);
+        private final ChannelRequest _request;
+        private final HttpStream _stream;
+
+        public ErrorResponse(ChannelRequest request, HttpStream stream)
+        {
+            super(request, request._response);
+            _request = request;
+            _stream = stream;
+        }
+
+        @Override
+        public boolean isCommitted()
+        {
+            return false;
+        }
+
+        @Override
+        public void write(boolean last, Callback callback, ByteBuffer... content)
+        {
+            MetaData.Response commit;
+            try (AutoLock ignored = _lock.lock())
+            {
+                for (ByteBuffer b : content)
+                {
+                    _request._response._written += b.remaining();
+                }
+                commit = _request._response.commitResponse(last);
+            }
+
+            // Do the write
+            _stream.send(commit, last, callback, content);
+        }
     }
 }
