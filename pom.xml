@@ -50,7 +50,7 @@
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>2.14.4</hawtio.version>
     <hazelcast.version>4.2.4</hazelcast.version>
-    <infinispan.protostream.version>4.3.5.Final</infinispan.protostream.version>
+    <infinispan.protostream.version>4.4.1.Final</infinispan.protostream.version>
     <infinispan.version>11.0.14.Final</infinispan.version>
     <jackson.annotations.version>2.13.1</jackson.annotations.version>
     <jackson.core.version>2.13.1</jackson.core.version>
