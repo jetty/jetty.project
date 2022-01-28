@@ -30,14 +30,14 @@ public class GzipHandler extends Handler.Wrapper
     private static final HttpField CONTENT_ENCODING_GZIP = new HttpField(HttpHeader.CONTENT_ENCODING, "gzip");
 
     @Override
-    public void handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
         // TODO more conditions than this
         // TODO handle other encodings
         // TODO more efficient than this
         if (!request.getHeaders().contains(ACCEPT_GZIP) && !request.getHeaders().contains(CONTENT_ENCODING_GZIP))
         {
-            super.handle(request, response);
+            super.handle(request);
             return;
         }
 
@@ -79,14 +79,24 @@ public class GzipHandler extends Handler.Wrapper
                     // TODO inflate data
                     return super.readContent();
                 }
-            },
-            new Response.Wrapper(request, response)
-            {
+
                 @Override
-                public void write(boolean last, Callback callback, ByteBuffer... content)
+                public Response accept()
                 {
-                    // TODO deflate data
-                    super.write(last, callback, content);
+                    Response response = super.accept();
+                    if (response != null)
+                    {
+                        return new Response.Wrapper(request, request.accept())
+                        {
+                            @Override
+                            public void write(boolean last, Callback callback, ByteBuffer... content)
+                            {
+                                // TODO deflate data
+                                super.write(last, callback, content);
+                            }
+                        };
+                    }
+                    return null;
                 }
             });
     }

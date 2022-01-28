@@ -67,8 +67,10 @@ public class ErrorHandlerTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response)
+            public void handle(Request request)
             {
+
+                Response response = request.accept();
                 if (request.getPath().startsWith("/badmessage/"))
                 {
                     int code = Integer.parseInt(request.getPath().substring(request.getPath().lastIndexOf('/') + 1));
@@ -109,7 +111,7 @@ public class ErrorHandlerTest
                     throw new TestException(message);
                 }
 
-                response.writeError(404, request.accept());
+                response.writeError(404, response.getCallback());
             }
         });
         server.start();
@@ -442,13 +444,14 @@ public class ErrorHandlerTest
         server.setErrorHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response)
+            public void handle(Request request)
             {
+                Response response = request.accept();
                 response.setHeader(HttpHeader.LOCATION, "/error");
                 response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
                 response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
                 response.setStatus(302);
-                request.accept().succeeded();
+                response.getCallback().succeeded();
             }
         });
         String rawResponse = connector.getResponse(
@@ -647,26 +650,29 @@ public class ErrorHandlerTest
         context.setErrorHandler(new ErrorHandler()
         {
             @Override
-            public void handle(Request request, Response response)
+            public void handle(Request request)
             {
-                response.write(true, request.accept(), BufferUtil.toBuffer("Context Error"));
+                Response response = request.accept();
+                response.write(true, response.getCallback(), BufferUtil.toBuffer("Context Error"));
             }
         });
         context.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response)
+            public void handle(Request request)
             {
-                response.writeError(444, request.accept());
+                Response response = request.accept();
+                response.writeError(444, response.getCallback());
             }
         });
 
         server.setErrorHandler(new ErrorHandler()
         {
             @Override
-            public void handle(Request request, Response response)
+            public void handle(Request request)
             {
-                response.write(true, request.accept(), BufferUtil.toBuffer("Server Error"));
+                Response response = request.accept();
+                response.write(true, response.getCallback(), BufferUtil.toBuffer("Server Error"));
             }
         });
 

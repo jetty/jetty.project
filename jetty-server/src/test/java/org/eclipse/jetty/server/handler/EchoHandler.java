@@ -30,8 +30,9 @@ import org.eclipse.jetty.util.StringUtil;
 public class EchoHandler extends Handler.Abstract
 {
     @Override
-    public void handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
+        Response response = request.accept();
         response.setStatus(200);
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (StringUtil.isNotBlank(contentType))
@@ -41,7 +42,7 @@ public class EchoHandler extends Handler.Abstract
             response.setContentLength(contentLength);
         if (request.getHeaders().contains(HttpHeader.TRAILER))
             response.getTrailers();
-        new Echo(request, response, request.accept()).iterate();
+        new Echo(request, response, response.getCallback()).iterate();
     }
 
     static class Echo extends IteratingCallback

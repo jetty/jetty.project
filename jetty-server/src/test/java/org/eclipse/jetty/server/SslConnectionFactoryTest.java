@@ -84,10 +84,11 @@ public class SslConnectionFactoryTest
         _server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
+                Response response = request.accept();
                 response.setStatus(200);
-                response.write(true, request.accept(), BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + request.getServerName()));
+                response.write(true, response.getCallback(), BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + request.getServerName()));
             }
         });
 

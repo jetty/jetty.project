@@ -25,7 +25,6 @@ import java.util.Set;
 
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Index;
@@ -123,7 +122,7 @@ public class ContextHandlerCollection extends Handler.Collection
     }
 
     @Override
-    public void handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
         List<Handler> handlers = getHandlers();
 
@@ -133,7 +132,7 @@ public class ContextHandlerCollection extends Handler.Collection
 
         if (!(handlers instanceof Mapping))
         {
-            super.handle(request, response);
+            super.handle(request);
             return;
         }
 
@@ -142,7 +141,7 @@ public class ContextHandlerCollection extends Handler.Collection
         // handle only a single context.
         if (handlers.size() == 1)
         {
-            handlers.get(0).handle(request, response);
+            handlers.get(0).handle(request);
             return;
         }
 
@@ -154,7 +153,7 @@ public class ContextHandlerCollection extends Handler.Collection
         String path = request.getPath();
         if (!path.startsWith("/"))
         {
-            super.handle(request, response);
+            super.handle(request);
             return;
         }
 
@@ -173,7 +172,7 @@ public class ContextHandlerCollection extends Handler.Collection
             {
                 for (Branch branch : branches.getValue())
                 {
-                    branch.getHandler().handle(request, response);
+                    branch.getHandler().handle(request);
                     if (request.isAccepted())
                         return;
                 }

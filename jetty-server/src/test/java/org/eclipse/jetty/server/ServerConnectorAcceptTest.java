@@ -44,9 +44,10 @@ public class ServerConnectorAcceptTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response)
+            public void handle(Request request)
             {
-                request.accept().succeeded();
+                Response response = request.accept();
+                response.getCallback().succeeded();
             }
         });
         server.start();

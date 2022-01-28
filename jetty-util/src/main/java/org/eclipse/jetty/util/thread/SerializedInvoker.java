@@ -147,6 +147,7 @@ public class SerializedInvoker
                 }
                 catch (Throwable t)
                 {
+                    t.printStackTrace();
                     onError(link._task, t);
                 }
                 link = link.next();

@@ -115,12 +115,13 @@ public class SniSslConnectionFactoryTest
         _server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response)
+            public void handle(Request request)
             {
+                Response response = request.accept();
                 response.setStatus(200);
                 response.setHeader("X-URL", request.getHttpURI().toString());
                 response.setHeader("X-HOST", request.getServerName());
-                request.accept().succeeded();
+                response.getCallback().succeeded();
             }
         });
 

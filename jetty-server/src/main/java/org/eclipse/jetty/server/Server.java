@@ -114,7 +114,7 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     @Override
-    public void handle(Request request, Response response)
+    public void handle(Request request)
     {
         if (!isStarted())
             return;
@@ -133,10 +133,13 @@ public class Server extends Handler.Wrapper implements Attributes
             }
 
             // Handle
-            super.handle(customizedRequest, customizedRequest.getResponse());
-            if (!request.isAccepted())
+            super.handle(customizedRequest);
+
+            // Try to accept to test if already accepted
+            Response response = request.accept();
+            if (response != null)
             {
-                Callback callback = request.accept();
+                Callback callback = response.getCallback();
                 if (response.isCommitted())
                     callback.failed(new IllegalStateException("No Handler for committed request"));
                 else
@@ -151,10 +154,11 @@ public class Server extends Handler.Wrapper implements Attributes
             else
                 LOG.warn("handle failed {}", this, t);
 
-            request.accept().failed(t);
+            Response response = request.accept();
+            if (response == null)
+                response = request.getResponse();
+            response.getCallback().failed(t);
         }
-
-        return;
     }
 
     public boolean isDryRun()

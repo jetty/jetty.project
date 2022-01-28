@@ -51,8 +51,9 @@ public class DumpHandler extends Handler.Abstract
     }
 
     @Override
-    public void handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
+        Response response = request.accept();
         if (LOG.isDebugEnabled())
             LOG.debug("dump {}", request);
         HttpURI httpURI = request.getHttpURI();
@@ -71,7 +72,7 @@ public class DumpHandler extends Handler.Abstract
         if (Boolean.parseBoolean(params.getValue("empty")))
         {
             response.setStatus(200);
-            request.accept().succeeded();
+            response.getCallback().succeeded();
             return;
         }
 
@@ -101,7 +102,7 @@ public class DumpHandler extends Handler.Abstract
 
                 if (content instanceof Content.Error)
                 {
-                    request.accept().failed(((Content.Error)content).getCause());
+                    response.getCallback().failed(((Content.Error)content).getCause());
                     return;
                 }
 
@@ -132,7 +133,7 @@ public class DumpHandler extends Handler.Abstract
         if (params.getValue("error") != null)
         {
             response.setStatus(Integer.parseInt(params.getValue("error")));
-            request.accept().succeeded();
+            response.getCallback().succeeded();
             return;
         }
 
@@ -201,6 +202,6 @@ public class DumpHandler extends Handler.Abstract
             response.write(true, blocker, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)));
         }
 
-        request.accept().succeeded();
+        response.getCallback().succeeded();
     }
 }

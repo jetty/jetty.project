@@ -27,16 +27,31 @@ import org.slf4j.LoggerFactory;
 public class ContextRequest extends Request.Wrapper implements Invocable.Task
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
-    private final Response _response;
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
+    private volatile Response _response;
 
-    protected ContextRequest(ContextHandler contextHandler, Request wrapped, Response response, String pathInContext)
+    protected ContextRequest(ContextHandler contextHandler, Request wrapped, String pathInContext)
     {
         super(wrapped);
-        _response = response;
         _pathInContext = pathInContext;
         _contextHandler = contextHandler;
+    }
+
+    @Override
+    public Response accept()
+    {
+        Response response = super.accept();
+        if (response == null)
+            return null;
+        _response = new ContextResponse(this, response);
+        return _response;
+    }
+
+    @Override
+    public Response getResponse()
+    {
+        return _response;
     }
 
     @Override
@@ -44,19 +59,27 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Task
     {
         try
         {
-            _contextHandler.getHandler().handle(this, new ContextResponse(this, _response));
+            _contextHandler.getHandler().handle(this);
         }
         catch (Throwable t)
         {
             // Let's be less verbose with BadMessageExceptions & QuietExceptions
             if (!LOG.isDebugEnabled() && (t instanceof BadMessageException || t instanceof QuietException))
-                LOG.warn("bad message {}", t.getMessage());
+                LOG.warn("context bad message {}", t.getMessage());
             else
                 LOG.warn("context handle failed {}", this, t);
 
-            if (_response.isCommitted())
+            // Only handle exception if request was accepted
+            if (isAccepted())
+            {
+                Response response = _response;
+                if (!response.isCommitted())
+                {
+                    response.writeError(t, response.getCallback());
+                    return;
+                }
                 throw t;
-            new Response.Wrapper(this, _response).writeError(t, this.accept());
+            }
         }
     }
 

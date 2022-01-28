@@ -160,11 +160,12 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
                 assertInContext(request);
+                Response response = request.accept();
                 response.setStatus(200);
-                request.accept().succeeded();
+                response.getCallback().succeeded();
             }
         };
         _contextHandler.setHandler(handler);
@@ -191,11 +192,11 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response) throws Exception
+            public void handle(Request request)
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
-
-                Callback callback = request.accept();
+                Response response = request.accept();
+                Callback callback = response.getCallback();
                 request.demandContent(() ->
                 {
                     assertInContext(request);
@@ -259,9 +260,11 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
+
+                Response response = request.accept();
 
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demandContent(() ->
@@ -278,7 +281,7 @@ public class ContextHandlerTest
                 assertTrue(content.isLast());
                 content.release();
                 response.setStatus(200);
-                request.accept().succeeded();
+                response.getCallback().succeeded();
             }
         };
         _contextHandler.setHandler(handler);
@@ -375,7 +378,7 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
                 request.accept();
                 throw new RuntimeException("Testing");

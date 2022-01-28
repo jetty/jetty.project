@@ -19,13 +19,12 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.HostPort;
 
 public class ProxiedRequestHandler extends Handler.Wrapper
 {
     @Override
-    public void handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
         ConnectionMetaData proxiedFor = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
         {
@@ -72,6 +71,6 @@ public class ProxiedRequestHandler extends Handler.Wrapper
             {
                 return proxiedFor;
             }
-        }, response);
+        });
     }
 }

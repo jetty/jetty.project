@@ -35,6 +35,8 @@ public interface Response
 {
     Request getRequest();
 
+    Callback getCallback();
+
     int getStatus();
 
     void setStatus(int code);
@@ -136,10 +138,10 @@ public interface Response
 
         if (errorHandler != null)
         {
-            Request errorRequest = new ErrorHandler.ErrorRequest(getRequest(), status, message, cause, callback);
+            Request errorRequest = new ErrorHandler.ErrorRequest(getRequest(), this, status, message, cause, callback);
             try
             {
-                errorHandler.handle(errorRequest, this);
+                errorHandler.handle(errorRequest);
                 if (errorRequest.isAccepted())
                     return;
             }
@@ -164,6 +166,12 @@ public interface Response
         {
             _request = request;
             _wrapped = wrapped;
+        }
+
+        @Override
+        public Callback getCallback()
+        {
+            return _wrapped.getCallback();
         }
 
         @Override

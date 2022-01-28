@@ -302,7 +302,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
     }
 
     @Override
-    public void handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
         if (getHandler() == null)
             return;
@@ -321,24 +321,26 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
                 location += ";" + request.getHttpURI().getParam();
             if (request.getHttpURI().getQuery() != null)
                 location += ";" + request.getHttpURI().getQuery();
+
+            Response response = request.accept();
             response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
             response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
-            request.accept().succeeded();
+            response.getCallback().succeeded();
             return;
         }
 
         // TODO check availability and maybe return a 503
 
-        ContextRequest scoped = wrap(request, response, pathInContext);
+        ContextRequest scoped = wrap(request, pathInContext);
         if (scoped == null)
             return; // TODO 404? 500? Error dispatch ???
 
         _context.call(scoped);
     }
 
-    protected ContextRequest wrap(Request request, Response response, String pathInContext)
+    protected ContextRequest wrap(Request request, String pathInContext)
     {
-        return new ContextRequest(this, request, response, pathInContext);
+        return new ContextRequest(this, request, pathInContext);
     }
 
     @Override

@@ -19,20 +19,21 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
 
 public class HandleOnContentHandler extends Handler.Wrapper
 {
     @Override
-    public void handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
         // If no content or content available, then don't delay dispatch
         if (request.getContentLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
-            super.handle(request, response);
+            super.handle(request);
         else
         {
-            request.accept();
+            Response response = request.accept();
+            if (response == null)
+                return;
             request.demandContent(new OnContentRunner(request, response));
         }
     }
@@ -53,25 +54,26 @@ public class HandleOnContentHandler extends Handler.Wrapper
         {
             try
             {
-                AtomicBoolean handled = new AtomicBoolean();
+                AtomicBoolean accepted = new AtomicBoolean();
                 Request request = new Request.Wrapper(_request)
                 {
                     @Override
-                    public Callback accept()
+                    public Response accept()
                     {
-                        handled.set(true);
-                        return super.accept();
+                        if (accepted.compareAndSet(false, true))
+                            return _response;
+                        return null;
                     }
 
                     @Override
                     public boolean isAccepted()
                     {
-                        return handled.get();
+                        return accepted.get();
                     }
                 };
-                HandleOnContentHandler.super.handle(request, _response);
+                HandleOnContentHandler.super.handle(request);
                 if (!request.isAccepted())
-                    _request.accept().failed(new IllegalStateException());
+                    _response.getCallback().failed(new IllegalStateException("Not accepted after content"));
             }
             catch (Exception e)
             {

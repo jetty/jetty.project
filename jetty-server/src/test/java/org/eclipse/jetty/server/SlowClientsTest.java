@@ -68,11 +68,12 @@ public class SlowClientsTest
             server.setHandler(new Handler.Abstract()
             {
                 @Override
-                public void handle(Request request, Response response) throws Exception
+                public void handle(Request request) throws Exception
                 {
                     LOG.info("SERVING {}", request);
                     // Write some big content.
-                    Callback callback = request.accept();
+                    Response response = request.accept();
+                    Callback callback = response.getCallback();
                     response.write(true, new Callback()
                         {
                             @Override

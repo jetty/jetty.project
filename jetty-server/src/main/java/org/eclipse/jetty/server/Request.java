@@ -34,8 +34,33 @@ import org.eclipse.jetty.util.UrlEncoded;
 // TODO lots of javadoc
 public interface Request extends Attributes, Executor, Content.Provider
 {
-    Callback accept();
+    /**
+     * Accept the request for handling and provide the {@link Response} instance.
+     * @return The response instance or null if the request has already been accepted.
+     */
+    Response accept();
 
+    /**
+     * Test if the request has been accepted.
+     * <p>This should not be used if the caller intends to accept the request.  Specifically
+     * the following is an anti-pattern: <pre>
+     *     if (!request.isAccepted())
+     *     {
+     *         Response response = request.accept();
+     *         // ...
+     *     }
+     * </pre>
+     * Instead, the {@link #accept()} method should be used and tested for a null result: <pre>
+     *     Response response = request.accept();
+     *     if (response != null)
+     *     {
+     *         // ...
+     *     }
+     * </pre>
+     *
+     * @return true if the request has been accepted, else null
+     * @see #accept()
+     */
     boolean isAccepted();
 
     String getId();
@@ -71,6 +96,9 @@ public interface Request extends Attributes, Executor, Content.Provider
 
     void addCompletionListener(Callback onComplete);
 
+    /**
+     * @return The response instance iff this request has been excepted, else null
+     */
     Response getResponse();
 
     default Request getWrapped()
@@ -317,7 +345,7 @@ public interface Request extends Attributes, Executor, Content.Provider
         }
 
         @Override
-        public Callback accept()
+        public Response accept()
         {
             return _wrapped.accept();
         }

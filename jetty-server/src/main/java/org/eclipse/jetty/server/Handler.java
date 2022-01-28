@@ -33,13 +33,10 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Incoming requests to the Server (itself a Handler) are passed to one or more Handlers
  * until the request is handled and a response is produced.  Handlers are asynchronous,
- * so handling may happen during or after a call to {@link #handle(Request, Response)}.
- * A handler indicates that returns true from the {@link #handle(Request, Response)} method
- * is indicated that it (or one of it's contained handlers) has undertaken to produce the
- * response and ultimately call {@link Request#succeeded()} or {@link Request#failed(Throwable)}
- * to indicate the end of the request handling.
+ * so handling may happen during or after a call to {@link #handle(Request)}.
+ *
  * <p>
- * A call to {@link #handle(Request, Response)} may:
+ * A call to {@link #handle(Request)} may:
  * <ul>
  * <li>Do nothing</li>
  * <li>Completely generate the HTTP Response and call {@link Callback#succeeded()} on the {@link Callback}
@@ -63,10 +60,9 @@ public interface Handler extends LifeCycle, Destroyable
      * or one of it's nested Handlers must call {@link Request#accept()} to indicate that it will ultimately succeed or
      * fail the {@link Callback} returned.
      *
-     * @param response The muttable response
      * @throws Exception Thrown if there is a problem handling.
      */
-    void handle(Request request, Response response) throws Exception;
+    void handle(Request request) throws Exception;
 
     @ManagedAttribute(value = "the jetty server for this handler", readonly = true)
     Server getServer();
@@ -286,11 +282,11 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public void handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
             Handler next = getHandler();
             if (next != null)
-                next.handle(request, response);
+                next.handle(request);
         }
     }
 
@@ -318,7 +314,7 @@ public interface Handler extends LifeCycle, Destroyable
 
     /**
      * A Handler Container that wraps a list of other Handlers.
-     * By default, each handler is called in turn until one returns true from {@link Handler#handle(Request, Response)}.
+     * By default, each handler is called in turn until one returns true from {@link Handler#handle(Request)}.
      */
     class Collection extends AbstractContainer
     {
@@ -336,12 +332,12 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public void handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
             for (Handler h : _handlers)
             {
                 if (!request.isAccepted())
-                    h.handle(request, response);
+                    h.handle(request);
             }
         }
 

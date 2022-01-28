@@ -82,8 +82,9 @@ public class ProxyCustomizerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response)
+            public void handle(Request request)
             {
+                Response response = request.accept();
                 response.addHeader("preexisting.attribute", request.getAttribute("some.attribute").toString());
                 ArrayList<String> attributeNames = new ArrayList<>(request.getAttributeNames());
                 Collections.sort(attributeNames);
@@ -98,7 +99,7 @@ public class ProxyCustomizerTest
                 if (remoteAddress != null)
                     response.addHeader("proxyRemoteAddress", remoteAddress + ":" + request.getAttribute(ProxyCustomizer.REMOTE_PORT_ATTRIBUTE_NAME));
 
-                request.accept().succeeded();
+                response.getCallback().succeeded();
             }
         };
 

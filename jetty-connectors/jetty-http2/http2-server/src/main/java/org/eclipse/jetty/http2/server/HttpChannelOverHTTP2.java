@@ -689,7 +689,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     {
         ContextHandler context = getState().getContextHandler();
         if (context != null)
-            context.handle(getRequest(), this);
+            context.handle(getRequest());
         else
             handle();
     }

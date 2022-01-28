@@ -54,8 +54,9 @@ public class SSLReadEOFAfterResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
+                Response response = request.accept();
                 // First: read the whole content exactly
                 int length = bytes.length;
                 while (length > 0)
@@ -76,7 +77,7 @@ public class SSLReadEOFAfterResponseTest
                         c.release();
                     }
                     if (c == Content.EOF)
-                        request.accept().failed(new IllegalStateException());
+                        response.getCallback().failed(new IllegalStateException());
                 }
 
                 // Second: write the response.
@@ -93,7 +94,7 @@ public class SSLReadEOFAfterResponseTest
                 Content content = request.readContent();
                 if (!content.isLast())
                     throw new IllegalStateException();
-                request.accept().succeeded();
+                response.getCallback().succeeded();
             }
         });
         server.start();
