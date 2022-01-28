@@ -64,9 +64,12 @@
       <artifactId>jakarta.activation-api</artifactId>
       <optional>true</optional>
     </dependency>
-    <dependency>
+     -->
+    <!-- TODO: REMOVE -->
+    <!--<dependency>
       <groupId>jakarta.mail</groupId>
       <artifactId>jakarta.mail-api</artifactId>
+      <version>${project.version}</version>
       <optional>true</optional>
     </dependency>-->
   </dependencies>

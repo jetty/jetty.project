@@ -281,13 +281,35 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
     @Override
     protected void doStart() throws Exception
     {
-        _context.call(super::doStart);
+        _context.call(() ->
+        {
+            // FIXME - Invocable.Task is a Runnable which has no Exception
+            try
+            {
+                super.doStart();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        _context.call(super::doStop);
+        _context.call(() ->
+        {
+            // FIXME - Invocable.Task is a Runnable which has no Exception
+            try
+            {
+                super.doStop();
+            }
+            catch (Exception e)
+            {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @Override

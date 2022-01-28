@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -306,7 +306,7 @@ public abstract class SelectableChannelEndPoint extends AbstractEndPoint impleme
             ManagedSelector.safeReadyOps(_key));
     }
 
-    private abstract class RunnableCloseable implements Invocable.Task, Closeable, Runnable
+    private abstract class RunnableCloseable implements Invocable.Task, Closeable
     {
         final String _operation;
 

@@ -40,7 +40,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Task
     }
 
     @Override
-    public void run() throws Exception
+    public void run()
     {
         try
         {
@@ -55,7 +55,11 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Task
                 LOG.warn("context handle failed {}", this, t);
 
             if (_response.isCommitted())
-                throw t;
+            {
+                if (t instanceof RuntimeException)
+                    throw (RuntimeException)t;
+                throw new RuntimeException(t);
+            }
             new Response.Wrapper(this, _response).writeError(t, this);
         }
     }

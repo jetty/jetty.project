@@ -31,12 +31,65 @@ import java.util.concurrent.Callable;
  */
 public interface Invocable
 {
+    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
+
     enum InvocationType
     {
         BLOCKING, NON_BLOCKING, EITHER
     }
 
-    ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
+    /**
+     * <p>A task with an {@link InvocationType}.</p>
+     */
+    interface Task extends Invocable, Runnable
+    {
+        void run();
+    }
+
+    /**
+     * <p>A {@link Runnable} decorated with an {@link InvocationType}.</p>
+     */
+    class ReadyTask implements Task
+    {
+        private final InvocationType type;
+        private final Runnable task;
+
+        public ReadyTask(InvocationType type, Runnable task)
+        {
+            this.type = type;
+            this.task = task;
+        }
+
+        @Override
+        public void run()
+        {
+            task.run();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return type;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s|%s]", getClass().getSimpleName(), hashCode(), type, task);
+        }
+    }
+
+    /**
+     * <p>Creates a {@link Task} from the given InvocationType and Runnable.</p>
+     *
+     * @param type the InvocationType
+     * @param task the Runnable
+     * @return a new Task
+     */
+    public static Task from(InvocationType type, Runnable task)
+    {
+        return new ReadyTask(type, task);
+    }
 
     /**
      * Test if the current thread has been tagged as non blocking
@@ -103,13 +156,5 @@ public interface Invocable
     default InvocationType getInvocationType()
     {
         return InvocationType.BLOCKING;
-    }
-
-    /**
-     * A Runnable-like Invocable interface, that throws Exception
-     */
-    interface Task extends Invocable
-    {
-        void run() throws Exception;
     }
 }
