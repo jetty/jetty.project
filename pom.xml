@@ -24,66 +24,64 @@
     <!-- dependency versions -->
     <alpn.agent.version>2.0.10</alpn.agent.version>
     <ant.version>1.10.12</ant.version>
+    <apache.avro.version>1.11.0</apache.avro.version>
     <apache.httpclient.version>4.5.13</apache.httpclient.version>
     <apache.httpcore.version>4.4.15</apache.httpcore.version>
-    <asciidoctorj.version>2.5.3</asciidoctorj.version>
     <asciidoctorj-diagram.version>2.2.1</asciidoctorj-diagram.version>
+    <asciidoctorj.version>2.5.3</asciidoctorj.version>
     <asm.version>9.2</asm.version>
     <awaitility.version>4.1.1</awaitility.version>
     <bndlib.version>5.3.0</bndlib.version>
     <build-support.version>1.5</build-support.version>
     <checkstyle.version>9.2.1</checkstyle.version>
     <commons-codec.version>1.15</commons-codec.version>
+    <commons.compress.version>1.21</commons.compress.version>
     <commons.io.version>2.11.0</commons.io.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
-    <commons.compress.version>1.21</commons.compress.version>
     <conscrypt.version>2.5.2</conscrypt.version>
     <disruptor.version>3.4.2</disruptor.version>
     <felix.version>7.0.3</felix.version>
     <findbugs.jsr305.version>3.0.2</findbugs.jsr305.version>
-    <google.errorprone.version>2.10.0</google.errorprone.version>
-    <grpc.version>1.43.2</grpc.version>
+    <google.errorprone.version>2.11.0</google.errorprone.version>
+    <grpc.version>1.44.0</grpc.version>
     <gson.version>2.8.9</gson.version>
     <guava.version>31.0.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>2.14.4</hawtio.version>
     <hazelcast.version>4.2.4</hazelcast.version>
-    <infinispan.version>11.0.14.Final</infinispan.version>
     <infinispan.protostream.version>4.3.5.Final</infinispan.protostream.version>
-    <apache.avro.version>1.9.2</apache.avro.version>
-    <wildfly.elytron.version>1.18.3.Final</wildfly.elytron.version>
-    <wildfly.common.version>1.5.4.Final</wildfly.common.version>
-    <jackson.core.version>2.13.0</jackson.core.version>
-    <jackson.annotations.version>2.13.0</jackson.annotations.version>
-    <jackson-databind.version>2.13.0</jackson-databind.version>
+    <infinispan.version>11.0.14.Final</infinispan.version>
+    <jackson.annotations.version>2.13.1</jackson.annotations.version>
+    <jackson.core.version>2.13.1</jackson.core.version>
+    <jackson.databind.version>2.13.1</jackson.databind.version>
     <jakarta.activation.api.version>2.0.1</jakarta.activation.api.version>
     <jakarta.annotation.api.version>2.0.0</jakarta.annotation.api.version>
     <jakarta.authentication.api.version>2.0.0</jakarta.authentication.api.version>
-    <jakarta.el.api.version>4.0.0</jakarta.el.api.version>
+    <jakarta.el-api.version>4.0.0</jakarta.el-api.version>
     <jakarta.enterprise.cdi.api.version>3.0.0</jakarta.enterprise.cdi.api.version>
     <jakarta.inject.api.version>2.0.0</jakarta.inject.api.version>
     <jakarta.interceptor.api.version>2.0.0</jakarta.interceptor.api.version>
     <jakarta.mail.api.version>2.0.1</jakarta.mail.api.version>
-    <jakarta.transaction-api.version>2.0.0</jakarta.transaction-api.version>
     <jakarta.servlet.api.version>5.0.0</jakarta.servlet.api.version>
     <jakarta.servlet.jsp.api.version>3.0.0</jakarta.servlet.jsp.api.version>
     <jakarta.servlet.jsp.jstl.api.version>2.0.0</jakarta.servlet.jsp.jstl.api.version>
-    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version> <!-- TODO: remove? -->
+    <jakarta.servlet.jsp.jstl.impl.version>2.0.0</jakarta.servlet.jsp.jstl.impl.version>
+    <jakarta.transaction-api.version>2.0.0</jakarta.transaction-api.version>
+    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
     <jakarta.ws.rs.api.version>3.0.0</jakarta.ws.rs.api.version>
     <jakarta.xml.bind.api.version>3.0.1</jakarta.xml.bind.api.version>
     <jakarta.xml.bind.impl.version>3.0.2</jakarta.xml.bind.impl.version>
-    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
     <jakarta.xml.jaxws.impl.version>3.0.2</jakarta.xml.jaxws.impl.version>
-    <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
+    <jakarta.xml.ws.api.version>3.0.1</jakarta.xml.ws.api.version>
     <jamon.version>2.82</jamon.version>
-    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version> <!-- TODO: remove? -->
-    <javax.cdi.api.version>2.0</javax.cdi.api.version> <!-- TODO: remove? -->
-    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version> <!-- TODO: remove? -->
-    <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version> <!-- TODO: remove? -->
-    <jboss.logging.version>3.4.3.Final</jboss.logging.version>
+    <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
+    <javax.cdi.api.version>2.0</javax.cdi.api.version>
+    <javax.mail.glassfish.version>1.4.1.v201005082020</javax.mail.glassfish.version>
+    <javax.security.auth.message.version>1.0.0.v201108011116</javax.security.auth.message.version>
     <jboss.logging.annotations.version>2.2.1.Final</jboss.logging.annotations.version>
     <jboss.logging.processor.version>2.2.1.Final</jboss.logging.processor.version>
+    <jboss.logging.version>3.4.3.Final</jboss.logging.version>
     <jboss-logmanager.version>2.1.18.Final</jboss-logmanager.version>
     <jboss-threads.version>3.1.0.Final</jboss-threads.version>
     <jetty-assembly-descriptors.version>1.1</jetty-assembly-descriptors.version>
@@ -107,11 +105,11 @@
     <kerb-simplekdc.version>2.0.1</kerb-simplekdc.version>
     <log4j2.version>2.17.1</log4j2.version>
     <logback.version>1.3.0-alpha12</logback.version>
-    <mariadb.version>2.7.5</mariadb.version>
+    <mariadb.version>3.0.3</mariadb.version>
     <mariadb.docker.version>10.3.6</mariadb.docker.version>
-    <maven.version>3.8.4</maven.version>
     <maven-artifact-transfer.version>0.13.1</maven-artifact-transfer.version>
     <maven.resolver.version>1.7.3</maven.resolver.version>
+    <maven.version>3.8.4</maven.version>
     <mongodb.version>3.2.2</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.0.1</org.osgi.annotation.version>
@@ -123,8 +121,10 @@
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.16.3</testcontainers.version>
-    <xmemcached.version>2.4.7</xmemcached.version>
     <weld.version>4.0.2.Final</weld.version>
+    <wildfly.common.version>1.5.4.Final</wildfly.common.version>
+    <wildfly.elytron.version>1.18.3.Final</wildfly.elytron.version>
+    <xmemcached.version>2.4.7</xmemcached.version>
 
     <!-- some maven plugins versions -->
     <appassembler.maven.plugin.version>2.1.0</appassembler.maven.plugin.version>
@@ -1904,7 +1904,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
-        <version>${jackson-databind.version}</version>
+        <version>${jackson.databind.version}</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.core</groupId>
