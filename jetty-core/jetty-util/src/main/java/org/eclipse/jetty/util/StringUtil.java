@@ -813,6 +813,16 @@ public class StringUtil
     }
 
     /**
+     * Get the length of a string where a null string is length 0.
+     * @param s the string.
+     * @return the length of the string.
+     */
+    public static int getLength(String s)
+    {
+        return (s == null) ? 0 : s.length();
+    }
+
+    /**
      * Convert String to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      *
      * @param string A String containing an integer.

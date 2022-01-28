@@ -165,7 +165,7 @@ public class DumpHandler extends Handler.Abstract
         }
 
         writer.write("</pre>\n<h3>Attributes:</h3>\n<pre>");
-        for (String attr : request.getAttributeNames())
+        for (String attr : request.getAttributeNamesSet())
         {
             writer.write(attr);
             writer.write("=");

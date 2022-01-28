@@ -38,18 +38,19 @@
   </modules>
 
   <!-- FIXME: Remove once Servlet API usage is totally removed from jetty-core -->
-  <!--
   <dependencyManagement>
     <dependencies>
       <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-jakarta-servlet-api</artifactId>
+        <version>5.0.2</version>
+      </dependency>
+      <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>jetty-ee9-bom</artifactId>
+        <artifactId>jetty-ee9-webapp</artifactId>
         <version>${project.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
-   -->
 
 </project>

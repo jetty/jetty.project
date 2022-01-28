@@ -85,7 +85,7 @@ public class ProxyCustomizerTest
             public boolean handle(Request request, Response response) throws Exception
             {
                 response.addHeader("preexisting.attribute", request.getAttribute("some.attribute").toString());
-                ArrayList<String> attributeNames = new ArrayList(request.getAttributeNames());
+                ArrayList<String> attributeNames = new ArrayList(request.getAttributeNamesSet());
                 Collections.sort(attributeNames);
                 response.addHeader("attributeNames", String.join(",", attributeNames));
 

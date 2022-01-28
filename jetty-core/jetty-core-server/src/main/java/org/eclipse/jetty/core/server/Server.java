@@ -571,9 +571,9 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     @Override
-    public Set<String> getAttributeNames()
+    public Set<String> getAttributeNamesSet()
     {
-        return _attributes.getAttributeNames();
+        return _attributes.getAttributeNamesSet();
     }
 
     @Override

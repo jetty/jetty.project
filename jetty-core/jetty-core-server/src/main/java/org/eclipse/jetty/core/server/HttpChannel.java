@@ -447,9 +447,9 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        public Set<String> getAttributeNames()
+        public Set<String> getAttributeNamesSet()
         {
-            return _requestAttributes.getAttributeNames();
+            return _requestAttributes.getAttributeNamesSet();
         }
 
         @Override

@@ -28,10 +28,12 @@
       <groupId>org.eclipse.jetty.fcgi</groupId>
       <artifactId>fcgi-client</artifactId>
     </dependency>
-    <!--<dependency>
+    <!-- TODO: REMOVE -->
+    <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-proxy</artifactId>
-    </dependency>-->
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
@@ -42,11 +44,13 @@
       <artifactId>jetty-slf4j-impl</artifactId>
       <scope>test</scope>
     </dependency>
-    <!--<dependency>
+    <!-- TODO: REMOVE -->
+    <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>-->
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>http2-server</artifactId>

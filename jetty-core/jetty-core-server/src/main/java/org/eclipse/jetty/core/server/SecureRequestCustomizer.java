@@ -375,10 +375,10 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         @Override
-        public Set<String> getAttributeNames()
+        public Set<String> getAttributeNamesSet()
         {
             String sessionAttribute = getSslSessionAttribute();
-            Set<String> names = new HashSet<>(super.getAttributeNames());
+            Set<String> names = new HashSet<>(super.getAttributeNamesSet());
             if (!StringUtil.isEmpty(sessionAttribute))
             {
                 names.add(sessionAttribute);

@@ -589,9 +589,9 @@ public class ErrorHandler extends Handler.Abstract
         }
 
         @Override
-        public Set<String> getAttributeNames()
+        public Set<String> getAttributeNamesSet()
         {
-            Set<String> names = new HashSet<>(super.getAttributeNames());
+            Set<String> names = new HashSet<>(super.getAttributeNamesSet());
             if (_message != null)
                 names.add(ERROR_MESSAGE);
             if (_status > 0)

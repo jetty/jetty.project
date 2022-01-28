@@ -289,9 +289,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     }
 
     @Override
-    public Set<String> getAttributeNames()
+    public Set<String> getAttributeNamesSet()
     {
-        return _attributes.getAttributeNames();
+        return _attributes.getAttributeNamesSet();
     }
 
     @Override

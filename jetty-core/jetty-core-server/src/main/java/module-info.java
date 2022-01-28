@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.server
+module org.eclipse.jetty.core.server
 {
     requires transitive org.eclipse.jetty.http;
     requires transitive org.slf4j;
@@ -22,13 +22,13 @@ module org.eclipse.jetty.server
     // TODO needed for testing??
     requires static java.xml;
 
-    exports org.eclipse.jetty.server;
-    exports org.eclipse.jetty.server.handler;
-    exports org.eclipse.jetty.server.handler.gzip;
+    exports org.eclipse.jetty.core.server;
+    exports org.eclipse.jetty.core.server.handler;
+    exports org.eclipse.jetty.core.server.handler.gzip;
 
-    exports org.eclipse.jetty.server.handler.jmx to
+    exports org.eclipse.jetty.core.server.handler.jmx to
          org.eclipse.jetty.jmx;
 
-    exports org.eclipse.jetty.server.jmx to
+    exports org.eclipse.jetty.core.server.jmx to
          org.eclipse.jetty.jmx;
 }

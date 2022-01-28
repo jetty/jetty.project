@@ -349,9 +349,9 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         }
 
         @Override
-        public Set<String> getAttributeNames()
+        public Set<String> getAttributeNamesSet()
         {
-            return _wrapped.getAttributeNames();
+            return _wrapped.getAttributeNamesSet();
         }
 
         @Override

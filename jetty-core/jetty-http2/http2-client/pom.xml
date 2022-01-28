@@ -57,21 +57,27 @@
       <artifactId>jetty-server</artifactId>
       <scope>test</scope>
     </dependency>
-    <!--<dependency>
+    <!-- TODO: REMOVE -->
+    <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>-->
-    <!--<dependency>
+    </dependency>
+    <!-- TODO: REMOVE -->
+    <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-servlet-extras</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>-->
-    <!--<dependency>
+    </dependency>
+    <!-- TODO: REMOVE -->
+    <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-proxy</artifactId>
+      <version>${project.version}</version>
       <scope>test</scope>
-    </dependency>-->
+    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
       <artifactId>http2-server</artifactId>

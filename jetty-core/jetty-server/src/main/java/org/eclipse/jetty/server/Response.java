@@ -54,6 +54,7 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.AtomicBiInteger;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -239,7 +240,7 @@ public class Response implements HttpServletResponse
             return cookie;
 
         //sameSite is not set, use the default configured for the context, if one exists
-        SameSite contextDefault = HttpCookie.getSameSiteDefault(_channel.getRequest().getContext());
+        SameSite contextDefault = HttpCookie.getSameSiteDefault(_channel.getRequest().getContext().getAttributes());
         if (contextDefault == null)
             return cookie; //no default set
 

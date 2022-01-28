@@ -38,7 +38,7 @@ public class ContextHandlerMBean extends HandlerIAbstractMBean
     public Map<String, Object> getContextAttributes()
     {
         Map<String, Object> map = new HashMap<String, Object>();
-        for (String name : _contextHandler.getContext().getAttributeNames())
+        for (String name : _contextHandler.getContext().getAttributeNamesSet())
         {
             Object value = _contextHandler.getContext().getAttribute(name);
             map.put(name, value);

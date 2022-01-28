@@ -356,9 +356,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes
     }
 
     @Override
-    public Set<String> getAttributeNames()
+    public Set<String> getAttributeNamesSet()
     {
-        return _persistentAttributes.getAttributeNames();
+        return _persistentAttributes.getAttributeNamesSet();
     }
 
     @Override

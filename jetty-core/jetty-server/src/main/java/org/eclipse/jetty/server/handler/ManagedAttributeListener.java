@@ -71,7 +71,7 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
     public void contextInitialized(ServletContextEvent event)
     {
         // Update existing attributes
-        for (String name : _context.getServletContext().getAttributeNameSet())
+        for (String name : _context.getServletContext().getAttributeNamesSet())
         {
             if (_managedAttributes.contains(name))
                 updateBean(name, null, event.getServletContext().getAttribute(name));
@@ -81,7 +81,7 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
     @Override
     public void contextDestroyed(ServletContextEvent event)
     {
-        for (String name : _context.getServletContext().getAttributeNameSet())
+        for (String name : _context.getServletContext().getAttributeNamesSet())
         {
             if (_managedAttributes.contains(name))
                 updateBean(name, event.getServletContext().getAttribute(name), null);
