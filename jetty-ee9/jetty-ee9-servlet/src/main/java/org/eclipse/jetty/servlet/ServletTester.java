@@ -15,6 +15,7 @@ package org.eclipse.jetty.servlet;
 
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Map;
@@ -145,7 +146,7 @@ public class ServletTester extends ContainerLifeCycle
 
     public Enumeration<String> getAttributeNames()
     {
-        return _context.getAttributeNames();
+        return Collections.enumeration(_context.getAttributeNamesSet());
     }
 
     public Attributes getAttributes()

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.jndi.factories;
 
 import java.util.Hashtable;
+import java.util.Properties;
 import javax.naming.Context;
 import javax.naming.Name;
 import javax.naming.Reference;
@@ -128,27 +129,31 @@ public class MailSessionReference extends Reference implements ObjectFactory
             return Session.getInstance(props, new PasswordAuthenticator(user, password));*/
     }
 
-    /*
     public void setUser(String user)
     {
+    /*
         StringRefAddr addr = (StringRefAddr)get("user");
         if (addr != null)
         {
             throw new RuntimeException("user already set on SessionReference, can't be changed");
         }
         add(new StringRefAddr("user", user));
+     */
     }
 
     public void setPassword(String password)
     {
+        /*
         StringRefAddr addr = (StringRefAddr)get("pwd");
         if (addr != null)
             throw new RuntimeException("password already set on SessionReference, can't be changed");
         add(new StringRefAddr("pwd", password));
+        */
     }
 
     public void setProperties(Properties properties)
     {
+        /*
         Iterator entries = properties.entrySet().iterator();
         while (entries.hasNext())
         {
@@ -158,5 +163,6 @@ public class MailSessionReference extends Reference implements ObjectFactory
                 throw new RuntimeException("property " + e.getKey() + " already set on Session reference, can't be changed");
             add(new StringRefAddr((String)e.getKey(), (String)e.getValue()));
         }
-    }*/
+        */
+    }
 }
