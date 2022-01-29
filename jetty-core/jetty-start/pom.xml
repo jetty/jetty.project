@@ -47,7 +47,6 @@
           </archive>
         </configuration>
       </plugin>
-      <!-- FIXME: shade-plugin does not support JDK 17 yet
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -82,7 +81,6 @@
           </execution>
         </executions>
       </plugin>
-       -->
     </plugins>
   </build>
   <dependencies>
