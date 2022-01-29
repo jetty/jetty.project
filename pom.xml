@@ -685,6 +685,7 @@
             <argLine>
               @{argLine} ${jetty.surefire.argLine}
             </argLine>
+            <testFailureIgnore>true</testFailureIgnore>
             <failIfNoTests>false</failIfNoTests>
             <forkCount>1</forkCount>
             <reuseForks>true</reuseForks> <!-- to work around crash at https://github.com/junit-team/junit5/issues/801 -->
