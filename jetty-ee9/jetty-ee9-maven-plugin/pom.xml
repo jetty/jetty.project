@@ -96,6 +96,7 @@
         </executions>
         <configuration>
           <addTestClassPath>true</addTestClassPath>
+          <ignoreFailures>true</ignoreFailures>
           <setupIncludes>
             <setupInclude>it-parent-pom/pom.xml</setupInclude>
           </setupIncludes>
