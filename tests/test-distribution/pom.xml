@@ -146,14 +146,14 @@
       <type>war</type>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>test-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
       <type>war</type>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
+      <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>test-bad-websocket-webapp</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
