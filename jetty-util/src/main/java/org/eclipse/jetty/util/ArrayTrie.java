@@ -194,7 +194,6 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                     if (_rows == _value.length)
                         return false;
                     t = big[c] = _rows;
-
                 }
             }
         }

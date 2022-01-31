@@ -97,24 +97,19 @@ public class TrieTest
                 for (String k : trie.keySet())
                 {
                     assertNotNull(trie.get(k));
-                    assertNotNull(trie.get(toAsciiDirectByteBuffer(k))); // has to be a direct buffer
+                    assertNotNull(trie.get(toAsciiDirectByteBuffer(k, 0))); // has to be a direct buffer
                 }
 
                 // Assert that all getBest() variants do work on full tries.
                 assertNotNull(trie.getBest(key), "key=" + key);
                 assertNotNull(trie.getBest(key.getBytes(StandardCharsets.US_ASCII), 0, key.length()), "key=" + key);
                 assertNull(trie.getBest(toAsciiDirectByteBuffer(key, key.length()), 0, key.length()), "key=" + key);
-                assertNotNull(trie.getBest(toAsciiDirectByteBuffer(key), 0, key.length()), "key=" + key); // has to be a direct buffer
+                assertNotNull(trie.getBest(toAsciiDirectByteBuffer(key, 0), 0, key.length()), "key=" + key); // has to be a direct buffer
                 break;
             }
         }
 
         assertTrue(!trie.isFull() || !trie.put("overflow", 0));
-    }
-
-    private static ByteBuffer toAsciiDirectByteBuffer(String s)
-    {
-        return toAsciiDirectByteBuffer(s, 0);
     }
 
     private static ByteBuffer toAsciiDirectByteBuffer(String s, int pos)
