@@ -89,6 +89,7 @@ public class TrieTest
             if (!trie.put("prefix" + i, i))
             {
                 assertTrue(trie.isFull());
+                assertNull(trie.getBest("prefix" + i));
                 break;
             }
         }
