@@ -11,22 +11,20 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.autobahn;
+package org.eclipse.jetty.websocket.tests.javax;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.tests.EchoSocket;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import javax.websocket.ClientEndpointConfig;
 
-@WebSocket
-public class JettyAutobahnSocket extends EchoSocket
+import org.eclipse.jetty.http.HttpHeader;
+
+public class HostConfigurator extends ClientEndpointConfig.Configurator
 {
     @Override
-    public void onOpen(Session session)
+    public void beforeRequest(Map<String, List<String>> headers)
     {
-        super.onOpen(session);
-        session.setMaxTextMessageSize(Long.MAX_VALUE);
-        session.setMaxBinaryMessageSize(Long.MAX_VALUE);
-        session.setMaxFrameSize(WebSocketConstants.DEFAULT_MAX_FRAME_SIZE * 2);
+        headers.put(HttpHeader.HOST.asString(), Collections.singletonList("localhost:9001"));
     }
 }
