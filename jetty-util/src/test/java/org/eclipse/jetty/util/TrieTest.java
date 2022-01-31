@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,6 +39,7 @@ import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -89,7 +91,16 @@ public class TrieTest
             if (!trie.put("prefix" + i, i))
             {
                 assertTrue(trie.isFull());
-                assertNull(trie.getBest("prefix" + i));
+                String key = "prefix" + i;
+
+                // Assert that all getBest() variants do work on full tries.
+                assertNotNull(trie.getBest(key), "key=" + key);
+                assertNotNull(trie.getBest(key.getBytes(StandardCharsets.US_ASCII), 0, key.length()), "key=" + key);
+                ByteBuffer bb = ByteBuffer.allocateDirect(key.length()); // has to be a direct buffer
+                bb.put(key.getBytes(StandardCharsets.US_ASCII));
+                assertNull(trie.getBest(bb, 0, key.length()), "key=" + key);
+                bb.flip();
+                assertNotNull(trie.getBest(bb, 0, key.length()), "key=" + key);
                 break;
             }
         }

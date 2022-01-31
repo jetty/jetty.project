@@ -348,7 +348,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 if (diff == 0)
                 {
                     t = _tree[row + EQ];
-                    if (t == 0)
+                    if (t == 0 || t >= _key.length)
                         break loop;
 
                     // if this node is a match, recurse to remember 
@@ -405,7 +405,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 if (diff == 0)
                 {
                     t = _tree[row + EQ];
-                    if (t == 0)
+                    if (t == 0 || t >= _key.length)
                         break loop;
 
                     // if this node is a match, recurse to remember 
@@ -435,6 +435,9 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         loop:
         for (int i = 0; i < len; i++)
         {
+            if (o + i >= b.limit())
+                return null;
+
             byte c = (byte)(b.get(o + i) & 0x7f);
             if (isCaseInsensitive())
                 c = (byte)StringUtil.lowercases[c];
@@ -448,7 +451,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 if (diff == 0)
                 {
                     t = _tree[row + EQ];
-                    if (t == 0)
+                    if (t == 0 || t >= _key.length)
                         break loop;
 
                     // if this node is a match, recurse to remember 

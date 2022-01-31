@@ -311,6 +311,8 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                     break;
                 t = nt;
             }
+            if (t >= _key.length)
+                return null;
 
             // Is the next Trie is a match
             if (_key[t] != null)
@@ -349,6 +351,8 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                     break;
                 t = nt;
             }
+            if (t >= _key.length)
+                return null;
 
             // Is the next Trie is a match
             if (_key[t] != null)
@@ -368,6 +372,9 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         int pos = b.position() + offset;
         for (int i = 0; i < len; i++)
         {
+            if (pos >= b.limit())
+                return null;
+
             byte c = b.get(pos++);
             int index = __lookup[c & 0x7f];
             if (index >= 0)
@@ -388,6 +395,8 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                     break;
                 t = nt;
             }
+            if (t >= _key.length)
+                return null;
 
             // Is the next Trie is a match
             if (_key[t] != null)
