@@ -126,7 +126,7 @@
 
     <!-- some maven plugins versions -->
     <appassembler.maven.plugin.version>2.1.0</appassembler.maven.plugin.version>
-    <asciidoctor.maven.plugin.version>2.2.1</asciidoctor.maven.plugin.version>
+    <asciidoctor.maven.plugin.version>2.2.2</asciidoctor.maven.plugin.version>
     <build-helper.maven.plugin.version>3.3.0</build-helper.maven.plugin.version>
     <buildnumber.maven.plugin.version>3.0.0</buildnumber.maven.plugin.version>
     <depends.maven.plugin.version>1.4.0</depends.maven.plugin.version>
