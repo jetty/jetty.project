@@ -98,13 +98,14 @@ public class TrieTest
                 {
                     assertNotNull(trie.get(k));
                     assertNotNull(trie.get(toAsciiDirectByteBuffer(k, 0))); // has to be a direct buffer
+                    assertEquals(9, trie.get(toAsciiDirectByteBuffer(k, k.length()))); // has to be a direct buffer
                 }
 
                 // Assert that all getBest() variants do work on full tries.
                 assertNotNull(trie.getBest(key), "key=" + key);
                 assertNotNull(trie.getBest(key.getBytes(StandardCharsets.US_ASCII), 0, key.length()), "key=" + key);
-                assertNull(trie.getBest(toAsciiDirectByteBuffer(key, key.length()), 0, key.length()), "key=" + key);
                 assertNotNull(trie.getBest(toAsciiDirectByteBuffer(key, 0), 0, key.length()), "key=" + key); // has to be a direct buffer
+                assertNull(trie.getBest(toAsciiDirectByteBuffer(key, key.length()), 0, key.length()), "key=" + key);  // has to be a direct buffer
                 break;
             }
         }
