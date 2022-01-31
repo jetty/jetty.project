@@ -205,9 +205,9 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 // Do we need to create the new row?
                 if (t == _rows)
                 {
+                    _rows = (char)Math.min(_rows + 1, _value.length);
                     if (_rows == _key.length)
                         return false;
-                    _rows++;
                     _tree[row] = c;
                 }
 
@@ -348,7 +348,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 if (diff == 0)
                 {
                     t = _tree[row + EQ];
-                    if (t == 0 || t >= _key.length)
+                    if (t == 0)
                         break loop;
 
                     // if this node is a match, recurse to remember 
@@ -405,7 +405,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 if (diff == 0)
                 {
                     t = _tree[row + EQ];
-                    if (t == 0 || t >= _key.length)
+                    if (t == 0)
                         break loop;
 
                     // if this node is a match, recurse to remember 
@@ -451,7 +451,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 if (diff == 0)
                 {
                     t = _tree[row + EQ];
-                    if (t == 0 || t >= _key.length)
+                    if (t == 0)
                         break loop;
 
                     // if this node is a match, recurse to remember 

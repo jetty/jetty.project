@@ -93,19 +93,39 @@ public class TrieTest
                 assertTrue(trie.isFull());
                 String key = "prefix" + i;
 
+                // Assert that all keys can be gotten.
+                for (String k : trie.keySet())
+                {
+                    assertNotNull(trie.get(k));
+                    assertNotNull(trie.get(toAsciiDirectByteBuffer(k))); // has to be a direct buffer
+                }
+
                 // Assert that all getBest() variants do work on full tries.
                 assertNotNull(trie.getBest(key), "key=" + key);
                 assertNotNull(trie.getBest(key.getBytes(StandardCharsets.US_ASCII), 0, key.length()), "key=" + key);
-                ByteBuffer bb = ByteBuffer.allocateDirect(key.length()); // has to be a direct buffer
-                bb.put(key.getBytes(StandardCharsets.US_ASCII));
-                assertNull(trie.getBest(bb, 0, key.length()), "key=" + key);
-                bb.flip();
-                assertNotNull(trie.getBest(bb, 0, key.length()), "key=" + key);
+                assertNull(trie.getBest(toAsciiDirectByteBuffer(key, key.length()), 0, key.length()), "key=" + key);
+                assertNotNull(trie.getBest(toAsciiDirectByteBuffer(key), 0, key.length()), "key=" + key); // has to be a direct buffer
                 break;
             }
         }
 
         assertTrue(!trie.isFull() || !trie.put("overflow", 0));
+    }
+
+    private static ByteBuffer toAsciiDirectByteBuffer(String s)
+    {
+        return toAsciiDirectByteBuffer(s, 0);
+    }
+
+    private static ByteBuffer toAsciiDirectByteBuffer(String s, int pos)
+    {
+        ByteBuffer bb = ByteBuffer.allocateDirect(s.length());
+        bb.put(s.getBytes(StandardCharsets.US_ASCII));
+        if (pos > 0)
+            bb.position(pos);
+        else
+            bb.flip();
+        return bb;
     }
 
     @ParameterizedTest

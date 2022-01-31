@@ -190,9 +190,11 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                 t = big[c];
                 if (t == 0)
                 {
+                    _rows = (char)Math.min(_rows + 1, _value.length);
                     if (_rows == _value.length)
                         return false;
-                    t = big[c] = ++_rows;
+                    t = big[c] = _rows;
+
                 }
             }
         }
@@ -311,8 +313,6 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                     break;
                 t = nt;
             }
-            if (t >= _key.length)
-                return null;
 
             // Is the next Trie is a match
             if (_key[t] != null)
@@ -351,8 +351,6 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                     break;
                 t = nt;
             }
-            if (t >= _key.length)
-                return null;
 
             // Is the next Trie is a match
             if (_key[t] != null)
@@ -395,8 +393,6 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                     break;
                 t = nt;
             }
-            if (t >= _key.length)
-                return null;
 
             // Is the next Trie is a match
             if (_key[t] != null)
