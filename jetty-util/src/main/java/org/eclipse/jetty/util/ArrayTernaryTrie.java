@@ -205,7 +205,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 // Do we need to create the new row?
                 if (t == _rows)
                 {
-                    _rows = (char)Math.min(_rows + 1, _value.length);
+                    _rows = (char)Math.min(_rows + 1, _key.length);
                     if (_rows == _key.length)
                         return false;
                     _tree[row] = c;
