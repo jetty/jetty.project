@@ -117,10 +117,7 @@ public class TrieTest
     {
         ByteBuffer bb = ByteBuffer.allocateDirect(s.length());
         bb.put(s.getBytes(StandardCharsets.US_ASCII));
-        if (pos > 0)
-            bb.position(pos);
-        else
-            bb.flip();
+        bb.position(pos);
         return bb;
     }
 
