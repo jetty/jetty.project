@@ -92,11 +92,6 @@
         <artifactId>javax.annotation-api</artifactId>
         <version>${annotation-api.version}</version>
       </extension>
-      <extension>
-        <groupId>javax.annotation</groupId>
-        <artifactId>jsr250-api</artifactId>
-        <version>@jsr250-api.version@</version>
-      </extension>
     </extensions>
   </build>
 </project>
