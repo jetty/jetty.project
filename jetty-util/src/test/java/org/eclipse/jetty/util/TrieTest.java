@@ -30,6 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -295,6 +296,7 @@ public class TrieTest
         testGetString(trie);
         testGetBestArray(trie);
         testGetBestBuffer(trie);
+        assertNull(trie.getBest("Large: This is a really large key and should blow the maximum size of the array trie as lots of nodes should already be used."));
     }
 
     @Test
