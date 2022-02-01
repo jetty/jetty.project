@@ -205,9 +205,9 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                 // Do we need to create the new row?
                 if (t == _rows)
                 {
+                    _rows = (char)MathUtils.cappedAdd(_rows, 1, _key.length);
                     if (_rows == _key.length)
                         return false;
-                    _rows++;
                     _tree[row] = c;
                 }
 
@@ -435,6 +435,9 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         loop:
         for (int i = 0; i < len; i++)
         {
+            if (o + i >= b.limit())
+                return null;
+
             byte c = (byte)(b.get(o + i) & 0x7f);
             if (isCaseInsensitive())
                 c = (byte)StringUtil.lowercases[c];

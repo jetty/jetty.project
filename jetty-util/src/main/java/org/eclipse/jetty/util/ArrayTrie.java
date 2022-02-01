@@ -139,7 +139,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         if (capacity > MAX_CAPACITY)
             throw new IllegalArgumentException("Capacity " + capacity + " > " + MAX_CAPACITY);
         _value = (V[])new Object[capacity + 1];
-        _rowIndex = new char[(capacity + 1) * 32];
+        _rowIndex = new char[(capacity + 1) * ROW_SIZE];
         _key = new String[capacity + 1];
     }
 
@@ -171,7 +171,8 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                 t = _rowIndex[idx];
                 if (t == 0)
                 {
-                    if (++_rows >= _value.length)
+                    _rows = (char)MathUtils.cappedAdd(_rows, 1, _value.length);
+                    if (_rows == _value.length)
                         return false;
                     t = _rowIndex[idx] = _rows;
                 }
@@ -190,9 +191,10 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                 t = big[c];
                 if (t == 0)
                 {
+                    _rows = (char)MathUtils.cappedAdd(_rows, 1, _value.length);
                     if (_rows == _value.length)
                         return false;
-                    t = big[c] = ++_rows;
+                    t = big[c] = _rows;
                 }
             }
         }
@@ -368,6 +370,9 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         int pos = b.position() + offset;
         for (int i = 0; i < len; i++)
         {
+            if (pos >= b.limit())
+                return null;
+
             byte c = b.get(pos++);
             int index = __lookup[c & 0x7f];
             if (index >= 0)
