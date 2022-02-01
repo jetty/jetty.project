@@ -58,5 +58,7 @@
     <module>test-cdi</module>
     <module>test-jndi</module>
     <module>test-jpms</module>
+    <module>test-websocket-autobahn</module>
   </modules>
+
 </project>

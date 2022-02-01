@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.autobahn;
+package org.eclipse.jetty.websocket.tests.core;
 
 import java.nio.ByteBuffer;
 import java.time.Duration;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
-import org.eclipse.jetty.websocket.core.TestMessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

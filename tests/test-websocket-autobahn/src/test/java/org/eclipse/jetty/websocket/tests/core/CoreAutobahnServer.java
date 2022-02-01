@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.core.autobahn;
+package org.eclipse.jetty.websocket.tests.core;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.websocket.core.TestWebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
+import org.eclipse.jetty.websocket.tests.AutobahnServer;
 
 /**
  * WebSocket Server for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).
@@ -54,7 +53,7 @@ import org.eclipse.jetty.websocket.core.server.WebSocketUpgradeHandler;
  *     $ ls target/reports/servers/
  * </pre>
  */
-public class CoreAutobahnServer
+public class CoreAutobahnServer implements AutobahnServer
 {
     public static void main(String[] args) throws Exception
     {
@@ -62,25 +61,36 @@ public class CoreAutobahnServer
         if (args != null && args.length > 0)
             port = Integer.parseInt(args[0]);
 
-        Server server = startAutobahnServer(port);
+        CoreAutobahnServer server = new CoreAutobahnServer();
+        server.startAutobahnServer(port);
         server.join();
     }
 
-    public static Server startAutobahnServer(int port) throws Exception
+    private Server _server;
+
+    public void startAutobahnServer(int port) throws Exception
     {
-        Server server = new Server(port);
-        ServerConnector connector = new ServerConnector(server);
-        connector.setIdleTimeout(10000);
-        server.addConnector(connector);
-        ContextHandler context = new ContextHandler("/");
-        server.setHandler(context);
+        _server = new Server();
+        ServerConnector connector = new ServerConnector(_server);
+        connector.setPort(port);
+        _server.addConnector(connector);
 
         WebSocketComponents components = new WebSocketComponents();
         WebSocketUpgradeHandler handler = new WebSocketUpgradeHandler(components);
         handler.addMapping("/*", new TestWebSocketNegotiator(new AutobahnFrameHandler()));
+        _server.setHandler(handler);
 
-        context.setHandler(handler);
-        server.start();
-        return server;
+        _server.start();
+    }
+
+    @Override
+    public void stopAutobahnServer() throws Exception
+    {
+        _server.stop();
+    }
+
+    public void join() throws InterruptedException
+    {
+        _server.join();
     }
 }
