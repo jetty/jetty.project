@@ -171,7 +171,8 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                 t = _rowIndex[idx];
                 if (t == 0)
                 {
-                    if (++_rows >= _value.length)
+                    _rows = (char)Math.min(_rows + 1, _value.length);
+                    if (_rows == _value.length)
                         return false;
                     t = _rowIndex[idx] = _rows;
                 }
