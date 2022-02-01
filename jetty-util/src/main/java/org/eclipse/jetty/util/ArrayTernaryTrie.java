@@ -130,6 +130,8 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
     {
         int t = 0;
         int limit = s.length();
+        if (limit > MAX_CAPACITY)
+            return false;
         int last = 0;
         for (int k = 0; k < limit; k++)
         {
@@ -139,6 +141,9 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
 
             while (true)
             {
+                if (_rows == MAX_CAPACITY)
+                    return false;
+
                 int row = ROW_SIZE * t;
 
                 // Do we need to create the new row?
@@ -409,7 +414,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     break loop;
             }
         }
-        return (V)_value[node];
+        return _value[node];
     }
 
     @Override
@@ -427,7 +432,7 @@ class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     buf.append(',');
                 buf.append(_key[r]);
                 buf.append('=');
-                buf.append(String.valueOf(_value[r]));
+                buf.append(_value[r]);
             }
         }
         buf.append('}');
