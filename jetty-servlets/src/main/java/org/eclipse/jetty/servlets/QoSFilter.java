@@ -293,7 +293,9 @@ public class QoSFilter implements Filter
      * for the semaphore to become available before suspending a request.
      *
      * @param value wait time (in milliseconds)
+     * @deprecated do not use
      */
+    @Deprecated
     public void setWaitMs(long value)
     {
         _waitMs = value;
@@ -316,7 +318,9 @@ public class QoSFilter implements Filter
      * a request for while waiting for the semaphore to become available.
      *
      * @param value suspend time (in milliseconds)
+     * @deprecated do not use
      */
+    @Deprecated
     public void setSuspendMs(long value)
     {
         _suspendMs = value;
@@ -339,7 +343,9 @@ public class QoSFilter implements Filter
      * at the same time.
      *
      * @param value the number of requests
+     * @deprecated do not use
      */
+    @Deprecated
     public void setMaxRequests(int value)
     {
         _passes = new Semaphore((value - getMaxRequests() + _passes.availablePermits()), true);
