@@ -396,8 +396,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     public boolean addEventListener(EventListener listener)
     {
-        if (isRunning())
-            throw new IllegalStateException(this.toString());
         if (super.addEventListener(listener))
         {
             if (listener instanceof AcceptListener)
@@ -410,8 +408,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     public boolean removeEventListener(EventListener listener)
     {
-        if (isRunning())
-            throw new IllegalStateException(this.toString());
         if (super.removeEventListener(listener))
         {
             if (listener instanceof AcceptListener)
