@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(MappedByteBufferPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ArrayByteBufferPool.class);
 
     private final int _maxCapacity;
     private final int _minCapacity;
