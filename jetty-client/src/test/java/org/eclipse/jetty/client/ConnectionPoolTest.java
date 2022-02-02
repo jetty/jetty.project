@@ -57,6 +57,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -315,7 +317,10 @@ public class ConnectionPoolTest
         assertEquals(1, destinations.size());
         HttpDestination destination = (HttpDestination)destinations.get(0);
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
-        assertEquals(2, connectionPool.getConnectionCount());
+        if (DUPLEX_MAX_DURATION == factory)
+            assertThat(connectionPool.getConnectionCount(), lessThanOrEqualTo(2)); // The connections can expire upon release.
+        else
+            assertThat(connectionPool.getConnectionCount(), is(2));
     }
 
     @ParameterizedTest
