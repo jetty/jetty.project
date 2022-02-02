@@ -43,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject
 public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpable
 {
-    private static final Logger LOG = Log.getLogger(MappedByteBufferPool.class);
+    private static final Logger LOG = Log.getLogger(ArrayByteBufferPool.class);
 
     private final int _maxCapacity;
     private final int _minCapacity;
