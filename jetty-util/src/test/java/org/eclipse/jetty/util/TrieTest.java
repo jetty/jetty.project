@@ -331,6 +331,33 @@ public class TrieTest
         assertThat(trie.getBest("X", 0, 1), is("/"));
     }
 
+    @ParameterizedTest
+    @MethodSource("trieConstructors")
+    public void testEmptyKey(Function<Integer, Trie<String>> constructor)
+    {
+        Trie<String> trie = constructor.apply(500);
+        assertTrue(trie.put("", "empty"));
+        assertTrue(trie.put("abc", "prefixed"));
+
+        assertThat(trie.getBest("unknown"), is("empty"));
+        assertThat(trie.getBest("a"), is("empty"));
+        assertThat(trie.getBest("aX"), is("empty"));
+        assertThat(trie.getBest("abc"), is("prefixed"));
+        assertThat(trie.getBest("abcd"), is("prefixed"));
+
+        assertThat(trie.getBest(BufferUtil.toBuffer("unknown")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("a")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("aX")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("abc")), is("prefixed"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("abcd")), is("prefixed"));
+
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("unknown")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("a")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("aX")), is("empty"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("abc")), is("prefixed"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("abcd")), is("prefixed"));
+    }
+
     @Test
     public void testArrayTernaryTrieSize()
     {

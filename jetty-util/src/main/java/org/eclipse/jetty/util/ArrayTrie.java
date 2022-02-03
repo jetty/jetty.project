@@ -295,34 +295,35 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         {
             char c = s.charAt(pos++);
             int index = __lookup[c & 0x7f];
+            int nt;
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
-                int nt = _rowIndex[idx];
+                nt = _rowIndex[idx];
                 if (nt == 0)
                     break;
-                t = nt;
             }
             else
             {
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
                     return null;
-                int nt = big[c];
+                nt = big[c];
                 if (nt == 0)
                     break;
-                t = nt;
             }
 
-            // Is the next Trie is a match
+            // Is this node a match ?
             if (_key[t] != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, s, offset + i + 1, len - i - 1);
+                V best = getBest(nt, s, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
                 return _value[t];
             }
+
+            t = nt;
         }
         return _value[t];
     }
@@ -333,34 +334,34 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         {
             byte c = b[offset + i];
             int index = __lookup[c & 0x7f];
+            int nt;
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
-                int nt = _rowIndex[idx];
+                nt = _rowIndex[idx];
                 if (nt == 0)
                     break;
-                t = nt;
             }
             else
             {
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
                     return null;
-                int nt = big[c];
+                nt = big[c];
                 if (nt == 0)
                     break;
-                t = nt;
             }
 
-            // Is the next Trie is a match
+            // Is this node is a match
             if (_key[t] != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, b, offset + i + 1, len - i - 1);
+                V best = getBest(nt, b, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
                 break;
             }
+            t = nt;
         }
         return _value[t];
     }
@@ -375,34 +376,35 @@ public class ArrayTrie<V> extends AbstractTrie<V>
 
             byte c = b.get(pos++);
             int index = __lookup[c & 0x7f];
+            int nt;
             if (index >= 0)
             {
                 int idx = t * ROW_SIZE + index;
-                int nt = _rowIndex[idx];
+                nt = _rowIndex[idx];
                 if (nt == 0)
                     break;
-                t = nt;
             }
             else
             {
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
                     return null;
-                int nt = big[c];
+                nt = big[c];
                 if (nt == 0)
                     break;
                 t = nt;
             }
 
-            // Is the next Trie is a match
+            // Is this node a match
             if (_key[t] != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, b, offset + i + 1, len - i - 1);
+                V best = getBest(nt, b, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
                 break;
             }
+            t = nt;
         }
         return _value[t];
     }

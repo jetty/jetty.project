@@ -114,6 +114,11 @@ public interface Trie<V>
      */
     V getBest(byte[] b, int offset, int len);
 
+    default V getBest(byte[] b)
+    {
+        return getBest(b, 0, b.length);
+    }
+
     /**
      * Get the best match from key in a byte buffer.
      * The key is assumed to by ISO_8859_1 characters.
@@ -124,6 +129,11 @@ public interface Trie<V>
      * @return The value or null if not found
      */
     V getBest(ByteBuffer b, int offset, int len);
+
+    default V getBest(ByteBuffer b)
+    {
+        return getBest(b, 0, b.remaining());
+    }
 
     Set<String> keySet();
 
