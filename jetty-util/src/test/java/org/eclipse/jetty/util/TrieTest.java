@@ -36,6 +36,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
@@ -398,8 +399,8 @@ public class TrieTest
         assertTrue(trie.put(huge, "wow"));
         assertThat(trie.get(huge), is("wow"));
 
-        assertNotNull(trie.keySet());
-        assertNotNull(trie.toString());
+        assertThat(trie.keySet(), contains(huge));
+        assertThat(trie.toString(), containsString(huge));
     }
 
     @ParameterizedTest
