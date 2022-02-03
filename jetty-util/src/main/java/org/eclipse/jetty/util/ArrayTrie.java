@@ -307,7 +307,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
             {
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
-                    return null;
+                    break;
                 nt = big[c];
                 if (nt == 0)
                     break;
@@ -346,7 +346,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
             {
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
-                    return null;
+                    break;
                 nt = big[c];
                 if (nt == 0)
                     break;
@@ -388,7 +388,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
             {
                 char[] big = _bigIndex == null ? null : _bigIndex[t];
                 if (big == null)
-                    return null;
+                    break;
                 nt = big[c];
                 if (nt == 0)
                     break;
