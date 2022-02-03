@@ -31,7 +31,6 @@ import static org.eclipse.jetty.util.AbstractTrie.requiredCapacity;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -114,6 +113,21 @@ public class TrieTest
 
         return impls.stream().map(Arguments::of);
     }
+
+    public static Stream<Arguments> emptyImplementations()
+    {
+        List<AbstractTrie<Integer>> impls = new ArrayList<>();
+
+        for (boolean caseSensitive : new boolean[] {true, false})
+        {
+            impls.add(new ArrayTrie<Integer>(caseSensitive, 128));
+            impls.add(new ArrayTernaryTrie<Integer>(caseSensitive, 128));
+            impls.add(new TreeTrie<>(caseSensitive));
+        }
+
+        return impls.stream().map(Arguments::of);
+    }
+
 
     @ParameterizedTest
     @MethodSource("implementations")
@@ -430,6 +444,38 @@ public class TrieTest
         trie.put(key, 103);
         assertThat(trie.get(key), is(103));
         assertThat(trie.getBest(key + ";xxxx"), is(103));
+    }
+
+    @ParameterizedTest
+    @MethodSource("emptyImplementations")
+    public void testHttp(AbstractTrie<Integer> trie)
+    {
+        trie.put("Host:", 1);
+        trie.put("Host: name", 2);
+
+        assertThat(trie.getBest("Other: header\r\n"), nullValue());
+        assertThat(trie.getBest("Host: other\r\n"), is(1));
+        assertThat(trie.getBest("Host: name\r\n"), is(2));
+        if (trie.isCaseInsensitive())
+            assertThat(trie.getBest("HoSt: nAme\r\n"), is(2));
+        else
+            assertThat(trie.getBest("HoSt: nAme\r\n"), nullValue());
+
+        assertThat(trie.getBest(BufferUtil.toBuffer("Other: header\r\n")), nullValue());
+        assertThat(trie.getBest(BufferUtil.toBuffer("Host: other\r\n")), is(1));
+        assertThat(trie.getBest(BufferUtil.toBuffer("Host: name\r\n")), is(2));
+        if (trie.isCaseInsensitive())
+            assertThat(trie.getBest(BufferUtil.toBuffer("HoSt: nAme\r\n")), is(2));
+        else
+            assertThat(trie.getBest(BufferUtil.toBuffer("HoSt: nAme\r\n")), nullValue());
+
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Other: header\r\n")), nullValue());
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Host: other\r\n")), is(1));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Host: name\r\n")), is(2));
+        if (trie.isCaseInsensitive())
+            assertThat(trie.getBest(BufferUtil.toDirectBuffer("HoSt: nAme\r\n")), is(2));
+        else
+            assertThat(trie.getBest(BufferUtil.toDirectBuffer("HoSt: nAme\r\n")), nullValue());
     }
 
     @Test
