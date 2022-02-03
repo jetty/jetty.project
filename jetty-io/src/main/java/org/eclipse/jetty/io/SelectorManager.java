@@ -22,10 +22,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EventListener;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntUnaryOperator;
@@ -60,7 +60,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     private final ManagedSelector[] _selectors;
     private final AtomicInteger _selectorIndex = new AtomicInteger();
     private final IntUnaryOperator _selectorIndexUpdate;
-    private final List<AcceptListener> _acceptListeners = new ArrayList<>();
+    private final List<AcceptListener> _acceptListeners = new CopyOnWriteArrayList<>();
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private ThreadPoolBudget.Lease _lease;
 
@@ -396,8 +396,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     public boolean addEventListener(EventListener listener)
     {
-        if (isRunning())
-            throw new IllegalStateException(this.toString());
         if (super.addEventListener(listener))
         {
             if (listener instanceof AcceptListener)
@@ -410,8 +408,6 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
     @Override
     public boolean removeEventListener(EventListener listener)
     {
-        if (isRunning())
-            throw new IllegalStateException(this.toString());
         if (super.removeEventListener(listener))
         {
             if (listener instanceof AcceptListener)
