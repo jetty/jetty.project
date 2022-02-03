@@ -39,6 +39,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -332,6 +333,30 @@ public class TrieTest
 
         // The previous entry was not overridden
         assertThat(trie.getBest("X", 0, 1), is("/"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("trieConstructors")
+    public void testHttp(Function<Integer, Trie<String>> constructor)
+    {
+        Trie<String> trie = constructor.apply(500);
+        trie.put("Host:", "H");
+        trie.put("Host: name", "HF");
+
+        assertThat(trie.getBest("Other: header\r\n"), nullValue());
+        assertThat(trie.getBest("Host: other\r\n"), is("H"));
+        assertThat(trie.getBest("Host: name\r\n"), is("HF"));
+        assertThat(trie.getBest("HoSt: nAme\r\n"), is("HF"));
+
+        assertThat(trie.getBest(BufferUtil.toBuffer("Other: header\r\n")), nullValue());
+        assertThat(trie.getBest(BufferUtil.toBuffer("Host: other\r\n")), is("H"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("Host: name\r\n")), is("HF"));
+        assertThat(trie.getBest(BufferUtil.toBuffer("HoSt: nAme\r\n")), is("HF"));
+
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Other: header\r\n")), nullValue());
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Host: other\r\n")), is("H"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Host: name\r\n")), is("HF"));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("HoSt: nAme\r\n")), is("HF"));
     }
 
     @ParameterizedTest
