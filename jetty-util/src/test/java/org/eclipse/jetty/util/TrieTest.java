@@ -128,7 +128,6 @@ public class TrieTest
         return impls.stream().map(Arguments::of);
     }
 
-
     @ParameterizedTest
     @MethodSource("implementations")
     public void testOverflow(AbstractTrie<Integer> trie) throws Exception
