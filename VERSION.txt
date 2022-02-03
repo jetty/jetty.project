@@ -1,3 +1,5 @@
+jetty-9.4.46-SNAPSHOT
+
 jetty-9.4.45.v20220203 - 03 February 2022
  + 4275 Path Normalization/Traversal - Context Matching
  + 6497 Replace SameFileAliasChecker
