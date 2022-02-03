@@ -35,13 +35,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.in;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -385,54 +381,6 @@ public class TrieTest
         assertThat(trie.getBest(BufferUtil.toDirectBuffer("aX")), is("empty"));
         assertThat(trie.getBest(BufferUtil.toDirectBuffer("abc")), is("prefixed"));
         assertThat(trie.getBest(BufferUtil.toDirectBuffer("abcd")), is("prefixed"));
-    }
-
-    @ParameterizedTest
-    @MethodSource("trieConstructors")
-    public void testBigKey(Function<Integer, Trie<String>> constructor)
-    {
-        Trie<String> trie = constructor.apply(Character.MAX_VALUE - 1);
-
-        char[] c1 = new char[Character.MAX_VALUE - 1];
-        Arrays.fill(c1, 'a');
-        String huge = new String(c1);
-        assertTrue(trie.put(huge, "wow"));
-        assertThat(trie.get(huge), is("wow"));
-
-        assertThat(trie.keySet(), contains(huge));
-        assertThat(trie.toString(), containsString(huge));
-    }
-
-    @ParameterizedTest
-    @MethodSource("trieConstructors")
-    public void testKeySet(Function<Integer, Trie<String>> constructor)
-    {
-        Trie<String> trie = constructor.apply(500);
-
-        assertTrue(trie.put("", "0"));
-        assertTrue(trie.put("A#A", "1"));
-        assertTrue(trie.put("ABC", "X"));
-        assertTrue(trie.put("abc", "2"));
-
-        assertThat(trie.keySet().stream().sorted().collect(Collectors.toList()), contains("", "A#A", "abc"));
-    }
-
-    @ParameterizedTest
-    @MethodSource("trieConstructors")
-    public void testToString(Function<Integer, Trie<String>> constructor)
-    {
-        Trie<String> trie = constructor.apply(10);
-
-        assertTrue(trie.put("", "0"));
-        assertTrue(trie.put("A#A", "1"));
-        assertTrue(trie.put("ABC", "X"));
-        assertTrue(trie.put("abc", "2"));
-
-        String s = trie.toString();
-        assertThat(s, startsWith("{"));
-        assertThat(s, endsWith("}"));
-        assertThat(Arrays.stream(s.substring(1, s.length() - 1).split(",")).sorted().collect(Collectors.toList()),
-            contains("=0", "A#A=1", "abc=2"));
     }
 
     @Test
