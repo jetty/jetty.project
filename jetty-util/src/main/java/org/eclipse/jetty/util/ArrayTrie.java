@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -412,81 +411,35 @@ public class ArrayTrie<V> extends AbstractTrie<V>
     @Override
     public String toString()
     {
-        StringBuilder buf = new StringBuilder();
-        toString(buf, 0);
 
-        if (buf.length() == 0)
+        int rows = _rows;
+        if (rows == 0)
             return "{}";
 
-        buf.setCharAt(0, '{');
+        StringBuilder buf = new StringBuilder();
+        char c = '{';
+
+        for (int i = 0; i <= rows; i++)
+        {
+            String key = _key[i];
+            if (key != null)
+            {
+                buf.append(c).append(key).append('=').append(_value[i]);
+                c = ',';
+            }
+        }
         buf.append('}');
         return buf.toString();
-    }
-
-    private void toString(Appendable out, int t)
-    {
-        if (_value[t] != null)
-        {
-            try
-            {
-                out.append(',');
-                out.append(_key[t]);
-                out.append('=');
-                out.append(_value[t].toString());
-            }
-            catch (IOException e)
-            {
-                throw new RuntimeException(e);
-            }
-        }
-
-        for (int i = 0; i < ROW_SIZE; i++)
-        {
-            int idx = t * ROW_SIZE + i;
-            if (_rowIndex[idx] != 0)
-                toString(out, _rowIndex[idx]);
-        }
-
-        char[] big = _bigIndex == null ? null : _bigIndex[t];
-        if (big != null)
-        {
-            for (int i : big)
-            {
-                if (i != 0)
-                    toString(out, i);
-            }
-        }
     }
 
     @Override
     public Set<String> keySet()
     {
         Set<String> keys = new HashSet<>();
-        keySet(keys, 0);
+        for (String k : _key)
+            if (k != null)
+                keys.add(k);
         return keys;
-    }
-
-    private void keySet(Set<String> set, int t)
-    {
-        if (t < _value.length && _value[t] != null)
-            set.add(_key[t]);
-
-        for (int i = 0; i < ROW_SIZE; i++)
-        {
-            int idx = t * ROW_SIZE + i;
-            if (idx < _rowIndex.length && _rowIndex[idx] != 0)
-                keySet(set, _rowIndex[idx]);
-        }
-
-        char[] big = _bigIndex == null || t >= _bigIndex.length ? null : _bigIndex[t];
-        if (big != null)
-        {
-            for (int i : big)
-            {
-                if (i != 0)
-                    keySet(set, i);
-            }
-        }
     }
 
     @Override
