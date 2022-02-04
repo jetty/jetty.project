@@ -29,6 +29,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.eclipse.jetty.util.AbstractTrie.requiredCapacity;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -486,5 +488,8 @@ public class TrieTest
         assertThat(trie.get(huge), is("wow"));
 
         assertThrows(IllegalArgumentException.class, () -> new ArrayTrie<String>(Character.MAX_VALUE + 1));
+
+        assertThat(trie.keySet(), contains(huge));
+        assertThat(trie.toString(), containsString(huge));
     }
 }
