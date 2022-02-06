@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -351,10 +351,10 @@ public class ForwardProxyTLSServerTest
                 try
                 {
                     // Make sure the proxy remains idle enough.
-                    Thread.sleep(2 * idleTimeout);
+                    sleep(2 * idleTimeout);
                     super.handleConnect(baseRequest, request, response, serverAddress);
                 }
-                catch (InterruptedException x)
+                catch (Throwable x)
                 {
                     onConnectFailure(request, response, null, x);
                 }
@@ -788,6 +788,47 @@ public class ForwardProxyTLSServerTest
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("proxyTLS")
+    public void testRequestCompletionDelayed(SslContextFactory.Server proxyTLS) throws Exception
+    {
+        startTLSServer(new ServerHandler());
+        startProxy(proxyTLS);
+
+        HttpClient httpClient = newHttpClient();
+        httpClient.getProxyConfiguration().getProxies().add(newHttpProxy());
+        httpClient.start();
+
+        try
+        {
+            httpClient.getRequestListeners().add(new org.eclipse.jetty.client.api.Request.Listener()
+            {
+                @Override
+                public void onSuccess(org.eclipse.jetty.client.api.Request request)
+                {
+                    if (HttpMethod.CONNECT.is(request.getMethod()))
+                        sleep(250);
+                }
+            });
+
+            String body = "BODY";
+            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+                .scheme(HttpScheme.HTTPS.asString())
+                .method(HttpMethod.GET)
+                .path("/echo?body=" + URLEncoder.encode(body, StandardCharsets.UTF_8))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = response.getContentAsString();
+            assertEquals(body, content);
+        }
+        finally
+        {
+            httpClient.stop();
+        }
+    }
+
     @Test
     @Tag("external")
     @Disabled
@@ -820,6 +861,18 @@ public class ForwardProxyTLSServerTest
         finally
         {
             httpClient.stop();
+        }
+    }
+
+    private static void sleep(long ms)
+    {
+        try
+        {
+            Thread.sleep(ms);
+        }
+        catch (InterruptedException x)
+        {
+            throw new RuntimeException(x);
         }
     }
 

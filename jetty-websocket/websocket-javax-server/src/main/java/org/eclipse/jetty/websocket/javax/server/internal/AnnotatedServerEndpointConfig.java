@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -70,9 +70,7 @@ public class AnnotatedServerEndpointConfig extends ServerEndpointConfigWrapper
         else
             path = anno.value();
 
-        // Make sure all Configurators obtained are decorated.
-        ServerEndpointConfig.Configurator rawConfigurator = getConfigurator(baseServerConfig, anno);
-        ServerEndpointConfig.Configurator configurator = containerScope.getObjectFactory().decorate(rawConfigurator);
+        ServerEndpointConfig.Configurator configurator = getConfigurator(baseServerConfig, anno, containerScope);
 
         // Build a ServerEndpointConfig with the Javax API builder to wrap.
         ServerEndpointConfig endpointConfig = ServerEndpointConfig.Builder.create(endpointClass, path)
@@ -90,7 +88,7 @@ public class AnnotatedServerEndpointConfig extends ServerEndpointConfigWrapper
         init(endpointConfig);
     }
 
-    private static Configurator getConfigurator(ServerEndpointConfig baseServerConfig, ServerEndpoint anno) throws DeploymentException
+    private static Configurator getConfigurator(ServerEndpointConfig baseServerConfig, ServerEndpoint anno, JavaxWebSocketContainer containerScope) throws DeploymentException
     {
         Configurator ret = null;
 
@@ -115,7 +113,7 @@ public class AnnotatedServerEndpointConfig extends ServerEndpointConfigWrapper
             // Instantiate the provided configurator
             try
             {
-                return anno.configurator().getConstructor().newInstance();
+                return containerScope.getObjectFactory().createInstance(anno.configurator());
             }
             catch (Exception e)
             {

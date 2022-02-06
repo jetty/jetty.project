@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,11 +11,16 @@
 // ========================================================================
 //
 
+import org.eclipse.jetty.security.openid.OpenIdAuthenticatorFactory;
+
 module org.eclipse.jetty.security.openid
 {
-    requires transitive org.eclipse.jetty.client;
-    requires transitive org.eclipse.jetty.security;
     requires org.eclipse.jetty.util.ajax;
 
+    requires transitive org.eclipse.jetty.client;
+    requires transitive org.eclipse.jetty.security;
+
     exports org.eclipse.jetty.security.openid;
+
+    provides org.eclipse.jetty.security.Authenticator.Factory with OpenIdAuthenticatorFactory;
 }

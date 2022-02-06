@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -55,7 +55,7 @@ Build related artifacts that release separately, common assembly descriptors, re
 Files associated with the development of Jetty -- code styles, formatting, iplogs, etc.::
   http://git.eclipse.org/c/jetty/org.eclipse.jetty.admin.git
 
-[[t-contributing-build]]
+[[cg-contributing-build]]
 === Maven Build
 
 Eclipse Jetty uses http://maven.apache.org/[Apache Maven] for managing the project metadata and controlling the build.
@@ -76,7 +76,7 @@ All relevant dependencies should be downloaded into your local repository automa
 
 ____
 [NOTE]
-Jetty has a great many test cases that run through the course of its build.  Many of these tests spin up embedded instances of Jetty itself and it is not uncommon to see hundreds or more instances of Jetty start and stop during tests.
+Jetty has a great many test cases that run through the course of its build.  Many of these tests spin up embedded instances of Jetty itself, and it is not uncommon to see hundreds or more instances of Jetty start and stop during tests.
 Periodically we find some test cases to be more time dependent than they should be and this results in intermittent test failures.
 You can help track these down by opening an https://github.com/eclipse/jetty.project/issues[Issue].
 ____

@@ -11,5 +11,5 @@ maven://org.postgresql/postgresql/${postgresql-version}|lib/postgresql-${postgre
 postgresql-version?=42.2.18
 
 [ini-template]
-# Postgres JDBC version
-postgresql-version=42.2.18
+## Postgres JDBC version.
+# postgresql-version=42.2.18

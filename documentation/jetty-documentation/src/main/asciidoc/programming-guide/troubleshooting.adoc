@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,9 +36,9 @@ This is helpful because by reading the DEBUG logs you get a better understanding
 The Jetty artifact `jetty-slf4j-impl` is a SLF4J binding, that is the Jetty implementation of the SLF4J APIs, and provides a number of easy-to-use features to configure logging.
 
 The Jetty SLF4J binding only provides an appender that writes to `System.err`.
-For more advanced configurations (for example, logging to a file), use link:http://logback.qos.ch[LogBack], or link:https://logging.apache.org/log4j/2.x/[Log4J2], or your preferred SLF4J binding.
+For more advanced configurations (for example, logging to a file), use link:http://logback.qos.ch[LogBack], or link:https://logging.apache.org/log4j/2.x/[Log4j2], or your preferred SLF4J binding.
 
-CAUTION: Only one binding can be present in the class-path or module-path. If you use the LogBack SLF4J binding or the Log4J2 SLF4J binding, remember to remove the Jetty SLF4J binding.
+CAUTION: Only one binding can be present in the class-path or module-path. If you use the LogBack SLF4J binding or the Log4j2 SLF4J binding, remember to remove the Jetty SLF4J binding.
 
 The Jetty SLF4J binding reads a file in the class-path (or module-path) called `jetty-logging.properties` that can be configured with the logging levels for various logger categories:
 

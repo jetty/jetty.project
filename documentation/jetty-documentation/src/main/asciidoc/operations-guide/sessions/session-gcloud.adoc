@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -62,10 +62,8 @@ The `session-store-gcloud` module provides GCloud support for storing session da
 
 Because the Google Cloud DataStore is not a technology provided by the Eclipse Foundation, when enabling the module you will be prompted to assent to the licenses of the external vendor.
 
-As GCloud requires certain Java Commons Logging features to work correctly, Jetty routes these through SLF4J by transitively enabling the `jcl-slf4j` module during installation.
-Therefore, you will _also_ need to enable one of the SLF4J implementation modules.
-You can either choose one ahead of time and enable it at the same time as the `session-store-gcloud` module, or you can just enable `session-store-gcloud` module and it will print out a list of available SLF4J implementations.
-You can then choose one and enable it.
+As GCloud requires certain Java Commons Logging features to work correctly, Jetty routes these through SLF4J.
+By default Jetty implements the SLF4J api, but you can choose a different logging implementation by following the instructions xref:og-logging[here]
 
 IMPORTANT: If you want to use updated versions of the jar files automatically downloaded during the module enablement, you can place them in the associated `$JETTY_BASE/lib/` directory and use the `--skip-file-validation=<module name>` command line option to prevent errors when starting your server.
 

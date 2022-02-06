@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -52,7 +52,7 @@ Server -- Handlers
 
 The components that accept connections from clients are `org.eclipse.jetty.server.Connector` implementations.
 
-When a Jetty server interprets the HTTP protocol (both HTTP/1.1 and HTTP/2), it uses `org.eclipse.jetty.server.Handler` instances to process incoming requests and eventually produce responses.
+When a Jetty server interprets the HTTP protocol (HTTP/1.1, HTTP/2 or HTTP/3), it uses `org.eclipse.jetty.server.Handler` instances to process incoming requests and eventually produce responses.
 
 A `Server` must be created, configured and started:
 
@@ -71,7 +71,7 @@ Read xref:pg-server-http-handler[this section] for further details about ``Handl
 If you are interested in writing your server application based on the Servlet APIs, jump to xref:pg-server-http-handler-use-servlet[this section].
 
 [[pg-server-http-request-processing]]
-==== Server Request Processing
+==== Request Processing
 
 The Jetty HTTP request processing is outlined below in the diagram below.
 You may want to refer to the xref:pg-arch-io[Jetty I/O architecture] for additional information about the classes mentioned below.
@@ -108,7 +108,7 @@ Server -> Handlers : handle()
 First, the Jetty I/O layer emits an event that a socket has data to read.
 This event is converted to a call to `AbstractConnection.onFillable()`, where the `Connection` first reads from the `EndPoint` into a `ByteBuffer`, and then calls a protocol specific parser to parse the bytes in the `ByteBuffer`.
 
-The parser emit events that are protocol specific; the HTTP/2 parser, for example, emits events for each HTTP/2 frame that has been parsed.
+The parser emit events that are protocol specific; the HTTP/2 parser, for example, emits events for each HTTP/2 frame that has been parsed, and similarly does the HTTP/3 parser.
 The parser events are then converted to protocol independent events such as _"request start"_, _"request headers"_, _"request content chunk"_, etc.
 that in turn are converted into method calls to `HttpChannel`.
 
@@ -118,7 +118,7 @@ When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.
 ===== HttpChannel Events
 
 The central component processing HTTP requests is `HttpChannel`.
-There is a 1-to-1 relationship between an HTTP request/response and an `HttpChannel`, no matter what is the specific protocol that carries the HTTP request over the network (HTTP/1.1, HTTP/2 or FastCGI).
+There is a 1-to-1 relationship between an HTTP request/response and an `HttpChannel`, no matter what is the specific protocol that carries the HTTP request over the network (HTTP/1.1, HTTP/2, HTTP/3 or FastCGI).
 
 Advanced server applications may be interested in the progress of the processing of an HTTP request/response by `HttpChannel`.
 A typical case is to know exactly _when_ the HTTP request/response processing is complete, for example to monitor processing times.
@@ -144,13 +144,56 @@ Currently, the following events are available:
 * `responseEnd`
 * `complete`
 
-Please refer to the `HttpChannel.Listener` link:{JDURL}/org/eclipse/jetty/server/HttpChannel.Listener.html[javadocs] for the complete list of events.
+Please refer to the `HttpChannel.Listener` link:{javadoc-url}/org/eclipse/jetty/server/HttpChannel.Listener.html[javadocs] for the complete list of events.
 
 Server applications can register `HttpChannel.Listener` by adding them as xref:pg-arch-bean[beans] to the `Connector`:
 
 [source,java,indent=0]
 ----
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=httpChannelListener]
+----
+
+[[pg-server-http-request-logging]]
+==== Request Logging
+
+HTTP requests and responses can be logged to provide data that can be later analyzed with other tools.
+These tools can provide information such as the most frequently accessed request URIs, the response status codes, the request/response content lengths, geographical information about the clients, etc.
+
+The default request/response log line format is the link:https://en.wikipedia.org/wiki/Common_Log_Format[NCSA Format] extended with referrer data and user-agent data.
+
+[NOTE]
+====
+Typically, the extended NCSA format is the is enough and it's the standard used and understood by most log parsing tools and monitoring tools.
+
+To customize the request/response log line format see the link:{javadoc-url}/org/eclipse/jetty/server/CustomRequestLog.html[`CustomRequestLog` javadocs].
+====
+
+Request logging can be enabled at the server level, or at the web application context level.
+
+The request logging output can be directed to an SLF4J logger named `"org.eclipse.jetty.server.RequestLog"` at `INFO` level, and therefore to any logging library implementation of your choice (see also xref:pg-troubleshooting-logging[this section] about logging).
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=serverRequestLogSLF4J]
+----
+
+Alternatively, the request logging output can be directed to a daily rolling file of your choice, and the file name must contain `yyyy_MM_dd` so that rolled over files retain their date:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=serverRequestLogFile]
+----
+
+For maximum flexibility, you can log to multiple ``RequestLog``s using class `RequestLog.Collection`, for example by logging with different formats or to different outputs.
+
+You can use `CustomRequestLog` with a custom `RequestLog.Writer` to direct the request logging output to your custom targets (for example, an RDBMS).
+You can implement your own `RequestLog` if you want to have functionalities that are not implemented by `CustomRequestLog`.
+
+Request logging can also be enabled at the web application context level, using `RequestLogHandler` (see xref:pg-server-http-handler[this section] about how to organize Jetty ``Handler``s) to wrap a web application `Handler`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/http/HTTPServerDocs.java[tags=contextRequestLog]
 ----
 
 include::server-http-connector.adoc[]

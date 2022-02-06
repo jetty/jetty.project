@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-:doctitle: Eclipse Jetty: Programming Guide
-:toc-title: Programming Guide
-:breadcrumb: Home:../index.html | Programming Guide:./index.html
+:doctitle: link:https://eclipse.org/jetty[Eclipse Jetty]: Programming Guide
+:toc-title: Jetty Programming Guide
 :idprefix: pg-
+:docinfo: private-head
 
 include::../config.adoc[]
 include::.asciidoctorconfig[]
@@ -24,3 +24,4 @@ include::server/server.adoc[]
 include::maven/maven.adoc[]
 include::arch.adoc[]
 include::troubleshooting.adoc[]
+include::migration/migration.adoc[]

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -22,6 +23,8 @@ import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -69,10 +72,13 @@ public class HttpConfiguration implements Dumpable
     private long _minRequestDataRate;
     private long _minResponseDataRate;
     private HttpCompliance _httpCompliance = HttpCompliance.RFC7230;
+    private UriCompliance _uriCompliance = UriCompliance.DEFAULT;
     private CookieCompliance _requestCookieCompliance = CookieCompliance.RFC6265;
     private CookieCompliance _responseCookieCompliance = CookieCompliance.RFC6265;
     private boolean _notifyRemoteAsyncErrors = true;
     private boolean _relativeRedirectAllowed;
+    private HostPort _serverAuthority;
+    private SocketAddress _localAddress;
 
     /**
      * <p>An interface that allows a request object to be customized
@@ -142,6 +148,9 @@ public class HttpConfiguration implements Dumpable
         _responseCookieCompliance = config._responseCookieCompliance;
         _notifyRemoteAsyncErrors = config._notifyRemoteAsyncErrors;
         _relativeRedirectAllowed = config._relativeRedirectAllowed;
+        _uriCompliance = config._uriCompliance;
+        _serverAuthority = config._serverAuthority;
+        _localAddress = config._localAddress;
     }
 
     /**
@@ -184,7 +193,7 @@ public class HttpConfiguration implements Dumpable
         return _outputAggregationSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for an HTTP request header")
+    @ManagedAttribute("The maximum allowed size in bytes for the HTTP request line and HTTP request headers")
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
@@ -397,11 +406,13 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * <p>Sets the maximum allowed size in bytes for the HTTP request line and HTTP request headers.</p>
+     *
      * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded
      * in a URL. However, larger headers consume more memory and can make a server more vulnerable to denial of service
      * attacks.</p>
      *
-     * @param requestHeaderSize the maximum size in bytes of the request header
+     * @param requestHeaderSize the maximum allowed size in bytes for the HTTP request line and HTTP request headers
      */
     public void setRequestHeaderSize(int requestHeaderSize)
     {
@@ -488,7 +499,7 @@ public class HttpConfiguration implements Dumpable
      */
     public void addFormEncodedMethod(String method)
     {
-        _formEncodedMethods.put(method,Boolean.TRUE);
+        _formEncodedMethods.put(method, Boolean.TRUE);
     }
 
     /**
@@ -570,6 +581,16 @@ public class HttpConfiguration implements Dumpable
         _httpCompliance = httpCompliance;
     }
 
+    public UriCompliance getUriCompliance()
+    {
+        return _uriCompliance;
+    }
+
+    public void setUriCompliance(UriCompliance uriCompliance)
+    {
+        _uriCompliance = uriCompliance;
+    }
+
     /**
      * @return The CookieCompliance used for parsing request {@code Cookie} headers.
      * @see #getResponseCookieCompliance()
@@ -580,20 +601,20 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * @param cookieCompliance The CookieCompliance to use for parsing request {@code Cookie} headers.
+     */
+    public void setRequestCookieCompliance(CookieCompliance cookieCompliance)
+    {
+        _requestCookieCompliance = cookieCompliance == null ? CookieCompliance.RFC6265 : cookieCompliance;
+    }
+
+    /**
      * @return The CookieCompliance used for generating response {@code Set-Cookie} headers
      * @see #getRequestCookieCompliance()
      */
     public CookieCompliance getResponseCookieCompliance()
     {
         return _responseCookieCompliance;
-    }
-
-    /**
-     * @param cookieCompliance The CookieCompliance to use for parsing request {@code Cookie} headers.
-     */
-    public void setRequestCookieCompliance(CookieCompliance cookieCompliance)
-    {
-        _requestCookieCompliance = cookieCompliance == null ? CookieCompliance.RFC6265 : cookieCompliance;
     }
 
     /**
@@ -636,6 +657,69 @@ public class HttpConfiguration implements Dumpable
     public boolean isRelativeRedirectAllowed()
     {
         return _relativeRedirectAllowed;
+    }
+
+    /**
+     * Get the SocketAddress override to be reported as the local address of all connections
+     *
+     * @return Returns the connection local address override or null.
+     */
+    @ManagedAttribute("Local SocketAddress override")
+    public SocketAddress getLocalAddress()
+    {
+        return _localAddress;
+    }
+
+    /**
+     * <p>
+     * Specify the connection local address used within application API layer
+     * when identifying the local host name/port of a connected endpoint.
+     * </p>
+     * <p>
+     * This allows an override of higher level APIs, such as
+     * {@code ServletRequest.getLocalName()}, {@code ServletRequest.getLocalAddr()},
+     * and {@code ServletRequest.getLocalPort()}.
+     * </p>
+     *
+     * @param localAddress the address to use for host/addr/port, or null to reset to default behavior
+     */
+    public void setLocalAddress(SocketAddress localAddress)
+    {
+        _localAddress = localAddress;
+    }
+
+    /**
+     * Get the Server authority override to be used if no authority is provided by a request.
+     *
+     * @return Returns the connection server authority (name/port) or null
+     */
+    @ManagedAttribute("The server authority if none provided by requests")
+    public HostPort getServerAuthority()
+    {
+        return _serverAuthority;
+    }
+
+    /**
+     * <p>
+     * Specify the connection server authority (name/port) used within application API layer
+     * when identifying the server host name/port of a connected endpoint.
+     * </p>
+     *
+     * <p>
+     * This allows an override of higher level APIs, such as
+     * {@code ServletRequest.getServerName()}, and {@code ServletRequest.getServerPort()}.
+     * </p>
+     *
+     * @param authority the authority host (and optional port), or null to reset to default behavior
+     */
+    public void setServerAuthority(HostPort authority)
+    {
+        if (authority == null)
+            _serverAuthority = null;
+        else if (!authority.hasHost())
+            throw new IllegalStateException("Server Authority must have host declared");
+        else
+            _serverAuthority = authority;
     }
 
     @Override

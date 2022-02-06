@@ -22,7 +22,7 @@
     <Arg>
       <New id="httpConnector" class="org.eclipse.jetty.server.ServerConnector">
         <Arg name="server"><Ref refid="Server" /></Arg>
-        <Arg name="acceptors" type="int"><Property name="jetty.http.acceptors" default="-1"/></Arg>
+        <Arg name="acceptors" type="int"><Property name="jetty.http.acceptors" default="1"/></Arg>
         <Arg name="selectors" type="int"><Property name="jetty.http.selectors" default="-1"/></Arg>
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
@@ -39,6 +39,7 @@
         <Set name="acceptorPriorityDelta" property="jetty.http.acceptorPriorityDelta" />
         <Set name="acceptQueueSize" property="jetty.http.acceptQueueSize" />
         <Set name="reuseAddress"><Property name="jetty.http.reuseAddress" default="true"/></Set>
+        <Set name="reusePort"><Property name="jetty.http.reusePort" default="false"/></Set>
         <Set name="acceptedTcpNoDelay"><Property name="jetty.http.acceptedTcpNoDelay" default="true"/></Set>
         <Set name="acceptedReceiveBufferSize" property="jetty.http.acceptedReceiveBufferSize" />
         <Set name="acceptedSendBufferSize" property="jetty.http.acceptedSendBufferSize" />

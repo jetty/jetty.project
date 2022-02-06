@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,19 +14,25 @@
 package org.eclipse.jetty.docs.programming.server;
 
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http.CookieCompliance;
+import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.DetectorConnectionFactory;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -51,6 +57,23 @@ public class ServerDocs
         server.addConnector(connector);
         server.start();
         // end::http[]
+    }
+
+    public void httpUnix() throws Exception
+    {
+        // tag::httpUnix[]
+        // Create the HTTP/1.1 ConnectionFactory.
+        HttpConnectionFactory http = new HttpConnectionFactory();
+
+        Server server = new Server();
+
+        // Create the connector with the ConnectionFactory.
+        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, http);
+        connector.setUnixDomainPath(Path.of("/tmp/jetty.sock"));
+
+        server.addConnector(connector);
+        server.start();
+        // end::httpUnix[]
     }
 
     public void tlsHttp() throws Exception
@@ -246,4 +269,67 @@ public class ServerDocs
         void service(JSONHTTPRequest request, JSONHTTPResponse response, Callback callback);
     }
     // end::jsonHttpAPI[]
+
+    public void httpCompliance()
+    {
+        // tag::httpCompliance[]
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.setHttpCompliance(HttpCompliance.RFC7230);
+        // end::httpCompliance[]
+    }
+
+    public void httpComplianceCustom()
+    {
+        // tag::httpComplianceCustom[]
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+
+        // RFC7230 compliance, but allow Violation.MULTIPLE_CONTENT_LENGTHS.
+        HttpCompliance customHttpCompliance = HttpCompliance.from("RFC7230,MULTIPLE_CONTENT_LENGTHS");
+
+        httpConfiguration.setHttpCompliance(customHttpCompliance);
+        // end::httpComplianceCustom[]
+    }
+
+    public void uriCompliance()
+    {
+        // tag::uriCompliance[]
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.setUriCompliance(UriCompliance.RFC3986);
+        // end::uriCompliance[]
+    }
+
+    public void uriComplianceCustom()
+    {
+        // tag::uriComplianceCustom[]
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+
+        // RFC3986 compliance, but enforce Violation.AMBIGUOUS_PATH_SEPARATOR.
+        UriCompliance customUriCompliance = UriCompliance.from("RFC3986,-AMBIGUOUS_PATH_SEPARATOR");
+
+        httpConfiguration.setUriCompliance(customUriCompliance);
+        // end::uriComplianceCustom[]
+    }
+
+    public void cookieCompliance()
+    {
+        // tag::cookieCompliance[]
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+        httpConfiguration.setRequestCookieCompliance(CookieCompliance.RFC6265);
+        httpConfiguration.setResponseCookieCompliance(CookieCompliance.RFC6265);
+        // end::cookieCompliance[]
+    }
+
+    public void cookieComplianceCustom()
+    {
+        // tag::cookieComplianceCustom[]
+        HttpConfiguration httpConfiguration = new HttpConfiguration();
+
+        // RFC6265 compliance, but enforce Violation.RESERVED_NAMES_NOT_DOLLAR_PREFIXED.
+        CookieCompliance customUriCompliance = CookieCompliance.from("RFC6265,-RESERVED_NAMES_NOT_DOLLAR_PREFIXED");
+        httpConfiguration.setRequestCookieCompliance(customUriCompliance);
+
+        httpConfiguration.setResponseCookieCompliance(CookieCompliance.RFC6265);
+
+        // end::cookieComplianceCustom[]
+    }
 }

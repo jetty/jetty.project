@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -34,6 +34,7 @@ import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
@@ -123,6 +124,24 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             servletHandler.prependFilter(holder);
             servletHandler.prependFilterMapping(mapping);
 
+            // If we create the filter we must also make sure it is removed if the context is stopped.
+            contextHandler.addEventListener(new LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStopping(LifeCycle event)
+                {
+                    servletHandler.removeFilterHolder(holder);
+                    servletHandler.removeFilterMapping(mapping);
+                    contextHandler.removeEventListener(this);
+                }
+
+                @Override
+                public String toString()
+                {
+                    return String.format("%sCleanupListener", WebSocketUpgradeFilter.class.getSimpleName());
+                }
+            });
+
             if (LOG.isDebugEnabled())
                 LOG.debug("Adding {} mapped to {} in {}", holder, pathSpec, servletContext);
             return holder;
@@ -130,7 +149,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     }
 
     private final Configuration.ConfigurationCustomizer defaultCustomizer = new Configuration.ConfigurationCustomizer();
-    private WebSocketMappings mapping;
+    private WebSocketMappings mappings;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
@@ -138,7 +157,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         HttpServletRequest httpreq = (HttpServletRequest)request;
         HttpServletResponse httpresp = (HttpServletResponse)response;
 
-        if (mapping.upgrade(httpreq, httpresp, defaultCustomizer))
+        if (mappings.upgrade(httpreq, httpresp, defaultCustomizer))
             return;
 
         // If we reach this point, it means we had an incoming request to upgrade
@@ -152,21 +171,15 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     }
 
     @Override
-    public String dump()
-    {
-        return Dumpable.dump(this);
-    }
-
-    @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        Dumpable.dumpObjects(out, indent, this, mapping);
+        Dumpable.dumpObjects(out, indent, this, defaultCustomizer, mappings);
     }
 
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        mapping = WebSocketMappings.ensureMappings(config.getServletContext());
+        mappings = WebSocketMappings.ensureMappings(config.getServletContext());
 
         String max = config.getInitParameter("idleTimeout");
         if (max == null)

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,6 +26,7 @@ import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.common.decoders.AvailableDecoders;
 import org.eclipse.jetty.websocket.javax.common.decoders.IntegerDecoder;
@@ -42,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class AvailableDecodersTest
 {
     private AvailableDecoders availableDecoders;
+    private WebSocketComponents components = new WebSocketComponents();
 
     @SafeVarargs
     public final void init(Class<? extends Decoder>... decoder)
@@ -49,7 +51,7 @@ public class AvailableDecodersTest
         EndpointConfig testConfig = ClientEndpointConfig.Builder.create()
             .decoders(Arrays.asList(decoder))
             .build();
-        this.availableDecoders = new AvailableDecoders(testConfig);
+        this.availableDecoders = new AvailableDecoders(testConfig, components);
     }
 
     public <T extends Decoder> T getInstanceFor(Class<?> type)

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,6 +25,7 @@ import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.toolchain.test.Hex;
+import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.javax.client.internal.BasicClientEndpointConfig;
 import org.eclipse.jetty.websocket.javax.common.encoders.AvailableEncoders;
@@ -41,6 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class AvailableEncodersTest
 {
     private static EndpointConfig testConfig;
+    private final WebSocketComponents components = new WebSocketComponents();
 
     @BeforeAll
     public static void initConfig()
@@ -48,7 +50,7 @@ public class AvailableEncodersTest
         testConfig = new BasicClientEndpointConfig();
     }
 
-    private AvailableEncoders encoders = new AvailableEncoders(testConfig);
+    private final AvailableEncoders encoders = new AvailableEncoders(testConfig, components);
 
     public <T> void assertTextEncoder(Class<T> type, T value, String expectedEncoded) throws IllegalAccessException, InstantiationException, EncodeException
     {

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,13 +11,15 @@
 // ========================================================================
 //
 
+@Deprecated(forRemoval = true)
 module org.eclipse.jetty.unixsocket.server
 {
-    exports org.eclipse.jetty.unixsocket.server;
+    requires org.slf4j;
 
-    requires transitive org.jnrproject.enxio;
-    requires transitive org.jnrproject.unixsocket;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.unixsocket.common;
-    requires org.slf4j;
+    requires transitive org.jnrproject.enxio;
+    requires transitive org.jnrproject.unixsocket;
+
+    exports org.eclipse.jetty.unixsocket.server;
 }

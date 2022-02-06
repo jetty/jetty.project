@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.1-SNAPSHOT</version>
+    <version>10.0.8-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -12,8 +12,8 @@
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
-    <!-- 2.0.0.AM25 is breaking surefire -->
     <apacheds.version>2.0.0.AM26</apacheds.version>
+    <apache.directory.api.version>2.1.0</apache.directory.api.version>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.jaas.*</spotbugs.onlyAnalyze>
   </properties>
 
@@ -41,7 +41,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-security</artifactId>
-      <version>${project.version}</version>
     </dependency>
 
     <dependency>
@@ -119,8 +118,23 @@
     <dependency>
       <groupId>org.apache.directory.api</groupId>
       <artifactId>api-ldap-schema-data</artifactId>
-      <version>2.0.0</version>
+      <version>${apache.directory.api.version}</version>
       <scope>test</scope>      
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.api</groupId>
+      <artifactId>api-ldap-model</artifactId>
+      <version>${apache.directory.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.api</groupId>
+      <artifactId>api-util</artifactId>
+      <version>${apache.directory.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.directory.api</groupId>
+      <artifactId>api-asn1-api</artifactId>
+      <version>${apache.directory.api.version}</version>
     </dependency>
     <!-- because directory server do not have yet junit5 extensions -->
     <dependency>
@@ -131,4 +145,27 @@
     </dependency>
 
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>jdk16</id>
+      <activation>
+        <jdk>[16,)</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <configuration>
+                <argLine>--add-opens java.base/sun.security.x509=ALL-UNNAMED --add-opens java.base/sun.security.util=ALL-UNNAMED</argLine>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
+
 </project>

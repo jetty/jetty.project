@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -70,8 +70,8 @@ public class TestJettyOSGiBootHTTP2Conscrypt
             "sun.security", "sun.security.x509", "sun.security.ssl"));
         options.addAll(http2JettyDependencies());
 
-        options.addAll(TestOSGiUtil.coreJettyDependencies());
-        options.addAll(TestOSGiUtil.jspDependencies());
+        TestOSGiUtil.coreJettyDependencies(options);
+        TestOSGiUtil.coreJspDependencies(options);
         //deploy a test webapp
         options.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-jsp-webapp").classifier("webbundle").versionAsInProject());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-conscrypt-client").versionAsInProject().start());

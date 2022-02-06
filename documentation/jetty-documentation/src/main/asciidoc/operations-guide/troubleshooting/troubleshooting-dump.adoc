@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -12,7 +12,7 @@
 //
 
 [[og-troubleshooting-dump]]
-==== Troubleshooting: Jetty Server Dump
+==== Server Dump
 
 The Jetty Server Dump is obtained by invoking, via JMX, the `Server.dump()` operation, as shown below.
 
@@ -43,7 +43,7 @@ At the end of the dump output there is a legend that explains the type of tree n
 ====
 
 [[og-troubleshooting-dump-start-stop]]
-===== Jetty Server Dump at Server Start/Stop
+===== Dump at Server Start/Stop
 
 The `Server.dump()` operation may also be invoked just after the `Server` starts (to log the state of the freshly started server), and just before the `Server` stops (which may be useful to log the state of server that is not working properly).
 
@@ -67,21 +67,19 @@ See the xref:og-module-threadpool[`threadpool` module] configuration for more in
 Detailed thread pool information can also be turned on/off on-the-fly via JMX, by finding the `ThreadPool` MBean under `org.eclipse.jetty.util.thread:type=queuedthreadpool,id=0`, then selecting the `detailedDump` attribute and setting it to `true`. You can now perform the `Server.dump()` operation as explained above, and then set `detailedDump` back to `false`.
 
 [[og-troubleshooting-dump-example]]
-===== Jetty Server Dump Example
+===== Dump Example
 
 Below you can find a simple example of a Jetty Server Dump, with annotations for the principal components:
 
 [source,subs=verbatim,role=small,options=nowrap]
 ----
-include::jetty[setupArgs="--add-modules=http",args="jetty.http.selectors=1 jetty.http.acceptors=1 jetty.threadPool.minThreads=4 jetty.server.dumpAfterStart=true",delete="^[0-9]{4}",callouts=" <$N>,Server@,= QueuedThreadPool,(?i)ACCEPTING,(?i)SELECTING,HandlerList@,= ServerConnector,ManagedSelector@,keys @,startJarLoader@,unmanaged"]
+include::jetty[setupArgs="--add-modules=http",args="jetty.http.selectors=1 jetty.http.acceptors=1 jetty.threadPool.minThreads=4 jetty.server.dumpAfterStart=true",delete="^[0-9]{4}",callouts=" <$N>,Server@,= QueuedThreadPool,HandlerList@,= ServerConnector,ManagedSelector@,keys @,startJarLoader@,unmanaged"]
 ----
 <1> The `Server` instance at the root of the tree
 <2> The thread pool component
-<3> The thread accepting connections
-<4> The thread selecting connections
-<5> The root of the `Handler` structure
-<6> The connector listening on port `8080` for the HTTP/1.1 protocol
-<7> A selector component that manages connections
-<8> The connections currently managed by the selector component
-<9> The server `ClassLoader` and its classpath
-<10> The legend for the dump nodes
+<3> The root of the `Handler` structure
+<4> The connector listening on port `8080` for the HTTP/1.1 protocol
+<5> A selector component that manages connections
+<6> The connections currently managed by the selector component
+<7> The server `ClassLoader` and its classpath
+<8> The legend for the dump nodes

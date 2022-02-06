@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -38,11 +38,6 @@ public class ServerListener implements LifeCycle.Listener
     }
 
     @Override
-    public void lifeCycleStarting(LifeCycle event)
-    {
-    }
-
-    @Override
     public void lifeCycleStarted(LifeCycle event)
     {
         if (_tokenFile != null)
@@ -57,20 +52,5 @@ public class ServerListener implements LifeCycle.Listener
                 throw new IllegalStateException(e);
             }
         }
-    }
-
-    @Override
-    public void lifeCycleFailure(LifeCycle event, Throwable cause)
-    {
-    }
-
-    @Override
-    public void lifeCycleStopping(LifeCycle event)
-    {
-    }
-
-    @Override
-    public void lifeCycleStopped(LifeCycle event)
-    {
     }
 }

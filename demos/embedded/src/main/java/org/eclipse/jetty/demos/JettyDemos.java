@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -75,9 +76,9 @@ public class JettyDemos
 
         String version = "unknown";
         Path pomFile = demosDir.resolve("pom.xml");
-        try
+        try (Stream<String> lineStream = Files.lines(pomFile))
         {
-            String versionLine = Files.lines(pomFile)
+            String versionLine = lineStream
                 .filter((line) -> line.contains("<version>"))
                 .findFirst()
                 .orElseThrow(() ->

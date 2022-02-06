@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -82,13 +82,13 @@ public class HttpParserTest
     {
         for (HttpMethod m : HttpMethod.values())
         {
-            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString().substring(0,2))));
+            assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString().substring(0, 2))));
             assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString())));
             assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + "FOO")));
             assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " ")));
             assertEquals(m, HttpMethod.lookAheadGet(BufferUtil.toBuffer(m.asString() + " /foo/bar")));
 
-            assertNull(HttpMethod.lookAheadGet(m.asString().substring(0,2).getBytes(), 0,2));
+            assertNull(HttpMethod.lookAheadGet(m.asString().substring(0, 2).getBytes(), 0, 2));
             assertNull(HttpMethod.lookAheadGet(m.asString().getBytes(), 0, m.asString().length()));
             assertNull(HttpMethod.lookAheadGet((m.asString() + "FOO").getBytes(), 0, m.asString().length() + 3));
             assertEquals(m, HttpMethod.lookAheadGet(("\n" + m.asString() + " ").getBytes(), 1, m.asString().length() + 2));
@@ -2102,6 +2102,41 @@ public class HttpParserTest
         parser.parseNext(buffer);
         assertNull(_host);
         assertNull(_bad);
+    }
+
+    @Test
+    public void testRequestMaxHeaderBytesURITooLong()
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "GET /long/nested/path/uri HTTP/1.1\r\n" +
+                "Host: example.com\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+
+        int maxHeaderBytes = 5;
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, maxHeaderBytes);
+
+        parseAll(parser, buffer);
+        assertEquals("414", _bad);
+    }
+
+    @Test
+    public void testRequestMaxHeaderBytesCumulative()
+    {
+        ByteBuffer buffer = BufferUtil.toBuffer(
+                "GET /nested/path/uri HTTP/1.1\r\n" +
+                "Host: example.com\r\n" +
+                "X-Large-Header: lorem-ipsum-dolor-sit\r\n" +
+                "Connection: close\r\n" +
+                "\r\n");
+
+        int maxHeaderBytes = 64;
+        HttpParser.RequestHandler handler = new Handler();
+        HttpParser parser = new HttpParser(handler, maxHeaderBytes);
+
+        parseAll(parser, buffer);
+        assertEquals("431", _bad);
     }
 
     @Test

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,14 +31,6 @@ Mailing lists are a wonderful way to interact with the community at large and fo
 * Jetty Announcements List
 ** Join - https://dev.eclipse.org/mailman/listinfo/jetty-announce
 ** Archives - http://dev.eclipse.org/mhonarc/lists/jetty-announce/
-
-[[cg-irc]]
-=== Internet Relay Chat - IRC
-
-IRC has been around for decades and it is hard to beat a communication platform that has such support.  Users are always welcome to come join our IRC channels and talk with us, other users, or just lurk.  Please note that IRC is not necessarily an active support channel, if you have a question by all means ask it but there should be no expectation that you will immediately get a response.  Your best bet is to ask and then lurk.
-
-irc.freenode.org - #jetty::
-  Our primary location, we recommend that if your looking to find folks on IRC you try here.
 
 [[cg-stackoverflow]]
 === Stack Overflow

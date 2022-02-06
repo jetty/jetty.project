@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,12 +16,4 @@
 
 These pages are works in progress that have not been moved to their respective sections yet.
 
-include::websocket-jetty-api.adoc[]
-include::websocket-jetty-api-events.adoc[]
-include::websocket-jetty-api-session.adoc[]
-include::websocket-jetty-api-send-message.adoc[]
-include::websocket-jetty-api-annotations.adoc[]
-include::websocket-jetty-api-listener.adoc[]
-include::websocket-jetty-api-adapter.adoc[]
-include::websocket-jetty-server-api.adoc[]
-include::websocket-jetty-client-api.adoc[]
+include::jetty-websocket-server-api.adoc[]

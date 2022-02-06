@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,10 +25,10 @@ JAAS authentication is performed in a pluggable fashion.
 This permits applications to remain independent from underlying authentication technologies.
 New or updated authentication technologies can be plugged under an application without requiring modifications to the application itself.
 
-See Java Authentication and Authorization Service (JAAS) http://java.sun.com/javase/7/docs/technotes/guides/security/jaas/JAASRefGuide.html[Reference Guide] for more information about JAAS.
+See Java Authentication and Authorization Service (JAAS) link:http://java.sun.com/javase/7/docs/technotes/guides/security/jaas/JAASRefGuide.html[Reference Guide] for more information about JAAS.
 
-The Jetty JAAS support aims to dictate as little as possible whilst providing a sufficiently flexible infrastructure to allow users to drop either one of the link:#og-jaas-loginmodules[JAAS Login Modules that ships with Jetty], or their
-own custom https://docs.oracle.com/javase/7/docs/api/javax/security/auth/spi/LoginModule.html[LoginModules].
+The Jetty JAAS support aims to dictate as little as possible whilst providing a sufficiently flexible infrastructure to allow users to drop either one of the xref:og-jaas-loginmodules[JAAS Login Modules that ships with Jetty], or their
+own custom link:https://docs.oracle.com/javase/7/docs/api/javax/security/auth/spi/LoginModule.html[LoginModule]s.
 
 [[og-jaas-configuration]]
 ==== Configuration
@@ -45,12 +45,12 @@ include::{JETTY_HOME}/modules/jaas.mod[]
 The configurable items in the resulting `$jetty.base/start.d/jaas.ini` file are:
 
 jetty.jaas.login.conf::
-This is the location of the file that will be referenced by the System property `java.security.auth.login.config`: Jetty sets this System property for you based on the value of this property.
-The value of this property is assumed to be _relative to the ``$jetty.base``_.
-The default value is `etc/login.conf`, which resolves to  `$jetty.base/etc/login.conf`.
-If you don't want to put your login module configuration file here, you can change this property to point to where it is. 
+This is the location of the file that will be referenced by the system property `java.security.auth.login.config`: Jetty sets this system property for you based on the value of this property.
+The value of this property is assumed to be _relative to ``$JETTY_BASE``_.
+The default value is `etc/login.conf`, which resolves to  `$JETTY_BASE/etc/login.conf`.
+If you don't want to put your login module configuration file here, you can change this property to point to where it is.
 
-See more about the contents of this file in the link:#og-jaas-loginconf[Configuring JAAS] section.
+See more about the contents of this file in the xref:og-jaas-loginconf[Configuring JAAS] section.
 
 [[og-jaas-webapp]]
 ===== Configure the webapp for JAAS
@@ -63,7 +63,7 @@ For example, this `web.xml` contains a realm called `Test JAAS Realm`:
 ----
 <login-config>
   <auth-method>FORM</auth-method>
-  <realm-name>Test JAAS Realm</realm-name> <1>
+  <realm-name>Test JAAS Realm</realm-name> <!--1-->
   <form-login-config>
     <form-login-page>/login/login</form-login-page>
     <form-error-page>/login/error</form-error-page>
@@ -75,30 +75,29 @@ For example, this `web.xml` contains a realm called `Test JAAS Realm`:
 We now need to declare an `org.eclipse.jetty.jaas.JAASLoginService` that references the realm name of `Test JAAS Realm`. 
 Here's an example of a suitable XML snippet:
 
-[source, xml, subs=verbatim]
+[source,xml,subs=verbatim]
 ----
 <New class="org.eclipse.jetty.jaas.JAASLoginService">
-  <Set name="Name">Test JAAS Realm</Set> <1>
-  <Set name="LoginModuleName">xyz</Set> <2>
+  <Set name="Name">Test JAAS Realm</Set> <!--1-->
+  <Set name="LoginModuleName">xyz</Set> <!--2-->
 </New>
 ----
 <1> The name is the _same_ as that declared in the `<realm-name>` in `web.xml`.
-<2> The name that identifies a set of `javax.security.auth.spi.LoginModule` configurations that comprise the link:#og-jaas-loginconf[JAAS config file] identified in the `jetty.jaas.login.conf` property of the link:#og-jaas-module[`jaas` module].
+<2> The name that identifies a set of `javax.security.auth.spi.LoginModule` configurations that comprise the xref:og-jaas-loginconf[JAAS config file] identified in the `jetty.jaas.login.conf` property of the xref:og-jaas-module[`jaas` module].
 
 The `org.eclipse.jetty.jaas.JAASLoginService` can be declared in a couple of different places, pick whichever suits your purposes best:
 
 * If you have more than one webapp that you would like to use the same security infrastructure, then you can declare your `org.eclipse.jetty.jaas.JAASLoginService` as a bean that is added to the `org.eclipse.jetty.server.Server`.
 The file in which you declare this needs to be on Jetty's execution path.
-The recommended procedure is to create a file in your `$jetty.base/etc` directory and then ensure it is on the classpath either by adding it to the Jetty link:#og-start-jar[start command line], or more conveniently to a link:#custom-modules[custom module].
+The recommended procedure is to create a file in your `$jetty.base/etc` directory and then ensure it is on the classpath either by adding it to the Jetty xref:og-start-jar[start command line], or more conveniently to a xref:custom-modules[custom module].
 +
 Here's an example of this type of XML file:
-[source, xml, subs=verbatim]
++
+[source,xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
-
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-
   <Call name="addBean">
     <Arg>
       <New class="org.eclipse.jetty.jaas.JAASLoginService">
@@ -107,18 +106,16 @@ Here's an example of this type of XML file:
       </New>
     </Arg>
   </Call>
-
 </Configure>
 ----
+
 * Alternatively, if you want to use JAAS with a specific webapp only, you declare your `org.eclipse.jetty.jaas.JAASLoginService` in a context XLM file specific to that webapp:
 +
-[source, xml, subs=verbatim]
+[source,xml]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
-
 <Configure class="org.eclipse.jetty.webapp.WebAppContext">
-
   <Set name="securityHandler">
     <New class="org.eclipse.jetty.security.ConstraintSecurityHandler">
      <Set name="loginService">
@@ -129,67 +126,65 @@ Here's an example of this type of XML file:
      </Set>
     </New>
   </Set>
-
 </Configure>
 ----
 
 [[og-jaas-loginconf]]
 ===== Configure JAAS
 
-We now need to setup the contents of the file we specified as the `jetty.jaas.login.conf` property when we link:#og-jaas-module[configured the `jaas` module].
-Refer to the https://docs.oracle.com/javase/7/docs/api/javax/security/auth/login/Configuration.html[syntax rules] of this file for a full description.
+We now need to setup the contents of the file we specified as the `jetty.jaas.login.conf` property when we xref:og-jaas-module[configured the `jaas` module].
+Refer to the link:https://docs.oracle.com/javase/7/docs/api/javax/security/auth/login/Configuration.html[syntax rules] of this file for a full description.
 
-Remembering the example we set up link:#og-jaas-webapp[previously], the contents of the `$jetty.base/etc/login.conf` file could look as follows:
+Remembering the example we set up xref:og-jaas-webapp[previously], the contents of the `$jetty.base/etc/login.conf` file could look as follows:
 
-[source, ini, subs=verbatim]
+[source,subs=verbatim]
 ----
 xyz  { <1>
-       com.acme.SomeLoginModule required debug=true; <2>
-       com.other.OtherLoginModule optional; <3>
-     };
+  com.acme.SomeLoginModule required debug=true; <2>
+  com.other.OtherLoginModule optional; <3>
+};
 ----
 <1> The name of the configuration _exactly_ as specified in your `org.eclipse.jetty.jaas.JAASLoginService` declaration.
 <2> The first `LoginModule` declaration, containing the classname of the `LoginModule` and its configuration properties.
 <3> A second `LoginModule` declaration.
 You can provide as many `LoginModule` alternatives as you like, with a minimum of one.
-Refer to the https://docs.oracle.com/javase/7/docs/api/javax/security/auth/login/Configuration.html[JAAS documentation] for more information on the standard configuration properties, and how JAAS interprets this file.
+Refer to the link:https://docs.oracle.com/javase/7/docs/api/javax/security/auth/login/Configuration.html[JAAS documentation] for more information on the standard configuration properties, and how JAAS interprets this file.
 
 [[og-jaas-loginmodules]]
 ==== Provided LoginModules
 
-* link:{JDURL}/org/eclipse/jetty/jaas/spi/JDBCLoginModule.html[`org.eclipse.jetty.jaas.spi.JDBCLoginModule`]
-* link:{JDURL}/org/eclipse/jetty/jaas/spi/PropertyFileLoginModule.html[`org.eclipse.jetty.jaas.spi.PropertyFileLoginModule`]
-* link:{JDURL}/org/eclipse/jetty/jaas/spi/DataSourceLoginModule.html[`org.eclipse.jetty.jaas.spi.DataSourceLoginModule`]
-* link:{JDURL}/org/eclipse/jetty/jaas/spi/LdapLoginModule.html[`org.eclipse.jetty.jaas.ldap.LdapLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/jaas/spi/JDBCLoginModule.html[`org.eclipse.jetty.jaas.spi.JDBCLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/jaas/spi/PropertyFileLoginModule.html[`org.eclipse.jetty.jaas.spi.PropertyFileLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/jaas/spi/DataSourceLoginModule.html[`org.eclipse.jetty.jaas.spi.DataSourceLoginModule`]
+* link:{javadoc-url}/org/eclipse/jetty/jaas/spi/LdapLoginModule.html[`org.eclipse.jetty.jaas.ldap.LdapLoginModule`]
 
-____
 [NOTE]
+====
 Passwords can be stored in clear text, obfuscated or checksummed.
-The class link:{JDURL}/org/eclipse/jetty/util/security/Password.html[`org.eclipse.jetty.util.security.Password`] should be used to generate all varieties of passwords,the output from which can be put in to property files or entered into database tables.
-____
+The class link:{javadoc-url}/org/eclipse/jetty/util/security/Password.html[`org.eclipse.jetty.util.security.Password`] should be used to generate all varieties of passwords,the output from which can be put in to property files or entered into database tables.
+====
 
 ===== JDBCLoginModule
 
 The `org.eclipse.jetty.jaas.spi.JDBCLoginModule` stores user passwords and roles in a database accessed via JDBC calls.
 You can configure the JDBC connection information, as well as the names of the table and columns storing the username and credential, and the names of the table and columns storing the roles.
 
-Here is an example link:#og-jaas-loginconf[login module configuration file] entry for it using an HSQLDB driver:
+Here is an example xref:og-jaas-loginconf[login module configuration file] entry for it using an HSQLDB driver:
 
-[source, ini, subs=verbatim]
+[source,subs=verbatim]
 ----
-
 jdbc { <1>
-      org.eclipse.jetty.jaas.spi.JDBCLoginModule required <2><3>
-      dbUrl="jdbc:hsqldb:." <4>
-      dbUserName="sa" <5>
-      dbDriver="org.hsqldb.jdbcDriver" <6>
-      userTable="myusers" <7>
-      userField="myuser" <8>
-      credentialField="mypassword" <9>
-      userRoleTable="myuserroles" <10>
-      userRoleUserField="myuser" <11>
-      userRoleRoleField="myrole"; <12>
-      };
+  org.eclipse.jetty.jaas.spi.JDBCLoginModule required <2><3>
+  dbUrl="jdbc:hsqldb:." <4>
+  dbUserName="sa" <5>
+  dbDriver="org.hsqldb.jdbcDriver" <6>
+  userTable="myusers" <7>
+  userField="myuser" <8>
+  credentialField="mypassword" <9>
+  userRoleTable="myuserroles" <10>
+  userRoleUserField="myuser" <11>
+  userRoleRoleField="myrole"; <12>
+};
 ----
 <1> The name of the configuration.
 <2> The name of the `LoginModule` class.
@@ -208,17 +203,15 @@ The properties *7*-*12* are used to format the following queries:
 
 [source,sql]
 ----
-  select <credentialField> from <userTable>
-          where <userField> =?
-  select <userRoleRoleField> from <userRoleTable>
-          where <userRoleUserField> =?
+select <credentialField> from <userTable> where <userField>=?
+select <userRoleRoleField> from <userRoleTable> where <userRoleUserField>=?
 ----
 
 Credential and role information is lazily read from the database when a previously unauthenticated user requests authentication.
 Note that this information is _only_ cached for the length of the authenticated session.
 When the user logs out or the session expires, the information is flushed from memory.
 
-Note that passwords can be stored in the database in plain text or encoded formats - see the note on "Passwords/Credentials" above.
+Note that passwords can be stored in the database in plain text or encoded formats -- see the note on "Passwords/Credentials" above.
 
 ===== DataSourceLoginModule
 
@@ -227,19 +220,18 @@ The `javax.sql.DataSource` is obtained at runtime by performing a JNDI lookup on
 
 A sample login module configuration for this `LoginModule`: 
 
-[source subs=verbatim]
+[source,subs=verbatim]
 ----
-
 ds { <1>
-     org.eclipse.jetty.jaas.spi.DataSourceLoginModule required <2><3>
-     dbJNDIName="ds" <4>
-     userTable="myusers" <5>
-     userField="myuser" <6>
-     credentialField="mypassword" <7>
-     userRoleTable="myuserroles" <8>
-     userRoleUserField="myuser" <9>
-     userRoleRoleField="myrole"; <10>
-    };
+  org.eclipse.jetty.jaas.spi.DataSourceLoginModule required <2><3>
+  dbJNDIName="ds" <4>
+  userTable="myusers" <5>
+  userField="myuser" <6>
+  credentialField="mypassword" <7>
+  userRoleTable="myuserroles" <8>
+  userRoleUserField="myuser" <9>
+  userRoleRoleField="myrole"; <10>
+};
 ----
 <1> The name of the configuration.
 <2> The name of the `LoginModule` class.
@@ -252,17 +244,16 @@ ds { <1>
 <9> The name of the column holding the user name.
 <10> The name of the column holding the user role.
 
-
 ===== PropertyFileLoginModule
 
 With this login module implementation, the authentication and role information is read from a property file.
 
-[source subs=verbatim]
+[source,subs=verbatim]
 ----
 props { <1>
-        org.eclipse.jetty.jaas.spi.PropertyFileLoginModule required  <2><3>
-        file="/somewhere/somefile.props"; <4>
-      };
+  org.eclipse.jetty.jaas.spi.PropertyFileLoginModule required  <2><3>
+  file="/somewhere/somefile.props"; <4>
+};
 ----
 <1> The name of the configuration.
 <2> The name of the `LoginModule` class.
@@ -271,14 +262,13 @@ props { <1>
 
 The property file must be of the format:
 
-[source,text subs=verbatim]
+[source,text,subs=verbatim]
 ----
 <username>: <password> [,<rolename> ...]
 ----
 
 Here's an example:
 
-[source,ini]
 ----
 fred: OBF:1xmk1w261u9r1w1c1xmq,user,admin
 harry: changeme,user,developer
@@ -295,30 +285,29 @@ The LDAP connection information and structure of the authentication/authorizatio
 
 Here's an example:
 
-[source,ini]
+[source,subs=verbatim]
 ----
-
 example  { <1>
-   org.eclipse.jetty.jaas.spi.LdapLoginModule required  <2><3>
-   contextFactory="com.sun.jndi.ldap.LdapCtxFactory" <4>
-   hostname="ldap.example.com" <5>
-   port="389" <6>
-   bindDn="cn=Directory Manager" <7>
-   bindPassword="directory" <8>
-   authenticationMethod="simple" <9>
-   useLdaps="true" <10>
-   userBaseDn="ou=people,dc=alcatel" <11>
-   userRdnAttribute="uid" <12>
-   userIdAttribute="cn" <13>
-   userPasswordAttribute="userPassword" <14>
-   userObjectClass="inetOrgPerson" <15>
-   roleBaseDn="ou=groups,dc=example,dc=com" <16>
-   roleNameAttribute="cn" <17>
-   roleMemberAttribute="uniqueMember" <18>
-   roleObjectClass="groupOfUniqueNames"; <19>
-   forceBindingLogin="false" <20>
-   debug="false" <21>
-   };
+  org.eclipse.jetty.jaas.spi.LdapLoginModule required  <2><3>
+  contextFactory="com.sun.jndi.ldap.LdapCtxFactory" <4>
+  hostname="ldap.example.com" <5>
+  port="389" <6>
+  bindDn="cn=Directory Manager" <7>
+  bindPassword="directory" <8>
+  authenticationMethod="simple" <9>
+  useLdaps="true" <10>
+  userBaseDn="ou=people,dc=alcatel" <11>
+  userRdnAttribute="uid" <12>
+  userIdAttribute="cn" <13>
+  userPasswordAttribute="userPassword" <14>
+  userObjectClass="inetOrgPerson" <15>
+  roleBaseDn="ou=groups,dc=example,dc=com" <16>
+  roleNameAttribute="cn" <17>
+  roleMemberAttribute="uniqueMember" <18>
+  roleObjectClass="groupOfUniqueNames"; <19>
+  forceBindingLogin="false" <20>
+  debug="false" <21>
+};
 ----
 <1> The name of the configuration.
 <2> The name of the `LoginModule` class.

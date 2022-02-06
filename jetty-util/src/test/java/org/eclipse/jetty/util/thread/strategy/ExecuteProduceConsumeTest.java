@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,7 +36,7 @@ public class ExecuteProduceConsumeTest
 
     private final BlockingQueue<Runnable> _produce = new LinkedBlockingQueue<>();
     private final Queue<Runnable> _executions = new LinkedBlockingQueue<>();
-    private ExecuteProduceConsume _ewyk;
+    private ExecuteProduceConsume _exStrategy;
     private volatile Thread _producer;
 
     @BeforeEach
@@ -67,7 +67,7 @@ public class ExecuteProduceConsumeTest
 
         Executor executor = _executions::add;
 
-        _ewyk = new ExecuteProduceConsume(producer, executor);
+        _exStrategy = new ExecuteProduceConsume(producer, executor);
     }
 
     @AfterEach
@@ -82,7 +82,7 @@ public class ExecuteProduceConsumeTest
     public void testIdle()
     {
         _produce.add(NULLTASK);
-        _ewyk.produce();
+        _exStrategy.produce();
     }
 
     @Test
@@ -91,9 +91,9 @@ public class ExecuteProduceConsumeTest
         Task t0 = new Task();
         _produce.add(t0);
         _produce.add(NULLTASK);
-        _ewyk.produce();
+        _exStrategy.produce();
         assertThat(t0.hasRun(), Matchers.equalTo(true));
-        assertEquals(_ewyk, _executions.poll());
+        assertEquals(_exStrategy, _executions.poll());
     }
 
     @Test
@@ -106,13 +106,13 @@ public class ExecuteProduceConsumeTest
             _produce.add(tasks[i]);
         }
         _produce.add(NULLTASK);
-        _ewyk.produce();
+        _exStrategy.produce();
 
         for (Task task : tasks)
         {
             assertThat(task.hasRun(), Matchers.equalTo(true));
         }
-        assertEquals(_ewyk, _executions.poll());
+        assertEquals(_exStrategy, _executions.poll());
     }
 
     @Test
@@ -126,7 +126,7 @@ public class ExecuteProduceConsumeTest
             {
                 _produce.add(t0);
                 _produce.add(NULLTASK);
-                _ewyk.produce();
+                _exStrategy.produce();
             }
         };
         thread.start();
@@ -136,10 +136,10 @@ public class ExecuteProduceConsumeTest
         assertEquals(thread, t0.getThread());
 
         // Should have dispatched only one helper
-        assertEquals(_ewyk, _executions.poll());
+        assertEquals(_exStrategy, _executions.poll());
         // which is make us idle
-        _ewyk.run();
-        assertThat(_ewyk.isIdle(), Matchers.equalTo(true));
+        _exStrategy.run();
+        assertThat(_exStrategy.isIdle(), Matchers.equalTo(true));
 
         // unblock task
         t0.unblock();
@@ -158,7 +158,7 @@ public class ExecuteProduceConsumeTest
             {
                 _produce.add(t0);
                 _produce.add(NULLTASK);
-                _ewyk.produce();
+                _exStrategy.produce();
             }
         };
         thread.start();
@@ -167,16 +167,16 @@ public class ExecuteProduceConsumeTest
         t0.awaitRun();
 
         // Should have dispatched only one helper
-        assertEquals(_ewyk, _executions.poll());
+        assertEquals(_exStrategy, _executions.poll());
 
         // unblock task
         t0.unblock();
         // will run to completion because are become idle
         thread.join();
-        assertThat(_ewyk.isIdle(), Matchers.equalTo(true));
+        assertThat(_exStrategy.isIdle(), Matchers.equalTo(true));
 
         // because we are idle, dispatched thread is noop
-        _ewyk.run();
+        _exStrategy.run();
     }
 
     @Test
@@ -189,7 +189,7 @@ public class ExecuteProduceConsumeTest
             public void run()
             {
                 _produce.add(t0);
-                _ewyk.produce();
+                _exStrategy.produce();
             }
         };
         thread0.start();
@@ -199,10 +199,10 @@ public class ExecuteProduceConsumeTest
         assertEquals(thread0, t0.getThread());
 
         // Should have dispatched another helper
-        assertEquals(_ewyk, _executions.poll());
+        assertEquals(_exStrategy, _executions.poll());
 
         // dispatched thread will block in produce
-        Thread thread1 = new Thread(_ewyk);
+        Thread thread1 = new Thread(_exStrategy);
         thread1.start();
 
         // Spin
@@ -215,10 +215,10 @@ public class ExecuteProduceConsumeTest
         assertEquals(thread1, _producer);
 
         // because we are producing, any other dispatched threads are noops
-        _ewyk.run();
+        _exStrategy.run();
 
         // ditto with execute
-        _ewyk.produce();
+        _exStrategy.produce();
 
         // Now if unblock the production by the dispatched thread
         final Task t1 = new Task(true);
@@ -229,7 +229,7 @@ public class ExecuteProduceConsumeTest
         assertEquals(thread1, t1.getThread());
 
         // and another thread will have been requested
-        assertEquals(_ewyk, _executions.poll());
+        assertEquals(_exStrategy, _executions.poll());
 
         // If we unblock t1, it will overtake t0 and try to produce again!
         t1.unblock();
@@ -246,7 +246,7 @@ public class ExecuteProduceConsumeTest
         thread0.join();
 
         // If the requested extra thread turns up, it is also noop because we are producing
-        _ewyk.run();
+        _exStrategy.run();
 
         // Give the idle job
         _produce.add(NULLTASK);
@@ -266,7 +266,7 @@ public class ExecuteProduceConsumeTest
             public void run()
             {
                 _produce.add(t0);
-                _ewyk.produce();
+                _exStrategy.produce();
             }
         };
         thread0.start();
@@ -276,13 +276,13 @@ public class ExecuteProduceConsumeTest
         assertEquals(thread0, t0.getThread());
 
         // Should have dispatched another helper
-        assertEquals(_ewyk, _executions.poll());
+        assertEquals(_exStrategy, _executions.poll());
 
         // We will go idle when we next produce
         _produce.add(NULLTASK);
 
         // execute will return immediately because it did not yet see the idle.
-        _ewyk.produce();
+        _exStrategy.produce();
 
         // When we unblock t0, thread1 will see the idle,
         t0.unblock();
@@ -298,8 +298,8 @@ public class ExecuteProduceConsumeTest
 
         // When the dispatched thread turns up, it will see the second idle
         _produce.add(NULLTASK);
-        _ewyk.run();
-        assertThat(_ewyk.isIdle(), Matchers.equalTo(true));
+        _exStrategy.run();
+        assertThat(_exStrategy.isIdle(), Matchers.equalTo(true));
 
         // So that when t1 completes it does not produce again.
         t1.unblock();

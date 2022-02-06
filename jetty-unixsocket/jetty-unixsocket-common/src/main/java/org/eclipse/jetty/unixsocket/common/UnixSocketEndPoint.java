@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,6 @@
 package org.eclipse.jetty.unixsocket.common;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 
 import jnr.unixsocket.UnixSocketChannel;
@@ -24,6 +23,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Deprecated(forRemoval = true)
 public class UnixSocketEndPoint extends SocketChannelEndPoint
 {
     private static final Logger LOG = LoggerFactory.getLogger(UnixSocketEndPoint.class);
@@ -37,18 +37,6 @@ public class UnixSocketEndPoint extends SocketChannelEndPoint
     public UnixSocketChannel getChannel()
     {
         return (UnixSocketChannel)super.getChannel();
-    }
-
-    @Override
-    public InetSocketAddress getLocalAddress()
-    {
-        return null;
-    }
-
-    @Override
-    public InetSocketAddress getRemoteAddress()
-    {
-        return null;
     }
 
     @Override

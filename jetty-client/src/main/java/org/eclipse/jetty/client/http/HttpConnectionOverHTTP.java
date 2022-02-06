@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,6 +15,8 @@ package org.eclipse.jetty.client.http;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
+import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpConversation;
@@ -181,7 +184,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
 
     protected boolean onIdleTimeout(long idleTimeout)
     {
-        return delegate.onIdleTimeout(idleTimeout);
+        TimeoutException failure = new TimeoutException("Idle timeout " + idleTimeout + " ms");
+        return delegate.onIdleTimeout(idleTimeout, failure);
     }
 
     @Override
@@ -253,8 +257,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         return String.format("%s@%x(l:%s <-> r:%s,closed=%b)=>%s",
             getClass().getSimpleName(),
             hashCode(),
-            getEndPoint().getLocalAddress(),
-            getEndPoint().getRemoteAddress(),
+            getEndPoint().getLocalSocketAddress(),
+            getEndPoint().getRemoteSocketAddress(),
             closed.get(),
             channel);
     }
@@ -264,6 +268,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         private Delegate(HttpDestination destination)
         {
             super(destination);
+        }
+
+        @Override
+        protected Iterator<HttpChannel> getHttpChannels()
+        {
+            return Collections.<HttpChannel>singleton(channel).iterator();
         }
 
         @Override
@@ -322,6 +332,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements IConne
         public void close()
         {
             HttpConnectionOverHTTP.this.close();
+            destroy();
         }
 
         @Override

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,20 +15,20 @@ package org.eclipse.jetty.http.client;
 
 public enum Transport
 {
-    HTTP, HTTPS, H2C, H2, FCGI, UNIX_SOCKET;
+    HTTP, HTTPS, H2C, H2, H3, FCGI, UNIX_DOMAIN;
 
     public boolean isHttp1Based()
     {
         return this == HTTP || this == HTTPS;
     }
 
-    public boolean isHttp2Based()
+    public boolean isMultiplexed()
     {
-        return this == H2C || this == H2;
+        return this == H2C || this == H2 || this == H3;
     }
 
     public boolean isTlsBased()
     {
-        return this == HTTPS || this == H2;
+        return this == HTTPS || this == H2 || this == H3;
     }
 }

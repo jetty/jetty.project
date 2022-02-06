@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * <li>{@link org.eclipse.jetty.security.authentication.DigestAuthenticator}</li>
  * <li>{@link org.eclipse.jetty.security.authentication.FormAuthenticator}</li>
  * <li>{@link org.eclipse.jetty.security.authentication.ClientCertAuthenticator}</li>
- * <li>{@link SslClientCertAuthenticator}</li>
+ * <li>{@link org.eclipse.jetty.security.authentication.SslClientCertAuthenticator}</li>
  * </ul>
  * All authenticators derived from {@link org.eclipse.jetty.security.authentication.LoginAuthenticator} are
  * wrapped with a {@link org.eclipse.jetty.security.authentication.DeferredAuthentication}
@@ -62,7 +62,7 @@ public class DefaultAuthenticatorFactory implements Authenticator.Factory
         String auth = configuration.getAuthMethod();
         Authenticator authenticator = null;
 
-        if (auth == null || Constraint.__BASIC_AUTH.equalsIgnoreCase(auth))
+        if (Constraint.__BASIC_AUTH.equalsIgnoreCase(auth))
             authenticator = new BasicAuthenticator();
         else if (Constraint.__DIGEST_AUTH.equalsIgnoreCase(auth))
             authenticator = new DigestAuthenticator();

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -12,7 +12,7 @@
 //
 
 [[pg-client-http-cookie]]
-=== HttpClient Cookie Support
+==== HttpClient Cookie Support
 
 Jetty's `HttpClient` supports cookies out of the box.
 
@@ -65,7 +65,7 @@ include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/http/HTTPCli
 The example above will retain only cookies that come from the `google.com` domain or sub-domains.
 
 // TODO: move this section to server-side
-==== Special Characters in Cookies
+===== Special Characters in Cookies
 
 Jetty is compliant with link:https://tools.ietf.org/html/rfc6265[RFC6265], and as such care must be taken when setting a cookie value that includes special characters such as `;`.
 

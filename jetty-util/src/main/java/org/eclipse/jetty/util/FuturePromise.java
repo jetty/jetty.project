@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -116,6 +116,30 @@ public class FuturePromise<C> implements Future<C>, Promise<C>
             return _result;
         if (_cause instanceof CancellationException)
             throw (CancellationException)new CancellationException().initCause(_cause);
+        throw new ExecutionException(_cause);
+    }
+    
+    /**
+     * Return the result if completed successfully
+     * or in the case of failure, throw the
+     * Exception/Error, or an ExecutionException wrapping
+     * the cause if it is neither an Exception or Error.
+     * 
+     * @return the computed result
+     * @throws Exception if the cause is an Exception or Error,
+     * otherwise an ExecutionException wrapping the cause
+     */
+    public C getOrThrow() throws Exception
+    {
+        _latch.await();
+
+        if (_cause == COMPLETED)
+            return _result;
+        if (_cause instanceof Exception)
+            throw (Exception)_cause;
+        if (_cause instanceof Error)
+            throw (Error)_cause;
+        
         throw new ExecutionException(_cause);
     }
 

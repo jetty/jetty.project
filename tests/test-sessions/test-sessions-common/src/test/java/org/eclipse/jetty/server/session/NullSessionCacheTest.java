@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -93,8 +93,8 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
         Session session = cache.newSession(null, data); //mimic a request making a session
-        cache.add("1234", session); 
-        assertFalse(cache.contains("1234"));//null cache doesn't actually retain the session
+        cache.add("1234", session);
+        assertFalse(cache.contains("1234")); //null cache doesn't actually retain the session
         
         //mimic releasing the session after the request is finished
         cache.release("1234", session);

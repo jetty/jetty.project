@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -568,14 +568,14 @@ public class Response implements HttpServletResponse
             if (location.startsWith("/"))
             {
                 // absolute in context
-                location = URIUtil.canonicalEncodedPath(location);
+                location = URIUtil.canonicalURI(location);
             }
             else
             {
                 // relative to request
                 String path = _channel.getRequest().getRequestURI();
                 String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.canonicalEncodedPath(URIUtil.addEncodedPaths(parent, location));
+                location = URIUtil.canonicalURI(URIUtil.addEncodedPaths(parent, location));
                 if (location != null && !location.startsWith("/"))
                     buf.append('/');
             }

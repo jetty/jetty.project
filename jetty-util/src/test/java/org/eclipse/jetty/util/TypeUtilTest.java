@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,9 +19,6 @@ import java.nio.file.Paths;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnJre;
-import org.junit.jupiter.api.condition.EnabledOnJre;
-import org.junit.jupiter.api.condition.JRE;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -176,7 +173,6 @@ public class TypeUtilTest
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testGetLocationJvmCoreJPMS()
     {
         // Class from JVM core
@@ -185,29 +181,10 @@ public class TypeUtilTest
     }
 
     @Test
-    @DisabledOnJre(JRE.JAVA_8)
     public void testGetLocationJavaLangThreadDeathJPMS()
     {
         // Class from JVM core
         String expectedJavaBase = "/java.base";
-        assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(), containsString(expectedJavaBase));
-    }
-
-    @Test
-    @EnabledOnJre(JRE.JAVA_8)
-    public void testGetLocationJvmCoreJava8RT()
-    {
-        // Class from JVM core
-        String expectedJavaBase = "/rt.jar";
-        assertThat(TypeUtil.getLocationOfClass(String.class).toASCIIString(), containsString(expectedJavaBase));
-    }
-
-    @Test
-    @EnabledOnJre(JRE.JAVA_8)
-    public void testGetLocationJavaLangThreadDeathJava8RT()
-    {
-        // Class from JVM core
-        String expectedJavaBase = "/rt.jar";
         assertThat(TypeUtil.getLocationOfClass(java.lang.ThreadDeath.class).toASCIIString(), containsString(expectedJavaBase));
     }
 }

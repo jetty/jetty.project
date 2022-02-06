@@ -1,0 +1,141 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-websocket-standard]]
+==== Standard APIs Implementation
+
+When you write a WebSocket application using the standard `javax.websocket` APIs, your code typically need to depend on just the APIs to compile your application.
+However, at runtime you need to have an implementation of the standard APIs in your class-path (or module-path).
+
+The standard `javax.websocket` APIs are provided by the following Maven artifact:
+
+[source,xml,subs=normal]
+----
+<dependency>
+  <groupId>javax.websocket</groupId>
+  <artifactId>javax.websocket-api</artifactId>
+  <version>1.1</version>
+</dependency>
+----
+
+However, the artifact above lacks a proper JPMS `module-info.class` file, and therefore it is a little more difficult to use if you want to use of JPMS for your application.
+
+If you want to use JPMS for your application, you can use this Maven artifact instead:
+
+[source,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.toolchain</groupId>
+  <artifactId>jetty-javax-websocket-api</artifactId>
+  <version>1.1.2</version>
+</dependency>
+----
+
+This artifact is nothing more than the `javax.websocket:javax.websocket-api:1.1` artifact repackaged with a proper `module-info.class` file.
+
+At runtime, you also need an implementation of the standard `javax.websocket` APIs.
+
+Jetty's implementation of the standard `javax.websocket` APIs is provided by the following Maven artifact (and its transitive dependencies):
+
+[source,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.websocket</groupId>
+  <artifactId>websocket-javax-server</artifactId>
+  <version>{version}</version>
+</dependency>
+----
+
+[NOTE]
+====
+The `javax.websocket-api` artifact and the `websocket-javax-server` artifact (and its transitive dependencies) should be present in the server class-path (or module-path), and never in the web application's `/WEB-INF/lib` directory.
+====
+
+To configure correctly your WebSocket application based on the standard `javax.websocket` APIs, you need two steps:
+
+. Make sure that Jetty xref:pg-server-websocket-standard-container[sets up] an instance of `javax.websocket.server.ServerContainer`.
+. xref:pg-server-websocket-standard-endpoints[Configure] the WebSocket endpoints that implement your application logic, either by annotating their classes with the standard `javax.websocket` annotations, or by using the `ServerContainer` APIs to register them in your code.
+
+[[pg-server-websocket-standard-container]]
+===== Setting Up `ServerContainer`
+
+Jetty sets up a `ServerContainer` instance using `JavaxWebSocketServletContainerInitializer`.
+
+When you deploy web applications using xref:pg-server-http-handler-use-webapp-context[`WebAppContext`], then  `JavaxWebSocketServletContainerInitializer` is automatically discovered and initialized by Jetty when the web application starts, so that it sets up the `ServerContainer`.
+In this way, you do not need to write any additional code:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=standardContainerWebAppContext]
+----
+
+On the other hand, when you deploy web applications using xref:pg-server-http-handler-use-servlet-context[`ServletContextHandler`], you have to write the code to ensure that the `JavaxWebSocketServletContainerInitializer` is initialized, so that it sets up the `ServerContainer`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=standardContainerServletContextHandler]
+----
+
+Calling `JavaxWebSocketServletContainerInitializer.configure(\...)` must be done _before_ the `ServletContextHandler` is started, and configures the `javax.websocket` implementation for that web application context.
+
+[[pg-server-websocket-standard-endpoints]]
+===== Configuring Endpoints
+
+Once you have xref:pg-server-websocket-standard-container[setup] the `ServerContainer`, you can configure your xref:pg-websocket-endpoints[WebSocket endpoints].
+
+The WebSocket endpoints classes may be either annotated with the standard `javax.websocket` annotations, extend the `javax.websocket.Endpoint` abstract class, or implement the `javax.websocket.server.ServerApplicationConfig` interface.
+
+When you deploy web applications using xref:pg-server-http-handler-use-webapp-context[`WebAppContext`], then annotated WebSocket endpoint classes are automatically discovered and registered.
+In this way, you do not need to write any additional code; you just need to ensure that your WebSocket endpoint classes are present in the web application's `/WEB-INF/classes` directory, or in a `*.jar` file in `/WEB-INF/lib`.
+
+On the other hand, when you deploy web applications using xref:pg-server-http-handler-use-webapp-context[`WebAppContext`] but you need to perform more advanced configuration of the `ServerContainer` or of the WebSocket endpoints, or when you deploy web applications using xref:pg-server-http-handler-use-servlet-context[`ServletContextHandler`], you need to access the `ServerContainer` APIs.
+
+The `ServerContainer` instance is stored as a `ServletContext` attribute, so it can be retrieved when the `ServletContext` is initialized, either from a `ServletContextListener` or from a `HttpServlet`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=standardEndpointsInitialization]
+----
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=standardWebSocketInitializerServlet]
+----
+
+When you deploy web applications using xref:pg-server-http-handler-use-servlet-context[`ServletContextHandler`], you can also use this variant to set up the `ServerContainer` and configure the WebSocket endpoints in one step:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=standardContainerAndEndpoints]
+----
+
+When the `ServletContextHandler` is started, the `Configurator` lambda (the second parameter passed to `JavaxWebSocketServletContainerInitializer.configure(\...)`) is invoked and allows you to explicitly configure the WebSocket endpoints using the standard APIs provided by `ServerContainer`.
+
+[[pg-server-websocket-standard-upgrade]]
+====== Upgrade to WebSocket
+
+Under the hood, `JavaxWebSocketServletContainerInitializer` installs the `org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter`, which is the component that intercepts HTTP requests to upgrade to WebSocket, and performs the upgrade from the HTTP protocol to the WebSocket protocol.
+
+[NOTE]
+====
+The `WebSocketUpgradeFilter` is installed under the filter name corresponding to its class name (that is, the string `"org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter"`) and with a filter mapping of `/*`.
+
+Refer to the xref:pg-server-websocket-configure-filter[advanced `WebSocketUpgradeFilter` configuration section] for more information.
+====
+
+With the default configuration, every HTTP request flows first through the `WebSocketUpgradeFilter`.
+
+If the HTTP request is a valid upgrade to WebSocket, then `WebSocketUpgradeFilter` tries to find a matching WebSocket endpoint for the request URI path; if the match is found, `WebSocketUpgradeFilter` performs the upgrade and does not invoke any other Filter or Servlet.
+From this point on, the communication happens with the WebSocket protocol, and HTTP components such as Filters and Servlets are not relevant anymore.
+
+If the HTTP request is not an upgrade to WebSocket, or `WebSocketUpgradeFilter` did not find a matching WebSocket endpoint for the request URI path, then the request is passed to the Filter chain of your web application, and eventually the request arrives to a Servlet to be processed (otherwise a `404 Not Found` response is returned to client).

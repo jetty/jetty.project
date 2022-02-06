@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 import javax.servlet.ServletRequest;
@@ -54,7 +55,7 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
         if (endPoint instanceof ProxyConnectionFactory.ProxyEndPoint)
         {
             EndPoint underlyingEndpoint = ((ProxyConnectionFactory.ProxyEndPoint)endPoint).unwrap();
-            request.setAttributes(new ProxyAttributes(underlyingEndpoint.getRemoteAddress(), underlyingEndpoint.getLocalAddress(), request.getAttributes()));
+            request.setAttributes(new ProxyAttributes(underlyingEndpoint.getLocalSocketAddress(), underlyingEndpoint.getRemoteSocketAddress(), request.getAttributes()));
         }
     }
 
@@ -65,13 +66,15 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
         private final int _remotePort;
         private final int _localPort;
 
-        private ProxyAttributes(InetSocketAddress remoteAddress, InetSocketAddress localAddress, Attributes attributes)
+        private ProxyAttributes(SocketAddress local, SocketAddress remote, Attributes attributes)
         {
             super(attributes);
-            _remoteAddress = remoteAddress.getAddress().getHostAddress();
-            _localAddress = localAddress.getAddress().getHostAddress();
-            _remotePort = remoteAddress.getPort();
-            _localPort = localAddress.getPort();
+            InetSocketAddress inetLocal = local instanceof InetSocketAddress ? (InetSocketAddress)local : null;
+            InetSocketAddress inetRemote = remote instanceof InetSocketAddress ? (InetSocketAddress)remote : null;
+            _localAddress = inetLocal == null ? null : inetLocal.getAddress().getHostAddress();
+            _remoteAddress = inetRemote == null ? null : inetRemote.getAddress().getHostAddress();
+            _localPort = inetLocal == null ? 0 : inetLocal.getPort();
+            _remotePort = inetRemote == null ? 0 : inetRemote.getPort();
         }
 
         @Override

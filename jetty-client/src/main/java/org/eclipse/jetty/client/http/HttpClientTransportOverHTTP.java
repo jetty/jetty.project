@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,6 +14,7 @@
 package org.eclipse.jetty.client.http;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -29,11 +30,14 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject("The HTTP/1.1 client transport")
 public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTransport
 {
     public static final Origin.Protocol HTTP11 = new Origin.Protocol(List.of("http/1.1"), false);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransportOverHTTP.class);
 
     private final ClientConnectionFactory factory = new HttpClientConnectionFactory();
     private int headerCacheSize = 1024;
@@ -65,7 +69,8 @@ public class HttpClientTransportOverHTTP extends AbstractConnectorHttpClientTran
     @Override
     public HttpDestination newHttpDestination(Origin origin)
     {
-        return new DuplexHttpDestination(getHttpClient(), origin);
+        SocketAddress address = origin.getAddress().getSocketAddress();
+        return new DuplexHttpDestination(getHttpClient(), origin, getClientConnector().isIntrinsicallySecure(address));
     }
 
     @Override

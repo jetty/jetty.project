@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -351,17 +351,18 @@ public class MavenWebAppContext extends WebAppContext
     }
 
     @Override
-    public Resource getResource(String uriInContext) throws MalformedURLException
+    public Resource getResource(String pathInContext) throws MalformedURLException
     {
         Resource resource = null;
         // Try to get regular resource
-        resource = super.getResource(uriInContext);
+        resource = super.getResource(pathInContext);
 
         // If no regular resource exists check for access to /WEB-INF/lib or
         // /WEB-INF/classes
-        if ((resource == null || !resource.exists()) && uriInContext != null && _classes != null)
+        if ((resource == null || !resource.exists()) && pathInContext != null && _classes != null)
         {
-            String uri = URIUtil.canonicalPath(uriInContext);
+            // Canonicalize again to look for the resource inside /WEB-INF subdirectories.
+            String uri = URIUtil.canonicalPath(pathInContext);
             if (uri == null)
                 return null;
 

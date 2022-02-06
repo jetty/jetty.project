@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,6 +27,11 @@ public class HttpFieldsMatchers
     public static Matcher<HttpFields> containsHeader(HttpHeader header)
     {
         return new HttpFieldsContainsHeaderKey(header);
+    }
+
+    public static Matcher<HttpFields> headerValue(String keyName, String value)
+    {
+        return new HttpFieldsHeaderValue(keyName, value);
     }
 
     public static Matcher<HttpFields> containsHeaderValue(String keyName, String value)

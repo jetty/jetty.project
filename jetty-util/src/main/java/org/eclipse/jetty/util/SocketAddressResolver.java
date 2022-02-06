@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
 public interface SocketAddressResolver
 {
     /**
-     * Resolves the given host and port, returning a {@link SocketAddress} through the given {@link Promise}
-     * with the default timeout.
+     * Resolves via DNS the given host and port, within the connect timeout,
+     * returning a list of {@link InetSocketAddress} through the given {@link Promise}.
      *
      * @param host the host to resolve
      * @param port the port of the resulting socket address
@@ -46,7 +46,7 @@ public interface SocketAddressResolver
     public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise);
 
     /**
-     * <p>Creates {@link SocketAddress} instances synchronously in the caller thread.</p>
+     * <p>Creates {@link InetSocketAddress} instances synchronously in the caller thread.</p>
      */
     @ManagedObject("The synchronous address resolver")
     public static class Sync implements SocketAddressResolver
@@ -77,7 +77,7 @@ public interface SocketAddressResolver
     }
 
     /**
-     * <p>Creates {@link SocketAddress} instances asynchronously in a different thread.</p>
+     * <p>Creates {@link InetSocketAddress} instances asynchronously in a different thread.</p>
      * <p>{@link InetSocketAddress#InetSocketAddress(String, int)} attempts to perform a DNS
      * resolution of the host name, and this may block for several seconds.
      * This class creates the {@link InetSocketAddress} in a separate thread and provides the result

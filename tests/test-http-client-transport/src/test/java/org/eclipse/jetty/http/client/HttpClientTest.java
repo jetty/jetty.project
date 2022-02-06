@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,9 +22,11 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
+import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
@@ -45,9 +47,9 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http3.client.http.HttpClientTransportOverHTTP3;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
@@ -69,7 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class HttpClientTest extends AbstractTest<TransportScenario>
+public class  HttpClientTest extends AbstractTest<TransportScenario>
 {
     @Override
     public void init(Transport transport) throws IOException
@@ -315,7 +317,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         org.eclipse.jetty.client.api.Request request = scenario.client.newRequest(scenario.newURI());
         FutureResponseListener listener = new FutureResponseListener(request, length);
         request.send(listener);
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        ContentResponse response = listener.get(15, TimeUnit.SECONDS);
         assertEquals(response.getStatus(), 200);
 
         // Make a request with a small response buffer, should fail.
@@ -324,7 +326,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
             request = scenario.client.newRequest(scenario.newURI());
             listener = new FutureResponseListener(request, length / 10);
             request.send(listener);
-            listener.get(5, TimeUnit.SECONDS);
+            listener.get(15, TimeUnit.SECONDS);
             fail("Expected ExecutionException");
         }
         catch (ExecutionException x)
@@ -336,7 +338,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         request = scenario.client.newRequest(scenario.newURI());
         listener = new FutureResponseListener(request, length);
         request.send(listener);
-        response = listener.get(5, TimeUnit.SECONDS);
+        response = listener.get(15, TimeUnit.SECONDS);
         assertEquals(response.getStatus(), 200);
     }
 
@@ -362,11 +364,18 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         clientThreads.setName("client");
         scenario.client.setExecutor(clientThreads);
         scenario.client.start();
+        if (transport == Transport.H3)
+        {
+            Assumptions.assumeTrue(false, "certificate verification not yet supported in quic");
+            // TODO: the lines below should be enough, but they don't work. To be investigated.
+            HttpClientTransportOverHTTP3 http3Transport = (HttpClientTransportOverHTTP3)scenario.client.getTransport();
+            http3Transport.getHTTP3Client().getQuicConfiguration().setVerifyPeerCertificates(true);
+        }
 
         assertThrows(ExecutionException.class, () ->
         {
             // Use an IP address not present in the certificate.
-            int serverPort = ((ServerConnector)scenario.connector).getLocalPort();
+            int serverPort = scenario.getServerPort().orElse(0);
             scenario.client.newRequest("https://127.0.0.2:" + serverPort)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
@@ -691,6 +700,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
     public void testIPv6Host(Transport transport) throws Exception
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
 
         init(transport);
         scenario.start(new EmptyServerHandler()
@@ -706,8 +716,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         // Test with a full URI.
         String hostAddress = "::1";
         String host = "[" + hostAddress + "]";
-        int port = Integer.parseInt(scenario.getNetworkConnectorLocalPort().get());
-        String uri = scenario.getScheme() + "://" + host + ":" + port + "/path";
+        String uri = scenario.newURI().replace("localhost", host) + "/path";
         ContentResponse response = scenario.client.newRequest(uri)
             .method(HttpMethod.PUT)
             .timeout(5, TimeUnit.SECONDS)
@@ -717,6 +726,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1), Matchers.startsWith("[::1]:"));
 
         // Test with host address.
+        int port = scenario.getServerPort().orElse(0);
         response = scenario.client.newRequest(hostAddress, port)
             .scheme(scenario.getScheme())
             .method(HttpMethod.PUT)
@@ -763,7 +773,7 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         if (transport.isTlsBased())
             scenario.httpConfig.getCustomizer(SecureRequestCustomizer.class).setSniHostCheck(false);
 
-        Origin origin = new Origin(scenario.getScheme(), "localhost", scenario.getNetworkConnectorLocalPortInt().get());
+        Origin origin = new Origin(scenario.getScheme(), "localhost", scenario.getServerPort().orElse(0));
         HttpDestination destination = scenario.client.resolveDestination(origin);
 
         org.eclipse.jetty.client.api.Request request = scenario.client.newRequest(requestHost, requestPort)
@@ -779,6 +789,56 @@ public class HttpClientTest extends AbstractTest<TransportScenario>
         });
 
         assertTrue(resultLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(TransportProvider.class)
+    public void testRequestIdleTimeout(Transport transport) throws Exception
+    {
+        init(transport);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        long idleTimeout = 500;
+        scenario.start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            {
+                try
+                {
+                    baseRequest.setHandled(true);
+                    if (target.equals("/1"))
+                        assertTrue(latch.await(5, TimeUnit.SECONDS));
+                    else if (target.equals("/2"))
+                        Thread.sleep(2 * idleTimeout);
+                    else
+                        fail("Unknown path: " + target);
+                }
+                catch (InterruptedException x)
+                {
+                    throw new ServletException(x);
+                }
+            }
+        });
+
+        assertThrows(TimeoutException.class, () ->
+            scenario.client.newRequest(scenario.newURI())
+                .scheme(scenario.getScheme())
+                .path("/1")
+                .idleTimeout(idleTimeout, TimeUnit.MILLISECONDS)
+                .timeout(2 * idleTimeout, TimeUnit.MILLISECONDS)
+                .send());
+        latch.countDown();
+
+        // Make another request without specifying the idle timeout, should not fail
+        ContentResponse response = scenario.client.newRequest(scenario.newURI())
+            .scheme(scenario.getScheme())
+            .path("/2")
+            .timeout(3 * idleTimeout, TimeUnit.MILLISECONDS)
+            .send();
+
+        assertNotNull(response);
+        assertEquals(200, response.getStatus());
     }
 
     private void sleep(long time) throws IOException

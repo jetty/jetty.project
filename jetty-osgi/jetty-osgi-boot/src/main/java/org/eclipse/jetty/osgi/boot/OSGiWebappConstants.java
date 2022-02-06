@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -134,5 +134,5 @@ public class OSGiWebappConstants
     /**
      * Set of extra dirs that must not be served by osgi webapps
      */
-    public static final String[] DEFAULT_PROTECTED_OSGI_TARGETS = {"/osgi-inf", "/osgi-opts"};
+    public static final String[] DEFAULT_PROTECTED_OSGI_TARGETS = {"/OSGI-INF", "/OSGI-OPTS"};
 }

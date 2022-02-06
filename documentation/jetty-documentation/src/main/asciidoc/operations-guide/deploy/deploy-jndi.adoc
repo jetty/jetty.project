@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,7 +15,7 @@
 ==== Configuring JNDI Entries
 
 A web application may _reference_ a JNDI entry, such as a JDBC `DataSource` from the web application `web.xml` file.
-The JNDI entry must be _defined_ in a link:#og-jndi-xml[Jetty XML file], for example a context XML like so:
+The JNDI entry must be _defined_ in a xref:og-jndi-xml[Jetty XML file], for example a context XML like so:
 
 .mywebapp.xml
 [source,xml,subs=normal]
@@ -40,13 +40,13 @@ The JNDI entry must be _defined_ in a link:#og-jndi-xml[Jetty XML file], for exa
 </Configure>
 ----
 
-For more information and examples on how to use JNDI in Jetty, refer to the link:#og-jndi[JNDI] feature section.
+For more information and examples on how to use JNDI in Jetty, refer to the xref:og-jndi[JNDI] feature section.
 
 [IMPORTANT]
 ====
 Class `com.mysql.cj.jdbc.MysqlConnectionPoolDataSource` is present in the MySQL JDBC driver file, `mysql-connector-java-<version>.jar`, which must be available on the server's classpath .
 
-If the class is instead present _within_ the web application, then the JNDI entry must be declared in a `WEB-INF/jetty-env.xml` file - see the link:#og-jndi[JNDI] feature section for more information and examples.
+If the class is instead present _within_ the web application, then the JNDI entry must be declared in a `WEB-INF/jetty-env.xml` file - see the xref:og-jndi[JNDI] feature section for more information and examples.
 
 ====
 // TODO: add a link to reference the section about how

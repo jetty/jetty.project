@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -64,6 +64,7 @@ public class URIUtilTest
     {
         // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
         return Stream.of(
+            Arguments.of("/foo/\n/bar", "/foo/%0A/bar"),
             Arguments.of("/foo%23+;,:=/b a r/?info ", "/foo%2523+%3B,:=/b%20a%20r/%3Finfo%20"),
             Arguments.of("/context/'list'/\"me\"/;<script>window.alert('xss');</script>",
                 "/context/%27list%27/%22me%22/%3B%3Cscript%3Ewindow.alert(%27xss%27)%3B%3C/script%3E"),
@@ -676,20 +677,22 @@ public class URIUtilTest
 
             for (Path root : zipFs.getRootDirectories())
             {
-                Stream<Path> entryStream = Files.find(root, 10, (path, attrs) -> true, fileVisitOptions);
-                entryStream.forEach((path) ->
+                try (Stream<Path> entryStream = Files.find(root, 10, (path, attrs) -> true, fileVisitOptions))
                 {
-                    if (path.toString().endsWith("!/"))
+                    entryStream.forEach((path) ->
                     {
-                        // skip - JAR entry type not supported by Jetty
-                        // TODO: re-enable once we start to use zipfs
-                        LOG.warn("Skipping Unsupported entry: " + path.toUri());
-                    }
-                    else
-                    {
-                        arguments.add(Arguments.of(path.toUri(), TEST_RESOURCE_JAR));
-                    }
-                });
+                        if (path.toString().endsWith("!/"))
+                        {
+                            // skip - JAR entry type not supported by Jetty
+                            // TODO: re-enable once we start to use zipfs
+                            LOG.warn("Skipping Unsupported entry: " + path.toUri());
+                        }
+                        else
+                        {
+                            arguments.add(Arguments.of(path.toUri(), TEST_RESOURCE_JAR));
+                        }
+                    });
+                }
             }
         }
 
@@ -726,5 +729,26 @@ public class URIUtilTest
     public void testAddQueryParam(String param1, String param2, Matcher<String> matcher)
     {
         assertThat(URIUtil.addQueries(param1, param2), matcher);
+    }
+
+    @Test
+    public void testEncodeDecodeVisibleOnly()
+    {
+        StringBuilder builder = new StringBuilder();
+        builder.append('/');
+        for (char i = 0; i < 0x7FFF; i++)
+            builder.append(i);
+        String path = builder.toString();
+        String encoded = URIUtil.encodePath(path);
+        // Check endoded is visible
+        for (char c : encoded.toCharArray())
+        {
+            assertTrue(c > 0x20 && c < 0x80);
+            assertFalse(Character.isWhitespace(c));
+            assertFalse(Character.isISOControl(c));
+        }
+        // check decode to original
+        String decoded = URIUtil.decodePath(encoded);
+        assertEquals(path, decoded);
     }
 }

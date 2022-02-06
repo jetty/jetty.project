@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -45,8 +45,10 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     private final String clientId;
     private final String clientSecret;
     private final List<String> scopes = new ArrayList<>();
+    private final String authMethod;
     private String authEndpoint;
     private String tokenEndpoint;
+    private boolean authenticateNewUsers = false;
 
     /**
      * Create an OpenID configuration for a specific OIDC provider.
@@ -71,12 +73,29 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint,
                                String clientId, String clientSecret, HttpClient httpClient)
     {
+        this(issuer, authorizationEndpoint, tokenEndpoint, clientId, clientSecret, "client_secret_post", httpClient);
+    }
+
+    /**
+     * Create an OpenID configuration for a specific OIDC provider.
+     * @param issuer The URL of the OpenID provider.
+     * @param authorizationEndpoint the URL of the OpenID provider's authorization endpoint if configured.
+     * @param tokenEndpoint the URL of the OpenID provider's token endpoint if configured.
+     * @param clientId OAuth 2.0 Client Identifier valid at the Authorization Server.
+     * @param clientSecret The client secret known only by the Client and the Authorization Server.
+     * @param authMethod Authentication method to use with the Token Endpoint.
+     * @param httpClient The {@link HttpClient} instance to use.
+     */
+    public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint,
+                               String clientId, String clientSecret, String authMethod, HttpClient httpClient)
+    {
         this.issuer = issuer;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
         this.authEndpoint = authorizationEndpoint;
         this.tokenEndpoint = tokenEndpoint;
         this.httpClient = httpClient != null ? httpClient : newHttpClient();
+        this.authMethod = authMethod;
 
         if (this.issuer == null)
             throw new IllegalArgumentException("Issuer was not configured");
@@ -121,29 +140,28 @@ public class OpenIdConfiguration extends ContainerLifeCycle
                 provider = provider.substring(0, provider.length() - 1);
 
             Map<String, Object> result;
-            String responseBody = httpClient.GET(provider + CONFIG_PATH)
-                    .getContentAsString();
+            String responseBody = httpClient.GET(provider + CONFIG_PATH).getContentAsString();
             Object parsedResult = new JSON().fromJSON(responseBody);
 
             if (parsedResult instanceof Map)
             {
                 Map<?, ?> rawResult = (Map<?, ?>)parsedResult;
                 result = rawResult.entrySet().stream()
+                        .filter(entry -> entry.getValue() != null)
                         .collect(Collectors.toMap(it -> it.getKey().toString(), Map.Entry::getValue));
+                if (LOG.isDebugEnabled())
+                    LOG.debug("discovery document {}", result);
+                return result;
             }
             else
             {
                 LOG.warn("OpenID provider did not return a proper JSON object response. Result was '{}'", responseBody);
                 throw new IllegalStateException("Could not parse OpenID provider's malformed response");
             }
-
-            LOG.debug("discovery document {}", result);
-
-            return result;
         }
         catch (Exception e)
         {
-            throw new IllegalArgumentException("invalid identity provider", e);
+            throw new IllegalArgumentException("invalid identity provider " + provider, e);
         }
     }
 
@@ -177,6 +195,11 @@ public class OpenIdConfiguration extends ContainerLifeCycle
         return tokenEndpoint;
     }
 
+    public String getAuthMethod()
+    {
+        return authMethod;
+    }
+
     public void addScopes(String... scopes)
     {
         if (scopes != null)
@@ -186,5 +209,22 @@ public class OpenIdConfiguration extends ContainerLifeCycle
     public List<String> getScopes()
     {
         return scopes;
+    }
+
+    public boolean isAuthenticateNewUsers()
+    {
+        return authenticateNewUsers;
+    }
+
+    public void setAuthenticateNewUsers(boolean authenticateNewUsers)
+    {
+        this.authenticateNewUsers = authenticateNewUsers;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{iss=%s, clientId=%s, authEndpoint=%s, authMethod=%s, tokenEndpoint=%s, scopes=%s, authNewUsers=%s}",
+            getClass().getSimpleName(), hashCode(), issuer, clientId, authEndpoint, authMethod, tokenEndpoint, scopes, authenticateNewUsers);
     }
 }

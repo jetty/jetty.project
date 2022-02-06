@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>10.0.1-SNAPSHOT</version>
+    <version>10.0.8-SNAPSHOT</version>
   </parent>
   <name>Demo :: Mock Resources</name>
   <artifactId>demo-mock-resources</artifactId>
@@ -54,7 +54,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.mail.glassfish</artifactId>
-      <version>1.4.1.v201005082020</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

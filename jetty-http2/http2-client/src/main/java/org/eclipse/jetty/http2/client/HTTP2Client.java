@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -115,6 +115,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private long streamIdleTimeout;
     private boolean useInputDirectByteBuffers = true;
     private boolean useOutputDirectByteBuffers = true;
+    private boolean isUseALPN = true;
 
     public HTTP2Client()
     {
@@ -358,6 +359,17 @@ public class HTTP2Client extends ContainerLifeCycle
         this.useOutputDirectByteBuffers = useOutputDirectByteBuffers;
     }
 
+    @ManagedAttribute(value = "Whether ALPN should be used when establishing connections")
+    public boolean isUseALPN()
+    {
+        return isUseALPN;
+    }
+
+    public void setUseALPN(boolean useALPN)
+    {
+        isUseALPN = useALPN;
+    }
+
     public CompletableFuture<Session> connect(SocketAddress address, Session.Listener listener)
     {
         return connect(null, address, listener);
@@ -423,8 +435,9 @@ public class HTTP2Client extends ContainerLifeCycle
         ClientConnectionFactory factory = new HTTP2ClientConnectionFactory();
         if (sslContextFactory != null)
         {
-            ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), factory, getProtocols());
-            factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
+            if (isUseALPN())
+                factory = new ALPNClientConnectionFactory(getExecutor(), factory, getProtocols());
+            factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), factory);
         }
         return factory;
     }

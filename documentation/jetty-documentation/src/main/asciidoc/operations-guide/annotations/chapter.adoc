@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -54,7 +54,7 @@ Here's an example context xml file that calls this method:
   <Set name="configurationDiscovered">false</Set> <2>
 </Configure>
 ----
-<1> Configures a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
 <2> Specifies that scanning should not take place.
 
 However, despite `metadata-complete=true`, scanning of classes may _still_ occur because of http://docs.oracle.com/javaee/6/api/javax/servlet/ServletContainerInitializer.html[javax.servlet.ServletContainerInitializer]s.
@@ -85,7 +85,7 @@ Here's an example from a context xml file that includes any jar whose name start
     </Call>
 </Configure>
 ----
-<1> Configures a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
 <2> Specifies a context attribute.
 <3> Specifies the name of the context attribute.
 <4> Specifies the value of the context attribute.
@@ -115,7 +115,7 @@ Here's an example of a context xml file that sets a pattern that matches any jar
     </Call>
 </Configure>
 ----
-<1> Configures a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
 <2> Specifies a context attribute.
 <3> Specifies the name of the context attribute.
 <4> Specifies the value of the context attribute.
@@ -181,7 +181,7 @@ Here's an example of setting the context attribute in a context xml file:
     </Call>
 </Configure>
 ----
-<1> Configures a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
 <2> Specifies a context attribute.
 <3> Specifies the name of the context attribute.
 <4> Specifies the value of the context attribute.
@@ -212,7 +212,7 @@ Here is an example context xml file that ensures the `com.example.PrioritySCI` w
     </Call>
 </Configure>
 ----
-<1> Configures a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
 <2> Specifies a context attribute.
 <3> Specifies the name of the context attribute.
 <4> Specifies the value of the context attribute.

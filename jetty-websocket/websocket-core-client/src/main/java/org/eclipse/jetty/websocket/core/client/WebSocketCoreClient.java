@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -38,13 +38,7 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketCoreClient.class);
     private final HttpClient httpClient;
     private final WebSocketComponents components;
-
-    // TODO: Things to consider for inclusion in this class (or removal if they can be set elsewhere, like HttpClient)
-    // - AsyncWrite Idle Timeout
-    // - Bind Address
-    // - SslContextFactory setup
-    // - Connect Timeout
-    // - Cookie Store
+    private ClassLoader classLoader;
 
     public WebSocketCoreClient()
     {
@@ -60,10 +54,24 @@ public class WebSocketCoreClient extends ContainerLifeCycle
     {
         if (httpClient == null)
             httpClient = Objects.requireNonNull(HttpClientProvider.get());
+        if (httpClient.getExecutor() == null)
+            httpClient.setExecutor(webSocketComponents.getExecutor());
 
+        this.classLoader = Thread.currentThread().getContextClassLoader();
         this.httpClient = httpClient;
         this.components = webSocketComponents;
         addBean(httpClient);
+        addBean(webSocketComponents);
+    }
+
+    public ClassLoader getClassLoader()
+    {
+        return classLoader;
+    }
+
+    public void setClassLoader(ClassLoader classLoader)
+    {
+        this.classLoader = Objects.requireNonNull(classLoader);
     }
 
     public CompletableFuture<CoreSession> connect(FrameHandler frameHandler, URI wsUri) throws IOException

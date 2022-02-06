@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,7 +21,11 @@ However for production deployment, the need to scan the contents of many jars ca
 
 The `quickstart` module allows a webapp to be pre-scanned, making startup predictable and faster.
 During scanning all declarative configuration (ie from web.xml, web-fragment.xml and annotations) are encoded into an effective `web.xml`, called `WEB-INF/quickstart-web.xml`, which can be inspected to understand what will be deployed.
-NOTE:: Programmatic configuration is _not_ encoded into the generated `quickstart-web.xml` file.
+
+[NOTE]
+====
+Programmatic configuration is _not_ encoded into the generated `quickstart-web.xml` file.
+====
 
 With `quickstart`, webapps that took many seconds to scan and deploy can now be deployed in a few hundred milliseconds.
 
@@ -29,11 +33,10 @@ With `quickstart`, webapps that took many seconds to scan and deploy can now be 
 
 Enable the `quickstart` module for your jetty base:
 
-[source, screen, subs="{sub-order}"]
-....
+----
 $ cd $JETTY-BASE
 $ java -jar $JETTY_HOME/start.jar --add-module=quickstart
-....
+----
 
 The `$JETTY-BASE/start.d/quickstart.ini` file contains these configurable parameters:
 

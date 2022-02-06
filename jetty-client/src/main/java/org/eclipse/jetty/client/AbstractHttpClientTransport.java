@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public abstract class AbstractHttpClientTransport extends ContainerLifeCycle implements HttpClientTransport
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(HttpClientTransport.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransport.class);
 
     private HttpClient client;
     private ConnectionPool.Factory factory;

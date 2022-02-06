@@ -3,18 +3,21 @@
   <parent>
     <groupId>org.eclipse.jetty.gcloud</groupId>
     <artifactId>gcloud-parent</artifactId>
-    <version>10.0.1-SNAPSHOT</version>
+    <version>10.0.8-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-gcloud-session-manager</artifactId>
   <name>Jetty :: GCloud :: Session Manager</name>
 
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.session</bundle-symbolic-name>
+  </properties>
+
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -33,24 +36,25 @@
           <groupId>javax.servlet</groupId>
           <artifactId>javax.servlet-api</artifactId>
         </exclusion>
+        <exclusion>
+          <groupId>javax.annotation</groupId>
+          <artifactId>javax.annotation-api</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-webapp</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-servlet</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-jetty-server</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -64,10 +68,6 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <properties>
-    <bundle-symbolic-name>${project.groupId}.session</bundle-symbolic-name>
-  </properties>
 
   <build>
     <plugins>
@@ -137,27 +137,10 @@
             <configuration>
               <target>
                 <concat destfile="${project.build.directory}/gcloud-datastore.mod">
-                  <fileset file="src/main/config-template/modules/gcloud-datastore.mod" />
+                  <fileset file="${project.build.directory}/jetty-config-files/modules/gcloud-datastore.mod" />
                   <fileset file="${project.build.directory}/deps.txt" />
                 </concat>
               </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/config.xml</descriptor>
-              </descriptors>
             </configuration>
           </execution>
         </executions>

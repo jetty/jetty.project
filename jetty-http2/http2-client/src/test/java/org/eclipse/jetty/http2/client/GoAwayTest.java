@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,6 +39,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -372,56 +373,63 @@ public class GoAwayTest extends AbstractTest
         CountDownLatch serverGoAwayLatch = new CountDownLatch(1);
         CountDownLatch serverCloseLatch = new CountDownLatch(1);
         start(new ServerSessionListener.Adapter()
-        {
-            @Override
-            public void onAccept(Session session)
             {
-                serverSessionRef.set(session);
-            }
-
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
-            {
-                AtomicInteger dataFrames = new AtomicInteger();
-                return new Stream.Listener.Adapter()
+                @Override
+                public void onAccept(Session session)
                 {
-                    @Override
-                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    serverSessionRef.set(session);
+                }
+
+                @Override
+                public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+                {
+                    AtomicInteger dataFrames = new AtomicInteger();
+                    return new Stream.Listener.Adapter()
                     {
-                        // Do not consume the data for this stream (i.e. don't succeed the callback).
-                        // Only send the response when receiving the first DATA frame.
-                        if (dataFrames.incrementAndGet() == 1)
+                        @Override
+                        public void onData(Stream stream, DataFrame frame, Callback callback)
                         {
-                            MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
-                            stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            // Do not consume the data for this stream (i.e. don't succeed the callback).
+                            // Only send the response when receiving the first DATA frame.
+                            if (dataFrames.incrementAndGet() == 1)
+                            {
+                                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
+                                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
+                            }
                         }
-                    }
-                };
-            }
+                    };
+                }
 
-            @Override
-            public void onGoAway(Session session, GoAwayFrame frame)
+                @Override
+                public void onGoAway(Session session, GoAwayFrame frame)
+                {
+                    serverGoAwayLatch.countDown();
+                }
+
+                @Override
+                public void onClose(Session session, GoAwayFrame frame)
+                {
+                    serverCloseLatch.countDown();
+                }
+            }, h2 ->
             {
-                serverGoAwayLatch.countDown();
-            }
+                // Use the simple, predictable, strategy for window updates.
+                h2.setFlowControlStrategyFactory(SimpleFlowControlStrategy::new);
+                h2.setInitialSessionRecvWindow(flowControlWindow);
+                h2.setInitialStreamRecvWindow(flowControlWindow);
+            });
 
-            @Override
-            public void onClose(Session session, GoAwayFrame frame)
-            {
-                serverCloseLatch.countDown();
-            }
-        }, h2 ->
-        {
-            // Use the simple, predictable, strategy for window updates.
-            h2.setFlowControlStrategyFactory(SimpleFlowControlStrategy::new);
-            h2.setInitialSessionRecvWindow(flowControlWindow);
-            h2.setInitialStreamRecvWindow(flowControlWindow);
-        });
-
+        CountDownLatch clientSettingsLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
         Session clientSession = newClient(new Session.Listener.Adapter()
         {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                clientSettingsLatch.countDown();
+            }
+
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
             {
@@ -434,6 +442,12 @@ public class GoAwayTest extends AbstractTest
                 clientCloseLatch.countDown();
             }
         });
+
+        // Wait for the server settings to be received by the client.
+        // In particular, we want to wait for the initial stream flow
+        // control window setting before we create the first stream below.
+        Assertions.assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));
+
         // This is necessary because the server session window is smaller than the
         // default and the server cannot send a WINDOW_UPDATE with a negative value.
         ((ISession)clientSession).updateSendWindow(flowControlWindow - FlowControlStrategy.DEFAULT_WINDOW_SIZE);

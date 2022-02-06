@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,6 +39,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.LocalConnector;
@@ -60,7 +61,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SuppressWarnings("serial")
 public class GzipHandlerTest
 {
     private static final String __content =
@@ -82,11 +82,13 @@ public class GzipHandlerTest
     private static final String __micro = __content.substring(0, 10);
 
     private static final String __contentETag = String.format("W/\"%x\"", __content.hashCode());
-    private static final String __contentETagGzip = String.format("W/\"%x--gzip\"", __content.hashCode());
+    private static final String __contentETagGzip = String.format("W/\"%x" + CompressedContentFormat.GZIP.getEtagSuffix() + "\"", __content.hashCode());
     private static final String __icontent = "BEFORE" + __content + "AFTER";
 
     private Server _server;
     private LocalConnector _connector;
+    private GzipHandler gzipHandler;
+    private ServletContextHandler context;
 
     @BeforeEach
     public void init() throws Exception
@@ -95,25 +97,25 @@ public class GzipHandlerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler = new GzipHandler();
         gzipHandler.setMinGzipSize(16);
         gzipHandler.setInflateBufferSize(4096);
 
-        ServletContextHandler context = new ServletContextHandler(gzipHandler, "/ctx");
-        ServletHandler servlets = context.getServletHandler();
+        context = new ServletContextHandler(gzipHandler, "/ctx");
 
         _server.setHandler(gzipHandler);
         gzipHandler.setHandler(context);
-        servlets.addServletWithMapping(MicroServlet.class, "/micro");
-        servlets.addServletWithMapping(MicroChunkedServlet.class, "/microchunked");
-        servlets.addServletWithMapping(TestServlet.class, "/content");
-        servlets.addServletWithMapping(ForwardServlet.class, "/forward");
-        servlets.addServletWithMapping(IncludeServlet.class, "/include");
-        servlets.addServletWithMapping(EchoServlet.class, "/echo/*");
-        servlets.addServletWithMapping(DumpServlet.class, "/dump/*");
-        servlets.addServletWithMapping(AsyncServlet.class, "/async/*");
-        servlets.addServletWithMapping(BufferServlet.class, "/buffer/*");
-        servlets.addFilterWithMapping(CheckFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+        context.addServlet(MicroServlet.class, "/micro");
+        context.addServlet(MicroChunkedServlet.class, "/microchunked");
+        context.addServlet(TestServlet.class, "/content");
+        context.addServlet(MimeTypeContentServlet.class, "/mimetypes/*");
+        context.addServlet(ForwardServlet.class, "/forward");
+        context.addServlet(IncludeServlet.class, "/include");
+        context.addServlet(EchoServlet.class, "/echo/*");
+        context.addServlet(DumpServlet.class, "/dump/*");
+        context.addServlet(AsyncServlet.class, "/async/*");
+        context.addServlet(BufferServlet.class, "/buffer/*");
+        context.addFilter(CheckFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         _server.start();
     }
@@ -143,6 +145,31 @@ public class GzipHandlerTest
             PrintWriter writer = response.getWriter();
             writer.write(__micro);
             response.flushBuffer();
+        }
+    }
+
+    public static class MimeTypeContentServlet extends HttpServlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            String pathInfo = req.getPathInfo();
+            resp.setContentType(getContentTypeFromRequest(pathInfo, req));
+            resp.getWriter().println("This is content for " + pathInfo);
+        }
+
+        private String getContentTypeFromRequest(String filename, HttpServletRequest req)
+        {
+            String defaultContentType = "application/octet-stream";
+            if (req.getParameter("type") != null)
+                defaultContentType = req.getParameter("type");
+            ServletContextHandler servletContextHandler = ServletContextHandler.getServletContextHandler(getServletContext());
+            if (servletContextHandler == null)
+                return defaultContentType;
+            String contentType = servletContextHandler.getMimeTypes().getMimeByExtension(filename);
+            if (contentType != null)
+                return contentType;
+            return defaultContentType;
         }
     }
 
@@ -585,7 +612,7 @@ public class GzipHandlerTest
         request.setURI("/ctx/content");
         request.setVersion("HTTP/1.0");
         request.setHeader("Host", "tester");
-        request.setHeader("If-Match", "WrongEtag--gzip");
+        request.setHeader("If-Match", "WrongEtag" + CompressedContentFormat.GZIP.getEtagSuffix());
         request.setHeader("accept-encoding", "gzip");
 
         response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
@@ -794,6 +821,52 @@ public class GzipHandlerTest
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.getContentBytes().length, is(512 * 1024));
+    }
+
+    @Test
+    public void testGzipExcludeNewMimeType() throws Exception
+    {
+        // setting all excluded mime-types to a mimetype new mime-type
+        // Note: this mime-type does not exist in MimeTypes object.
+        gzipHandler.setExcludedMimeTypes("image/webfoo");
+
+        // generated and parsed test
+        HttpTester.Request request = HttpTester.newRequest();
+        HttpTester.Response response;
+
+        // Request something that is not present on MimeTypes and is also
+        // excluded by GzipHandler configuration
+        request.setMethod("GET");
+        request.setURI("/ctx/mimetypes/foo.webfoo?type=image/webfoo");
+        request.setVersion("HTTP/1.1");
+        request.setHeader("Host", "tester");
+        request.setHeader("Accept", "*/*");
+        request.setHeader("Accept-Encoding", "gzip"); // allow compressed responses
+        request.setHeader("Connection", "close");
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        assertThat(response.getStatus(), is(200));
+        assertThat("Should not be compressed with gzip", response.get("Content-Encoding"), nullValue());
+        assertThat(response.get("ETag"), nullValue());
+        assertThat(response.get("Vary"), nullValue());
+
+        // Request something that is present on MimeTypes and is also compressible
+        // by the GzipHandler configuration
+        request.setMethod("GET");
+        request.setURI("/ctx/mimetypes/zed.txt");
+        request.setVersion("HTTP/1.1");
+        request.setHeader("Host", "tester");
+        request.setHeader("Accept", "*/*");
+        request.setHeader("Accept-Encoding", "gzip"); // allow compressed responses
+        request.setHeader("Connection", "close");
+
+        response = HttpTester.parseResponse(_connector.getResponse(request.generate()));
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.get("Content-Encoding"), containsString("gzip"));
+        assertThat(response.get("ETag"), nullValue());
+        assertThat(response.get("Vary"), is("Accept-Encoding"));
     }
 
     public static class CheckFilter implements Filter

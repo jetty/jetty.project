@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -12,23 +12,30 @@
 //
 
 [[pg-server-io-arch]]
-=== Server Libraries I/O Architecture
+=== Server I/O Architecture
 
 The Jetty server libraries provide the basic components and APIs to implement a network server.
 
 They build on the common xref:pg-arch-io[Jetty I/O Architecture] and provide server specific concepts.
 
-The central I/O server-side component is `org.eclipse.jetty.server.ServerConnector`.
+The Jetty server libraries provide I/O support for TCP/IP sockets (for both IPv4 and IPv6) and, when using Java 16 or later, for Unix-Domain sockets.
+
+Support for Unix-Domain sockets is interesting when Jetty is deployed behind a proxy or a load-balancer: it is possible to configure the proxy or load balancer to communicate with Jetty via Unix-Domain sockets, rather than via the loopback network interface.
+
+The central I/O server-side component are `org.eclipse.jetty.server.ServerConnector`, that handles the TCP/IP socket traffic, and `org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector`, that handles the Unix-Domain socket traffic.
+
+`ServerConnector` and `UnixDomainServerConnector` are very similar, and while in the following sections `ServerConnector` is used, the same concepts apply to `UnixDomainServerConnector`, unless otherwise noted.
+
 A `ServerConnector` manages a list of ``ConnectionFactory``s, that indicate what protocols the connector is able to speak.
 
 [[pg-server-io-arch-connection-factory]]
 ==== Creating Connections with `ConnectionFactory`
 
-Recall from the xref:pg-arch-io-connection[`Connection` section] of the Jetty I/O architecture that `Connection` instances are responsible for parsing bytes read from a TCP connection and generating bytes to write to that TCP connection.
+Recall from the xref:pg-arch-io-connection[`Connection` section] of the Jetty I/O architecture that `Connection` instances are responsible for parsing bytes read from a socket and generating bytes to write to that socket.
 
 On the server-side, a `ConnectionFactory` creates `Connection` instances that know how to parse and generate bytes for the specific protocol they support -- it can be either HTTP/1.1, or TLS, or FastCGI, or the link:https://www.haproxy.org/download/2.1/doc/proxy-protocol.txt[PROXY protocol].
 
-For example, this is how clear-text HTTP/1.1 is configured:
+For example, this is how clear-text HTTP/1.1 is configured for TCP/IP sockets:
 
 [source,java,indent=0]
 ----
@@ -36,7 +43,24 @@ include::../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java
 ----
 
 With this configuration, the `ServerConnector` will listen on port `8080`.
-When a new TCP connection is established, `ServerConnector` delegates to the `ConnectionFactory` the creation of the `Connection` instance for that TCP connection, that is linked to the corresponding `EndPoint`:
+
+Similarly, this is how clear-text HTTP/1.1 is configured for Unix-Domain sockets:
+
+[source,java,indent=0]
+----
+include::../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=httpUnix]
+----
+
+With this configuration, the `UnixDomainServerConnector` will listen on file `/tmp/jetty.sock`.
+
+[NOTE]
+====
+`ServerConnector` and `UnixDomainServerConnector` only differ by how they are configured -- for `ServerConnector` you specify the IP port it listens to, for `UnixDomainServerConnector` you specify the Unix-Domain path it listens to.
+
+Both configure ``ConnectionFactory``s in exactly the same way.
+====
+
+When a new socket connection is established, `ServerConnector` delegates to the `ConnectionFactory` the creation of the `Connection` instance for that socket connection, that is linked to the corresponding `EndPoint`:
 
 [plantuml]
 ----
@@ -53,12 +77,12 @@ scale 1.5
 circle network
 circle application
 
-network - SocketEndPoint
-SocketEndPoint - HttpConnection
+network - SocketChannelEndPoint
+SocketChannelEndPoint - HttpConnection
 HttpConnection - application
 ----
 
-For every TCP connection there will be an `EndPoint` + `Connection` pair.
+For every socket connection there will be an `EndPoint` + `Connection` pair.
 
 [[pg-server-io-arch-connection-factory-wrapping]]
 ==== Wrapping a `ConnectionFactory`
@@ -72,7 +96,7 @@ include::../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java
 ----
 
 With this configuration, the `ServerConnector` will listen on port `8443`.
-When a new TCP connection is established, the first `ConnectionFactory` configured in `ServerConnector` is invoked to create a `Connection`.
+When a new socket connection is established, the first `ConnectionFactory` configured in `ServerConnector` is invoked to create a `Connection`.
 In the example above, `SslConnectionFactory` creates a `SslConnection` and then asks to its wrapped `ConnectionFactory` (in the example, `HttpConnectionFactory`) to create the wrapped `Connection` (an `HttpConnection`) and will then link the two ``Connection``s together, in this way:
 
 [plantuml]
@@ -90,16 +114,16 @@ scale 1.5
 circle network
 circle application
 
-network - SocketEndPoint
-SocketEndPoint - SslConnection
+network - SocketChannelEndPoint
+SocketChannelEndPoint - SslConnection
 SslConnection -- DecryptedEndPoint
 DecryptedEndPoint - HttpConnection
 HttpConnection - application
 ----
 
-Bytes read by the `SocketEndPoint` will be interpreted as TLS bytes by the `SslConnection`, then decrypted and made available to the `DecryptedEndPoint` (a component part of `SslConnection`), which will then provide them to `HttpConnection`.
+Bytes read by the `SocketChannelEndPoint` will be interpreted as TLS bytes by the `SslConnection`, then decrypted and made available to the `DecryptedEndPoint` (a component part of `SslConnection`), which will then provide them to `HttpConnection`.
 
-The application writes bytes through the `HttpConnection` to the `DecryptedEndPoint`, which will encrypt them through the `SslConnection` and write the encrypted bytes to the `SocketEndPoint`.
+The application writes bytes through the `HttpConnection` to the `DecryptedEndPoint`, which will encrypt them through the `SslConnection` and write the encrypted bytes to the `SocketChannelEndPoint`.
 
 [[pg-server-io-arch-connection-factory-detecting]]
 ==== Choosing `ConnectionFactory` via Bytes Detection
@@ -124,18 +148,18 @@ With this configuration, the detector will delegate to `SslConnectionFactory` to
 <2> Creates the `ServerConnector` with `DetectorConnectionFactory` as the first `ConnectionFactory`, and `HttpConnectionFactory` as the next `ConnectionFactory` to invoke if the detection fails.
 
 In the example above `ServerConnector` will listen on port 8181.
-When a new TCP connection is established, `DetectorConnectionFactory` is invoked to create a `Connection`, because it is the first `ConnectionFactory` specified in the `ServerConnector` list.
+When a new socket connection is established, `DetectorConnectionFactory` is invoked to create a `Connection`, because it is the first `ConnectionFactory` specified in the `ServerConnector` list.
 `DetectorConnectionFactory` reads the initial bytes and asks to its detecting ``ConnectionFactory``s if they recognize the bytes.
 In the example above, the detecting ``ConnectionFactory`` is `SslConnectionFactory` which will therefore detect whether the initial bytes are TLS bytes.
 If one of the detecting ``ConnectionFactory``s recognizes the bytes, it creates a `Connection`; otherwise `DetectorConnectionFactory` will try the next `ConnectionFactory` after itself in the `ServerConnector` list.
 In the example above, the next `ConnectionFactory` after `DetectorConnectionFactory` is `HttpConnectionFactory`.
 
-The final result is that when new TCP connection is established, the initial bytes are examined: if they are TLS bytes, a `SslConnectionFactory` will create a `SslConnection` that wraps an `HttpConnection` as explained xref:pg-server-io-arch-connection-factory-wrapping[here], therefore supporting `https`; otherwise they are not TLS bytes and an `HttpConnection` is created, therefore supporting `http`.
+The final result is that when new socket connection is established, the initial bytes are examined: if they are TLS bytes, a `SslConnectionFactory` will create a `SslConnection` that wraps an `HttpConnection` as explained xref:pg-server-io-arch-connection-factory-wrapping[here], therefore supporting `https`; otherwise they are not TLS bytes and an `HttpConnection` is created, therefore supporting `http`.
 
 [[pg-server-io-arch-connection-factory-custom]]
 ==== Writing a Custom `ConnectionFactory`
 
-This section explains how to use the Jetty server-side libraries to write a generic network server able to parse and generate any protocol based on TCP.
+This section explains how to use the Jetty server-side libraries to write a generic network server able to parse and generate any protocol..
 
 Let's suppose that we want to write a custom protocol that is based on JSON but has the same semantic as HTTP; let's call this custom protocol `JSONHTTP`, so that a request would look like this:
 

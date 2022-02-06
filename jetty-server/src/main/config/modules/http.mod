@@ -26,7 +26,7 @@ etc/jetty-http.xml
 # jetty.http.idleTimeout=30000
 
 ## The number of acceptors (-1 picks a default value based on number of cores).
-# jetty.http.acceptors=-1
+# jetty.http.acceptors=1
 
 ## The number of selectors (-1 picks a default value based on number of cores).
 # jetty.http.selectors=-1
@@ -39,6 +39,9 @@ etc/jetty-http.xml
 
 ## Whether to enable the SO_REUSEADDR socket option.
 # jetty.http.reuseAddress=true
+
+## Whether to enable the SO_REUSEPORT socket option.
+# jetty.http.reusePort=false
 
 ## Whether to enable the TCP_NODELAY socket option on accepted sockets.
 # jetty.http.acceptedTcpNoDelay=true

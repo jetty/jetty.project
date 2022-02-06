@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.docs.programming.server.http2;
 
-import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -82,7 +82,7 @@ public class HTTP2ServerDocs
             @Override
             public void onAccept(Session session)
             {
-                InetSocketAddress remoteAddress = session.getRemoteAddress();
+                SocketAddress remoteAddress = session.getRemoteSocketAddress();
                 System.getLogger("http2").log(INFO, "Connection from {0}", remoteAddress);
             }
         };

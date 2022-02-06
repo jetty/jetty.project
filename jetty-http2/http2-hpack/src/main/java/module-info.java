@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,15 +11,14 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.http.HttpFieldPreEncoder;
-import org.eclipse.jetty.http2.hpack.HpackFieldPreEncoder;
-
 module org.eclipse.jetty.http2.hpack
 {
-    exports org.eclipse.jetty.http2.hpack;
-
-    requires transitive org.eclipse.jetty.http;
     requires org.slf4j;
 
-    provides HttpFieldPreEncoder with HpackFieldPreEncoder;
+    requires transitive org.eclipse.jetty.http;
+
+    exports org.eclipse.jetty.http2.hpack;
+
+    provides org.eclipse.jetty.http.HttpFieldPreEncoder with
+        org.eclipse.jetty.http2.hpack.HpackFieldPreEncoder;
 }

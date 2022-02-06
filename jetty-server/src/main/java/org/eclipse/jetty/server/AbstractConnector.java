@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -32,8 +32,10 @@ import java.util.concurrent.locks.Condition;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.StringUtil;
@@ -154,6 +156,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private long _shutdownIdleTimeout = 1000L;
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
+    /* The name used to link up virtual host configuration to named connectors */
     private String _name;
     private int _acceptorPriorityDelta = -2;
     private boolean _accepting = true;
@@ -188,6 +191,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             pool = _server.getBean(ByteBufferPool.class);
         _byteBufferPool = pool != null ? pool : new ArrayByteBufferPool();
         addBean(_byteBufferPool);
+        RetainableByteBufferPool retainableByteBufferPool = _server.getBean(RetainableByteBufferPool.class);
+        addBean(retainableByteBufferPool == null ? new ArrayRetainableByteBufferPool() : retainableByteBufferPool, retainableByteBufferPool == null);
 
         addEventListener(new Container.Listener()
         {
@@ -344,6 +349,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
 
         _lease = ThreadPoolBudget.leaseFrom(getExecutor(), this, _acceptors.length);
+
         super.doStart();
 
         for (int i = 0; i < _acceptors.length; i++)

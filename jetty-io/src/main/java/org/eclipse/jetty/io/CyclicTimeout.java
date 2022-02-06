@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,6 +28,17 @@ import static java.lang.Long.MAX_VALUE;
  * <p>Subclasses should implement {@link #onTimeoutExpired()}.</p>
  * <p>This implementation is optimised assuming that the timeout
  * will mostly be cancelled and then reused with a similar value.</p>
+ * <p>The typical scenario to use this class is when you have events
+ * that postpone (by re-scheduling), or cancel then re-schedule, a
+ * timeout for a single entity.
+ * For example: connection idleness, where for each connection there
+ * is a CyclicTimeout and a read/write postpones the timeout; when
+ * the timeout expires, the implementation checks against a timestamp
+ * if the connection is really idle.
+ * Another example: HTTP session expiration, where for each HTTP
+ * session there is a CyclicTimeout and at the beginning of the
+ * request processing the timeout is canceled (via cancel()), but at
+ * the end of the request processing the timeout is re-scheduled.</p>
  * <p>This implementation has a {@link Timeout} holding the time
  * at which the scheduled task should fire, and a linked list of
  * {@link Wakeup}, each holding the actual scheduled task.</p>
@@ -42,6 +53,8 @@ import static java.lang.Long.MAX_VALUE;
  * When the Wakeup task fires, it will see that the Timeout is now
  * in the future and will attach a new Wakeup with the future time
  * to the Timeout, and submit a scheduler task for the new Wakeup.</p>
+ *
+ * @see CyclicTimeouts
  */
 public abstract class CyclicTimeout implements Destroyable
 {
@@ -97,9 +110,12 @@ public abstract class CyclicTimeout implements Destroyable
             if (_timeout.compareAndSet(timeout, new Timeout(newTimeoutAt, wakeup)))
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Installed timeout in {} ms, waking up in {} ms",
+                {
+                    LOG.debug("Installed timeout in {} ms, {} wake up in {} ms",
                         units.toMillis(delay),
+                        newWakeup != null ? "new" : "existing",
                         TimeUnit.NANOSECONDS.toMillis(wakeup._at - now));
+                }
                 break;
             }
         }

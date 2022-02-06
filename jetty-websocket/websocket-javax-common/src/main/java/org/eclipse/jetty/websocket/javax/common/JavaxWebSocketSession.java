@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -74,8 +74,8 @@ public class JavaxWebSocketSession implements javax.websocket.Session
         this.coreSession = coreSession;
         this.frameHandler = frameHandler;
         this.sessionId = UUID.randomUUID().toString();
-        this.availableDecoders = new AvailableDecoders(endpointConfig);
-        this.availableEncoders = new AvailableEncoders(endpointConfig);
+        this.availableDecoders = new AvailableDecoders(endpointConfig, container.getWebSocketComponents());
+        this.availableEncoders = new AvailableEncoders(endpointConfig, container.getWebSocketComponents());
 
         if (endpointConfig instanceof PathParamProvider)
         {

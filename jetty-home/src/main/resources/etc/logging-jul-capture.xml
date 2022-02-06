@@ -1,5 +1,0 @@
-<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
-
-<Configure id="logging-jul-capture">
-  <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="install" />
-</Configure>

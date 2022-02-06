@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,8 +15,8 @@ package org.eclipse.jetty.tests.distribution;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.FormRequestContent;
@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -34,6 +35,49 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class DemoModulesTests extends AbstractJettyHomeTest
 {
+    @Test
+    public void testDemoAddServerClasses() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        int httpPort = distribution.freePort();
+        int httpsPort = distribution.freePort();
+        assertThat("httpPort != httpsPort", httpPort, is(not(httpsPort)));
+
+        String[] argsConfig = {
+            "--add-modules=demo"
+        };
+
+        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
+        {
+            assertTrue(runConfig.awaitFor(5, TimeUnit.SECONDS));
+            assertEquals(0, runConfig.getExitValue());
+
+            try (JettyHomeTester.Run runListConfig = distribution.start("--list-config"))
+            {
+                assertTrue(runListConfig.awaitFor(5, TimeUnit.SECONDS));
+                assertEquals(0, runListConfig.getExitValue());
+                // Example of what we expect
+                // jetty.webapp.addServerClasses = org.eclipse.jetty.logging.,${jetty.home.uri}/lib/logging/,org.slf4j.,${jetty.base.uri}/lib/bouncycastle/
+                String addServerKey = " jetty.webapp.addServerClasses = ";
+                String addServerClasses = runListConfig.getLogs().stream()
+                    .filter(s -> s.startsWith(addServerKey))
+                    .findFirst()
+                    .orElseThrow(() ->
+                        new NoSuchElementException("Unable to find [" + addServerKey + "]"));
+                assertThat("'jetty.webapp.addServerClasses' entry count",
+                    addServerClasses.split(",").length,
+                    greaterThan(1));
+            }
+        }
+    }
+
     @Test
     public void testJspDump() throws Exception
     {
@@ -294,26 +338,6 @@ public class DemoModulesTests extends AbstractJettyHomeTest
                 content = response.getContentAsString();
                 assertThat("Content", content, containsString("<b>Zed:</b> [alpha]<br/>"));
             }
-        }
-    }
-
-    private class ResponseDetails implements Supplier<String>
-    {
-        private final ContentResponse response;
-
-        public ResponseDetails(ContentResponse response)
-        {
-            this.response = response;
-        }
-
-        @Override
-        public String get()
-        {
-            StringBuilder ret = new StringBuilder();
-            ret.append(response.toString()).append(System.lineSeparator());
-            ret.append(response.getHeaders().toString()).append(System.lineSeparator());
-            ret.append(response.getContentAsString()).append(System.lineSeparator());
-            return ret.toString();
         }
     }
 }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,6 +17,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -75,8 +77,10 @@ public class CDITests extends AbstractJettyHomeTest
     public void testCDIIncludedInWebapp(String implementation, String integration, Consumer<JettyHomeTester> configure) throws Exception
     {
         String jettyVersion = System.getProperty("jettyVersion");
+        String jvmArgs = System.getProperty("cdi.tests.jvmArgs");
         JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
             .jettyVersion(jettyVersion)
+            .jvmArgs(jvmArgs == null ? Collections.emptyList() : Arrays.asList(jvmArgs.split("\\s+")))
             .mavenLocalRepository(System.getProperty("mavenRepoPath"))
             .build();
 

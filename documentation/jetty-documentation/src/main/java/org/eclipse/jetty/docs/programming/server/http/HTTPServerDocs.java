@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,9 @@
 package org.eclipse.jetty.docs.programming.server.http;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.servlet.DispatcherType;
@@ -32,19 +34,24 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.HTTP3ServerConnector;
 import org.eclipse.jetty.rewrite.handler.CompactPathRule;
 import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.RewriteRegexRule;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.RequestLogWriter;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.Slf4jRequestLogWriter;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -53,6 +60,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.SecuredRedirectHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
@@ -62,6 +70,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -151,6 +160,57 @@ public class HTTPServerDocs
         // end::httpChannelListener[]
     }
 
+    public void serverRequestLogSLF4J()
+    {
+        // tag::serverRequestLogSLF4J[]
+        Server server = new Server();
+
+        // Sets the RequestLog to log to an SLF4J logger named "org.eclipse.jetty.server.RequestLog" at INFO level.
+        server.setRequestLog(new CustomRequestLog(new Slf4jRequestLogWriter(), CustomRequestLog.EXTENDED_NCSA_FORMAT));
+        // end::serverRequestLogSLF4J[]
+    }
+
+    public void serverRequestLogFile()
+    {
+        // tag::serverRequestLogFile[]
+        Server server = new Server();
+
+        // Use a file name with the pattern 'yyyy_MM_dd' so rolled over files retain their date.
+        RequestLogWriter logWriter = new RequestLogWriter("/var/log/yyyy_MM_dd.jetty.request.log");
+        // Retain rolled over files for 2 weeks.
+        logWriter.setRetainDays(14);
+        // Log times are in the current time zone.
+        logWriter.setTimeZone(TimeZone.getDefault().getID());
+
+        // Set the RequestLog to log to the given file, rolling over at midnight.
+        server.setRequestLog(new CustomRequestLog(logWriter, CustomRequestLog.EXTENDED_NCSA_FORMAT));
+        // end::serverRequestLogFile[]
+    }
+
+    public void contextRequestLog()
+    {
+        // tag::contextRequestLog[]
+        Server server = new Server();
+
+        // Create a first ServletContextHandler for your main application.
+        ServletContextHandler mainContext = new ServletContextHandler();
+        mainContext.setContextPath("/main");
+
+        // Create a RequestLogHandler to log requests for your main application.
+        RequestLogHandler requestLogHandler = new RequestLogHandler();
+        requestLogHandler.setRequestLog(new CustomRequestLog());
+        // Wrap the main application with the request log handler.
+        requestLogHandler.setHandler(mainContext);
+
+        // Create a second ServletContextHandler for your other application.
+        // No request logging for this application.
+        ServletContextHandler otherContext = new ServletContextHandler();
+        mainContext.setContextPath("/other");
+
+        server.setHandler(new HandlerList(requestLogHandler, otherContext));
+        // end::contextRequestLog[]
+    }
+
     public void configureConnector() throws Exception
     {
         // tag::configureConnector[]
@@ -163,20 +223,48 @@ public class HTTPServerDocs
         int selectors = 1;
 
         // Create a ServerConnector instance.
-        ServerConnector connector = new ServerConnector(server, 1, 1, new HttpConnectionFactory());
+        ServerConnector connector = new ServerConnector(server, acceptors, selectors, new HttpConnectionFactory());
 
-        // Configure TCP parameters.
+        // Configure TCP/IP parameters.
 
-        // The TCP port to listen to.
+        // The port to listen to.
         connector.setPort(8080);
-        // The TCP address to bind to.
+        // The address to bind to.
         connector.setHost("127.0.0.1");
+
         // The TCP accept queue size.
         connector.setAcceptQueueSize(128);
 
         server.addConnector(connector);
         server.start();
         // end::configureConnector[]
+    }
+
+    public void configureConnectorUnix() throws Exception
+    {
+        // tag::configureConnectorUnix[]
+        Server server = new Server();
+
+        // The number of acceptor threads.
+        int acceptors = 1;
+
+        // The number of selectors.
+        int selectors = 1;
+
+        // Create a ServerConnector instance.
+        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, acceptors, selectors, new HttpConnectionFactory());
+
+        // Configure Unix-Domain parameters.
+
+        // The Unix-Domain path to listen to.
+        connector.setUnixDomainPath(Path.of("/tmp/jetty.sock"));
+
+        // The TCP accept queue size.
+        connector.setAcceptQueueSize(128);
+
+        server.addConnector(connector);
+        server.start();
+        // end::configureConnectorUnix[]
     }
 
     public void configureConnectors() throws Exception
@@ -246,6 +334,31 @@ public class HTTPServerDocs
         server.addConnector(connector);
         server.start();
         // end::proxyHTTP[]
+    }
+
+    public void proxyHTTPUnix() throws Exception
+    {
+        // tag::proxyHTTPUnix[]
+        Server server = new Server();
+
+        // The HTTP configuration object.
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        // Configure the HTTP support, for example:
+        httpConfig.setSendServerVersion(false);
+
+        // The ConnectionFactory for HTTP/1.1.
+        HttpConnectionFactory http11 = new HttpConnectionFactory(httpConfig);
+
+        // The ConnectionFactory for the PROXY protocol.
+        ProxyConnectionFactory proxy = new ProxyConnectionFactory(http11.getProtocol());
+
+        // Create the ServerConnector.
+        UnixDomainServerConnector connector = new UnixDomainServerConnector(server, proxy, http11);
+        connector.setUnixDomainPath(Path.of("/tmp/jetty.sock"));
+
+        server.addConnector(connector);
+        server.start();
+        // end::proxyHTTPUnix[]
     }
 
     public void tlsHttp11() throws Exception
@@ -337,6 +450,27 @@ public class HTTPServerDocs
         server.addConnector(connector);
         server.start();
         // end::tlsALPNHTTP[]
+    }
+
+    public void h3() throws Exception
+    {
+        // tag::h3[]
+        Server server = new Server();
+
+        SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+        sslContextFactory.setKeyStorePath("/path/to/keystore");
+        sslContextFactory.setKeyStorePassword("secret");
+
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        httpConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // Create and configure the HTTP/3 connector.
+        HTTP3ServerConnector connector = new HTTP3ServerConnector(server, sslContextFactory, new HTTP3ServerConnectionFactory(httpConfig));
+        connector.setPort(843);
+        server.addConnector(connector);
+
+        server.start();
+        // end::h3[]
     }
 
     public void handlerTree()

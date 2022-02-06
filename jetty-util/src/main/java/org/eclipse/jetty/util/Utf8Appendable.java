@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -213,7 +213,6 @@ public abstract class Utf8Appendable
 
     protected void appendByte(byte b) throws IOException
     {
-
         if (b > 0 && _state == UTF8_ACCEPT)
         {
             _appendable.append((char)(b & 0xFF));

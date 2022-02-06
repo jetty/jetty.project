@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,9 +17,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.channels.WritePendingException;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
+import java.util.Deque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -39,8 +37,8 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Promise;
@@ -50,12 +48,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpable
+public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.Expirable
 {
     private static final Logger LOG = LoggerFactory.getLogger(HTTP2Stream.class);
 
     private final AutoLock lock = new AutoLock();
-    private final Queue<DataEntry> dataQueue = new ArrayDeque<>();
+    private Deque<DataEntry> dataQueue;
     private final AtomicReference<Object> attachment = new AtomicReference<>();
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
@@ -75,16 +73,24 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     private long dataDemand;
     private boolean dataInitial;
     private boolean dataProcess;
+    private boolean committed;
+    private long idleTimeout;
+    private long expireNanoTime = Long.MAX_VALUE;
 
-    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
+    public HTTP2Stream(ISession session, int streamId, MetaData.Request request, boolean local)
     {
-        super(scheduler);
         this.session = session;
         this.streamId = streamId;
         this.request = request;
         this.local = local;
         this.dataLength = Long.MIN_VALUE;
         this.dataInitial = true;
+    }
+
+    @Deprecated
+    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId, MetaData.Request request, boolean local)
+    {
+        this(session, streamId, request, local);
     }
 
     @Override
@@ -146,14 +152,23 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
+        Throwable resetFailure = null;
         try (AutoLock l = lock.lock())
         {
             if (isReset())
-                return;
-            localReset = true;
-            failure = new EOFException("reset");
+            {
+                resetFailure = failure;
+            }
+            else
+            {
+                localReset = true;
+                failure = new EOFException("reset");
+            }
         }
-        ((HTTP2Session)session).reset(this, frame, callback);
+        if (resetFailure != null)
+            callback.failed(resetFailure);
+        else
+            ((HTTP2Session)session).reset(this, frame, callback);
     }
 
     private boolean startWrite(Callback callback)
@@ -234,15 +249,19 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     @Override
     public boolean failAllData(Throwable x)
     {
-        List<DataEntry> copy;
+        Deque<DataEntry> copy;
         try (AutoLock l = lock.lock())
         {
             dataDemand = 0;
-            copy = new ArrayList<>(dataQueue);
-            dataQueue.clear();
+            copy = dataQueue;
+            dataQueue = null;
         }
-        copy.forEach(dataEntry -> dataEntry.callback.failed(x));
-        DataEntry lastDataEntry = copy.isEmpty() ? null : copy.get(copy.size() - 1);
+        DataEntry lastDataEntry = null;
+        if (copy != null)
+        {
+            copy.forEach(dataEntry -> dataEntry.callback.failed(x));
+            lastDataEntry = copy.isEmpty() ? null : copy.peekLast();
+        }
         if (lastDataEntry == null)
             return isRemotelyClosed();
         return lastDataEntry.frame.isEndStream();
@@ -254,12 +273,50 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
     }
 
     @Override
+    public void commit()
+    {
+        committed = true;
+    }
+
+    @Override
+    public boolean isCommitted()
+    {
+        return committed;
+    }
+
     public boolean isOpen()
     {
         return !isClosed();
     }
 
     @Override
+    public void notIdle()
+    {
+        long idleTimeout = getIdleTimeout();
+        if (idleTimeout > 0)
+            expireNanoTime = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(idleTimeout);
+    }
+
+    @Override
+    public long getExpireNanoTime()
+    {
+        return expireNanoTime;
+    }
+
+    @Override
+    public long getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    @Override
+    public void setIdleTimeout(long idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+        notIdle();
+        ((HTTP2Session)session).scheduleTimeout(this);
+    }
+
     protected void onIdleExpired(TimeoutException timeout)
     {
         if (LOG.isDebugEnabled())
@@ -400,6 +457,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         DataEntry entry = new DataEntry(frame, callback);
         try (AutoLock l = lock.lock())
         {
+            if (dataQueue == null)
+                dataQueue = new ArrayDeque<>();
             dataQueue.offer(entry);
             initial = dataInitial;
             if (initial)
@@ -441,7 +500,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         {
             demand = dataDemand = MathUtils.cappedAdd(dataDemand, n);
             if (!dataProcess)
-                dataProcess = proceed = !dataQueue.isEmpty();
+                dataProcess = proceed = dataQueue != null && !dataQueue.isEmpty();
         }
         if (LOG.isDebugEnabled())
             LOG.debug("Demand {}/{}, {} data processing for {}", n, demand, proceed ? "proceeding" : "stalling", this);
@@ -456,7 +515,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
             DataEntry dataEntry;
             try (AutoLock l = lock.lock())
             {
-                if (dataQueue.isEmpty() || dataDemand == 0)
+                if (dataQueue == null || dataQueue.isEmpty() || dataDemand == 0)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Stalling data processing for {}", this);
@@ -491,6 +550,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         close();
         if (session.removeStream(this))
             notifyReset(this, frame, callback);
+        else
+            callback.succeeded();
     }
 
     private void onPush(PushPromiseFrame frame, Callback callback)
@@ -515,6 +576,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         close();
         if (session.removeStream(this))
             notifyFailure(this, frame, callback);
+        else
+            callback.succeeded();
     }
 
     @Override
@@ -666,10 +729,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         }
     }
 
-    @Override
     public void onClose()
     {
-        super.onClose();
         notifyClosed(this);
     }
 
@@ -692,6 +753,15 @@ public class HTTP2Stream extends IdleTimeout implements IStream, Callback, Dumpa
         Callback callback = endWrite();
         if (callback != null)
             callback.failed(x);
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        synchronized (this)
+        {
+            return sendCallback != null ? sendCallback.getInvocationType() : Callback.super.getInvocationType();
+        }
     }
 
     private Callback endWrite()

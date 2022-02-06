@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -68,7 +68,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnJre;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.JRE;
@@ -82,7 +81,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.condition.OS.LINUX;
-import static org.junit.jupiter.api.condition.OS.WINDOWS;
 
 // Other JREs have slight differences in how TLS work
 // and this test expects a very specific TLS behavior.
@@ -329,7 +327,7 @@ public class SslBytesServerTest extends SslBytesTest
 
         final SSLSocket client2 = newClient(proxy);
 
-        threadPool.submit(() ->
+        Future<Object> handshakeFuture = threadPool.submit(() ->
         {
             client2.startHandshake();
             return null;
@@ -361,6 +359,9 @@ public class SslBytesServerTest extends SslBytesTest
         // Client Done
         TLSRecord doneRecord = proxy.readFromClient();
         assertNotNull(doneRecord);
+
+        // Wait for socket to be done with handshake
+        handshakeFuture.get(5, TimeUnit.SECONDS);
         // Close
         client2.close();
         TLSRecord closeRecord = proxy.readFromClient();
@@ -1024,7 +1025,6 @@ public class SslBytesServerTest extends SslBytesTest
     }
 
     @Test
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
     public void testRequestWithBigContentWriteBlockedThenReset() throws Exception
     {
         final SSLSocket client = newClient();
@@ -1079,7 +1079,6 @@ public class SslBytesServerTest extends SslBytesTest
     }
 
     @Test
-    @DisabledOnOs(WINDOWS) // Don't run on Windows (buggy JVM)
     public void testRequestWithBigContentReadBlockedThenReset() throws Exception
     {
         final SSLSocket client = newClient();

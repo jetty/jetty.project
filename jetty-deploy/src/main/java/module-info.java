@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,17 +13,20 @@
 
 module org.eclipse.jetty.deploy
 {
-    exports org.eclipse.jetty.deploy;
-    exports org.eclipse.jetty.deploy.bindings;
-    exports org.eclipse.jetty.deploy.graph;
-    exports org.eclipse.jetty.deploy.jmx to org.eclipse.jetty.jmx;
-    exports org.eclipse.jetty.deploy.providers;
-
     requires java.xml;
-    requires transitive org.eclipse.jetty.webapp;
     requires org.eclipse.jetty.xml;
     requires org.slf4j;
 
+    requires transitive org.eclipse.jetty.webapp;
+
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
+
+    exports org.eclipse.jetty.deploy;
+    exports org.eclipse.jetty.deploy.bindings;
+    exports org.eclipse.jetty.deploy.graph;
+    exports org.eclipse.jetty.deploy.providers;
+
+    exports org.eclipse.jetty.deploy.jmx to
+        org.eclipse.jetty.jmx;
 }

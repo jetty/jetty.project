@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -118,7 +118,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
         assertThat("Response[ETag]", response.get("ETag"), startsWith("W/"));
-        assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP._etag));
+        assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
 
         assertThat("Response[Content-Length]", response.get("Content-Length"), is(nullValue()));
         // A HEAD request should have similar headers, but no body
@@ -320,7 +320,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), containsString("gzip"));
         assertThat("Response[ETag]", response.get("ETag"), startsWith("W/"));
-        assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP._etag));
+        assertThat("Response[ETag]", response.get("ETag"), containsString(CompressedContentFormat.GZIP.getEtagSuffix()));
         assertThat("Response[Vary]", response.get("Vary"), containsString("Accept-Encoding"));
 
         // Response Content checks
@@ -439,7 +439,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         // Response Content-Encoding check
         assertThat("Response[Content-Encoding]", response.get("Content-Encoding"), not(containsString("gzip")));
         assertThat("Response[ETag]", response.get("ETag"), startsWith("W/"));
-        assertThat("Response[ETag]", response.get("ETag"), not(containsString(CompressedContentFormat.GZIP._etag)));
+        assertThat("Response[ETag]", response.get("ETag"), not(containsString(CompressedContentFormat.GZIP.getEtagSuffix())));
 
         // Response Content checks
         UncompressedMetadata metadata = parseResponseContent(response);

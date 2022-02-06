@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,11 +25,11 @@ CachingSessionDataStore "1" *-down- "1" SessionDataStore
 SessionDataMap <|-- MemcachedSessionDataMap
 ----
 
-The link:{JDURL}/org/eclipse/jetty/server/session/CachingSessionDataStore.html[CachingSessionDataStore] is a special type of `SessionDataStore` that checks an L2 cache for `SessionData` before checking a delegate `SessionDataStore`.
+The link:{javadoc-url}/org/eclipse/jetty/server/session/CachingSessionDataStore.html[CachingSessionDataStore] is a special type of `SessionDataStore` that checks an L2 cache for `SessionData` before checking a delegate `SessionDataStore`.
 This can improve the performance of slow stores.
 
-The L2 cache is an instance of a link:{JDURL}/org/eclipse/jetty/server/session/SessionDataMap.html[SessionDataMap].
-Jetty provides one implementation of this L2 cache based on `memcached`, link:{JDURL}/org/eclipse/jetty/memcached/session/MemcachedSessionDataMap.html[MemcachedSessionDataMap].
+The L2 cache is an instance of a link:{javadoc-url}/org/eclipse/jetty/server/session/SessionDataMap.html[SessionDataMap].
+Jetty provides one implementation of this L2 cache based on `memcached`, link:{javadoc-url}/org/eclipse/jetty/memcached/session/MemcachedSessionDataMap.html[MemcachedSessionDataMap].
 
 ====== Configuration
 

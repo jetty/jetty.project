@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,6 +13,41 @@
 
 [[og-arch]]
 === Architecture Overview
+
+[[og-arch-concepts]]
+==== Main Concepts
+
+Jetty is an HTTP server and Servlet Container, and supports deployments of web applications.
+
+The Jetty _server_ listens on one or more network ports using one or more __connector__s.
+
+Clients send HTTP requests for specific URIs, such as `+https://host/store/cart+`.
+
+The HTTP requests arrive to the connectors through the network; the Jetty server processes the requests and, based on their URIs, forwards them to the appropriate web application.
+
+[plantuml]
+----
+skinparam backgroundColor transparent
+skinparam monochrome true
+skinparam shadowing false
+skinparam roundCorner 10
+
+scale 1.25
+
+cloud Internet as internet
+rectangle "Jetty Server" as server
+rectangle "HTTP/1.1 Connector" as http
+rectangle "HTTP/2 Connector" as http2
+rectangle "WebApp "Store"" as store
+rectangle "WebApp "Catalog"" as catalog
+
+internet -- http
+internet -- http2
+http -- server
+http2 -- server
+server -- store
+server -- catalog
+----
 
 There are three main concepts on which the Jetty standalone server is based:
 
@@ -37,7 +72,7 @@ A Jetty module may be dependent on other Jetty modules: for example, the `http` 
 Every feature in a Jetty server is enabled by enabling the corresponding Jetty module(s).
 
 For example, if you enable only the `http` Jetty module, then your Jetty standalone server will only be able to listen to a network port for clear-text HTTP requests.
-It will not be able to process secure HTTP (i.e. `https`) requests, it will not be able to process WebSocket, or HTTP/2 or any other protocol because the correspondent modules have not been enabled.
+It will not be able to process secure HTTP (i.e. `https`) requests, it will not be able to process WebSocket, or HTTP/2, or HTTP/3 or any other protocol because the correspondent modules have not been enabled.
 
 You can even start a Jetty server _without_ listening on a network port -- for example because you have enabled a custom module you wrote that provides the features you need.
 
@@ -50,7 +85,7 @@ For more detailed information about the Jetty module system, see xref:og-modules
 
 Instead of managing multiple Jetty distributions out of many locations, it is possible to maintain a separation between the binary installation of the standalone Jetty, known as `$JETTY_HOME`, and the customizations for your specific environment(s), known as `$JETTY_BASE`.
 
-This separation between the binary installation directory and the specific configuration directory allows to manage multiple, different, server configurations, and allows for quick, drop-in upgrades of Jetty.
+This separation between the binary installation directory and the specific configuration directory allows managing multiple, different, server configurations, and allows for quick, drop-in upgrades of Jetty.
 
 There should always only be *one* `$JETTY_HOME` (per version of Jetty), but there can be many `$JETTY_BASE` directories that reference it.
 

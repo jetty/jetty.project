@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -209,11 +209,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     @Override
     public void recycle()
     {
-        _expect100Continue = false;
-        _delayedUntilContent = false;
-        _contentDemander.recycle();
         super.recycle();
         getHttpTransport().recycle();
+        _expect100Continue = false;
+        _delayedUntilContent = false;
+        // The content demander must be the very last thing to be recycled
+        // to make sure any pending demanding content gets cleared off.
+        _contentDemander.recycle();
     }
 
     @Override
@@ -587,7 +589,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
     {
         if (LOG.isDebugEnabled())
             LOG.debug("failing all content with {} {}", failure, this);
-        boolean atEof = getStream().failAllData(failure);
+        IStream stream = getStream();
+        boolean atEof = stream == null || stream.failAllData(failure);
         atEof |= _contentDemander.failContent(failure);
         if (LOG.isDebugEnabled())
             LOG.debug("failed all content, reached EOF? {}", atEof);

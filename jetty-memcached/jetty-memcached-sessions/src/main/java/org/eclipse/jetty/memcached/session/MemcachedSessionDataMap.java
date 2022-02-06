@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.session.SessionContext;
 import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataMap;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -43,6 +44,7 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     protected int _expirySec = 0;
     protected boolean _heartbeats = true;
     protected XMemcachedClientBuilder _builder;
+    protected SessionContext _context;
 
     /**
      * SessionDataTranscoder
@@ -140,8 +142,12 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     @Override
     public void initialize(SessionContext context)
     {
+        if (isStarted())
+            throw new IllegalStateException("Context set after MemcachedSessionDataMap started");
+        
         try
         {
+            _context = context;
             _builder.setTranscoder(new SessionDataTranscoder());
             _client = _builder.build();
             _client.setEnableHeartBeat(isHeartbeats());
@@ -155,14 +161,48 @@ public class MemcachedSessionDataMap extends AbstractLifeCycle implements Sessio
     @Override
     public SessionData load(String id) throws Exception
     {
-        SessionData data = _client.get(id);
-        return data;
+        if (!isStarted())
+            throw new IllegalStateException("Not started");
+        
+        final FuturePromise<SessionData> result = new FuturePromise<>();
+
+        Runnable r = () ->
+        {
+            try
+            {
+                result.succeeded(_client.get(id));
+            }
+            catch (Exception e)
+            {
+                result.failed(e);
+            }
+        };
+
+        _context.run(r);
+        return result.getOrThrow();
     }
 
     @Override
     public void store(String id, SessionData data) throws Exception
     {
-        _client.set(id, _expirySec, data);
+        if (!isStarted())
+            throw new IllegalStateException("Not started");
+        
+        final FuturePromise<Void> result = new FuturePromise<>();
+        Runnable r = () ->
+        {
+            try
+            {
+                _client.set(id, _expirySec, data);
+                result.succeeded(null);
+            }
+            catch (Exception e)
+            {
+                result.failed(e);
+            }
+        };
+        _context.run(r);
+        result.getOrThrow();
     }
 
     @Override

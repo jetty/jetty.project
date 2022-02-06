@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,11 +13,12 @@
 
 module org.eclipse.jetty.fcgi.client
 {
+    requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.client;
+
     exports org.eclipse.jetty.fcgi;
     exports org.eclipse.jetty.fcgi.client.http;
     exports org.eclipse.jetty.fcgi.generator;
     exports org.eclipse.jetty.fcgi.parser;
-
-    requires transitive org.eclipse.jetty.client;
-    requires org.slf4j;
 }

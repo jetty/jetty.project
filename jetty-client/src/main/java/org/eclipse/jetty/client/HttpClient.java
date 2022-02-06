@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -54,10 +54,12 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Jetty;
@@ -159,7 +161,7 @@ public class HttpClient extends ContainerLifeCycle
     {
         this.transport = Objects.requireNonNull(transport);
         addBean(transport);
-        this.connector = ((AbstractHttpClientTransport)transport).getBean(ClientConnector.class);
+        this.connector = ((AbstractHttpClientTransport)transport).getContainedBeans(ClientConnector.class).stream().findFirst().orElseThrow();
         addBean(handlers);
         addBean(decoderFactories);
     }
@@ -193,12 +195,14 @@ public class HttpClient extends ContainerLifeCycle
             threadPool.setName(name);
             setExecutor(threadPool);
         }
+        int maxBucketSize = executor instanceof ThreadPool.SizedThreadPool
+            ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
+            : ProcessorUtils.availableProcessors() * 2;
         ByteBufferPool byteBufferPool = getByteBufferPool();
         if (byteBufferPool == null)
-            setByteBufferPool(new MappedByteBufferPool(2048,
-                executor instanceof ThreadPool.SizedThreadPool
-                    ? ((ThreadPool.SizedThreadPool)executor).getMaxThreads() / 2
-                    : ProcessorUtils.availableProcessors() * 2));
+            setByteBufferPool(new MappedByteBufferPool(2048, maxBucketSize));
+        if (getBean(RetainableByteBufferPool.class) == null)
+            addBean(new ArrayRetainableByteBufferPool(0, 2048, 65536, maxBucketSize));
         Scheduler scheduler = getScheduler();
         if (scheduler == null)
             setScheduler(new ScheduledExecutorScheduler(name + "-scheduler", false));
@@ -549,24 +553,28 @@ public class HttpClient extends ContainerLifeCycle
         return new ArrayList<>(destinations.values());
     }
 
-    protected void send(final HttpRequest request, List<Response.ResponseListener> listeners)
+    protected void send(HttpRequest request, List<Response.ResponseListener> listeners)
     {
         HttpDestination destination = (HttpDestination)resolveDestination(request);
         destination.send(request, listeners);
     }
 
-    protected void newConnection(final HttpDestination destination, final Promise<Connection> promise)
+    protected void newConnection(HttpDestination destination, Promise<Connection> promise)
     {
+        // Multiple threads may access the map, especially with DEBUG logging enabled.
+        Map<String, Object> context = new ConcurrentHashMap<>();
+        context.put(ClientConnectionFactory.CLIENT_CONTEXT_KEY, HttpClient.this);
+        context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
+        Origin.Protocol protocol = destination.getOrigin().getProtocol();
+        List<String> protocols = protocol != null ? protocol.getProtocols() : List.of("http/1.1");
+        context.put(ClientConnector.APPLICATION_PROTOCOLS_CONTEXT_KEY, protocols);
+
         Origin.Address address = destination.getConnectAddress();
         resolver.resolve(address.getHost(), address.getPort(), new Promise<>()
         {
             @Override
             public void succeeded(List<InetSocketAddress> socketAddresses)
             {
-                // Multiple threads may access the map, especially with DEBUG logging enabled.
-                Map<String, Object> context = new ConcurrentHashMap<>();
-                context.put(ClientConnectionFactory.CLIENT_CONTEXT_KEY, HttpClient.this);
-                context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
                 connect(socketAddresses, 0, context);
             }
 
@@ -590,7 +598,7 @@ public class HttpClient extends ContainerLifeCycle
                             connect(socketAddresses, nextIndex, context);
                     }
                 });
-                transport.connect(socketAddresses.get(index), context);
+                transport.connect((SocketAddress)socketAddresses.get(index), context);
             }
         });
     }
@@ -918,8 +926,10 @@ public class HttpClient extends ContainerLifeCycle
 
     /**
      * @return whether TCP_NODELAY is enabled
+     * @deprecated use {@link ClientConnector#isTCPNoDelay()} instead
      */
     @ManagedAttribute(value = "Whether the TCP_NODELAY option is enabled", name = "tcpNoDelay")
+    @Deprecated
     public boolean isTCPNoDelay()
     {
         return tcpNoDelay;
@@ -928,7 +938,9 @@ public class HttpClient extends ContainerLifeCycle
     /**
      * @param tcpNoDelay whether TCP_NODELAY is enabled
      * @see java.net.Socket#setTcpNoDelay(boolean)
+     * @deprecated use {@link ClientConnector#setTCPNoDelay(boolean)} instead
      */
+    @Deprecated
     public void setTCPNoDelay(boolean tcpNoDelay)
     {
         this.tcpNoDelay = tcpNoDelay;
@@ -1225,7 +1237,7 @@ public class HttpClient extends ContainerLifeCycle
         @Override
         public Iterator<ContentDecoder.Factory> iterator()
         {
-            final Iterator<ContentDecoder.Factory> iterator = set.iterator();
+            Iterator<ContentDecoder.Factory> iterator = set.iterator();
             return new Iterator<>()
             {
                 @Override

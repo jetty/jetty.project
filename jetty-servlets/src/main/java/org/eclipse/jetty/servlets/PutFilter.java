@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -57,6 +57,7 @@ import org.eclipse.jetty.util.URIUtil;
  * <li><b>putAtomic</b> - boolean, if true PUT files are written to a temp location and moved into place.
  * </ul>
  */
+@Deprecated
 public class PutFilter implements Filter
 {
     public static final String __PUT = "PUT";
@@ -80,7 +81,8 @@ public class PutFilter implements Filter
 
         _tmpdir = (File)_context.getAttribute("javax.servlet.context.tempdir");
 
-        if (_context.getRealPath("/") == null)
+        String realPath = _context.getRealPath("/");
+        if (realPath == null)
             throw new UnavailableException("Packed war");
 
         String b = config.getInitParameter("baseURI");
@@ -90,7 +92,7 @@ public class PutFilter implements Filter
         }
         else
         {
-            File base = new File(_context.getRealPath("/"));
+            File base = new File(realPath);
             _baseURI = base.toURI().toString();
         }
 
@@ -284,7 +286,7 @@ public class PutFilter implements Filter
     public void handleMove(HttpServletRequest request, HttpServletResponse response, String pathInContext, File file)
         throws ServletException, IOException, URISyntaxException
     {
-        String newPath = URIUtil.canonicalEncodedPath(request.getHeader("new-uri"));
+        String newPath = URIUtil.canonicalURI(request.getHeader("new-uri"));
         if (newPath == null)
         {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);

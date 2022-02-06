@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,12 +22,12 @@ include::{JETTY_HOME}/modules/jsp.mod[]
 
 Logging has been bridged to Jetty logging, so you can enable logging for the `org.apache.jasper` package, subpackages and classes as usual.
 
-===== Configuration of the JSP servlet
+==== Configuration of the JSP Servlet
 
-The `org.eclipse.jetty.jsp.JettyJspServlet` is the servlet responsible for serving jsps.
+The `org.eclipse.jetty.jsp.JettyJspServlet` is the servlet responsible for serving JSPs.
 
-It is configured as the default jsp servlet in the link:{JETTY_HOME}/etc/webdefault.xml[webdefault.xml] file.
-Notice that Jetty identifies the jsp servlet by the presence of the `id=jsp` attribute in the `<servlet>` declaration.
+It is configured as the default jsp servlet in the `$JETTY_HOME/etc/webdefault.xml` file.
+Notice that Jetty identifies the jsp servlet by the presence of the `id="jsp"` attribute in the `<servlet>` declaration.
 
 That file maps the `org.eclipse.jetty.jsp.JettyJspServlet` to the following partial urls:
 
@@ -46,13 +46,13 @@ Here's an example of adding an `<init-param>` to augment the definitions from th
 
 [source,xml,subs=verbatim]
 ----
- <servlet id="jsp">  <1>
-     <servlet-name>jsp</servlet-name> <2>
-     <init-param>
-         <param-name>keepgenerated</param-name> <3>
-         <param-value>true</param-value>  <4>
-     </init-param>
-   </servlet>
+<servlet id="jsp">  <!--1-->
+  <servlet-name>jsp</servlet-name> <!--2-->
+  <init-param>
+    <param-name>keepgenerated</param-name> <!--3-->
+    <param-value>true</param-value>  <!--4-->
+  </init-param>
+</servlet>
 ----
 <1> This identifies this servlet as the jsp servlet to Jetty.
 <2> This identifies this declaration as augmenting the already-defined servlet called `jsp`.
@@ -63,20 +63,20 @@ Another element you might consider adding to the default setup is `async-support
 
 [source,xml,subs=verbatim]
 ----
-<servlet id="jsp">  <1>
-  <servlet-name>jsp</servlet-name>  <2>
-  <async-supported>true</async-supported>  <3>
+<servlet id="jsp">  <!--1-->
+  <servlet-name>jsp</servlet-name>  <!--2-->
+  <async-supported>true</async-supported>  <!--3-->
 </servlet>
 ----
 <1> This identifies this servlet as the jsp servlet to Jetty.
 <2> This identifies this declaration as augmenting the already-defined servlet called `jsp`.
 <3> By default, the jsp servlet does not support async.
 
-There are many configuration parameters for the Apache Jasper jsp servlet, here are some of them:
+There are many configuration parameters for the Apache Jasper JSP Servlet, here are some of them:
 
-.Jsp Servlet Parameters
-[cols=",,,",options="header",]
-|=======================================================================
+.JSP Servlet Parameters
+[cols=",,,",options="header"]
+|===
 |init param |Description |Default |`webdefault.xml`
 
 |checkInterval |If non-zero and `development` is `false`, background jsp recompilation is enabled. This value is the interval in seconds between background recompile checks.
@@ -84,7 +84,7 @@ There are many configuration parameters for the Apache Jasper jsp servlet, here 
 |classpath |The classpath is dynamically generated if the context has a URL classloader. The `org.apache.catalina.jsp_classpath`
 context attribute is used to add to the classpath, but if this is not set, this `classpath` configuration item is added to the classpath instead.` |- |–
 
-|classdebuginfo |Include debugging info in class file. |TRUE |–
+|classdebuginfo |Include debugging info in class file. |true |–
 
 |compilerClassName |If not set, defaults to the Eclipse jdt compiler. |- |–
 
@@ -97,14 +97,14 @@ classpath. It is the classname of a compiler that Ant should invoke. |–
 |compilerSourceVM |Sets source compliance level for the jdt compiler.
 |1.8 |1.8
 
-|development |If `true` recompilation checks occur at the frequency governed by `modificationTestInterval`. |TRUE |–
+|development |If `true` recompilation checks occur at the frequency governed by `modificationTestInterval`. |true |–
 
 |displaySourceFragment |Should a source fragment be included in
-exception messages |TRUE |–
+exception messages |true |–
 
-|dumpSmap |Dump SMAP JSR45 info to a file. |FALSE |–
+|dumpSmap |Dump SMAP JSR45 info to a file. |false |–
 
-|enablePooling |Determines whether tag handler pooling is enabled. |TRUE |–
+|enablePooling |Determines whether tag handler pooling is enabled. |true |–
 
 |engineOptionsClass |Allows specifying the Options class used to
 configure Jasper. If not present, the default EmbeddedServletOptions
@@ -112,11 +112,11 @@ will be used. |- |–
 
 |errorOnUseBeanInvalidClassAttribute |Should Jasper issue an error when
 the value of the class attribute in an useBean action is not a valid
-bean class |TRUE |–
+bean class |true |–
 
-|fork |Only relevant if you use Ant to compile jsps: by default Jetty will use the Eclipse jdt compiler.|TRUE |-
+|fork |Only relevant if you use Ant to compile JSPs: by default Jetty will use the Eclipse jdt compiler.|true |-
 
-|genStrAsCharArray |Option for generating Strings as char arrays. |FALSE |–
+|genStrAsCharArray |Option for generating Strings as char arrays. |false |–
 
 |ieClassId |The class-id value to be sent to Internet Explorer when
 using <jsp:plugin> tags. |clsid:8AD9C840-044E-11D1-B3E9-00805F499D93 |–
@@ -128,10 +128,10 @@ using <jsp:plugin> tags. |clsid:8AD9C840-044E-11D1-B3E9-00805F499D93 |–
 it is unloaded. A value of zero or less indicates never unload. |-1 |–
 
 |keepgenerated |Do you want to keep the generated Java files around?
-|TRUE |–
+|true |–
 
 |mappedFile |Support for mapped Files. Generates a servlet that has a
-print statement per line of the JSP file  |TRUE |–
+print statement per line of the JSP file |true |–
 
 |maxLoadedJsps |The maximum number of JSPs that will be loaded for a web
 application. If more than this number of JSPs are loaded, the least
@@ -143,35 +143,36 @@ indicates no limit. |-1 |–
 recompilation checks, triggered by a request. |4 |–
 
 |quoteAttributeEL | When EL is used in an attribute value on a JSP page, should the rules for quoting of attributes described in JSP.1.6 be applied to the expression
-                 |TRUE |-
+                 |true |-
 
 |recompileOnFail |If a JSP compilation fails should the
 modificationTestInterval be ignored and the next access trigger a
 re-compilation attempt? Used in development mode only and is disabled by
 default as compilation may be expensive and could lead to excessive
-resource usage. |FALSE |–
+resource usage. |false |–
 
 |scratchDir |Directory where servlets are generated. The default is the value of the context attribute `javax.servlet.context.tempdir`, or the system property `java.io.tmpdir` if the context attribute is not set. |– |–
 
 |strictQuoteEscaping |Should the quote escaping required by section JSP.1.6 of the JSP specification be applied to scriplet expression.
-             |TRUE|-
+             |true|-
 
-|suppressSmap |Generation of SMAP info for JSR45 debugging. |FALSE |–
+|suppressSmap |Generation of SMAP info for JSR45 debugging. |false |–
 
 |trimSpaces |Should template text that consists entirely of whitespace be removed from the output (true), replaced with a single space (single) or left unchanged (false)? Note that if a JSP page or tag file specifies a trimDirectiveWhitespaces value of true, that will take precedence over this configuration setting for that page/tag.
-trimmed? |FALSE |–
+trimmed? |false |–
 
-|xpoweredBy |Generate an X-Powered-By response header. |FALSE |FALSE
+|xpoweredBy |Generate an X-Powered-By response header. |false |false
 
-|=======================================================================
+|===
 
-
-NOTE:: If the value you set doesn't take effect, try using all lower case instead of camel case, or capitalizing only some of the words in the name, as Jasper is inconsistent in its parameter naming strategy.
-
+[NOTE]
+====
+If the value you set doesn't take effect, try using all lower case instead of camel case, or capitalizing only some of the words in the name, as Jasper is inconsistent in its parameter naming strategy.
+====
 
 === JavaServer Pages Standard Tag Libraries
 
-The JavaServer Pages Standlard Tag Library (JSTL) is part of the Jetty distribution, and is available via the `jstl` module:
+The JavaServer Pages Standard Tag Library (JSTL) is part of the Jetty distribution, and is available via the `jstl` module:
 
 ----
 include::{JETTY_HOME}/modules/jstl.mod[]
@@ -179,9 +180,9 @@ include::{JETTY_HOME}/modules/jstl.mod[]
 
 When enabled, Jetty will make the JSTL tags available for your webapps.
 
-=== JavaServer Faces Taglibs
+=== JavaServer Faces TagLibs
 
-If you want to use JSF with your webapp, you should copy the relevant jars from your implementation of choice into your `$jetty.base` directory, ideally into `$jetty.base/lib/ext`.
+If you want to use JSF with your webapp, you should copy the relevant jars from your implementation of choice into your `$JETTY_BASE` directory, ideally into `$JETTY_BASE/lib/ext`.
 If that directory does not exist, enable the `ext` module, which will create the directory and ensure all jars within it are put onto the container classpath.
 
 
@@ -196,15 +197,14 @@ Here's an example of using a context xml file to add in a pattern to match files
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext"> <1>
-    <Call name="setAttribute"> <2>
-      <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg> <3>
-      <Arg.*/jetty-servlet-api-[^/]*\.jar$|.*/javax.servlet.jsp.jstl-.*\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\.jar$|.*/jsf-[^/]*\.jar$></Arg> <4>
+<Configure class="org.eclipse.jetty.webapp.WebAppContext"> <!--1-->
+    <Call name="setAttribute"> <!--2-->
+      <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg> <!--3-->
+      <Arg>.*/jetty-servlet-api-[^/]*\.jar$|.*/javax.servlet.jsp.jstl-.*\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\.jar$|.*/jsf-[^/]*\.jar$</Arg> <!--4-->
     </Call>
 </Configure>
 ----
-<1> Configures a link:{JDURL}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
+<1> Configures a link:{javadoc-url}/org/eclipse/jetty/webapp/WebAppContext.html[`WebAppContext`], which is the Jetty component that represents a standard Servlet web application.
 <2> Specifies a context attribute.
 <3> Specifies the name of the context attribute.
 <4> Adds the additional pattern `+.*/jsf-[^/]*\.jar$+` to those already existing.
-

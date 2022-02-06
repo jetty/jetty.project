@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -12,7 +12,7 @@
 //
 
 [[og-protocols-http2c]]
-==== Configuring Clear-Text HTTP/2
+==== Clear-Text HTTP/2
 
 When you enable clear-text HTTP/2 you typically want to enable also clear-text HTTP/1.1, for backwards compatibility reasons and to allow clients to link:https://tools.ietf.org/html/rfc7540#section-3.2[upgrade] from HTTP/1.1 to HTTP/2.
 

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * <p>Parser for the PARAMS frame body.</p>
+ * <p>Parser for the PARAMS frame content.</p>
  * <pre>
  * struct small_name_small_value_params_body {
  *     ubyte nameLength;
@@ -227,9 +227,9 @@ public class ParamsContentParser extends ContentParser
     }
 
     @Override
-    public void noContent()
+    public boolean noContent()
     {
-        onParams();
+        return onParams();
     }
 
     protected void onParam(String name, String value)
@@ -245,16 +245,17 @@ public class ParamsContentParser extends ContentParser
         }
     }
 
-    protected void onParams()
+    protected boolean onParams()
     {
         try
         {
-            listener.onHeaders(getRequest());
+            return listener.onHeaders(getRequest());
         }
         catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Exception while invoking listener {}", listener, x);
+            return false;
         }
     }
 

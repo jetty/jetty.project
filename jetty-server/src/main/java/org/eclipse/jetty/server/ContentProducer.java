@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -12,6 +12,9 @@
 //
 
 package org.eclipse.jetty.server;
+
+import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * ContentProducer is the bridge between {@link HttpInput} and {@link HttpChannel}.
@@ -25,9 +28,23 @@ package org.eclipse.jetty.server;
 public interface ContentProducer
 {
     /**
-     * Reset all internal state and clear any held resources.
+     * Lock this instance. The lock must be held before any of this instance's
+     * method can be called, and must be released afterward.
+     * @return the lock that is guarding this instance.
+     */
+    AutoLock lock();
+
+    /**
+     * Clear the interceptor and call {@link Destroyable#destroy()} on it if it implements {@link Destroyable}.
+     * A recycled {@link ContentProducer} will only produce special content with a non-null error until
+     * {@link #reopen()} is called.
      */
     void recycle();
+
+    /**
+     * Reset all internal state, making this is instance logically equivalent to a freshly allocated one.
+     */
+    void reopen();
 
     /**
      * Fail all content currently available in this {@link ContentProducer} instance
@@ -37,7 +54,7 @@ public interface ContentProducer
      * Doesn't change state.
      * @return true if EOF was reached.
      */
-    boolean consumeAll(Throwable x);
+    boolean consumeAll();
 
     /**
      * Check if the current data rate consumption is above the minimal rate.

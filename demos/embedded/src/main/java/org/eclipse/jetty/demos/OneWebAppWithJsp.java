@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,7 +15,6 @@ package org.eclipse.jetty.demos;
 
 import java.io.FileNotFoundException;
 import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.annotations.AnnotationConfiguration;

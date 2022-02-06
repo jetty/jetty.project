@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -134,24 +135,14 @@ public class Negotiated
             String httpScheme = uri.getScheme();
             if (httpScheme == null)
                 return uri;
-
-            if ("ws".equalsIgnoreCase(httpScheme) || "wss".equalsIgnoreCase(httpScheme))
-            {
-                // keep as-is
+            if (HttpScheme.WS.is(httpScheme) || HttpScheme.WSS.is(httpScheme))
                 return uri;
-            }
 
-            if ("http".equalsIgnoreCase(httpScheme))
-            {
-                // convert to ws
-                return new URI("ws" + uri.toString().substring(httpScheme.length()));
-            }
-
-            if ("https".equalsIgnoreCase(httpScheme))
-            {
-                // convert to wss
-                return new URI("wss" + uri.toString().substring(httpScheme.length()));
-            }
+            String afterScheme = uri.toString().substring(httpScheme.length());
+            if (HttpScheme.HTTP.is(httpScheme))
+                return new URI("ws" + afterScheme);
+            if (HttpScheme.HTTPS.is(httpScheme))
+                return new URI("wss" + afterScheme);
 
             throw new URISyntaxException(uri.toString(), "Unrecognized HTTP scheme");
         }

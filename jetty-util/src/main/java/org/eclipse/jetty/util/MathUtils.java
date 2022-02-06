@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -55,6 +55,26 @@ public class MathUtils
         catch (ArithmeticException x)
         {
             return Long.MAX_VALUE;
+        }
+    }
+
+    /**
+     * Returns the sum of its arguments, capping to {@code maxValue}.
+     *
+     * @param a the first value
+     * @param b the second value
+     * @return the sum of the values, capped to {@code maxValue}
+     */
+    public static int cappedAdd(int a, int b, int maxValue)
+    {
+        try
+        {
+            int sum = Math.addExact(a, b);
+            return Math.min(sum, maxValue);
+        }
+        catch (ArithmeticException x)
+        {
+            return maxValue;
         }
     }
 }

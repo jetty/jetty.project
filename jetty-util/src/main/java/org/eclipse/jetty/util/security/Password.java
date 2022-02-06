@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,9 +16,6 @@ package org.eclipse.jetty.util.security;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Password utility class.
@@ -47,8 +44,7 @@ import org.slf4j.LoggerFactory;
  */
 public class Password extends Credential
 {
-    private static final Logger LOG = LoggerFactory.getLogger(Password.class);
-
+    // NOTE: DO NOT INTRODUCE LOGGING TO THIS CLASS
     private static final long serialVersionUID = 5062906681431569445L;
 
     public static final String __OBFUSCATE = "OBF:";
@@ -224,7 +220,9 @@ public class Password extends Credential
             }
             catch (IOException e)
             {
-                LOG.warn("EXCEPTION", e);
+                // only seen with command line input style
+                System.err.println("ERROR: Bad/Invalid password.");
+                e.printStackTrace();
             }
             if (passwd == null || passwd.length() == 0)
                 passwd = promptDft;
@@ -247,5 +245,6 @@ public class Password extends Credential
         System.err.println(Credential.MD5.digest(p));
         if (arg.length == 2)
             System.err.println(Credential.Crypt.crypt(arg[0], pw.toString()));
+        System.exit(0);
     }
 }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -156,6 +156,7 @@ public class JettyWebSocketRemoteEndpoint implements org.eclipse.jetty.websocket
         b.block(getBlockingTimeout(), TimeUnit.MILLISECONDS);
     }
 
+    // FIXME: Remove the throws IOException from API for this method in the next major release.
     @Override
     public void sendPartialString(String fragment, boolean isLast, WriteCallback callback)
     {

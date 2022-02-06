@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -34,10 +34,14 @@ import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ManagedObject("The FastCGI/1.0 client transport")
 public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTransport
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransportOverFCGI.class);
+
     private final String scriptRoot;
 
     public HttpClientTransportOverFCGI(String scriptRoot)

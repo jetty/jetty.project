@@ -1,0 +1,177 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-websocket-jetty]]
+==== Jetty APIs Implementation
+
+When you write a WebSocket application using the Jetty WebSocket APIs, your code typically need to depend on just the Jetty WebSocket APIs to compile your application.
+However, at runtime you need to have the _implementation_ of the Jetty WebSocket APIs in your class-path (or module-path).
+
+Jetty's WebSocket APIs are provided by the following Maven artifact:
+
+[source,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.websocket</groupId>
+  <artifactId>websocket-jetty-api</artifactId>
+  <version>{version}</version>
+</dependency>
+----
+
+Jetty's implementation of the Jetty WebSocket APIs is provided by the following Maven artifact (and its transitive dependencies):
+
+[source,xml,subs=normal]
+----
+<dependency>
+  <groupId>org.eclipse.jetty.websocket</groupId>
+  <artifactId>websocket-jetty-server</artifactId>
+  <version>{version}</version>
+</dependency>
+----
+
+[NOTE]
+====
+The `websocket-jetty-api` artifact and the `websocket-jetty-server` artifact (and its transitive dependencies) should be present in the server class-path (or module-path), and never in the web application's `/WEB-INF/lib` directory.
+====
+
+To configure correctly your WebSocket application based on the Jetty WebSocket APIs, you need two steps:
+
+. Make sure that Jetty xref:pg-server-websocket-jetty-container[sets up] an instance of `JettyWebSocketServerContainer`.
+. Use the `JettyWebSocketServerContainer` APIs in your applications to xref:pg-server-websocket-jetty-endpoints[register your WebSocket endpoints] that implement your application logic.
+
+[[pg-server-websocket-jetty-container]]
+===== Setting up `JettyWebSocketServerContainer`
+
+Jetty sets up a `JettyWebSocketServerContainer` instance using `JettyWebSocketServletContainerInitializer`.
+
+When you deploy web applications using xref:pg-server-http-handler-use-webapp-context[`WebAppContext`], then  `JettyWebSocketServletContainerInitializer` is automatically discovered and initialized by Jetty when the web application starts, so that it sets up the `JettyWebSocketServerContainer`.
+In this way, you do not need to write any additional code:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=standardContainerWebAppContext]
+----
+
+On the other hand, when you deploy web applications using xref:pg-server-http-handler-use-servlet-context[`ServletContextHandler`], you have to write the code to ensure that the `JettyWebSocketServletContainerInitializer` is initialized, so that it sets up the `JettyWebSocketServerContainer`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=jettyContainerServletContextHandler]
+----
+
+Calling `JettyWebSocketServletContainerInitializer.configure(\...)` must be done _before_ the `ServletContextHandler` is started, and configures the Jetty WebSocket implementation for that web application context.
+
+[[pg-server-websocket-jetty-endpoints]]
+===== Configuring Endpoints
+
+Once you have xref:pg-server-websocket-jetty-container[setup] the `JettyWebSocketServerContainer`, you can configure your xref:pg-websocket-endpoints[WebSocket endpoints].
+
+Differently from the xref:pg-server-websocket-standard-endpoints[configuration of standard WebSocket endpoints], WebSocket endpoint classes may be annotated with Jetty WebSocket API annotations, or extend the `org.eclipse.jetty.websocket.api.WebSocketListener` interface, but they are not automatically discovered, not even when deploying web applications using xref:pg-server-http-handler-use-webapp-context[`WebAppContext`].
+
+[IMPORTANT]
+====
+When using the Jetty WebSocket APIs, WebSocket endpoints must always be explicitly configured.
+====
+
+There are two ways of configuring WebSocket endpoints when using the Jetty WebSocket APIs:
+
+* xref:pg-server-websocket-jetty-endpoints-container[Using `JettyWebSocketServerContainer`], which is very similar to how WebSocket endpoints are configured when using the xref:pg-server-websocket-standard-endpoints[standard `javax.websocket` APIs], but also provides APIs to perform a direct, programmatic, WebSocket upgrade.
+* xref:pg-server-websocket-jetty-endpoints-servlet[Using `JettyWebSocketServlet`], which may configured in `web.xml`, rather than in Java code.
+
+[[pg-server-websocket-jetty-endpoints-container]]
+====== Using `JettyWebSocketServerContainer`
+
+To register WebSocket endpoints using the Jetty WebSocket APIs you need to access the `JettyWebSocketServerContainer` APIs.
+
+The `JettyWebSocketServerContainer` instance is stored in the `ServletContext`, so it can be retrieved when the `ServletContext` is initialized, either from a `ServletContextListener` or from a `HttpServlet`:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=jettyEndpointsInitialization]
+----
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=jettyWebSocketInitializerServlet]
+----
+
+You can also use this variant to set up the `JettyWebSocketServerContainer` and configure the WebSocket endpoints in one step:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=jettyContainerAndEndpoints]
+----
+
+When the `ServletContextHandler` is started, the `Configurator` lambda (the second parameter passed to `JettyWebSocketServletContainerInitializer.configure(\...)`) is invoked and allows you to explicitly configure the WebSocket endpoints using the Jetty WebSocket APIs provided by `JettyWebSocketServerContainer`.
+
+Under the hood, the call to `JettyWebSocketServerContainer.addMapping(\...)` installs the `org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter`, which is the component that intercepts HTTP requests to upgrade to WebSocket, described in xref:pg-server-websocket-standard-upgrade[this section].
+For more information about the `WebSocketUpgradeFilter` see also xref:pg-server-websocket-configure-filter[this section].
+
+One last alternative to register your WebSocket endpoints is to use a programmatic WebSocket upgrade via `JettyWebSocketServerContainer.upgrade(\...)`, which allows you to use a standard `HttpServlet` subclass (rather than a `JettyWebSocketServlet` as explained in xref:pg-server-websocket-jetty-endpoints-servlet[this section]) to perform a direct WebSocket upgrade when your application logic demands so:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=jettyContainerServletContextHandler]
+----
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=jettyContainerUpgrade]
+----
+
+When using `JettyWebSocketServerContainer.upgrade(\...)`, the `WebSocketUpgradeFilter` is not installed, since the WebSocket upgrade is performed programmatically.
+
+[[pg-server-websocket-jetty-endpoints-servlet]]
+====== Using `JettyWebSocketServlet`
+
+An alternative way to register WebSocket endpoints using the Jetty WebSocket APIs is to use a `JettyWebSocketServlet` subclass (or even many different `JettyWebSocketServlet` subclasses).
+
+This method has the advantage that it does not install the `WebSocketUpgradeFilter` under the hood, because the WebSocket upgrade is handled directly by your `JettyWebSocketServlet` subclass.
+This may also have a performance benefit for non-WebSocket HTTP requests (as they will not pass through the `WebSocketUpgradeFilter`).
+
+Your `JettyWebSocketServlet` subclass may be declared and configured either in code or in `web.xml`.
+Declaring your `JettyWebSocketServlet` subclass explicitly in code or in `web.xml` also simplifies the declaration and configuration of other web components such as other Servlets and/or Filters (for example, it is easier to configure the `CrossOriginFilter`, see also xref:pg-server-websocket-configure-filter[this section] for more information).
+
+For example, your `JettyWebSocketServlet` subclass may be declared in code in this way:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=jettyWebSocketServletMain]
+----
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/websocket/WebSocketServerDocs.java[tags=jettyWebSocketServlet]
+----
+
+Note how in the call to `JettyWebSocketServletContainerInitializer.configure(\...)` the second parameter is `null`, because WebSocket endpoints are not created here, but instead by one (or more) `JettyWebSocketServlet` subclasses.
+Yet the call is necessary to create other WebSocket implementation components that are necessary also when using `JettyWebSocketServlet` subclasses.
+
+An HTTP upgrade request to WebSocket that matches your `JettyWebSocketServlet` subclass path mapping (specified above via `ServletContextHandler.addServlet(\...)`) arrives at the Servlet and is inspected to verify whether it is a valid upgrade to WebSocket.
+
+If the HTTP request is a valid upgrade to WebSocket, `JettyWebSocketServlet` calls `configure(JettyWebSocketServletFactory factory)` that you have overridden in your subclass, so that your application can instantiate and return the WebSocket endpoint.
+After having obtained the WebSocket endpoint, `JettyWebSocketServlet` performs the WebSocket upgrade.
+From this point on, the communication happens with the WebSocket protocol, and HTTP components such as Filters and Servlets are not relevant anymore.
+
+If the HTTP request is not an upgrade to WebSocket, `JettyWebSocketServlet` delegates the processing to the superclass, `javax.servlet.HttpServlet`, which in turn invokes methods such as `doGet(\...)` or `doPost(\...)` depending on the HTTP method.
+If your `JettyWebSocketServlet` subclass did not override the `doXYZ(\...)` method corresponding to the HTTP request, a `405 Method Not Allowed` response is returned to the client, as per the standard `HttpServlet` class implementation.
+
+[NOTE]
+====
+It is possible to use both `JettyWebSocketServerContainer` and `JettyWebSocketServlet`.
+
+However, it is typically best to avoid mixing the use of `JettyWebSocketServerContainer` with the use of `JettyWebSocketServlet`, so that all your WebSocket endpoints are initialized by the same code in one place only.
+====
+
+Using `JettyWebSocketServerContainer.addMapping(\...)` will install the `WebSocketUpgradeFilter` under the hood, which by default will intercepts all HTTP requests to upgrade to WebSocket.
+However, as explained in xref:pg-server-websocket-standard-upgrade[this section], if `WebSocketUpgradeFilter` does not find a matching WebSocket endpoint for the request URI path, then the HTTP request is passed to the Filter chain of your web application and may arrive to your `JettyWebSocketServlet` subclass, where it would be processed and possibly result in a WebSocket upgrade.

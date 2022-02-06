@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,10 +31,10 @@ import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
 public abstract class WebSocketNegotiation
 {
-    private final Request baseRequest;
     private final HttpServletRequest request;
     private final HttpServletResponse response;
     private final WebSocketComponents components;
+    private Request baseRequest;
     private String version;
     private List<ExtensionConfig> offeredExtensions;
     private List<ExtensionConfig> negotiatedExtensions;
@@ -52,6 +52,11 @@ public abstract class WebSocketNegotiation
     public Request getBaseRequest()
     {
         return baseRequest;
+    }
+
+    public void upgrade()
+    {
+        this.baseRequest = null;
     }
 
     public HttpServletRequest getRequest()

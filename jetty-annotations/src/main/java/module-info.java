@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,22 +11,19 @@
 // ========================================================================
 //
 
-import javax.servlet.ServletContainerInitializer;
-
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.webapp.Configuration;
-
 module org.eclipse.jetty.annotations
 {
-    exports org.eclipse.jetty.annotations;
-
     requires java.annotation;
     requires java.naming;
-    requires transitive org.eclipse.jetty.plus;
-    requires transitive org.objectweb.asm;
     requires org.slf4j;
 
-    uses ServletContainerInitializer;
+    requires transitive org.eclipse.jetty.plus;
+    requires transitive org.objectweb.asm;
 
-    provides Configuration with AnnotationConfiguration;
+    exports org.eclipse.jetty.annotations;
+
+    uses javax.servlet.ServletContainerInitializer;
+
+    provides org.eclipse.jetty.webapp.Configuration with
+        org.eclipse.jetty.annotations.AnnotationConfiguration;
 }

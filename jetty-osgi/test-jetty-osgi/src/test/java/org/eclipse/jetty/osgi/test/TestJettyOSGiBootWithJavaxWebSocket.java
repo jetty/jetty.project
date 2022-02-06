@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -61,18 +61,13 @@ public class TestJettyOSGiBootWithJavaxWebSocket
             "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
             "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
 
-        options.addAll(TestOSGiUtil.coreJettyDependencies());
+        TestOSGiUtil.coreJettyDependencies(options);
+        TestOSGiUtil.coreJspDependencies(options);
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-java-client").versionAsInProject().start());
         options.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-client").versionAsInProject().start());
-        options.addAll(jspDependencies());
         options.addAll(testJettyWebApp());
         options.addAll(extraDependencies());
         return options.toArray(new Option[0]);
-    }
-
-    public static List<Option> jspDependencies()
-    {
-        return TestOSGiUtil.jspDependencies();
     }
 
     public static List<Option> testJettyWebApp()

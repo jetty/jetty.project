@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -61,7 +61,7 @@ public class ServletLifeCycleTest
 
         ServletHandler sh = context.getServletHandler();
         sh.addListener(new ListenerHolder(TestListener.class)); //added directly to ServletHandler
-        context.addEventListener(context.getServletContext().createListener(TestListener2.class));//create,decorate and add listener to context - no holder!
+        context.addEventListener(context.getServletContext().createListener(TestListener2.class)); //create,decorate and add listener to context - no holder!
 
         sh.addFilterWithMapping(TestFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         sh.addFilterWithMapping(new FilterHolder(context.getServletContext().createFilter(TestFilter2.class)), "/*", EnumSet.of(DispatcherType.REQUEST));
@@ -130,8 +130,7 @@ public class ServletLifeCycleTest
         server.start();
         context.addEventListener(new EventListener() {});
         listeners = context.getEventListeners();
-        listeners = context.getEventListeners();
-        assertThat(listeners.size(), is(3));
+        assertThat(listeners.size(), is(4));
 
         server.stop();
         listeners = context.getEventListeners();

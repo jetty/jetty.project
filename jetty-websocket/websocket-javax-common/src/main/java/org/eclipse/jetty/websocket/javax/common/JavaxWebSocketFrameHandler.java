@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -133,6 +133,9 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             // Rewire EndpointConfig to call CoreSession setters if Jetty specific properties are set.
             endpointConfig = getWrappedEndpointConfig();
             session = new JavaxWebSocketSession(container, coreSession, this, endpointConfig);
+            if (!session.isOpen())
+                throw new IllegalStateException("Session is not open");
+
             openHandle = InvokerUtils.bindTo(openHandle, session, endpointConfig);
             closeHandle = InvokerUtils.bindTo(closeHandle, session);
             errorHandle = InvokerUtils.bindTo(errorHandle, session);
@@ -171,8 +174,11 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             if (openHandle != null)
                 openHandle.invoke();
 
-            container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionOpened(session));
+            if (session.isOpen())
+                container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionOpened(session));
+
             callback.succeeded();
+            coreSession.demand(1);
         }
         catch (Throwable cause)
         {
@@ -266,6 +272,10 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
     {
         notifyOnClose(closeStatus, callback);
         container.notifySessionListeners((listener) -> listener.onJavaxWebSocketSessionClosed(session));
+
+        // Close AvailableEncoders and AvailableDecoders to call destroy() on any instances of Encoder/Encoder created.
+        session.getDecoders().close();
+        session.getEncoders().close();
     }
 
     private void notifyOnClose(CloseStatus closeStatus, Callback callback)
@@ -310,6 +320,12 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             wsError.addSuppressed(cause);
             callback.failed(wsError);
         }
+    }
+
+    @Override
+    public boolean isDemanding()
+    {
+        return true;
     }
 
     public Set<MessageHandler> getMessageHandlers()
@@ -568,6 +584,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         if (activeMessageSink == null)
         {
             callback.succeeded();
+            coreSession.demand(1);
             return;
         }
 
@@ -582,6 +599,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
         ByteBuffer payload = BufferUtil.copy(frame.getPayload());
         coreSession.sendFrame(new Frame(OpCode.PONG).setPayload(payload), Callback.NOOP, false);
         callback.succeeded();
+        coreSession.demand(1);
     }
 
     public void onPong(Frame frame, Callback callback)
@@ -604,6 +622,7 @@ public class JavaxWebSocketFrameHandler implements FrameHandler
             }
         }
         callback.succeeded();
+        coreSession.demand(1);
     }
 
     public void onText(Frame frame, Callback callback)

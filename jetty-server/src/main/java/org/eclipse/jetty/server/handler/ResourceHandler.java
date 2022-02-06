@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -156,7 +156,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
 
         if (_baseResource != null)
         {
-            path = URIUtil.canonicalPath(path);
             r = _baseResource.addPath(path);
 
             if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
@@ -169,8 +168,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         else if (_context != null)
         {
             r = _context.getResource(path);
-            if (r != null)
-                return r;
         }
 
         if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))

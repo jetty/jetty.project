@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -63,9 +63,9 @@ public class DynamicListenerTests
             }
 
             Files.copy(Paths.get("src/test/resources/realm.ini"),
-                       Paths.get(jettyBase.toString(),"start.d").resolve("realm.ini"));
+                Paths.get(jettyBase.toString(), "start.d").resolve("realm.ini"));
             Files.copy(Paths.get("src/test/resources/realm.properties"),
-                       etc.resolve("realm.properties"));
+                etc.resolve("realm.properties"));
             Files.copy(Paths.get("src/test/resources/test-realm.xml"),
                        etc.resolve("test-realm.xml"));
 

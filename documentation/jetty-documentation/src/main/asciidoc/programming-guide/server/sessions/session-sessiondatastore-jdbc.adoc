@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -56,7 +56,7 @@ Many databases use different keywords for the `long`, `blob` and `varchar` types
 
 ====== Configuration
 
-The link:{JDURL}/org/eclipse/jetty/server/session/JDBCSessionDataStore.html[JDBCSessionDataStore] and corresponding link:{JDURL}/org/eclipse/jetty/server/session/JDBCSessionDataStoreFactory.html[JDBCSessionDataStoreFactory] supports the following configuration:
+The link:{javadoc-url}/org/eclipse/jetty/server/session/JDBCSessionDataStore.html[JDBCSessionDataStore] and corresponding link:{javadoc-url}/org/eclipse/jetty/server/session/JDBCSessionDataStoreFactory.html[JDBCSessionDataStoreFactory] supports the following configuration:
 
 include::session-sessiondatastore.adoc[tag=common-datastore-config]
 

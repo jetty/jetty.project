@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,10 +15,9 @@ package org.eclipse.jetty.io;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
@@ -39,34 +38,28 @@ import org.slf4j.LoggerFactory;
  */
 public class ByteArrayEndPoint extends AbstractEndPoint
 {
-    static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
-    static final InetAddress NOIP;
-    static final InetSocketAddress NOIPPORT;
-
-    static
+    private static SocketAddress noSocketAddress()
     {
-        InetAddress noip = null;
         try
         {
-            noip = Inet4Address.getByName("0.0.0.0");
+            return new InetSocketAddress(InetAddress.getByName("0.0.0.0"), 0);
         }
-        catch (UnknownHostException e)
+        catch (Throwable x)
         {
-            LOG.warn("Unable to get IPv4 no-ip reference for 0.0.0.0", e);
-        }
-        finally
-        {
-            NOIP = noip;
-            NOIPPORT = new InetSocketAddress(NOIP, 0);
+            throw new RuntimeIOException(x);
         }
     }
 
+    private static final Logger LOG = LoggerFactory.getLogger(ByteArrayEndPoint.class);
+    private static final SocketAddress NO_SOCKET_ADDRESS = noSocketAddress();
+    private static final int MAX_BUFFER_SIZE = Integer.MAX_VALUE - 1024;
     private static final ByteBuffer EOF = BufferUtil.allocate(0);
 
     private final Runnable _runFillable = () -> getFillInterest().fillable();
     private final AutoLock _lock = new AutoLock();
     private final Condition _hasOutput = _lock.newCondition();
     private final Queue<ByteBuffer> _inQ = new ArrayDeque<>();
+    private final int _outputSize;
     private ByteBuffer _out;
     private boolean _growOutput;
 
@@ -113,9 +106,22 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         super(timer);
         if (BufferUtil.hasContent(input))
             addInput(input);
-        _out = output == null ? BufferUtil.allocate(1024) : output;
+        _outputSize = (output == null) ? 1024 : output.capacity();
+        _out = output == null ? BufferUtil.allocate(_outputSize) : output;
         setIdleTimeout(idleTimeoutMs);
         onOpen();
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return NO_SOCKET_ADDRESS;
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return NO_SOCKET_ADDRESS;
     }
 
     @Override
@@ -136,18 +142,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         {
             _hasOutput.signalAll();
         }
-    }
-
-    @Override
-    public InetSocketAddress getLocalAddress()
-    {
-        return NOIPPORT;
-    }
-
-    @Override
-    public InetSocketAddress getRemoteAddress()
-    {
-        return NOIPPORT;
     }
 
     @Override
@@ -290,7 +284,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         try (AutoLock lock = _lock.lock())
         {
             b = _out;
-            _out = BufferUtil.allocate(b.capacity());
+            _out = BufferUtil.allocate(_outputSize);
         }
         getWriteFlusher().completeWrite();
         return b;
@@ -316,7 +310,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                     return null;
             }
             b = _out;
-            _out = BufferUtil.allocate(b.capacity());
+            _out = BufferUtil.allocate(_outputSize);
         }
         getWriteFlusher().completeWrite();
         return b;
@@ -424,9 +418,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
                         BufferUtil.compact(_out);
                         if (b.remaining() > BufferUtil.space(_out))
                         {
-                            ByteBuffer n = BufferUtil.allocate(_out.capacity() + b.remaining() * 2);
-                            BufferUtil.append(n, _out);
-                            _out = n;
+                            // Don't grow larger than MAX_BUFFER_SIZE to avoid memory issues.
+                            if (_out.capacity() < MAX_BUFFER_SIZE)
+                            {
+                                long newBufferCapacity = Math.min((long)(_out.capacity() + b.remaining() * 1.5), MAX_BUFFER_SIZE);
+                                ByteBuffer n = BufferUtil.allocate(Math.toIntExact(newBufferCapacity));
+                                BufferUtil.append(n, _out);
+                                _out = n;
+                            }
                         }
                     }
 

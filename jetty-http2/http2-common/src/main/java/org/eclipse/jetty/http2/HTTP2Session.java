@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,12 +15,14 @@ package org.eclipse.jetty.http2;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -56,6 +58,7 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackException;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.AtomicBiInteger;
@@ -69,6 +72,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,12 +93,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final AtomicLong bytesWritten = new AtomicLong();
-    private final Scheduler scheduler;
     private final EndPoint endPoint;
     private final Generator generator;
     private final Session.Listener listener;
     private final FlowControlStrategy flowControl;
     private final HTTP2Flusher flusher;
+    private final StreamTimeouts streamTimeouts;
     private int maxLocalStreams;
     private int maxRemoteStreams;
     private long streamIdleTimeout;
@@ -105,12 +109,12 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Session.Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
-        this.scheduler = scheduler;
         this.endPoint = endPoint;
         this.generator = generator;
         this.listener = listener;
         this.flowControl = flowControl;
         this.flusher = new HTTP2Flusher(this);
+        this.streamTimeouts = new StreamTimeouts(scheduler);
         this.maxLocalStreams = -1;
         this.maxRemoteStreams = -1;
         this.localStreamIds.set(initialStreamId);
@@ -613,7 +617,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
     protected IStream newStream(int streamId, MetaData.Request request, boolean local)
     {
-        return new HTTP2Stream(scheduler, this, streamId, request, local);
+        return new HTTP2Stream(this, streamId, request, local);
     }
 
     @Override
@@ -782,7 +786,10 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int maxCount = getMaxLocalStreams();
             if (maxCount >= 0 && localCount >= maxCount)
             {
-                failFn.accept(new IllegalStateException("Max local stream count " + maxCount + " exceeded"));
+                IllegalStateException failure = new IllegalStateException("Max local stream count " + maxCount + " exceeded: " + localCount);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not create local stream #{} for {}", streamId, this, failure);
+                failFn.accept(failure);
                 return null;
             }
             if (localStreamCount.compareAndSet(localCount, localCount + 1))
@@ -795,7 +802,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             stream.setIdleTimeout(getStreamIdleTimeout());
             flowControl.onStreamCreated(stream);
             if (LOG.isDebugEnabled())
-                LOG.debug("Created local {}", stream);
+                LOG.debug("Created local {} for {}", stream, this);
             return stream;
         }
         else
@@ -830,6 +837,9 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             int maxCount = getMaxRemoteStreams();
             if (maxCount >= 0 && remoteCount - remoteClosing >= maxCount)
             {
+                IllegalStateException failure = new IllegalStateException("Max remote stream count " + maxCount + " exceeded: " + remoteCount + "+" + remoteClosing);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not create remote stream #{} for {}", streamId, this, failure);
                 reset(null, new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.from(() -> onStreamDestroyed(streamId)));
                 return null;
             }
@@ -843,7 +853,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             stream.setIdleTimeout(getStreamIdleTimeout());
             flowControl.onStreamCreated(stream);
             if (LOG.isDebugEnabled())
-                LOG.debug("Created remote {}", stream);
+                LOG.debug("Created remote {} for {}", stream, this);
             return stream;
         }
         else
@@ -900,13 +910,31 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     @Override
     public InetSocketAddress getLocalAddress()
     {
-        return endPoint.getLocalAddress();
+        SocketAddress local = getLocalSocketAddress();
+        if (local instanceof InetSocketAddress)
+            return (InetSocketAddress)local;
+        return null;
+    }
+
+    @Override
+    public SocketAddress getLocalSocketAddress()
+    {
+        return endPoint.getLocalSocketAddress();
     }
 
     @Override
     public InetSocketAddress getRemoteAddress()
     {
-        return endPoint.getRemoteAddress();
+        SocketAddress remote = getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress)
+            return (InetSocketAddress)remote;
+        return null;
+    }
+
+    @Override
+    public SocketAddress getRemoteSocketAddress()
+    {
+        return endPoint.getRemoteSocketAddress();
     }
 
     @ManagedAttribute(value = "The flow control send window", readonly = true)
@@ -989,10 +1017,15 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "upgrade");
     }
 
+    void scheduleTimeout(HTTP2Stream stream)
+    {
+        streamTimeouts.schedule(stream);
+    }
+
     private void onStreamCreated(int streamId)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Created stream #{} for {}", streamId, this);
+            LOG.debug("Creating stream #{} for {}", streamId, this);
         streamsState.onStreamCreated();
     }
 
@@ -1026,6 +1059,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
     private void terminate(Throwable cause)
     {
         flusher.terminate(cause);
+        streamTimeouts.destroy();
         disconnect();
     }
 
@@ -1182,8 +1216,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         return String.format("%s@%x{local:%s,remote:%s,sendWindow=%s,recvWindow=%s,%s}",
             getClass().getSimpleName(),
             hashCode(),
-            getEndPoint().getLocalAddress(),
-            getEndPoint().getRemoteAddress(),
+            getEndPoint().getLocalSocketAddress(),
+            getEndPoint().getRemoteSocketAddress(),
             sendWindow,
             recvWindow,
             streamsState
@@ -1270,6 +1304,8 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         @Override
         public void succeeded()
         {
+            commit();
+
             bytesWritten.addAndGet(frameBytes);
             frameBytes = 0;
 
@@ -1962,7 +1998,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
 
         private void sendGoAwayAndTerminate(GoAwayFrame frame, GoAwayFrame eventFrame)
         {
-            sendGoAway(frame, Callback.from(() -> terminate(eventFrame)));
+            sendGoAway(frame, Callback.from(Callback.NOOP, () -> terminate(eventFrame)));
         }
 
         private void sendGoAway(GoAwayFrame frame, Callback callback)
@@ -2168,7 +2204,7 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
             stream.setListener(listener);
             stream.process(new PrefaceFrame(), Callback.NOOP);
 
-            Callback streamCallback = Callback.from(() -> promise.succeeded(stream), x ->
+            Callback streamCallback = Callback.from(Invocable.InvocationType.NON_BLOCKING, () -> promise.succeeded(stream), x ->
             {
                 HTTP2Session.this.onStreamDestroyed(streamId);
                 promise.failed(x);
@@ -2299,6 +2335,27 @@ public abstract class HTTP2Session extends ContainerLifeCycle implements ISessio
         private class Slot
         {
             private volatile List<HTTP2Flusher.Entry> entries;
+        }
+    }
+
+    private class StreamTimeouts extends CyclicTimeouts<HTTP2Stream>
+    {
+        private StreamTimeouts(Scheduler scheduler)
+        {
+            super(scheduler);
+        }
+
+        @Override
+        protected Iterator<HTTP2Stream> iterator()
+        {
+            return streams.values().stream().map(HTTP2Stream.class::cast).iterator();
+        }
+
+        @Override
+        protected boolean onExpired(HTTP2Stream stream)
+        {
+            stream.onIdleExpired(new TimeoutException("Idle timeout " + stream.getIdleTimeout() + " ms elapsed"));
+            return false;
         }
     }
 }

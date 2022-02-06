@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -259,7 +259,7 @@ public class SessionTableSchemaTest
                 id,
                 sc);
 
-            s.setString(1, "0");//should be my node id
+            s.setString(1, "0"); //should be my node id
             s.setLong(2, System.currentTimeMillis());
             s.setLong(3, System.currentTimeMillis());
             s.setLong(4, System.currentTimeMillis());
@@ -268,7 +268,7 @@ public class SessionTableSchemaTest
 
             byte[] bytes = new byte[3];
             ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-            s.setBinaryStream(7, bais, bytes.length);//attribute map as blob
+            s.setBinaryStream(7, bais, bytes.length); //attribute map as blob
 
             assertEquals(1, s.executeUpdate());
         }

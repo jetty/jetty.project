@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -47,20 +47,19 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
-import org.eclipse.jetty.server.SameFileAliasChecker;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,6 +73,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeader;
 import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
+import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.headerValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
@@ -250,11 +250,8 @@ public class DefaultServletTest
         String resBasePath = docRoot.toAbsolutePath().toString();
         defholder.setInitParameter("resourceBase", resBasePath);
 
-        StringBuffer req1 = new StringBuffer();
-        req1.append("GET /context/one/deep/ HTTP/1.0\n");
-        req1.append("\n");
-
-        String rawResponse = connector.getResponse(req1.toString());
+        String req1 = "GET /context/one/deep/ HTTP/1.0\n\n";
+        String rawResponse = connector.getResponse(req1);
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
@@ -452,9 +449,16 @@ public class DefaultServletTest
             );
 
             scenarios.addScenario(
+                "GET " + prefix + "/..;/..;/sekret/pass",
+                "GET " + prefix + "/..;/..;/sekret/pass HTTP/1.0\r\n\r\n",
+                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
+                (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
+            );
+
+            scenarios.addScenario(
                 "GET " + prefix + "/%2E%2E/%2E%2E/sekret/pass",
-                "GET " + prefix + "/ HTTP/1.0\r\n\r\n",
-                HttpStatus.NOT_FOUND_404,
+                "GET " + prefix + "/%2E%2E/%2E%2E/sekret/pass HTTP/1.0\r\n\r\n",
+                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400,
                 (response) -> assertThat(response.getContent(), not(containsString("Sssh")))
             );
 
@@ -466,12 +470,6 @@ public class DefaultServletTest
                     "GET " + prefix + "/../index.html HTTP/1.0\r\n\r\n",
                     HttpStatus.NOT_FOUND_404
                 );
-
-                scenarios.addScenario(
-                    "GET " + prefix + "/%2E%2E/index.html",
-                    "GET " + prefix + "/%2E%2E/index.html HTTP/1.0\r\n\r\n",
-                    HttpStatus.NOT_FOUND_404
-                );
             }
             else
             {
@@ -481,14 +479,13 @@ public class DefaultServletTest
                     HttpStatus.OK_200,
                     (response) -> assertThat(response.getContent(), containsString("Hello Index"))
                 );
-
-                scenarios.addScenario(
-                    "GET " + prefix + "/%2E%2E/index.html",
-                    "GET " + prefix + "/%2E%2E/index.html HTTP/1.0\r\n\r\n",
-                    HttpStatus.OK_200,
-                    (response) -> assertThat(response.getContent(), containsString("Hello Index"))
-                );
             }
+
+            scenarios.addScenario(
+                "GET " + prefix + "/%2E%2E/index.html",
+                "GET " + prefix + "/%2E%2E/index.html HTTP/1.0\r\n\r\n",
+                prefix.endsWith("?") ? HttpStatus.NOT_FOUND_404 : HttpStatus.BAD_REQUEST_400
+            );
 
             scenarios.addScenario(
                 "GET " + prefix + "/../../",
@@ -884,20 +881,25 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.html"));
 
         createFile(inde, "<h1>Hello Inde</h1>");
+        rawResponse = connector.getResponse("GET /context/dir HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/"));
+
         rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-        assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.html"));
+        assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.html"));
 
         if (deleteFile(index))
         {
             rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
-            assertThat(response, containsHeaderValue("Location", "http://0.0.0.0/context/dir/index.htm"));
+            assertThat(response, headerValue("Location", "http://0.0.0.0/context/dir/index.htm"));
 
             if (deleteFile(inde))
             {
@@ -908,6 +910,46 @@ public class DefaultServletTest
         }
     }
 
+    @Test
+    public void testRelativeRedirect() throws Exception
+    {
+        Path dir = docRoot.resolve("dir");
+        FS.ensureDirExists(dir);
+        Path index = dir.resolve("index.html");
+        createFile(index, "<h1>Hello Index</h1>");
+
+        context.addAliasCheck((p, r) -> true);
+        connector.getConnectionFactory(HttpConfiguration.ConnectionFactory.class).getHttpConfiguration().setRelativeRedirectAllowed(true);
+
+        ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
+        defholder.setInitParameter("dirAllowed", "false");
+        defholder.setInitParameter("redirectWelcome", "true");
+        defholder.setInitParameter("welcomeServlets", "false");
+        defholder.setInitParameter("gzip", "false");
+
+        defholder.setInitParameter("maxCacheSize", "1024000");
+        defholder.setInitParameter("maxCachedFileSize", "512000");
+        defholder.setInitParameter("maxCachedFiles", "100");
+
+        String rawResponse;
+        HttpTester.Response response;
+
+        rawResponse = connector.getResponse("GET /context/dir HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, headerValue("Location", "/context/dir/"));
+
+        rawResponse = connector.getResponse("GET /context/dir/ HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, headerValue("Location", "/context/dir/index.html"));
+
+        rawResponse = connector.getResponse("GET /context/dir/index.html/ HTTP/1.0\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
+        assertThat(response, headerValue("Location", "/context/dir/index.html"));
+    }
+
     /**
      * Ensure that oddball directory names are served with proper escaping
      */
@@ -915,8 +957,6 @@ public class DefaultServletTest
     public void testWelcomeRedirectDirWithQuestion() throws Exception
     {
         FS.ensureDirExists(docRoot);
-        context.setBaseResource(new PathResource(docRoot));
-
         Path dir = assumeMkDirSupported(docRoot, "dir?");
 
         Path index = dir.resolve("index.html");
@@ -949,8 +989,6 @@ public class DefaultServletTest
     public void testWelcomeRedirectDirWithSemicolon() throws Exception
     {
         FS.ensureDirExists(docRoot);
-        context.setBaseResource(new PathResource(docRoot));
-
         Path dir = assumeMkDirSupported(docRoot, "dir;");
 
         Path index = dir.resolve("index.html");
@@ -1084,8 +1122,7 @@ public class DefaultServletTest
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.NOT_FOUND_404));
 
-            context.addAliasCheck(new AllowSymLinkAliasChecker());
-
+            context.addAliasCheck(new SymlinkAllowedResourceAliasChecker(context));
             rawResponse = connector.getResponse("GET /context/dir/link.txt HTTP/1.0\r\n\r\n");
             response = HttpTester.parseResponse(rawResponse);
             assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
@@ -1173,8 +1210,6 @@ public class DefaultServletTest
     public void testDirectFromResourceHttpContent() throws Exception
     {
         FS.ensureDirExists(docRoot);
-        context.setBaseResource(Resource.newResource(docRoot));
-
         Path index = docRoot.resolve("index.html");
         createFile(index, "<h1>Hello World</h1>");
 
@@ -1451,11 +1486,13 @@ public class DefaultServletTest
         Path image = docRoot.resolve("image.jpg");
         createFile(image, "not an image");
 
+        server.stop();
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("dirAllowed", "false");
         defholder.setInitParameter("redirectWelcome", "false");
         defholder.setInitParameter("welcomeServlets", "false");
         defholder.setInitParameter("gzip", "false");
+        server.start();
 
         String rawResponse;
         HttpTester.Response response;
@@ -1479,8 +1516,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "" + body.length()));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset="));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain;charset=UTF-8"));
         assertThat(body, containsString("Extra Info"));
 
         rawResponse = connector.getResponse("GET /context/image.jpg HTTP/1.0\r\n\r\n");
@@ -1488,8 +1524,7 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "" + body.length()));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "image/jpeg"));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset=utf-8"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "image/jpeg;charset=utf-8"));
         assertThat(body, containsString("Extra Info"));
 
         server.stop();
@@ -1503,7 +1538,6 @@ public class DefaultServletTest
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
         body = response.getContent();
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
-        assertThat(response, not(containsHeaderValue(HttpHeader.CONTENT_TYPE, "charset=")));
         assertThat(body, containsString("Extra Info"));
     }
 
@@ -2057,7 +2091,7 @@ public class DefaultServletTest
         FS.ensureEmpty(docRoot);
 
         context.addServlet(DefaultServlet.class, "/");
-        context.addAliasCheck(new SameFileAliasChecker());
+        context.addAliasCheck(new AllowedResourceAliasChecker(context));
 
         // Create file with UTF-8 NFC format
         String filename = "swedish-" + new String(TypeUtil.fromHexString("C3A5"), UTF_8) + ".txt";
@@ -2097,7 +2131,7 @@ public class DefaultServletTest
         FS.ensureEmpty(docRoot);
 
         context.addServlet(DefaultServlet.class, "/");
-        context.addAliasCheck(new SameFileAliasChecker());
+        context.addAliasCheck(new AllowedResourceAliasChecker(context));
 
         // Create file with UTF-8 NFD format
         String filename = "swedish-a" + new String(TypeUtil.fromHexString("CC8A"), UTF_8) + ".txt";

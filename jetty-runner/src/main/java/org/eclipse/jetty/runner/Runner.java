@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,6 +19,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -78,7 +81,9 @@ public class Runner
             org.eclipse.jetty.plus.webapp.EnvConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.plus.webapp.PlusConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.annotations.AnnotationConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName()
+            org.eclipse.jetty.webapp.JettyWebXmlConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.WebAppConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.webapp.JspConfiguration.class.getCanonicalName()
         };
     public static final String CONTAINER_INCLUDE_JAR_PATTERN = ".*/jetty-runner-[^/]*\\.jar$";
     public static final String DEFAULT_CONTEXT_PATH = "/";
@@ -92,6 +97,7 @@ public class Runner
     protected ArrayList<String> _configFiles;
     protected boolean _enableStats = false;
     protected String _statsPropFile;
+    protected String _serverUriFile;
 
     /**
      * Classpath
@@ -164,6 +170,7 @@ public class Runner
         System.err.println(" --out file                          - info/warn/debug log filename (with optional 'yyyy_mm_dd' wildcard");
         System.err.println(" --host name|ip                      - interface to listen on (default is all interfaces)");
         System.err.println(" --port n                            - port to listen on (default 8080)");
+        System.err.println(" --server-uri-file path              - file to write a single line with server base URI");
         System.err.println(" --stop-port n                       - port to listen for stop command (or -DSTOP.PORT=n)");
         System.err.println(" --stop-key n                        - security string for stop command (required if --stop-port is present) (or -DSTOP.KEY=n)");
         System.err.println(" [--jar file]*n                      - each tuple specifies an extra jar to be added to the classloader");
@@ -277,7 +284,7 @@ public class Runner
                     _configFiles.add(args[++i]);
                     break;
                 case "--lib":
-                    ++i;//skip
+                    ++i; //skip
 
                     break;
                 case "--jar":
@@ -285,13 +292,16 @@ public class Runner
 
                     break;
                 case "--classes":
-                    ++i;//skip
+                    ++i; //skip
 
                     break;
                 case "--stats":
                     _enableStats = true;
                     _statsPropFile = args[++i];
                     _statsPropFile = ("unsecure".equalsIgnoreCase(_statsPropFile) ? null : _statsPropFile);
+                    break;
+                case "--server-uri-file":
+                    _serverUriFile = args[++i];
                     break;
                 default:
                     // process system property type argument so users can use in second args part
@@ -310,7 +320,7 @@ public class Runner
                         }
                     }
 
-// process contexts
+                    // process contexts
 
                     if (!runnerServerInitialized) // log handlers not registered, server maybe not created, etc
                     {
@@ -334,7 +344,7 @@ public class Runner
                         }
 
                         //check that everything got configured, and if not, make the handlers
-                        HandlerCollection handlers = (HandlerCollection)_server.getChildHandlerByClass(HandlerCollection.class);
+                        HandlerCollection handlers = _server.getChildHandlerByClass(HandlerCollection.class);
                         if (handlers == null)
                         {
                             handlers = new HandlerList();
@@ -342,7 +352,7 @@ public class Runner
                         }
 
                         //check if contexts already configured
-                        _contexts = (ContextHandlerCollection)handlers.getChildHandlerByClass(ContextHandlerCollection.class);
+                        _contexts = handlers.getChildHandlerByClass(ContextHandlerCollection.class);
                         if (_contexts == null)
                         {
                             _contexts = new ContextHandlerCollection();
@@ -519,6 +529,13 @@ public class Runner
     public void run() throws Exception
     {
         _server.start();
+        if (_serverUriFile != null)
+        {
+            Path fileWithPort = Paths.get(_serverUriFile);
+            Files.deleteIfExists(fileWithPort);
+            String serverUri = _server.getURI().toString();
+            Files.writeString(fileWithPort, serverUri);
+        }
         _server.join();
     }
 

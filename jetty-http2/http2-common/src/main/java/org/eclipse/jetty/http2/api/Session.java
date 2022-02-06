@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http2.api;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -137,14 +138,36 @@ public interface Session
     /**
      * @return the local network address this session is bound to,
      * or {@code null} if this session is not bound to a network address
+     * @deprecated use {@link #getLocalSocketAddress()} instead
      */
+    @Deprecated
     public InetSocketAddress getLocalAddress();
+
+    /**
+     * @return the local network address this session is bound to,
+     * or {@code null} if this session is not bound to a network address
+     */
+    public default SocketAddress getLocalSocketAddress()
+    {
+        return getLocalAddress();
+    }
+
+    /**
+     * @return the remote network address this session is connected to,
+     * or {@code null} if this session is not connected to a network address
+     * @deprecated use {@link #getRemoteSocketAddress()} instead
+     */
+    @Deprecated
+    public InetSocketAddress getRemoteAddress();
 
     /**
      * @return the remote network address this session is connected to,
      * or {@code null} if this session is not connected to a network address
      */
-    public InetSocketAddress getRemoteAddress();
+    public default SocketAddress getRemoteSocketAddress()
+    {
+        return getRemoteAddress();
+    }
 
     /**
      * <p>A {@link Listener} is the passive counterpart of a {@link Session} and

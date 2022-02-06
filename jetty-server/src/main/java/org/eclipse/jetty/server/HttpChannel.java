@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,10 +15,12 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -49,11 +51,14 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /**
  * HttpChannel represents a single endpoint for HTTP semantic processing.
@@ -93,7 +98,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
     {
         _connector = connector;
-        _configuration = configuration;
+        _configuration = Objects.requireNonNull(configuration);
         _endPoint = endPoint;
         _transport = transport;
 
@@ -119,6 +124,15 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _state.isSendError();
     }
 
+    /** Format the address or host returned from Request methods
+     * @param addr The address or host
+     * @return Default implementation returns {@link HostPort#normalizeHost(String)}
+     */
+    protected String formatAddrOrHost(String addr)
+    {
+        return HostPort.normalizeHost(addr);
+    }
+
     private HttpInput newHttpInput(HttpChannelState state)
     {
         return new HttpInput(state);
@@ -127,10 +141,11 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
     /**
      * Notify the channel that content is needed. If some content is immediately available, true is returned and
      * {@link #produceContent()} has to be called and will return a non-null object.
-     * If no content is immediately available, {@link HttpInput#onContentProducible()} is called once some content arrives
-     * and {@link #produceContent()} can be called without returning null.
-     * If a failure happens, then {@link HttpInput#onContentProducible()} will be called and an error content will return the
-     * error on the next call to {@link #produceContent()}.
+     * If no content is immediately available, an attempt to produce content must be made; if new content has been
+     * produced, true is returned; otherwise {@link HttpInput#onContentProducible()} is called once some content
+     * arrives and {@link #produceContent()} can be called without returning {@code null}.
+     * If a failure happens, then {@link HttpInput#onContentProducible()} will be called and an error content will
+     * return the error on the next call to {@link #produceContent()}.
      * @return true if content is immediately available.
      */
     public abstract boolean needContent();
@@ -183,7 +198,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
      * {@link TransientListeners} as an {@link AbstractConnector}
      * provided listener</p>
      * <p>Transient listeners are removed after every request cycle</p>
-     * @param listener
+     * @param listener the listener to add
      * @return true if the listener was added.
      */
     @Deprecated
@@ -311,14 +326,105 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _endPoint;
     }
 
+    /**
+     * <p>Return the local name of the connected channel.</p>
+     *
+     * <p>
+     * This is the host name after the connector is bound and the connection is accepted.
+     * </p>
+     * <p>
+     * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)}.
+     * </p>
+     * <p>
+     * Note: some connectors are not based on IP networking, and default behavior here will
+     * result in a null return.  Use {@link HttpConfiguration#setLocalAddress(SocketAddress)}
+     * to set the value to an acceptable host name.
+     * </p>
+     *
+     * @return the local name, or null
+     */
+    public String getLocalName()
+    {
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+        {
+            SocketAddress localAddress = httpConfiguration.getLocalAddress();
+            if (localAddress instanceof InetSocketAddress)
+                return ((InetSocketAddress)localAddress).getHostName();
+        }
+
+        InetSocketAddress local = getLocalAddress();
+        if (local != null)
+            return local.getHostString();
+
+        return null;
+    }
+
+    /**
+     * <p>Return the Local Port of the connected channel.</p>
+     *
+     * <p>
+     * This is the port the connector is bound to and is accepting connections on.
+     * </p>
+     * <p>
+     * Value can be overridden by {@link HttpConfiguration#setLocalAddress(SocketAddress)}.
+     * </p>
+     * <p>
+     * Note: some connectors are not based on IP networking, and default behavior here will
+     * result in a value of 0 returned.  Use {@link HttpConfiguration#setLocalAddress(SocketAddress)}
+     * to set the value to an acceptable port.
+     * </p>
+     *
+     * @return the local port, or 0 if unspecified
+     */
+    public int getLocalPort()
+    {
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+        {
+            SocketAddress localAddress = httpConfiguration.getLocalAddress();
+            if (localAddress instanceof InetSocketAddress)
+                return ((InetSocketAddress)localAddress).getPort();
+        }
+
+        InetSocketAddress local = getLocalAddress();
+        return local == null ? 0 : local.getPort();
+    }
+
     public InetSocketAddress getLocalAddress()
     {
-        return _endPoint.getLocalAddress();
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+        {
+            SocketAddress localAddress = httpConfiguration.getLocalAddress();
+            if (localAddress instanceof InetSocketAddress)
+                return ((InetSocketAddress)localAddress);
+        }
+
+        SocketAddress local = _endPoint.getLocalSocketAddress();
+        if (local instanceof InetSocketAddress)
+            return (InetSocketAddress)local;
+        return null;
     }
 
     public InetSocketAddress getRemoteAddress()
     {
-        return _endPoint.getRemoteAddress();
+        SocketAddress remote = _endPoint.getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress)
+            return (InetSocketAddress)remote;
+        return null;
+    }
+
+    /**
+     * @return return the HttpConfiguration server authority override
+     */
+    public HostPort getServerAuthority()
+    {
+        HttpConfiguration httpConfiguration = getHttpConfiguration();
+        if (httpConfiguration != null)
+            return httpConfiguration.getServerAuthority();
+
+        return null;
     }
 
     /**
@@ -404,7 +510,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case ASYNC_DISPATCH:
                     {
-                        dispatch(DispatcherType.ASYNC,() -> getServer().handleAsync(this));
+                        dispatch(DispatcherType.ASYNC, () -> getServer().handleAsync(this));
                         break;
                     }
 
@@ -443,7 +549,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 break;
                             }
 
-                            dispatch(DispatcherType.ERROR,() ->
+                            dispatch(DispatcherType.ERROR, () ->
                             {
                                 errorHandler.handle(null, _request, _request, _response);
                                 _request.setHandled(true);
@@ -531,9 +637,9 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
                         // If send error is called we need to break.
                         if (checkAndPrepareUpgrade())
                             break;
-                        
+
                         // Set a close callback on the HttpOutput to make it an async callback
-                        _response.completeOutput(Callback.from(() -> _state.completed(null), _state::completed));
+                        _response.completeOutput(Callback.from(NON_BLOCKING, () -> _state.completed(null), _state::completed));
 
                         break;
                     }
@@ -701,9 +807,20 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
 
         if (isCommitted())
+        {
             abort(failure);
+        }
         else
-            _state.onError(failure);
+        {
+            try
+            {
+                _state.onError(failure);
+            }
+            catch (IllegalStateException e)
+            {
+                abort(failure);
+            }
+        }
     }
 
     /**
@@ -841,9 +958,6 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onCompleted for {} written={}", getRequest().getRequestURI(), getBytesWritten());
-
-        if (_requestLog != null)
-            _requestLog.log(_request, _response);
 
         long idleTO = _configuration.getIdleTimeout();
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)

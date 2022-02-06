@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -210,51 +210,6 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     }
 
     /**
-     * Test sessions are saved when shutdown with a store.
-     */
-    /*    @Test
-    public void testNoInvalidateOnShutdown()
-        throws Exception
-    {
-        Server server = new Server();
-    
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
-        context.setServer(server);
-        server.setHandler(context);
-    
-        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
-        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
-    
-        TestSessionDataStore store = new TestSessionDataStore(true);//fake passivation
-        cache.setSessionDataStore(store);
-        context.getSessionHandler().setSessionCache(cache);
-    
-        server.start();
-    
-        //put a session in the cache and store
-        long now = System.currentTimeMillis();
-        SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
-        Session session = cache.newSession(data);
-        TestSessionActivationListener listener = new TestSessionActivationListener();
-        cache.add("1234", session);
-        assertTrue(cache.contains("1234"));
-        session.setAttribute("aaa", listener);
-        cache.release("1234", session);
-    
-        assertTrue(store.exists("1234"));
-        assertTrue(cache.contains("1234"));
-    
-        server.stop(); //calls shutdown
-    
-        assertTrue(store.exists("1234"));
-        assertFalse(cache.contains("1234"));
-        assertEquals(2, listener.passivateCalls);
-        assertEquals(1, listener.activateCalls);
-    }
-    */
-
-    /**
      * Test that a session id can be renewed.
      */
     @Test
@@ -271,7 +226,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(context.getSessionHandler());
 
-        TestSessionDataStore store = new TestSessionDataStore(true);//fake passivation
+        TestSessionDataStore store = new TestSessionDataStore(true); //fake passivation
         cache.setSessionDataStore(store);
         context.getSessionHandler().setSessionCache(cache);
 
@@ -487,11 +442,11 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         //test  EVICT_ON_SESSION_EXIT with requests still active.
         //this should not affect the session because it this is an idle test only
         SessionData data2 = store.newSessionData("567", now, now - TimeUnit.SECONDS.toMillis(30), now - TimeUnit.SECONDS.toMillis(40), TimeUnit.MINUTES.toMillis(10));
-        data2.setExpiry(now + TimeUnit.DAYS.toMillis(1));//not expired
+        data2.setExpiry(now + TimeUnit.DAYS.toMillis(1)); //not expired
         Session session2 = cache.newSession(data2);
-        cache.add("567", session2);//ensure session is in cache
+        cache.add("567", session2); //ensure session is in cache
         cache.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
-        session2.access(System.currentTimeMillis());//simulate 1 request in session
+        session2.access(System.currentTimeMillis()); //simulate 1 request in session
         assertTrue(cache.contains("567"));
         cache.checkInactiveSession(session2);
         assertTrue(cache.contains("567")); //not evicted

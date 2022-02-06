@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,10 +14,12 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URLDecoder;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.channels.UnresolvedAddressException;
 import java.nio.charset.StandardCharsets;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -38,9 +40,11 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -52,6 +56,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 {
+    private static final Logger LOG = LoggerFactory.getLogger(HttpClientRedirectTest.class);
+
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
     public void test303(Scenario scenario) throws Exception
@@ -287,24 +293,26 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
 
     @ParameterizedTest
     @ArgumentsSource(ScenarioProvider.class)
-    @Disabled
     public void testRedirectFailed(Scenario scenario) throws Exception
     {
-        // TODO this test is failing with timout after an ISP upgrade??  DNS dependent?
+        // Skip this test if DNS Hijacking is detected
+        Assumptions.assumeFalse(detectDnsHijacking());
+
         start(scenario, new RedirectHandler());
 
-        try
-        {
-            client.newRequest("localhost", connector.getLocalPort())
+        ExecutionException e = assertThrows(ExecutionException.class,
+            () -> client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())
                 .path("/303/doesNotExist/done")
                 .timeout(5, TimeUnit.SECONDS)
-                .send();
-        }
-        catch (ExecutionException x)
-        {
-            assertThat(x.getCause(), Matchers.instanceOf(UnresolvedAddressException.class));
-        }
+                .send());
+
+        assertThat("Cause", e.getCause(), Matchers.anyOf(
+            // Exception seen on some updates of OpenJDK 8
+            // Matchers.instanceOf(UnresolvedAddressException.class),
+            // Exception seen on OpenJDK 11+
+            Matchers.instanceOf(UnknownHostException.class))
+        );
     }
 
     @ParameterizedTest
@@ -506,12 +514,125 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             }
         });
 
+        long timeout = 1000;
+        TimeoutException timeoutException = assertThrows(TimeoutException.class, () ->
+        {
+            client.setMaxRedirects(-1);
+            client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scenario.getScheme())
+                .timeout(timeout, TimeUnit.MILLISECONDS)
+                .send();
+        });
+        assertThat(timeoutException.getMessage(), Matchers.containsString(String.valueOf(timeout)));
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testRedirectToDifferentHostThenRequestToFirstHostExpires(Scenario scenario) throws Exception
+    {
+        long timeout = 1000;
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            {
+                if ("/one".equals(target))
+                {
+                    response.setStatus(HttpStatus.SEE_OTHER_303);
+                    response.setHeader(HttpHeader.LOCATION.asString(), scenario.getScheme() + "://127.0.0.1:" + connector.getLocalPort() + "/two");
+                }
+                else if ("/two".equals(target))
+                {
+                    try
+                    {
+                        // Send another request to "localhost", therefore reusing the
+                        // connection used for the first request, it must timeout.
+                        CountDownLatch latch = new CountDownLatch(1);
+                        client.newRequest("localhost", connector.getLocalPort())
+                            .scheme(scenario.getScheme())
+                            .path("/three")
+                            .timeout(timeout, TimeUnit.MILLISECONDS)
+                            .send(result ->
+                            {
+                                if (result.getFailure() instanceof TimeoutException)
+                                    latch.countDown();
+                            });
+                        // Wait for the request to fail as it should.
+                        assertTrue(latch.await(2 * timeout, TimeUnit.MILLISECONDS));
+                    }
+                    catch (Throwable x)
+                    {
+                        throw new ServletException(x);
+                    }
+                }
+                else if ("/three".equals(target))
+                {
+                    try
+                    {
+                        // The third request must timeout.
+                        Thread.sleep(2 * timeout);
+                    }
+                    catch (InterruptedException x)
+                    {
+                        throw new ServletException(x);
+                    }
+                }
+            }
+        });
+
+        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
+            .scheme(scenario.getScheme())
+            .path("/one")
+            // The timeout should not expire, but must be present to trigger the test conditions.
+            .timeout(3 * timeout, TimeUnit.MILLISECONDS)
+            .send();
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+    }
+
+    @ParameterizedTest
+    @ArgumentsSource(ScenarioProvider.class)
+    public void testManyRedirectsTotalTimeoutExpires(Scenario scenario) throws Exception
+    {
+        long timeout = 1000;
+        start(scenario, new EmptyServerHandler()
+        {
+            @Override
+            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            {
+                try
+                {
+                    String serverURI = scenario.getScheme() + "://localhost:" + connector.getLocalPort();
+                    if ("/one".equals(target))
+                    {
+                        Thread.sleep(timeout);
+                        response.setStatus(HttpStatus.SEE_OTHER_303);
+                        response.setHeader(HttpHeader.LOCATION.asString(), serverURI + "/two");
+                    }
+                    else if ("/two".equals(target))
+                    {
+                        Thread.sleep(timeout);
+                        response.setStatus(HttpStatus.SEE_OTHER_303);
+                        response.setHeader(HttpHeader.LOCATION.asString(), serverURI + "/three");
+                    }
+                    else if ("/three".equals(target))
+                    {
+                        Thread.sleep(2 * timeout);
+                    }
+                }
+                catch (InterruptedException x)
+                {
+                    throw new ServletException(x);
+                }
+            }
+        });
+
         assertThrows(TimeoutException.class, () ->
         {
             client.setMaxRedirects(-1);
             client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scenario.getScheme())
-                .timeout(1, TimeUnit.SECONDS)
+                .path("/one")
+                .timeout(3 * timeout, TimeUnit.MILLISECONDS)
                 .send();
         });
     }
@@ -564,7 +685,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         assertEquals(200, response.getStatus());
     }
 
-    private class RedirectHandler extends EmptyServerHandler
+    private static class RedirectHandler extends EmptyServerHandler
     {
         @Override
         protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -597,5 +718,49 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 IO.copy(request.getInputStream(), response.getOutputStream());
             }
         }
+    }
+
+    public static boolean detectDnsHijacking()
+    {
+        String host1 = randomHostname();
+        String host2 = randomHostname();
+        String addr1 = getInetHostAddress(host1);
+        String addr2 = getInetHostAddress(host2);
+
+        boolean ret = (addr1.equals(addr2));
+
+        if (ret)
+        {
+            LOG.warn("DNS Hijacking detected (these should not return the same host address): host1={} ({}), host2={} ({})",
+                host1, addr1,
+                host2, addr2);
+        }
+
+        return ret;
+    }
+
+    private static String getInetHostAddress(String hostname)
+    {
+        try
+        {
+            InetAddress addr = InetAddress.getByName(hostname);
+            return addr.getHostAddress();
+        }
+        catch (Throwable t)
+        {
+            return "<unknown:" + hostname + ">";
+        }
+    }
+
+    private static String randomHostname()
+    {
+        String digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+        Random random = new Random();
+        char[] host = new char[7 + random.nextInt(8)];
+        for (int i = 0; i < host.length; ++i)
+        {
+            host[i] = digits.charAt(random.nextInt(digits.length()));
+        }
+        return new String(host) + ".tld.";
     }
 }

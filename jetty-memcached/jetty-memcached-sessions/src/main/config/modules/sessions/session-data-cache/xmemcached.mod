@@ -11,7 +11,10 @@ session-store
 logging/slf4j
 
 [files]
-maven://com.googlecode.xmemcached/xmemcached/2.4.5|lib/xmemcached/xmemcached-2.4.5.jar
+maven://com.googlecode.xmemcached/xmemcached/${xmemcached.version}|lib/xmemcached/xmemcached-${xmemcached.version}.jar
+
+[ini]
+xmemcached.version?=@xmemcached.version@
 
 [lib]
 lib/jetty-memcached-sessions-${jetty.version}.jar

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,6 +16,7 @@ package org.eclipse.jetty.io;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
@@ -100,16 +101,38 @@ public interface EndPoint extends Closeable
     }
 
     /**
-     * @return The local Inet address to which this {@code EndPoint} is bound, or {@code null}
-     * if this {@code EndPoint} does not represent a network connection.
+     * @return The local InetSocketAddress to which this {@code EndPoint} is bound, or {@code null}
+     * if this {@code EndPoint} is not bound to a Socket address.
+     * @deprecated use {@link #getLocalSocketAddress()} instead
      */
+    @Deprecated
     InetSocketAddress getLocalAddress();
 
     /**
-     * @return The remote Inet address to which this {@code EndPoint} is bound, or {@code null}
-     * if this {@code EndPoint} does not represent a network connection.
+     * @return the local SocketAddress to which this {@code EndPoint} is bound or {@code null}
+     * if this {@code EndPoint} is not bound to a Socket address.
      */
+    default SocketAddress getLocalSocketAddress()
+    {
+        return getLocalAddress();
+    }
+
+    /**
+     * @return The remote InetSocketAddress to which this {@code EndPoint} is connected, or {@code null}
+     * if this {@code EndPoint} is not connected to a Socket address.
+     * @deprecated use {@link #getRemoteSocketAddress()} instead.
+     */
+    @Deprecated
     InetSocketAddress getRemoteAddress();
+
+    /**
+     * @return The remote SocketAddress to which this {@code EndPoint} is connected, or {@code null}
+     * if this {@code EndPoint} is not connected to a Socket address.
+     */
+    default SocketAddress getRemoteSocketAddress()
+    {
+        return getRemoteAddress();
+    }
 
     /**
      * @return whether this EndPoint is open
@@ -180,7 +203,10 @@ public interface EndPoint extends Closeable
      * filled or -1 if EOF is read or the input is shutdown.
      * @throws IOException if the endpoint is closed.
      */
-    int fill(ByteBuffer buffer) throws IOException;
+    default int fill(ByteBuffer buffer) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed
@@ -192,7 +218,10 @@ public interface EndPoint extends Closeable
      * destination (ie is not buffering any data).
      * @throws IOException If the endpoint is closed or output is shutdown.
      */
-    boolean flush(ByteBuffer... buffer) throws IOException;
+    default boolean flush(ByteBuffer... buffer) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return The underlying transport object (socket, channel, etc.)
@@ -248,7 +277,10 @@ public interface EndPoint extends Closeable
      * @param buffers one or more {@link ByteBuffer}s that will be flushed.
      * @throws WritePendingException if another write operation is concurrent.
      */
-    void write(Callback callback, ByteBuffer... buffers) throws WritePendingException;
+    default void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
+    {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @return the {@link Connection} associated with this EndPoint

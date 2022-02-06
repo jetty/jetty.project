@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -29,9 +29,10 @@ public class DuplexConnectionPool extends AbstractConnectionPool
 
     public DuplexConnectionPool(HttpDestination destination, int maxConnections, boolean cache, Callback requester)
     {
-        this(destination, new Pool<>(Pool.StrategyType.FIRST, maxConnections, cache), requester);
+        super(destination, Pool.StrategyType.FIRST, maxConnections, cache, requester);
     }
 
+    @Deprecated
     public DuplexConnectionPool(HttpDestination destination, Pool<Connection> pool, Callback requester)
     {
         super(destination, pool, requester);

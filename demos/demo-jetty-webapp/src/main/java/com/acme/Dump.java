@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -50,8 +50,6 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 import javax.servlet.http.Part;
-
-import org.slf4j.LoggerFactory;
 
 /**
  * Dump Servlet Request.
@@ -116,7 +114,7 @@ public class Dump extends HttpServlet
             }
             catch (ServletException e)
             {
-                getServletContext().log(e.toString());
+                getServletContext().log("Login fail", e);
             }
         }
 
@@ -341,12 +339,12 @@ public class Dump extends HttpServlet
                 }
                 catch (IOException e2)
                 {
-                    LoggerFactory.getLogger(Dump.class).trace("IGNORED", e2);
+                    getServletContext().log("Write fail", e2);
                 }
             }
             catch (IOException e)
             {
-                LoggerFactory.getLogger(Dump.class).trace("IGNORED", e);
+                getServletContext().log("Output fail", e);
             }
             return;
         }

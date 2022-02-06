@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
@@ -49,6 +50,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.KeyManager;
@@ -58,7 +60,6 @@ import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SNIServerName;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLServerSocket;
@@ -708,13 +709,20 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
      */
     public void setTrustStorePath(String trustStorePath)
     {
-        try
+        if (StringUtil.isEmpty(trustStorePath))
         {
-            _trustStoreResource = Resource.newResource(trustStorePath);
+            _trustStoreResource = null;
         }
-        catch (Exception e)
+        else
         {
-            throw new IllegalArgumentException(e);
+            try
+            {
+                _trustStoreResource = Resource.newResource(trustStorePath);
+            }
+            catch (Exception e)
+            {
+                throw new IllegalArgumentException(e);
+            }
         }
     }
 
@@ -786,6 +794,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         _validatePeerCerts = validatePeerCerts;
     }
 
+    public String getKeyStorePassword()
+    {
+        return _keyStorePassword == null ? null : _keyStorePassword.toString();
+    }
+
     /**
      * @param password The password for the key store.  If null is passed and
      * a keystore is set, then
@@ -796,6 +809,11 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
     public void setKeyStorePassword(String password)
     {
         _keyStorePassword = password == null ? getPassword(PASSWORD_PROPERTY) : newPassword(password);
+    }
+
+    public String getKeyManagerPassword()
+    {
+        return _keyManagerPassword == null ? null : _keyManagerPassword.toString();
     }
 
     /**
@@ -2075,6 +2093,8 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
 
     public static class Client extends SslContextFactory
     {
+        private SniProvider sniProvider = (sslEngine, serverNames) -> serverNames;
+
         public Client()
         {
             this(false);
@@ -2091,6 +2111,90 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
             checkTrustAll();
             checkEndPointIdentificationAlgorithm();
             super.checkConfiguration();
+        }
+
+        @Override
+        public void customize(SSLEngine sslEngine)
+        {
+            SSLParameters sslParameters = sslEngine.getSSLParameters();
+            List<SNIServerName> serverNames = sslParameters.getServerNames();
+            if (serverNames == null)
+                serverNames = Collections.emptyList();
+            List<SNIServerName> newServerNames = getSNIProvider().apply(sslEngine, serverNames);
+            if (newServerNames != null && newServerNames != serverNames)
+            {
+                sslParameters.setServerNames(newServerNames);
+                sslEngine.setSSLParameters(sslParameters);
+            }
+            super.customize(sslEngine);
+        }
+
+        /**
+         * @return the SNI provider used to customize the SNI
+         */
+        public SniProvider getSNIProvider()
+        {
+            return sniProvider;
+        }
+
+        /**
+         * @param sniProvider the SNI provider used to customize the SNI
+         */
+        public void setSNIProvider(SniProvider sniProvider)
+        {
+            this.sniProvider = Objects.requireNonNull(sniProvider);
+        }
+
+        /**
+         * <p>A provider for SNI names to send to the server during the TLS handshake.</p>
+         * <p>By default, the OpenJDK TLS implementation does not send SNI names when
+         * they are IP addresses, following what currently specified in
+         * <a href="https://datatracker.ietf.org/doc/html/rfc6066#section-3">TLS 1.3</a>,
+         * or when they are non-domain strings such as {@code "localhost"}.</p>
+         * <p>If you need to send custom SNI, such as a non-domain SNI or an IP address SNI,
+         * you can set your own SNI provider or use {@link #NON_DOMAIN_SNI_PROVIDER}.</p>
+         */
+        @FunctionalInterface
+        public interface SniProvider
+        {
+            /**
+             * <p>An SNI provider that, if the given {@code serverNames} list is empty,
+             * retrieves the host via {@link SSLEngine#getPeerHost()}, converts it to
+             * ASCII bytes, and sends it as SNI.</p>
+             * <p>This allows to send non-domain SNI such as {@code "localhost"} or
+             * IP addresses.</p>
+             */
+            public static final SniProvider NON_DOMAIN_SNI_PROVIDER = Client::getSniServerNames;
+
+            /**
+             * <p>Provides the SNI names to send to the server.</p>
+             * <p>Currently, RFC 6066 allows for different types of server names,
+             * but defines only one of type "host_name".</p>
+             * <p>As such, the input {@code serverNames} list and the list to be returned
+             * contain at most one element.</p>
+             *
+             * @param sslEngine the SSLEngine that processes the TLS handshake
+             * @param serverNames the non-null immutable list of server names computed by implementation
+             * @return either the same {@code serverNames} list passed as parameter, or a new list
+             * containing the server names to send to the server
+             */
+            public List<SNIServerName> apply(SSLEngine sslEngine, List<SNIServerName> serverNames);
+        }
+
+        private static List<SNIServerName> getSniServerNames(SSLEngine sslEngine, List<SNIServerName> serverNames)
+        {
+            if (serverNames.isEmpty())
+            {
+                String host = sslEngine.getPeerHost();
+                if (host != null)
+                {
+                    // Must use the byte[] constructor, because the character ':' is forbidden when
+                    // using the String constructor (but typically present in IPv6 addresses).
+                    // Since Java 17, only letter|digit|hyphen characters are allowed, even by the byte[] constructor.
+                    return List.of(new SNIHostName(host.getBytes(StandardCharsets.US_ASCII)));
+                }
+            }
+            return serverNames;
         }
     }
 
@@ -2148,12 +2252,17 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
 
         /**
-         * Does the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
-         * require an SNI match?  Note that if a non SNI handshake is accepted, requests may still be rejected
-         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
+         * <p>Returns whether an SNI match is required when choosing the alias that
+         * identifies the certificate to send to the client.</p>
+         * <p>The exact logic to choose an alias given the SNI is configurable via
+         * {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.</p>
+         * <p>The default implementation is {@link #sniSelect(String, Principal[], SSLSession, String, Collection)}
+         * and if SNI is not required it will delegate the TLS implementation to
+         * choose an alias (typically the first alias in the KeyStore).</p>
+         * <p>Note that if a non SNI handshake is accepted, requests may still be rejected
+         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).</p>
          *
-         * @return true if no SNI match is handled as no certificate match, false if no SNI match is handled by
-         * delegation to the non SNI matching methods.
+         * @return whether an SNI match is required when choosing the alias that identifies the certificate
          */
         @ManagedAttribute("Whether the TLS handshake is rejected if there is no SNI host match")
         public boolean isSniRequired()
@@ -2162,14 +2271,12 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
 
         /**
-         * Set if the default {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} implementation
-         * require an SNI match? Note that if a non SNI handshake is accepted, requests may still be rejected
-         * at the HTTP level for incorrect SNI (see SecureRequestCustomizer).
-         * This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
-         * overridden or a non null function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.
+         * <p>Sets whether an SNI match is required when choosing the alias that
+         * identifies the certificate to send to the client.</p>
+         * <p>This setting may have no effect if {@link #sniSelect(String, Principal[], SSLSession, String, Collection)} is
+         * overridden or a custom function is passed to {@link #setSNISelector(SniX509ExtendedKeyManager.SniSelector)}.</p>
          *
-         * @param sniRequired true if no SNI match is handled as no certificate match, false if no SNI match is handled by
-         * delegation to the non SNI matching methods.
+         * @param sniRequired whether an SNI match is required when choosing the alias that identifies the certificate
          */
         public void setSniRequired(boolean sniRequired)
         {
@@ -2223,22 +2330,53 @@ public abstract class SslContextFactory extends AbstractLifeCycle implements Dum
         }
 
         @Override
-        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates) throws SSLHandshakeException
+        public String sniSelect(String keyType, Principal[] issuers, SSLSession session, String sniHost, Collection<X509> certificates)
         {
+            boolean sniRequired = isSniRequired();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Selecting alias: keyType={}, sni={}, sniRequired={}, certs={}", keyType, String.valueOf(sniHost), sniRequired, certificates);
+
+            String alias;
             if (sniHost == null)
             {
                 // No SNI, so reject or delegate.
-                return isSniRequired() ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+                alias = sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
             }
             else
             {
-                // Match the SNI host, or let the JDK decide unless unmatched SNIs are rejected.
-                return certificates.stream()
+                // Match the SNI host.
+                List<X509> matching = certificates.stream()
                     .filter(x509 -> x509.matches(sniHost))
-                    .findFirst()
-                    .map(X509::getAlias)
-                    .orElse(_sniRequired ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE);
+                    .collect(Collectors.toList());
+
+                if (matching.isEmpty())
+                {
+                    // There is no match for this SNI among the certificates valid for
+                    // this keyType; check if there is any certificate that matches this
+                    // SNI, as we will likely be called again with a different keyType.
+                    boolean anyMatching = aliasCerts().values().stream()
+                        .anyMatch(x509 -> x509.matches(sniHost));
+                    alias = sniRequired || anyMatching ? null : SniX509ExtendedKeyManager.SniSelector.DELEGATE;
+                }
+                else
+                {
+                    alias = matching.get(0).getAlias();
+                    if (matching.size() > 1)
+                    {
+                        // Prefer strict matches over wildcard matches.
+                        alias = matching.stream()
+                            .min(Comparator.comparingInt(cert -> cert.getWilds().size()))
+                            .map(X509::getAlias)
+                            .orElse(alias);
+                    }
+                }
             }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Selected alias={}", String.valueOf(alias));
+
+            return alias;
         }
 
         protected X509ExtendedKeyManager newSniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)

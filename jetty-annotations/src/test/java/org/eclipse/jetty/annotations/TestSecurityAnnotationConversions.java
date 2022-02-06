@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -65,12 +65,16 @@ public class TestSecurityAnnotationConversions
     {
     }
 
-    @ServletSecurity(value = @HttpConstraint(value = EmptyRoleSemantic.PERMIT, transportGuarantee = TransportGuarantee.CONFIDENTIAL, rolesAllowed =
-        {
-            "tom", "dick", "harry"
-        }), httpMethodConstraints = {
-        @HttpMethodConstraint(value = "GET", transportGuarantee = TransportGuarantee.CONFIDENTIAL)
-    })
+    @ServletSecurity(
+        value = @HttpConstraint(
+            value = EmptyRoleSemantic.PERMIT,
+            transportGuarantee = TransportGuarantee.CONFIDENTIAL,
+            rolesAllowed = {
+                "tom", "dick", "harry"
+            }),
+        httpMethodConstraints = {
+            @HttpMethodConstraint(value = "GET", transportGuarantee = TransportGuarantee.CONFIDENTIAL)
+        })
     public static class Method2Servlet extends HttpServlet
     {
     }

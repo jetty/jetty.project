@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -148,6 +148,35 @@ public class Utf8AppendableTest
             Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
             buffer.append((byte)0xC2);
             buffer.append((byte)0xC2);
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testInvalidZeroUTF8(Class<Utf8Appendable> impl) throws UnsupportedEncodingException
+    {
+        // From https://datatracker.ietf.org/doc/html/rfc3629#section-10
+        assertThrows(Utf8Appendable.NotUtf8Exception.class, () ->
+        {
+            Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+            buffer.append((byte)0xC0);
+            buffer.append((byte)0x80);
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testInvalidAlternateDotEncodingUTF8(Class<Utf8Appendable> impl) throws UnsupportedEncodingException
+    {
+        // From https://datatracker.ietf.org/doc/html/rfc3629#section-10
+        assertThrows(Utf8Appendable.NotUtf8Exception.class, () ->
+        {
+            Utf8Appendable buffer = impl.getDeclaredConstructor().newInstance();
+            buffer.append((byte)0x2f);
+            buffer.append((byte)0xc0);
+            buffer.append((byte)0xae);
+            buffer.append((byte)0x2e);
+            buffer.append((byte)0x2f);
         });
     }
 

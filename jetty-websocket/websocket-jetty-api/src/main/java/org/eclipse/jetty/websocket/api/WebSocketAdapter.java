@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,10 +21,11 @@ package org.eclipse.jetty.websocket.api;
 public class WebSocketAdapter implements WebSocketListener
 {
     private volatile Session session;
+    private RemoteEndpoint remote;
 
     public RemoteEndpoint getRemote()
     {
-        return session.getRemote();
+        return remote;
     }
 
     public Session getSession()
@@ -34,7 +35,8 @@ public class WebSocketAdapter implements WebSocketListener
 
     public boolean isConnected()
     {
-        return session.isOpen();
+        Session sess = this.session;
+        return (sess != null) && (sess.isOpen());
     }
 
     public boolean isNotConnected()
@@ -58,6 +60,7 @@ public class WebSocketAdapter implements WebSocketListener
     public void onWebSocketConnect(Session sess)
     {
         this.session = sess;
+        this.remote = sess.getRemote();
     }
 
     @Override

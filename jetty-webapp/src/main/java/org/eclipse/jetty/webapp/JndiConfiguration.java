@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.util.ServiceLoader;
-
 import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,9 +22,7 @@ import org.slf4j.LoggerFactory;
  * <p>This configuration configures the WebAppContext system/server classes to
  * be able to see the org.eclipse.jetty.jaas package.
  * This class is defined in the webapp package, as it implements the {@link Configuration} interface,
- * which is unknown to the jndi package.  However, the corresponding {@link ServiceLoader}
- * resource is defined in the jndi package, so that this configuration only be
- * loaded if the jetty-jndi jars are on the classpath.
+ * which is unknown to the jndi package.
  * </p>
  */
 public class JndiConfiguration extends AbstractConfiguration

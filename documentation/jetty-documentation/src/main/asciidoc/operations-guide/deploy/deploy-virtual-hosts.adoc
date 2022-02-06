@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,7 +23,7 @@ By using virtual hosts, you will be able to have the first web application avail
 
 Another typical case is when you want to use different subdomains for different web application, for example a project website is at `+http://project.org/+` and the project documentation is at `+http://docs.project.org+`.
 
-Virtual hosts can be used with any context that is a subclass of link:{JDURL}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler].
+Virtual hosts can be used with any context that is a subclass of link:{javadoc-url}/org/eclipse/jetty/server/handler/ContextHandler.html[ContextHandler].
 
 [[og-deploy-virtual-hosts-names]]
 ===== Virtual Host Names
@@ -41,8 +41,8 @@ A wildcard domain name which will match only one level of arbitrary subdomains.
 An IP address may be set as a virtual host to indicate that a web application should handle requests received on the network interface with that IP address for protocols that do not indicate a host name such as HTTP/0.9 or HTTP/1.0.
 
 `@ConnectorName`::
-A Jetty `ServerConnector` name to indicate that a web application should handle requests received on the `ServerConnector` with that name, and therefore received on a specific IP port.
-A `ServerConnector` name can be set via link:{JDURL}/org/eclipse/jetty/server/AbstractConnector.html#setName(java.lang.String)[].
+A Jetty server `Connector` name to indicate that a web application should handle requests received on the server `Connector` with that name, and therefore received on a specific socket address (either an IP port for `ServerConnector`, or a Unix-Domain path for `UnixDomainServerConnector`).
+A server `Connector` name can be set via link:{javadoc-url}/org/eclipse/jetty/server/AbstractConnector.html#setName(java.lang.String)[].
 
 `www.√integral.com`::
 Non-ASCII and https://en.wikipedia.org/wiki/Internationalized_domain_name[IDN] domain names can be set as virtual hosts using https://en.wikipedia.org/wiki/Punycode[Puny Code] equivalents that may be obtained from a https://www.punycoder.com/[Punycode/IDN converters].
@@ -134,7 +134,7 @@ To achieve this, you simply use the same context path of `/` for each of your we
 [[og-deploy-virtual-hosts-port]]
 ===== Different Port, Different Web Application
 
-Sometimes it is required to serve different web applications from different IP ports, and therefore from different ``ServerConnector``s.
+Sometimes it is required to serve different web applications from different socket addresses (either different IP ports, or different Unix-Domain paths), and therefore from different server ``Connector``s.
 
 For example, you want requests to `+http://localhost:8080/+` to be served by one web application, but requests to `+http://localhost:9090/+` to be served by another web application.
 

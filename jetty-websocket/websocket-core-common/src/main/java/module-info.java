@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,20 +11,21 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.websocket.core.Extension;
-import org.eclipse.jetty.websocket.core.internal.FragmentExtension;
-import org.eclipse.jetty.websocket.core.internal.IdentityExtension;
-import org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension;
-import org.eclipse.jetty.websocket.core.internal.ValidationExtension;
-
 module org.eclipse.jetty.websocket.core.common
 {
+    requires org.eclipse.jetty.http;
+    requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.io;
+    requires transitive org.eclipse.jetty.util;
+
     exports org.eclipse.jetty.websocket.core;
     exports org.eclipse.jetty.websocket.core.exception;
 
     exports org.eclipse.jetty.websocket.core.internal to
         org.eclipse.jetty.websocket.core.client,
-        org.eclipse.jetty.websocket.core.server;
+        org.eclipse.jetty.websocket.core.server,
+        org.eclipse.jetty.util; // Export to DecoratedObjectFactory.
 
     // The Jetty & Javax API Layers need to access both access some internal utilities which we don't want to expose.
     exports org.eclipse.jetty.websocket.core.internal.util to
@@ -43,16 +44,11 @@ module org.eclipse.jetty.websocket.core.common
         org.eclipse.jetty.websocket.javax.client,
         org.eclipse.jetty.websocket.javax.server;
 
-    requires org.eclipse.jetty.http;
-    requires transitive org.eclipse.jetty.io;
-    requires transitive org.eclipse.jetty.util;
-    requires org.slf4j;
-
-    uses Extension;
-
-    provides Extension with
-        FragmentExtension,
-        IdentityExtension,
-        PerMessageDeflateExtension,
-        ValidationExtension;
+    uses org.eclipse.jetty.websocket.core.Extension;
+    
+    provides org.eclipse.jetty.websocket.core.Extension with
+        org.eclipse.jetty.websocket.core.internal.FragmentExtension,
+        org.eclipse.jetty.websocket.core.internal.IdentityExtension,
+        org.eclipse.jetty.websocket.core.internal.PerMessageDeflateExtension,
+        org.eclipse.jetty.websocket.core.internal.ValidationExtension;
 }

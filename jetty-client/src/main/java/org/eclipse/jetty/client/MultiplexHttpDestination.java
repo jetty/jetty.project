@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,22 +28,27 @@ public class MultiplexHttpDestination extends HttpDestination implements HttpDes
 {
     public MultiplexHttpDestination(HttpClient client, Origin origin)
     {
-        super(client, origin);
+        this(client, origin, false);
+    }
+
+    public MultiplexHttpDestination(HttpClient client, Origin origin, boolean intrinsicallySecure)
+    {
+        super(client, origin, intrinsicallySecure);
     }
 
     @ManagedAttribute(value = "The maximum number of concurrent requests per connection")
     public int getMaxRequestsPerConnection()
     {
         ConnectionPool connectionPool = getConnectionPool();
-        if (connectionPool instanceof ConnectionPool.Multiplexable)
-            return ((ConnectionPool.Multiplexable)connectionPool).getMaxMultiplex();
+        if (connectionPool instanceof AbstractConnectionPool)
+            return ((AbstractConnectionPool)connectionPool).getMaxMultiplex();
         return 1;
     }
 
     public void setMaxRequestsPerConnection(int maxRequestsPerConnection)
     {
         ConnectionPool connectionPool = getConnectionPool();
-        if (connectionPool instanceof ConnectionPool.Multiplexable)
-            ((ConnectionPool.Multiplexable)connectionPool).setMaxMultiplex(maxRequestsPerConnection);
+        if (connectionPool instanceof AbstractConnectionPool)
+            ((AbstractConnectionPool)connectionPool).setMaxMultiplex(maxRequestsPerConnection);
     }
 }

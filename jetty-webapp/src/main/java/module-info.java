@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,22 +11,22 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.webapp.Configuration;
-
 module org.eclipse.jetty.webapp
 {
-    exports org.eclipse.jetty.webapp;
+    requires org.slf4j;
 
     requires transitive java.instrument;
     requires transitive org.eclipse.jetty.servlet;
     requires transitive org.eclipse.jetty.xml;
-    requires org.slf4j;
 
-    uses Configuration;
+    exports org.eclipse.jetty.webapp;
 
-    provides Configuration with
+    uses org.eclipse.jetty.webapp.Configuration;
+
+    provides org.eclipse.jetty.webapp.Configuration with 
         org.eclipse.jetty.webapp.FragmentConfiguration,
         org.eclipse.jetty.webapp.JaasConfiguration,
+        org.eclipse.jetty.webapp.JaspiConfiguration,
         org.eclipse.jetty.webapp.JettyWebXmlConfiguration,
         org.eclipse.jetty.webapp.JmxConfiguration,
         org.eclipse.jetty.webapp.JndiConfiguration,

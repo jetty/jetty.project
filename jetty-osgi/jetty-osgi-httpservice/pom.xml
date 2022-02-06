@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
     <artifactId>jetty-osgi-project</artifactId>
-    <version>10.0.1-SNAPSHOT</version>
+    <version>10.0.8-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-httpservice</artifactId>
@@ -65,7 +65,12 @@
             <Bundle-SymbolicName>org.eclipse.jetty.osgi.httpservice</Bundle-SymbolicName>
             <Bundle-Name>OSGi HttpService</Bundle-Name>
             <Jetty-ContextFilePath>contexts/httpservice.xml</Jetty-ContextFilePath>
-            <Import-Package>org.eclipse.jetty.server.handler;version="[9.1,11.0)", org.eclipse.jetty.util.component;version="[9.1,11.0)", org.eclipse.jetty.server.session;version="[9.1,11.0)", org.eclipse.jetty.servlet;version="[9.1,11.0)", org.eclipse.equinox.http.servlet, *
+            <Import-Package>
+                org.eclipse.jetty.server.handler;version="[10,11.0)",
+                org.eclipse.jetty.util.component;version="[10,11.0)", 
+                org.eclipse.jetty.server.session;version="[10,11.0)",
+                org.eclipse.jetty.servlet;version="[10,11.0)",
+                org.eclipse.equinox.http.servlet, *
             </Import-Package>
             <_nouses>true</_nouses>
           </instructions>

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -203,7 +203,7 @@ public class HpackEncoder
                     encode(buffer, HttpScheme.HTTPS.is(scheme) ? C_SCHEME_HTTPS : C_SCHEME_HTTP);
                     encode(buffer, new HttpField(HttpHeader.C_PATH, request.getURI().getPathQuery()));
                     if (protocol != null)
-                        encode(buffer,new HttpField(HttpHeader.C_PROTOCOL,protocol));
+                        encode(buffer, new HttpField(HttpHeader.C_PROTOCOL, protocol));
                 }
             }
             else if (metadata.isResponse())

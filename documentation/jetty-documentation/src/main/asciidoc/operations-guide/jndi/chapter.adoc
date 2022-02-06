@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -29,33 +29,33 @@ You must declare the objects you want bound into the environment so that you can
 You make these declarations in Jetty XML files that are either _external_  or _internal_ to your webapp.
 A server or context XML file is external to your webapp.
 The special `WEB-INF/jetty-env.xml` file is internal to your webapp.
-See the section on link:#og-jndi-xml[Jetty XML files] for more information on how to choose in which XML file to place your declarations.
+See the section on xref:og-jndi-xml[Jetty XML files] for more information on how to choose in which XML file to place your declarations.
 
 For now, let's look at _what_ you declare in the XML file, regardless of its location.
 
 Declaring a JDNI resource to be referenced later in your webapp is accomplished by declaring new instances of the following types:
 
-link:#og-jndi-env[`org.eclipse.jetty.plus.jndi.EnvEntry`]::
+xref:og-jndi-env[`org.eclipse.jetty.plus.jndi.EnvEntry`]::
 Used for `env-entry` type of entries
-link:#og-jndi-resource[`org.eclipse.jetty.plus.jndi.Resource`]::
+xref:og-jndi-resource[`org.eclipse.jetty.plus.jndi.Resource`]::
 Used for most other type of resources
-link:#og-jndi-tx[`org.eclipse.jetty.plus.jndi.Transaction`]::
+xref:og-jndi-tx[`org.eclipse.jetty.plus.jndi.Transaction`]::
 For a JTA manager
-link:#og-jndi-link[`org.eclipse.jetty.plus.jndi.Link`]::
+xref:og-jndi-link[`org.eclipse.jetty.plus.jndi.Link`]::
 For the link between a `web.xml` resource name and a naming entry
 
 Declarations of each of these types follow a similar pattern:
 
 [source,xml,subs=verbatim]
 ----
-<New class="org.eclipse.jetty.plus.jndi.xxxx"> <1>
-  <Arg><!-- scope --></Arg> <2>
-  <Arg><!-- name --></Arg>  <3>
-  <Arg><!-- value --></Arg> <4>
+<New class="org.eclipse.jetty.plus.jndi.xxxx"> <!--1-->
+  <Arg><!-- scope --></Arg> <!--2-->
+  <Arg><!-- name --></Arg>  <!--3-->
+  <Arg><!-- value --></Arg> <!--4-->
 </New>
 ----
 <1> Defines a resource to Jetty.
-<2> Specifies the link:#og-jndi-scope[scope] of the resource.
+<2> Specifies the xref:og-jndi-scope[scope] of the resource.
 <3> Specifies the name of the resource which will be looked up by the webapp relative to the `java:comp/env` namespace.
 <4> Specifies the value of the resource.
 
@@ -70,15 +70,15 @@ Here's an example that defines the equivalent of an `env-entry` called `mySpecia
 
 [source,xml,subs=verbatim]
 ----
-<New class="org.eclipse.jetty.plus.jndi.EnvEntry"> <1>
-  <Arg></Arg> <2>
-  <Arg>mySpecialValue</Arg> <3>
-  <Arg type="java.lang.Integer">4000</Arg> <4>
-  <Arg type="boolean">true</Arg> <5>
+<New class="org.eclipse.jetty.plus.jndi.EnvEntry"> <!--1-->
+  <Arg></Arg> <!--2-->
+  <Arg>mySpecialValue</Arg> <!--3-->
+  <Arg type="java.lang.Integer">4000</Arg> <!--4-->
+  <Arg type="boolean">true</Arg> <!--5-->
 </New>
 ----
 <1> Define an `EnvEntry` that corresponds to an `<env-entry>`.
-<2> link:#og-jndi-scope[Scoped] at the JVM level.
+<2> xref:og-jndi-scope[Scoped] at the JVM level.
 <3> The name of the entry, corresponding to a lookup by the webapp of `java:comp/env/mySpecialValue`.
 <4> The value of the entry, in this case the integer value `4000`.
 <5> `true` means to override the value of an `<env-entry>` of the same name in `web.xml`.
@@ -100,8 +100,8 @@ The Servlet Specification allows binding only the following object types to an `
 Jetty is a little more flexible and allows you to also bind:
 
 * custom POJOs
-* http://docs.oracle.com/javase/1.5.0/docs/api/javax/naming/Reference.html[`javax.naming.References`]
-* http://docs.oracle.com/javase/1.5.0/docs/api/javax/naming/Referenceable.html[`javax.naming.Referenceables`]
+* link:http://docs.oracle.com/javase/1.5.0/docs/api/javax/naming/Reference.html[`javax.naming.References`]
+* link:http://docs.oracle.com/javase/1.5.0/docs/api/javax/naming/Referenceable.html[`javax.naming.Referenceables`]
 
 Be aware that if you take advantage of this feature, your web application is __not portable__.
 
@@ -116,7 +116,7 @@ Let's examine how to configure some of the most common types of resources.
 
 ====== DataSources
 
-In this example, we'll configure a http://db.apache.org/derby[Derby] DataSource named `jdbc/myds`:
+In this example, we'll configure a link:http://db.apache.org/derby[Derby] DataSource named `jdbc/myds`:
 
 [source,xml,subs=verbatim]
 ----
@@ -150,7 +150,7 @@ This would linked into the webapps JNDI namespace via an entry in a `web.xml` li
 When configuring Resources, ensure that the type of object you configure matches the type of object you expect to look up in `java:comp/env`.
 For database connection factories, this means that the object you register as a Resource _must_ implement the `javax.sql.DataSource` interface.
 
-Also note that the http://jcp.org/aboutJava/communityprocess/pr/jsr244/index.html[J2EE Specification] recommends storing DataSources relative to `jdbc/` and thus looked up by the application as `java:comp/env/jdbc/xxx`.
+Also note that the link:http://jcp.org/aboutJava/communityprocess/pr/jsr244/index.html[J2EE Specification] recommends storing DataSources relative to `jdbc/` and thus looked up by the application as `java:comp/env/jdbc/xxx`.
 Eg The Datasource bound in Jetty as `jdbc/users` would be looked up by the application as `java:comp/env/jdbc/users`
 
 ====
@@ -162,7 +162,7 @@ Eg The Datasource bound in Jetty as `jdbc/users` would be looked up by the appli
 
 Jetty can bind any implementation of the JMS destinations and connection factories.
 
-Here is an example of binding an http://activemq.apache.org[ActiveMQ] in-JVM connection factory:
+Here is an example of binding an link:http://activemq.apache.org[ActiveMQ] in-JVM connection factory:
 
 [source,xml,subs=verbatim]
 ----
@@ -192,7 +192,7 @@ The corresponding entry in `web.xml` to bind the ConnectionFactory into the weba
 
 [NOTE]
 ====
-The http://jcp.org/aboutJava/communityprocess/pr/jsr244/index.html[J2EE Specification] recommends storing JMS connection factories under `jms/`.
+The link:http://jcp.org/aboutJava/communityprocess/pr/jsr244/index.html[J2EE Specification] recommends storing JMS connection factories under `jms/`.
 Eg The ConnectionFactory bound in Jetty as `jms/inqueue` would be looked up by the application as `java:comp/env/jms/inqueue`.
 ====
 
@@ -207,10 +207,10 @@ To configure access to `javax.mail.Session` from within a webapp, declare an `or
     <Arg><Ref refid="wac"/></Arg>
     <Arg>mail/Session</Arg>
     <Arg>
-      <New class="org.eclipse.jetty.jndi.factories.MailSessionReference"> <1>
-        <Set name="user">fred</Set> <2>
-        <Set name="password">OBF:1xmk1w261z0f1w1c1xmq</Set> <3>
-        <Set name="properties"> <4>
+      <New class="org.eclipse.jetty.jndi.factories.MailSessionReference"> <!--1-->
+        <Set name="user">fred</Set> <!--2-->
+        <Set name="password">OBF:1xmk1w261z0f1w1c1xmq</Set> <!--3-->
+        <Set name="properties"> <!--4-->
           <New class="java.util.Properties"> 
             <Put name="mail.smtp.host">XXX</Put>
             <Put name="mail.from">me@me</Put>
@@ -227,13 +227,13 @@ To configure access to `javax.mail.Session` from within a webapp, declare an `or
 <3> Set the password for the mail instance - use Jetty's secure password obfuscation to obscure the password. 
 <4> Set all other applicable properties.
 
-The webapp performs a lookup for `java:comp/env/mail/Session` at runtime and obtains a `javax.mail.Session` that has the correct configuration to permit it to send email via SMTP.
+The webapp performs a lookup for `java:comp/env/mail/Session` at runtime and obtains a `javax.mail.Session` that has the correct configuration to permit it to send email via SMTP.
 
 [NOTE]
 ====
 Jetty does not provide the `javax.mail` and `javax.activation` jars.
 
-Note also that the http://jcp.org/aboutJava/communityprocess/pr/jsr244/index.html[J2EE Specification] recommends storing JavaMail connection factories under `mail/`.
+Note also that the link:http://jcp.org/aboutJava/communityprocess/pr/jsr244/index.html[J2EE Specification] recommends storing JavaMail connection factories under `mail/`.
 Eg The `MailSessionReference` bound to jetty as `mail/smtp` would be looked up by the application as `java:comp/env/mail/smtp`.
 ====
 
@@ -245,9 +245,9 @@ The transaction manager is looked up by the application as `java:comp/UserTransa
 
 Jetty does not ship with a JTA manager, but _does_ provide the infrastructure to plug in the JTA manager of your choice.
 
-Use the link:{JDURL}/org/eclipse/jetty/plus/jndi/Transaction.html[org.eclipse.jetty.plus.jndi.Transaction] object in a link:#og-jndi-xml[Jetty XML file] to configure the JTA manager.
+Use the link:{javadoc-url}/org/eclipse/jetty/plus/jndi/Transaction.html[org.eclipse.jetty.plus.jndi.Transaction] object in a xref:og-jndi-xml[Jetty XML file] to configure the JTA manager.
 
-The following example configures the http://www.atomikos.com/[Atomikos] transaction manager:
+The following example configures the link:http://www.atomikos.com/[Atomikos] transaction manager:
 
 [source,xml,subs=verbatim]
 ----
@@ -308,8 +308,8 @@ Create a `WEB-INF/jetty-env.xml` file with a `org.eclipse.jetty.plus.jndi.Link` 
 ----
 <New class="org.eclipse.jetty.plus.jndi.Link">
   <Arg><Ref refid='wac'/></Arg>
-  <Arg>jdbc/employees</Arg> <1>
-  <Arg>jdbc/workforce</Arg>  <2>
+  <Arg>jdbc/employees</Arg> <!--1-->
+  <Arg>jdbc/workforce</Arg>  <!--2-->
 </New>
 ----
 <1> The name as referenced in the `web.xml` file.
@@ -321,14 +321,14 @@ Create a `WEB-INF/jetty-env.xml` file with a `org.eclipse.jetty.plus.jndi.Link` 
 You can define naming resources in three places:
 
 Server XML file::
-Naming resources defined in a server XML file are link:#og-jndi-scope[scoped] at either the JVM level or the `org.eclipse.jetty.server.Server` level.
+Naming resources defined in a server XML file are xref:og-jndi-scope[scoped] at either the JVM level or the `org.eclipse.jetty.server.Server` level.
 The classes for the resource _must_ be visible at the Jetty *container* level.
 If instead the classes for the resource only exist inside your webapp, you must declare it in a `WEB-INF/jetty-env.xml` file.
 Context XML file::
-Entries in a context XML file should be link:#og-jndi-scope[scoped] at the level of the webapp to which they apply (although it is possible to use a less strict scoping level of Server or JVM, but not recommended).
+Entries in a context XML file should be xref:og-jndi-scope[scoped] at the level of the webapp to which they apply (although it is possible to use a less strict scoping level of Server or JVM, but not recommended).
 As with resources declared in a server XML file, classes associated with the resource _must_ be visible on the *container's* classpath.
 WEB-INF/jetty-env.xml::
-Naming resources in a `WEB-INF/jetty-env.xml` file are link:#og-jndi-scope[scoped] to the webapp in which the file resides.
+Naming resources in a `WEB-INF/jetty-env.xml` file are xref:og-jndi-scope[scoped] to the webapp in which the file resides.
 While you can enter JVM or Server scopes if you choose, we do not recommend doing so.
 The resources defined here may use classes from inside your webapp.
 
@@ -344,7 +344,7 @@ For example:
 [source,xml,subs=verbatim]
 ----
 <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
-  <Arg></Arg>  <1>
+  <Arg></Arg>  <!--1-->
   <Arg>jms/connectionFactory</Arg>
   <Arg>
     <New class="org.apache.activemq.ActiveMQConnectionFactory">
@@ -362,7 +362,7 @@ For example:
 [source,xml,subs=verbatim]
 ----
 <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
-  <Arg><Ref refid="Server"/></Arg>  <1>
+  <Arg><Ref refid="Server"/></Arg>  <!--1-->
   <Arg>jms/connectionFactory</Arg>
   <Arg>
     <New class="org.apache.activemq.ActiveMQConnectionFactory">
@@ -380,7 +380,7 @@ For example:
 [source,xml,subs=verbatim]
 ----
 <New class="org.eclipse.jetty.plus.jndi.Resource">
-  <Arg><Ref refid='wac'/></Arg> <1>
+  <Arg><Ref refid='wac'/></Arg> <!--1-->
   <Arg>jms/connectionFactory</Arg>
   <Arg>
     <New class="org.apache.activemq.ActiveMQConnectionFactory">

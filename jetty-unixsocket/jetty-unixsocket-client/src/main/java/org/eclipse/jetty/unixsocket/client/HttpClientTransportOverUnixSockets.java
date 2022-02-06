@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -22,6 +22,7 @@ import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.SocketChannel;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -32,6 +33,7 @@ import org.eclipse.jetty.client.AbstractConnectorHttpClientTransport;
 import org.eclipse.jetty.client.DuplexConnectionPool;
 import org.eclipse.jetty.client.DuplexHttpDestination;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.Origin;
@@ -47,7 +49,10 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO: this class needs a thorough review.
+/**
+ * @deprecated use any {@link HttpClientTransport} with {@link ClientConnector#forUnixDomain(Path)} instead (requires Java 16 or later)
+ */
+@Deprecated(forRemoval = true)
 public class HttpClientTransportOverUnixSockets extends AbstractConnectorHttpClientTransport
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpClientTransportOverUnixSockets.class);

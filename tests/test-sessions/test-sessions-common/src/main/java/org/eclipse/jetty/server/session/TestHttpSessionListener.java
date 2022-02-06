@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,16 +26,18 @@ public class TestHttpSessionListener implements HttpSessionListener
     public List<String> createdSessions = new ArrayList<>();
     public List<String> destroyedSessions = new ArrayList<>();
     public boolean accessAttribute = false;
-    public Exception ex = null;
+    public boolean lastAccessTime = false;
+    public Exception attributeException = null;
+    public Exception accessTimeException = null;
 
-    public TestHttpSessionListener(boolean access)
+    public TestHttpSessionListener(boolean accessAttribute, boolean lastAccessTime)
     {
-        accessAttribute = access;
+        this.accessAttribute = accessAttribute;
+        this.lastAccessTime = lastAccessTime;
     }
 
     public TestHttpSessionListener()
     {
-        accessAttribute = false;
     }
 
     public void sessionDestroyed(HttpSessionEvent se)
@@ -49,7 +51,19 @@ public class TestHttpSessionListener implements HttpSessionListener
             }
             catch (Exception e)
             {
-                ex = e;
+                attributeException = e;
+            }
+        }
+        
+        if (lastAccessTime)
+        {
+            try
+            {
+                se.getSession().getLastAccessedTime();
+            }
+            catch (Exception e)
+            {
+                accessTimeException = e;
             }
         }
     }

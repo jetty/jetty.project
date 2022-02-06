@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -102,7 +102,7 @@ public class LifeCycleListenerTest
         // System.out.println("STOPING TIME : " + listener.stoppingTime + " : " + listener.stoppedTime);
 
         // check that the lifecycle's state is stopped
-        assertTrue(lifecycle.isStopped(), "The lifecycle state is not stooped");
+        assertTrue(lifecycle.isStopped(), "The lifecycle state is not stopped");
     }
 
     @Test

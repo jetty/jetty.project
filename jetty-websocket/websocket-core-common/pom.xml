@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.websocket</groupId>
     <artifactId>websocket-parent</artifactId>
-    <version>10.0.1-SNAPSHOT</version>
+    <version>10.0.8-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -18,12 +18,10 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-io</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -46,6 +44,12 @@
             <configuration>
               <instructions>
                 <Export-Package>*,org.eclipse.jetty.websocket.core.common.internal.*</Export-Package>
+                <Require-Capability>
+                  osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
+                </Require-Capability>
+                <Provide-Capability>
+                  osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.websocket.core.Extension
+                </Provide-Capability>
               </instructions>
             </configuration>
           </execution>

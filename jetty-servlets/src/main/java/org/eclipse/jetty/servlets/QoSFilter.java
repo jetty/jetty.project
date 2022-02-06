@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -230,8 +230,8 @@ public class QoSFilter implements Filter
                             }
                             catch (IllegalStateException x)
                             {
-                                LOG.warn("Unable to resume suspended dispatch", x);
-                                continue;
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("dispatch failed", x);
                             }
                         }
                     }
@@ -356,12 +356,12 @@ public class QoSFilter implements Filter
         }
 
         @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
+        public void onStartAsync(AsyncEvent event)
         {
         }
 
         @Override
-        public void onComplete(AsyncEvent event) throws IOException
+        public void onComplete(AsyncEvent event)
         {
         }
 
@@ -377,7 +377,7 @@ public class QoSFilter implements Filter
         }
 
         @Override
-        public void onError(AsyncEvent event) throws IOException
+        public void onError(AsyncEvent event)
         {
         }
     }

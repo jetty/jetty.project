@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,7 @@
 // Snippets of HTTP/2 documentation that are common between client and server.
 
 tag::multiplex[]
-HTTP/2 is a multiplexed protocol: it allows multiple HTTP/2 requests to be sent on the same TCP connection.
+HTTP/2 is a multiplexed protocol: it allows multiple HTTP/2 requests to be sent on the same TCP connection, or _session_.
 Each request/response cycle is represented by a _stream_.
 Therefore, a single _session_ manages multiple concurrent _streams_.
 A _stream_ has typically a very short life compared to the _session_: a _stream_ only exists for the duration of the request/response cycle and then disappears.

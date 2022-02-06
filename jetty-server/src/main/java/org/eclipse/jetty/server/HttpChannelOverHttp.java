@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -90,7 +90,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
                 LOG.debug("needContent has content immediately available: {}", _content);
             return true;
         }
-        _httpConnection.parseAndFillForContent();
+        parseAndFillForContent();
         if (_content != null)
         {
             if (LOG.isDebugEnabled())
@@ -111,7 +111,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("produceContent has no content, parsing and filling");
-            _httpConnection.parseAndFillForContent();
+            parseAndFillForContent();
         }
         HttpInput.Content result = _content;
         if (result != null && !result.isSpecial())
@@ -119,6 +119,18 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         if (LOG.isDebugEnabled())
             LOG.debug("produceContent produced {}", result);
         return result;
+    }
+
+    private void parseAndFillForContent()
+    {
+        try
+        {
+            _httpConnection.parseAndFillForContent();
+        }
+        catch (Throwable x)
+        {
+            _content = new HttpInput.ErrorContent(x);
+        }
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -30,7 +30,7 @@ public class RunAsCollection
     private static final Logger LOG = LoggerFactory.getLogger(RunAsCollection.class);
 
     public static final String RUNAS_COLLECTION = "org.eclipse.jetty.runAsCollection";
-    private ConcurrentMap<String, RunAs> _runAsMap = new ConcurrentHashMap<String, RunAs>();//map of classname to run-as
+    private ConcurrentMap<String, RunAs> _runAsMap = new ConcurrentHashMap<String, RunAs>(); //map of classname to run-as
 
     public void add(RunAs runAs)
     {

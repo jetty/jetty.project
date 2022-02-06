@@ -1,0 +1,70 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+// Snippets of HTTP/3 documentation that are common between client and server.
+
+tag::multiplex[]
+HTTP/3 is a multiplexed protocol because it relies on the multiplexing capabilities of QUIC, the protocol based on UDP that transports HTTP/3 frames.
+Thanks to multiplexing, multiple HTTP/3 requests are sent on the same QUIC connection, or _session_.
+Each request/response cycle is represented by a _stream_.
+Therefore, a single _session_ manages multiple concurrent _streams_.
+A _stream_ has typically a very short life compared to the _session_: a _stream_ only exists for the duration of the request/response cycle and then disappears.
+end::multiplex[]
+
+//tag::flowControl[]
+//The HTTP/3 protocol is _flow controlled_ (see link:https://tools.ietf.org/html/rfc7540#section-5.2[the specification]).
+//This means that a sender and a receiver maintain a _flow control window_ that tracks the number of data bytes sent and received, respectively.
+//When a sender sends data bytes, it reduces its flow control window.
+//When a receiver receives data bytes, it also reduces its flow control window, and then passes the received data bytes to the application.
+//The application consumes the data bytes and tells back the receiver that it has consumed the data bytes.
+//The receiver then enlarges the flow control window, and arranges to send a message to the sender with the number of bytes consumed, so that the sender can enlarge its flow control window.
+//
+//A sender can send data bytes up to its whole flow control window, then it must stop sending until it receives a message from the receiver that the data bytes have been consumed, which enlarges the flow control window, which allows the sender to send more data bytes.
+//
+//HTTP/3 defines _two_ flow control windows: one for each _session_, and one for each _stream_.
+//Let's see with an example how they interact, assuming that in this example the session flow control window is 120 bytes and the stream flow control window is 100 bytes.
+//
+//The sender opens a session, and then opens `stream_1` on that session, and sends `80` data bytes.
+//At this point the session flow control window is `40` bytes (`120 - 80`), and ``stream_1``'s flow control window is `20` bytes (`100 - 80`).
+//The sender now opens `stream_2` on the same session and sends `40` data bytes.
+//At this point, the session flow control window is `0` bytes (`40 - 40`), while ``stream_2``'s flow control window is `60` (`100 - 40`).
+//Since now the session flow control window is `0`, the sender cannot send more data bytes, neither on `stream_1` nor on `stream_2` despite both have their stream flow control windows greater than `0`.
+//
+//The receiver consumes ``stream_2``'s `40` data bytes and sends a message to the sender with this information.
+//At this point, the session flow control window is `40` (`0   40`), ``stream_1``'s flow control window is still `20` and ``stream_2``'s flow control window is `100` (`60   40`).
+//If the sender opens `stream_3` and would like to send 50 data bytes, it would only be able to send `40` because that is the maximum allowed by the session flow control window at this point.
+//
+//It is therefore very important that applications notify the fact that they have consumed data bytes as soon as possible, so that the implementation (the receiver) can send a message to the sender (in the form of a `WINDOW_UPDATE` frame) with the information to enlarge the flow control window, therefore reducing the possibility that sender stalls due to the flow control windows being reduced to `0`.
+//end::flowControl[]
+//
+//tag::apiFlowControl[]
+//NOTE: Returning from the `onData(...)` method implicitly demands for more `DATA` frames (unless the one just delivered was the last).
+//Additional `DATA` frames may be delivered immediately if they are available or later, asynchronously, when they arrive.
+//
+//Applications that consume the content buffer within `onData(...)` (for example, writing it to a file, or copying the bytes to another storage) should succeed the callback as soon as they have consumed the content buffer.
+//This allows the implementation to reuse the buffer, reducing the memory requirements needed to handle the content buffers.
+//
+//Alternatively, a client application may store away _both_ the buffer and the callback to consume the buffer bytes later, or pass _both_ the buffer and the callback to another asynchronous API (this is typical in proxy applications).
+//
+//IMPORTANT: Completing the `Callback` is very important not only to allow the implementation to reuse the buffer, but also tells the implementation to enlarge the stream and session flow control windows so that the sender will be able to send more `DATA` frames without stalling.
+//
+//Applications can also precisely control _when_ to demand more `DATA` frames, by implementing the `onDataDemanded(...)` method instead of `onData(...)`:
+//
+//[source,java,indent=0]
+//----
+//include::{doc_code}/org/eclipse/jetty/docs/programming/HTTP3Docs.java[tags=dataDemanded]
+//----
+//
+//IMPORTANT: Applications that implement `onDataDemanded(...)` must remember to call `Stream.demand(...)`.
+//If they don't, the implementation will not deliver `DATA` frames and the application will stall threadlessly until an idle timeout fires to close the stream or the session.
+//end::apiFlowControl[]

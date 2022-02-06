@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -237,6 +237,9 @@ public class DetectorConnectionTest
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
         assertThat(response, Matchers.containsString("pathInfo=/path"));
+        assertThat(response, Matchers.containsString("servername=server"));
+        assertThat(response, Matchers.containsString("serverport=80"));
+        assertThat(response, Matchers.containsString("localname=5.6.7.8"));
         assertThat(response, Matchers.containsString("local=5.6.7.8:222"));
         assertThat(response, Matchers.containsString("remote=1.2.3.4:111"));
     }

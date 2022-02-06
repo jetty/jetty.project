@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -50,7 +50,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>A server-side connector for UNIX sockets.</p>
+ *
+ * @deprecated Use UnixDomainServerConnector from the jetty-unixdomain-server module instead (requires Java 16 or later).
  */
+@Deprecated(forRemoval = true)
 @ManagedObject("Connector using UNIX Socket")
 public class UnixSocketConnector extends AbstractConnector
 {

@@ -1,0 +1,288 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+// Snippets of WebSocket documentation that are common between client and server.
+
+[[pg-websocket-architecture]]
+==== WebSocket Architecture
+
+The Jetty WebSocket architecture is organized around the concept of a logical _connection_ between the client and the server.
+
+The connection may be physical, when connecting to the server using HTTP/1.1, as the WebSocket bytes are carried directly by the TCP connection.
+
+The connection may be virtual, when connecting to the server using HTTP/2, as the WebSocket bytes are wrapped into HTTP/2 `DATA` frames of an HTTP/2 stream.
+In this case, a single TCP connection may carry several WebSocket virtual connections, each wrapped in its own HTTP/2 stream.
+
+Each side of a WebSocket connection, either client or server, is made of two entities:
+
+* A xref:pg-websocket-endpoints[WebSocket _endpoint_], the entity that _receives_ WebSocket events.
+* A xref:pg-websocket-session[WebSocket _session_], the entity that offers an API to _send_ WebSocket data (and to close the WebSocket connection), as well as to configure WebSocket connection parameters.
+
+[[pg-websocket-endpoints]]
+==== WebSocket Endpoints
+
+A WebSocket endpoint is the entity that receives WebSocket events.
+
+The WebSocket events are the following:
+
+* The _connect_ event.
+This event is emitted when the WebSocket communication has been successfully established.
+Applications interested in the connect event receive the WebSocket _session_ so that they can use it to send data to the remote peer.
+* The _close_ event.
+This event is emitted when the WebSocket communication has been closed.
+Applications interested in the close event receive a WebSocket status code and an optional close reason message.
+* The _error_ event.
+This event is emitted when the WebSocket communication encounters a fatal error, such as an I/O error (for example, the network connection has been broken), or a protocol error (for example, the remote peer sends an invalid WebSocket frame).
+Applications interested in the error event receive a `Throwable` that represent the error.
+* The _message_ event.
+The message event is emitted when a WebSocket message is received.
+Only one thread at a time will be delivering a message event to the `onMessage` method; the next message event will not be delivered until the previous call to the `onMessage` method has exited.
+Endpoints will always be notified of message events in the same order they were received over the network.
+The message event can be of two types:
+** Textual message event.
+Applications interested in this type of messages receive a `String` representing the UTF-8 bytes received.
+** Binary message event.
+Applications interested in this type of messages receive a `byte[]` representing the raw bytes received.
+
+[[pg-websocket-endpoints-listener]]
+===== Listener Endpoints
+
+A WebSocket endpoint may implement the `org.eclipse.jetty.websocket.api.WebSocketListener` interface to receive WebSocket events:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=listenerEndpoint]
+----
+<1> Your listener class implements `WebSocketListener`.
+
+====== Message Streaming Reads
+
+If you need to deal with large WebSocket messages, you may reduce the memory usage by streaming the message content.
+For large WebSocket messages, the memory usage may be large due to the fact that the text or the bytes must be accumulated until the message is complete before delivering the message event.
+
+To stream textual or binary messages, you must implement interface `org.eclipse.jetty.websocket.api.WebSocketPartialListener` instead of `WebSocketListener`.
+
+Interface `WebSocketPartialListener` exposes one method for textual messages, and one method to binary messages that receive _chunks_ of, respectively, text and bytes that form the whole WebSocket message.
+
+You may accumulate the chunks yourself, or process each chunk as it arrives, or stream the chunks elsewhere, for example:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=streamingListenerEndpoint]
+----
+
+[[pg-websocket-endpoints-annotated]]
+===== Annotated Endpoints
+
+A WebSocket endpoint may annotate methods with `org.eclipse.jetty.websocket.api.annotations.*` annotations to receive WebSocket events.
+Each annotated method may take an optional `Session` argument as its first parameter:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=annotatedEndpoint]
+----
+<1> Use the `@WebSocket` annotation at the class level to make it a WebSocket endpoint.
+<2> Use the `@OnWebSocketConnect` annotation for the _connect_ event.
+As this is the first event notified to the endpoint, you can configure the `Session` object.
+<3> Use the `@OnWebSocketClose` annotation for the _close_ event.
+The method may take an optional `Session` as first parameter.
+<4> Use the `@OnWebSocketError` annotation for the _error_ event.
+The method may take an optional `Session` as first parameter.
+<5> Use the `@OnWebSocketMessage` annotation for the _message_ event, both for textual and binary messages.
+The method may take an optional `Session` as first parameter.
+
+[NOTE]
+====
+For binary messages, you may declare the annotated method with either or these two signatures:
+
+[source,java]
+----
+@OnWebSocketMessage
+public void methodName(byte[] bytes, int offset, int length) { ... }
+----
+
+or
+
+[source,java]
+----
+@OnWebSocketMessage
+public void methodName(ByteBuffer buffer) { ... }
+----
+====
+
+====== Message Streaming Reads
+
+If you need to deal with large WebSocket messages, you may reduce the memory usage by streaming the message content.
+
+To stream textual or binary messages, you still use the `@OnWebSocketMessage` annotation, but you change the signature of the method to take, respectively a `Reader` and an `InputStream`:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=streamingAnnotatedEndpoint]
+----
+
+[CAUTION]
+====
+`Reader` or `InputStream` only offer blocking APIs, so if the remote peers are slow in sending the large WebSocket messages, reading threads may be blocked in `Reader.read(char[])` or `InputStream.read(byte[])`, possibly exhausting the thread pool.
+====
+
+[[pg-websocket-session]]
+==== WebSocket Session
+
+A WebSocket session is the entity that offers an API to send data to the remote peer, to close the WebSocket connection, and to configure WebSocket connection parameters.
+
+[[pg-websocket-session-configure]]
+===== Configuring the Session
+
+You may configure the WebSocket session behavior using the `org.eclipse.jetty.websocket.api.Session` APIs.
+You want to do this as soon as you have access to the `Session` object, typically from the xref:pg-websocket-endpoints[_connect_ event] handler:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=sessionConfigure]
+----
+
+Please refer to the `Session` link:{javadoc-url}/org/eclipse/jetty/websocket/api/Session.html[javadocs] for the complete list of configuration APIs.
+
+[[pg-websocket-session-send]]
+===== Sending Data
+
+To send data to the remote peer, you need to obtain the `RemoteEndpoint` object from the `Session`, and then use its API to send data.
+
+`RemoteEndpoint` offers two styles of APIs to send data:
+
+* Blocking APIs, where the call returns when the data has been sent, or throws an `IOException` if the data cannot be sent.
+* Non-blocking APIs, where a callback object is notified when the data has been sent, or when there was a failure sending the data.
+
+[[pg-websocket-session-send-blocking]]
+====== Blocking APIs
+
+`RemoteEndpoint` blocking APIs throw `IOException`:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=sendBlocking]
+----
+
+Blocking APIs are simpler to use since they can be invoked one after the other sequentially.
+
+[CAUTION]
+====
+Sending large messages to the remote peer may cause the sending thread to block, possibly exhausting the thread pool.
+Consider using non-blocking APIs for large messages.
+====
+
+[[pg-websocket-session-send-non-blocking]]
+====== Non-Blocking APIs
+
+`RemoteEndpoint` non-blocking APIs have an additional callback parameter:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=sendNonBlocking]
+----
+<1> Non-blocking APIs require a `WriteCallback` parameter.
+<2> Note how the second send must be performed from inside the callback.
+<3> Sequential sends may throw `WritePendingException`.
+
+Non-blocking APIs are more difficult to use since you are required to meet the following condition:
+
+[IMPORTANT]
+====
+You cannot initiate another send of any kind until the previous send is completed.
+
+For example, if you have initiated a text send, you cannot initiate a binary send, until the previous send has completed.
+
+Furthermore, if you have initiated a non-blocking send, you cannot initiate a blocking send, until the previous send has completed.
+====
+
+This requirement is necessary to avoid unbounded buffering that could lead to ``OutOfMemoryError``s.
+
+[CAUTION]
+====
+We strongly recommend that you follow the condition above.
+
+However, there may be cases where you want to explicitly control the number of outgoing buffered messages using `RemoteEndpoint.setMaxOutgoingFrames(int)`.
+
+Remember that trying to control the number of outgoing buffered messages is very difficult and tricky; you may set `maxOutgoingFrames=4` and have a situation where 6 threads try to concurrently send messages: threads 1 to 4 will be able to successfully buffer their messages, thread 5 may fail, but thread 6 may succeed because one of the previous threads completed its send.
+At this point you have an out-of-order message delivery that could be unexpected and very difficult to troubleshoot because it will happen non-deterministically.
+====
+
+While non-blocking APIs are more difficult to use, they don't block the sender thread and therefore use less resources, which in turn typically allows for greater scalability under load: with respect to blocking APIs, non-blocking APIs need less resources to cope with the same load.
+
+[[pg-websocket-session-send-stream]]
+====== Streaming Send APIs
+
+If you need to send large WebSocket messages, you may reduce the memory usage by streaming the message content.
+
+Both blocking and non-blocking APIs offer `sendPartial*(...)` methods that allow you to send a chunk of the whole message at a time, therefore reducing the memory usage since it is not necessary to have the whole message `String` or `byte[]` in memory to send it.
+
+Streaming sends using blocking APIs is quite simple:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=streamSendBlocking]
+----
+
+Streaming sends using non-blocking APIs is more complicated, as you should wait (without blocking!) for the callbacks to complete.
+
+Fortunately, Jetty provides you with the `IteratingCallback` utility class (described in more details xref:pg-arch-io-echo[in this section]) which greatly simplify the use of non-blocking APIs:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=streamSendNonBlocking]
+----
+<1> Implementing `WriteCallback` allows to pass `this` to `sendPartialBytes(...)`.
+<2> The `process()` method is called iteratively when each `sendPartialBytes(...)` is completed.
+<3> Send the message chunks.
+
+[[pg-websocket-session-ping]]
+===== Sending Ping/Pong
+
+The WebSocket protocol defines two special frame, named `Ping` and `Pong` that may be interesting to applications for these use cases:
+
+* Calculate the round-trip time with the remote peer.
+* Keep the connection from being closed due to idle timeout -- a heartbeat-like mechanism.
+
+To handle `Ping`/`Pong` events, you may implement interface `org.eclipse.jetty.websocket.api.WebSocketPingPongListener`.
+
+[NOTE]
+====
+`Ping`/`Pong` events are not supported when using annotations.
+====
+
+`Ping` frames may contain opaque application bytes, and the WebSocket implementation replies to them with a `Pong` frame containing the same bytes:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=pingPongListener]
+----
+<1> The WebSocket endpoint class must implement `WebSocketPingPongListener`
+
+[[pg-websocket-session-close]]
+===== Closing the Session
+
+When you want to terminate the communication with the remote peer, you close the `Session`:
+
+[source,java,indent=0]
+----
+include::{doc_code}/org/eclipse/jetty/docs/programming/WebSocketDocs.java[tags=sessionClose]
+----
+
+Closing a WebSocket `Session` carries a status code and a reason message that the remote peer can inspect in the _close_ event handler (see xref:pg-websocket-endpoints[this section]).
+
+[NOTE]
+====
+The reason message is optional, and may be truncated to fit into the WebSocket frame sent to the client.
+It is best to use short tokens such as `"shutdown"`, or `"idle_timeout"`, etc. or even application specific codes such as `"0001"` or `"00AF"` that can be converted by the application into more meaningful messages.
+====

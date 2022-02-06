@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -60,30 +60,33 @@ import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpInput.Content;
+import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.gzip.GzipHttpInputInterceptor;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.compression.CompressionPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 import static java.nio.ByteBuffer.wrap;
+import static org.awaitility.Awaitility.await;
 import static org.eclipse.jetty.http.client.Transport.FCGI;
+import static org.eclipse.jetty.http.client.Transport.H2;
 import static org.eclipse.jetty.http.client.Transport.H2C;
+import static org.eclipse.jetty.http.client.Transport.H3;
 import static org.eclipse.jetty.http.client.Transport.HTTP;
+import static org.eclipse.jetty.http.client.Transport.UNIX_DOMAIN;
 import static org.eclipse.jetty.util.BufferUtil.toArray;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -234,7 +237,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                 });
             }
         });
-        scenario.setConnectionIdleTimeout(1000);
+        scenario.setRequestIdleTimeout(1000);
         CountDownLatch closeLatch = new CountDownLatch(1);
         scenario.connector.addBean(new Connection.Listener()
         {
@@ -267,7 +270,9 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                 clientLatch.countDown();
             });
 
-        assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "close latch expired");
+        // HTTP/2 does not close a Connection when the request idle times out.
+        if (transport != H2C && transport != H2)
+            assertTrue(closeLatch.await(5, TimeUnit.SECONDS), "close latch expired");
         assertTrue(responseLatch.await(5, TimeUnit.SECONDS), "response latch expired");
         content.close();
         assertTrue(clientLatch.await(5, TimeUnit.SECONDS), "client latch expired");
@@ -399,18 +404,11 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @Tag("Unstable")
-    @Disabled
     public void testAsyncWriteClosed(Transport transport) throws Exception
     {
         init(transport);
 
-        String text = "Now is the winter of our discontent. How Now Brown Cow. The quick brown fox jumped over the lazy dog.\n";
-        for (int i = 0; i < 10; i++)
-        {
-            text = text + text;
-        }
-        byte[] data = text.getBytes(StandardCharsets.UTF_8);
+        byte[] data = new byte[1024];
 
         CountDownLatch errorLatch = new CountDownLatch(1);
         scenario.start(new HttpServlet()
@@ -426,15 +424,32 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                 out.setWriteListener(new WriteListener()
                 {
                     @Override
-                    public void onWritePossible() throws IOException
+                    public void onWritePossible()
                     {
                         scenario.assertScope();
 
                         // Wait for the failure to arrive to
                         // the server while we are about to write.
-                        sleep(2000);
-
-                        out.write(data);
+                        try
+                        {
+                            await().atMost(5, TimeUnit.SECONDS).until(() ->
+                            {
+                                try
+                                {
+                                    if (out.isReady())
+                                        ((HttpOutput)out).write(ByteBuffer.wrap(data));
+                                    return false;
+                                }
+                                catch (EofException e)
+                                {
+                                    return true;
+                                }
+                            });
+                        }
+                        catch (Exception e)
+                        {
+                            throw new AssertionError(e);
+                        }
                     }
 
                     @Override
@@ -556,8 +571,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
             .send(result ->
             {
                 failed.set(result.isFailed());
-                clientLatch.countDown();
-                clientLatch.countDown();
                 clientLatch.countDown();
             });
 
@@ -851,7 +864,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
     {
         init(transport);
         String success = "SUCCESS";
-        AtomicBoolean allDataRead = new AtomicBoolean(false);
 
         scenario.start(new HttpServlet()
         {
@@ -888,7 +900,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                     {
                         scenario.assertScope();
                         output.write("FAILURE".getBytes(StandardCharsets.UTF_8));
-                        allDataRead.set(true);
                         throw new IllegalStateException();
                     }
 
@@ -1078,7 +1089,6 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         // only generates the close alert back, without encrypting the
         // response, so we need to skip the transports over TLS.
         Assumptions.assumeFalse(scenario.transport.isTlsBased());
-        Assumptions.assumeFalse(scenario.transport == FCGI);
 
         String content = "jetty";
         int responseCode = HttpStatus.NO_CONTENT_204;
@@ -1129,7 +1139,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
             .body(requestContent)
             .onResponseSuccess(response ->
             {
-                if (transport == HTTP)
+                if (transport == HTTP || transport == UNIX_DOMAIN)
                     responseLatch.countDown();
             })
             .onResponseFailure((response, failure) ->
@@ -1148,6 +1158,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
             switch (transport)
             {
                 case HTTP:
+                case UNIX_DOMAIN:
                     assertThat(result.getResponse().getStatus(), Matchers.equalTo(responseCode));
                     break;
                 case H2C:
@@ -1165,6 +1176,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
         switch (transport)
         {
             case HTTP:
+            case UNIX_DOMAIN:
                 ((HttpConnectionOverHTTP)connection).getEndPoint().shutdownOutput();
                 break;
             case H2C:
@@ -1357,13 +1369,16 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
     @ArgumentsSource(TransportProvider.class)
     public void testAsyncEcho(Transport transport) throws Exception
     {
+        // TODO: investigate why H3 does not work.
+        Assumptions.assumeTrue(transport != H3);
+
         init(transport);
         scenario.start(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                System.err.println("Service " + request);
+                System.err.println("service " + request);
 
                 AsyncContext asyncContext = request.startAsync();
                 ServletInputStream input = request.getInputStream();
@@ -1386,7 +1401,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                     }
 
                     @Override
-                    public void onAllDataRead() throws IOException
+                    public void onAllDataRead()
                     {
                         asyncContext.complete();
                     }
@@ -1444,6 +1459,8 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
                 httpInput.addInterceptor(new GzipHttpInputInterceptor(new InflaterPool(-1, true), ((Request)request).getHttpChannel().getByteBufferPool(), 1024));
                 httpInput.addInterceptor(content ->
                 {
+                    if (content.isSpecial())
+                        return content;
                     ByteBuffer byteBuffer = content.getByteBuffer();
                     byte[] bytes = new byte[2];
                     bytes[1] = byteBuffer.get();

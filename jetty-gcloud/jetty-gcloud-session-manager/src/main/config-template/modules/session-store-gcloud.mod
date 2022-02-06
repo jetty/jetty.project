@@ -33,6 +33,8 @@ etc/sessions/gcloud/session-store.xml
 #jetty.session.gcloud.maxRetries=5
 #jetty.session.gcloud.backoffMs=1000
 #jetty.session.gcloud.namespace=
+#jetty.session.gcloud.host=
+#jetty.session.gcloud.projectId=
 #jetty.session.gcloud.model.kind=GCloudSession
 #jetty.session.gcloud.model.id=id
 #jetty.session.gcloud.model.contextPath=contextPath
@@ -42,6 +44,7 @@ etc/sessions/gcloud/session-store.xml
 #jetty.session.gcloud.model.createTime=createTime
 #jetty.session.gcloud.model.cookieSetTime=cookieSetTime
 #jetty.session.gcloud.model.lastNode=lastNode
+#jetty.session.gcloud.model.lastSaved=lastSaved
 #jetty.session.gcloud.model.expiry=expiry
 #jetty.session.gcloud.model.maxInactive=maxInactive
 #jetty.session.gcloud.model.attributes=attributes

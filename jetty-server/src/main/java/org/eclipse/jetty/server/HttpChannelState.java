@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -147,6 +147,7 @@ public class HttpChannelState
     private boolean _asyncWritePossible;
     private long _timeoutMs = DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
+    private Thread _onTimeoutThread;
 
     protected HttpChannelState(HttpChannel channel)
     {
@@ -573,7 +574,10 @@ public class HttpChannelState
             switch (_requestState)
             {
                 case ASYNC:
+                    break;
                 case EXPIRING:
+                    if (Thread.currentThread() != _onTimeoutThread)
+                        throw new IllegalStateException(this.getStatusStringLocked());
                     break;
                 default:
                     throw new IllegalStateException(this.getStatusStringLocked());
@@ -637,39 +641,50 @@ public class HttpChannelState
                 throw new IllegalStateException(toStringLocked());
             event = _event;
             listeners = _asyncListeners;
+            _onTimeoutThread = Thread.currentThread();
         }
 
-        if (listeners != null)
+        try
         {
-            Runnable task = new Runnable()
+            if (listeners != null)
             {
-                @Override
-                public void run()
+                Runnable task = new Runnable()
                 {
-                    for (AsyncListener listener : listeners)
+                    @Override
+                    public void run()
                     {
-                        try
+                        for (AsyncListener listener : listeners)
                         {
-                            listener.onTimeout(event);
-                        }
-                        catch (Throwable x)
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener, x);
-                            else
-                                LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener);
+                            try
+                            {
+                                listener.onTimeout(event);
+                            }
+                            catch (Throwable x)
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener, x);
+                                else
+                                    LOG.warn("{} while invoking onTimeout listener {}", x.toString(), listener);
+                            }
                         }
                     }
-                }
 
-                @Override
-                public String toString()
-                {
-                    return "onTimeout";
-                }
-            };
+                    @Override
+                    public String toString()
+                    {
+                        return "onTimeout";
+                    }
+                };
 
-            runInContext(event, task);
+                runInContext(event, task);
+            }
+        }
+        finally
+        {
+            try (AutoLock l = lock())
+            {
+                _onTimeoutThread = null;
+            }
         }
     }
 
@@ -686,6 +701,11 @@ public class HttpChannelState
             switch (_requestState)
             {
                 case EXPIRING:
+                    if (Thread.currentThread() != _onTimeoutThread)
+                        throw new IllegalStateException(this.getStatusStringLocked());
+                    _requestState = _sendError ? RequestState.BLOCKING : RequestState.COMPLETE;
+                    break;
+
                 case ASYNC:
                     _requestState = _sendError ? RequestState.BLOCKING : RequestState.COMPLETE;
                     break;
@@ -1266,6 +1286,10 @@ public class HttpChannelState
         return woken;
     }
 
+    /**
+     * Called to indicate that some content was produced and is
+     * ready for consumption.
+     */
     public void onContentAdded()
     {
         try (AutoLock l = lock())
@@ -1287,6 +1311,9 @@ public class HttpChannelState
         }
     }
 
+    /**
+     * Called to indicate that the content is being consumed.
+     */
     public void onReadIdle()
     {
         try (AutoLock l = lock())
@@ -1309,9 +1336,9 @@ public class HttpChannelState
     }
 
     /**
-     * Called to indicate that more content may be available,
-     * but that a handling thread may need to produce (fill/parse)
-     * it.  Typically called by the async read success callback.
+     * Called to indicate that no content is currently available,
+     * more content has been demanded and may be available, but
+     * that a handling thread may need to produce (fill/parse) it.
      */
     public void onReadUnready()
     {
@@ -1331,6 +1358,14 @@ public class HttpChannelState
                 default:
                     throw new IllegalStateException(toStringLocked());
             }
+        }
+    }
+
+    public boolean isInputUnready()
+    {
+        try (AutoLock l = lock())
+        {
+            return _inputState == InputState.UNREADY;
         }
     }
 

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,15 +21,20 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.io.CyclicTimeout;
+import org.eclipse.jetty.io.CyclicTimeouts;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated Do not use it, use {@link CyclicTimeouts} instead.
+ */
+@Deprecated
 public class TimeoutCompleteListener extends CyclicTimeout implements Response.CompleteListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(TimeoutCompleteListener.class);
 
-    private final AtomicReference<Request> request = new AtomicReference<>();
+    private final AtomicReference<Request> requestTimeout = new AtomicReference<>();
 
     public TimeoutCompleteListener(Scheduler scheduler)
     {
@@ -39,7 +44,7 @@ public class TimeoutCompleteListener extends CyclicTimeout implements Response.C
     @Override
     public void onTimeoutExpired()
     {
-        Request request = this.request.getAndSet(null);
+        Request request = requestTimeout.getAndSet(null);
         if (LOG.isDebugEnabled())
             LOG.debug("Total timeout {} ms elapsed for {} on {}", request.getTimeout(), request, this);
         if (request != null)
@@ -49,7 +54,7 @@ public class TimeoutCompleteListener extends CyclicTimeout implements Response.C
     @Override
     public void onComplete(Result result)
     {
-        Request request = this.request.getAndSet(null);
+        Request request = requestTimeout.getAndSet(null);
         if (request != null)
         {
             boolean cancelled = cancel();
@@ -60,19 +65,12 @@ public class TimeoutCompleteListener extends CyclicTimeout implements Response.C
 
     void schedule(HttpRequest request, long timeoutAt)
     {
-        if (this.request.compareAndSet(null, request))
+        if (requestTimeout.compareAndSet(null, request))
         {
-            long delay = timeoutAt - System.nanoTime();
-            if (delay <= 0)
-            {
-                onTimeoutExpired();
-            }
-            else
-            {
-                schedule(delay, TimeUnit.NANOSECONDS);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Scheduled timeout in {} ms for {} on {}", TimeUnit.NANOSECONDS.toMillis(delay), request, this);
-            }
+            long delay = Math.max(0, timeoutAt - System.nanoTime());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Scheduling timeout in {} ms for {} on {}", TimeUnit.NANOSECONDS.toMillis(delay), request, this);
+            schedule(delay, TimeUnit.NANOSECONDS);
         }
     }
 }

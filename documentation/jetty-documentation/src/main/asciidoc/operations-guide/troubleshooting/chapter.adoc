@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -12,7 +12,7 @@
 //
 
 [[og-troubleshooting]]
-=== Eclipse Jetty Troubleshooting
+=== Troubleshooting
 
 To troubleshoot Jetty when used as a production server, there are two main tools: the Jetty Server Dump and enabling DEBUG level logging.
 
@@ -35,3 +35,4 @@ IMPORTANT: Make sure you read about how to secure the access to Jetty when using
 
 include::troubleshooting-dump.adoc[]
 include::troubleshooting-logging.adoc[]
+include::troubleshooting-debugging.adoc[]

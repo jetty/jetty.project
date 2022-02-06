@@ -1,0 +1,238 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-modules-custom]]
+==== Custom Jetty Modules
+
+In addition to the modules that come packaged with Jetty, you can create your own custom modules.
+
+NOTE: Make sure you have read the xref:og-modules[Jetty modules section] if you are not familiar with the concepts used in this section.
+
+Custom modules can be used for a number of reasons -- they can extend Jetty features, or add new features, or make additional libraries available to the server, etc.
+
+[[og-modules-custom-modify]]
+===== Modifying an Existing Module
+
+The standard Jetty modules typically come with a number of configurable properties that can be easily customized without the need of writing a custom module.
+
+However, there may be cases where the customization is more complex than a simple property, and a custom module is necessary.
+
+For example, let's assume that you want to modify the order of the TLS cipher suites offered by the server when a client connects, using the link:https://www.openssl.org/docs/man1.1.0/man1/ciphers.html[OpenSSL cipher list format].
+
+The Jetty class that handles the TLS configuration is `SslContextFactory`, and it already has a method `setCipherComparator(Comparator<String>)`; however, you need to pass your custom implementation, which cannot be represented with a simple module property.
+
+The `SslContextFactory` component is already allocated by the standard Jetty module `ssl`, so what you need to do is the following:
+
+* Write the custom cipher `Comparator` and package it into a `+*.jar+` file (exercise left to reader).
+* Write a custom Jetty XML file that calls the `SslContextFactory.setCipherComparator(Comparator<String>)` method.
+* Write a custom Jetty module file that depends on the standard `ssl` module.
+
+Start with the custom Jetty XML file, `$JETTY_BASE/etc/custom-ssl.xml`:
+
+.custom-ssl.xml
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure>
+  <Ref refid="sslContextFactory"> <!--1-->
+    <Set name="CipherComparator"> <!--2-->
+      <New class="com.acme.ssl.CustomCipherComparator"> <!--3-->
+        <Arg>
+          <Property name="com.acme.ssl.cipherList"> <!--4-->
+            <Default>ECDH+AESGCM:ECDH+AES256:!aNULL:!MD5:!DSS:!ADH</Default>
+          </Property>
+        </Arg>
+      </New>
+    </Set>
+  </Ref>
+</Configure>
+----
+<1> Reference the existing `SslContextFactory` object created by the standard `ssl` module using its `id`.
+<2> Call the `setCipherComparator()` method.
+<3> Instantiate your custom cipher comparator.
+<4> Pass to the constructor the ordering string in OpenSSL format, reading it from the module property `com.acme.ssl.cipherList`.
+
+CAUTION: The cipher list used above may not be secure -- it's just an example.
+
+Then write your custom module in the `$JETTY_BASE/modules/custom-ssl.mod` file:
+
+.custom-ssl.mod
+[source,subs=verbatim]
+----
+[description]
+Customizes the standard ssl module.
+
+[tags] <1>
+acme
+
+[depends] <2>
+ssl
+
+[lib] <3>
+lib/custom-cipher-comparator.jar
+
+[xml] <4>
+etc/custom-ssl.xml
+
+[ini-template] <5>
+## The cipher list in OpenSSL format.
+# com.acme.ssl.cipherList=ECDH+AESGCM:ECDH+AES256:!aNULL:!MD5:!DSS:!ADH
+
+----
+<1> A tag that characterizes this custom module (see xref:og-modules-directive-tags[here]).
+<2> This custom module depends on the standard `ssl` module.
+<3> The custom cipher comparator class is compiled and packaged into this `+*.jar+` file.
+<4> The custom Jetty XML file from above.
+<5> The text that will be copied in the `custom-ssl.ini` file when this custom module will be enabled.
+
+Now you can xref:og-start-configure-enable[enable] the custom module with the following command issued from the `$JETTY_BASE` directory:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=https,custom-ssl
+----
+
+The command above will produce the following `$JETTY_BASE` directory structure:
+
+[source,subs=normal]
+----
+$JETTY_BASE
+├── etc
+│   └── custom-ssl.xml
+├── modules
+│   └── custom-ssl.mod
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── https.ini
+    └── ##custom-ssl.ini##
+----
+
+In the custom XML file you have used a custom module property to parametrize your custom cipher comparator.
+This custom module property was then referenced in the `[ini-template]` section of the custom module file, so that when the custom module is enabled, a correspondent `custom-ssl.ini` file is created.
+
+In this way, updating the cipher list won't require you to update the XML file, but just the `custom-ssl.ini` file.
+
+[[og-modules-custom-create]]
+===== Creating a New Module
+
+In the cases where you need to enhance Jetty with a custom functionality, you can write a new Jetty module that provides it.
+
+For example, let's assume that you need to add a custom auditing component that integrates with the auditing tools used by your company.
+This custom auditing component should measure the HTTP request processing times and record them (how they are recorded is irrelevant here -- could be in a local log file or sent via network to an external service).
+
+The Jetty libraries already provide a way to measure HTTP request processing times via xref:{prog-guide}#pg-server-http-channel-events[`HttpChannel` events]: you write a custom component that implements the `HttpChannel.Listener` interface and add it as a bean to the server `Connector` that receives the HTTP requests.
+
+The steps to create a Jetty module are similar to those necessary to xref:og-modules-custom-modify[modify an existing module]:
+
+* Write the auditing component and package it into a `+*.jar+` file.
+* Write a custom Jetty XML file that wires the auditing component to the `ServerConnector`.
+* Write a custom Jetty module file that puts everything together.
+
+Let's start with the auditing component, sketched below:
+
+[source,java]
+----
+package com.acme.audit;
+
+public class AuditingHttpChannelListener implements HttpChannel.Listener {
+    // Auditing is implemented here.
+}
+----
+
+Let's assume that this class is compiled and packaged into `acme-audit.jar`, and that it has a dependency on `acme-util.jar`.
+Both `+*.jar+` files will be put in the `$JETTY_BASE/lib/` directory.
+
+Next, let's write the Jetty XML file that wires the auditing component to the `ServerConnector`, `$JETTY_BASE/etc/acme-audit.xml`:
+
+.acme-audit.xml
+[source,xml,subs=verbatim,options=nowrap]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure>
+  <Ref refid="httpConnector"> <!--1-->
+    <Call name="addBean"> <!--2-->
+      <Arg>
+        <New class="com.acme.audit.AuditingHttpChannelListener"> <!--3-->
+          <Set name="someProperty">
+            <Property name="com.acme.audit.some.property" default="42" /> <!--4-->
+          </Set>
+        </New>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>
+
+----
+<1> Reference the existing clear-text HTTP `ServerConnector` object created by the standard `http` module.
+<2> Call `addBean()` on the `ServerConnector` to wire the auditing component.
+<3> Instantiate the auditing component.
+<4> Configure the auditing component with a property.
+
+The last step is to create the custom Jetty module file for the auditing component, `$JETTY_BASE/modules/acme-audit.mod`:
+
+.acme-audit.mod
+----
+[description]
+Adds auditing to the clear-text HTTP connector
+
+[tags] <1>
+acme
+audit
+
+[depends] <2>
+http
+
+[libs] <3>
+lib/acme-audit.jar
+lib/acme-util.jar
+
+[xml] <4>
+etc/acme-audit.xml
+
+[ini-template] <5>
+## An auditing property.
+# com.acme.audit.some.property=42
+----
+<1> The tags that characterize this custom module (see xref:og-modules-directive-tags[here]).
+<2> This custom module depends on the standard `http` module.
+<3> The `+*.jar+` files that contains the custom auditing component, and its dependencies.
+<4> The custom Jetty XML file from above.
+<5> The text that will be copied in the `acme-audit.ini` file when this custom module will be enabled.
+
+Now you can xref:og-start-configure-enable[enable] the custom auditing module with the following command issued from the `$JETTY_BASE` directory:
+
+----
+$ java -jar $JETTY_HOME/start.jar --add-modules=http,acme-audit
+----
+
+The command above will produce the following `$JETTY_BASE` directory structure:
+
+[source,subs=normal]
+----
+$JETTY_BASE
+├── etc
+│   └── acme-audit.xml
+├── modules
+│   └── acme-audit.mod
+├── resources
+│   └── jetty-logging.properties
+└── start.d
+    ├── http.ini
+    └── ##acme-audit.ini##
+----
+
+Enabling the custom auditing component will create the `$JETTY_BASE/start.d/acme-audit.ini` module configuration file that you can edit to configure auditing properties.
+
+// TODO: it's possible to have an *.ini file without a correspondent *.mod -- it's just a list of command line arguments, so make an example of a custom connector with a custom-connector.ini and XML file, but no module file.

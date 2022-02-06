@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -44,7 +44,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +51,6 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Disabled
 public class SmallThreadPoolLoadTest extends AbstractTest
 {
     private final Logger logger = LoggerFactory.getLogger(SmallThreadPoolLoadTest.class);
@@ -83,8 +81,8 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         boolean result = IntStream.range(0, 16).parallel()
             .mapToObj(i -> IntStream.range(0, runs)
                 .mapToObj(j -> run(session, iterations))
-                .reduce(true, (acc, res) -> acc && res))
-            .reduce(true, (acc, res) -> acc && res);
+                .reduce(true, Boolean::logicalAnd))
+            .reduce(true, Boolean::logicalAnd);
 
         assertTrue(result);
     }
@@ -94,15 +92,14 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         try
         {
             CountDownLatch latch = new CountDownLatch(iterations);
-            int factor = (logger.isDebugEnabled() ? 25 : 1) * 100;
+            long factor = (logger.isDebugEnabled() ? 25 : 1) * 100;
 
             // Dumps the state of the client if the test takes too long.
-            final Thread testThread = Thread.currentThread();
+            Thread testThread = Thread.currentThread();
             Scheduler.Task task = client.getScheduler().schedule(() ->
             {
-                logger.warn("Interrupting test, it is taking too long{}Server:{}{}{}Client:{}{}",
-                    System.lineSeparator(), System.lineSeparator(), server.dump(),
-                    System.lineSeparator(), System.lineSeparator(), client.dump());
+                logger.warn("Interrupting test, it is taking too long - \nServer: \n" +
+                    server.dump() + "\nClient: \n" + client.dump());
                 testThread.interrupt();
             }, iterations * factor, TimeUnit.MILLISECONDS);
 
@@ -123,7 +120,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
             logger.info("{} requests in {} ms, {}/{} success/failure, {} req/s",
                 iterations, elapsed,
                 successes, iterations - successes,
-                elapsed > 0 ? iterations * 1000 / elapsed : -1);
+                elapsed > 0 ? iterations * 1000L / elapsed : -1);
             return true;
         }
         catch (Exception x)
@@ -186,9 +183,8 @@ public class SmallThreadPoolLoadTest extends AbstractTest
         if (success)
             latch.countDown();
         else
-            logger.warn("Request {} took too long{}Server:{}{}{}Client:{}{}", requestId,
-                System.lineSeparator(), System.lineSeparator(), server.dump(),
-                System.lineSeparator(), System.lineSeparator(), client.dump());
+            logger.warn("Request {} took too long - \nServer: \n" +
+                server.dump() + "\nClient: \n" + client.dump(), requestId);
         return !reset.get();
     }
 

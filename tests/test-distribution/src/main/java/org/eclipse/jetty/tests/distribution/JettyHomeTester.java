@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -149,6 +149,12 @@ public class JettyHomeTester
         commands.add(getJavaExecutable());
         commands.addAll(config.getJVMArgs());
         commands.add("-Djava.io.tmpdir=" + workDir.toAbsolutePath().toString());
+        int debugPort = Integer.getInteger("distribution.debug.port", 0);
+        if (debugPort > 0)
+        {
+            commands.add("-Xdebug");
+            commands.add("-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=" + debugPort);
+        }
         commands.add("-jar");
         commands.add(config.jettyHome.toAbsolutePath() + "/start.jar");
 
@@ -174,6 +180,7 @@ public class JettyHomeTester
 
         ProcessBuilder pbCmd = new ProcessBuilder(commands);
         pbCmd.directory(jettyBaseDir);
+        pbCmd.environment().putAll(config.env);
         Process process = pbCmd.start();
 
         return new Run(config, process);
@@ -387,6 +394,7 @@ public class JettyHomeTester
         private String jettyVersion;
         private String mavenLocalRepository = System.getProperty("mavenRepoPath", System.getProperty("user.home") + "/.m2/repository");
         private List<String> jvmArgs = new ArrayList<>();
+        private Map<String, String> env = new HashMap<>();
 
         public Path getJettyBase()
         {
@@ -411,6 +419,11 @@ public class JettyHomeTester
         public List<String> getJVMArgs()
         {
             return Collections.unmodifiableList(jvmArgs);
+        }
+
+        public Map<String, String> getEnv()
+        {
+            return Collections.unmodifiableMap(env);
         }
 
         @Override
@@ -756,6 +769,16 @@ public class JettyHomeTester
         public Builder jvmArgs(List<String> jvmArgs)
         {
             config.jvmArgs = jvmArgs;
+            return this;
+        }
+
+        /**
+         * @param env the env to add
+         * @return this Builder
+         */
+        public Builder env(Map<String, String> env)
+        {
+            config.env = env;
             return this;
         }
 

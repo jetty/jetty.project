@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -23,12 +23,16 @@ If you are interested in the low-level details of how the Eclipse Jetty server l
 
 The Jetty server-side libraries provide:
 
-* HTTP support for HTTP/1.0, HTTP/1.1, HTTP/2, clear-text or encrypted, for applications that want to embed Jetty as a generic HTTP server or proxy, via the xref:pg-server-http[HTTP libraries]
+* HTTP support for HTTP/1.0, HTTP/1.1, HTTP/2, clear-text or encrypted, HTTP/3, for applications that want to embed Jetty as a generic HTTP server or proxy, via the xref:pg-server-http[HTTP libraries]
 * HTTP/2 low-level support, for applications that want to explicitly handle low-level HTTP/2 _sessions_, _streams_ and _frames_, via the xref:pg-server-http2[HTTP/2 libraries]
+* HTTP/3 low-level support, for applications that want to explicitly handle low-level HTTP/3 _sessions_, _streams_ and _frames_, via the xref:pg-server-http3[HTTP/3 libraries]
 * WebSocket support, for applications that want to embed a WebSocket server, via the xref:pg-server-websocket[WebSocket libraries]
+* FCGI support, to delegate requests to python or similar scripting languages.
 
+include::compliance/server-compliance.adoc[]
 include::http/server-http.adoc[]
 include::http2/server-http2.adoc[]
+include::http3/server-http3.adoc[]
 include::sessions/sessions.adoc[]
 include::websocket/server-websocket.adoc[]
 include::server-io-arch.adoc[]

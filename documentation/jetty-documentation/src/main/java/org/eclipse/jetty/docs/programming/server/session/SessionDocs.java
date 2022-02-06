@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -250,7 +250,7 @@ public class SessionDocs
         //Make a factory for memcached L2 caches for SessionData
         MemcachedSessionDataMapFactory mapFactory = new MemcachedSessionDataMapFactory();
         mapFactory.setExpirySec(0); //items in memcached don't expire
-        mapFactory.setHeartbeats(true);//tell memcached to use heartbeats
+        mapFactory.setHeartbeats(true); //tell memcached to use heartbeats
         mapFactory.setAddresses(new InetSocketAddress("localhost", 11211)); //use a local memcached instance
         mapFactory.setWeights(new int[] {100}); //set the weighting
         

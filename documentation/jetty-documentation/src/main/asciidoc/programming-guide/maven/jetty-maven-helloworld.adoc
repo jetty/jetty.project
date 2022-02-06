@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -17,7 +17,7 @@
 http://maven.apache.org/[Apache Maven] is a software project management and comprehension tool.
 Based on the concept of a project object model (POM), Maven can manage a project's build, reporting and documentation from a central piece of information.
 
-It is an ideal tool to build a web application project, and such projects can use the link:#jetty-maven-plugin[jetty-maven-plugin] to easily run the web application and save time in development.
+It is an ideal tool to build a web application project, and such projects can use the xref:jetty-maven-plugin[jetty-maven-plugin] to easily run the web application and save time in development.
 You can also use Maven to build, test and run a project which embeds Jetty.
 
 [NOTE]
@@ -27,18 +27,18 @@ Using Maven for Jetty implementations is a popular choice, but users encouraged 
 Other popular tools include Ant and Gradle.
 ====
 
-First we'll have a look at a very simple HelloWorld java application that embeds Jetty, then a simple webapp which makes use of the link:#jetty-maven-plugin[jetty-maven-plugin] to speed up the development cycle.
+First we'll have a look at a very simple HelloWorld java application that embeds Jetty, then a simple webapp which makes use of the xref:jetty-maven-plugin[jetty-maven-plugin] to speed up the development cycle.
 
 [[configuring-embedded-jetty-with-maven]]
 ==== Using Embedded Jetty with Maven
 
 To understand the basic operations of building and running against Jetty, first review:
 
-* link:#advanced-embedding[Embedding with Jetty]
-* link:#jetty-helloworld[Jetty HelloWorld example]
+* xref:advanced-embedding[Embedding with Jetty]
+* xref:jetty-helloworld[Jetty HelloWorld example]
 
 Maven uses convention over configuration, so it is best to use the project structure Maven recommends.
-You can use _link:#archetypes[http://maven.apache.org/guides/introduction/introduction-to-archetypes.html[archetypes]]_ to quickly setup Maven projects, but we will set up the structure manually for this simple tutorial example:
+You can use _xref:archetypes[http://maven.apache.org/guides/introduction/introduction-to-archetypes.html[archetypes]]_ to quickly setup Maven projects, but we will set up the structure manually for this simple tutorial example:
 
 ----
 > mkdir JettyMavenHelloWorld
@@ -247,7 +247,7 @@ You need to declare this servlet in the deployment descriptor, so create the fil
 ===== Creating the POM Descriptor
 
 The `pom.xml` file declares the project name and its dependencies.
-Use an editor to create the file `pom.xml` with the following contents in the `JettyMavenHelloWarApp` directory, noting particularly the declaration of the link:#jetty-maven-plugin[jetty-maven-plugin]:
+Use an editor to create the file `pom.xml` with the following contents in the `JettyMavenHelloWarApp` directory, noting particularly the declaration of the xref:jetty-maven-plugin[jetty-maven-plugin]:
 
 [source,xml]
 ----
@@ -291,7 +291,7 @@ Use an editor to create the file `pom.xml` with the following contents in the `J
 [[building-and-running-web-application]]
 ===== Building and Running the Web Application
 
-Now you can both build and run the web application without needing to assemble it into a war by using the link:#jetty-maven-plugin[jetty-maven-plugin] via the command:
+Now you can both build and run the web application without needing to assemble it into a war by using the xref:jetty-maven-plugin[jetty-maven-plugin] via the command:
 
 ----
 > mvn jetty:run
@@ -300,7 +300,7 @@ Now you can both build and run the web application without needing to assemble i
 You can see the static and dynamic content at `http://localhost:8080/hello`
 
 There are a great deal of configuration options available for the jetty-maven-plugin to help you build and run your webapp.
-The full reference is at link:#jetty-maven-plugin[Configuring the Jetty Maven Plugin].
+The full reference is at xref:jetty-maven-plugin[Configuring the Jetty Maven Plugin].
 
 [[building-war-file]]
 ===== Building a WAR file
@@ -311,4 +311,4 @@ You can create a Web Application Archive (WAR) file from the project with the co
 > mvn package
 ----
 
-The resulting war file is in the `target` directory and may be deployed on any standard servlet server, including link:#configuring-deployment[Jetty].
+The resulting war file is in the `target` directory and may be deployed on any standard servlet server, including xref:configuring-deployment[Jetty].

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 public class HttpTransportOverFCGI implements HttpTransport
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpTransportOverFCGI.class);
+
     private final ServerGenerator generator;
     private final Flusher flusher;
     private final int request;
@@ -48,6 +49,8 @@ public class HttpTransportOverFCGI implements HttpTransport
     @Override
     public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("send {} {} l={}", this, request, lastContent);
         boolean head = HttpMethod.HEAD.is(request.getMethod());
         if (response != null)
         {

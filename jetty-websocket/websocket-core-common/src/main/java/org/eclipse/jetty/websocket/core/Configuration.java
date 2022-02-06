@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -237,6 +237,16 @@ public interface Configuration
                 configurable.setMaxTextMessageSize(maxTextMessageSize);
             if (maxOutgoingFrames != null)
                 configurable.setMaxOutgoingFrames(maxOutgoingFrames);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x{idleTimeout=%s, writeTimeout=%s, autoFragment=%s, maxFrameSize=%s, " +
+                    "inputBufferSize=%s, outputBufferSize=%s, maxBinaryMessageSize=%s, maxTextMessageSize=%s, maxOutgoingFrames=%s}",
+                getClass().getSimpleName(), hashCode(),
+                idleTimeout, writeTimeout, autoFragment, maxFrameSize, inputBufferSize, outputBufferSize,
+                maxBinaryMessageSize, maxTextMessageSize, maxOutgoingFrames);
         }
     }
 }

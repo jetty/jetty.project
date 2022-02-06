@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,7 +39,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.core.Behavior;
@@ -87,25 +89,17 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
 
         // Validate websocket URI
         if (!requestURI.isAbsolute())
-        {
             throw new IllegalArgumentException("WebSocket URI must be absolute");
-        }
 
         if (StringUtil.isBlank(requestURI.getScheme()))
-        {
             throw new IllegalArgumentException("WebSocket URI must include a scheme");
-        }
 
         String scheme = requestURI.getScheme();
         if (!HttpScheme.WS.is(scheme) && !HttpScheme.WSS.is(scheme))
-        {
             throw new IllegalArgumentException("WebSocket URI scheme only supports [ws] and [wss], not [" + scheme + "]");
-        }
 
         if (requestURI.getHost() == null)
-        {
             throw new IllegalArgumentException("Invalid WebSocket URI: host not present");
-        }
 
         this.wsClient = webSocketClient;
         this.futureCoreSession = new CompletableFuture<>();
@@ -291,7 +285,12 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
             headers(headers -> headers.add(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, extensionString));
 
         // Notify the listener which may change the headers directly.
-        notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
+        Exception listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeRequest(this));
+        if (listenerError != null)
+        {
+            abort(listenerError);
+            return;
+        }
 
         // Check if extensions were set in the headers from the upgrade listener.
         String extsAfterListener = String.join(",", getHeaders().getCSV(HttpHeader.SEC_WEBSOCKET_EXTENSIONS, true));
@@ -306,8 +305,9 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         }
     }
 
-    private void notifyUpgradeListeners(Consumer<UpgradeListener> action)
+    private Exception notifyUpgradeListeners(Consumer<UpgradeListener> action)
     {
+        MultiException multiException = null;
         for (UpgradeListener listener : upgradeListeners)
         {
             try
@@ -317,8 +317,13 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
             catch (Throwable t)
             {
                 LOG.info("Exception while invoking listener {}", listener, t);
+                if (multiException == null)
+                     multiException = new MultiException();
+                multiException.add(t);
             }
         }
+
+        return multiException;
     }
 
     public void upgrade(HttpResponse response, EndPoint endPoint)
@@ -425,19 +430,23 @@ public abstract class CoreClientUpgradeRequest extends HttpRequest implements Re
         Negotiated negotiated = new Negotiated(
             request.getURI(),
             negotiatedSubProtocol,
-            HttpScheme.HTTPS.is(request.getScheme()), // TODO better than this?
+            HttpClient.isSchemeSecure(request.getScheme()),
             extensionStack,
             WebSocketConstants.SPEC_VERSION_STRING);
 
         WebSocketCoreSession coreSession = new WebSocketCoreSession(frameHandler, Behavior.CLIENT, negotiated, wsClient.getWebSocketComponents());
+        coreSession.setClassLoader(wsClient.getClassLoader());
         customizer.customize(coreSession);
 
         HttpClient httpClient = wsClient.getHttpClient();
         ByteBufferPool bufferPool = wsClient.getWebSocketComponents().getBufferPool();
-        WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, coreSession);
+        RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(wsClient.getWebSocketComponents(), bufferPool);
+        WebSocketConnection wsConnection = new WebSocketConnection(endPoint, httpClient.getExecutor(), httpClient.getScheduler(), bufferPool, retainableByteBufferPool, coreSession);
         wsClient.getEventListeners().forEach(wsConnection::addEventListener);
         coreSession.setWebSocketConnection(wsConnection);
-        notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
+        Exception listenerError = notifyUpgradeListeners((listener) -> listener.onHandshakeResponse(this, response));
+        if (listenerError != null)
+            throw new WebSocketException("onHandshakeResponse error", listenerError);
 
         // Now swap out the connection
         try

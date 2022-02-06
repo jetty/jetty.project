@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,6 +18,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 import static java.lang.System.Logger.Level.INFO;
 
+@SuppressWarnings("unused")
 public class ClientConnectorDocs
 {
     public void simplest() throws Exception
@@ -415,6 +417,19 @@ public class ClientConnectorDocs
             }
         });
         // end::tlsTelnet[]
+    }
+
+    public void unixDomain() throws Exception
+    {
+        // tag::unixDomain[]
+        // This is the path where the server "listens" on.
+        Path unixDomainPath = Path.of("/path/to/server.sock");
+
+        // Creates a ClientConnector that uses Unix-Domain
+        // sockets, not the network, to connect to the server.
+        ClientConnector clientConnector = ClientConnector.forUnixDomain(unixDomainPath);
+        clientConnector.start();
+        // end::unixDomain[]
     }
 
     public static void main(String[] args) throws Exception

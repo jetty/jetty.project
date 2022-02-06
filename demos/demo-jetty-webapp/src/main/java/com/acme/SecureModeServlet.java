@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,17 +27,12 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Dump Servlet Request.
  */
 @SuppressWarnings("serial")
 public class SecureModeServlet extends HttpServlet
 {
-    private static final Logger LOG = LoggerFactory.getLogger(SecureModeServlet.class);
-
     @Override
     public void init(ServletConfig config) throws ServletException
     {
@@ -116,7 +111,7 @@ public class SecureModeServlet extends HttpServlet
         try
         {
             out.println("check ability to log<br/>");
-            LOG.info("testing logging");
+            getServletContext().log("testing logging");
             out.println("status: <b>SUCCESS - expected</b><br/>");
         }
         catch (SecurityException e)

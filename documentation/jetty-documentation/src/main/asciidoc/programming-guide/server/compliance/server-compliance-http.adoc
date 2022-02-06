@@ -1,0 +1,42 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-compliance-http]]
+==== HTTP Compliance Modes
+
+In 1995, when Jetty was first implemented, there were no RFC specification of HTTP, only a W3C specification for link:https://www.w3.org/Protocols/HTTP/AsImplemented.html[HTTP/0.9], which has since been obsoleted or augmented by:
+
+ * link:https://datatracker.ietf.org/doc/html/rfc1945[RFC 1945] for HTTP/1.0 in 1996
+ * link:https://datatracker.ietf.org/doc/html/rfc2068[RFC 2068] for HTTP/1.1  in 1997
+ * link:https://datatracker.ietf.org/doc/html/rfc2616[RFC 2616] for HTTP/1.1 bis in 1999
+ * link:https://datatracker.ietf.org/doc/html/rfc7230[RFC 7230], link:https://datatracker.ietf.org/doc/html/rfc7231[RFC 7231], link:https://datatracker.ietf.org/doc/html/rfc7232[RFC 7232], link:https://datatracker.ietf.org/doc/html/rfc7233[RFC 7233], link:https://datatracker.ietf.org/doc/html/rfc7234[RFC 7234], link:https://datatracker.ietf.org/doc/html/rfc7235[RFC 7235] again for HTTP/1.1 in 2014
+ * link:https://datatracker.ietf.org/doc/html/rfc7540[RFC 7540] for HTTP/2.0 in 2015
+
+In addition to these evolving requirements, some earlier version of Jetty did not completely or strictly implement the RFC at the time (for example, case-insensitive HTTP methods).
+Therefore, upgrading to a newer Jetty version may cause runtime behavior differences that may break your applications.
+
+The link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.Violation.html[`HttpCompliance.Violation`] enumeration defines the RFC requirements that may be optionally enforced by Jetty, to support legacy deployments. These possible violations are grouped into modes by the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] class, which also defines several named modes that support common deployed sets of violations (with the default being link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html#RFC7230[`HttpCompliance.RFC7230`]).
+
+For example:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=httpCompliance]
+----
+
+If you want to customize the violations that you want to allow, you can create your own mode using the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html#from(java.lang.String)[`HttpCompliance.from(String)`] method:
+
+[source,java,indent=0]
+----
+include::../../{doc_code}/org/eclipse/jetty/docs/programming/server/ServerDocs.java[tags=httpComplianceCustom]
+----

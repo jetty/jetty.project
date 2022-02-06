@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -261,7 +261,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
     private boolean isTunnel(MetaData.Request request, MetaData.Response response)
     {
-        return HttpMethod.CONNECT.is(request.getMethod()) && response.getStatus() == HttpStatus.OK_200;
+        return MetaData.isTunnel(request.getMethod(), response.getStatus());
     }
 
     @Override

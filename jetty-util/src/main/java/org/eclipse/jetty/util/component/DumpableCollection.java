@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -37,6 +37,11 @@ public class DumpableCollection implements Dumpable
     public static DumpableCollection from(String name, Object... items)
     {
         return new DumpableCollection(name, items == null ? Collections.emptyList() : Arrays.asList(items));
+    }
+
+    public static DumpableCollection from(String name, Collection<?> collection)
+    {
+        return new DumpableCollection(name, collection);
     }
 
     @Override

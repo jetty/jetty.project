@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,16 +15,16 @@
 == Participate in the Documentation
 
 Another wonderful way to help with Eclipse Jetty is to help contribute to our corpus of documentation.
-We have taken every every to reduce the barriers to contributing to our documentation and many contributors find our documentation as a low key way to participate and learn the process.
+We have made an effort to reduce the barriers to contributing to our documentation, and many contributors find our documentation as a low-key way to participate and learn the process.
 
 
 [[cg-documentation-format]]
 === Source Control and Maven Build.
 
 The Jetty documentation is a module within the overall Jetty project and is build as a part of the standard build process.
-As such to checkout the documentation you can follow the link:#t-community-source[same process] as checking out Jetty itself.
+As such to checkout the documentation you can follow the link:#cg-community-source[same process] as checking out Jetty itself.
 
-As a part of the main Jetty project the documentation is build through the link:#t-community-build[same process] as Jetty.
+As a part of the main Jetty project the documentation is build through the link:#cg-contributing-build[same process] as Jetty.
 However, it is a more independent module and can be worked with much simpler by building strictly the jetty-documentation module.
 
 [source, screen, subs="{sub-order}"]
@@ -155,7 +155,7 @@ license blocks::
 ....
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,13 +13,6 @@
 
 module org.eclipse.jetty.server
 {
-    exports org.eclipse.jetty.server;
-    exports org.eclipse.jetty.server.handler;
-    exports org.eclipse.jetty.server.handler.gzip;
-    exports org.eclipse.jetty.server.handler.jmx to org.eclipse.jetty.jmx;
-    exports org.eclipse.jetty.server.jmx to org.eclipse.jetty.jmx;
-    exports org.eclipse.jetty.server.session;
-
     requires transitive jetty.servlet.api;
     requires transitive org.eclipse.jetty.http;
     requires transitive org.slf4j;
@@ -29,4 +22,15 @@ module org.eclipse.jetty.server
     requires static java.naming;
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
+
+    exports org.eclipse.jetty.server;
+    exports org.eclipse.jetty.server.handler;
+    exports org.eclipse.jetty.server.handler.gzip;
+    exports org.eclipse.jetty.server.session;
+
+    exports org.eclipse.jetty.server.handler.jmx to
+         org.eclipse.jetty.jmx;
+
+    exports org.eclipse.jetty.server.jmx to
+         org.eclipse.jetty.jmx;
 }

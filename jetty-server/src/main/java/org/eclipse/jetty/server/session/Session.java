@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -469,10 +469,7 @@ public class Session implements SessionHandler.SessionIf
     {
         try (AutoLock l = _lock.lock())
         {
-            if (isInvalid())
-            {
-                throw new IllegalStateException("Session not valid");
-            }
+            checkValidForRead();
             return _sessionData.getLastAccessed();
         }
     }
@@ -867,14 +864,18 @@ public class Session implements SessionHandler.SessionIf
                     // do the invalidation
                     _handler.callSessionDestroyedListeners(this);
                 }
+                catch (Exception e)
+                {
+                    LOG.warn("Error during Session destroy listener", e);
+                }
                 finally
                 {
                     // call the attribute removed listeners and finally mark it
                     // as invalid
                     finishInvalidate();
+                    // tell id mgr to remove sessions with same id from all contexts
+                    _handler.getSessionIdManager().invalidateAll(_sessionData.getId());
                 }
-                // tell id mgr to remove sessions with same id from all contexts
-                _handler.getSessionIdManager().invalidateAll(_sessionData.getId());
             }
         }
         catch (Exception e)

@@ -4,8 +4,13 @@
 Configures Jetty logging to use Log4j.
 SLF4J is used as the core logging mechanism.
 
+[deprecated]
+Module 'logging-log4j1' is deprecated for removal.
+Use 'logging-log4j2' instead.
+
 [tags]
 logging
+deprecated
 
 [depends]
 logging/slf4j

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -76,6 +76,10 @@ public class XmlBasedJettyServer
 
         Path webappsDir = MavenTestingUtils.getTargetPath("webapps");
         properties.setProperty("test.webapps", webappsDir.toString());
+
+        Path keystorePath = MavenTestingUtils.getTestResourcePathFile("keystore.p12");
+        properties.setProperty("jetty.sslContext.keyStorePath", keystorePath.toString());
+        properties.setProperty("jetty.sslContext.keyStorePassword", "storepwd");
 
         // Write out configuration for use by ConfigurationManager.
         Path testConfig = targetDir.resolve("testable-jetty-server-config.properties");

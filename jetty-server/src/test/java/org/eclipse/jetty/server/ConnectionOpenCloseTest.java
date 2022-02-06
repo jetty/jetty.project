@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -34,9 +34,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -46,8 +44,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ConnectionOpenCloseTest extends AbstractHttpTest
 {
     @Test
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testOpenClose() throws Exception
     {
         server.setHandler(new AbstractHandler()
@@ -97,8 +93,6 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
     }
 
     @Test
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testOpenRequestClose() throws Exception
     {
         server.setHandler(new AbstractHandler()
@@ -153,15 +147,13 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
             assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
 
             // Wait some time to see if the callbacks are called too many times
-            TimeUnit.SECONDS.sleep(1);
+            TimeUnit.MILLISECONDS.sleep(200);
 
             assertEquals(2, callbacks.get());
         }
     }
 
     @Test
-    @Tag("Slow")
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testSSLOpenRequestClose() throws Exception
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
@@ -223,7 +215,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
 
         // Wait some time to see if the callbacks are called too many times
-        TimeUnit.SECONDS.sleep(1);
+        TimeUnit.MILLISECONDS.sleep(200);
 
         assertEquals(4, callbacks.get());
     }

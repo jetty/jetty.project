@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -58,7 +58,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -125,7 +125,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             .scheme(scenario.getScheme())
             .file(upload)
             .onRequestSuccess(request -> requestTime.set(System.nanoTime()))
-            .timeout(30, TimeUnit.SECONDS)
+            .timeout(2, TimeUnit.MINUTES)
             .send();
         long responseTime = System.nanoTime();
 
@@ -473,6 +473,10 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testInputStreamResponseListenerFailedBeforeResponse(Transport transport) throws Exception
     {
+        // Failure to connect is based on TCP connection refused
+        // (as the server is stopped), which does not work for UDP.
+        Assumptions.assumeTrue(transport != Transport.H3);
+
         init(transport);
         scenario.start(new EmptyServerHandler());
         String uri = scenario.newURI();
@@ -666,7 +670,6 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testUploadWithDeferredContentProviderFromInputStream(Transport transport) throws Exception
     {
         init(transport);
@@ -680,20 +683,22 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
 
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch requestSentLatch = new CountDownLatch(1);
+        CountDownLatch responseLatch = new CountDownLatch(1);
         try (AsyncRequestContent content = new AsyncRequestContent())
         {
             scenario.client.newRequest(scenario.newURI())
                 .scheme(scenario.getScheme())
                 .body(content)
+                .onRequestCommit((request) -> requestSentLatch.countDown())
                 .send(result ->
                 {
                     if (result.isSucceeded() && result.getResponse().getStatus() == 200)
-                        latch.countDown();
+                        responseLatch.countDown();
                 });
 
             // Make sure we provide the content *after* the request has been "sent".
-            Thread.sleep(1000);
+            assertTrue(requestSentLatch.await(5, TimeUnit.SECONDS));
 
             try (ByteArrayInputStream input = new ByteArrayInputStream(new byte[1024]))
             {
@@ -705,7 +710,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 }
             }
         }
-        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
 
     @ParameterizedTest
@@ -890,6 +895,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testUploadWithOutputStreamFailureToConnect(Transport transport) throws Exception
     {
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
+
         init(transport);
 
         long connectTimeout = 1000;
@@ -899,8 +907,6 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
         CountDownLatch latch = new CountDownLatch(1);
         OutputStreamRequestContent content = new OutputStreamRequestContent();
         String uri = "http://0.0.0.1";
-        if (scenario.getNetworkConnectorLocalPort().isPresent())
-            uri += ":" + scenario.getNetworkConnectorLocalPort().get();
         scenario.client.newRequest(uri)
             .scheme(scenario.getScheme())
             .body(content)
@@ -974,6 +980,9 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
     @ArgumentsSource(TransportProvider.class)
     public void testUploadWithConnectFailureClosesStream(Transport transport) throws Exception
     {
+        // Failure to connect is based on InetSocket address failure, which Unix-Domain does not use.
+        Assumptions.assumeTrue(transport != Transport.UNIX_DOMAIN);
+
         init(transport);
 
         long connectTimeout = 1000;
@@ -993,8 +1002,6 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
 
         CountDownLatch completeLatch = new CountDownLatch(1);
         String uri = "http://0.0.0.1";
-        if (scenario.getNetworkConnectorLocalPort().isPresent())
-            uri += ":" + scenario.getNetworkConnectorLocalPort().get();
         scenario.client.newRequest(uri)
             .scheme(scenario.getScheme())
             .body(content)
@@ -1004,7 +1011,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
                 completeLatch.countDown();
             });
 
-        assertTrue(completeLatch.await(2 * connectTimeout, TimeUnit.SECONDS));
+        assertTrue(completeLatch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -1207,7 +1214,7 @@ public class HttpClientStreamTest extends AbstractTest<TransportScenario>
             }
         });
         long idleTimeout = 1000;
-        scenario.setServerIdleTimeout(idleTimeout);
+        scenario.setRequestIdleTimeout(idleTimeout);
 
         CountDownLatch latch = new CountDownLatch(1);
         byte[] bytes = "[{\"key\":\"value\"}]".getBytes(StandardCharsets.UTF_8);

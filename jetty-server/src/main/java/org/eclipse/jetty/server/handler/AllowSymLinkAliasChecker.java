@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,13 +28,20 @@ import org.slf4j.LoggerFactory;
  * to check resources that are aliased to other locations.   The checker uses the
  * Java {@link Files#readSymbolicLink(Path)} and {@link Path#toRealPath(java.nio.file.LinkOption...)}
  * APIs to check if a file is aliased with symbolic links.</p>
+ * @deprecated use {@link org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker} instead.
  */
+@Deprecated
 public class AllowSymLinkAliasChecker implements AliasCheck
 {
     private static final Logger LOG = LoggerFactory.getLogger(AllowSymLinkAliasChecker.class);
 
+    public AllowSymLinkAliasChecker()
+    {
+        LOG.warn("Deprecated, use SymlinkAllowedResourceAliasChecker instead.");
+    }
+
     @Override
-    public boolean check(String uri, Resource resource)
+    public boolean check(String pathInContext, Resource resource)
     {
         // Only support PathResource alias checking
         if (!(resource instanceof PathResource))

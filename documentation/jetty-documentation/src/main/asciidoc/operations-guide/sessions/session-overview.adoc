@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -48,7 +48,7 @@ CachingSessionDataStore::
 is an L2 cache of session data.
 A `SessionCache` can use a `CachingSessionDataStore` as its backing store.
 
-More details on these concepts can be found in the link:{PROGGUIDE}/server/sessions/sessions[Programming Guide].
+More details on these concepts can be found in the xref:{prog-guide}#pg-server-session[Programming Guide].
 
 [NOTE]
 ====

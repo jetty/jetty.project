@@ -1,0 +1,33 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[pg-server-compliance]]
+=== Server Compliance Modes
+
+The Jetty server strives to keep up with the latest link:https://en.wikipedia.org/wiki/Request_for_Comments[IETF RFC]s for compliance with internet specifications, which are periodically updated.
+
+When possible, Jetty will support backwards compatibility by providing compliance modes that can be configured to allow violations of the current specifications that may have been allowed in obsoleted specifications.
+
+There are compliance modes provided for:
+
+* xref:pg-server-compliance-http[HTTP Compliance]
+* xref:pg-server-compliance-uri[URI Compliance]
+* xref:pg-server-compliance-cookie[Cookie Compliance]
+
+Compliance modes can be configured to allow violations from the RFC requirements, or in some cases to allow additional behaviors that Jetty has implemented in excess of the RFC (for example, to allow xref:pg-server-compliance-uri[ambiguous URIs]).
+
+For example, the HTTP RFCs require that request HTTP methods are link:https://datatracker.ietf.org/doc/html/rfc7230#section-3.1.1[case sensitive], however Jetty can allow case-insensitive HTTP methods by including the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.Violation.html#CASE_INSENSITIVE_METHOD[`HttpCompliance.Violation.CASE_INSENSITIVE_METHOD`] in the link:{javadoc-url}/org/eclipse/jetty/http/HttpCompliance.html[`HttpCompliance`] set of allowed violations.
+
+include::server-compliance-http.adoc[]
+include::server-compliance-uri.adoc[]
+include::server-compliance-cookie.adoc[]

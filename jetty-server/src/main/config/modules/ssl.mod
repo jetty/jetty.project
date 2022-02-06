@@ -28,7 +28,7 @@ etc/jetty-ssl-context.xml
 # jetty.ssl.idleTimeout=30000
 
 ## The number of acceptors (-1 picks a default value based on number of cores).
-# jetty.ssl.acceptors=-1
+# jetty.ssl.acceptors=1
 
 ## The number of selectors (-1 picks a default value based on number of cores).
 # jetty.ssl.selectors=-1
@@ -41,6 +41,9 @@ etc/jetty-ssl-context.xml
 
 ## Whether to enable the SO_REUSEADDR socket option.
 # jetty.ssl.reuseAddress=true
+
+## Whether to enable the SO_REUSEPORT socket option.
+# jetty.ssl.reusePort=false
 
 ## Whether to enable the TCP_NODELAY socket option on accepted sockets.
 # jetty.ssl.acceptedTcpNoDelay=true

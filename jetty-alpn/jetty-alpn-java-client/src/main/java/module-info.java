@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,13 +11,12 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.alpn.java.client.JDK9ClientALPNProcessor;
-import org.eclipse.jetty.io.ssl.ALPNProcessor;
-
 module org.eclipse.jetty.alpn.java.client
 {
-    requires transitive org.eclipse.jetty.alpn.client;
     requires org.slf4j;
 
-    provides ALPNProcessor.Client with JDK9ClientALPNProcessor;
+    requires transitive org.eclipse.jetty.alpn.client;
+
+    provides org.eclipse.jetty.io.ssl.ALPNProcessor.Client with
+        org.eclipse.jetty.alpn.java.client.JDK9ClientALPNProcessor;
 }

@@ -16,15 +16,17 @@ logging
 java-util-logging
 
 [files]
-basehome:modules/logging/jul
 maven://org.slf4j/slf4j-jdk14/${slf4j.version}|lib/logging/slf4j-jdk14-${slf4j.version}.jar
+basehome:modules/logging/jul/resources/java-util-logging.properties|resources/java-util-logging.properties
 
 [lib]
 lib/logging/slf4j-jdk14-${slf4j.version}.jar
 
+[exec]
+-Djava.util.logging.config.file=${jetty.base}/resources/java-util-logging.properties
+
 [ini]
-slf4j.version?=2.0.0-alpha1
-java.util.logging.config.file=${jetty.base}/resources/java-util-logging.properties
+slf4j.version?=@slf4j.version@
 
 [license]
 SLF4J is distributed under the MIT License.

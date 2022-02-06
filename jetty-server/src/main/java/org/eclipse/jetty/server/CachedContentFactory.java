@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -224,7 +224,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
                 Map<CompressedContentFormat, CachedHttpContent> precompresssedContents = new HashMap<>(_precompressedFormats.length);
                 for (CompressedContentFormat format : _precompressedFormats)
                 {
-                    String compressedPathInContext = pathInContext + format._extension;
+                    String compressedPathInContext = pathInContext + format.getExtension();
                     CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
                     if (compressedContent == null || compressedContent.isValid())
                     {
@@ -269,7 +269,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             Map<CompressedContentFormat, HttpContent> compressedContents = new HashMap<>();
             for (CompressedContentFormat format : _precompressedFormats)
             {
-                String compressedPathInContext = pathInContext + format._extension;
+                String compressedPathInContext = pathInContext + format.getExtension();
                 CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
                 if (compressedContent != null && compressedContent.isValid() && compressedContent.getResource().lastModified() >= resource.lastModified())
                     compressedContents.put(format, compressedContent);
@@ -682,7 +682,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             _content = content;
             _precompressedContent = precompressedContent;
 
-            _etag = (CachedContentFactory.this._etags) ? new PreEncodedHttpField(HttpHeader.ETAG, _content.getResource().getWeakETag(format._etag)) : null;
+            _etag = (CachedContentFactory.this._etags) ? new PreEncodedHttpField(HttpHeader.ETAG, _content.getResource().getWeakETag(format.getEtagSuffix())) : null;
         }
 
         public boolean isValid()

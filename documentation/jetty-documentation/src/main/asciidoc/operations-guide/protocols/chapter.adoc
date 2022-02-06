@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -12,7 +12,7 @@
 //
 
 [[og-protocols]]
-=== Configuring Eclipse Jetty Connectors and Protocols
+=== Jetty Connectors and Protocols
 
 Connectors are the network components through which Jetty accepts incoming network connections.
 
@@ -34,7 +34,14 @@ $ java -jar $JETTY_HOME/start.jar --list-modules=connector
 include::protocols-http.adoc[]
 include::protocols-https.adoc[]
 include::protocols-http2.adoc[]
+include::protocols-http2s.adoc[]
+include::protocols-http2c.adoc[]
+include::protocols-http3.adoc[]
 include::protocols-ssl.adoc[]
 include::protocols-proxy.adoc[]
+include::protocols-websocket.adoc[]
 
 // TODO: old_docs/connectors/*.adoc
+
+// TODO: add documentation for how to add an additional connector e.g. with a name
+//  we have 2 connectors out of the box, but a third would need an additional XML.

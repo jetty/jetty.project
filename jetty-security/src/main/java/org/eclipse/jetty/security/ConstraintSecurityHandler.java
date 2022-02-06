@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -741,14 +741,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         Set<String> paths = getPathsWithUncoveredHttpMethods();
         if (paths != null && !paths.isEmpty())
         {
-            ContextHandler.Context currentContext = ContextHandler.getCurrentContext();
-
-            for (String p : paths)
-            {
-                LOG.warn("{} has uncovered http methods for path: {}", currentContext, p);
-            }
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} has uncovered http methods", currentContext, new Throwable());
+            LOG.warn("{} has uncovered HTTP methods for the following paths: {}",
+                ContextHandler.getCurrentContext(), paths);
             return true;
         }
         return false;

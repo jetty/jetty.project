@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>10.0.1-SNAPSHOT</version>
+    <version>10.0.8-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>test-webapps-parent</artifactId>
@@ -32,6 +32,7 @@
   <modules>
     <module>test-webapp-rfc2616</module>
     <module>test-http2-webapp</module>
+    <module>test-simple-session-webapp</module>
     <module>test-felix-webapp</module>
     <module>test-cdi-common-webapp</module>
     <module>test-weld-cdi-webapp</module>

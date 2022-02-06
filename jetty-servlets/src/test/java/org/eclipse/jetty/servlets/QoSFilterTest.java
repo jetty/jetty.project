@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -41,7 +41,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,13 +99,9 @@ public class QoSFilterTest
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers <= maxQos)
-            LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
-        else
-            assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(numConnections));
+        assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(numConnections));
     }
 
-    @Disabled("Issue #2627")
     @Test
     public void testBlockingQosFilter() throws Exception
     {
@@ -126,10 +121,7 @@ public class QoSFilterTest
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers < maxQos)
-            LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
-        else
-            assertEquals(TestServlet.__maxSleepers, maxQos);
+        assertEquals(TestServlet.__maxSleepers, maxQos);
     }
 
     @Test
@@ -151,10 +143,7 @@ public class QoSFilterTest
 
         rethrowExceptions(futures);
 
-        if (TestServlet.__maxSleepers < maxQos)
-            LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
-        else
-            assertEquals(TestServlet.__maxSleepers, maxQos);
+        assertEquals(TestServlet.__maxSleepers, maxQos);
     }
 
     private void rethrowExceptions(List<Future<Void>> futures) throws Exception

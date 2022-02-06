@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,7 +14,7 @@
 [[og-start-start-jpms]]
 ==== Starting Jetty using JPMS
 
-Jetty modules are proper https://en.wikipedia.org/wiki/Java_Platform_Module_System[JPMS] modules: each Jetty module has a `module-info.class` file.
+Jetty modules are proper link:https://en.wikipedia.org/wiki/Java_Platform_Module_System[JPMS] modules: each Jetty module has a `module-info.class` file.
 This makes possible to run Jetty from the module-path, rather than the class-path.
 
 To start Jetty on the module-path rather than the class-path, it is enough to add the `--jpms` option to the command line, for example:
@@ -45,11 +45,9 @@ Create the `$JETTY_BASE/modules/jpms.mod` file:
 include::jpms.mod[]
 ----
 
-The `[ini]` section with `--jpms` is equivalent to passing the `--jpms` option to the command line.
+The `[ini]` section with `--jpms` is equivalent to passing the `--jpms` option to the command line (see also xref:og-modules-directive-ini[this section]).
 
-The `[jpms]` section allows you to specify additional JPMS configuration, for example additional `--add-modules` options, or `--add-opens` options, etc.
-
-// TODO: add a link to the custom module section and the [jpms] section in there, see old_docs/startup/startup-jpms.adoc.
+The `[jpms]` section allows you to specify additional JPMS configuration, for example additional `--add-modules` options, or `--add-opens` options, etc. (see also xref:og-modules-directive-jpms[this section]).
 
 Then enable it:
 

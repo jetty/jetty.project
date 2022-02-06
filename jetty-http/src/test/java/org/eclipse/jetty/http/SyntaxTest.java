@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class SyntaxTest
@@ -61,17 +62,11 @@ public class SyntaxTest
 
         for (String token : tokens)
         {
-            try
-            {
-                Syntax.requireValidRFC2616Token(token, "Test Based");
-                fail("RFC2616 Token [" + token + "] Should have thrown " + IllegalArgumentException.class.getName());
-            }
-            catch (IllegalArgumentException e)
-            {
-                assertThat("Testing Bad RFC2616 Token [" + token + "]", e.getMessage(),
+            Throwable e = assertThrows(IllegalArgumentException.class,
+                    () -> Syntax.requireValidRFC2616Token(token, "Test Based"));
+            assertThat("Testing Bad RFC2616 Token [" + token + "]", e.getMessage(),
                     allOf(containsString("Test Based"),
-                        containsString("RFC2616")));
-            }
+                            containsString("RFC2616")));
         }
     }
 

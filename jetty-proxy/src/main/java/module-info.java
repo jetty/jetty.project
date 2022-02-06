@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,9 +13,9 @@
 
 module org.eclipse.jetty.proxy
 {
-    exports org.eclipse.jetty.proxy;
-
     requires transitive org.eclipse.jetty.client;
     requires transitive org.eclipse.jetty.server;
     requires transitive org.slf4j;
+
+    exports org.eclipse.jetty.proxy;
 }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,11 +19,15 @@ import java.io.Reader;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.TypeUtil;
@@ -81,6 +85,7 @@ public class JSON
 
     private final Map<String, Convertor> _convertors = new ConcurrentHashMap<>();
     private int _stringBufferSize = 1024;
+    private Function<List<?>, Object> _arrayConverter = this::defaultArrayConverter;
 
     /**
      * @return the initial stringBuffer size to use when creating JSON strings
@@ -461,7 +466,9 @@ public class JSON
      *
      * @param size the size of the array
      * @return a new array representing the JSON array
+     * @deprecated use {@link #setArrayConverter(Function)} instead.
      */
+    @Deprecated
     protected Object[] newArray(int size)
     {
         return new Object[size];
@@ -599,6 +606,28 @@ public class JSON
     public Convertor getConvertorFor(String name)
     {
         return _convertors.get(name);
+    }
+
+    /**
+     * @return the function to customize the Java representation of JSON arrays
+     * @see #setArrayConverter(Function)
+     */
+    public Function<List<?>, Object> getArrayConverter()
+    {
+        return _arrayConverter;
+    }
+
+    /**
+     * <p>Sets the function to convert JSON arrays from their default Java
+     * representation, a {@code List<Object>}, to another Java data structure
+     * such as an {@code Object[]}.</p>
+     *
+     * @param arrayConverter the function to customize the Java representation of JSON arrays
+     * @see #getArrayConverter()
+     */
+    public void setArrayConverter(Function<List<?>, Object> arrayConverter)
+    {
+        _arrayConverter = Objects.requireNonNull(arrayConverter);
     }
 
     /**
@@ -909,6 +938,14 @@ public class JSON
         return map;
     }
 
+    private Object defaultArrayConverter(List<?> list)
+    {
+        // Call newArray() to keep backward compatibility.
+        Object[] objects = newArray(list.size());
+        IntStream.range(0, list.size()).forEach(i -> objects[i] = list.get(i));
+        return objects;
+    }
+
     protected Object parseArray(Source source)
     {
         if (source.next() != '[')
@@ -928,14 +965,16 @@ public class JSON
                     switch (size)
                     {
                         case 0:
-                            return newArray(0);
+                            list = Collections.emptyList();
+                            break;
                         case 1:
-                            Object array = newArray(1);
-                            Array.set(array, 0, item);
-                            return array;
+                            list = Collections.singletonList(item);
+                            break;
                         default:
-                            return list.toArray(newArray(list.size()));
+                            break;
                     }
+                    return getArrayConverter().apply(list);
+
                 case ',':
                     if (comma)
                         throw new IllegalStateException();
@@ -970,6 +1009,7 @@ public class JSON
                             item = null;
                         }
                     }
+                    break;
             }
         }
 
@@ -1199,7 +1239,7 @@ public class JSON
                     break doubleLoop;
             }
         }
-        return Double.parseDouble(buffer.toString());
+        return Double.valueOf(buffer.toString());
     }
 
     protected void seekTo(char seek, Source source)
@@ -1585,7 +1625,7 @@ public class JSON
      */
     public static class Literal implements Generator
     {
-        private String _json;
+        private final String _json;
 
         /**
          * Constructs a literal JSON instance.

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -67,7 +67,7 @@ public class JettyForkedChild extends AbstractLifeCycle
     public void configure(String[] args)
         throws Exception
     {
-        Map<String,String> jettyProperties = new HashMap<>();
+        Map<String, String> jettyProperties = new HashMap<>();
         
         for (int i = 0; i < args.length; i++)
         {

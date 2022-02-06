@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -430,7 +430,7 @@ public class XmlParser
             if (LOG.isDebugEnabled())
                 LOG.warn("SAX Parse Issue", ex);
             else
-                LOG.warn("SAX Parse Issue @{} : {}",getLocationString(ex), ex.toString());
+                LOG.warn("SAX Parse Issue @{} : {}", getLocationString(ex), ex.toString());
         }
 
         @Override
@@ -442,7 +442,7 @@ public class XmlParser
             if (LOG.isDebugEnabled())
                 LOG.error("SAX Parse Issue", ex);
             else
-                LOG.error("SAX Parse Issue @{} : {}",getLocationString(ex), ex.toString());
+                LOG.error("SAX Parse Issue @{} : {}", getLocationString(ex), ex.toString());
         }
 
         @Override

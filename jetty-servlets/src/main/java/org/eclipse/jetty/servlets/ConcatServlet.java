@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -56,6 +56,7 @@ import org.eclipse.jetty.util.URIUtil;
  * appropriate. This means that when not in development mode, the servlet must be
  * restarted before changed content will be served.</p>
  */
+@Deprecated
 public class ConcatServlet extends HttpServlet
 {
     private boolean _development;
@@ -120,7 +121,8 @@ public class ConcatServlet extends HttpServlet
                 }
             }
 
-            RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(path);
+            // Use the original string and not the decoded path as the Dispatcher will decode again.
+            RequestDispatcher dispatcher = getServletContext().getRequestDispatcher(part);
             if (dispatcher != null)
                 dispatchers.add(dispatcher);
         }

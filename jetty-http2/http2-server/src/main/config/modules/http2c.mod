@@ -18,18 +18,18 @@ etc/jetty-http2c.xml
 [ini-template]
 # tag::documentation[]
 ## Specifies the maximum number of concurrent requests per session.
-# jetty.http2c.maxConcurrentStreams=1024
+# jetty.http2c.maxConcurrentStreams=128
 
-  ## Specifies the initial stream receive window (client to server) in bytes.
-# jetty.http2c.initialStreamRecvWindow=65535
+## Specifies the initial stream receive window (client to server) in bytes.
+# jetty.http2c.initialStreamRecvWindow=524288
 
 ## Specifies the initial session receive window (client to server) in bytes.
-# jetty.http2.initialSessionRecvWindow=1048576
+# jetty.http2c.initialSessionRecvWindow=1232896
 
 ## Specifies the maximum number of keys in all SETTINGS frames received by a session.
-# jetty.http2.maxSettingsKeys=64
+# jetty.http2c.maxSettingsKeys=64
 
 ## Specifies the maximum number of bad frames and pings per second,
 ## after which a session is closed to avoid denial of service attacks.
-# jetty.http2.rateControl.maxEventsPerSecond=20
+# jetty.http2c.rateControl.maxEventsPerSecond=50
 # end::documentation[]

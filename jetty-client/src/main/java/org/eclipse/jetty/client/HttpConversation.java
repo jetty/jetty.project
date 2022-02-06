@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,6 +18,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.AttributesMap;
 import org.slf4j.Logger;
@@ -136,6 +137,20 @@ public class HttpConversation extends AttributesMap
         if (LOG.isDebugEnabled())
             LOG.debug("Exchanges in conversation {}, override={}, listeners={}", exchanges.size(), overrideListener, listeners);
         this.listeners = listeners;
+    }
+
+    /**
+     * <p>Returns the total timeout for the conversation.</p>
+     * <p>The conversation total timeout is the total timeout
+     * of the first request in the conversation.</p>
+     *
+     * @return the total timeout of the conversation
+     * @see Request#getTimeout()
+     */
+    public long getTimeout()
+    {
+        HttpExchange firstExchange = exchanges.peekFirst();
+        return firstExchange == null ? 0 : firstExchange.getRequest().getTimeout();
     }
 
     public boolean abort(Throwable cause)

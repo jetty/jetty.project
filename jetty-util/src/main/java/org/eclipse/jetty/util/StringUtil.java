@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,9 +14,11 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Fast String Utilities.
@@ -578,6 +580,10 @@ public class StringUtil
         return new String(b, offset, length, StandardCharsets.UTF_8);
     }
 
+    /**
+     * @deprecated use {@link String#String(byte[], int, int, Charset)} instead
+     */
+    @Deprecated(since = "10", forRemoval = true)
     public static String toString(byte[] b, int offset, int length, String charset)
     {
         try
@@ -697,6 +703,16 @@ public class StringUtil
     }
 
     /**
+     * Get the length of a string where a null string is length 0.
+     * @param s the string.
+     * @return the length of the string.
+     */
+    public static int getLength(String s)
+    {
+        return (s == null) ? 0 : s.length();
+    }
+
+    /**
      * Test if a string is not null and contains at least 1 non-whitespace characters in it.
      * <p>
      * Note: uses codepoint version of {@link Character#isWhitespace(int)} to support Unicode better.
@@ -757,6 +773,47 @@ public class StringUtil
             }
         }
         return true;
+    }
+
+    public static byte[] fromHexString(String s)
+    {
+        if (s.length() % 2 != 0)
+            throw new IllegalArgumentException(s);
+        byte[] array = new byte[s.length() / 2];
+        for (int i = 0; i < array.length; i++)
+        {
+            int b = Integer.parseInt(s.substring(i * 2, i * 2 + 2), 16);
+            array[i] = (byte)(0xff & b);
+        }
+        return array;
+    }
+
+    public static String toHexString(byte b)
+    {
+        return toHexString(new byte[]{b}, 0, 1);
+    }
+
+    public static String toHexString(byte[] b)
+    {
+        return toHexString(Objects.requireNonNull(b, "ByteBuffer cannot be null"), 0, b.length);
+    }
+
+    public static String toHexString(byte[] b, int offset, int length)
+    {
+        StringBuilder buf = new StringBuilder();
+        for (int i = offset; i < offset + length; i++)
+        {
+            int bi = 0xff & b[i];
+            int c = '0' + (bi / 16) % 16;
+            if (c > '9')
+                c = 'A' + (c - '0' - 10);
+            buf.append((char)c);
+            c = '0' + bi % 16;
+            if (c > '9')
+                c = 'a' + (c - '0' - 10);
+            buf.append((char)c);
+        }
+        return buf.toString();
     }
 
     public static String printable(String name)

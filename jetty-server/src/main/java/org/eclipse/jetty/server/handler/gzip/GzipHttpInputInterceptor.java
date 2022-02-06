@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -38,6 +38,9 @@ public class GzipHttpInputInterceptor implements HttpInput.Interceptor, Destroya
     @Override
     public Content readFrom(Content content)
     {
+        if (content.isSpecial())
+            return content;
+
         _decoder.decodeChunks(content.getByteBuffer());
         final ByteBuffer chunk = _chunk;
 

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -26,8 +26,10 @@ import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
@@ -265,5 +267,35 @@ public class StringUtilTest
         assertThat(StringUtil.csvSplit(" ,\n,bbb, , "), arrayContaining("", "", "bbb", ""));
 
         assertThat(StringUtil.csvSplit("\"aaa\", \" b,\\\"\",\"\""), arrayContaining("aaa", " b,\"", ""));
+    }
+
+    @Test
+    public void testFromHexStringGood()
+    {
+        assertArrayEquals(new byte[]{0x12, 0x34, 0x56, 0x78, (byte)0x9A}, StringUtil.fromHexString("123456789A"));
+    }
+
+    @Test
+    public void testFromHexStringBad()
+    {
+        assertThrows(NumberFormatException.class, () -> StringUtil.fromHexString("Hello World "));
+    }
+
+    @Test
+    public void testToHexStringGood()
+    {
+        assertThat(StringUtil.toHexString(new byte[]{0x12, 0x34, 0x56, 0x78, (byte)0x9A}), is("123456789a"));
+    }
+
+    @Test
+    public void testToHexStringNull()
+    {
+        assertThrows(NullPointerException.class, () -> StringUtil.toHexString(null));
+    }
+
+    @Test
+    public void testToHexStringEmpty()
+    {
+        assertThat(StringUtil.toHexString(new byte[0]), is(""));
     }
 }

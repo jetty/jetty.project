@@ -1,0 +1,135 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[appendix]
+[[pg-migration]]
+== Migration Guides
+
+[[pg-migration-94-to-10]]
+=== Migrating from Jetty 9.4.x to Jetty 10.0.x
+
+[[pg-migration-94-to-10-java-version]]
+==== Required Java Version Changes
+
+[cols="1,1", options="header"]
+|===
+| Jetty 9.4.x | Jetty 10.0.x
+| Java 8 | Java 11
+|===
+
+[[pg-migration-94-to-10-websocket]]
+==== WebSocket Migration Guide
+
+Migrating from Jetty 9.4.x to Jetty 10.0.x requires changes in the coordinates of the Maven artifact dependencies for WebSocket. Some of these classes have also changed name and package. This is not a comprehensive list of changes but should cover the most common changes encountered during migration.
+
+[[pg-migration-94-to-10-websocket-maven-artifact-changes]]
+===== Maven Artifacts Changes
+
+[cols="1a,1a", options="header"]
+|===
+| Jetty 9.4.x | Jetty 10.0.x
+
+| `org.eclipse.jetty.websocket:**websocket-api**`
+| `org.eclipse.jetty.websocket:**websocket-jetty-api**`
+
+| `org.eclipse.jetty.websocket:**websocket-server**`
+| `org.eclipse.jetty.websocket:**websocket-jetty-server**`
+
+| `org.eclipse.jetty.websocket:**websocket-client**`
+| `org.eclipse.jetty.websocket:**websocket-jetty-client**`
+
+| `org.eclipse.jetty.websocket:**javax-websocket-server-impl**`
+| `org.eclipse.jetty.websocket:**websocket-javax-server**`
+
+| `org.eclipse.jetty.websocket:**javax-websocket-client-impl**`
+| `org.eclipse.jetty.websocket:**websocket-javax-client**`
+
+|===
+
+[[pg-migration-94-to-10-websocket-class-name-changes]]
+===== Class Names Changes
+
+[cols="1a,1a", options="header"]
+|===
+| Jetty 9.4.x | Jetty 10.0.x
+
+| `org.eclipse.jetty.websocket.**server.NativeWebSocketServletContainerInitializer**`
+| `org.eclipse.jetty.websocket.**server.config.JettyWebSocketServletContainerInitializer**`
+
+| `org.eclipse.jetty.websocket.**jsr356.server.deploy.WebSocketServerContainerInitializer**`
+| `org.eclipse.jetty.websocket.**javax.server.config.JavaxWebSocketServletContainerInitializer**`
+
+| `org.eclipse.jetty.websocket.**servlet.WebSocketCreator**`
+| `org.eclipse.jetty.websocket.**server.JettyWebSocketCreator**`
+
+| `org.eclipse.jetty.websocket.**servlet.ServletUpgradeRequest**`
+| `org.eclipse.jetty.websocket.**server.JettyServerUpgradeRequest**`
+
+| `org.eclipse.jetty.websocket.**servlet.ServletUpgradeResponse**`
+| `org.eclipse.jetty.websocket.**server.JettyServerUpgradeResponse**`
+
+| `org.eclipse.jetty.websocket.**servlet.WebSocketServlet**`
+| `org.eclipse.jetty.websocket.**server.JettyWebSocketServlet**`
+
+| `org.eclipse.jetty.websocket.**servlet.WebSocketServletFactory**`
+| `org.eclipse.jetty.websocket.**server.JettyWebSocketServletFactory**`
+|===
+
+[[pg-migration-94-to-10-websocket-example-code]]
+===== Example Code
+
+[cols="1a,1a", options="header"]
+|===
+| Jetty 9.4.x
+| Jetty 10.0.x
+
+|
+[source,java]
+----
+public class ExampleWebSocketServlet extends WebSocketServlet
+{
+    @Override
+    public void configure(WebSocketServletFactory factory)
+    {
+        factory.setCreator(new WebSocketCreator()
+        {
+            @Override
+            public Object createWebSocket(ServletUpgradeRequest req, ServletUpgradeResponse resp)
+            {
+                return new ExampleEndpoint();
+            }
+        });
+    }
+}
+----
+
+|
+[source,java]
+----
+public class ExampleWebSocketServlet extends JettyWebSocketServlet
+{
+    @Override
+    public void configure(JettyWebSocketServletFactory factory)
+    {
+        factory.setCreator(new JettyWebSocketCreator()
+        {
+            @Override
+            public Object createWebSocket(JettyServerUpgradeRequest req, JettyServerUpgradeResponse resp)
+            {
+                return new ExampleEndpoint();
+            }
+        });
+    }
+}
+----
+|===

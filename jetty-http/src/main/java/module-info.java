@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,18 +11,17 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.http.Http1FieldPreEncoder;
-import org.eclipse.jetty.http.HttpFieldPreEncoder;
-
 module org.eclipse.jetty.http
 {
+    requires org.slf4j;
+
+    requires transitive org.eclipse.jetty.io;
+
     exports org.eclipse.jetty.http;
     exports org.eclipse.jetty.http.pathmap;
 
-    requires transitive org.eclipse.jetty.io;
-    requires org.slf4j;
+    uses org.eclipse.jetty.http.HttpFieldPreEncoder;
 
-    uses HttpFieldPreEncoder;
-
-    provides HttpFieldPreEncoder with Http1FieldPreEncoder;
+    provides org.eclipse.jetty.http.HttpFieldPreEncoder with
+        org.eclipse.jetty.http.Http1FieldPreEncoder;
 }

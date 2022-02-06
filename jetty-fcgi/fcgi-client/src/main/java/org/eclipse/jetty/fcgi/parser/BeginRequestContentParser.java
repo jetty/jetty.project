@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,7 +18,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.fcgi.FCGI;
 
 /**
- * <p>Parser for the BEGIN_REQUEST frame body.</p>
+ * <p>Parser for the BEGIN_REQUEST frame content.</p>
  * <pre>
  * struct begin_request_body {
  *     ushort role;

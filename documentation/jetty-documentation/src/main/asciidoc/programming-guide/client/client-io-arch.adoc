@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -12,7 +12,7 @@
 //
 
 [[pg-client-io-arch]]
-=== Client Libraries I/O Architecture
+=== I/O Architecture
 
 The Jetty client libraries provide the basic components and APIs to implement a network client.
 
@@ -24,12 +24,12 @@ There are conceptually two layers that compose the Jetty client libraries:
 . xref:pg-client-io-arch-protocol[The protocol layer], that handles the parsing of bytes read from the network and the generation of bytes to write to the network.
 
 [[pg-client-io-arch-network]]
-==== Client Libraries Network Layer
+==== Network Layer
 
 The Jetty client libraries use the common I/O design described in xref:pg-arch-io[this section].
-The main client-side component is the link:{JDURL}/org/eclipse/jetty/io/ClientConnector.html[`ClientConnector`].
+The main client-side component is the link:{javadoc-url}/org/eclipse/jetty/io/ClientConnector.html[`ClientConnector`].
 
-The `ClientConnector` primarily wraps the link:{JDURL}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`] and aggregates other four components:
+The `ClientConnector` primarily wraps the link:{javadoc-url}/org/eclipse/jetty/io/SelectorManager.html[`SelectorManager`] and aggregates other four components:
 
 * a thread pool (in form of an `java.util.concurrent.Executor`)
 * a scheduler (in form of `org.eclipse.jetty.util.thread.Scheduler`)
@@ -76,10 +76,27 @@ For generic Internet hosts (e.g. when you are implementing a web spider) you wan
 * `ClientConnector.connectTimeout`: the duration of time after which `ClientConnector` aborts a connection attempt to the server (defaults to `5` seconds).
 This time includes the DNS lookup time _and_ the TCP connect time.
 
-Please refer to the `ClientConnector` link:{JDURL}/org/eclipse/jetty/io/ClientConnector.html[javadocs] for the complete list of configurable parameters.
+Please refer to the `ClientConnector` link:{javadoc-url}/org/eclipse/jetty/io/ClientConnector.html[javadocs] for the complete list of configurable parameters.
+
+[[pg-client-io-arch-unix-domain]]
+===== Unix-Domain Support
+
+link:https://openjdk.java.net/jeps/380[JEP 380] introduced Unix-Domain sockets support in Java 16, on all operative systems.
+
+`ClientConnector` can be configured to support Unix-Domain sockets in the following way:
+
+[source,java,indent=0]
+----
+include::../{doc_code}/org/eclipse/jetty/docs/programming/client/ClientConnectorDocs.java[tags=unixDomain]
+----
+
+[IMPORTANT]
+====
+You can use Unix-Domain sockets support only when you run your client application with Java 16 or later.
+====
 
 [[pg-client-io-arch-protocol]]
-==== Client Libraries Protocol Layer
+==== Protocol Layer
 
 The protocol layer builds on top of the network layer to generate the bytes to be written to the network and to parse the bytes read from the network.
 
@@ -89,7 +106,7 @@ On the client side, a `ClientConnectionFactory` implementation is the component 
 
 Applications use `ClientConnector.connect(SocketAddress, Map<String, Object>)` to establish a TCP connection to the server, and must tell `ClientConnector` how to create the `Connection` for that particular TCP connection, and how to notify back the application when the connection creation succeeds or fails.
 
-This is done by passing a link:{JDURL}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`] (that creates `Connection` instances) and a link:{JDURL}/org/eclipse/jetty/util/Promise.html[`Promise`] (that is notified of connection creation success or failure) in the context `Map` as follows:
+This is done by passing a link:{javadoc-url}/org/eclipse/jetty/io/ClientConnectionFactory.html[`ClientConnectionFactory`] (that creates `Connection` instances) and a link:{javadoc-url}/org/eclipse/jetty/util/Promise.html[`Promise`] (that is notified of connection creation success or failure) in the context `Map` as follows:
 
 [source,java,indent=0]
 ----

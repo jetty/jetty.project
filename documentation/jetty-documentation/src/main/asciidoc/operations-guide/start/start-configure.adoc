@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,7 +21,10 @@ Within the Jetty start mechanism, the source of configurations is layered in thi
 * The directory specified with the `--include-jetty-dir` option, and its files.
 * The `$JETTY_HOME` directory, and its files.
 
-You can enable Jetty modules with the `--add-modules` command:
+[[og-start-configure-enable]]
+===== Enabling Modules
+
+You can enable Jetty modules persistently across restarts with the `--add-modules` command:
 
 ----
 $ java -jar $JETTY_HOME/start.jar --add-modules=server,http
@@ -40,10 +43,7 @@ The content of these `+*.ini+` files is copied from the `[ini-template]` section
 This may simply create a file or a directory, or download files from the Internet.
 This step is performed transitively for all module dependencies.
 
-The fact that there exist a `+$JETTY_BASE/start.d/*.ini+` file means that the module is enabled.
-To disable the module, simply delete the `+$JETTY_BASE/start.d/*.ini+` file.
-
-In the example above, enabling the `server` and `http` modules results in the `$JETTY_BASE` directory to have the following structure:
+For example, enabling the `server` and `http` modules results in the `$JETTY_BASE` directory to have the following structure:
 
 ----
 $JETTY_BASE
@@ -55,6 +55,15 @@ $JETTY_BASE
 ----
 
 The `$JETTY_BASE/resources/jetty-logging.properties` is created by the `[files]` directives of the `logging-jetty` module, which is a transitive dependency of the `server` module.
+
+[[og-start-configure-disable]]
+===== Disabling Modules
+
+A module is enabled because the correspondent `+$JETTY_BASE/start.d/*.ini+` file contains a `--module=<name>` directive.
+
+Commenting out the `--module=<name>` directive effectively disables the module.
+
+Deleting the correspondent `+$JETTY_BASE/start.d/*.ini+` file also disables the module.
 
 [[og-start-configure-edit-ini]]
 ===== Editing `+*.ini+` Files
@@ -98,6 +107,29 @@ jetty.http.port=9876
 ----
 
 When Jetty is started (or re-started) this configuration is applied and Jetty will listen for clear-text HTTP/1.1 on port `9876`.
+
+[[og-start-configure-enable-command-line]]
+===== Enabling Modules on Command Line
+
+You can also enable a module transiently, only for the current execution of the `java -jar $JETTY_HOME/start.jar` command.
+
+If you have an empty `$JETTY_BASE`, the following command enables the `server` and `http` modules, but does not create any `+$JETTY_BASE/start.d/*.ini+` files.
+
+----
+$ java -jar $JETTY_HOME/start.jar --module=server,http
+----
+
+Since there are no `+$JETTY_BASE/start.d/*.ini+` files, you can only customize the properties via the command line, for example:
+
+----
+$ java -jar $JETTY_HOME/start.jar --module=server,http jetty.http.port=9876
+----
+
+Enabling modules on the command line is useful to verify that the modules work as expected, or to try different configurations.
+
+NOTE: It is possible to enable some module persistently via `--add-modules` and some other module transiently via `--module`.
+
+Remember that once the current execution terminates, the modules enabled transiently on the command line via `--module` and their configuration are not saved and will not be enabled on the next execution (unless you specify them again on the command line).
 
 [[og-start-configure-custom-module]]
 ===== Adding Your Own Modules
@@ -154,9 +186,14 @@ $ java -jar $JETTY_HOME/start.jar --add-modules=jvm
 
 Since the module defines an `[exec]` section, it will fork _another_ JVM when Jetty is started.
 
-This means that when you start Jetty, there will be _two_ JVMs running: one spawned by you when you run `java -jar $JETTY_HOME/start.jar`, and another spawned by the Jetty start mechanism with the JVM options you specified (that cannot be applied to an already running JVM).
+This means that when you start Jetty, there will be _two_ JVMs running: one created by you when you run `java -jar $JETTY_HOME/start.jar`, and another forked by the Jetty start mechanism with the JVM options you specified (that cannot be applied to an already running JVM).
 
 Again, you can xref:og-start-configure-dry-run[display the JVM command line] to verify that it is correct.
+
+[TIP]
+====
+The second JVM forked by the Jetty start mechanism when one of the modules requires forking, for example a module that contains an `[exec]` section, may not be desirable, and may be avoided as explained in xref:og-start-configure-dry-run[this section].
+====
 
 [[og-start-configure-display]]
 ===== Displaying the Configuration
@@ -196,7 +233,28 @@ Some option, such as `--jpms`, imply `--exec`, as it won't be possible to modify
 
 To start Jetty without forking a second JVM, the `--dry-run` option can be used to generate a command line that is then executed so that starting Jetty only spawns one JVM.
 
-The `--dry-run` option is quite flexible and below you can find a few examples of how to use it to generate scripts or to create an arguments file that can be passed to the `java` executable.
+IMPORTANT: You can use the `--dry-run` option as explained below to avoid forking a second JVM when using modules that have the `[exec]` section, or the `--exec` option, or when using the `--jpms` option.
+
+For example, using the `--dry-run` option with the `jvm.mod` introduced in xref:og-start-configure-custom-module-exec[this section] produces the following command line:
+
+----
+$ java -jar $JETTY_HOME/start.jar --dry-run
+----
+
+[source,options=nowrap]
+----
+include::jetty[setupModules="src/main/asciidoc/operations-guide/start/jvm.mod",setupArgs="--add-modules=http,jvm",args="--dry-run",replace="( ),$1\\\n"]
+----
+
+You can then run the generated command line.
+
+For example, in the Linux `bash` shell you can run it by wrapping it into `$(\...)`:
+
+----
+$ $(java -jar $JETTY_HOME/start.jar --dry-run)
+----
+
+The `--dry-run` option is quite flexible and below you can find a few examples of how to use it to avoid forking a second JVM, or generating scripts or creating an arguments file that can be passed to (a possibly alternative) `java` executable.
 
 To display the `java` executable used to start Jetty:
 
@@ -295,7 +353,13 @@ $ java -jar $JETTY_HOME/start.jar --dry-run=##opts,path,main,args## > /tmp/jvm_c
 $ /some/other/java @/tmp/jvm_cmd_line.txt
 ----
 
-Alternatively, they can be combined in a shell script:
+Using `--dry-run=opts,path,main,args` can be used to avoid that the Jetty start mechanism forks a second JVM when using modules that require forking:
+
+----
+$ java $(java -jar $JETTY_HOME/start.jar --dry-run=opts,path,main,args)
+----
+
+The output of different `--dry-run` executions can be creatively combined in a shell script:
 
 [source,subs=quotes]
 ----

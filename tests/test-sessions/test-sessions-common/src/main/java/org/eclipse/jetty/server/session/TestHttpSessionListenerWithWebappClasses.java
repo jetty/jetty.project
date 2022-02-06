@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -30,9 +30,9 @@ public class TestHttpSessionListenerWithWebappClasses extends TestHttpSessionLis
         super();
     }
 
-    public TestHttpSessionListenerWithWebappClasses(boolean access)
+    public TestHttpSessionListenerWithWebappClasses(boolean attribute, boolean lastAccessTime)
     {
-        super(access);
+        super(attribute, lastAccessTime);
     }
 
     @Override
@@ -47,7 +47,7 @@ public class TestHttpSessionListenerWithWebappClasses extends TestHttpSessionLis
         }
         catch (Exception cnfe)
         {
-            ex = cnfe;
+            attributeException = cnfe;
         }
         super.sessionDestroyed(se);
     }

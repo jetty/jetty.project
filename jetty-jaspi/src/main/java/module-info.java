@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,19 +11,19 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.jaspi.JaspiAuthenticatorFactory;
-
 module org.eclipse.jetty.security.jaspi
 {
+    requires jetty.servlet.api;
+    requires org.slf4j;
+
+    requires transitive javax.security.auth.message;
+    requires transitive org.eclipse.jetty.security;
+
     exports org.eclipse.jetty.security.jaspi;
     exports org.eclipse.jetty.security.jaspi.callback;
     exports org.eclipse.jetty.security.jaspi.modules;
+    exports org.eclipse.jetty.security.jaspi.provider;
 
-    requires javax.security.auth.message;
-    requires jetty.servlet.api;
-    requires transitive org.eclipse.jetty.security;
-    requires org.slf4j;
-
-    provides Authenticator.Factory with JaspiAuthenticatorFactory;
+    provides org.eclipse.jetty.security.Authenticator.Factory with
+        org.eclipse.jetty.security.jaspi.JaspiAuthenticatorFactory;
 }

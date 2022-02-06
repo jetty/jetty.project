@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -64,7 +64,7 @@ public class ConnectionPoolsBenchmark
                 promise.succeeded(new MockConnection());
             }
         };
-        HttpDestination httpDestination = new HttpDestination(httpClient, new Origin("http", "localhost", 8080))
+        HttpDestination httpDestination = new HttpDestination(httpClient, new Origin("http", "localhost", 8080), false)
         {
         };
 
@@ -86,11 +86,11 @@ public class ConnectionPoolsBenchmark
                 pool.preCreateConnections(initialConnections).get();
                 break;
             case "uncached/multiplex":
-                pool = new MultiplexConnectionPool(httpDestination, maxConnections,false, Callback.NOOP, 12);
+                pool = new MultiplexConnectionPool(httpDestination, maxConnections, false, Callback.NOOP, 12);
                 pool.preCreateConnections(initialConnections).get();
                 break;
             case "cached/multiplex":
-                pool = new MultiplexConnectionPool(httpDestination, maxConnections,true, Callback.NOOP, 12);
+                pool = new MultiplexConnectionPool(httpDestination, maxConnections, true, Callback.NOOP, 12);
                 pool.preCreateConnections(initialConnections).get();
                 break;
             case "round-robin":

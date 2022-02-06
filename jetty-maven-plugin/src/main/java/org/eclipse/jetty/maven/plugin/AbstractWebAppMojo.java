@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -72,19 +72,21 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     {
         EMBED,
         FORK,
-        HOME
+        HOME, //alias for EXTERNAL
+        DISTRO, //alias for EXTERNAL
+        EXTERNAL
     }
 
     /**
      * Max number of times to check to see if jetty has started correctly
-     * when running in FORK or HOME mode.
+     * when running in FORK or EXTERNAL mode.
      */
     @Parameter (defaultValue = "10")
     protected int maxChildStartChecks;
 
     /**
      * How long to wait in msec between checks to see if jetty has started
-     * correctly when running in FORK or HOME mode.
+     * correctly when running in FORK or EXTERNAL mode.
      */
     @Parameter (defaultValue = "200")
     protected long maxChildStartCheckMs;
@@ -195,7 +197,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Optional jetty properties to put on the command line
      */
     @Parameter
-    protected Map<String,String> jettyProperties;
+    protected Map<String, String> jettyProperties;
 
     
     /**
@@ -219,10 +221,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * Optional.
      */
     @Parameter
-    protected Map<String,String> systemProperties;
+    protected Map<String, String> systemProperties;
 
     /**
-     * Controls how to run jetty. Valid values are EMBED,FORK,HOME.
+     * Controls how to run jetty. Valid values are EMBED,FORK,EXTERNAL.
      */
     @Parameter (property = "jetty.deployMode", defaultValue = "EMBED") 
     protected DeploymentMode deployMode;
@@ -267,12 +269,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     //End of EMBED only
     
 
-    //Start of parameters only valid for FORK/HOME
+    //Start of parameters only valid for FORK/EXTERNAL
     /**
      * Extra environment variables to be passed to the forked process
      */
     @Parameter
-    protected Map<String,String> env = new HashMap<String,String>();
+    protected Map<String, String> env = new HashMap<>();
 
     /**
      * Arbitrary jvm args to pass to the forked process
@@ -288,7 +290,6 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     @Parameter
     protected int stopPort;
     
-    
     /**
      * Key to provide when stopping jetty on executing java -DSTOP.KEY=&lt;stopKey&gt; 
      * -DSTOP.PORT=&lt;stopPort&gt; -jar start.jar --stop
@@ -296,9 +297,9 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected String stopKey;
-    //End of FORK or HOME parameters
+    //End of FORK or EXTERNAL parameters
 
-    //Start of parameters only valid for HOME
+    //Start of parameters only valid for EXTERNAL
     /**
      * Location of jetty home directory
      */
@@ -317,7 +318,14 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      */
     @Parameter
     protected String[] modules;
-    //End of HOME only parameters
+
+    /**
+     * Extra options that can be passed to the jetty command line
+     */
+    @Parameter (property = "jetty.options")
+    protected String jettyOptions;
+
+    //End of EXTERNAL only parameters
 
     //Start of parameters only valid for FORK
     /**
@@ -381,7 +389,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     /**
      * System properties from both systemPropertyFile and systemProperties.
      */
-    protected Map<String,String> mergedSystemProperties;
+    protected Map<String, String> mergedSystemProperties;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException
@@ -438,8 +446,12 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
                 startJettyForked();
                 break;
             }
+            case DISTRO:
             case HOME:
+            case EXTERNAL:
             {
+                if (deployMode != DeploymentMode.EXTERNAL)
+                    getLog().warn(deployMode + " mode is deprecated, use mode EXTERNAL");
                 startJettyHome();
                 break;
             }
@@ -505,6 +517,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         jetty.setStopPort(stopPort);
         jetty.setEnv(env);
         jetty.setJvmArgs(jvmArgs);
+        jetty.setJettyOptions(jettyOptions);
         jetty.setJettyXmlFiles(jettyXmls);
         jetty.setJettyProperties(jettyProperties);
         jetty.setModules(modules);
@@ -566,10 +579,10 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
      * @return united properties map
      * @throws MojoExecutionException
      */
-    protected Map<String,String> mergeSystemProperties()
+    protected Map<String, String> mergeSystemProperties()
         throws MojoExecutionException
     {
-        Map<String,String> properties = new HashMap<>();
+        Map<String, String> properties = new HashMap<>();
         
         //Get the properties from any file first
         if (systemPropertiesFile != null)
@@ -583,7 +596,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
             }
             catch (Exception e)
             {
-                throw new MojoExecutionException("Problem applying system properties from file " + systemPropertiesFile.getName(),e);
+                throw new MojoExecutionException("Problem applying system properties from file " + systemPropertiesFile.getName(), e);
             }
         }
         //Allow systemProperties defined in the pom to override the file
@@ -599,7 +612,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
     {
         if (mergedSystemProperties != null)
         {
-            for (Map.Entry<String,String> e : mergedSystemProperties.entrySet())
+            for (Map.Entry<String, String> e : mergedSystemProperties.entrySet())
             {
                 if (!StringUtil.isEmpty(e.getKey()) && !StringUtil.isEmpty(e.getValue()))
                 {
@@ -785,7 +798,7 @@ public abstract class AbstractWebAppMojo extends AbstractMojo
         if (webApp.getTempDirectory() == null)
         {
             File target = new File(project.getBuild().getDirectory());
-            File tmp = new File(target,"tmp");
+            File tmp = new File(target, "tmp");
             if (!tmp.exists())
             {
                 if (!tmp.mkdirs())

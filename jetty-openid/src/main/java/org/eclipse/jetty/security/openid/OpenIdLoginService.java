@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.security.openid;
 
+import java.util.Objects;
 import javax.security.auth.Subject;
 import javax.servlet.ServletRequest;
 
@@ -53,10 +54,12 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
      */
     public OpenIdLoginService(OpenIdConfiguration configuration, LoginService loginService)
     {
-        this.configuration = configuration;
+        this.configuration = Objects.requireNonNull(configuration);
         this.loginService = loginService;
         addBean(this.configuration);
         addBean(this.loginService);
+
+        setAuthenticateNewUsers(configuration.isAuthenticateNewUsers());
     }
 
     @Override
@@ -93,13 +96,14 @@ public class OpenIdLoginService extends ContainerLifeCycle implements LoginServi
         subject.getPrivateCredentials().add(credentials);
         subject.setReadOnly();
 
+        IdentityService identityService = getIdentityService();
         if (loginService != null)
         {
             UserIdentity userIdentity = loginService.login(openIdCredentials.getUserId(), "", req);
             if (userIdentity == null)
             {
                 if (isAuthenticateNewUsers())
-                    return getIdentityService().newUserIdentity(subject, userPrincipal, new String[0]);
+                    return identityService.newUserIdentity(subject, userPrincipal, new String[0]);
                 return null;
             }
             return new OpenIdUserIdentity(subject, userPrincipal, userIdentity);

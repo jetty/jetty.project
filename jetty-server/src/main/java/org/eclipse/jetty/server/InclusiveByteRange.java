@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -159,6 +159,7 @@ public class InclusiveByteRange
                         int dash = t.indexOf('-');
                         if (dash < 0 || t.indexOf("-", dash + 1) >= 0)
                         {
+                            ranges = null;
                             LOG.warn("Bad range format: {}", t);
                             break;
                         }
@@ -172,6 +173,7 @@ public class InclusiveByteRange
                         {
                             if (last == -1)
                             {
+                                ranges = null;
                                 LOG.warn("Bad range format: {}", t);
                                 break;
                             }
@@ -197,6 +199,7 @@ public class InclusiveByteRange
 
                         if (last < first)
                         {
+                            ranges = null;
                             LOG.warn("Bad range format: {}", t);
                             break;
                         }
@@ -231,6 +234,7 @@ public class InclusiveByteRange
                     }
                     catch (NumberFormatException e)
                     {
+                        ranges = null;
                         LOG.warn("Bad range format: {}", t);
                         LOG.trace("IGNORED", e);
                     }
@@ -238,6 +242,7 @@ public class InclusiveByteRange
             }
             catch (Exception e)
             {
+                ranges = null;
                 LOG.warn("Bad range format: {}", t);
                 LOG.trace("IGNORED", e);
             }

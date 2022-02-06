@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -29,9 +29,9 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBuffer;
+import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
@@ -43,10 +43,12 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private final LongAdder inMessages = new LongAdder();
     private final HttpParser parser;
+    private final RetainableByteBufferPool retainableByteBufferPool;
     private RetainableByteBuffer networkBuffer;
     private boolean shutdown;
     private boolean complete;
     private boolean unsolicited;
+    private String method;
     private int status;
 
     public HttpReceiverOverHTTP(HttpChannelOverHTTP channel)
@@ -61,6 +63,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             parser.setHeaderCacheSize(httpTransport.getHeaderCacheSize());
             parser.setHeaderCacheCaseSensitive(httpTransport.isHeaderCacheCaseSensitive());
         }
+
+        this.retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(httpClient, httpClient.getByteBufferPool());
     }
 
     @Override
@@ -111,9 +115,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     private RetainableByteBuffer newNetworkBuffer()
     {
         HttpClient client = getHttpDestination().getHttpClient();
-        ByteBufferPool bufferPool = client.getByteBufferPool();
         boolean direct = client.isUseInputDirectByteBuffers();
-        return new RetainableByteBuffer(bufferPool, client.getResponseBufferSize(), direct);
+        return retainableByteBufferPool.acquire(client.getResponseBufferSize(), direct);
     }
 
     private void releaseNetworkBuffer()
@@ -128,6 +131,10 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     protected ByteBuffer onUpgradeFrom()
     {
+        RetainableByteBuffer networkBuffer = this.networkBuffer;
+        if (networkBuffer == null)
+            return null;
+
         ByteBuffer upgradeBuffer = null;
         if (networkBuffer.hasRemaining())
         {
@@ -166,7 +173,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     return;
                 }
 
-                if (networkBuffer.getReferences() > 1)
+                if (networkBuffer.isRetained())
                     reacquireNetworkBuffer();
 
                 // The networkBuffer may have been reacquired.
@@ -224,13 +231,19 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             boolean complete = this.complete;
             this.complete = false;
             if (LOG.isDebugEnabled())
-                LOG.debug("Parse complete={}, remaining {} {}", complete, networkBuffer.remaining(), parser);
+                LOG.debug("Parse complete={}, {} {}", complete, networkBuffer, parser);
 
             if (complete)
             {
                 int status = this.status;
                 this.status = 0;
+                // Connection upgrade due to 101, bail out.
                 if (status == HttpStatus.SWITCHING_PROTOCOLS_101)
+                    return true;
+                // Connection upgrade due to CONNECT + 200, bail out.
+                String method = this.method;
+                this.method = null;
+                if (getHttpChannel().isTunnel(method, status))
                     return true;
             }
 
@@ -281,10 +294,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (exchange == null)
             return;
 
+        this.method = exchange.getRequest().getMethod();
         this.status = status;
-        String method = exchange.getRequest().getMethod();
-        parser.setHeadResponse(HttpMethod.HEAD.is(method) ||
-            (HttpMethod.CONNECT.is(method) && status == HttpStatus.OK_200));
+        parser.setHeadResponse(HttpMethod.HEAD.is(method) || getHttpChannel().isTunnel(method, status));
         exchange.getResponse().version(version).status(status).reason(reason);
 
         responseBegin(exchange);

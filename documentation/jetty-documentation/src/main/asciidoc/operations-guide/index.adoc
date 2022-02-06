@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -11,9 +11,8 @@
 // ========================================================================
 //
 
-:doctitle: Eclipse Jetty: Operations Guide
+:doctitle: link:https://eclipse.org/jetty[Eclipse Jetty]: Operations Guide
 :toc-title: Operations Guide
-:breadcrumb: Home:../index.html | Operations Guide:./index.html
 :idprefix: og-
 :docinfo: private-head
 
@@ -25,18 +24,18 @@ include::architecture/chapter.adoc[]
 include::features.adoc[]
 include::howtos.adoc[]
 include::start/chapter.adoc[]
-
+include::modules/chapter.adoc[]
 include::deploy/chapter.adoc[]
 include::protocols/chapter.adoc[]
 include::keystore/chapter.adoc[]
-include::modules/chapter.adoc[]
-include::xml/chapter.adoc[]
 include::sessions/chapter.adoc[]
 include::quickstart/chapter.adoc[]
 include::annotations/chapter.adoc[]
 include::jsp/chapter.adoc[]
 include::jndi/chapter.adoc[]
 include::jaas/chapter.adoc[]
+include::jaspi/chapter.adoc[]
 include::jmx/chapter.adoc[]
 include::logging/chapter.adoc[]
 include::troubleshooting/chapter.adoc[]
+include::xml/chapter.adoc[]

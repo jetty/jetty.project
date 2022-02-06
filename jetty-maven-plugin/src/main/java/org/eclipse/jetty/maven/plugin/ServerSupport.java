@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -92,7 +92,7 @@ public class ServerSupport
      * @param connector the connector
      * @param properties jetty properties
      */
-    public static void configureConnectors(Server server, Connector connector, Map<String,String> properties)
+    public static void configureConnectors(Server server, Connector connector, Map<String, String> properties)
     {
         if (server == null)
             throw new IllegalArgumentException("Server is null");
@@ -190,7 +190,7 @@ public class ServerSupport
         if (files == null || files.isEmpty())
             return server;
 
-        Map<String,Object> lastMap = new HashMap<String,Object>();
+        Map<String, Object> lastMap = new HashMap<>();
 
         if (server != null)
             lastMap.put("Server", server);

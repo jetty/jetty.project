@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,8 +39,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A matcher for classes based on package and/or location and/or module/
@@ -65,8 +63,6 @@ import org.slf4j.LoggerFactory;
 
 public class ClassMatcher extends AbstractSet<String>
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ClassMatcher.class);
-
     public static class Entry
     {
         private final String _pattern;
@@ -500,6 +496,7 @@ public class ClassMatcher extends AbstractSet<String>
     {
     }
 
+    @SuppressWarnings("CopyConstructorMissesField")
     public ClassMatcher(ClassMatcher patterns)
     {
         if (patterns != null)
@@ -680,7 +677,7 @@ public class ClassMatcher extends AbstractSet<String>
      */
     public String[] getPatterns()
     {
-        return toArray(new String[_entries.size()]);
+        return toArray(new String[0]);
     }
 
     /**
@@ -722,9 +719,8 @@ public class ClassMatcher extends AbstractSet<String>
         {
             return combine(_patterns, clazz.getName(), _locations, () -> TypeUtil.getLocationOfClass(clazz));
         }
-        catch (Exception e)
+        catch (Exception ignored)
         {
-            LOG.warn("Unable to match against {}", clazz, e);
         }
         return false;
     }
@@ -744,14 +740,13 @@ public class ClassMatcher extends AbstractSet<String>
             {
                 return URIUtil.getJarSource(url.toURI());
             }
-            catch (URISyntaxException e)
+            catch (URISyntaxException ignored)
             {
-                LOG.trace("IGNORED", e);
                 return null;
             }
         });
     }
-    
+
     /**
      * Match a class against inclusions and exclusions by name and location.
      * Name based checks are performed before location checks. For a class to match,

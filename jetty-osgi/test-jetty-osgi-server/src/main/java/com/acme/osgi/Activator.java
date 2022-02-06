@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -19,7 +19,6 @@ import java.util.Hashtable;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.component.AbstractLifeCycle.AbstractLifeCycleListener;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -41,14 +40,13 @@ public class Activator implements BundleActivator
     {
         //For test purposes, use a random port
         Server server = new Server(0);
-        server.getConnectors()[0].addEventListener(new AbstractLifeCycleListener()
+        server.getConnectors()[0].addEventListener(new LifeCycle.Listener()
         {
 
             @Override
             public void lifeCycleStarted(LifeCycle event)
             {
                 System.setProperty("bundle.server.port", String.valueOf(((ServerConnector)event).getLocalPort()));
-                super.lifeCycleStarted(event);
             }
         });
         ContextHandlerCollection contexts = new ContextHandlerCollection();

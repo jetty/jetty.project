@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -32,7 +32,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -50,7 +49,6 @@ public class ConnectionStatisticsTest extends AbstractTest<TransportScenario>
         Assumptions.assumeTrue(scenario.transport == HTTP || scenario.transport == H2C);
     }
 
-    @Disabled
     @ParameterizedTest
     @ArgumentsSource(TransportProvider.class)
     public void testConnectionStatistics(Transport transport) throws Exception

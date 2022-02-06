@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -29,16 +29,20 @@ public interface WriteCallback
      *
      * @param x the reason for the write failure
      */
-    void writeFailed(Throwable x);
+    default void writeFailed(Throwable x)
+    {
+    }
 
     /**
      * <p>
-     * Callback invoked when the write completes.
+     * Callback invoked when the write succeeds.
      * </p>
      *
      * @see #writeFailed(Throwable)
      */
-    void writeSuccess();
+    default void writeSuccess()
+    {
+    }
 
     class Adaptor implements WriteCallback
     {

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -106,7 +106,6 @@ public class Server extends HandlerWrapper implements Attributes
         ServerConnector connector = new ServerConnector(this);
         connector.setPort(port);
         setConnectors(new Connector[]{connector});
-        addBean(_attributes);
     }
 
     /**
@@ -129,6 +128,7 @@ public class Server extends HandlerWrapper implements Attributes
     {
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
+        addBean(_attributes);
         setServer(this);
     }
 
@@ -614,7 +614,7 @@ public class Server extends HandlerWrapper implements Attributes
                     {
                         encodedPathQuery = URIUtil.canonicalPath(URIUtil.addEncodedPaths(encodedContextPath, encodedPathQuery));
                         if (encodedPathQuery == null)
-                            throw new BadMessageException(500,"Bad dispatch path");
+                            throw new BadMessageException(500, "Bad dispatch path");
                     }
                 }
 

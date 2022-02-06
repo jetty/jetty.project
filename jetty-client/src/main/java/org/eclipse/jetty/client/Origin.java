@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client;
 
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -140,11 +142,13 @@ public class Origin
     {
         private final String host;
         private final int port;
+        private final SocketAddress address;
 
         public Address(String host, int port)
         {
             this.host = HostPort.normalizeHost(Objects.requireNonNull(host));
             this.port = port;
+            this.address = InetSocketAddress.createUnresolved(getHost(), getPort());
         }
 
         public String getHost()
@@ -177,6 +181,11 @@ public class Origin
         public String asString()
         {
             return String.format("%s:%d", host, port);
+        }
+
+        public SocketAddress getSocketAddress()
+        {
+            return address;
         }
 
         @Override

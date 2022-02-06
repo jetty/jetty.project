@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,16 +14,17 @@
 package org.eclipse.jetty.http2.client.http;
 
 import java.nio.channels.AsynchronousCloseException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -45,9 +46,9 @@ import org.eclipse.jetty.util.thread.Sweeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable
+public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.Sweepable, ConnectionPool.Multiplexable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpConnectionOverHTTP2.class);
 
     private final Set<HttpChannel> activeChannels = ConcurrentHashMap.newKeySet();
     private final Queue<HttpChannelOverHTTP2> idleChannels = new ConcurrentLinkedQueue<>();
@@ -75,6 +76,18 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public void setRecycleHttpChannels(boolean recycleHttpChannels)
     {
         this.recycleHttpChannels = recycleHttpChannels;
+    }
+
+    @Override
+    public int getMaxMultiplex()
+    {
+        return ((HTTP2Session)session).getMaxLocalStreams();
+    }
+
+    @Override
+    protected Iterator<HttpChannel> getHttpChannels()
+    {
+        return activeChannels.iterator();
     }
 
     @Override
@@ -151,7 +164,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
         return new HttpChannelOverHTTP2(getHttpDestination(), this, getSession());
     }
 
-    protected void release(HttpChannelOverHTTP2 channel)
+    protected boolean release(HttpChannelOverHTTP2 channel)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Released {}", channel);
@@ -162,19 +175,21 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
                 channel.destroy();
             else if (isRecycleHttpChannels())
                 idleChannels.offer(channel);
+            return true;
         }
         else
         {
             channel.destroy();
+            return false;
         }
     }
 
     @Override
-    public boolean onIdleTimeout(long idleTimeout)
+    public boolean onIdleTimeout(long idleTimeout, Throwable failure)
     {
-        boolean close = super.onIdleTimeout(idleTimeout);
+        boolean close = super.onIdleTimeout(idleTimeout, failure);
         if (close)
-            close(new TimeoutException("idle_timeout"));
+            close(failure);
         return false;
     }
 
@@ -182,6 +197,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection implements Sweeper.S
     public void close()
     {
         close(new AsynchronousCloseException());
+        destroy();
     }
 
     protected void close(Throwable failure)

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -15,6 +15,7 @@ package org.eclipse.jetty.start.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -172,19 +173,22 @@ public class RebuildTestResources
     {
         Files.createDirectories(to);
 
-        for (Path path : Files.newDirectoryStream(from))
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(from))
         {
-            String name = renamer.getName(path);
-            Path dest = to.resolve(name);
-            if (Files.isDirectory(path))
+            for (Path path : directoryStream)
             {
-                copyDir(path, dest, fileMatcher, renamer, copier);
-            }
-            else
-            {
-                if (fileMatcher.matches(path))
+                String name = renamer.getName(path);
+                Path dest = to.resolve(name);
+                if (Files.isDirectory(path))
                 {
-                    copier.copy(path, dest);
+                    copyDir(path, dest, fileMatcher, renamer, copier);
+                }
+                else
+                {
+                    if (fileMatcher.matches(path))
+                    {
+                        copier.copy(path, dest);
+                    }
                 }
             }
         }

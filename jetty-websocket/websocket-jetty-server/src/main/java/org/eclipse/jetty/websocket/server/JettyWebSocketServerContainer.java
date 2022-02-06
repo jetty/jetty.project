@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketBehavior;
@@ -66,23 +67,43 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         if (contextHandler.getServer() == null)
             throw new IllegalStateException("Server has not been set on the ServletContextHandler");
 
-        JettyWebSocketServerContainer container = getContainer(servletContext);
-        if (container == null)
+        // If we find a container in the servlet context return it.
+        JettyWebSocketServerContainer containerFromServletContext = getContainer(servletContext);
+        if (containerFromServletContext != null)
+            return containerFromServletContext;
+
+        // Find Pre-Existing executor.
+        Executor executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
+        if (executor == null)
+            executor = contextHandler.getServer().getThreadPool();
+
+        // Create the Jetty ServerContainer implementation.
+        WebSocketMappings mappings = WebSocketMappings.ensureMappings(servletContext);
+        WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(servletContext);
+        JettyWebSocketServerContainer container = new JettyWebSocketServerContainer(contextHandler, mappings, components, executor);
+
+        // Manage the lifecycle of the Container.
+        contextHandler.addManaged(container);
+        contextHandler.addEventListener(container);
+        contextHandler.addEventListener(new LifeCycle.Listener()
         {
-            // Find Pre-Existing executor
-            Executor executor = (Executor)servletContext.getAttribute("org.eclipse.jetty.server.Executor");
-            if (executor == null)
-                executor = contextHandler.getServer().getThreadPool();
+            @Override
+            public void lifeCycleStopping(LifeCycle event)
+            {
+                contextHandler.getServletContext().removeAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE);
+                contextHandler.removeBean(container);
+                contextHandler.removeEventListener(container);
+                contextHandler.removeEventListener(this);
+            }
 
-            // Create the Jetty ServerContainer implementation
-            WebSocketMappings mappings = WebSocketMappings.ensureMappings(servletContext);
-            WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(servletContext);
-            container = new JettyWebSocketServerContainer(contextHandler, mappings, components, executor);
-            servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
-            contextHandler.addManaged(container);
-            contextHandler.addEventListener(container);
-        }
+            @Override
+            public String toString()
+            {
+                return String.format("%sCleanupListener", JettyWebSocketServerContainer.class.getSimpleName());
+            }
+        });
 
+        servletContext.setAttribute(JETTY_WEBSOCKET_CONTAINER_ATTRIBUTE, container);
         return container;
     }
 
@@ -110,7 +131,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
         this.webSocketMappings = webSocketMappings;
         this.components = components;
         this.executor = executor;
-        this.frameHandlerFactory = new JettyServerFrameHandlerFactory(this);
+        this.frameHandlerFactory = new JettyServerFrameHandlerFactory(this, components);
         addBean(frameHandlerFactory);
 
         addSessionListener(sessionTracker);
@@ -291,5 +312,11 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
     public void setAutoFragment(boolean autoFragment)
     {
         customizer.setAutoFragment(autoFragment);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        Dumpable.dumpObjects(out, indent, this, customizer);
     }
 }

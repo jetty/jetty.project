@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,6 +16,8 @@ package org.eclipse.jetty.util.security;
 import org.eclipse.jetty.util.security.Credential.Crypt;
 import org.eclipse.jetty.util.security.Credential.MD5;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -98,5 +100,18 @@ public class CredentialTest
         assertFalse(Credential.byteEquals("fooo".getBytes(), "".getBytes()));
         assertFalse(Credential.byteEquals("".getBytes(), "fooo".getBytes()));
         assertTrue(Credential.byteEquals("".getBytes(), "".getBytes()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "OBF:1v2j1uum1xtv1zej1zer1xtn1uvk1v1v",
+        "MD5:5f4dcc3b5aa765d61d8327deb882cf99",
+        "CRYPT:usjRS48E8ZADM"
+    })
+    public void testGetCredential(String encoded)
+    {
+        Credential credential = Credential.getCredential(encoded);
+        assertTrue(credential.check(Credential.getCredential("password")));
+        assertTrue(credential.check("password"));
     }
 }

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -106,21 +106,26 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public void release()
     {
         setStream(null);
-        connection.release(this);
-        getHttpDestination().release(getHttpConnection());
+        boolean released = connection.release(this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("released channel? {} {}", released, this);
+        if (released)
+            getHttpDestination().release(getHttpConnection());
     }
 
     @Override
     public void exchangeTerminated(HttpExchange exchange, Result result)
     {
         super.exchangeTerminated(exchange, result);
+        Stream stream = getStream();
+        if (LOG.isDebugEnabled())
+            LOG.debug("exchange terminated {} {}", result, stream);
         if (result.isSucceeded())
         {
             release();
         }
         else
         {
-            Stream stream = getStream();
             if (stream != null)
                 stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), new ReleaseCallback());
             else

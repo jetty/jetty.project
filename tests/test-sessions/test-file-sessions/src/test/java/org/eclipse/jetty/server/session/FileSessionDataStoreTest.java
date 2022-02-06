@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,6 +24,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(WorkDirExtension.class)
 public class FileSessionDataStoreTest extends AbstractSessionDataStoreTest
 {
+    public FileSessionDataStoreTest() throws Exception
+    {
+        super();
+    }
+
     public WorkDir workDir;
     private FileTestHelper _helper;
 

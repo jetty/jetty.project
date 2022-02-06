@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,6 +13,7 @@
 
 package examples;
 
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import javax.websocket.ClientEndpointConfig;
@@ -21,9 +22,11 @@ import javax.websocket.WebSocketContainer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
+import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.util.component.Container;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.javax.client.internal.JavaxWebSocketClientContainer;
+import org.eclipse.jetty.websocket.javax.client.JavaxWebSocketClientContainerProvider;
 
 public class SecureClientContainerExample
 {
@@ -76,9 +79,12 @@ public class SecureClientContainerExample
         clientConnector.setSslContextFactory(ssl);
 
         HttpClient httpClient = new HttpClient(new HttpClientTransportOverHTTP(clientConnector));
-        JavaxWebSocketClientContainer clientContainer = new JavaxWebSocketClientContainer(httpClient);
-        clientContainer.addManaged(httpClient); // allow clientContainer to own httpClient (for start/stop lifecycle)
-        clientContainer.start();
+        WebSocketContainer clientContainer = JavaxWebSocketClientContainerProvider.getContainer(httpClient);
+
+        // Components can be added as a bean to the WebSocketContainer with the Container static method.
+        MBeanContainer mbeanContainer = new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        Container.addBean(clientContainer, mbeanContainer);
+
         return clientContainer;
     }
 }

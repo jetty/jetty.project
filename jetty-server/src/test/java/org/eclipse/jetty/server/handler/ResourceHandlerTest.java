@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -40,7 +40,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_LENGTH;
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
@@ -277,7 +276,6 @@ public class ResourceHandlerTest
     }
 
     @Test
-    @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testSlowBiggest() throws Exception
     {
         _connector.setIdleTimeout(9000);
@@ -307,7 +305,7 @@ public class ResourceHandlerTest
             ByteBuffer buffer = null;
             while (true)
             {
-                Thread.sleep(25);
+                Thread.sleep(10);
                 int len = in.read(array);
                 if (len < 0)
                     break;

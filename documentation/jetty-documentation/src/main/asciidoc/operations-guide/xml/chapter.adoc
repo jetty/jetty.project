@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,6 +13,8 @@
 
 [[og-xml]]
 === Jetty XML
+
+// TODO: merge this small section into the syntax and maybe call it "Jetty XML Reference".
 
 The Jetty XML format is a straightforward mapping of XML elements to Java APIs so that any object can be instantiated and getters, setters, and methods can be called.
 

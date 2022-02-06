@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -42,11 +42,13 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     private static final Logger LOG = LoggerFactory.getLogger(ScanningAppProvider.class);
 
     private final Map<String, App> _appMap = new HashMap<>();
+
     private DeploymentManager _deploymentManager;
     private FilenameFilter _filenameFilter;
     private final List<Resource> _monitored = new CopyOnWriteArrayList<>();
     private int _scanInterval = 10;
     private Scanner _scanner;
+    private boolean _useRealPaths;
 
     private final Scanner.DiscreteListener _scannerListener = new Scanner.DiscreteListener()
     {
@@ -78,6 +80,22 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
     {
         _filenameFilter = filter;
         addBean(_appMap);
+    }
+
+    /**
+     * @return True if the real path of the scanned files should be used for deployment.
+     */
+    public boolean isUseRealPaths()
+    {
+        return _useRealPaths;
+    }
+
+    /**
+     * @param useRealPaths True if the real path of the scanned files should be used for deployment.
+     */
+    public void setUseRealPaths(boolean useRealPaths)
+    {
+        _useRealPaths = useRealPaths;
     }
 
     protected void setFilenameFilter(FilenameFilter filter)
@@ -127,7 +145,7 @@ public abstract class ScanningAppProvider extends ContainerLifeCycle implements 
                 LOG.warn("Does not exist: {}", resource);
         }
 
-        _scanner = new Scanner();
+        _scanner = new Scanner(null, _useRealPaths);
         _scanner.setScanDirs(files);
         _scanner.setScanInterval(_scanInterval);
         _scanner.setFilenameFilter(_filenameFilter);

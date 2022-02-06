@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -85,11 +85,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     {
         coreClient = new WebSocketCoreClient(httpClient, components);
         addManaged(coreClient);
-
-        if (httpClient == null)
-            coreClient.getHttpClient().setName("Jetty-WebSocketClient@" + hashCode());
-
-        frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this);
+        frameHandlerFactory = new JettyWebSocketFrameHandlerFactory(this, components);
         sessionListeners.add(sessionTracker);
         addBean(sessionTracker);
     }
