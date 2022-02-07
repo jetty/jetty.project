@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
-  <artifactId>tests-parent</artifactId>
+  <artifactId>tests</artifactId>
   <name>Jetty Tests :: Parent</name>
   <packaging>pom</packaging>
   <properties>

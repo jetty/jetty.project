@@ -7,7 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-integrations-parent</artifactId>
+  <artifactId>jetty-integrations</artifactId>
   <name>Jetty Integrations :: Parent</name>
   <packaging>pom</packaging>
 

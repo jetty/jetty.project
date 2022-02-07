@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
-    <artifactId>jetty-ee9-demos-parent</artifactId>
+    <artifactId>jetty-ee9-demos</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <name>Demo :: Mock Resources</name>

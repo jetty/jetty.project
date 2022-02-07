@@ -2,13 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-core-parent</artifactId>
+    <artifactId>jetty-core</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.http2</groupId>
-  <artifactId>http2-parent</artifactId>
+  <artifactId>http2</artifactId>
   <packaging>pom</packaging>
   <name>Jetty :: HTTP2</name>
 
