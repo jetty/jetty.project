@@ -117,7 +117,7 @@
     <maven.javadoc.plugin.version>3.3.1</maven.javadoc.plugin.version>
     <maven.jxr.plugin.version>3.3.1</maven.jxr.plugin.version>
     <maven.plugin.plugin.version>3.6.4</maven.plugin.plugin.version>
-    <maven.project-info-reports.plugin.version>3.1.2</maven.project-info-reports.plugin.version>
+    <maven.project-info-reports.plugin.version>3.2.1</maven.project-info-reports.plugin.version>
     <maven.release.plugin.version>2.5.3</maven.release.plugin.version>
     <maven.remote-resources.plugin.version>1.7.0</maven.remote-resources.plugin.version>
     <maven.resources.plugin.version>3.2.0</maven.resources.plugin.version>
@@ -1278,7 +1278,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-project-info-reports-plugin</artifactId>
-            <version>3.1.2</version>
+            <version>3.2.1</version>
           </plugin>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
