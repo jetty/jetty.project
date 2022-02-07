@@ -63,6 +63,34 @@ jetty-10.0.8 - 07 February 2022
  + 7524 Missing package in JmxConfiguration
  + 7529 Upgrade quiche to version 0.11.0
 
+jetty-9.4.45.v20220203 - 03 February 2022
+ + 4275 Path Normalization/Traversal - Context Matching
+ + 6497 Replace SameFileAliasChecker
+ + 6687 Upgrade Infinispan in all active Jetty branches
+ + 6965 Expose Spec `ServerContainer.upgrade()` API
+ + 6969 Getting 404 failures when trying to enable `logging-log4j` module.
+ + 6974 Major websocket memory change in 9.4.36
+ + 7031 ResponseWriter.println(char) does not print newline
+ + 7059 NPE in AllowedResourceAliasChecker.getPath()
+ + 7073 Error in parse parameter in broken UTF-8 encoding
+ + 7078 CompressionPools are not shared between multiple contexts for 9.4
+   WebSocket
+ + 7107 Client timeout and async close exceptions when setting max duration on
+   pool
+ + 7124 Add default methods on LifeCycle.Listener interface
+ + 7157 Multiplexed connection pools retain CLOSED entries
+ + 7243 Reset pooled ByteBuffer endianness
+ + 7266 Wrong ALPN jars are selected for newer versions of JDK8
+ + 7271 It is necessary to set MAX_CAPACITY to ArrayTernaryTrie/ArrayTrie
+ + 7277 Allow override of `ServletRequest.getLocalName()` and `.getLocalPort()`
+   in post-intermediary scenarios
+ + 7297 Deprecate log4j 1.x support
+ + 7348 Slow CONNECT request causes NPE
+ + 7375 Some environments require Request scoping during session save
+ + 7435 Investigate Infinispan transitive dependencies
+ + 7440 ContextHandler.getAliasChecks() breaks Spring Boot
+ + 7496 Transient 400: Bad Request responses in jetty-9.4.45.v20220128
+
 jetty-10.0.7 - 06 October 2021
  + 3514 Use interpolation of versions from pom in mod files
  + 6043 Reimplement UnixSocket support based on Java 16
@@ -119,6 +147,32 @@ jetty-10.0.7 - 06 October 2021
  + 6870 Encode control characters in URIUtil.encodePath
  + 6883 Welcome file redirects do not honor the relativeRedirectAllowed option
  + 6938 module-info.java file do not use the canonical order for the elements
+
+jetty-9.4.44.v20210927 - 27 September 2021
+ + 3514 Use interpolation of versions from pom in mod files
+ + 6369 Increment default jetty.http2.rateControl.maxEventsPerSecond
+ + 6372 Review socket options configuration
+ + 6487 Expose ServletHolder getter in ServletHandler$ChainEnd for auditing
+   libraries to use
+ + 6491 onDataAvailable() not called when HttpParser is closed prematurely
+ + 6520 Error page has HTML error when writePoweredBy is enabled
+ + 6545 image/webp MIME type support
+ + 6553 Review usage of Authentication.UNAUTHENTICATED in SecurityHandler
+ + 6554 Allow creation of DefaultIdentityService without realmName
+ + 6558 Allow to configure return type in JSON array parsing
+ + 6562 HttpOutput.write(ByteBuffer buffer)
+ + 6603 HTTP/2 max local stream count exceeded
+ + 6617 Add basic auth support for OpenId token endpoint (client_secret_basic)
+ + 6618 ID token `azp` claim should not be required if `aud` is single value
+   array
+ + 6652 Improve ReservedThreadExecutor dump
+ + 6671 Update to apache jsp 8.5.70
+ + 6772 Update to asm 9.2
+ + 6853 Remove pack200 plugins
+ + 6860 Correct IPv6 format
+ + 6869 Correct Content-Type within HTML error pages
+ + 6870 Encode control characters in URIUtil.encodePath
+ + 6883 Welcome file redirects do not honor the relativeRedirectAllowed option
 
 jetty-10.0.6 - 29 June 2021
  + 6375 Always check XML `Set` elements with `property` attribute
