@@ -30,7 +30,7 @@ jetty-11.0.8 - 07 February 2022
    RetainableByteBuffer
  + 7103 Rework LaF of distro landing page
  + 7107 Client timeout and async close exceptions when setting max duration on
-   pool 
+   pool
  + 7109 Deprecate UnixSocket JNR support
  + 7111 Add support to deprecate jetty-home modules
  + 7113 Improve Unix-Domain client documentation
@@ -52,12 +52,75 @@ jetty-11.0.8 - 07 February 2022
    org.eclipse.jetty.server.Server
  + 7327 jetty-slf4j-impl missing from BOM
  + 7348 Slow CONNECT request causes NPE
- + 7351 Large WebSocket payloads with permessage-deflate hang on 10.0.7 
+ + 7351 Large WebSocket payloads with permessage-deflate hang on 10.0.7
  + 7354 Demo jars should not be in jetty-home
  + 7369 Document CustomRequestLog
  + 7375 Some environments require Request scoping during session save
  + 7435 Investigate Infinispan transitive dependencies
  + 7494 Remove modules in Jetty 11 that are not supporting jakarta.servlet yet
+ + 7496 Transient 400: Bad Request responses in jetty-9.4.45.v20220128
+ + 7514 Adding InheritedListeners to already-started components can cause
+   IllegalStateException
+ + 7523 Typo in AnnotationConfiguration
+ + 7524 Missing package in JmxConfiguration
+ + 7529 Upgrade quiche to version 0.11.0
+
+jetty-10.0.8 - 07 February 2022
+ + 2504 Expose more WebSocket details in JMX and Server Dump
+ + 4275 Path Normalization/Traversal - Context Matching
+ + 4317 EventSource does not work with GzipHandler
+ + 6017 Property overriding does not work
+ + 6282 SecuredRedirectHandler should probably redirect with 301
+ + 6497 Replace SameFileAliasChecker
+ + 6728 QUIC and HTTP/3
+ + 6730 HTTP3: update Quiche to 0.9.0
+ + 6965 Expose Spec `ServerContainer.upgrade()` API
+ + 6973 Jetty starts consuming CPU that remains high even without any traffic
+ + 6974 Major websocket memory change in 9.4.36
+ + 6980 ELContextCleaner failed because cannot access a member of class
+   javax.el.BeanELResolver with modifiers "private static final"
+ + 6987 jetty-unixdomain-server is missing from jetty-bom
+ + 6990 UnixDomainServerConnector throws misleading exception on invalid socket
+   path
+ + 7008 Problem with jetty.sh start regression 10.0.6 -> 10.0.7 when using
+   JETTY_USER
+ + 7012 Remove all old geronimo spec jars from jetty-10
+ + 7031 ResponseWriter.println(char) does not print newline
+ + 7042 Simplify configuration to use different OpenIdConfiguration per webapp.
+ + 7059 NPE in AllowedResourceAliasChecker.getPath()
+ + 7063 Simplify command line use of org.eclipse.jetty.util.Password
+ + 7064 Cleanup or clarify `(null)` in output of `--list-config`
+ + 7086 WebSocket: java.lang.IllegalStateException: already released
+   RetainableByteBuffer
+ + 7103 Rework LaF of distro landing page
+ + 7107 Client timeout and async close exceptions when setting max duration on
+   pool
+ + 7109 Deprecate UnixSocket JNR support
+ + 7111 Add support to deprecate jetty-home modules
+ + 7113 Improve Unix-Domain client documentation
+ + 7124 Add default methods on LifeCycle.Listener interface
+ + 7131 Use Charset instead of encoding string where possible
+ + 7157 Multiplexed connection pools retain CLOSED entries
+ + 7160 HttpURI considers %25 to be ambiguous, preventing access to static
+   resources with % in their name
+ + 7240 Clarify and javadoc InvocationType
+ + 7243 Reset pooled ByteBuffer endianness
+ + 7262 Allow the SerlvetHandler.getFilterChain method to be overridden.
+ + 7277 Allow override of `ServletRequest.getLocalName()` and `.getLocalPort()`
+   in post-intermediary scenarios
+ + 7280 Interceptors don't get destroyed in HttpInput
+ + 7281 EOFs are not passed to interceptors any more - shouldn't they?
+ + 7284 HttpInput reopen/recycle cleanup
+ + 7297 Deprecate log4j 1.x support
+ + 7313 addBean(_attributes); only called in the Convenience constructor of
+   org.eclipse.jetty.server.Server
+ + 7327 jetty-slf4j-impl missing from BOM
+ + 7348 Slow CONNECT request causes NPE
+ + 7351 Large WebSocket payloads with permessage-deflate hang on 10.0.7
+ + 7354 Demo jars should not be in jetty-home
+ + 7369 Document CustomRequestLog
+ + 7375 Some environments require Request scoping during session save
+ + 7435 Investigate Infinispan transitive dependencies
  + 7496 Transient 400: Bad Request responses in jetty-9.4.45.v20220128
  + 7514 Adding InheritedListeners to already-started components can cause
    IllegalStateException
@@ -126,19 +189,6 @@ jetty-11.0.7 - 06 October 2021
  + 6883 Welcome file redirects do not honor the relativeRedirectAllowed option
  + 6938 module-info.java file do not use the canonical order for the elements
 
-jetty-11.0.6 - 29 June 2021
- + 6375 Always check XML `Set` elements with `property` attribute
- + 6382 HttpClient TimeoutException message reports transient values
- + 6394 Review osgi manifests within Jetty 10
- + 6407 Malformed scheme logical expression check in WebSocket
-   ClientUpgradeRequest
- + 6410 Ensure Jetty IO uses SocketAddress instead of InetSocketAddress
- + 6418 Bad and/or missing Require-Capability for osgi.serviceloader
- + 6425 Update to asm 9.1
- + 6447 Deprecate support for UTF16 encoding in URIs
- + 6451 Request#getServletPath() returns null for ROOT mapping
- + 6464 Wrong files/lib definitions in certain *-capture.mod files?
-
 jetty-10.0.7 - 06 October 2021
  + 3514 Use interpolation of versions from pom in mod files
  + 6043 Reimplement UnixSocket support based on Java 16
@@ -195,6 +245,19 @@ jetty-10.0.7 - 06 October 2021
  + 6870 Encode control characters in URIUtil.encodePath
  + 6883 Welcome file redirects do not honor the relativeRedirectAllowed option
  + 6938 module-info.java file do not use the canonical order for the elements
+
+jetty-11.0.6 - 29 June 2021
+ + 6375 Always check XML `Set` elements with `property` attribute
+ + 6382 HttpClient TimeoutException message reports transient values
+ + 6394 Review osgi manifests within Jetty 10
+ + 6407 Malformed scheme logical expression check in WebSocket
+   ClientUpgradeRequest
+ + 6410 Ensure Jetty IO uses SocketAddress instead of InetSocketAddress
+ + 6418 Bad and/or missing Require-Capability for osgi.serviceloader
+ + 6425 Update to asm 9.1
+ + 6447 Deprecate support for UTF16 encoding in URIs
+ + 6451 Request#getServletPath() returns null for ROOT mapping
+ + 6464 Wrong files/lib definitions in certain *-capture.mod files?
 
 jetty-10.0.6 - 29 June 2021
  + 6375 Always check XML `Set` elements with `property` attribute
@@ -586,7 +649,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907 
+ + 4907
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
