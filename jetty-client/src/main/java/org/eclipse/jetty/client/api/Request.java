@@ -279,7 +279,7 @@ public interface Request
 
     /**
      * Shortcut method to specify a file as a content for this request, with the default content type of
-     * "application/octect-stream".
+     * "application/octet-stream".
      *
      * @param file the file to upload
      * @return this request object
