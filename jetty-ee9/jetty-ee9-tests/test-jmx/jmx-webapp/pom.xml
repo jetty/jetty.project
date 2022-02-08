@@ -8,7 +8,7 @@
   </parent>
   <artifactId>jmx-webapp</artifactId>
   <packaging>war</packaging>
-  <name>Jetty Tests :: JMX :: WebApp</name>
+  <name>EE9 :: Jetty Test :: JMX :: WebApp</name>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <bundle-symbolic-name>${project.groupId}.jmx.webapp</bundle-symbolic-name>

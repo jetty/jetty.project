@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-io</artifactId>
-  <name>Jetty :: IO Utility</name>
+  <name>Jetty Core :: IO Utility</name>
   <properties>
     <bundle-symbolic-name>${project.groupId}.io</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.io.*</spotbugs.onlyAnalyze>

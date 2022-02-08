@@ -12,7 +12,7 @@
   <artifactId>jetty-simple-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>Jetty :: Simple :: Webapp</name>
+  <name>EE9 :: Jetty :: Simple :: Webapp</name>
 
   <properties>
     <jetty.port.file>${project.build.directory}/jetty-start-war-forked-port.txt</jetty.port.file>

@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.http2</groupId>
   <artifactId>http2</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty :: HTTP2</name>
+  <name>Jetty Core :: HTTP2</name>
 
   <modules>
     <module>http2-client</module>

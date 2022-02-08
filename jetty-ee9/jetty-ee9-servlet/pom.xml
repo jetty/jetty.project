@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee9-servlet</artifactId>
-  <name>Jetty :: Servlet Handling</name>
+  <name>EE9 :: Jetty :: Servlet Handling</name>
   <description>Jetty Servlet Container</description>
 
   <properties>

@@ -10,7 +10,7 @@
   <artifactId>test-websocket-webapp</artifactId>
   <packaging>war</packaging>
 
-  <name>Test :: Jetty Websocket Simple Webapp</name>
+  <name>EE9 :: Jetty Test :: Jetty Websocket Simple Webapp</name>
 
   <dependencies>
     <dependency>

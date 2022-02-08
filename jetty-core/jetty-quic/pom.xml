@@ -10,7 +10,7 @@
   <groupId>org.eclipse.jetty.quic</groupId>
   <artifactId>quic</artifactId>
   <packaging>pom</packaging>
-  <name>Jetty :: QUIC</name>
+  <name>Jetty Core :: QUIC</name>
 
   <modules>
     <module>quic-quiche</module>

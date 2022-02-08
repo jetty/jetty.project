@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-httpservice</artifactId>
-  <name>Jetty :: OSGi :: HttpService</name>
+  <name>EE9 :: Jetty :: OSGi :: HttpService</name>
   <description>Jetty OSGi HttpService bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.httpservice</bundle-symbolic-name>

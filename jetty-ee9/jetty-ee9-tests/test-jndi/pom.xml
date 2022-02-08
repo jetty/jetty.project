@@ -9,7 +9,7 @@
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jndi</artifactId>
   <packaging>jar</packaging>
-  <name>Test :: JNDI</name>
+  <name>EE9 :: Jetty Test :: JNDI</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.jndi.tests</bundle-symbolic-name>

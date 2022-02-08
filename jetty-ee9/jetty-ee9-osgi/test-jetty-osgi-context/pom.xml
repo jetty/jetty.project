@@ -6,7 +6,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-jetty-osgi-context</artifactId>
-  <name>Jetty :: OSGi :: Test Context</name>
+  <name>EE9 :: Jetty :: OSGi :: Test Context</name>
   <description>Test Jetty OSGi bundle with a ContextHandler</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.testcontext</bundle-symbolic-name>

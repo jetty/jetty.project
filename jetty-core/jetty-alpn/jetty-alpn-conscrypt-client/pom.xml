@@ -9,7 +9,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-alpn-conscrypt-client</artifactId>
-  <name>Jetty :: ALPN :: Conscrypt Client Implementation</name>
+  <name>Jetty Core :: ALPN :: Conscrypt Client Implementation</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.alpn.conscrypt.client</bundle-symbolic-name>

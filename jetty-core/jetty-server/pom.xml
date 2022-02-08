@@ -7,7 +7,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-server</artifactId>
-  <name>Jetty :: Server Legacy</name>
+  <name>Jetty Core :: Server (Legacy)</name>
   <description>The legacy jetty server artifact.</description>
 
   <properties>

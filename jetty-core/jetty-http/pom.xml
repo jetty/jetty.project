@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-http</artifactId>
-  <name>Jetty :: Http Utility</name>
+  <name>Jetty Core :: Http Utility</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.http</bundle-symbolic-name>

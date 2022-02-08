@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>quic-client</artifactId>
-  <name>Jetty :: QUIC :: Client</name>
+  <name>Jetty Core :: QUIC :: Client</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>

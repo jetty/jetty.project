@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>websocket-core-server</artifactId>
-  <name>Jetty :: Websocket :: Core :: Server</name>
+  <name>Jetty Core :: Websocket :: Core :: Server</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.core.server</bundle-symbolic-name>

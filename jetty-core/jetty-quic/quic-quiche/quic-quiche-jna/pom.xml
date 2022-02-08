@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>quic-quiche-jna</artifactId>
-  <name>Jetty :: QUIC :: Quiche :: JNA Binding</name>
+  <name>Jetty Core :: QUIC :: Quiche :: JNA Binding</name>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.quic-quiche-jna</bundle-symbolic-name>

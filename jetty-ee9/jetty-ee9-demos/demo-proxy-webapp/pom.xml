@@ -7,7 +7,7 @@
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>demo-proxy-webapp</artifactId>
-  <name>Demo :: Proxy :: Webapp</name>
+  <name>EE9 :: Jetty Demo :: Proxy :: Webapp</name>
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
