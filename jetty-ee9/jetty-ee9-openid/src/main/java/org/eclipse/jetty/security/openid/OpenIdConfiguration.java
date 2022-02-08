@@ -88,9 +88,12 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param httpClient The {@link HttpClient} instance to use.
      */
     public OpenIdConfiguration(@Name("issuer") String issuer,
-                               @Name("authorizationEndpoint") String authorizationEndpoint, @Name("tokenEndpoint") String tokenEndpoint,
-                               @Name("clientId") String clientId, @Name("clientSecret") String clientSecret,
-                               @Name("authMethod") String authMethod, @Name("httpClient") HttpClient httpClient)
+                               @Name("authorizationEndpoint") String authorizationEndpoint,
+                               @Name("tokenEndpoint") String tokenEndpoint,
+                               @Name("clientId") String clientId,
+                               @Name("clientSecret") String clientSecret,
+                               @Name("authMethod") String authMethod,
+                               @Name("httpClient") HttpClient httpClient)
     {
         this.issuer = issuer;
         this.clientId = clientId;
