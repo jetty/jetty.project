@@ -41,5 +41,6 @@
     <module>test-bad-websocket-webapp</module>
     <module>test-websocket-client-webapp</module>
     <module>test-websocket-client-provided-webapp</module>
+    <module>test-openid-webapp</module>
   </modules>
 </project>

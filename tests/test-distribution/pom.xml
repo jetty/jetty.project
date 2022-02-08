@@ -150,6 +150,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-openid</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-felix-webapp</artifactId>
       <version>${project.version}</version>
