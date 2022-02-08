@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,8 +28,8 @@ public class TestFrameHandler implements SynchronousFrameHandler
 
     protected CoreSession coreSession;
     public BlockingQueue<Frame> receivedFrames = new BlockingArrayQueue<>();
-    protected CloseStatus closeStatus;
-    protected Throwable failure;
+    public CloseStatus closeStatus;
+    public Throwable failure;
 
     public CountDownLatch open = new CountDownLatch(1);
     public CountDownLatch error = new CountDownLatch(1);

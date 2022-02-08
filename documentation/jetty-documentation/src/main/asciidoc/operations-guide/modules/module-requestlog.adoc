@@ -1,0 +1,27 @@
+//
+// ========================================================================
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+//
+// This program and the accompanying materials are made available under the
+// terms of the Eclipse Public License v. 2.0 which is available at
+// https://www.eclipse.org/legal/epl-2.0, or the Apache License, Version 2.0
+// which is available at https://www.apache.org/licenses/LICENSE-2.0.
+//
+// SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
+// ========================================================================
+//
+
+[[og-module-requestlog]]
+===== Module `requestlog`
+
+The `requestlog` module provides HTTP request/response logging in the standard link:https://en.wikipedia.org/wiki/Common_Log_Format[NCSA format], or in a custom format of your choice.
+
+The module properties are:
+
+----
+include::{JETTY_HOME}/modules/requestlog.mod[tags=documentation]
+----
+
+The property `jetty.requestlog.formatString` can be customized using format codes.
+
+include::javadoc[file=jetty-server/src/main/java/org/eclipse/jetty/server/CustomRequestLog.java,xsl=src/main/asciidoc/operations-guide/modules/module-requestlog.xsl,tags=documentation,replace="\|,\\|"]

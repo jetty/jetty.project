@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public class ArrayByteBufferPool extends AbstractByteBufferPool implements Dumpable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(MappedByteBufferPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ArrayByteBufferPool.class);
 
     private final int _maxCapacity;
     private final int _minCapacity;

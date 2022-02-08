@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -67,6 +67,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private final Negotiated negotiated;
     private final boolean demanding;
     private final Flusher flusher = new Flusher(this);
+    private final ExtensionStack extensionStack;
 
     private int maxOutgoingFrames = -1;
     private final AtomicInteger numOutgoingFrames = new AtomicInteger();
@@ -90,7 +91,8 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
         this.behavior = behavior;
         this.negotiated = negotiated;
         this.demanding = handler.isDemanding();
-        negotiated.getExtensions().initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
+        extensionStack = negotiated.getExtensions();
+        extensionStack.initialize(new IncomingAdaptor(), new OutgoingAdaptor(), this);
     }
 
     public ClassLoader getClassLoader()
@@ -204,6 +206,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     {
         connection.getEndPoint().setIdleTimeout(idleTimeout.toMillis());
         connection.getFrameFlusher().setIdleTimeout(writeTimeout.toMillis());
+        extensionStack.setLastDemand(connection::demand);
         this.connection = connection;
     }
 
@@ -392,7 +395,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
                 if (LOG.isDebugEnabled())
                     LOG.debug("ConnectionState: Transition to OPEN");
                 if (!demanding)
-                    connection.demand(1);
+                    autoDemand();
             },
             x ->
             {
@@ -422,7 +425,12 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     {
         if (!demanding)
             throw new IllegalStateException("FrameHandler is not demanding: " + this);
-        connection.demand(n);
+        getExtensionStack().demand(n);
+    }
+
+    public void autoDemand()
+    {
+        getExtensionStack().demand(1);
     }
 
     @Override
@@ -640,7 +648,7 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
     private class IncomingAdaptor implements IncomingFrames
     {
         @Override
-        public void onFrame(Frame frame, final Callback callback)
+        public void onFrame(Frame frame, Callback callback)
         {
             Callback closeCallback = null;
             try
@@ -653,7 +661,13 @@ public class WebSocketCoreSession implements IncomingFrames, CoreSession, Dumpab
                 // Handle inbound frame
                 if (frame.getOpCode() != OpCode.CLOSE)
                 {
-                    handle(() -> handler.onFrame(frame, callback));
+                    Callback handlerCallback = isDemanding() ? callback : Callback.from(() ->
+                    {
+                        callback.succeeded();
+                        autoDemand();
+                    }, callback::failed);
+
+                    handle(() -> handler.onFrame(frame, handlerCallback));
                     return;
                 }
 

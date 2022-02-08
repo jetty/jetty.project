@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -24,7 +24,7 @@ An `org.eclipse.jetty.server.Handler` is the component that processes incoming H
 * nested, where one `Handler` invokes the next, nested, `Handler`
 ** `HandlerWrapper` implements this behavior
 
-The `HandlerCollection` behavior (invoking _all_ handlers) is useful when for example the last `Handler` is a logging `Handler` that logs the request(that may have been modified by previous handlers).
+The `HandlerCollection` behavior (invoking _all_ handlers) is useful when for example the last `Handler` is a logging `Handler` that logs the request (that may have been modified by previous handlers).
 
 The `HandlerList` behavior (invoking handlers up to the first that calls `Request.setHandled(true)`) is useful when each handler processes a different URIs or a different virtual hosts: ``Handler``s are invoked one after the other until one matches the URI or virtual host.
 

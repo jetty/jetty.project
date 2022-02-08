@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>10.0.8-SNAPSHOT</version>
+    <version>10.0.9-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <groupId>org.eclipse.jetty.tests</groupId>
@@ -57,5 +57,7 @@
     <module>test-distribution</module>
     <module>test-cdi</module>
     <module>test-jpms</module>
+    <module>test-websocket-autobahn</module>
   </modules>
+
 </project>

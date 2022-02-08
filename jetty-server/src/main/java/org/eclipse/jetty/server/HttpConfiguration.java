@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -193,7 +193,7 @@ public class HttpConfiguration implements Dumpable
         return _outputAggregationSize;
     }
 
-    @ManagedAttribute("The maximum allowed size in bytes for an HTTP request header")
+    @ManagedAttribute("The maximum allowed size in bytes for the HTTP request line and HTTP request headers")
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
@@ -406,11 +406,13 @@ public class HttpConfiguration implements Dumpable
     }
 
     /**
+     * <p>Sets the maximum allowed size in bytes for the HTTP request line and HTTP request headers.</p>
+     *
      * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded
      * in a URL. However, larger headers consume more memory and can make a server more vulnerable to denial of service
      * attacks.</p>
      *
-     * @param requestHeaderSize the maximum size in bytes of the request header
+     * @param requestHeaderSize the maximum allowed size in bytes for the HTTP request line and HTTP request headers
      */
     public void setRequestHeaderSize(int requestHeaderSize)
     {

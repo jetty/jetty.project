@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -28,7 +28,7 @@ Note that the Jetty MBeans are registered into the platform `MBeanServer`, but a
 
 This configuration is useful when you develop and test your Jetty server locally.
 
-JMX compliant tools such as link:https://adoptopenjdk.net/jmc.html[Java Mission Control (JMC)] can be started locally on your machine and can attach to other JVMs running on your machine, showing you the registered MBeans among which you will find the Jetty MBeans.
+JMX compliant tools such as link:https://adoptium.net/jmc.html[Java Mission Control (JMC)] can be started locally on your machine and can attach to other JVMs running on your machine, showing you the registered MBeans among which you will find the Jetty MBeans.
 
 NOTE: Enabling only the local JMX support is the most secure option for monitoring and management, but only users that have local access to the JVM will be able to browse the MBeans.
 If you need to access the MBeans from a remote machine, read xref:og-jmx-remote[this section].

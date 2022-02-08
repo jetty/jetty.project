@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,7 +31,7 @@ public interface LibQuiche extends Library
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    String EXPECTED_QUICHE_VERSION = "0.10.0";
+    String EXPECTED_QUICHE_VERSION = "0.11.0";
 
     // The charset used to convert java.lang.String to char * and vice versa.
     Charset CHARSET = StandardCharsets.UTF_8;

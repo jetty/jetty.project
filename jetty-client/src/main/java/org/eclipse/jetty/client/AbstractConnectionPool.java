@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -459,6 +459,30 @@ public abstract class AbstractConnectionPool extends ContainerLifeCycle implemen
     @Override
     public void close()
     {
+        // Forcibly release and remove entries to do our best effort calling the listeners.
+        try
+        {
+            for (Pool<Connection>.Entry entry : pool.values())
+            {
+                while (entry.isInUse())
+                {
+                    if (entry.release())
+                    {
+                        released(entry.getPooled());
+                        break;
+                    }
+                }
+                if (entry.remove())
+                    removed(entry.getPooled());
+            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Detected concurrent modification while forcibly releasing the pooled connections", x);
+            // We could not call the listeners for all entries, but at least the following
+            // pool.close() call will still release all resources.
+        }
         pool.close();
     }
 

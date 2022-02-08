@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -39,6 +39,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -418,10 +419,17 @@ public class GoAwayTest extends AbstractTest
                 h2.setInitialStreamRecvWindow(flowControlWindow);
             });
 
+        CountDownLatch clientSettingsLatch = new CountDownLatch(1);
         CountDownLatch clientGoAwayLatch = new CountDownLatch(1);
         CountDownLatch clientCloseLatch = new CountDownLatch(1);
         Session clientSession = newClient(new Session.Listener.Adapter()
         {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                clientSettingsLatch.countDown();
+            }
+
             @Override
             public void onGoAway(Session session, GoAwayFrame frame)
             {
@@ -434,6 +442,12 @@ public class GoAwayTest extends AbstractTest
                 clientCloseLatch.countDown();
             }
         });
+
+        // Wait for the server settings to be received by the client.
+        // In particular, we want to wait for the initial stream flow
+        // control window setting before we create the first stream below.
+        Assertions.assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));
+
         // This is necessary because the server session window is smaller than the
         // default and the server cannot send a WINDOW_UPDATE with a negative value.
         ((ISession)clientSession).updateSendWindow(flowControlWindow - FlowControlStrategy.DEFAULT_WINDOW_SIZE);

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -127,12 +127,12 @@ public class JettyIncludeExtension implements ExtensionRegistry
                 {
                     run.awaitFor(15, TimeUnit.SECONDS);
                     String output = captureOutput(document, attributes, run);
-                    reader.push_include(output, "jettyHome_run", target, 1, attributes);
+                    reader.pushInclude(output, "jettyHome_run", target, 1, attributes);
                 }
             }
             catch (Throwable x)
             {
-                reader.push_include(x.toString(), "jettyHome_run", target, 1, attributes);
+                reader.pushInclude(x.toString(), "jettyHome_run", target, 1, attributes);
                 x.printStackTrace();
             }
         }

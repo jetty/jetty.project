@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -33,7 +33,7 @@ public class quiche_h
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    private static final String EXPECTED_QUICHE_VERSION = "0.10.0";
+    private static final String EXPECTED_QUICHE_VERSION = "0.11.0";
 
     public static final byte C_FALSE = 0;
     public static final byte C_TRUE = 1;

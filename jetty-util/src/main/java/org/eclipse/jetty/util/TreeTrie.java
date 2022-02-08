@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -231,44 +231,46 @@ class TreeTrie<V> extends AbstractTrie<V>
         return getBest(_root, b, offset, len);
     }
 
-    private V getBest(Node<V> t, byte[] b, int offset, int len)
+    private V getBest(Node<V> node, byte[] b, int offset, int len)
     {
         for (int i = 0; i < len; i++)
         {
+            Node<V> next;
             byte c = b[offset + i];
             int index = c >= 0 && c < 0x7f ? _lookup[c] : -1;
             if (index >= 0)
             {
-                if (t._nextIndex[index] == null)
+                if (node._nextIndex[index] == null)
                     break;
-                t = t._nextIndex[index];
+                next = node._nextIndex[index];
             }
             else
             {
                 Node<V> n = null;
-                for (int j = t._nextOther.size(); j-- > 0; )
+                for (int j = node._nextOther.size(); j-- > 0; )
                 {
-                    n = t._nextOther.get(j);
+                    n = node._nextOther.get(j);
                     if (n._c == c)
                         break;
                     n = null;
                 }
                 if (n == null)
                     break;
-                t = n;
+                next = n;
             }
 
             // Is the next Trie is a match
-            if (t._key != null)
+            if (node._key != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, b, offset + i + 1, len - i - 1);
+                V best = getBest(next, b, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
                 break;
             }
+            node = next;
         }
-        return t._value;
+        return node._value;
     }
 
     @Override
@@ -289,44 +291,47 @@ class TreeTrie<V> extends AbstractTrie<V>
         return getBest(_root, s, offset, len);
     }
 
-    private V getBest(Node<V> t, String s, int offset, int len)
+    private V getBest(Node<V> node, String s, int offset, int len)
     {
         for (int i = 0; i < len; i++)
         {
+            Node<V> next;
             char c = s.charAt(offset + i);
             int index = c < 0x7f ? _lookup[c] : -1;
             if (index >= 0)
             {
-                if (t._nextIndex[index] == null)
+                if (node._nextIndex[index] == null)
                     break;
-                t = t._nextIndex[index];
+                next = node._nextIndex[index];
             }
             else
             {
                 Node<V> n = null;
-                for (int j = t._nextOther.size(); j-- > 0; )
+                for (int j = node._nextOther.size(); j-- > 0; )
                 {
-                    n = t._nextOther.get(j);
+                    n = node._nextOther.get(j);
                     if (n._c == c)
                         break;
                     n = null;
                 }
                 if (n == null)
                     break;
-                t = n;
+                next = n;
             }
 
             // Is the next Trie is a match
-            if (t._key != null)
+            if (node._key != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, s, offset + i + 1, len - i - 1);
+                V best = getBest(next, s, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
                 break;
             }
+
+            node = next;
         }
-        return t._value;
+        return node._value;
     }
 
     @Override
@@ -337,8 +342,9 @@ class TreeTrie<V> extends AbstractTrie<V>
         return getBest(_root, b, offset, len);
     }
 
-    private V getBest(Node<V> t, ByteBuffer b, int offset, int len)
+    private V getBest(Node<V> node, ByteBuffer b, int offset, int len)
     {
+        Node<V> next;
         int pos = b.position() + offset;
         for (int i = 0; i < len; i++)
         {
@@ -346,36 +352,37 @@ class TreeTrie<V> extends AbstractTrie<V>
             int index = c >= 0 && c < 0x7f ? _lookup[c] : -1;
             if (index >= 0)
             {
-                if (t._nextIndex[index] == null)
+                if (node._nextIndex[index] == null)
                     break;
-                t = t._nextIndex[index];
+                next = node._nextIndex[index];
             }
             else
             {
                 Node<V> n = null;
-                for (int j = t._nextOther.size(); j-- > 0; )
+                for (int j = node._nextOther.size(); j-- > 0; )
                 {
-                    n = t._nextOther.get(j);
+                    n = node._nextOther.get(j);
                     if (n._c == c)
                         break;
                     n = null;
                 }
                 if (n == null)
                     break;
-                t = n;
+                next = n;
             }
 
             // Is the next Trie is a match
-            if (t._key != null)
+            if (node._key != null)
             {
                 // Recurse so we can remember this possibility
-                V best = getBest(t, b, offset + i + 1, len - i - 1);
+                V best = getBest(next, b, offset + i + 1, len - i - 1);
                 if (best != null)
                     return best;
                 break;
             }
+            node = next;
         }
-        return t._value;
+        return node._value;
     }
 
     @Override

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -14,6 +14,7 @@
 package org.eclipse.jetty.websocket.tests;
 
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -22,7 +23,9 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.Session;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -32,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -66,6 +70,13 @@ public class PermessageDeflateBufferTest
             sb.append(DICT.get(rnd.nextInt(DICT.size())));
         }
         return sb.toString();
+    }
+
+    private static ByteBuffer randomBytes(int size)
+    {
+        var bytes = new byte[size];
+        new Random(42).nextBytes(bytes);
+        return BufferUtil.toBuffer(bytes);
     }
 
     @BeforeEach
@@ -124,5 +135,26 @@ public class PermessageDeflateBufferTest
 
         session.close();
         assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(socket.closeCode, equalTo(StatusCode.NORMAL));
+    }
+
+    @Test
+    public void testPermessageDeflateFragmentedBinaryMessage() throws Exception
+    {
+        EventSocket socket = new EventSocket();
+        ClientUpgradeRequest clientUpgradeRequest = new ClientUpgradeRequest();
+        clientUpgradeRequest.addExtensions("permessage-deflate");
+
+        URI uri = URI.create("ws://localhost:" + connector.getLocalPort());
+        Session session = client.connect(socket, uri, clientUpgradeRequest).get(5, TimeUnit.SECONDS);
+
+        ByteBuffer message = randomBytes(1024);
+        session.setMaxFrameSize(64);
+        session.getRemote().sendBytes(message);
+        assertThat(socket.binaryMessages.poll(5, TimeUnit.SECONDS), equalTo(message));
+
+        session.close();
+        assertTrue(socket.closeLatch.await(5, TimeUnit.SECONDS));
+        assertThat(socket.closeCode, equalTo(StatusCode.NORMAL));
     }
 }

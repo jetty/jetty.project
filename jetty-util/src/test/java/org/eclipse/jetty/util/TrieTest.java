@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -27,9 +29,13 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.eclipse.jetty.util.AbstractTrie.requiredCapacity;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -108,6 +114,62 @@ public class TrieTest
         }
 
         return impls.stream().map(Arguments::of);
+    }
+
+    public static Stream<Arguments> emptyImplementations()
+    {
+        List<AbstractTrie<Integer>> impls = new ArrayList<>();
+
+        for (boolean caseSensitive : new boolean[] {true, false})
+        {
+            impls.add(new ArrayTrie<Integer>(caseSensitive, 128));
+            impls.add(new ArrayTernaryTrie<Integer>(caseSensitive, 128));
+            impls.add(new TreeTrie<>(caseSensitive));
+        }
+
+        return impls.stream().map(Arguments::of);
+    }
+
+    @ParameterizedTest
+    @MethodSource("implementations")
+    public void testOverflow(AbstractTrie<Integer> trie) throws Exception
+    {
+        int i = 0;
+        while (true)
+        {
+            if (++i > 10000)
+                break; // must not be fixed size
+            if (!trie.put("prefix" + i, i))
+            {
+                String key = "prefix" + i;
+
+                // Assert that all keys can be gotten.
+                for (String k : trie.keySet())
+                {
+                    assertNotNull(trie.get(k));
+                    assertNotNull(trie.get(toAsciiDirectByteBuffer(k, 0))); // has to be a direct buffer
+                    assertNull(trie.get(toAsciiDirectByteBuffer(k, k.length()))); // has to be a direct buffer
+                }
+
+                // Assert that all getBest() variants do work on full tries.
+                assertNotNull(trie.getBest(key), "key=" + key);
+                assertNotNull(trie.getBest(key.getBytes(StandardCharsets.US_ASCII), 0, key.length()), "key=" + key);
+                assertNotNull(trie.getBest(toAsciiDirectByteBuffer(key, 0), 0, key.length()), "key=" + key); // has to be a direct buffer
+                assertNull(trie.getBest(toAsciiDirectByteBuffer(key, key.length()), 0, key.length()), "key=" + key);  // has to be a direct buffer
+                break;
+            }
+        }
+
+        if (trie instanceof ArrayTrie || trie instanceof ArrayTernaryTrie)
+            assertFalse(trie.put("overflow", 0));
+    }
+
+    private static ByteBuffer toAsciiDirectByteBuffer(String s, int pos)
+    {
+        ByteBuffer bb = ByteBuffer.allocateDirect(s.length());
+        bb.put(s.getBytes(StandardCharsets.US_ASCII));
+        bb.position(pos);
+        return bb;
     }
 
     @ParameterizedTest
@@ -295,6 +357,7 @@ public class TrieTest
         testGetString(trie);
         testGetBestArray(trie);
         testGetBestBuffer(trie);
+        assertNull(trie.getBest("Large: This is a really large key and should blow the maximum size of the array trie as lots of nodes should already be used."));
     }
 
     @Test
@@ -384,6 +447,38 @@ public class TrieTest
         assertThat(trie.getBest(key + ";xxxx"), is(103));
     }
 
+    @ParameterizedTest
+    @MethodSource("emptyImplementations")
+    public void testHttp(AbstractTrie<Integer> trie)
+    {
+        trie.put("Host:", 1);
+        trie.put("Host: name", 2);
+
+        assertThat(trie.getBest("Other: header\r\n"), nullValue());
+        assertThat(trie.getBest("Host: other\r\n"), is(1));
+        assertThat(trie.getBest("Host: name\r\n"), is(2));
+        if (trie.isCaseInsensitive())
+            assertThat(trie.getBest("HoSt: nAme\r\n"), is(2));
+        else
+            assertThat(trie.getBest("HoSt: nAme\r\n"), nullValue());
+
+        assertThat(trie.getBest(BufferUtil.toBuffer("Other: header\r\n")), nullValue());
+        assertThat(trie.getBest(BufferUtil.toBuffer("Host: other\r\n")), is(1));
+        assertThat(trie.getBest(BufferUtil.toBuffer("Host: name\r\n")), is(2));
+        if (trie.isCaseInsensitive())
+            assertThat(trie.getBest(BufferUtil.toBuffer("HoSt: nAme\r\n")), is(2));
+        else
+            assertThat(trie.getBest(BufferUtil.toBuffer("HoSt: nAme\r\n")), nullValue());
+
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Other: header\r\n")), nullValue());
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Host: other\r\n")), is(1));
+        assertThat(trie.getBest(BufferUtil.toDirectBuffer("Host: name\r\n")), is(2));
+        if (trie.isCaseInsensitive())
+            assertThat(trie.getBest(BufferUtil.toDirectBuffer("HoSt: nAme\r\n")), is(2));
+        else
+            assertThat(trie.getBest(BufferUtil.toDirectBuffer("HoSt: nAme\r\n")), nullValue());
+    }
+
     @Test
     public void testArrayTrieCapacity()
     {
@@ -393,5 +488,8 @@ public class TrieTest
         assertThat(trie.get(huge), is("wow"));
 
         assertThrows(IllegalArgumentException.class, () -> new ArrayTrie<String>(Character.MAX_VALUE + 1));
+
+        assertThat(trie.keySet(), contains(huge));
+        assertThat(trie.toString(), containsString(huge));
     }
 }
