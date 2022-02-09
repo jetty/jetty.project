@@ -156,6 +156,18 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>17</source>
+          <target>17</target>
+          <release>17</release>
+          <compilerArgs>
+            <arg>--add-modules</arg>
+            <arg>jdk.incubator.foreign</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
