@@ -78,7 +78,7 @@
     <maven.resolver.version>1.7.3</maven.resolver.version>
     <maven.version>3.8.4</maven.version>
     <mongodb.version>2.13.2</mongodb.version>
-    <osgi.annotation.version>8.0.1</osgi.annotation.version>
+    <osgi.annotation.version>8.1.0</osgi.annotation.version>
     <osgi.core.version>6.0.0</osgi.core.version>
     <plexus-container.version>2.1.1</plexus-container.version>
     <plexus-utils.version>3.4.1</plexus-utils.version>
