@@ -110,7 +110,7 @@
     <maven.version>3.8.4</maven.version>
     <mongodb.version>3.2.2</mongodb.version>
     <openpojo.version>0.9.1</openpojo.version>
-    <org.osgi.annotation.version>8.0.1</org.osgi.annotation.version>
+    <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>6.0.0</org.osgi.core.version>
     <plexus-component-annotations.version>2.1.1</plexus-component-annotations.version>
     <plexus-utils.version>3.4.1</plexus-utils.version>
