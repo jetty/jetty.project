@@ -2353,7 +2353,6 @@
       <properties>
         <!-- disable plugins known not to work with JDK 17 (yet) -->
         <spotbugs.skip>true</spotbugs.skip>
-        <jacoco.skip>true</jacoco.skip>
       </properties>
     </profile>
     <profile>
