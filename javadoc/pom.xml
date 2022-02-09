@@ -109,6 +109,10 @@
                 infinispan-remote,
                 jetty-test-helper,
                 alpn-api,
+                quic-quiche,
+                quic-quiche-common,
+                quic-quiche-foreign-incubator,
+                quic-quiche-jna,
                 javax.servlet,
                 javax.websocket,
                 jetty-servlet-api,
@@ -148,25 +152,11 @@
                 org.eclipse.jetty.http3.qpack.internal.*;
                 org.eclipse.jetty.http3.server.internal;
                 org.eclipse.jetty.quic.common.internal;
-                org.eclipse.jetty.quic.quiche;
-                org.eclipse.jetty.quic.quiche.*;
                 org.eclipse.jetty.quic.server.internal;
               </excludePackageNames>
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>17</source>
-          <target>17</target>
-          <release>17</release>
-          <compilerArgs>
-            <arg>--add-modules</arg>
-            <arg>jdk.incubator.foreign</arg>
-          </compilerArgs>
-        </configuration>
       </plugin>
     </plugins>
   </build>
