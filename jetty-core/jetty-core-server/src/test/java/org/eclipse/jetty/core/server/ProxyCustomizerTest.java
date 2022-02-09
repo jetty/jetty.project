@@ -82,10 +82,11 @@ public class ProxyCustomizerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request)
             {
+                Response response = request.accept();
                 response.addHeader("preexisting.attribute", request.getAttribute("some.attribute").toString());
-                ArrayList<String> attributeNames = new ArrayList(request.getAttributeNamesSet());
+                ArrayList<String> attributeNames = new ArrayList<>(request.getAttributeNamesSet());
                 Collections.sort(attributeNames);
                 response.addHeader("attributeNames", String.join(",", attributeNames));
 
@@ -93,13 +94,12 @@ public class ProxyCustomizerTest
                 response.addHeader("remoteAddress", request.getConnectionMetaData().getRemoteAddress().toString());
                 Object localAddress = request.getAttribute(ProxyCustomizer.LOCAL_ADDRESS_ATTRIBUTE_NAME);
                 if (localAddress != null)
-                    response.addHeader("proxyLocalAddress", localAddress.toString() + ":" + request.getAttribute(ProxyCustomizer.LOCAL_PORT_ATTRIBUTE_NAME));
+                    response.addHeader("proxyLocalAddress", localAddress + ":" + request.getAttribute(ProxyCustomizer.LOCAL_PORT_ATTRIBUTE_NAME));
                 Object remoteAddress = request.getAttribute(ProxyCustomizer.REMOTE_ADDRESS_ATTRIBUTE_NAME);
                 if (remoteAddress != null)
-                    response.addHeader("proxyRemoteAddress", remoteAddress.toString() + ":" + request.getAttribute(ProxyCustomizer.REMOTE_PORT_ATTRIBUTE_NAME));
+                    response.addHeader("proxyRemoteAddress", remoteAddress + ":" + request.getAttribute(ProxyCustomizer.REMOTE_PORT_ATTRIBUTE_NAME));
 
-                request.succeeded();
-                return true;
+                response.getCallback().succeeded();
             }
         };
 

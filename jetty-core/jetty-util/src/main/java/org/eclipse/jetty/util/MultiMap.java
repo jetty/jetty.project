@@ -29,6 +29,7 @@ import java.util.Map;
 public class MultiMap<V> extends HashMap<String, List<V>>
 {
     // TODO review if this is really still needed or can we just use Map<List<V>> instead?
+    //      or org.eclipse.util.Fields ?
 
     public MultiMap()
     {

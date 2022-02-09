@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -94,15 +95,15 @@ public class HttpServerTestFixture
     protected static class OptionsHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
+            Response response = request.accept();
             if (request.getMethod().equals("OPTIONS"))
                 response.setStatus(200);
             else
                 response.setStatus(500);
             response.setHeader("Allow", "GET");
-            request.succeeded();
-            return true;
+            response.getCallback().succeeded();
         }
     }
 
@@ -123,10 +124,10 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
-            response.writeError(code, message, request);
-            return true;
+            Response response = request.accept();
+            response.writeError(code, message, response.getCallback());
         }
     }
 
@@ -145,8 +146,9 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
+            Response response = request.accept();
             long len = expected < 0 ? request.getContentLength() : expected;
             if (len < 0)
                 throw new IllegalStateException();
@@ -179,31 +181,31 @@ public class HttpServerTestFixture
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
             response.setContentLength(reply.length());
-            response.write(true, request, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
-
-            return true;
+            response.write(true, response.getCallback(), BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
         }
     }
 
     protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
+            Response response = request.accept();
             response.setStatus(200);
+            Callback callback = response.getCallback();
             Content.readUtf8String(request, Promise.from(
-                s -> response.write(true, request, "read %d%n" + s.length()),
-                t -> response.write(true, request, String.format("caught %s%n", t))
+                s -> response.write(true, callback, "read %d%n" + s.length()),
+                t -> response.write(true, callback, String.format("caught %s%n", t))
             ));
-            return true;
         }
     }
 
     protected static class DataHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
+            Response response = request.accept();
             response.setStatus(200);
 
             String input = Content.readUtf8String(request);
@@ -251,8 +253,7 @@ public class HttpServerTestFixture
                     }
                 }
             }
-            request.succeeded();
-            return true;
+            response.getCallback().succeeded();
         }
     }
 }

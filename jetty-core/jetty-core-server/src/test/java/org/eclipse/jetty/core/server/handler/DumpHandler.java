@@ -44,20 +44,16 @@ public class DumpHandler extends Handler.Abstract
     private static final Logger LOG = LoggerFactory.getLogger(DumpHandler.class);
 
     private final Blocking.Shared _blocker = new Blocking.Shared(); 
-    String _label = "Dump Handler";
+    private static final String _label = "Dump Handler";
 
     public DumpHandler()
     {
     }
 
-    public DumpHandler(String label)
-    {
-        this._label = label;
-    }
-
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
+        Response response = request.accept();
         if (LOG.isDebugEnabled())
             LOG.debug("dump {}", request);
         HttpURI httpURI = request.getHttpURI();
@@ -76,8 +72,8 @@ public class DumpHandler extends Handler.Abstract
         if (Boolean.parseBoolean(params.getValue("empty")))
         {
             response.setStatus(200);
-            request.succeeded();
-            return true;
+            response.getCallback().succeeded();
+            return;
         }
 
         Utf8StringBuilder read = null;
@@ -106,8 +102,8 @@ public class DumpHandler extends Handler.Abstract
 
                 if (content instanceof Content.Error)
                 {
-                    request.failed(((Content.Error)content).getCause());
-                    return true;
+                    response.getCallback().failed(((Content.Error)content).getCause());
+                    return;
                 }
 
                 int l = Math.min(buffer.length, Math.min(len, content.remaining()));
@@ -137,8 +133,8 @@ public class DumpHandler extends Handler.Abstract
         if (params.getValue("error") != null)
         {
             response.setStatus(Integer.parseInt(params.getValue("error")));
-            request.succeeded();
-            return true;
+            response.getCallback().succeeded();
+            return;
         }
 
         response.setContentType(MimeTypes.Type.TEXT_HTML.asString());
@@ -206,7 +202,6 @@ public class DumpHandler extends Handler.Abstract
             response.write(true, blocker, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)));
         }
 
-        request.succeeded();
-        return true;
+        response.getCallback().succeeded();
     }
 }

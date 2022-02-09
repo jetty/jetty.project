@@ -21,7 +21,6 @@ import org.eclipse.jetty.core.server.Content;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.HttpStream;
 import org.eclipse.jetty.core.server.Request;
-import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -36,11 +35,11 @@ public class RequestStatsHandler extends Handler.Wrapper
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
 
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
         Object connectionStats = _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {
-            request.getChannel().addConnectionCloseListener(x ->
+            request.getHttpChannel().addConnectionCloseListener(x ->
             {
                 // complete connections stats
                 _connectionStats.remove(request.getConnectionMetaData().getId());
@@ -52,7 +51,7 @@ public class RequestStatsHandler extends Handler.Wrapper
         final LongAdder bytesWritten = new LongAdder();
 
         _requestStats.increment();
-        request.getChannel().addStreamWrapper(s -> new HttpStream.Wrapper(s)
+        request.getHttpChannel().addStreamWrapper(s -> new HttpStream.Wrapper(s)
         {
             @Override
             public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
@@ -97,7 +96,7 @@ public class RequestStatsHandler extends Handler.Wrapper
 
         try
         {
-            return super.handle(new Request.Wrapper(request)
+            super.handle(new Request.Wrapper(request)
             {
                 // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
                 @Override
@@ -114,11 +113,12 @@ public class RequestStatsHandler extends Handler.Wrapper
                             return super.getAttribute(name);
                     }
                 }
-            }, response);
+            });
         }
         finally
         {
-            _handleTimeStats.record(System.nanoTime() - request.getChannel().getStream().getNanoTimeStamp());
+            if (request.isAccepted())
+                _handleTimeStats.record(System.nanoTime() - request.getHttpChannel().getHttpStream().getNanoTimeStamp());
             // TODO initial dispatch duration stats collected here.
         }
     }

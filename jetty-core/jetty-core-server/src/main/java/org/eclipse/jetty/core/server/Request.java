@@ -32,11 +32,40 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
 // TODO lots of javadoc
-public interface Request extends Attributes, Callback, Executor, Content.Provider
+public interface Request extends Attributes, Executor, Content.Provider
 {
+    /**
+     * Accept the request for handling and provide the {@link Response} instance.
+     * @return The response instance or null if the request has already been accepted.
+     */
+    Response accept();
+
+    /**
+     * Test if the request has been accepted.
+     * <p>This should not be used if the caller intends to accept the request.  Specifically
+     * the following is an anti-pattern: <pre>
+     *     if (!request.isAccepted())
+     *     {
+     *         Response response = request.accept();
+     *         // ...
+     *     }
+     * </pre>
+     * Instead, the {@link #accept()} method should be used and tested for a null result: <pre>
+     *     Response response = request.accept();
+     *     if (response != null)
+     *     {
+     *         // ...
+     *     }
+     * </pre>
+     *
+     * @return true if the request has been accepted, else null
+     * @see #accept()
+     */
+    boolean isAccepted();
+
     String getId();
 
-    HttpChannel getChannel();
+    HttpChannel getHttpChannel();
 
     boolean isComplete();
 
@@ -67,6 +96,9 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
 
     void addCompletionListener(Callback onComplete);
 
+    /**
+     * @return The response instance iff this request has been excepted, else null
+     */
     Response getResponse();
 
     default Request getWrapped()
@@ -84,7 +116,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
                 ? ((InetSocketAddress)local).getHostString()
                 : address.getHostAddress();
 
-            return getChannel().formatAddrOrHost(result);
+            return getHttpChannel().formatAddrOrHost(result);
         }
         return local.toString();
     }
@@ -107,7 +139,7 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
                 ? ((InetSocketAddress)remote).getHostString()
                 : address.getHostAddress();
 
-            return getChannel().formatAddrOrHost(result);
+            return getHttpChannel().formatAddrOrHost(result);
         }
         return remote.toString();
     }
@@ -124,15 +156,15 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
     {
         HttpURI uri = getHttpURI();
         if (uri.hasAuthority())
-            return getChannel().formatAddrOrHost(uri.getHost());
+            return getHttpChannel().formatAddrOrHost(uri.getHost());
 
         HostPort authority = getConnectionMetaData().getServerAuthority();
         if (authority != null)
-            return getChannel().formatAddrOrHost(authority.getHost());
+            return getHttpChannel().formatAddrOrHost(authority.getHost());
 
         SocketAddress local = getConnectionMetaData().getLocalAddress();
         if (local instanceof InetSocketAddress)
-            return getChannel().formatAddrOrHost(((InetSocketAddress)local).getHostString());
+            return getHttpChannel().formatAddrOrHost(((InetSocketAddress)local).getHostString());
 
         return local.toString();
     }
@@ -241,9 +273,9 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         }
 
         @Override
-        public HttpChannel getChannel()
+        public HttpChannel getHttpChannel()
         {
-            return _wrapped.getChannel();
+            return _wrapped.getHttpChannel();
         }
 
         @Override
@@ -313,21 +345,15 @@ public interface Request extends Attributes, Callback, Executor, Content.Provide
         }
 
         @Override
-        public void succeeded()
+        public Response accept()
         {
-            _wrapped.succeeded();
+            return _wrapped.accept();
         }
 
         @Override
-        public void failed(Throwable x)
+        public boolean isAccepted()
         {
-            _wrapped.failed(x);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return _wrapped.getInvocationType();
+            return _wrapped.isAccepted();
         }
 
         @Override

@@ -21,6 +21,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1299,18 +1300,19 @@ public class ForwardedRequestCustomizerTest
         private RequestTester requestTester;
 
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
+            Response response = request.accept();
+            Callback callback = response.getCallback();
             if (requestTester != null && requestTester.check(request, response))
             {
                 response.setStatus(200);
-                request.succeeded();
+                callback.succeeded();
             }
             else
             {
-                response.writeError(500, "failed", request);
+                response.writeError(500, "failed", callback);
             }
-            return true;
         }
     }
 }

@@ -49,7 +49,7 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
     @Override
     public Request customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
-        EndPoint endPoint = request.getChannel().getConnection().getEndPoint();
+        EndPoint endPoint = request.getHttpChannel().getConnection().getEndPoint();
         if (endPoint instanceof ProxyConnectionFactory.ProxyEndPoint)
         {
             EndPoint underlyingEndpoint = ((ProxyConnectionFactory.ProxyEndPoint)endPoint).unwrap();

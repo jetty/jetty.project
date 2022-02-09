@@ -18,14 +18,13 @@ import java.net.SocketAddress;
 import org.eclipse.jetty.core.server.ConnectionMetaData;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
-import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.HostPort;
 
 public class ProxiedRequestHandler extends Handler.Wrapper
 {
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
         ConnectionMetaData proxiedFor = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
         {
@@ -58,7 +57,7 @@ public class ProxiedRequestHandler extends Handler.Wrapper
             }
         };
 
-        return super.handle(new Request.Wrapper(request)
+        super.handle(new Request.Wrapper(request)
         {
             @Override
             public HttpURI getHttpURI()
@@ -72,6 +71,6 @@ public class ProxiedRequestHandler extends Handler.Wrapper
             {
                 return proxiedFor;
             }
-        }, response);
+        });
     }
 }

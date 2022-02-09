@@ -68,27 +68,28 @@ public class SlowClientsTest
             server.setHandler(new Handler.Abstract()
             {
                 @Override
-                public boolean handle(Request request, Response response) throws Exception
+                public void handle(Request request) throws Exception
                 {
                     LOG.info("SERVING {}", request);
                     // Write some big content.
+                    Response response = request.accept();
+                    Callback callback = response.getCallback();
                     response.write(true, new Callback()
                         {
                             @Override
                             public void succeeded()
                             {
-                                request.succeeded();
+                                callback.succeeded();
                                 LOG.info("SERVED {}", request);
                             }
 
                             @Override
                             public void failed(Throwable x)
                             {
-                                request.failed(x);
+                                callback.failed(x);
                             }
                         },
                         BufferUtil.toBuffer(new byte[contentLength]));
-                    return true;
                 }
             });
             server.start();

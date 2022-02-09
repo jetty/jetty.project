@@ -35,6 +35,8 @@ public interface Response
 {
     Request getRequest();
 
+    Callback getCallback();
+
     int getStatus();
 
     void setStatus(int code);
@@ -132,14 +134,15 @@ public interface Response
         setStatus(status);
 
         ContextHandler.Context context = getRequest().get(ContextRequest.class, ContextRequest::getContext);
-        Handler errorHandler = ErrorHandler.getErrorHandler(getRequest().getChannel().getServer(), context == null ? null : context.getContextHandler());
+        Handler errorHandler = ErrorHandler.getErrorHandler(getRequest().getHttpChannel().getServer(), context == null ? null : context.getContextHandler());
 
         if (errorHandler != null)
         {
-            Request request = new ErrorHandler.ErrorRequest(getRequest(), status, message, cause, callback);
+            Request errorRequest = new ErrorHandler.ErrorRequest(getRequest(), this, status, message, cause, callback);
             try
             {
-                if (errorHandler.handle(request, this))
+                errorHandler.handle(errorRequest);
+                if (errorRequest.isAccepted())
                     return;
             }
             catch (Exception e)
@@ -163,6 +166,12 @@ public interface Response
         {
             _request = request;
             _wrapped = wrapped;
+        }
+
+        @Override
+        public Callback getCallback()
+        {
+            return _wrapped.getCallback();
         }
 
         @Override

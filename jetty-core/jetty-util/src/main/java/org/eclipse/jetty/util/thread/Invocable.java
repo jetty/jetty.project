@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.concurrent.Callable;
-
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
  * that declares how it will behave when invoked:</p>
@@ -40,10 +38,17 @@ public interface Invocable
 
     /**
      * <p>A task with an {@link InvocationType}.</p>
+     * TODO Review. Note sure what the value of this is
      */
     interface Task extends Invocable, Runnable
     {
         void run();
+    }
+
+    // TODO review.  Handy for lambdas that throw (eg LifeCycle#start())
+    interface Callable extends Invocable
+    {
+        void call() throws Exception;
     }
 
     /**

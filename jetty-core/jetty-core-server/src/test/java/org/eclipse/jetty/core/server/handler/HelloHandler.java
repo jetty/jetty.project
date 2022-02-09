@@ -52,12 +52,12 @@ public class HelloHandler extends Handler.Abstract
     }
 
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
+        Response response = request.accept();
         response.setStatus(200);
         response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
         response.setContentLength(_byteBuffer.remaining());
-        response.write(true, request, _byteBuffer.slice());
-        return true;
+        response.write(true, response.getCallback(), _byteBuffer.slice());
     }
 }

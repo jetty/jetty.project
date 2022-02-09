@@ -84,10 +84,11 @@ public class DefaultHandler extends Handler.Abstract
     }
 
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
-        if (response.isCommitted())
-            return false;
+        Response response = request.accept();
+        if (response == null || response.isCommitted())
+            return;
 
         String method = request.getMethod();
 
@@ -106,14 +107,14 @@ public class DefaultHandler extends Handler.Abstract
                 response.setHeader(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
                 content = _favicon.slice();
             }
-            response.write(true, request, content);
-            return true;
+            response.write(true, response.getCallback(), content);
+            return;
         }
 
         if (!_showContexts || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
         {
-            response.writeError(HttpStatus.NOT_FOUND_404, null, request);
-            return true;
+            response.writeError(HttpStatus.NOT_FOUND_404, null, response.getCallback());
+            return;
         }
 
         response.setStatus(HttpStatus.NOT_FOUND_404);
@@ -193,8 +194,7 @@ public class DefaultHandler extends Handler.Abstract
             writer.flush();
             ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
             response.setContentLength(content.remaining());
-            response.write(true, request, content);
-            return true;
+            response.write(true, response.getCallback(), content);
         }
     }
 

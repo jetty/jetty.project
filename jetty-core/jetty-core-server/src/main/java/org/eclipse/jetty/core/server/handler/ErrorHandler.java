@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.core.server.Content;
@@ -41,11 +42,9 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.ByteBufferOutputStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -85,8 +84,12 @@ public class ErrorHandler extends Handler.Abstract
         return ERROR_METHODS.contains(method);
     }
 
-    public boolean handle(Request request, Response response) throws IOException
+    public void handle(Request request) throws IOException
     {
+        Response response = request.accept();
+        if (response == null || response.isCommitted())
+            return;
+
         if (_cacheControl != null)
             response.getHeaders().put(_cacheControl);
 
@@ -103,7 +106,7 @@ public class ErrorHandler extends Handler.Abstract
 
         if (!errorPageForMethod(request.getMethod()) || HttpStatus.hasNoBody(code))
         {
-            request.succeeded();
+            response.getCallback().succeeded();
         }
         else
         {
@@ -112,7 +115,6 @@ public class ErrorHandler extends Handler.Abstract
 
             generateAcceptableResponse(request, response, code, message, cause);
         }
-        return true;
     }
 
     protected void generateAcceptableResponse(Request request, Response response, int code, String message, Throwable cause)
@@ -123,7 +125,7 @@ public class ErrorHandler extends Handler.Abstract
         {
             if (request.getHeaders().contains(HttpHeader.ACCEPT))
             {
-                request.succeeded();
+                response.getCallback().succeeded();
                 return;
             }
             acceptable = Collections.singletonList(Type.TEXT_HTML.asString());
@@ -149,7 +151,7 @@ public class ErrorHandler extends Handler.Abstract
             charsets = List.of(StandardCharsets.ISO_8859_1, StandardCharsets.UTF_8);
             if (request.getHeaders().contains(HttpHeader.ACCEPT_CHARSET))
             {
-                request.succeeded();
+                response.getCallback().succeeded();
                 return;
             }
         }
@@ -159,7 +161,7 @@ public class ErrorHandler extends Handler.Abstract
             if (generateAcceptableResponse(request, response, mimeType, charsets, code, message, cause))
                 return;
         }
-        request.succeeded();
+        response.getCallback().succeeded();
     }
 
     protected boolean generateAcceptableResponse(Request request, Response response, String contentType, List<Charset> charsets, int code, String message, Throwable cause)
@@ -196,7 +198,7 @@ public class ErrorHandler extends Handler.Abstract
                 return false;
         }
 
-        int bufferSize = request.getChannel().getHttpConfiguration().getOutputBufferSize();
+        int bufferSize = request.getHttpChannel().getHttpConfiguration().getOutputBufferSize();
         ByteBuffer buffer = request.getConnectionMetaData().getConnector().getByteBufferPool().acquire(bufferSize, false);
 
         // write into the response aggregate buffer and flush it asynchronously.
@@ -246,25 +248,25 @@ public class ErrorHandler extends Handler.Abstract
 
         if (!buffer.hasRemaining())
         {
-            request.succeeded();
+            response.getCallback().succeeded();
             return true;
         }
 
         response.getHeaders().put(type.getContentTypeField(charset));
-        response.write(true, new Callback()
+        response.write(true, new Callback.Nested(response.getCallback())
         {
             @Override
             public void succeeded()
             {
                 request.getConnectionMetaData().getConnector().getByteBufferPool().release(buffer);
-                request.succeeded();
+                super.succeeded();
             }
 
             @Override
             public void failed(Throwable x)
             {
                 request.getConnectionMetaData().getConnector().getByteBufferPool().release(buffer);
-                request.failed(x);
+                super.failed(x);
             }
         }, buffer);
 
@@ -316,7 +318,7 @@ public class ErrorHandler extends Handler.Abstract
         if (showStacks)
             writeErrorHtmlStacks(request, writer);
         
-        request.getChannel().getHttpConfiguration()
+        request.getHttpChannel().getHttpConfiguration()
             .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 
@@ -525,14 +527,24 @@ public class ErrorHandler extends Handler.Abstract
 
     public static class ErrorRequest extends Request.Wrapper
     {
-        private final Callback _callback;
+        private final Response _response;
         private final int _status;
         private final String _message;
         private final Throwable _cause;
+        private final AtomicBoolean _accepted = new AtomicBoolean();
+        private final Callback _callback;
 
-        public ErrorRequest(Request request, int status, String message, Throwable cause, Callback callback)
+        public ErrorRequest(Request request, Response response, int status, String message, Throwable cause, Callback callback)
         {
             super(request);
+            _response = new Response.Wrapper(request, response)
+            {
+                @Override
+                public Callback getCallback()
+                {
+                    return callback;
+                }
+            };
             _callback = callback;
             _status = status;
             _message = message;
@@ -540,15 +552,15 @@ public class ErrorHandler extends Handler.Abstract
         }
 
         @Override
-        public void succeeded()
+        public Response accept()
         {
-            _callback.succeeded();
+            return _accepted.compareAndSet(false, true) ? _response : null;
         }
 
         @Override
-        public void failed(Throwable x)
+        public boolean isAccepted()
         {
-            _callback.failed(x);
+            return _accepted.get();
         }
 
         @Override
@@ -599,48 +611,6 @@ public class ErrorHandler extends Handler.Abstract
             if (_cause != null)
                 names.add(ERROR_EXCEPTION);
             return names;
-        }
-    }
-
-    public static class ErrorResponse extends Response.Wrapper
-    {
-        private final ByteBufferAccumulator _accumulator;
-
-        public ErrorResponse(Request request, Response wrapped)
-        {
-            super(request, wrapped);
-            _accumulator = new ByteBufferAccumulator(request.getConnectionMetaData().getConnector().getByteBufferPool(), false);
-        }
-
-        @Override
-        public void write(boolean last, Callback callback, ByteBuffer... content)
-        {
-            for (ByteBuffer buffer : content)
-            {
-                _accumulator.copyBuffer(buffer);
-                BufferUtil.clear(buffer);
-            }
-            if (last)
-                _accumulator.close();
-            callback.succeeded();
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            super.push(request);
-        }
-
-        @Override
-        public boolean isCommitted()
-        {
-            return false;
-        }
-
-        @Override
-        public void reset()
-        {
-            super.reset();
         }
     }
 }

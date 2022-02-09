@@ -15,22 +15,21 @@ package org.eclipse.jetty.core.server.handler;
 
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
-import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
 
 public class RewriteHandler extends Handler.Wrapper
 {
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
-        Request rewritten = rewrite(request, response);
-        if (response.isCommitted())
-            return true;
-        return super.handle(request, response);
+        Request rewritten = rewrite(request);
+        if (request.isAccepted())
+            return;
+        super.handle(request);
     }
 
-    protected Request rewrite(Request request, Response response)
+    protected Request rewrite(Request request)
     {
         // TODO run the rules, but ultimately wrap for any changes:
         return new Request.Wrapper(request)

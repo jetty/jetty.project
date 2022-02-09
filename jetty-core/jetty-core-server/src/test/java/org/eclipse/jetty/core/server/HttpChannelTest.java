@@ -55,6 +55,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -325,9 +326,8 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request)
             {
-                return false;
             }
         };
         _server.setHandler(handler);
@@ -356,7 +356,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request)
             {
                 throw new UnsupportedOperationException("testing");
             }
@@ -390,15 +390,15 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
+                Response response = request.accept();
                 response.setStatus(200);
                 response.setContentLength(10);
-                response.write(false, Callback.from(() ->
+                response.write(false, Callback.from(response.getCallback(), () ->
                 {
                     throw new Error("testing");
                 }));
-                return true;
             }
         };
         _server.setHandler(handler);
@@ -428,10 +428,10 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
-                response.write(true, request, BufferUtil.toBuffer("12345"));
-                return true;
+                Response response = request.accept();
+                response.write(true, response.getCallback(), BufferUtil.toBuffer("12345"));
             }
         };
         _server.setHandler(handler);
@@ -460,11 +460,11 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
+                Response response = request.accept();
                 response.setContentLength(10);
-                response.write(true, request, BufferUtil.toBuffer("12345"));
-                return true;
+                response.write(true, response.getCallback(), BufferUtil.toBuffer("12345"));
             }
         };
         _server.setHandler(handler);
@@ -493,11 +493,12 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
+                Response response = request.accept();
                 response.setContentLength(10);
-                response.write(false, Callback.from(() -> response.write(true, request)), BufferUtil.toBuffer("12345"));
-                return true;
+                Callback callback = response.getCallback();
+                response.write(false, Callback.from(() -> response.write(true, callback)), BufferUtil.toBuffer("12345"));
             }
         };
         _server.setHandler(handler);
@@ -525,11 +526,11 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
+                Response response = request.accept();
                 response.setContentLength(5);
-                response.write(true, request, BufferUtil.toBuffer("1234567890"));
-                return true;
+                response.write(true, response.getCallback(), BufferUtil.toBuffer("1234567890"));
             }
         };
         _server.setHandler(handler);
@@ -558,11 +559,12 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
+                Response response = request.accept();
                 response.setContentLength(5);
-                response.write(false, Callback.from(() -> response.write(true, request, BufferUtil.toBuffer("567890"))), BufferUtil.toBuffer("1234"));
-                return true;
+                Callback callback = response.getCallback();
+                response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("567890"))), BufferUtil.toBuffer("1234"));
             }
         };
         _server.setHandler(handler);
@@ -624,13 +626,14 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
+                Response response = request.accept();
                 response.setStatus(200);
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.setContentLength(5);
-                response.write(false, Callback.from(() -> response.write(true, request, BufferUtil.toBuffer("12345"))));
-                return true;
+                Callback callback = response.getCallback();
+                response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
             }
         };
         _server.setHandler(handler);
@@ -667,14 +670,15 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
+                Response response = request.accept();
                 response.setStatus(200);
                 response.addHeader(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.setContentLength(5);
-                response.write(false, Callback.from(() -> response.write(true, request, BufferUtil.toBuffer("12345"))));
-                return true;
+                Callback callback = response.getCallback();
+                response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
             }
         };
         _server.setHandler(handler);
@@ -964,8 +968,9 @@ public class HttpChannelTest
         _server.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
+                Response response = request.accept();
                 LongAdder contentSize = new LongAdder();
                 CountDownLatch latch = new CountDownLatch(1);
                 Runnable onContentAvailable = new Runnable()
@@ -983,17 +988,16 @@ public class HttpChannelTest
                     }
                 };
                 request.demandContent(onContentAvailable);
+                Callback callback = response.getCallback();
                 if (latch.await(30, TimeUnit.SECONDS))
                 {
                     response.setStatus(200);
-                    response.write(true, request, BufferUtil.toBuffer("contentSize=" + contentSize.longValue()));
+                    response.write(true, callback, BufferUtil.toBuffer("contentSize=" + contentSize.longValue()));
                 }
                 else
                 {
-                    request.failed(new IOException());
+                    callback.failed(new IOException());
                 }
-
-                return true;
             }
         });
         _server.start();
@@ -1046,13 +1050,13 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response)
+            public void handle(Request request)
             {
+                request.accept();
                 handling.set(request);
                 request.addErrorListener(t -> {});
                 request.addErrorListener(error::set);
                 request.addErrorListener(t -> {});
-                return true;
             }
         };
         _server.setHandler(handler);
@@ -1067,6 +1071,9 @@ public class HttpChannelTest
         Runnable task = channel.onRequest(request);
         task.run();
 
+        // check we are handling
+        assertNotNull(handling.get());
+        assertTrue(handling.get().isAccepted());
         assertThat(stream.isComplete(), is(false));
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), nullValue());
@@ -1074,7 +1081,7 @@ public class HttpChannelTest
         // failure happens
         IOException failure = new IOException("Testing");
         Runnable todo = channel.onError(failure);
-        assertThat(todo, notNullValue());
+        assertNotNull(todo);
 
         // onError not yet called
         assertThat(error.get(), nullValue());
@@ -1093,10 +1100,12 @@ public class HttpChannelTest
         CountDownLatch demand = new CountDownLatch(1);
         // Callback serialized until after onError task
         handling.get().demandContent(demand::countDown);
+        assertThat(demand.getCount(), is(1L));
 
         FuturePromise<Throwable> callback = new FuturePromise<>();
         // Callback serialized until after onError task
-        handling.get().getChannel().getResponse().write(false, Callback.from(() -> {}, callback::succeeded));
+        handling.get().getHttpChannel().getResponse().write(false, Callback.from(() -> {}, callback::succeeded));
+        assertFalse(callback.isDone());
 
         // process error callback
         todo.run();
@@ -1121,10 +1130,10 @@ public class HttpChannelTest
         EchoHandler echoHandler = new EchoHandler()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
                 request.addCompletionListener(Callback.from(completed::countDown));
-                return super.handle(request, response);
+                super.handle(request);
             }
         };
         _server.setHandler(echoHandler);

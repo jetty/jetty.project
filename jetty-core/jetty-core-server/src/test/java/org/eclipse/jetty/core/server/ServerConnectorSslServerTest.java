@@ -226,8 +226,9 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
     public static class SecureRequestHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
+            Response response = request.accept();
             response.setStatus(200);
             StringBuilder out = new StringBuilder();
             SSLSession session = (SSLSession)request.getAttribute("SSL_SESSION");
@@ -242,8 +243,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
             out.append("key_size='").append(data == null ? "" : data.getKeySize()).append("'").append('\n');
             out.append("ssl_session_id='").append(data == null ? "" : data.getId()).append("'").append('\n');
             out.append("ssl_session='").append(session).append("'").append('\n');
-            response.write(true, request, out.toString());
-            return true;
+            response.write(true, response.getCallback(), out.toString());
         }
     }
 }

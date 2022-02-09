@@ -15,14 +15,21 @@ package org.eclipse.jetty.core.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Flow;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Utf8StringBuilder;
+import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
  * The Content abstract is based on what is already used in several places.
@@ -372,6 +379,374 @@ public interface Content
         public Content.Provider getProvider()
         {
             return _provider;
+        }
+    }
+
+    // TODO thought bubble. Review, delete and/of find a proper home.
+    class ContentPublisher implements Flow.Publisher<Content>
+    {
+        private final Provider _provider;
+        private final AtomicReference<TheSubscription> _theSubscription = new AtomicReference<>();
+
+        public ContentPublisher(Provider provider)
+        {
+            _provider = provider;
+        }
+
+        @Override
+        public void subscribe(Flow.Subscriber<? super Content> subscriber)
+        {
+            TheSubscription theSubscription = new TheSubscription(subscriber);
+            if (_theSubscription.compareAndSet(null, theSubscription))
+                subscriber.onSubscribe(theSubscription);
+            else
+                subscriber.onError(new IllegalStateException("Already subscribed"));
+        }
+
+        private class TheSubscription implements Flow.Subscription, Runnable
+        {
+            private final Flow.Subscriber<? super Content> _subscriber;
+            private final AtomicLong _demand = new AtomicLong();
+
+            private TheSubscription(Flow.Subscriber<? super Content> subscriber)
+            {
+                _subscriber = subscriber;
+            }
+
+            @Override
+            public void request(long n)
+            {
+                if (_demand.getAndUpdate(d -> MathUtils.cappedAdd(d, n)) == 0)
+                    _provider.demandContent(this);
+            }
+
+            @Override
+            public void cancel()
+            {
+                // TODO
+            }
+
+            @Override
+            public void run()
+            {
+                while (true)
+                {
+                    Content content = _provider.readContent();
+                    if (content == null)
+                    {
+                        _provider.demandContent(this);
+                        return;
+                    }
+
+                    if (content.hasRemaining())
+                    {
+                        long demand = _demand.decrementAndGet();
+                        _subscriber.onNext(content);
+                        if (demand == 0 && !content.isLast())
+                            return;
+                    }
+
+                    if (content instanceof Content.Error)
+                    {
+                        _subscriber.onError(((Content.Error)content).getCause());
+                        return;
+                    }
+
+                    if (content.isLast())
+                    {
+                        _subscriber.onComplete();
+                        return;
+                    }
+                }
+            }
+        }
+    }
+
+    // TODO thought bubble. Review, delete and/of find a proper home.
+    class FieldPublisher implements Flow.Publisher<Fields.Field>
+    {
+        private final Provider _provider;
+        private final AtomicReference<TheSubscription> _theSubscription = new AtomicReference<>();
+
+        public FieldPublisher(Provider provider)
+        {
+            _provider = provider;
+        }
+
+        @Override
+        public void subscribe(Flow.Subscriber<? super Fields.Field> subscriber)
+        {
+            TheSubscription theSubscription = new TheSubscription(subscriber);
+            if (_theSubscription.compareAndSet(null, theSubscription))
+                subscriber.onSubscribe(theSubscription);
+            else
+                subscriber.onError(new IllegalStateException("Already subscribed"));
+        }
+
+        private class TheSubscription implements Flow.Subscription, Runnable
+        {
+            private final Flow.Subscriber<? super Fields.Field> _subscriber;
+            private final AutoLock _lock = new AutoLock();
+            private boolean _iterating;
+            private long _demand;
+            private Content _content;
+            private Utf8StringBuilder _builder = new Utf8StringBuilder(); // TODO only UTF8???
+            private String _name;
+            private boolean _last;
+
+            private TheSubscription(Flow.Subscriber<? super Fields.Field> subscriber)
+            {
+                _subscriber = subscriber;
+            }
+
+            @Override
+            public void request(long n)
+            {
+                if (n == 0)
+                    return;
+                if (n < 0)
+                    throw new IllegalArgumentException("must be positive");
+
+                boolean run;
+                try (AutoLock ignored = _lock.lock())
+                {
+                    long demand = _demand;
+                    _demand = MathUtils.cappedAdd(demand, n);
+                    if (demand > 0 || _iterating)
+                        return;
+
+                    run = _content != null;
+                    if (run)
+                        _iterating = true;
+                }
+                if (run)
+                    run();
+                else
+                    _provider.demandContent(this);
+            }
+
+            @Override
+            public void cancel()
+            {
+                // TODO
+            }
+
+            @Override
+            public void run()
+            {
+                boolean complete = false;
+                boolean demandContent = false;
+                Throwable error = null;
+
+                while (true)
+                {
+                    Fields.Field field;
+                    try (AutoLock ignored = _lock.lock())
+                    {
+                        if (_last)
+                        {
+                            complete = true;
+                            _iterating = false;
+                            break;
+                        }
+
+                        if (_demand == 0)
+                        {
+                            _iterating = false;
+                            break;
+                        }
+
+                        if (_content == null)
+                        {
+                            _content = _provider.readContent();
+                            if (_content == null)
+                            {
+                                demandContent = !_last;
+                                _iterating = false;
+                                break;
+                            }
+
+                            _last |= _content.isLast();
+
+                            if (_content instanceof Error)
+                            {
+                                error = ((Content.Error)_content).getCause();
+                                _content.release();
+                                _iterating = false;
+                                break;
+                            }
+                        }
+
+                        field = parse(_content.getByteBuffer(), _last);
+                        if (field == null)
+                        {
+                            if (_content.isEmpty())
+                            {
+                                _content.release();
+                                _content = null;
+                            }
+                            continue;
+                        }
+
+                        _demand--;
+                        _iterating = true;
+                    }
+                    _subscriber.onNext(field);
+                }
+
+                if (error != null)
+                    _subscriber.onError(error);
+                else if (complete)
+                    _subscriber.onComplete();
+                else if (demandContent)
+                    _provider.demandContent(this);
+            }
+
+            protected Fields.Field parse(ByteBuffer buffer, boolean last)
+            {
+                String value = null;
+                while (BufferUtil.hasContent(buffer))
+                {
+                    byte b = buffer.get();
+                    if (_name == null)
+                    {
+                        if (b == '=')
+                        {
+                            _name = _builder.toString();
+                            _builder.reset();
+                        }
+                        else
+                            _builder.append(b);
+                    }
+                    else
+                    {
+                        if (b == '&')
+                        {
+                            value = _builder.toString();
+                            _builder.reset();
+                            break;
+                        }
+                        else
+                            _builder.append(b);
+                    }
+                }
+
+                if (_name != null)
+                {
+                    if (value == null && last)
+                    {
+                        value = _builder.toString();
+                        _builder.reset();
+                    }
+
+                    if (value != null)
+                    {
+                        Fields.Field field = new Fields.Field(_name, value);
+                        _name = null;
+                        return field;
+                    }
+                }
+
+                return null;
+            }
+        }
+    }
+
+    // TODO thought bubble. Review, delete and/of find a proper home.
+    class FieldsFuture extends CompletableFuture<Fields> implements Runnable
+    {
+        private final Provider _provider;
+        private final Fields _fields = new Fields();
+        private final Utf8StringBuilder _builder = new Utf8StringBuilder(); // TODO only UTF8???
+        private String _name;
+
+        public FieldsFuture(Provider provider)
+        {
+            _provider = provider;
+            run();
+        }
+
+        @Override
+        public void run()
+        {
+            while (true)
+            {
+                Content content = _provider.readContent();
+                if (content == null)
+                {
+                    _provider.demandContent(this);
+                    return;
+                }
+
+                if (content instanceof Error)
+                {
+                    completeExceptionally(((Error)content).getCause());
+                    content.release();
+                    return;
+                }
+
+                Fields.Field field = parse(content.getByteBuffer(), content.isLast());
+                while (field != null)
+                {
+                    _fields.put(field);
+                    field = parse(content.getByteBuffer(), content.isLast());
+                }
+
+                content.release();
+                if (content.isLast())
+                {
+                    complete(_fields);
+                    return;
+                }
+            }
+        }
+
+        protected Fields.Field parse(ByteBuffer buffer, boolean last)
+        {
+            String value = null;
+            while (BufferUtil.hasContent(buffer))
+            {
+                byte b = buffer.get();
+                if (_name == null)
+                {
+                    if (b == '=')
+                    {
+                        _name = _builder.toString();
+                        _builder.reset();
+                    }
+                    else
+                        _builder.append(b);
+                }
+                else
+                {
+                    if (b == '&')
+                    {
+                        value = _builder.toString();
+                        _builder.reset();
+                        break;
+                    }
+                    else
+                        _builder.append(b);
+                }
+            }
+
+            if (_name != null)
+            {
+                if (value == null && last)
+                {
+                    value = _builder.toString();
+                    _builder.reset();
+                }
+
+                if (value != null)
+                {
+                    Fields.Field field = new Fields.Field(_name, value);
+                    _name = null;
+                    return field;
+                }
+            }
+
+            return null;
         }
     }
 }

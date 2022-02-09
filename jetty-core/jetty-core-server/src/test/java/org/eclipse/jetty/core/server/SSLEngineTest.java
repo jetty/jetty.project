@@ -355,8 +355,9 @@ public class SSLEngineTest
     private static class TestHandler extends Handler.Abstract
     {
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
+            Response response = request.accept();
             // System.err.println("HANDLE "+request.getRequestURI());
             SecureRequestCustomizer.SslSessionData sslData = (SecureRequestCustomizer.SslSessionData)
                 request.getAttribute("org.eclipse.jetty.servlet.request.ssl_session_data");
@@ -372,13 +373,12 @@ public class SSLEngineTest
                 {
                     buf[i] = (byte)('0' + (i % 10));
                 }
-                response.write(true, request, BufferUtil.toBuffer(buf));
+                response.write(true, response.getCallback(), BufferUtil.toBuffer(buf));
             }
             else
             {
-                response.write(true, request, BufferUtil.toBuffer(HELLO_WORLD));
+                response.write(true, response.getCallback(), BufferUtil.toBuffer(HELLO_WORLD));
             }
-            return true;
         }
     }
 }

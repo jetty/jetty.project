@@ -33,19 +33,20 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Incoming requests to the Server (itself a Handler) are passed to one or more Handlers
  * until the request is handled and a response is produced.  Handlers are asynchronous,
- * so handling may happen during or after a call to {@link #handle(Request, Response)}.
- * A handler indicates that returns true from the {@link #handle(Request, Response)} method
- * is indicated that it (or one of it's contained handlers) has undertaken to produce the
- * response and ultimately call {@link Request#succeeded()} or {@link Request#failed(Throwable)}
- * to indicate the end of the request handling.
+ * so handling may happen during or after a call to {@link #handle(Request)}.
+ *
  * <p>
- * A call to {@link #handle(Request, Response)} may:
+ * A call to {@link #handle(Request)} may:
  * <ul>
-                        * <li>return false to indicate that it will not handle the request</li>
- * <li>Completely generate the HTTP Response and call {@link Request#succeeded()}</li>
- * <li>Arrange for an async process to generate the HTTP Response and call {@link Request#succeeded()}</li>
+ * <li>Do nothing</li>
+ * <li>Completely generate the HTTP Response and call {@link Callback#succeeded()} on the {@link Callback}
+ * returned from {@link Request#accept()}.</li>
+ * <li>Call {@link Request#accept()} and arrange for an async process to generate the HTTP Response and call
+ * {@link Callback#succeeded()} or {@link Callback#failed(Throwable)} on the {@link Callback} returned.</li>
  * <li>Pass the request to one or more other Handlers.</li>
  * <li>Wrap the request and/or response and pass them to one or more other Handlers.</li>
+ * <li>Fail the request by calling {@link Callback#failed(Throwable)} on the {@link Callback} returned from
+ * {@link Request#accept()}.</li>
  * </ul>
  *
  */
@@ -55,16 +56,18 @@ public interface Handler extends LifeCycle, Destroyable
 
     /**
      * Handle an HTTP request and produce a response.
-     * @param request The immutable request, which is also a {@link Callback} used to signal success or failure.
-     * @param response The muttable response
-     * @return True if this handle has or will handle the request. This is a commitment to ultimately call
-     *         either {@link Request#succeeded()} or {@link Request#failed(Throwable)}.
+     * @param request The immutable request, which is also a {@link Callback} used to signal success or failure. The Handler
+     * or one of it's nested Handlers must call {@link Request#accept()} to indicate that it will ultimately succeed or
+     * fail the {@link Callback} returned.
+     *
      * @throws Exception Thrown if there is a problem handling.
      */
-    boolean handle(Request request, Response response) throws Exception;
+    void handle(Request request) throws Exception;
 
     @ManagedAttribute(value = "the jetty server for this handler", readonly = true)
     Server getServer();
+
+    void setServer(Server server);
 
     @ManagedOperation(value = "destroy associated resources", impact = "ACTION")
     @Override
@@ -127,6 +130,7 @@ public interface Handler extends LifeCycle, Destroyable
             return _server;
         }
 
+        @Override
         public void setServer(Server server)
         {
             if (_server == server)
@@ -281,10 +285,11 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
             Handler next = getHandler();
-            return next != null && next.handle(request, response);
+            if (next != null)
+                next.handle(request);
         }
     }
 
@@ -312,7 +317,7 @@ public interface Handler extends LifeCycle, Destroyable
 
     /**
      * A Handler Container that wraps a list of other Handlers.
-     * By default, each handler is called in turn until one returns true from {@link Handler#handle(Request, Response)}.
+     * By default, each handler is called in turn until one returns true from {@link Handler#handle(Request)}.
      */
     class Collection extends AbstractContainer
     {
@@ -330,14 +335,13 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public boolean handle(Request request, Response response) throws Exception
+        public void handle(Request request) throws Exception
         {
             for (Handler h : _handlers)
             {
-                if (h.handle(request, response))
-                    return true;
+                if (!request.isAccepted())
+                    h.handle(request);
             }
-            return false;
         }
 
         @Override

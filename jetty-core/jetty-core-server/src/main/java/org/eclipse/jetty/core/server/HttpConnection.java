@@ -607,14 +607,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     }
 
     @Override
-    protected boolean onReadTimeout(Throwable timeout)
-    {
-        // TODO
-        throw new UnsupportedOperationException();
-        // TODO return _channel.onIdleTimeout(timeout);
-    }
-
-    @Override
     protected void onFillInterestedFailed(Throwable cause)
     {
         _parser.close();
@@ -690,6 +682,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         public void succeeded()
         {
             Runnable task = _channel.onContentAvailable();
+            if (LOG.isDebugEnabled())
+                LOG.debug("demand succeeded {}", task);
             if (task != null)
                 task.run();
         }
@@ -698,6 +692,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         public void failed(Throwable x)
         {
             Runnable task = _channel.onConnectionClose(x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("demand failed {}", task, x);
             if (task != null)
                 // Execute error path as invocation type is probably wrong.
                 getConnector().getExecutor().execute(task);

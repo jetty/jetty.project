@@ -75,7 +75,7 @@ public class ContextHandlerTest
         _contextHandler = new ContextHandler();
         _contextHandler.setDisplayName("Test Context");
         _contextHandler.setContextPath("/ctx");
-        _contextHandler.setContextLoader(_loader);
+        _contextHandler.setClassLoader(_loader);
         _context = _contextHandler.getContext();
         _inContext = new AtomicBoolean(true);
         _server.setHandler(_contextHandler);
@@ -160,12 +160,12 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
                 assertInContext(request);
+                Response response = request.accept();
                 response.setStatus(200);
-                request.succeeded();
-                return true;
+                response.getCallback().succeeded();
             }
         };
         _contextHandler.setHandler(handler);
@@ -192,10 +192,11 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request)
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
-
+                Response response = request.accept();
+                Callback callback = response.getCallback();
                 request.demandContent(() ->
                 {
                     assertInContext(request);
@@ -208,14 +209,13 @@ public class ContextHandlerTest
                         {
                             content.release();
                             assertInContext(request);
-                            request.succeeded();
+                            callback.succeeded();
                         },
                         t ->
                         {
                             throw new IllegalStateException();
                         }), content.getByteBuffer());
                 });
-                return true;
             }
         };
         _contextHandler.setHandler(handler);
@@ -260,9 +260,11 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
+
+                Response response = request.accept();
 
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demandContent(() ->
@@ -279,8 +281,7 @@ public class ContextHandlerTest
                 assertTrue(content.isLast());
                 content.release();
                 response.setStatus(200);
-                request.succeeded();
-                return true;
+                response.getCallback().succeeded();
             }
         };
         _contextHandler.setHandler(handler);
@@ -377,8 +378,9 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public boolean handle(Request request, Response response) throws Exception
+            public void handle(Request request) throws Exception
             {
+                request.accept();
                 throw new RuntimeException("Testing");
             }
         });

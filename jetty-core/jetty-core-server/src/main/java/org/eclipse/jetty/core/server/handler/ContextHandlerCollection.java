@@ -25,7 +25,6 @@ import java.util.Set;
 
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
-import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Index;
@@ -123,31 +122,40 @@ public class ContextHandlerCollection extends Handler.Collection
     }
 
     @Override
-    public boolean handle(Request request, Response response) throws Exception
+    public void handle(Request request) throws Exception
     {
         List<Handler> handlers = getHandlers();
 
         // Handle no contexts
         if (handlers == null || handlers.isEmpty())
-            return false;
+            return;
 
         if (!(handlers instanceof Mapping))
-            return super.handle(request, response);
+        {
+            super.handle(request);
+            return;
+        }
 
         Mapping mapping = (Mapping)getHandlers();
 
         // handle only a single context.
         if (handlers.size() == 1)
-            return handlers.get(0).handle(request, response);
+        {
+            handlers.get(0).handle(request);
+            return;
+        }
 
         // handle many contexts
         Index<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
         if (pathBranches == null)
-            return false;
+            return;
 
         String path = request.getPath();
         if (!path.startsWith("/"))
-            return super.handle(request, response);
+        {
+            super.handle(request);
+            return;
+        }
 
         int limit = path.length() - 1;
 
@@ -164,15 +172,23 @@ public class ContextHandlerCollection extends Handler.Collection
             {
                 for (Branch branch : branches.getValue())
                 {
-                    if (branch.getHandler().handle(request, response))
-                        return true;
+                    try
+                    {
+                        branch.getHandler().handle(request);
+                    }
+                    catch (Throwable t)
+                    {
+                        if (request.isAccepted())
+                            throw t;
+                        LOG.warn("Unaccepted error {}", this, t);
+                    }
+                    if (request.isAccepted())
+                        return;
                 }
             }
 
             limit = l - 2;
         }
-
-        return false;
     }
 
     /**
