@@ -13,9 +13,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-
 /**
  * MemoryUtils provides an abstraction over memory properties and operations.
  */
@@ -29,14 +26,7 @@ public class MemoryUtils
         int value = defaultValue;
         try
         {
-            value = Integer.parseInt(AccessController.doPrivileged(new PrivilegedAction<String>()
-            {
-                @Override
-                public String run()
-                {
-                    return System.getProperty("org.eclipse.jetty.util.cacheLineBytes", String.valueOf(defaultValue));
-                }
-            }));
+            value = Integer.parseInt(System.getProperty("org.eclipse.jetty.util.cacheLineBytes", String.valueOf(defaultValue)));
         }
         catch (Exception ignored)
         {

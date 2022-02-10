@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.function.Supplier;
 
 /**
  * Convenience class to ensure that a new Thread is created
- * inside a privileged block. 
+ * inside a controlled block.
  * 
  * This prevents the Thread constructor
  * from pinning the caller's context classloader. This happens
@@ -32,20 +30,14 @@ class PrivilegedThreadFactory
 {
     /**
      * Use a Supplier to make a new thread, calling it within
-     * a privileged block to prevent classloader pinning.
+     * a controlled block to prevent classloader pinning.
      * 
      * @param newThreadSupplier a Supplier to create a fresh thread
      * @return a new thread, protected from classloader pinning.
      */
     static <T extends Thread> T newThread(Supplier<T> newThreadSupplier)
     {
-        return AccessController.doPrivileged(new PrivilegedAction<T>()
-        {
-            @Override
-            public T run()
-            {
-                return newThreadSupplier.get();
-            }
-        });
+        // TODO: Need an alternate way of accomplishing this, as AccessController is slated for removal.
+        return newThreadSupplier.get();
     }
 }
