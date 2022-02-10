@@ -57,7 +57,6 @@ public class PropertiesConfigurationManager implements ConfigurationManager, Dum
         this(null);
     }
 
-    @ManagedAttribute("A file or URL of properties")
     public void setFile(String resource) throws IOException
     {
         _properties = resource;
@@ -65,6 +64,7 @@ public class PropertiesConfigurationManager implements ConfigurationManager, Dum
         loadProperties(_properties);
     }
 
+    @ManagedAttribute("A file or URL of properties")
     public String getFile()
     {
         return _properties;
