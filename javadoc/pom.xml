@@ -14,7 +14,6 @@
   <properties>
     <sources-directory>${project.build.directory}/jetty-sources</sources-directory>
     <sonar.skip>true</sonar.skip>
-    <pmd.skip>true</pmd.skip>
     <spotbugs.skip>true</spotbugs.skip>
     <checkstyle.skip>true</checkstyle.skip>
   </properties>
