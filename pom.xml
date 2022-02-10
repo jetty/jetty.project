@@ -48,7 +48,7 @@
     <guava.version>31.0.1-jre</guava.version>
     <guice.version>5.1.0</guice.version>
     <hamcrest.version>2.2</hamcrest.version>
-    <hawtio.version>2.14.4</hawtio.version>
+    <hawtio.version>2.14.5</hawtio.version>
     <hazelcast.version>4.2.4</hazelcast.version>
     <infinispan.protostream.version>4.3.5.Final</infinispan.protostream.version>
     <infinispan.version>11.0.14.Final</infinispan.version>
