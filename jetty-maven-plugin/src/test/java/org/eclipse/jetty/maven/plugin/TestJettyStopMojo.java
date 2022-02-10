@@ -34,7 +34,6 @@ public class TestJettyStopMojo
 {
     /**
      * ShutdownMonitorMain
-     *
      * Kick off the ShutdownMonitor and wait for it to exit.
      */
     public static final class ShutdownMonitorMain
@@ -57,7 +56,7 @@ public class TestJettyStopMojo
 
     public static class TestLog implements org.apache.maven.plugin.logging.Log
     {
-        List<String> sink = new ArrayList<String>();
+        List<String> sink = new ArrayList<>();
 
         @Override
         public boolean isDebugEnabled()
@@ -249,7 +248,7 @@ public class TestJettyStopMojo
 
         String tmp = "";
         String port = null;
-        try (LineNumberReader reader = new LineNumberReader(new FileReader(file));)
+        try (LineNumberReader reader = new LineNumberReader(new FileReader(file)))
         {
             while (port == null && tmp != null)
             {

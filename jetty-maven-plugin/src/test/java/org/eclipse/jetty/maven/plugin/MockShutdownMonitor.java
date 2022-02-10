@@ -19,7 +19,6 @@ import org.eclipse.jetty.toolchain.test.IO;
 
 /**
  * MockShutdownMonitor
- * 
  * A helper class that grabs a ServerSocket, spawns a thread and then
  * passes the ServerSocket to the Runnable. This class has a main so
  * that it can be used for forking, to mimic the actions of the
