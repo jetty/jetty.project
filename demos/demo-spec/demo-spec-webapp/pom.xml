@@ -209,11 +209,10 @@
     </dependency>
 
     <!-- deliberately old version to test classloading -->
-    <!-- TODO uncomment and update the following once 9.4.19 is released with a fix for #3726
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
-      <version>9.4.19.vXXXXXXXX</version>
+      <version>9.4.45.v20220203</version>
       <exclusions>
         <exclusion>
           <groupId>javax.servlet</groupId>
@@ -221,6 +220,5 @@
         </exclusion>
       </exclusions>
     </dependency>
- -->
   </dependencies>
 </project>

@@ -25,6 +25,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.util.IO;
+
 @WebServlet(urlPatterns = "/classloader")
 public class ClassLoaderServlet extends HttpServlet
 {
@@ -39,8 +41,6 @@ public class ClassLoaderServlet extends HttpServlet
             writer.println("<body>");
             writer.println("<h1>ClassLoader Isolation Test</h1>");
 
-            // TODO uncomment the following once 9.4.19 is released with a fix for #3726
-            /*
             Class<?> webappIO = IO.class;
             URI webappURI = getLocationOfClass(webappIO);
             String webappVersion = webappIO.getPackage().getImplementationVersion();
@@ -48,8 +48,8 @@ public class ClassLoaderServlet extends HttpServlet
             URI serverURI = getLocationOfClass(serverIO);
             String serverVersion = serverIO.getPackage().getImplementationVersion();
 
-            writer.printf("<p>Webapp loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n",webappVersion,webappURI);
-            writer.printf("<br/>Server loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n",serverVersion, serverURI);
+            writer.printf("<p>Webapp loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n", webappVersion, webappURI);
+            writer.printf("<br/>Server loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n", serverVersion, serverURI);
             if (webappVersion.equals(serverVersion))
                 writer.println("<br/><b>Version Result: <span class=\"fail\">FAIL</span></b>");
             else
@@ -58,7 +58,6 @@ public class ClassLoaderServlet extends HttpServlet
                 writer.println("<br/><b>URI Result: <span class=\"fail\">FAIL</span></b></p>");
             else
                 writer.println("<br/><b>URI Result: <span class=\"pass\">PASS</span></b></p>");
-            */
 
             writer.println("</body>");
             writer.println("</html>");
