@@ -151,7 +151,7 @@
     <maven.install.plugin.version>3.0.0-M1</maven.install.plugin.version>
     <maven.invoker.plugin.version>3.2.2</maven.invoker.plugin.version>
     <maven.jar.plugin.version>3.2.2</maven.jar.plugin.version>
-    <maven.javadoc.plugin.version>3.3.1</maven.javadoc.plugin.version>
+    <maven.javadoc.plugin.version>3.3.2</maven.javadoc.plugin.version>
     <maven.jxr.plugin.version>3.1.1</maven.jxr.plugin.version>
     <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
     <maven-plugin.plugin.version>3.6.4</maven-plugin.plugin.version>
@@ -2237,8 +2237,8 @@
                 <configuration>
                   <rules>
                     <requireJavaVersion>
-                      <version>[11,)</version>
-                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 11 or newer</message>
+                      <version>[17,)</version>
+                      <message>[ERROR] OLD JDK [${java.version}] in use. Jetty Release ${project.version} MUST use JDK 17 or newer</message>
                     </requireJavaVersion>
                   </rules>
                 </configuration>
@@ -2353,7 +2353,6 @@
       <properties>
         <!-- disable plugins known not to work with JDK 17 (yet) -->
         <spotbugs.skip>true</spotbugs.skip>
-        <jacoco.skip>true</jacoco.skip>
       </properties>
     </profile>
     <profile>
