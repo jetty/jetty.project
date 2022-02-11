@@ -74,7 +74,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
      * the 16 bit indexes can overflow and the trie
      * cannot find existing entries anymore.
      */
-    private static final int MAX_CAPACITY = Character.MAX_VALUE - 1;
+    public static final int MAX_CAPACITY = Character.MAX_VALUE - 1;
 
     /**
      * The Trie rows in a single array which allows a lookup of row,character
