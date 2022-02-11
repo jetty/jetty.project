@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.core.server.Content;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
@@ -84,40 +83,41 @@ public class ErrorHandler extends Handler.Abstract
         return ERROR_METHODS.contains(method);
     }
 
-    public void handle(Request request) throws IOException
+    public void offer(Request request, Acceptor acceptor) throws Exception
     {
-        Response response = request.accept();
-        if (response == null || response.isCommitted())
-            return;
-
-        if (_cacheControl != null)
-            response.getHeaders().put(_cacheControl);
-
-        int code = response.getStatus();
-        String message = (String)request.getAttribute(ERROR_MESSAGE);
-        Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
-        if (cause instanceof BadMessageException)
+        acceptor.accept(request, exchange ->
         {
-            BadMessageException bad = (BadMessageException)cause;
-            response.setStatus(code = bad.getCode());
-            if (message == null)
-                message = bad.getReason();
-        }
+            Response response = exchange.getResponse();
+            if (response == null || response.isCommitted())
+                return;
 
-        if (!errorPageForMethod(request.getMethod()) || HttpStatus.hasNoBody(code))
-        {
-            response.getCallback().succeeded();
-        }
-        else
-        {
-            if (message == null)
-                message = cause == null ? HttpStatus.getMessage(code) : cause.toString();
+            if (_cacheControl != null)
+                response.getHeaders().put(_cacheControl);
 
-            generateAcceptableResponse(request, response, code, message, cause);
-        }
+            int code = response.getStatus();
+            String message = (String)request.getAttribute(ERROR_MESSAGE);
+            Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
+            if (cause instanceof BadMessageException bad)
+            {
+                response.setStatus(code = bad.getCode());
+                if (message == null)
+                    message = bad.getReason();
+            }
+
+            if (!errorPageForMethod(request.getMethod()) || HttpStatus.hasNoBody(code))
+            {
+                exchange.succeeded();
+            }
+            else
+            {
+                if (message == null)
+                    message = cause == null ? HttpStatus.getMessage(code) : cause.toString();
+                generateAcceptableResponse(request, response, code, message, cause, exchange);
+            }
+        });
     }
 
-    protected void generateAcceptableResponse(Request request, Response response, int code, String message, Throwable cause)
+    protected void generateAcceptableResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback)
         throws IOException
     {
         List<String> acceptable = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
@@ -125,7 +125,7 @@ public class ErrorHandler extends Handler.Abstract
         {
             if (request.getHeaders().contains(HttpHeader.ACCEPT))
             {
-                response.getCallback().succeeded();
+                callback.succeeded();
                 return;
             }
             acceptable = Collections.singletonList(Type.TEXT_HTML.asString());
@@ -151,20 +151,20 @@ public class ErrorHandler extends Handler.Abstract
             charsets = List.of(StandardCharsets.ISO_8859_1, StandardCharsets.UTF_8);
             if (request.getHeaders().contains(HttpHeader.ACCEPT_CHARSET))
             {
-                response.getCallback().succeeded();
+                callback.succeeded();
                 return;
             }
         }
 
         for (String mimeType : acceptable)
         {
-            if (generateAcceptableResponse(request, response, mimeType, charsets, code, message, cause))
+            if (generateAcceptableResponse(request, response, mimeType, charsets, code, message, cause, callback))
                 return;
         }
-        response.getCallback().succeeded();
+        callback.succeeded();
     }
 
-    protected boolean generateAcceptableResponse(Request request, Response response, String contentType, List<Charset> charsets, int code, String message, Throwable cause)
+    protected boolean generateAcceptableResponse(Request request, Response response, String contentType, List<Charset> charsets, int code, String message, Throwable cause, Callback callback)
         throws IOException
     {
         Type type;
@@ -248,12 +248,12 @@ public class ErrorHandler extends Handler.Abstract
 
         if (!buffer.hasRemaining())
         {
-            response.getCallback().succeeded();
+            callback.succeeded();
             return true;
         }
 
         response.getHeaders().put(type.getContentTypeField(charset));
-        response.write(true, new Callback.Nested(response.getCallback())
+        response.write(true, new Callback.Nested(callback)
         {
             @Override
             public void succeeded()
@@ -537,24 +537,11 @@ public class ErrorHandler extends Handler.Abstract
         public ErrorRequest(Request request, Response response, int status, String message, Throwable cause, Callback callback)
         {
             super(request);
-            _response = new Response.Wrapper(request, response)
-            {
-                @Override
-                public Callback getCallback()
-                {
-                    return callback;
-                }
-            };
+            _response = response;
             _callback = callback;
             _status = status;
             _message = message;
             _cause = cause;
-        }
-
-        @Override
-        public Response accept()
-        {
-            return _accepted.compareAndSet(false, true) ? _response : null;
         }
 
         @Override
@@ -567,18 +554,6 @@ public class ErrorHandler extends Handler.Abstract
         public boolean isComplete()
         {
             return false;
-        }
-
-        @Override
-        public Content readContent()
-        {
-            return Content.EOF;
-        }
-
-        @Override
-        public void demandContent(Runnable onContentAvailable)
-        {
-            onContentAvailable.run();
         }
 
         @Override

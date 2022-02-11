@@ -64,36 +64,39 @@ public class ServerConnectorTest
     public static class ReuseInfoHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            response.setContentType("text/plain");
-
-            EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-            assertThat("Endpoint", endPoint, instanceOf(SocketChannelEndPoint.class));
-            SocketChannelEndPoint channelEndPoint = (SocketChannelEndPoint)endPoint;
-            Socket socket = channelEndPoint.getChannel().socket();
-            ServerConnector connector = (ServerConnector)request.getConnectionMetaData().getConnector();
-
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            PrintWriter out = new PrintWriter(new OutputStreamWriter(buffer, StandardCharsets.UTF_8));
-            out.printf("connector.getReuseAddress() = %b%n", connector.getReuseAddress());
-
-            try
+            acceptor.accept(request, exchange ->
             {
-                Field fld = connector.getClass().getDeclaredField("_reuseAddress");
-                assertThat("Field[_reuseAddress]", fld, notNullValue());
-                fld.setAccessible(true);
-                Object val = fld.get(connector);
-                out.printf("connector._reuseAddress() = %b%n", val);
-            }
-            catch (Throwable t)
-            {
-                t.printStackTrace(out);
-            }
-            out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
-            out.flush();
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(buffer.toByteArray()));
+                Response response = exchange.getResponse();
+                response.setContentType("text/plain");
+
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                assertThat("Endpoint", endPoint, instanceOf(SocketChannelEndPoint.class));
+                SocketChannelEndPoint channelEndPoint = (SocketChannelEndPoint)endPoint;
+                Socket socket = channelEndPoint.getChannel().socket();
+                ServerConnector connector = (ServerConnector)request.getConnectionMetaData().getConnector();
+
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+                PrintWriter out = new PrintWriter(new OutputStreamWriter(buffer, StandardCharsets.UTF_8));
+                out.printf("connector.getReuseAddress() = %b%n", connector.getReuseAddress());
+
+                try
+                {
+                    Field fld = connector.getClass().getDeclaredField("_reuseAddress");
+                    assertThat("Field[_reuseAddress]", fld, notNullValue());
+                    fld.setAccessible(true);
+                    Object val = fld.get(connector);
+                    out.printf("connector._reuseAddress() = %b%n", val);
+                }
+                catch (Throwable t)
+                {
+                    t.printStackTrace(out);
+                }
+                out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
+                out.flush();
+                response.write(true, exchange, BufferUtil.toBuffer(buffer.toByteArray()));
+            });
         }
     }
 
@@ -242,10 +245,9 @@ public class ServerConnectorTest
             server.setHandler(new Handler.Abstract()
             {
                 @Override
-                public void handle(Request request)
+                public void offer(Request request, Acceptor acceptor) throws Exception
                 {
-                    Response response = request.accept();
-                    response.getCallback().succeeded();
+                    acceptor.accept(request, Exchange::succeeded);
                 }
             });
 

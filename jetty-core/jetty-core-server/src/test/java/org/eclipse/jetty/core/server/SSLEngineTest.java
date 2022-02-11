@@ -355,30 +355,33 @@ public class SSLEngineTest
     private static class TestHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            // System.err.println("HANDLE "+request.getRequestURI());
-            SecureRequestCustomizer.SslSessionData sslData = (SecureRequestCustomizer.SslSessionData)
-                request.getAttribute("org.eclipse.jetty.servlet.request.ssl_session_data");
-            String sslId = sslData.getId();
-            assertNotNull(sslId);
+            acceptor.accept(request, exchange ->
+            {
+                Response response = exchange.getResponse();
+                // System.err.println("HANDLE "+request.getRequestURI());
+                SecureRequestCustomizer.SslSessionData sslData = (SecureRequestCustomizer.SslSessionData)
+                    request.getAttribute("org.eclipse.jetty.servlet.request.ssl_session_data");
+                String sslId = sslData.getId();
+                assertNotNull(sslId);
 
-            MultiMap<String> params = request.extractQueryParameters();
-            if (params.get("dump") != null)
-            {
-                byte[] buf = new byte[Integer.parseInt(params.getValue("dump"))];
-                // System.err.println("DUMP "+buf.length);
-                for (int i = 0; i < buf.length; i++)
+                MultiMap<String> params = request.extractQueryParameters();
+                if (params.get("dump") != null)
                 {
-                    buf[i] = (byte)('0' + (i % 10));
+                    byte[] buf = new byte[Integer.parseInt(params.getValue("dump"))];
+                    // System.err.println("DUMP "+buf.length);
+                    for (int i = 0; i < buf.length; i++)
+                    {
+                        buf[i] = (byte)('0' + (i % 10));
+                    }
+                    response.write(true, exchange, BufferUtil.toBuffer(buf));
                 }
-                response.write(true, response.getCallback(), BufferUtil.toBuffer(buf));
-            }
-            else
-            {
-                response.write(true, response.getCallback(), BufferUtil.toBuffer(HELLO_WORLD));
-            }
+                else
+                {
+                    response.write(true, exchange, BufferUtil.toBuffer(HELLO_WORLD));
+                }
+            });
         }
     }
 }

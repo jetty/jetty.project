@@ -84,118 +84,121 @@ public class DefaultHandler extends Handler.Abstract
     }
 
     @Override
-    public void handle(Request request) throws Exception
+    public void offer(Request request, Acceptor acceptor) throws Exception
     {
-        Response response = request.accept();
-        if (response == null || response.isCommitted())
-            return;
-
-        String method = request.getMethod();
-
-        // little cheat for common request
-        if (_serveIcon && _favicon != null && HttpMethod.GET.is(method) && request.getPath().equals("/favicon.ico"))
+        acceptor.accept(request, exchange ->
         {
-            ByteBuffer content = BufferUtil.EMPTY_BUFFER;
-            if (_faviconModifiedMs > 0 && request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE) == _faviconModifiedMs)
-                response.setStatus(HttpStatus.NOT_MODIFIED_304);
-            else
+            Response response = exchange.getResponse();
+            if (response == null || response.isCommitted())
+                return;
+
+            String method = request.getMethod();
+
+            // little cheat for common request
+            if (_serveIcon && _favicon != null && HttpMethod.GET.is(method) && request.getPath().equals("/favicon.ico"))
             {
-                response.setStatus(HttpStatus.OK_200);
-                response.setContentType("image/x-icon");
-                response.setContentLength(_favicon.remaining());
-                response.getHeaders().add(_faviconModified);
-                response.setHeader(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
-                content = _favicon.slice();
-            }
-            response.write(true, response.getCallback(), content);
-            return;
-        }
-
-        if (!_showContexts || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
-        {
-            response.writeError(HttpStatus.NOT_FOUND_404, null, response.getCallback());
-            return;
-        }
-
-        response.setStatus(HttpStatus.NOT_FOUND_404);
-        response.setContentType(MimeTypes.Type.TEXT_HTML_UTF_8.toString());
-
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-             OutputStreamWriter writer = new OutputStreamWriter(outputStream, UTF_8))
-        {
-            writer.append("<!DOCTYPE html>\n");
-            writer.append("<html lang=\"en\">\n<head>\n");
-            writer.append("<title>Error 404 - Not Found</title>\n");
-            writer.append("<meta charset=\"utf-8\">\n");
-            writer.append("<style>body { font-family: sans-serif; } table, td { border: 1px solid #333; } td, th { padding: 5px; } thead, tfoot { background-color: #333; color: #fff; } </style>\n");
-            writer.append("</head>\n<body>\n");
-            writer.append("<h2>Error 404 - Not Found.</h2>\n");
-            writer.append("<p>No context on this server matched or handled this request.</p>\n");
-            writer.append("<p>Contexts known to this server are:</p>\n");
-
-            writer.append("<table class=\"contexts\"><thead><tr>");
-            writer.append("<th>Context Path</th>");
-            writer.append("<th>Display Name</th>");
-            writer.append("<th>Status</th>");
-            writer.append("<th>LifeCycle</th>");
-            writer.append("</tr></thead><tbody>\n");
-
-            Server server = getServer();
-            List<ContextHandler> handlers = server == null ? Collections.emptyList() : server.getChildHandlersByClass(ContextHandler.class);
-
-            for (ContextHandler context : handlers)
-            {
-                writer.append("<tr><td>");
-
-                String contextPath = context.getContextPath();
-                String href = URIUtil.encodePath(contextPath);
-                if (contextPath.length() > 1 && !contextPath.endsWith("/"))
-                {
-                    href += '/';
-                }
-
-                if (context.isRunning())
-                {
-                    writer.append("<a href=\"").append(href).append("\">");
-                }
-                writer.append(StringUtil.replace(contextPath, "%", "&#37;"));
-                if (context.isRunning())
-                {
-                    writer.append("</a>");
-                }
-                writer.append("</td><td>");
-                // Display Name
-
-                if (StringUtil.isNotBlank(context.getDisplayName()))
-                {
-                    writer.append(StringUtil.sanitizeXmlString(context.getDisplayName()));
-                }
-                writer.append("&nbsp;</td><td>");
-                // Available
-
-                if (context.isAvailable())
-                {
-                    writer.append("Available");
-                }
+                ByteBuffer content = BufferUtil.EMPTY_BUFFER;
+                if (_faviconModifiedMs > 0 && request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE) == _faviconModifiedMs)
+                    response.setStatus(HttpStatus.NOT_MODIFIED_304);
                 else
                 {
-                    writer.append("<em>Not</em> Available");
+                    response.setStatus(HttpStatus.OK_200);
+                    response.setContentType("image/x-icon");
+                    response.setContentLength(_favicon.remaining());
+                    response.getHeaders().add(_faviconModified);
+                    response.setHeader(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
+                    content = _favicon.slice();
                 }
-                writer.append("</td><td>");
-                // State
-                writer.append(context.getState());
-                writer.append("</td></tr>\n");
+                response.write(true, exchange, content);
+                return;
             }
 
-            writer.append("</tbody></table><hr/>\n");
-            writer.append("<a href=\"https://eclipse.org/jetty\"><img alt=\"icon\" src=\"/favicon.ico\"/></a>&nbsp;");
-            writer.append("<a href=\"https://eclipse.org/jetty\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
-            writer.append("</body>\n</html>\n");
-            writer.flush();
-            ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
-            response.setContentLength(content.remaining());
-            response.write(true, response.getCallback(), content);
-        }
+            if (!_showContexts || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
+            {
+                response.writeError(HttpStatus.NOT_FOUND_404, null, exchange);
+                return;
+            }
+
+            response.setStatus(HttpStatus.NOT_FOUND_404);
+            response.setContentType(MimeTypes.Type.TEXT_HTML_UTF_8.toString());
+
+            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                 OutputStreamWriter writer = new OutputStreamWriter(outputStream, UTF_8))
+            {
+                writer.append("<!DOCTYPE html>\n");
+                writer.append("<html lang=\"en\">\n<head>\n");
+                writer.append("<title>Error 404 - Not Found</title>\n");
+                writer.append("<meta charset=\"utf-8\">\n");
+                writer.append("<style>body { font-family: sans-serif; } table, td { border: 1px solid #333; } td, th { padding: 5px; } thead, tfoot { background-color: #333; color: #fff; } </style>\n");
+                writer.append("</head>\n<body>\n");
+                writer.append("<h2>Error 404 - Not Found.</h2>\n");
+                writer.append("<p>No context on this server matched or handled this request.</p>\n");
+                writer.append("<p>Contexts known to this server are:</p>\n");
+
+                writer.append("<table class=\"contexts\"><thead><tr>");
+                writer.append("<th>Context Path</th>");
+                writer.append("<th>Display Name</th>");
+                writer.append("<th>Status</th>");
+                writer.append("<th>LifeCycle</th>");
+                writer.append("</tr></thead><tbody>\n");
+
+                Server server = getServer();
+                List<ContextHandler> handlers = server == null ? Collections.emptyList() : server.getChildHandlersByClass(ContextHandler.class);
+
+                for (ContextHandler context : handlers)
+                {
+                    writer.append("<tr><td>");
+
+                    String contextPath = context.getContextPath();
+                    String href = URIUtil.encodePath(contextPath);
+                    if (contextPath.length() > 1 && !contextPath.endsWith("/"))
+                    {
+                        href += '/';
+                    }
+
+                    if (context.isRunning())
+                    {
+                        writer.append("<a href=\"").append(href).append("\">");
+                    }
+                    writer.append(StringUtil.replace(contextPath, "%", "&#37;"));
+                    if (context.isRunning())
+                    {
+                        writer.append("</a>");
+                    }
+                    writer.append("</td><td>");
+                    // Display Name
+
+                    if (StringUtil.isNotBlank(context.getDisplayName()))
+                    {
+                        writer.append(StringUtil.sanitizeXmlString(context.getDisplayName()));
+                    }
+                    writer.append("&nbsp;</td><td>");
+                    // Available
+
+                    if (context.isAvailable())
+                    {
+                        writer.append("Available");
+                    }
+                    else
+                    {
+                        writer.append("<em>Not</em> Available");
+                    }
+                    writer.append("</td><td>");
+                    // State
+                    writer.append(context.getState());
+                    writer.append("</td></tr>\n");
+                }
+
+                writer.append("</tbody></table><hr/>\n");
+                writer.append("<a href=\"https://eclipse.org/jetty\"><img alt=\"icon\" src=\"/favicon.ico\"/></a>&nbsp;");
+                writer.append("<a href=\"https://eclipse.org/jetty\">Powered by Eclipse Jetty:// Server</a><hr/>\n");
+                writer.append("</body>\n</html>\n");
+                writer.flush();
+                ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
+                response.setContentLength(content.remaining());
+                response.write(true, exchange, content);
+            }
+        });
     }
 
     /**

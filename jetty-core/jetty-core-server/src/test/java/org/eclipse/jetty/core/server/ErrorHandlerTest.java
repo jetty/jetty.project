@@ -67,51 +67,53 @@ public class ErrorHandlerTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-
-                Response response = request.accept();
-                if (request.getPath().startsWith("/badmessage/"))
+                acceptor.accept(request, exchange ->
                 {
-                    int code = Integer.parseInt(request.getPath().substring(request.getPath().lastIndexOf('/') + 1));
-                    throw new BadMessageException(code);
-                }
+                    Response response = exchange.getResponse();
+                    if (request.getPath().startsWith("/badmessage/"))
+                    {
+                        int code = Integer.parseInt(request.getPath().substring(request.getPath().lastIndexOf('/') + 1));
+                        throw new BadMessageException(code);
+                    }
 
-                // produce an exception with an JSON formatted cause message
-                if (request.getPath().startsWith("/jsonmessage/"))
-                {
-                    String message = "\"}, \"glossary\": {\n \"title\": \"example\"\n }\n {\"";
-                    throw new TestException(message);
-                }
+                    // produce an exception with an JSON formatted cause message
+                    if (request.getPath().startsWith("/jsonmessage/"))
+                    {
+                        String message = "\"}, \"glossary\": {\n \"title\": \"example\"\n }\n {\"";
+                        throw new TestException(message);
+                    }
 
-                // produce an exception with an XML cause message
-                if (request.getPath().startsWith("/xmlmessage/"))
-                {
-                    String message =
-                        "<!DOCTYPE glossary PUBLIC \"-//OASIS//DTD DocBook V3.1//EN\">\n" +
-                            " <glossary>\n" +
-                            "  <title>example glossary</title>\n" +
-                            " </glossary>";
-                    throw new TestException(message);
-                }
+                    // produce an exception with an XML cause message
+                    if (request.getPath().startsWith("/xmlmessage/"))
+                    {
+                        String message =
+                            "<!DOCTYPE glossary PUBLIC \"-//OASIS//DTD DocBook V3.1//EN\">\n" +
+                                " <glossary>\n" +
+                                "  <title>example glossary</title>\n" +
+                                " </glossary>";
+                        throw new TestException(message);
+                    }
 
-                // produce an exception with an HTML cause message
-                if (request.getPath().startsWith("/htmlmessage/"))
-                {
-                    String message = "<hr/><script>alert(42)</script>%3Cscript%3E";
-                    throw new TestException(message);
-                }
+                    // produce an exception with an HTML cause message
+                    if (request.getPath().startsWith("/htmlmessage/"))
+                    {
+                        String message = "<hr/><script>alert(42)</script>%3Cscript%3E";
+                        throw new TestException(message);
+                    }
 
-                // produce an exception with a UTF-8 cause message
-                if (request.getPath().startsWith("/utf8message/"))
-                {
-                    // @checkstyle-disable-check : AvoidEscapedUnicodeCharacters
-                    String message = "Euro is &euro; and \u20AC and %E2%82%AC";
-                    // @checkstyle-enable-check : AvoidEscapedUnicodeCharacters
-                    throw new TestException(message);
-                }
+                    // produce an exception with a UTF-8 cause message
+                    if (request.getPath().startsWith("/utf8message/"))
+                    {
+                        // @checkstyle-disable-check : AvoidEscapedUnicodeCharacters
+                        String message = "Euro is &euro; and \u20AC and %E2%82%AC";
+                        // @checkstyle-enable-check : AvoidEscapedUnicodeCharacters
+                        throw new TestException(message);
+                    }
 
-                response.writeError(404, response.getCallback());
+                    response.writeError(404, exchange);
+                });
             }
         });
         server.start();
@@ -444,14 +446,17 @@ public class ErrorHandlerTest
         server.setErrorHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setHeader(HttpHeader.LOCATION, "/error");
-                response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
-                response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
-                response.setStatus(302);
-                response.getCallback().succeeded();
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setHeader(HttpHeader.LOCATION, "/error");
+                    response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
+                    response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
+                    response.setStatus(302);
+                    exchange.succeeded();
+                });
             }
         });
         String rawResponse = connector.getResponse(
@@ -650,29 +655,38 @@ public class ErrorHandlerTest
         context.setErrorHandler(new ErrorHandler()
         {
             @Override
-            public void handle(Request request)
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("Context Error"));
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.write(true, exchange, BufferUtil.toBuffer("Context Error"));
+                });
             }
         });
         context.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.writeError(444, response.getCallback());
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.writeError(444, exchange);
+                });
             }
         });
 
         server.setErrorHandler(new ErrorHandler()
         {
             @Override
-            public void handle(Request request)
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("Server Error"));
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.write(true, exchange, BufferUtil.toBuffer("Server Error"));
+                });
             }
         });
 

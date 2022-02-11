@@ -40,7 +40,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -272,7 +271,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -301,7 +300,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -332,45 +331,47 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                long contentLength = request.getContentLength();
-                long read = 0;
-                while (read < contentLength)
+                acceptor.accept(request, exchange ->
                 {
-                    Content content = request.readContent();
-                    if (content == null)
+                    long contentLength = request.getContentLength();
+                    long read = 0;
+                    while (read < contentLength)
                     {
-                        try (Blocking.Runnable blocker = Blocking.runnable())
+                        Content content = exchange.readContent();
+                        if (content == null)
                         {
-                            request.demandContent(blocker);
-                            blocker.block();
+                            try (Blocking.Runnable blocker = Blocking.runnable())
+                            {
+                                exchange.demandContent(blocker);
+                                blocker.block();
+                            }
+                            continue;
                         }
-                        continue;
-                    }
 
-                    if (content instanceof Content.Error)
-                    {
-                        earlyEOFException.countDown();
-                        content.checkError();
-                    }
+                        if (content instanceof Content.Error)
+                        {
+                            earlyEOFException.countDown();
+                            content.checkError();
+                        }
 
-                    if (content.hasRemaining())
-                    {
-                        read += content.remaining();
-                        content.getByteBuffer().clear();
-                        content.release();
-                        if (!fourBytesRead.get() && read >= 4)
-                            fourBytesRead.set(true);
-                    }
+                        if (content.hasRemaining())
+                        {
+                            read += content.remaining();
+                            content.getByteBuffer().clear();
+                            content.release();
+                            if (!fourBytesRead.get() && read >= 4)
+                                fourBytesRead.set(true);
+                        }
 
-                    if (content.isLast())
-                    {
-                        response.getCallback().succeeded();
-                        break;
+                        if (content.isLast())
+                        {
+                            exchange.succeeded();
+                            break;
+                        }
                     }
-                }
+                });
             }
         });
 
@@ -1004,30 +1005,34 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            response.setStatus(200);
-            response.setContentType("text/plain");
-
-            long[] times = new long[10];
-            for (int i = 0; i < times.length; i++)
+            acceptor.accept(request, exchange ->
             {
-                long start = System.currentTimeMillis();
-                try (Blocking.Callback blocker = Blocking.callback())
-                {
-                    response.write(false, blocker, BufferUtil.toBuffer(buf));
-                    blocker.block();
-                }
-                long end = System.currentTimeMillis();
-                times[i] = end - start;
-            }
-            StringBuilder out = new StringBuilder();
-            out.append("\n");
-            for (long t : times)
-                out.append(t).append(",");
+                Response response = exchange.getResponse();
+                response.setStatus(200);
+                response.setContentType("text/plain");
 
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(out.toString()));
+                long[] times = new long[10];
+                for (int i = 0; i < times.length; i++)
+                {
+                    long start = System.currentTimeMillis();
+                    try (Blocking.Callback blocker = Blocking.callback())
+                    {
+                        response.write(false, blocker, BufferUtil.toBuffer(buf));
+                        blocker.block();
+                    }
+                    long end = System.currentTimeMillis();
+                    times[i] = end - start;
+                }
+                StringBuilder out = new StringBuilder();
+                out.append("\n");
+                for (long t : times)
+                    out.append(t).append(",");
+
+                response.write(true, exchange, BufferUtil.toBuffer(out.toString()));
+
+            });
         }
     }
 
@@ -1038,10 +1043,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new HelloHandler("Hello\n")
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
                 served.incrementAndGet();
-                super.handle(request);
+                super.offer(request, acceptor);
             }
         });
 
@@ -1214,20 +1219,23 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public EndPoint _endp;
 
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            _endp = request.getConnectionMetaData().getConnection().getEndPoint();
-            response.setHeader("test", "value");
-            response.setStatus(200);
-            response.setContentType("text/plain");
-            try (Blocking.Callback blocker = Blocking.callback())
+            acceptor.accept(request, exchange ->
             {
-                response.write(false, blocker, BufferUtil.toBuffer("Now is the time for all good men to come to the aid of the party"));
-                blocker.block();
-            }
+                Response response = exchange.getResponse();
+                _endp = request.getConnectionMetaData().getConnection().getEndPoint();
+                response.setHeader("test", "value");
+                response.setStatus(200);
+                response.setContentType("text/plain");
+                try (Blocking.Callback blocker = Blocking.callback())
+                {
+                    response.write(false, blocker, BufferUtil.toBuffer("Now is the time for all good men to come to the aid of the party"));
+                    blocker.block();
+                }
 
-            throw new Exception(new Exception("exception after commit"));
+                throw new Exception(new Exception("exception after commit"));
+            });
         }
     }
 
@@ -1423,23 +1431,29 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            response.setStatus(304);
-            response.write(false, response.getCallback(), BufferUtil.toBuffer("yuck"));
+            acceptor.accept(request, exchange ->
+            {
+                Response response = exchange.getResponse();
+                response.setStatus(304);
+                response.write(false, exchange, BufferUtil.toBuffer("yuck"));
+            });
         }
     }
 
     public static class NoopHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            //don't read the input, just send something back
-            Response response = request.accept();
-            response.setStatus(200);
-            response.getCallback().succeeded();
+            acceptor.accept(request, exchange ->
+            {
+                Response response = exchange.getResponse();
+                //don't read the input, just send something back
+                response.setStatus(200);
+                exchange.succeeded();
+            });
         }
     }
 
@@ -1536,33 +1550,43 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                request.getHttpChannel().addConnectionCloseListener(t -> closed.countDown());
-                while (true)
+                acceptor.accept(request, exchange ->
                 {
-                    Content content = request.readContent();
-
-                    if (content == null)
+                    try
                     {
-                        try (Blocking.Runnable blocker = Blocking.runnable())
+                        Response response = exchange.getResponse();
+                        request.getHttpChannel().addConnectionCloseListener(t -> closed.countDown());
+                        while (true)
                         {
-                            request.demandContent(blocker);
-                            blocker.block();
-                            continue;
+                            Content content = exchange.readContent();
+
+                            if (content == null)
+                            {
+                                try (Blocking.Runnable blocker = Blocking.runnable())
+                                {
+                                    exchange.demandContent(blocker);
+                                    blocker.block();
+                                    continue;
+                                }
+                            }
+
+                            if (content.hasRemaining())
+                                contents.add(content);
+
+                            if (content.isLast())
+                                break;
                         }
+
+                        response.setStatus(200);
+                        exchange.succeeded();
                     }
-
-                    if (content.hasRemaining())
-                        contents.add(content);
-
-                    if (content.isLast())
-                        break;
-                }
-
-                response.setStatus(200);
-                response.getCallback().succeeded();
+                    catch (Throwable t)
+                    {
+                        exchange.failed(t);
+                    }
+                });
             }
         });
 
@@ -1627,50 +1651,37 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         public TestHandler(boolean content)
         {
-            _musthavecontent = false;
+            _musthavecontent = content;
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            super.handle(new Request.Wrapper(request)
-            {
-                volatile boolean hasContent = false;
-                @Override
-                public Content readContent()
+            super.offer(request, (req, process) ->
+                acceptor.accept(req, exchange ->
                 {
-                    Content c = super.readContent();
-                    if (c != null && c.hasRemaining())
-                        hasContent = true;
-                    return c;
-                }
-
-                @Override
-                public Response accept()
-                {
-                    Response response = super.accept();
-                    if (response == null)
-                        return null;
-                    return new Response.Wrapper(request, response)
+                    process.process(new Exchange.Wrapper(exchange)
                     {
+                        volatile boolean hasContent = false;
                         @Override
-                        public Callback getCallback()
+                        public Content readContent()
                         {
-                            return new Callback.Nested(super.getCallback())
-                            {
-                                @Override
-                                public void succeeded()
-                                {
-                                    if (_musthavecontent && !hasContent)
-                                        super.failed(new IllegalStateException("No Test Content"));
-                                    else
-                                        super.succeeded();
-                                }
-                            };
+                            Content c = super.readContent();
+                            if (c != null && c.hasRemaining())
+                                hasContent = true;
+                            return c;
                         }
-                    };
-                }
-            });
+
+                        @Override
+                        public void succeeded()
+                        {
+                            if (_musthavecontent && !hasContent)
+                                super.failed(new IllegalStateException("No Test Content"));
+                            else
+                                super.succeeded();
+                        }
+                    });
+                }));
         }
     }
 }

@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -28,41 +29,79 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * A Jetty HTTP Request Handler.
- * <p>
- * Incoming requests to the Server (itself a Handler) are passed to one or more Handlers
- * until the request is handled and a response is produced.  Handlers are asynchronous,
- * so handling may happen during or after a call to {@link #handle(Request)}.
- *
- * <p>
- * A call to {@link #handle(Request)} may:
- * <ul>
- * <li>Do nothing</li>
- * <li>Completely generate the HTTP Response and call {@link Callback#succeeded()} on the {@link Callback}
- * returned from {@link Request#accept()}.</li>
- * <li>Call {@link Request#accept()} and arrange for an async process to generate the HTTP Response and call
- * {@link Callback#succeeded()} or {@link Callback#failed(Throwable)} on the {@link Callback} returned.</li>
- * <li>Pass the request to one or more other Handlers.</li>
- * <li>Wrap the request and/or response and pass them to one or more other Handlers.</li>
- * <li>Fail the request by calling {@link Callback#failed(Throwable)} on the {@link Callback} returned from
- * {@link Request#accept()}.</li>
- * </ul>
- *
- */
 @ManagedObject("Handler")
 public interface Handler extends LifeCycle, Destroyable
 {
+    interface Exchange extends Content.Provider, Executor, Callback
+    {
+        Request getRequest();
 
-    /**
-     * Handle an HTTP request and produce a response.
-     * @param request The immutable request, which is also a {@link Callback} used to signal success or failure. The Handler
-     * or one of it's nested Handlers must call {@link Request#accept()} to indicate that it will ultimately succeed or
-     * fail the {@link Callback} returned.
-     *
-     * @throws Exception Thrown if there is a problem handling.
-     */
-    void handle(Request request) throws Exception;
+        Response getResponse();
+
+        class Wrapper implements Exchange
+        {
+            private final Exchange _exchange;
+
+            public Wrapper(Exchange exchange)
+            {
+                _exchange = exchange;
+            }
+
+            @Override
+            public Content readContent()
+            {
+                return _exchange.readContent();
+            }
+
+            @Override
+            public void demandContent(Runnable onContentAvailable)
+            {
+                _exchange.demandContent(onContentAvailable);
+            }
+
+            @Override
+            public Request getRequest()
+            {
+                return _exchange.getRequest();
+            }
+
+            @Override
+            public Response getResponse()
+            {
+                return _exchange.getResponse();
+            }
+
+            @Override
+            public void execute(Runnable runnable)
+            {
+                _exchange.execute(runnable);
+            }
+
+            @Override
+            public void succeeded()
+            {
+                _exchange.succeeded();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                _exchange.failed(x);
+            }
+        }
+    }
+
+    interface Acceptor
+    {
+        void accept(Request request, Processor process) throws Exception;
+    }
+
+    interface Processor
+    {
+        void process(Exchange exchange) throws Exception;
+    }
+
+    void offer(Request request, Acceptor acceptor) throws Exception;
 
     @ManagedAttribute(value = "the jetty server for this handler", readonly = true)
     Server getServer();
@@ -146,7 +185,7 @@ public interface Handler extends LifeCycle, Destroyable
             if (LOG.isDebugEnabled())
                 LOG.debug("starting {}", this);
             if (_server == null)
-                throw new IllegalStateException(String.format("No Server set for {}", this));
+                throw new IllegalStateException(String.format("No Server set for %s", this));
             super.doStart();
         }
 
@@ -224,7 +263,7 @@ public interface Handler extends LifeCycle, Destroyable
             for (Handler h : getHandlers())
             {
                 if (h instanceof Abstract)
-                    ((Abstract)h).setServer(server);
+                    h.setServer(server);
             }
         }
     }
@@ -249,7 +288,7 @@ public interface Handler extends LifeCycle, Destroyable
                 throw new IllegalStateException("setHandler loop");
 
             if (handler instanceof Abstract)
-                ((Abstract)handler).setServer(getServer());
+                handler.setServer(getServer());
             updateBean(_handler, handler);
             _handler = handler;
         }
@@ -281,15 +320,15 @@ public interface Handler extends LifeCycle, Destroyable
         {
             super.setServer(server);
             if (_handler instanceof Abstract)
-                ((Abstract)_handler).setServer(getServer());
+                _handler.setServer(getServer());
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
             Handler next = getHandler();
             if (next != null)
-                next.handle(request);
+                next.offer(request, acceptor);
         }
     }
 
@@ -317,7 +356,7 @@ public interface Handler extends LifeCycle, Destroyable
 
     /**
      * A Handler Container that wraps a list of other Handlers.
-     * By default, each handler is called in turn until one returns true from {@link Handler#handle(Request)}.
+     * By default, each handler is called in turn until one returns true from {@link Handler#offer(Request, Acceptor)}.
      */
     class Collection extends AbstractContainer
     {
@@ -335,12 +374,12 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
             for (Handler h : _handlers)
             {
                 if (!request.isAccepted())
-                    h.handle(request);
+                    h.offer(request, acceptor);
             }
         }
 
@@ -373,7 +412,7 @@ public interface Handler extends LifeCycle, Destroyable
                     ((Handler.Container)handler).getChildHandlers().contains(this)))
                     throw new IllegalStateException("setHandler loop");
                 if (handler instanceof Abstract)
-                    ((Abstract)handler).setServer(getServer());
+                    handler.setServer(getServer());
             }
 
             updateBeans(_handlers, handlers);

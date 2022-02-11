@@ -80,24 +80,27 @@ public class SSLCloseTest
     private static class WriteHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            response.setStatus(200);
-            response.setHeader("test", "value");
+            acceptor.accept(request, exchange ->
+            {
+                Response response = exchange.getResponse();
+                response.setStatus(200);
+                response.setHeader("test", "value");
 
-            String data = "Now is the time for all good men to come to the aid of the party.\n";
-            data += "How now brown cow.\n";
-            data += "The quick brown fox jumped over the lazy dog.\n";
-            // data=data+data+data+data+data+data+data+data+data+data+data+data+data;
-            // data=data+data+data+data+data+data+data+data+data+data+data+data+data;
-            data = data + data + data + data;
-            byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
+                String data = "Now is the time for all good men to come to the aid of the party.\n";
+                data += "How now brown cow.\n";
+                data += "The quick brown fox jumped over the lazy dog.\n";
+                // data=data+data+data+data+data+data+data+data+data+data+data+data+data;
+                // data=data+data+data+data+data+data+data+data+data+data+data+data+data;
+                data = data + data + data + data;
+                byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
 
-            Callback callback = response.getCallback();
-            response.write(false,
-                Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer(bytes)), callback::failed),
-                BufferUtil.toBuffer(bytes));
+                Callback callback = exchange;
+                response.write(false,
+                    Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer(bytes)), callback::failed),
+                    BufferUtil.toBuffer(bytes));
+            });
         }
     }
 }

@@ -35,7 +35,7 @@ public class RequestStatsHandler extends Handler.Wrapper
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
 
     @Override
-    public void handle(Request request) throws Exception
+    public void offer(Request request, Acceptor acceptor) throws Exception
     {
         Object connectionStats = _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {
@@ -96,7 +96,7 @@ public class RequestStatsHandler extends Handler.Wrapper
 
         try
         {
-            super.handle(new Request.Wrapper(request)
+            super.offer(new Request.Wrapper(request)
             {
                 // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
                 @Override
@@ -113,7 +113,7 @@ public class RequestStatsHandler extends Handler.Wrapper
                             return super.getAttribute(name);
                     }
                 }
-            });
+            }, acceptor);
         }
         finally
         {

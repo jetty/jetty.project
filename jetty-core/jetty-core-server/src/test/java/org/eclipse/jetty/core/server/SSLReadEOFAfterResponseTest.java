@@ -54,47 +54,50 @@ public class SSLReadEOFAfterResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                // First: read the whole content exactly
-                int length = bytes.length;
-                while (length > 0)
+                acceptor.accept(request, exchange ->
                 {
-                    Content c = request.readContent();
-                    if (c == null)
+                    Response response = exchange.getResponse();
+                    // First: read the whole content exactly
+                    int length = bytes.length;
+                    while (length > 0)
                     {
-                        try (Blocking.Runnable blocker = Blocking.runnable())
+                        Content c = exchange.readContent();
+                        if (c == null)
                         {
-                            request.demandContent(blocker);
-                            blocker.block();
+                            try (Blocking.Runnable blocker = Blocking.runnable())
+                            {
+                                exchange.demandContent(blocker);
+                                blocker.block();
+                            }
+                            continue;
                         }
-                        continue;
+                        if (c.hasRemaining())
+                        {
+                            length -= c.remaining();
+                            c.release();
+                        }
+                        if (c == Content.EOF)
+                            exchange.failed(new IllegalStateException());
                     }
-                    if (c.hasRemaining())
+
+                    // Second: write the response.
+                    response.setContentLength(bytes.length);
+                    try (Blocking.Callback blocker = Blocking.callback())
                     {
-                        length -= c.remaining();
-                        c.release();
+                        response.write(true, blocker, BufferUtil.toBuffer(bytes));
+                        blocker.block();
                     }
-                    if (c == Content.EOF)
-                        response.getCallback().failed(new IllegalStateException());
-                }
 
-                // Second: write the response.
-                response.setContentLength(bytes.length);
-                try (Blocking.Callback blocker = Blocking.callback())
-                {
-                    response.write(true, blocker, BufferUtil.toBuffer(bytes));
-                    blocker.block();
-                }
+                    sleep(idleTimeout / 2);
 
-                sleep(idleTimeout / 2);
-
-                // Third, read the EOF.
-                Content content = request.readContent();
-                if (!content.isLast())
-                    throw new IllegalStateException();
-                response.getCallback().succeeded();
+                    // Third, read the EOF.
+                    Content content = exchange.readContent();
+                    if (!content.isLast())
+                        throw new IllegalStateException();
+                    exchange.succeeded();
+                });
             }
         });
         server.start();

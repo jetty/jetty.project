@@ -139,11 +139,14 @@ public class SslUploadTest
     private static class EmptyHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            ByteBuffer input = Content.readBytes(request);
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));
+            acceptor.accept(request, exchange ->
+            {
+                Response response = exchange.getResponse();
+                ByteBuffer input = Content.readBytes(exchange);
+                response.write(true, exchange, BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));
+            });
         }
     }
 }

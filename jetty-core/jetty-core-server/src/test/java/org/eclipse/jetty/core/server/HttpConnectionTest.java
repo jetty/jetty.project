@@ -859,11 +859,14 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setStatus(200);
-                response.write(false, response.getCallback());
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setStatus(200);
+                    response.write(false, exchange);
+                });
             }
         });
         server.start();
@@ -1133,19 +1136,21 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
-                response.setHeader("LongStr", longstr);
-                Callback callback = response.getCallback();
-                response.write(false,
-                    Callback.from(callback::succeeded, t ->
-                    {
-                        checkError.countDown();
-                        callback.failed(t);
-                    }),
-                    BufferUtil.toBuffer("<html><h1>FOO</h1></html>"));
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
+                    response.setHeader("LongStr", longstr);
+                    response.write(false,
+                        Callback.from(((Callback)exchange)::succeeded, t ->
+                        {
+                            checkError.countDown();
+                            exchange.failed(t);
+                        }),
+                        BufferUtil.toBuffer("<html><h1>FOO</h1></html>"));
+                });
             }
         });
         server.start();
@@ -1184,20 +1189,22 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
-                response.setHeader("LongStr", longstr);
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
+                    response.setHeader("LongStr", longstr);
 
-                Callback callback = response.getCallback();
-                response.write(false,
-                    Callback.from(callback::succeeded, t ->
-                    {
-                        checkError.countDown();
-                        callback.failed(t);
-                    }),
-                    BufferUtil.toBuffer("<html><h1>FOO</h1></html>"));
+                    response.write(false,
+                        Callback.from(exchange::succeeded, t ->
+                        {
+                            checkError.countDown();
+                            exchange.failed(t);
+                        }),
+                        BufferUtil.toBuffer("<html><h1>FOO</h1></html>"));
+                });
             }
         });
         server.start();
@@ -1299,39 +1306,41 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                while (true)
+                acceptor.accept(request, exchange ->
                 {
-                    Content content = request.readContent();
-                    if (content == null)
+                    while (true)
                     {
-                        try
+                        Content content = exchange.readContent();
+                        if (content == null)
                         {
-                            CountDownLatch blocker = new CountDownLatch(1);
-                            request.demandContent(blocker::countDown);
-                            blocker.await();
+                            try
+                            {
+                                CountDownLatch blocker = new CountDownLatch(1);
+                                exchange.demandContent(blocker::countDown);
+                                blocker.await();
+                            }
+                            catch (InterruptedException e)
+                            {
+                                // ignored
+                            }
+                            continue;
                         }
-                        catch (InterruptedException e)
-                        {
-                            // ignored
-                        }
-                        continue;
+
+                        if (content.hasRemaining())
+                            content.getByteBuffer().clear();
+                        content.release();
+                        if (content.isLast())
+                            break;
                     }
 
-                    if (content.hasRemaining())
-                        content.getByteBuffer().clear();
-                    content.release();
-                    if (content.isLast())
-                        break;
-                }
+                    HttpConnection connection = HttpConnection.getCurrentConnection();
+                    long bytesIn = connection.getBytesIn();
+                    assertThat(bytesIn, greaterThan(dataLength));
 
-                HttpConnection connection = HttpConnection.getCurrentConnection();
-                long bytesIn = connection.getBytesIn();
-                assertThat(bytesIn, greaterThan(dataLength));
-
-                response.getCallback().succeeded();
+                    exchange.succeeded();
+                });
             }
         });
         server.start();

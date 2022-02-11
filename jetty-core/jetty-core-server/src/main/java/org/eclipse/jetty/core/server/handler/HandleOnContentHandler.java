@@ -13,78 +13,29 @@
 
 package org.eclipse.jetty.core.server.handler;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
-import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.util.thread.Invocable;
 
 public class HandleOnContentHandler extends Handler.Wrapper
 {
     @Override
-    public void handle(Request request) throws Exception
+    public void offer(Request request, Acceptor acceptor) throws Exception
     {
         // If no content or content available, then don't delay dispatch
         if (request.getContentLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
-            super.handle(request);
+            super.offer(request, acceptor);
         else
-        {
-            Response response = request.accept();
-            if (response == null)
-                return;
-            request.demandContent(new OnContentRunner(request, response));
-        }
-    }
-
-    private class OnContentRunner implements Runnable, Invocable
-    {
-        private final Request _request;
-        private final Response _response;
-
-        public OnContentRunner(Request request, Response response)
-        {
-            _request = request;
-            _response = response;
-        }
-
-        @Override
-        public void run()
-        {
-            try
+            super.offer(request, (req, processor) -> acceptor.accept(req, exchange -> exchange.demandContent(() ->
             {
-                AtomicBoolean accepted = new AtomicBoolean();
-                Request request = new Request.Wrapper(_request)
+                try
                 {
-                    @Override
-                    public Response accept()
-                    {
-                        if (accepted.compareAndSet(false, true))
-                            return _response;
-                        return null;
-                    }
-
-                    @Override
-                    public boolean isAccepted()
-                    {
-                        return accepted.get();
-                    }
-                };
-                HandleOnContentHandler.super.handle(request);
-                if (!request.isAccepted())
-                    _response.getCallback().failed(new IllegalStateException("Not accepted after content"));
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.EITHER;
-        }
+                    processor.process(exchange);
+                }
+                catch (Throwable t)
+                {
+                    exchange.failed(t);
+                }
+            })));
     }
 }

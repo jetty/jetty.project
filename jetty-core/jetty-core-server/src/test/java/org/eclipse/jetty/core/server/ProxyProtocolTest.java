@@ -25,7 +25,6 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.core.server.ProxyConnectionFactory.ProxyEndPoint;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -63,23 +62,24 @@ public class ProxyProtocolTest
         start(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                SocketAddress addr = request.getConnectionMetaData().getRemoteAddress();
-                Response response = request.accept();
-                Callback callback = response.getCallback();
-                if (addr instanceof InetSocketAddress)
+                acceptor.accept(request, exchange ->
                 {
-                    InetSocketAddress iAddr = (InetSocketAddress)addr;
-                    if (iAddr.getHostString().equals(remoteAddr) && iAddr.getPort() == remotePort)
-                        callback.succeeded();
+                    SocketAddress addr = request.getConnectionMetaData().getRemoteAddress();
+                    if (addr instanceof InetSocketAddress)
+                    {
+                        InetSocketAddress iAddr = (InetSocketAddress)addr;
+                        if (iAddr.getHostString().equals(remoteAddr) && iAddr.getPort() == remotePort)
+                            exchange.succeeded();
+                        else
+                            exchange.failed(new Throwable("wrong address"));
+                    }
                     else
-                        callback.failed(new Throwable("wrong address"));
-                }
-                else
-                {
-                    callback.failed(new Throwable("no inet address"));
-                }
+                    {
+                        exchange.failed(new Throwable("no inet address"));
+                    }
+                });
             }
         });
 
@@ -134,16 +134,18 @@ public class ProxyProtocolTest
         start(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                Callback callback = response.getCallback();
-                if (validateEndPoint(request) &&
-                    remoteAddr.equals(request.getRemoteAddr()) &&
-                    remotePort == request.getRemotePort())
-                    callback.succeeded();
-                else
-                    callback.failed(new Throwable());
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    if (validateEndPoint(request) &&
+                        remoteAddr.equals(request.getRemoteAddr()) &&
+                        remotePort == request.getRemotePort())
+                        exchange.succeeded();
+                    else
+                        exchange.failed(new Throwable());
+                });
             }
 
             private boolean validateEndPoint(Request request) 
@@ -234,10 +236,12 @@ public class ProxyProtocolTest
         start(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.getCallback().succeeded();
+                acceptor.accept(request, exchange ->
+                {
+                    exchange.succeeded();
+                });
             }
         });
 

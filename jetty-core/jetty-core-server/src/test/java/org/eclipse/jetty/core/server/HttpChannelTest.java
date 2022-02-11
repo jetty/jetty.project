@@ -326,7 +326,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            public void offer(Request request, Acceptor acceptor)
             {
             }
         };
@@ -356,7 +356,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            public void offer(Request request, Acceptor acceptor)
             {
                 throw new UnsupportedOperationException("testing");
             }
@@ -390,15 +390,18 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setStatus(200);
-                response.setContentLength(10);
-                response.write(false, Callback.from(response.getCallback(), () ->
+                acceptor.accept(request, exchange ->
                 {
-                    throw new Error("testing");
-                }));
+                    Response response = exchange.getResponse();
+                    response.setStatus(200);
+                    response.setContentLength(10);
+                    response.write(false, Callback.from(exchange, () ->
+                    {
+                        throw new Error("testing");
+                    }));
+                });
             }
         };
         _server.setHandler(handler);
@@ -428,10 +431,13 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("12345"));
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.write(true, exchange, BufferUtil.toBuffer("12345"));
+                });
             }
         };
         _server.setHandler(handler);
@@ -460,11 +466,14 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setContentLength(10);
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("12345"));
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setContentLength(10);
+                    response.write(true, exchange, BufferUtil.toBuffer("12345"));
+                });
             }
         };
         _server.setHandler(handler);
@@ -493,12 +502,14 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setContentLength(10);
-                Callback callback = response.getCallback();
-                response.write(false, Callback.from(() -> response.write(true, callback)), BufferUtil.toBuffer("12345"));
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setContentLength(10);
+                    response.write(false, Callback.from(() -> response.write(true, exchange)), BufferUtil.toBuffer("12345"));
+                });
             }
         };
         _server.setHandler(handler);
@@ -526,11 +537,14 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setContentLength(5);
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("1234567890"));
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setContentLength(5);
+                    response.write(true, exchange, BufferUtil.toBuffer("1234567890"));
+                });
             }
         };
         _server.setHandler(handler);
@@ -559,12 +573,14 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setContentLength(5);
-                Callback callback = response.getCallback();
-                response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("567890"))), BufferUtil.toBuffer("1234"));
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setContentLength(5);
+                    response.write(false, Callback.from(() -> response.write(true, exchange, BufferUtil.toBuffer("567890"))), BufferUtil.toBuffer("1234"));
+                });
             }
         };
         _server.setHandler(handler);
@@ -626,14 +642,16 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setStatus(200);
-                response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-                response.setContentLength(5);
-                Callback callback = response.getCallback();
-                response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setStatus(200);
+                    response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+                    response.setContentLength(5);
+                    response.write(false, Callback.from(() -> response.write(true, exchange, BufferUtil.toBuffer("12345"))));
+                });
             }
         };
         _server.setHandler(handler);
@@ -670,15 +688,17 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setStatus(200);
-                response.addHeader(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-                response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-                response.setContentLength(5);
-                Callback callback = response.getCallback();
-                response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setStatus(200);
+                    response.addHeader(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+                    response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+                    response.setContentLength(5);
+                    response.write(false, Callback.from(() -> response.write(true, exchange, BufferUtil.toBuffer("12345"))));
+                });
             }
         };
         _server.setHandler(handler);
@@ -968,36 +988,38 @@ public class HttpChannelTest
         _server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                LongAdder contentSize = new LongAdder();
-                CountDownLatch latch = new CountDownLatch(1);
-                Runnable onContentAvailable = new Runnable()
+                acceptor.accept(request, exchange ->
                 {
-                    @Override
-                    public void run()
+                    Response response = exchange.getResponse();
+                    LongAdder contentSize = new LongAdder();
+                    CountDownLatch latch = new CountDownLatch(1);
+                    Runnable onContentAvailable = new Runnable()
                     {
-                        Content content = request.readContent();
-                        contentSize.add(content.remaining());
-                        content.release();
-                        if (content.isLast())
-                            latch.countDown();
-                        else
-                            request.demandContent(this);
+                        @Override
+                        public void run()
+                        {
+                            Content content = exchange.readContent();
+                            contentSize.add(content.remaining());
+                            content.release();
+                            if (content.isLast())
+                                latch.countDown();
+                            else
+                                exchange.demandContent(this);
+                        }
+                    };
+                    exchange.demandContent(onContentAvailable);
+                    if (latch.await(30, TimeUnit.SECONDS))
+                    {
+                        response.setStatus(200);
+                        response.write(true, exchange, BufferUtil.toBuffer("contentSize=" + contentSize.longValue()));
                     }
-                };
-                request.demandContent(onContentAvailable);
-                Callback callback = response.getCallback();
-                if (latch.await(30, TimeUnit.SECONDS))
-                {
-                    response.setStatus(200);
-                    response.write(true, callback, BufferUtil.toBuffer("contentSize=" + contentSize.longValue()));
-                }
-                else
-                {
-                    callback.failed(new IOException());
-                }
+                    else
+                    {
+                        exchange.failed(new IOException());
+                    }
+                });
             }
         });
         _server.start();
@@ -1045,18 +1067,20 @@ public class HttpChannelTest
     @Test
     public void testOnError() throws Exception
     {
-        AtomicReference<Request> handling = new AtomicReference<>();
+        AtomicReference<Handler.Exchange> handling = new AtomicReference<>();
         AtomicReference<Throwable> error = new AtomicReference<>();
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                request.accept();
-                handling.set(request);
-                request.addErrorListener(t -> {});
-                request.addErrorListener(error::set);
-                request.addErrorListener(t -> {});
+                acceptor.accept(request, exchange ->
+                {
+                    handling.set(exchange);
+                    request.addErrorListener(t -> {});
+                    request.addErrorListener(error::set);
+                    request.addErrorListener(t -> {});
+                });
             }
         };
         _server.setHandler(handler);
@@ -1073,7 +1097,7 @@ public class HttpChannelTest
 
         // check we are handling
         assertNotNull(handling.get());
-        assertTrue(handling.get().isAccepted());
+        assertTrue(handling.get().getRequest().isAccepted());
         assertThat(stream.isComplete(), is(false));
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), nullValue());
@@ -1087,7 +1111,7 @@ public class HttpChannelTest
         assertThat(error.get(), nullValue());
 
         // request still handling
-        assertFalse(handling.get().isComplete());
+        assertFalse(handling.get().getRequest().isComplete());
         assertFalse(stream.isComplete());
 
         // but now we cannot read, demand nor write
@@ -1104,7 +1128,7 @@ public class HttpChannelTest
 
         FuturePromise<Throwable> callback = new FuturePromise<>();
         // Callback serialized until after onError task
-        handling.get().getHttpChannel().getResponse().write(false, Callback.from(() -> {}, callback::succeeded));
+        handling.get().getRequest().getHttpChannel().getResponse().write(false, Callback.from(() -> {}, callback::succeeded));
         assertFalse(callback.isDone());
 
         // process error callback
@@ -1118,7 +1142,7 @@ public class HttpChannelTest
         assertThat(callback.get(5, TimeUnit.SECONDS), sameInstance(failure));
 
         // request completed handling
-        assertTrue(handling.get().isComplete());
+        assertTrue(handling.get().getRequest().isComplete());
         assertTrue(stream.isComplete());
     }
 
@@ -1130,10 +1154,10 @@ public class HttpChannelTest
         EchoHandler echoHandler = new EchoHandler()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
                 request.addCompletionListener(Callback.from(completed::countDown));
-                super.handle(request);
+                super.offer(request, acceptor);
             }
         };
         _server.setHandler(echoHandler);

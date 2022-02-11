@@ -30,14 +30,14 @@ public class GzipHandler extends Handler.Wrapper
     private static final HttpField CONTENT_ENCODING_GZIP = new HttpField(HttpHeader.CONTENT_ENCODING, "gzip");
 
     @Override
-    public void handle(Request request) throws Exception
+    public void offer(Request request, Acceptor acceptor) throws Exception
     {
         // TODO more conditions than this
         // TODO handle other encodings
         // TODO more efficient than this
         if (!request.getHeaders().contains(ACCEPT_GZIP) && !request.getHeaders().contains(CONTENT_ENCODING_GZIP))
         {
-            super.handle(request);
+            super.offer(request, acceptor);
             return;
         }
 
@@ -57,7 +57,7 @@ public class GzipHandler extends Handler.Wrapper
         // TODO look up cached or pool inflaters / deflated
         final Object inflaterAndOrDeflator = request.getHttpChannel().getAttribute("o.e.j.s.h.gzip.cachedCompression");
 
-        super.handle(
+        super.offer(
             new Request.Wrapper(request)
             {
                 @Override
@@ -72,32 +72,38 @@ public class GzipHandler extends Handler.Wrapper
                     // TODO hide the content length
                     return -1;
                 }
-
-                @Override
-                public Content readContent()
-                {
-                    // TODO inflate data
-                    return super.readContent();
-                }
-
-                @Override
-                public Response accept()
-                {
-                    Response response = super.accept();
-                    if (response != null)
+            },
+            (r, processor) ->
+                acceptor.accept(r, exchange ->
+                    processor.process(new Exchange.Wrapper(exchange)
                     {
-                        return new Response.Wrapper(request, request.accept())
+                        @Override
+                        public Response getResponse()
                         {
-                            @Override
-                            public void write(boolean last, Callback callback, ByteBuffer... content)
+                            return new Response.Wrapper(exchange.getRequest(), super.getResponse())
                             {
-                                // TODO deflate data
-                                super.write(last, callback, content);
-                            }
-                        };
-                    }
-                    return null;
-                }
-            });
+                                @Override
+                                public void write(boolean last, Callback callback, ByteBuffer... content)
+                                {
+                                    // TODO compress output
+                                    super.write(last, callback, content);
+                                }
+                            };
+                        }
+
+                        @Override
+                        public Content readContent()
+                        {
+                            // TODO inflate data
+                            return super.readContent();
+                        }
+
+                        @Override
+                        public void demandContent(Runnable onContentAvailable)
+                        {
+                            super.demandContent(onContentAvailable);
+                        }
+                    })));
+
     }
 }

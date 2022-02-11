@@ -21,7 +21,6 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -95,15 +94,18 @@ public class HttpServerTestFixture
     protected static class OptionsHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            if (request.getMethod().equals("OPTIONS"))
-                response.setStatus(200);
-            else
-                response.setStatus(500);
-            response.setHeader("Allow", "GET");
-            response.getCallback().succeeded();
+            acceptor.accept(request, exchange ->
+            {
+                Response response = exchange.getResponse();
+                if (request.getMethod().equals("OPTIONS"))
+                    response.setStatus(200);
+                else
+                    response.setStatus(500);
+                response.setHeader("Allow", "GET");
+                exchange.succeeded();
+            });
         }
     }
 
@@ -124,10 +126,13 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            response.writeError(code, message, response.getCallback());
+            acceptor.accept(request, exchange ->
+            {
+                Response response = exchange.getResponse();
+                response.writeError(code, message, exchange);
+            });
         }
     }
 
@@ -146,114 +151,122 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            long len = expected < 0 ? request.getContentLength() : expected;
-            if (len < 0)
-                throw new IllegalStateException();
-            byte[] content = new byte[(int)len];
-            int offset = 0;
-            while (offset < len)
+            acceptor.accept(request, exchange ->
             {
-                Content c = request.readContent();
-                if (c == null)
+                Response response = exchange.getResponse();
+                long len = expected < 0 ? request.getContentLength() : expected;
+                if (len < 0)
+                    throw new IllegalStateException();
+                byte[] content = new byte[(int)len];
+                int offset = 0;
+                while (offset < len)
                 {
-                    try (Blocking.Runnable blocker = Blocking.runnable())
+                    Content c = exchange.readContent();
+                    if (c == null)
                     {
-                        request.demandContent(blocker);
-                        blocker.block();
+                        try (Blocking.Runnable blocker = Blocking.runnable())
+                        {
+                            exchange.demandContent(blocker);
+                            blocker.block();
+                        }
+                        continue;
                     }
-                    continue;
-                }
 
-                if (c.hasRemaining())
-                {
-                    int r = c.remaining();
-                    c.fill(content, offset, r);
-                    offset += r;
-                    c.release();
-                }
+                    if (c.hasRemaining())
+                    {
+                        int r = c.remaining();
+                        c.fill(content, offset, r);
+                        offset += r;
+                        c.release();
+                    }
 
-                if (c.isLast())
-                    break;
-            }
-            response.setStatus(200);
-            String reply = "Read " + offset + "\r\n";
-            response.setContentLength(reply.length());
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
+                    if (c.isLast())
+                        break;
+                }
+                response.setStatus(200);
+                String reply = "Read " + offset + "\r\n";
+                response.setContentLength(reply.length());
+                response.write(true, exchange, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
+            });
         }
     }
 
     protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            response.setStatus(200);
-            Callback callback = response.getCallback();
-            Content.readUtf8String(request, Promise.from(
-                s -> response.write(true, callback, "read %d%n" + s.length()),
-                t -> response.write(true, callback, String.format("caught %s%n", t))
-            ));
+            acceptor.accept(request, exchange ->
+            {
+                Response response = exchange.getResponse();
+                response.setStatus(200);
+                Content.readUtf8String(exchange, Promise.from(
+                    s -> response.write(true, exchange, "read %d%n" + s.length()),
+                    t -> response.write(true, exchange, String.format("caught %s%n", t))
+                ));
+            });
         }
     }
 
     protected static class DataHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            response.setStatus(200);
-
-            String input = Content.readUtf8String(request);
-            MultiMap<String> params = request.extractQueryParameters();
-
-            String tmp = params.getValue("writes");
-            int writes = Integer.parseInt(tmp == null ? "10" : tmp);
-            tmp = params.getValue("block");
-            int block = Integer.parseInt(tmp == null ? "10" : tmp);
-            String encoding = params.getValue("encoding");
-            String chars = params.getValue("chars");
-            if (chars != null)
-                throw new IllegalStateException("chars no longer supported"); // TODO remove
-
-            String data = "\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            while (data.length() < block)
+            acceptor.accept(request, exchange ->
             {
-                data += data;
-            }
+                Response response = exchange.getResponse();
+                response.setStatus(200);
 
-            String chunk = (input + data).substring(0, block);
-            if (encoding == null)
-            {
-                response.setContentType("text/plain");
-                ByteBuffer bytes = BufferUtil.toBuffer(chunk, StandardCharsets.ISO_8859_1);
-                for (int i = writes; i-- > 0;)
+                String input = Content.readUtf8String(exchange);
+                MultiMap<String> params = request.extractQueryParameters();
+
+                String tmp = params.getValue("writes");
+                int writes = Integer.parseInt(tmp == null ? "10" : tmp);
+                tmp = params.getValue("block");
+                int block = Integer.parseInt(tmp == null ? "10" : tmp);
+                String encoding = params.getValue("encoding");
+                String chars = params.getValue("chars");
+                if (chars != null)
+                    throw new IllegalStateException("chars no longer supported"); // TODO remove
+
+                String data = "\u0a870123456789A\u0a87CDEFGHIJKLMNOPQRSTUVWXYZ\u0250bcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                while (data.length() < block)
                 {
-                    try (Blocking.Callback blocker = Blocking.callback())
+                    data += data;
+                }
+
+                String chunk = (input + data).substring(0, block);
+                if (encoding == null)
+                {
+                    response.setContentType("text/plain");
+                    ByteBuffer bytes = BufferUtil.toBuffer(chunk, StandardCharsets.ISO_8859_1);
+                    for (int i = writes; i-- > 0; )
                     {
-                        response.write(i == 0, blocker, bytes.slice());
-                        blocker.block();
+                        try (Blocking.Callback blocker = Blocking.callback())
+                        {
+                            response.write(i == 0, blocker, bytes.slice());
+                            blocker.block();
+                        }
                     }
                 }
-            }
-            else
-            {
-                response.setContentType("text/plain;charset=" + encoding);
-                ByteBuffer bytes = BufferUtil.toBuffer(chunk, Charset.forName(encoding));
-                for (int i = writes; i-- > 0;)
+                else
                 {
-                    try (Blocking.Callback blocker = Blocking.callback())
+                    response.setContentType("text/plain;charset=" + encoding);
+                    ByteBuffer bytes = BufferUtil.toBuffer(chunk, Charset.forName(encoding));
+                    for (int i = writes; i-- > 0; )
                     {
-                        response.write(i == 0, blocker, bytes.slice());
-                        blocker.block();
+                        try (Blocking.Callback blocker = Blocking.callback())
+                        {
+                            response.write(i == 0, blocker, bytes.slice());
+                            blocker.block();
+                        }
                     }
                 }
-            }
-            response.getCallback().succeeded();
+                exchange.succeeded();
+            });
         }
     }
 }

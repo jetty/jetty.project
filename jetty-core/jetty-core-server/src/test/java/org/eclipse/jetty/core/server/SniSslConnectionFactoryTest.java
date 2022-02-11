@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -93,8 +92,9 @@ public class SniSslConnectionFactoryTest
             SslConnection sslConnection = sslEndPoint.getSslConnection();
             SSLEngine sslEngine = sslConnection.getSSLEngine();
             SSLSession session = sslEngine.getSession();
-            for (Certificate c : session.getLocalCertificates())
-                request.getResponse().getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
+            // TODO how can we do this???  Note this would not have worked before accept anyway???
+            // for (Certificate c : session.getLocalCertificates())
+            //     request.getResponse().getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
             return request;
         });
 
@@ -115,13 +115,16 @@ public class SniSslConnectionFactoryTest
         _server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                Response response = request.accept();
-                response.setStatus(200);
-                response.setHeader("X-URL", request.getHttpURI().toString());
-                response.setHeader("X-HOST", request.getServerName());
-                response.getCallback().succeeded();
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setStatus(200);
+                    response.setHeader("X-URL", request.getHttpURI().toString());
+                    response.setHeader("X-HOST", request.getServerName());
+                    exchange.succeeded();
+                });
             }
         });
 

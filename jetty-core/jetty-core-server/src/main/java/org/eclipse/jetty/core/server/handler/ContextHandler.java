@@ -446,7 +446,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public void handle(Request request) throws Exception
+    public void offer(Request request, Acceptor acceptor) throws Exception
     {
         if (getHandler() == null)
             return;
@@ -460,16 +460,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         if (pathInContext.isEmpty() && !getAllowNullPathInfo())
         {
-            String location = _contextPath + "/";
-            if (request.getHttpURI().getParam() != null)
-                location += ";" + request.getHttpURI().getParam();
-            if (request.getHttpURI().getQuery() != null)
-                location += ";" + request.getHttpURI().getQuery();
+            String location = _contextPath + "/" +
+                ((request.getHttpURI().getParam() != null) ? (";" + request.getHttpURI().getParam()) : "") +
+                ((request.getHttpURI().getQuery() != null) ? (";" + request.getHttpURI().getQuery()) : "");
 
-            Response response = request.accept();
-            response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
-            response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
-            response.getCallback().succeeded();
+            acceptor.accept(request, e ->
+            {
+                Response response = e.getResponse();
+                response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
+                response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
+                e.succeeded();
+            });
             return;
         }
 
@@ -479,7 +480,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (scoped == null)
             return; // TODO 404? 500? Error dispatch ???
 
-        _context.call(scoped);
+        _context.call(() -> super.offer(scoped, acceptor));
     }
 
     /**

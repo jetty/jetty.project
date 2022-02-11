@@ -141,11 +141,14 @@ public class ExtendedServerTest extends HttpServerTestBase
     protected static class DispatchedAtHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            response.setStatus(200);
-            response.write(true, response.getCallback(), BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"));
+            acceptor.accept(request, exchange ->
+            {
+                Response response = exchange.getResponse();
+                response.setStatus(200);
+                response.write(true, exchange, BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"));
+            });
         }
     }
 }

@@ -30,30 +30,33 @@ import org.eclipse.jetty.util.StringUtil;
 public class EchoHandler extends Handler.Abstract
 {
     @Override
-    public void handle(Request request) throws Exception
+    public void offer(Request request, Acceptor acceptor) throws Exception
     {
-        Response response = request.accept();
-        response.setStatus(200);
-        String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-        if (StringUtil.isNotBlank(contentType))
-            response.setContentType(contentType);
-        long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
-        if (contentLength >= 0)
-            response.setContentLength(contentLength);
-        if (request.getHeaders().contains(HttpHeader.TRAILER))
-            response.getTrailers();
-        new Echo(request, response, response.getCallback()).iterate();
+        acceptor.accept(request, exchange ->
+        {
+            Response response = exchange.getResponse();
+            response.setStatus(200);
+            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+            if (StringUtil.isNotBlank(contentType))
+                response.setContentType(contentType);
+            long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
+            if (contentLength >= 0)
+                response.setContentLength(contentLength);
+            if (request.getHeaders().contains(HttpHeader.TRAILER))
+                response.getTrailers();
+            new Echo(exchange, response, exchange).iterate();
+        });
     }
 
     static class Echo extends IteratingCallback
     {
-        private final Request _request;
+        private final Content.Provider _provider;
         private final Response _response;
         private final Callback _callback;
 
-        Echo(Request request, Response response, Callback callback)
+        Echo(Content.Provider provider, Response response, Callback callback)
         {
-            _request = request;
+            _provider = provider;
             _response = response;
             _callback = callback;
         }
@@ -61,10 +64,10 @@ public class EchoHandler extends Handler.Abstract
         @Override
         protected Action process() throws Throwable
         {
-            Content content = _request.readContent();
+            Content content = _provider.readContent();
             if (content == null)
             {
-                _request.demandContent(this::succeeded);
+                _provider.demandContent(this::succeeded);
                 return Action.SCHEDULED;
             }
 

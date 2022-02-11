@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.core.server;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -651,23 +650,26 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class DumpHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
             if (request.getPath().startsWith("/dump"))
             {
-                Response response = request.accept();
-                response.setContentType("text/plain; charset=utf-8");
-                try (StringWriter stringWriter = new StringWriter();
-                     PrintWriter out = new PrintWriter(stringWriter))
+                acceptor.accept(request, exchange ->
                 {
-                    out.printf("ServerName=[%s]%n", request.getServerName());
-                    out.printf("ServerPort=[%d]%n", request.getServerPort());
-                    out.printf("LocalAddr=[%s]%n", request.getLocalAddr());
-                    out.printf("LocalName=[%s]%n", request.getLocalAddr());
-                    out.printf("LocalPort=[%s]%n", request.getLocalPort());
-                    out.printf("HttpURI=[%s]%n", request.getHttpURI());
-                    response.write(true, response.getCallback(), stringWriter.getBuffer().toString());
-                }
+                    Response response = exchange.getResponse();
+                    response.setContentType("text/plain; charset=utf-8");
+                    try (StringWriter stringWriter = new StringWriter();
+                         PrintWriter out = new PrintWriter(stringWriter))
+                    {
+                        out.printf("ServerName=[%s]%n", request.getServerName());
+                        out.printf("ServerPort=[%d]%n", request.getServerPort());
+                        out.printf("LocalAddr=[%s]%n", request.getLocalAddr());
+                        out.printf("LocalName=[%s]%n", request.getLocalAddr());
+                        out.printf("LocalPort=[%s]%n", request.getLocalPort());
+                        out.printf("HttpURI=[%s]%n", request.getHttpURI());
+                        response.write(true, exchange, stringWriter.getBuffer().toString());
+                    }
+                });
             }
         }
     }
@@ -675,14 +677,17 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class RedirectHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
             if (request.getPath().startsWith("/redirect"))
             {
-                Response response = request.accept();
-                response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-                response.setHeader(HttpHeader.LOCATION, HttpURI.build(request.getHttpURI(), "/dump").toString());
-                response.getCallback().succeeded();
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
+                    response.setHeader(HttpHeader.LOCATION, HttpURI.build(request.getHttpURI(), "/dump").toString());
+                    exchange.succeeded();
+                });
             }
         }
     }
@@ -690,13 +695,16 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class ErrorMsgHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
             if (request.getPath().startsWith("/error"))
             {
-                Response response = request.accept();
-                response.setContentType("text/plain; charset=utf-8");
-                response.write(true, response.getCallback(), "Generic Error Page.");
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setContentType("text/plain; charset=utf-8");
+                    response.write(true, exchange, "Generic Error Page.");
+                });
             }
         }
     }
@@ -704,17 +712,20 @@ public class HttpConfigurationAuthorityOverrideTest
     public static class RedirectErrorHandler extends ErrorHandler
     {
         @Override
-        public void handle(Request request) throws IOException
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
-            Response response = request.accept();
-            response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
-            response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
-            response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-            String scheme = request.getHttpURI().getScheme();
-            if (scheme == null)
-                scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
-            response.setHeader(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
-            response.write(true, response.getCallback());
+            acceptor.accept(request, exchange ->
+            {
+                Response response = exchange.getResponse();
+                response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
+                response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
+                response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
+                String scheme = request.getHttpURI().getScheme();
+                if (scheme == null)
+                    scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
+                response.setHeader(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
+                response.write(true, exchange);
+            });
         }
     }
 

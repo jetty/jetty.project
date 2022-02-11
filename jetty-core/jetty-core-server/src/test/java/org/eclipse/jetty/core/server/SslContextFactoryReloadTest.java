@@ -237,15 +237,18 @@ public class SslContextFactoryReloadTest
     private static class TestHandler extends EchoHandler
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void offer(Request request, Acceptor acceptor) throws Exception
         {
             if (HttpMethod.POST.is(request.getMethod()))
-                super.handle(request);
+                super.offer(request, acceptor);
             else
             {
-                Response response = request.accept();
-                response.setContentLength(0);
-                response.getCallback().succeeded();
+                acceptor.accept(request, exchange ->
+                {
+                    Response response = exchange.getResponse();
+                    response.setContentLength(0);
+                    exchange.succeeded();
+                });
             }
         }
     }

@@ -21,12 +21,12 @@ import org.eclipse.jetty.http.HttpURI;
 public class RewriteHandler extends Handler.Wrapper
 {
     @Override
-    public void handle(Request request) throws Exception
+    public void offer(Request request, Acceptor acceptor) throws Exception
     {
         Request rewritten = rewrite(request);
         if (request.isAccepted())
             return;
-        super.handle(request);
+        super.offer(request, acceptor);
     }
 
     protected Request rewrite(Request request)

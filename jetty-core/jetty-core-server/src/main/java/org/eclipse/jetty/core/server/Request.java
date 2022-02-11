@@ -17,7 +17,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Set;
-import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -32,35 +31,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
 // TODO lots of javadoc
-public interface Request extends Attributes, Executor, Content.Provider
+public interface Request extends Attributes
 {
-    /**
-     * Accept the request for handling and provide the {@link Response} instance.
-     * @return The response instance or null if the request has already been accepted.
-     */
-    Response accept();
-
-    /**
-     * Test if the request has been accepted.
-     * <p>This should not be used if the caller intends to accept the request.  Specifically
-     * the following is an anti-pattern: <pre>
-     *     if (!request.isAccepted())
-     *     {
-     *         Response response = request.accept();
-     *         // ...
-     *     }
-     * </pre>
-     * Instead, the {@link #accept()} method should be used and tested for a null result: <pre>
-     *     Response response = request.accept();
-     *     if (response != null)
-     *     {
-     *         // ...
-     *     }
-     * </pre>
-     *
-     * @return true if the request has been accepted, else null
-     * @see #accept()
-     */
     boolean isAccepted();
 
     String getId();
@@ -86,20 +58,9 @@ public interface Request extends Attributes, Executor, Content.Provider
 
     long getContentLength();
 
-    @Override
-    Content readContent();
-
-    @Override
-    void demandContent(Runnable onContentAvailable);
-
     void addErrorListener(Consumer<Throwable> onError);
 
     void addCompletionListener(Callback onComplete);
-
-    /**
-     * @return The response instance iff this request has been excepted, else null
-     */
-    Response getResponse();
 
     default Request getWrapped()
     {
@@ -249,12 +210,6 @@ public interface Request extends Attributes, Executor, Content.Provider
         }
 
         @Override
-        public void execute(Runnable task)
-        {
-            _wrapped.execute(task);
-        }
-
-        @Override
         public boolean isComplete()
         {
             return _wrapped.isComplete();
@@ -309,18 +264,6 @@ public interface Request extends Attributes, Executor, Content.Provider
         }
 
         @Override
-        public Content readContent()
-        {
-            return _wrapped.readContent();
-        }
-
-        @Override
-        public void demandContent(Runnable onContentAvailable)
-        {
-            _wrapped.demandContent(onContentAvailable);
-        }
-
-        @Override
         public void addErrorListener(Consumer<Throwable> onError)
         {
             _wrapped.addErrorListener(onError);
@@ -333,21 +276,9 @@ public interface Request extends Attributes, Executor, Content.Provider
         }
 
         @Override
-        public Response getResponse()
-        {
-            return _wrapped.getResponse();
-        }
-
-        @Override
         public Request getWrapped()
         {
             return _wrapped;
-        }
-
-        @Override
-        public Response accept()
-        {
-            return _wrapped.accept();
         }
 
         @Override

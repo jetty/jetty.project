@@ -52,12 +52,15 @@ public class HelloHandler extends Handler.Abstract
     }
 
     @Override
-    public void handle(Request request) throws Exception
+    public void offer(Request originalRequest, Acceptor acceptor) throws Exception
     {
-        Response response = request.accept();
-        response.setStatus(200);
-        response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-        response.setContentLength(_byteBuffer.remaining());
-        response.write(true, response.getCallback(), _byteBuffer.slice());
+        acceptor.accept(originalRequest, exchange ->
+        {
+            Response response = exchange.getResponse();
+            response.setStatus(200);
+            response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+            response.setContentLength(_byteBuffer.remaining());
+            response.write(true, exchange, _byteBuffer.slice());
+        });
     }
 }

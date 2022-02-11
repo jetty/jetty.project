@@ -35,8 +35,6 @@ public interface Response
 {
     Request getRequest();
 
-    Callback getCallback();
-
     int getStatus();
 
     void setStatus(int code);
@@ -141,7 +139,38 @@ public interface Response
             Request errorRequest = new ErrorHandler.ErrorRequest(getRequest(), this, status, message, cause, callback);
             try
             {
-                errorHandler.handle(errorRequest);
+                errorHandler.offer(errorRequest, (request, processor) -> processor.process(new Handler.Exchange()
+                {
+                    @Override
+                    public Request getRequest()
+                    {
+                        return request;
+                    }
+
+                    @Override
+                    public Response getResponse()
+                    {
+                        return Response.this;
+                    }
+
+                    @Override
+                    public void execute(Runnable runnable)
+                    {
+                        runnable.run();
+                    }
+
+                    @Override
+                    public Content readContent()
+                    {
+                        return Content.EOF;
+                    }
+
+                    @Override
+                    public void demandContent(Runnable onContentAvailable)
+                    {
+                        onContentAvailable.run();
+                    }
+                }));
                 if (errorRequest.isAccepted())
                     return;
             }
@@ -166,12 +195,6 @@ public interface Response
         {
             _request = request;
             _wrapped = wrapped;
-        }
-
-        @Override
-        public Callback getCallback()
-        {
-            return _wrapped.getCallback();
         }
 
         @Override

@@ -36,7 +36,6 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.Uptime;
@@ -114,7 +113,7 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     @Override
-    public void handle(Request request)
+    public void offer(Request request, Acceptor acceptor) throws Exception
     {
         if (!isStarted())
             return;
@@ -133,18 +132,17 @@ public class Server extends Handler.Wrapper implements Attributes
             }
 
             // Handle
-            super.handle(customizedRequest);
+            super.offer(customizedRequest, acceptor);
 
             // Try to accept to test if already accepted
-            Response response = request.accept();
-            if (response != null)
+            acceptor.accept(request, exchange ->
             {
-                Callback callback = response.getCallback();
+                Response response = exchange.getResponse();
                 if (response.isCommitted())
-                    callback.failed(new IllegalStateException("No Handler for committed request"));
+                    exchange.failed(new IllegalStateException("No Handler for committed request"));
                 else
-                    response.writeError(404, null, callback);
-            }
+                    response.writeError(404, null, exchange);
+            });
         }
         catch (Throwable t)
         {
@@ -154,10 +152,10 @@ public class Server extends Handler.Wrapper implements Attributes
             else
                 LOG.warn("handle failed {}", this, t);
 
-            Response response = request.accept();
-            if (response == null)
-                response = request.getResponse();
-            response.getCallback().failed(t);
+            if (request.isAccepted())
+                throw t;
+
+            acceptor.accept(request, exchange -> exchange.failed(t));
         }
     }
 

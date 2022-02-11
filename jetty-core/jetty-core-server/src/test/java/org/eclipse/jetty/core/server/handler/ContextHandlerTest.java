@@ -160,12 +160,16 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
                 assertInContext(request);
-                Response response = request.accept();
-                response.setStatus(200);
-                response.getCallback().succeeded();
+                acceptor.accept(request, exchange ->
+                {
+                    assertInContext(request);
+                    Response response = exchange.getResponse();
+                    response.setStatus(200);
+                    exchange.succeeded();
+                });
             }
         };
         _contextHandler.setHandler(handler);
@@ -192,29 +196,31 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                request.addCompletionListener(Callback.from(() -> assertInContext(request)));
-                Response response = request.accept();
-                Callback callback = response.getCallback();
-                request.demandContent(() ->
+                acceptor.accept(request, exchange ->
                 {
-                    assertInContext(request);
-                    Content content = request.readContent();
-                    assertTrue(content.hasRemaining());
-                    assertTrue(content.isLast());
-                    response.setStatus(200);
-                    response.write(true, Callback.from(
-                        () ->
-                        {
-                            content.release();
-                            assertInContext(request);
-                            callback.succeeded();
-                        },
-                        t ->
-                        {
-                            throw new IllegalStateException();
-                        }), content.getByteBuffer());
+                    Response response = exchange.getResponse();
+                    request.addCompletionListener(Callback.from(() -> assertInContext(request)));
+                    exchange.demandContent(() ->
+                    {
+                        assertInContext(request);
+                        Content content = exchange.readContent();
+                        assertTrue(content.hasRemaining());
+                        assertTrue(content.isLast());
+                        response.setStatus(200);
+                        response.write(true, Callback.from(
+                            () ->
+                            {
+                                content.release();
+                                assertInContext(request);
+                                exchange.succeeded();
+                            },
+                            t ->
+                            {
+                                throw new IllegalStateException();
+                            }), content.getByteBuffer());
+                    });
                 });
             }
         };
@@ -260,28 +266,29 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                request.addCompletionListener(Callback.from(() -> assertInContext(request)));
-
-                Response response = request.accept();
-
-                CountDownLatch latch = new CountDownLatch(1);
-                request.demandContent(() ->
+                acceptor.accept(request, exchange ->
                 {
-                    assertInContext(request);
-                    latch.countDown();
-                });
+                    request.addCompletionListener(Callback.from(() -> assertInContext(request)));
+                    Response response = exchange.getResponse();
+                    CountDownLatch latch = new CountDownLatch(1);
+                    exchange.demandContent(() ->
+                    {
+                        assertInContext(request);
+                        latch.countDown();
+                    });
 
-                blocking.countDown();
-                assertTrue(latch.await(10, TimeUnit.SECONDS));
-                Content content = request.readContent();
-                assertNotNull(content);
-                assertTrue(content.hasRemaining());
-                assertTrue(content.isLast());
-                content.release();
-                response.setStatus(200);
-                response.getCallback().succeeded();
+                    blocking.countDown();
+                    assertTrue(latch.await(10, TimeUnit.SECONDS));
+                    Content content = exchange.readContent();
+                    assertNotNull(content);
+                    assertTrue(content.hasRemaining());
+                    assertTrue(content.isLast());
+                    content.release();
+                    response.setStatus(200);
+                    exchange.succeeded();
+                });
             }
         };
         _contextHandler.setHandler(handler);
@@ -378,10 +385,12 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void offer(Request request, Acceptor acceptor) throws Exception
             {
-                request.accept();
-                throw new RuntimeException("Testing");
+                acceptor.accept(request, exchange ->
+                {
+                    throw new RuntimeException("Testing");
+                });
             }
         });
         _contextHandler.setErrorHandler(new ErrorHandler()

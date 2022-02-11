@@ -68,28 +68,31 @@ public class SlowClientsTest
             server.setHandler(new Handler.Abstract()
             {
                 @Override
-                public void handle(Request request) throws Exception
+                public void offer(Request request, Acceptor acceptor) throws Exception
                 {
-                    LOG.info("SERVING {}", request);
-                    // Write some big content.
-                    Response response = request.accept();
-                    Callback callback = response.getCallback();
-                    response.write(true, new Callback()
-                        {
-                            @Override
-                            public void succeeded()
+                    acceptor.accept(request, exchange ->
+                    {
+                        Response response = exchange.getResponse();
+                        LOG.info("SERVING {}", request);
+                        // Write some big content.
+                        Callback callback = exchange;
+                        response.write(true, new Callback()
                             {
-                                callback.succeeded();
-                                LOG.info("SERVED {}", request);
-                            }
+                                @Override
+                                public void succeeded()
+                                {
+                                    callback.succeeded();
+                                    LOG.info("SERVED {}", request);
+                                }
 
-                            @Override
-                            public void failed(Throwable x)
-                            {
-                                callback.failed(x);
-                            }
-                        },
-                        BufferUtil.toBuffer(new byte[contentLength]));
+                                @Override
+                                public void failed(Throwable x)
+                                {
+                                    callback.failed(x);
+                                }
+                            },
+                            BufferUtil.toBuffer(new byte[contentLength]));
+                    });
                 }
             });
             server.start();
