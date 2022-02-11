@@ -14,7 +14,6 @@
   <properties>
     <sources-directory>${project.build.directory}/jetty-sources</sources-directory>
     <sonar.skip>true</sonar.skip>
-    <pmd.skip>true</pmd.skip>
     <spotbugs.skip>true</spotbugs.skip>
     <checkstyle.skip>true</checkstyle.skip>
   </properties>
@@ -109,6 +108,10 @@
                 infinispan-remote,
                 jetty-test-helper,
                 alpn-api,
+                quic-quiche,
+                quic-quiche-common,
+                quic-quiche-foreign-incubator,
+                quic-quiche-jna,
                 javax.servlet,
                 javax.websocket,
                 jakarta.servlet,
@@ -154,8 +157,6 @@
                 org.eclipse.jetty.http3.qpack.internal.*;
                 org.eclipse.jetty.http3.server.internal;
                 org.eclipse.jetty.quic.common.internal;
-                org.eclipse.jetty.quic.quiche;
-                org.eclipse.jetty.quic.quiche.*;
                 org.eclipse.jetty.quic.server.internal;
               </excludePackageNames>
             </configuration>
