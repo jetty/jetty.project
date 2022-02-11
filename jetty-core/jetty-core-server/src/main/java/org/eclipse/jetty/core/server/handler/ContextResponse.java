@@ -42,7 +42,7 @@ class ContextResponse extends Response.Wrapper
             @Override
             public void failed(Throwable t)
             {
-                _contextHandler.getContext().accept(callback::failed, t);
+                _contextHandler.getContext().consumeThrowableInContext(callback::failed, t);
             }
         };
         super.write(last, contextCallback, content);

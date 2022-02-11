@@ -38,7 +38,7 @@ public class ContextRequest extends Request.Wrapper
     @Override
     public void addErrorListener(Consumer<Throwable> onError)
     {
-        super.addErrorListener(t -> _contextHandler.getContext().accept(onError, t));
+        super.addErrorListener(t -> _contextHandler.getContext().consumeThrowableInContext(onError, t));
     }
 
     @Override
@@ -55,7 +55,7 @@ public class ContextRequest extends Request.Wrapper
             @Override
             public void failed(Throwable t)
             {
-                _contextHandler.getContext().accept(onComplete::failed, t);
+                _contextHandler.getContext().consumeThrowableInContext(onComplete::failed, t);
             }
         });
     }

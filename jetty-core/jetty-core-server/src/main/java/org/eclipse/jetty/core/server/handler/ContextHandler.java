@@ -480,7 +480,22 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (scoped == null)
             return; // TODO 404? 500? Error dispatch ???
 
-        _context.call(() -> super.offer(scoped, acceptor));
+        _context.call(() -> super.offer(scoped, (r, processor) -> acceptor.accept(r, exchange -> _context.call(() -> processor.process(
+            new Exchange.Wrapper(exchange)
+            {
+                @Override
+                public void demandContent(Runnable onContentAvailable)
+                {
+                    super.demandContent(() -> _context.run(onContentAvailable));
+                }
+
+                @Override
+                public Response getResponse()
+                {
+                    // TODO cache this
+                    return new ContextResponse(scoped, super.getResponse());
+                }
+            })))));
     }
 
     /**
@@ -676,7 +691,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             }
         }
 
-        public void accept(Consumer<Throwable> consumer, Throwable t)
+        public void consumeThrowableInContext(Consumer<Throwable> consumer, Throwable t)
         {
             Context lastContext = __context.get();
             if (lastContext == this)
