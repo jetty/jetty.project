@@ -27,6 +27,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.TreeTrie;
@@ -434,6 +435,10 @@ public class HttpConfiguration implements Dumpable
      */
     public void setHeaderCacheSize(int headerCacheSize)
     {
+        if (headerCacheSize > ArrayTernaryTrie.MAX_CAPACITY)
+        {
+            throw new IllegalArgumentException("headerCacheSize " + headerCacheSize + " exceeds maximum value of " + ArrayTernaryTrie.MAX_CAPACITY);
+        }
         _headerCacheSize = headerCacheSize;
     }
 
