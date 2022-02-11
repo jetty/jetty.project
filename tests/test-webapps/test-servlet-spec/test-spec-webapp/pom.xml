@@ -210,6 +210,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+      <version>9.3.0.RC0</version>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-web-fragment</artifactId>
       <version>${project.version}</version>
