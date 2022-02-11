@@ -80,11 +80,6 @@ public class ConnectionPoolTest
         return Stream.of(DUPLEX, MULTIPLEX, RANDOM, DUPLEX_MAX_DURATION, ROUND_ROBIN);
     }
 
-    public static Stream<ConnectionPoolFactory> poolsNoMaxDuration()
-    {
-        return Stream.of(DUPLEX, MULTIPLEX, RANDOM, ROUND_ROBIN);
-    }
-
     public static Stream<ConnectionPoolFactory> poolsNoRoundRobin()
     {
         return Stream.of(DUPLEX, MULTIPLEX, RANDOM, DUPLEX_MAX_DURATION);
@@ -377,8 +372,7 @@ public class ConnectionPoolTest
     }
 
     @ParameterizedTest
-    // Connection pool aggressively closes expired connections upon release, which interferes with this test's assertion.
-    @MethodSource("poolsNoMaxDuration")
+    @MethodSource("pools")
     public void testConcurrentRequestsAllBlockedOnServerWithLargeConnectionPool(ConnectionPoolFactory factory) throws Exception
     {
         int count = 50;
@@ -386,8 +380,7 @@ public class ConnectionPoolTest
     }
 
     @ParameterizedTest
-    // Connection pool aggressively closes expired connections upon release, which interferes with this test's assertion.
-    @MethodSource("poolsNoMaxDuration")
+    @MethodSource("pools")
     public void testConcurrentRequestsAllBlockedOnServerWithExactConnectionPool(ConnectionPoolFactory factory) throws Exception
     {
         int count = 50;
@@ -448,9 +441,13 @@ public class ConnectionPoolTest
         assertTrue(latch.await(5, TimeUnit.SECONDS), "server requests " + barrier.getNumberWaiting() + "<" + count + " - client: " + client.dump());
         List<Destination> destinations = client.getDestinations();
         assertEquals(1, destinations.size());
-        HttpDestination destination = (HttpDestination)destinations.get(0);
-        AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
-        assertThat(connectionPool.getConnectionCount(), Matchers.greaterThanOrEqualTo(count));
+        // The max duration connection pool aggressively closes expired connections upon release, which interferes with this assertion.
+        if (DUPLEX_MAX_DURATION != factory)
+        {
+            HttpDestination destination = (HttpDestination)destinations.get(0);
+            AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
+            assertThat(connectionPool.getConnectionCount(), Matchers.greaterThanOrEqualTo(count));
+        }
     }
 
     @Test
@@ -587,8 +584,17 @@ public class ConnectionPoolTest
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
 
         assertEquals(0, connectionPool.getActiveConnectionCount());
-        assertEquals(1, connectionPool.getIdleConnectionCount());
-        assertEquals(1, connectionPool.getConnectionCount());
+        if (DUPLEX_MAX_DURATION == factory)
+        {
+            // The connections can expire upon release.
+            assertThat(connectionPool.getIdleConnectionCount(), lessThanOrEqualTo(1));
+            assertThat(connectionPool.getConnectionCount(), lessThanOrEqualTo(1));
+        }
+        else
+        {
+            assertThat(connectionPool.getIdleConnectionCount(), is(1));
+            assertThat(connectionPool.getConnectionCount(), is(1));
+        }
 
         // Send second request, max usage count will be reached,
         // the only connection must be closed.
@@ -624,7 +630,10 @@ public class ConnectionPoolTest
         // Trigger the creation of a destination, that will create the connection pool.
         HttpDestination destination = client.resolveDestination(new Origin("http", "localhost", connector.getLocalPort()));
         AbstractConnectionPool connectionPool = (AbstractConnectionPool)destination.getConnectionPool();
-        assertEquals(1, connectionPool.getConnectionCount());
+        if (DUPLEX_MAX_DURATION == factory)
+            assertThat(connectionPool.getConnectionCount(), lessThanOrEqualTo(1)); // The connections can expire upon release.
+        else
+            assertThat(connectionPool.getConnectionCount(), is(1));
 
         // Wait for the pre-created connections to idle timeout.
         Thread.sleep(idleTimeout + idleTimeout / 2);
