@@ -304,7 +304,7 @@
         </exclusion>
         <exclusion>
           <groupId>org.eclipse.jetty.fcgi</groupId>
-          <artifactId>fcgi-server</artifactId>
+          <artifactId>jetty-fcgi-server</artifactId>
         </exclusion>
         <exclusion>
           <groupId>org.eclipse.jetty</groupId>

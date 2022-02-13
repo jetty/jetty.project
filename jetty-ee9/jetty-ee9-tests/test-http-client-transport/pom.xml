@@ -115,7 +115,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
-      <artifactId>fcgi-server</artifactId>
+      <artifactId>jetty-fcgi-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -194,7 +194,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.fcgi</groupId>
-      <artifactId>fcgi-client</artifactId>
+      <artifactId>jetty-fcgi-client</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
