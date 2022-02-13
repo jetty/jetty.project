@@ -17,7 +17,7 @@
     <module>jetty-http2-common</module>
     <module>jetty-http2-hpack</module>
     <module>jetty-http2-http-client-transport</module>
-    <module>http2-server</module>
+    <module>jetty-http2-server</module>
   </modules>
 
 </project>
