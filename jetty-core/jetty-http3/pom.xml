@@ -8,17 +8,17 @@
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty.http3</groupId>
-  <artifactId>http3</artifactId>
+  <artifactId>jetty-http3</artifactId>
   <packaging>pom</packaging>
   <name>Jetty Core :: HTTP3</name>
 
   <modules>
-    <module>http3-qpack</module>
-    <module>http3-common</module>
-    <module>http3-server</module>
-    <module>http3-client</module>
-    <module>http3-http-client-transport</module>
-    <module>http3-tests</module>
+    <module>jetty-http3-qpack</module>
+    <module>jetty-http3-common</module>
+    <module>jetty-http3-server</module>
+    <module>jetty-http3-client</module>
+    <module>jetty-http3-http-client-transport</module>
+    <module>jetty-http3-tests</module>
   </modules>
 
 </project>

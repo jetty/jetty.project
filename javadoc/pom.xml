@@ -263,17 +263,17 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-client</artifactId>
+      <artifactId>jetty-http3-client</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-http-client-transport</artifactId>
+      <artifactId>jetty-http3-http-client-transport</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-server</artifactId>
+      <artifactId>jetty-http3-server</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

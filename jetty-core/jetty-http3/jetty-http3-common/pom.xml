@@ -2,26 +2,30 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.http3</groupId>
-    <artifactId>http3</artifactId>
+    <artifactId>jetty-http3</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>http3-client</artifactId>
-  <name>Jetty Core :: HTTP3 :: Client</name>
+  <artifactId>jetty-http3-common</artifactId>
+  <name>Jetty Core :: HTTP3 :: Common</name>
 
   <properties>
-    <bundle-symbolic-name>${project.groupId}.client</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
   </properties>
 
   <dependencies>
     <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.jetty.http3</groupId>
-      <artifactId>http3-common</artifactId>
+      <artifactId>jetty-http3-qpack</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.quic</groupId>
-      <artifactId>quic-client</artifactId>
+      <artifactId>quic-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -30,6 +34,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
     </dependency>
   </dependencies>
 

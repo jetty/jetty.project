@@ -31,7 +31,7 @@ The Maven artifact coordinates for the HTTP/3 client library are the following:
 ----
 <dependency>
   <groupId>org.eclipse.jetty.http3</groupId>
-  <artifactId>http3-client</artifactId>
+  <artifactId>jetty-http3-client</artifactId>
   <version>{version}</version>
 </dependency>
 ----
