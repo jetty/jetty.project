@@ -2,12 +2,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.http2</groupId>
-    <artifactId>http2</artifactId>
+    <artifactId>jetty-http2</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>http2-client</artifactId>
+  <artifactId>jetty-http2-client</artifactId>
   <name>Jetty Core :: HTTP2 :: Client</name>
 
   <properties>
@@ -31,7 +31,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-common</artifactId>
+      <artifactId>jetty-http2-common</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -80,7 +80,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-server</artifactId>
+      <artifactId>jetty-http2-server</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

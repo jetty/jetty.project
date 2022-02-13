@@ -59,7 +59,7 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-client</artifactId>
+      <artifactId>jetty-http2-client</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
@@ -88,7 +88,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-server</artifactId>
+      <artifactId>jetty-http2-server</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

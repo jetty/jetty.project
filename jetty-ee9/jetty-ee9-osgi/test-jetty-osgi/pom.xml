@@ -356,11 +356,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-server</artifactId>
+      <artifactId>jetty-http2-server</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-hpack</artifactId>
+      <artifactId>jetty-http2-hpack</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
@@ -481,13 +481,13 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-client</artifactId>
+      <artifactId>jetty-http2-client</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
-      <artifactId>http2-http-client-transport</artifactId>
+      <artifactId>jetty-http2-http-client-transport</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
