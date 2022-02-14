@@ -13,6 +13,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.jmh</bundle-symbolic-name>
     <spotbugs.skip>true</spotbugs.skip>
+    <maven.deploy.skip>true</maven.deploy.skip>
   </properties>
 
   <build>
@@ -57,18 +58,6 @@
         </executions>
       </plugin>
     </plugins>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-deploy-plugin</artifactId>
-          <configuration>
-            <!-- No point deploying jmh project -->
-            <skip>true</skip>
-          </configuration>
-        </plugin>
-      </plugins>
-    </pluginManagement>
   </build>
 
   <dependencies>

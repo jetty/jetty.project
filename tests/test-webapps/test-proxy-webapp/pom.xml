@@ -13,6 +13,8 @@
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.proxy</bundle-symbolic-name>
+    <!-- must deploy: required for jetty-distribution -->
+    <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
   <build>
     <plugins>
@@ -22,14 +24,6 @@
           <archive>
             <manifestFile>src/main/webapp/META-INF/MANIFEST.MF</manifestFile>
           </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- must deploy: required for jetty-distribution -->
-          <skip>false</skip>
         </configuration>
       </plugin>
     </plugins>
