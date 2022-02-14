@@ -30,7 +30,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,7 +159,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         if (ct != null)
         {
             String baseType = HttpField.valueParameters(ct, null);
-            if (!_factory.isMimeTypeGzipable(StringUtil.asciiToLowerCase(baseType)))
+            if (!_factory.isMimeTypeGzipable(baseType))
             {
                 LOG.debug("{} exclude by mimeType {}", this, ct);
                 noCompression();
