@@ -54,8 +54,6 @@ import org.eclipse.jetty.websocket.javax.common.messages.DecodedBinaryStreamMess
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextMessageSink;
 import org.eclipse.jetty.websocket.javax.common.messages.DecodedTextStreamMessageSink;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 public abstract class JavaxWebSocketFrameHandlerFactory
 {
     private static final MethodHandle FILTER_RETURN_TYPE_METHOD;
@@ -536,49 +534,47 @@ public abstract class JavaxWebSocketFrameHandlerFactory
                 {
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, strValue);
                 }
-                else if (Integer.TYPE.isAssignableFrom(type))
+                else if (Integer.class.isAssignableFrom(type) || Integer.TYPE.isAssignableFrom(type))
                 {
-                    int intValue = Integer.parseInt(strValue);
+                    Integer intValue = Integer.parseInt(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, intValue);
                 }
-                else if (Long.TYPE.isAssignableFrom(type))
+                else if (Long.class.isAssignableFrom(type) || Long.TYPE.isAssignableFrom(type))
                 {
-                    long longValue = Long.parseLong(strValue);
+                    Long longValue = Long.parseLong(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, longValue);
                 }
-                else if (Short.TYPE.isAssignableFrom(type))
+                else if (Short.class.isAssignableFrom(type) || Short.TYPE.isAssignableFrom(type))
                 {
-                    short shortValue = Short.parseShort(strValue);
+                    Short shortValue = Short.parseShort(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, shortValue);
                 }
-                else if (Float.TYPE.isAssignableFrom(type))
+                else if (Float.class.isAssignableFrom(type) || Float.TYPE.isAssignableFrom(type))
                 {
-                    float floatValue = Float.parseFloat(strValue);
+                    Float floatValue = Float.parseFloat(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, floatValue);
                 }
-                else if (Double.TYPE.isAssignableFrom(type))
+                else if (Double.class.isAssignableFrom(type) || Double.TYPE.isAssignableFrom(type))
                 {
-                    double doubleValue = Double.parseDouble(strValue);
+                    Double doubleValue = Double.parseDouble(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, doubleValue);
                 }
-                else if (Boolean.TYPE.isAssignableFrom(type))
+                else if (Boolean.class.isAssignableFrom(type) || Boolean.TYPE.isAssignableFrom(type))
                 {
-                    boolean boolValue = Boolean.parseBoolean(strValue);
+                    Boolean boolValue = Boolean.parseBoolean(strValue);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, boolValue);
                 }
-                else if (Character.TYPE.isAssignableFrom(type))
+                else if (Character.class.isAssignableFrom(type) || Character.TYPE.isAssignableFrom(type))
                 {
                     if (strValue.length() != 1)
                         throw new IllegalArgumentException("Invalid Size");
-                    char charValue = strValue.charAt(0);
+                    Character charValue = strValue.charAt(0);
                     retHandle = MethodHandles.insertArguments(retHandle, IDX, charValue);
                 }
-                else if (Byte.TYPE.isAssignableFrom(type))
+                else if (Byte.class.isAssignableFrom(type) || Byte.TYPE.isAssignableFrom(type))
                 {
-                    byte[] buf = strValue.getBytes(UTF_8);
-                    if (buf.length != 1)
-                        throw new IllegalArgumentException("Invalid Size");
-                    retHandle = MethodHandles.insertArguments(retHandle, IDX, buf[0]);
+                    Byte b = Byte.parseByte(strValue);
+                    retHandle = MethodHandles.insertArguments(retHandle, IDX, b);
                 }
                 else
                 {
