@@ -16,7 +16,7 @@
     <!-- No point deploying testing projects -->
     <maven.deploy.skip>true</maven.deploy.skip>
     <maven.source.skip>true</maven.source.skip>
-    <<maven.javadoc.skip>true</maven.javadoc.skip>
+    <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
   <modules>
     <module>test-webapps</module>
