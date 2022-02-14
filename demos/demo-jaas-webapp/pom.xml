@@ -11,18 +11,9 @@
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
+    <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
   <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- DEMO Project, Must Deploy -->
-          <skip>false</skip>
-        </configuration>
-      </plugin>
-    </plugins>
     <pluginManagement>
       <plugins>
         <plugin>
