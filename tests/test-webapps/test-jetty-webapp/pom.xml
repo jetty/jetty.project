@@ -13,6 +13,8 @@
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.tests.webapp</bundle-symbolic-name>
+    <!-- must deploy: required for jetty-distribution -->
+    <maven.deploy.skip>false</maven.deploy.skip>
   </properties>
   <build>
     <plugins>
@@ -123,14 +125,6 @@
               <config>src/main/config/demo-base/etc/realm.properties</config>
             </loginService>
           </loginServices>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-deploy-plugin</artifactId>
-        <configuration>
-          <!-- must deploy: required for jetty-distribution -->
-          <skip>false</skip>
         </configuration>
       </plugin>
     </plugins>
