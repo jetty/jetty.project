@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.util.component.AttributeContainerMap;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.util.thread.ThreadPool;
@@ -59,6 +61,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
+    private final Request.Context _context;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
@@ -111,6 +114,12 @@ public class Server extends Handler.Wrapper implements Attributes
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
+        _context = new ServerContext();
+    }
+
+    public Request.Context getContext()
+    {
+        return _context;
     }
 
     @Override
@@ -683,4 +692,54 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     private static class DynamicErrorHandler extends ErrorHandler {}
+
+    private class ServerContext extends Attributes.Wrapper implements Request.Context
+    {
+        public ServerContext()
+        {
+            super(Server.this);
+        }
+
+        @Override
+        public String getContextPath()
+        {
+            return null;
+        }
+
+        @Override
+        public ClassLoader getClassLoader()
+        {
+            return Server.class.getClassLoader();
+        }
+
+        @Override
+        public Path getResourceBase()
+        {
+            return null;
+        }
+
+        @Override
+        public void call(Invocable.Callable callable) throws Exception
+        {
+            callable.call();
+        }
+
+        @Override
+        public void run(Runnable task)
+        {
+            task.run();
+        }
+
+        @Override
+        public Handler getErrorHandler()
+        {
+            return Server.this.getErrorHandler();
+        }
+
+        @Override
+        public void execute(Runnable runnable)
+        {
+            getThreadPool().execute(runnable);
+        }
+    }
 }

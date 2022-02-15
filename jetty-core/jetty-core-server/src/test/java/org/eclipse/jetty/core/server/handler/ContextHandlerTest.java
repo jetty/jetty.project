@@ -64,7 +64,7 @@ public class ContextHandlerTest
     Server _server;
     ClassLoader _loader;
     ContextHandler _contextHandler;
-    ContextHandler.Context _context;
+    Request.Context _context;
     AtomicBoolean _inContext;
 
     @BeforeEach
@@ -142,7 +142,7 @@ public class ContextHandlerTest
             if (request != null)
             {
                 assertThat(request.getPath(), equalTo("/path"));
-                assertThat(request.get(ContextRequest.class, ContextRequest::getContext), sameInstance(_context));
+                assertThat(request.getContext(), sameInstance(_context));
             }
             assertThat(ContextHandler.getCurrentContext(), sameInstance(_context));
             assertThat(Thread.currentThread().getContextClassLoader(), sameInstance(_loader));
@@ -389,7 +389,7 @@ public class ContextHandlerTest
             @Override
             protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException
             {
-                ContextHandler.Context context = request.get(ContextRequest.class, ContextRequest::getContext);
+                Request.Context context = request.getContext();
                 if (context != null)
                     writer.write("<h1>Context: " + context.getContextPath() + "</h1>");
                 super.writeErrorHtmlBody(request, writer, code, message, cause, showStacks);

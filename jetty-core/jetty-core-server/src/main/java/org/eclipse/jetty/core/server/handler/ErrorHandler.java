@@ -515,16 +515,6 @@ public class ErrorHandler extends Handler.Abstract
         writer.write(StringUtil.sanitizeXmlString(string));
     }
 
-    public static Handler getErrorHandler(Server server, ContextHandler context)
-    {
-        Handler errorHandler = null;
-        if (context != null)
-            errorHandler = context.getErrorHandler();
-        if (errorHandler == null && server != null)
-            errorHandler = server.getErrorHandler();
-        return errorHandler;
-    }
-
     public static class ErrorRequest extends Request.Wrapper
     {
         private final Response _response;

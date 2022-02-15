@@ -478,12 +478,6 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        public void execute(Runnable task)
-        {
-            _server.getThreadPool().execute(task);
-        }
-
-        @Override
         public String getId()
         {
             return _id;
@@ -511,6 +505,12 @@ public class HttpChannel extends Attributes.Lazy
         public HttpURI getHttpURI()
         {
             return _metaData.getURI();
+        }
+
+        @Override
+        public Context getContext()
+        {
+            return _server.getContext();
         }
 
         @Override

@@ -84,12 +84,6 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     }
 
     @Override
-    public void execute(Runnable task)
-    {
-        super.execute(() -> _contextHandler.getContext().run(task));
-    }
-
-    @Override
     public void demandContent(Runnable onContentAvailable)
     {
         super.demandContent(() -> _contextHandler.getContext().run(onContentAvailable));
@@ -98,7 +92,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     @Override
     public void addErrorListener(Consumer<Throwable> onError)
     {
-        super.addErrorListener(t -> _contextHandler.getContext().accept(onError, t));
+        super.addErrorListener(t -> _contextHandler.getContext().run(() -> onError.accept(t)));
     }
 
     @Override
@@ -115,12 +109,12 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
             @Override
             public void failed(Throwable t)
             {
-                _contextHandler.getContext().accept(onComplete::failed, t);
+                _contextHandler.getContext().run(() -> onComplete.failed(t));
             }
         });
     }
 
-    public ContextHandler.Context getContext()
+    public Context getContext()
     {
         return _contextHandler.getContext();
     }

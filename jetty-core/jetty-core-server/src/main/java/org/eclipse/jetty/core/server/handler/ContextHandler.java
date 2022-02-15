@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.core.server.ClassLoaderDump;
@@ -54,20 +53,20 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     // TODO init param stuff to ServletContextHandler
 
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
-    private static final ThreadLocal<Context> __context = new ThreadLocal<>();
+    private static final ThreadLocal<Request.Context> __context = new ThreadLocal<>();
 
     /**
      * Get the current ServletContext implementation.
      *
      * @return ServletContext implementation
      */
-    public static Context getCurrentContext()
+    public static Request.Context getCurrentContext()
     {
         return __context.get();
     }
 
     private final Attributes _persistentAttributes = new Mapped();
-    private final Context _context = new Context();
+    private final HandledContext _context = new HandledContext();
     private final List<VHost> _vhosts = new ArrayList<>();
 
     private String _displayName;
@@ -97,7 +96,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @ManagedAttribute(value = "Context")
-    public Context getContext()
+    public Request.Context getContext()
     {
         return _context;
     }
@@ -607,9 +606,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return host;
     }
 
-    public class Context extends Attributes.Layer
+    public class HandledContext extends Attributes.Layer implements Request.Context
     {
-        public Context()
+        public HandledContext()
         {
             super(_persistentAttributes);
         }
@@ -628,6 +627,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return super.getAttribute(name);
         }
 
+        @Override
         public String getContextPath()
         {
             return _contextPath;
@@ -639,19 +639,22 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return "Context@" + ContextHandler.this.toString();
         }
 
+        @Override
         public ClassLoader getClassLoader()
         {
             return _classLoader;
         }
 
+        @Override
         public Path getResourceBase()
         {
             return _resourceBase;
         }
 
+        @Override
         public void call(Invocable.Callable callable) throws Exception
         {
-            Context lastContext = __context.get();
+            Request.Context lastContext = __context.get();
             if (lastContext == this)
                 callable.call();
             else
@@ -675,32 +678,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             }
         }
 
-        public void accept(Consumer<Throwable> consumer, Throwable t)
-        {
-            Context lastContext = __context.get();
-            if (lastContext == this)
-                consumer.accept(t);
-            else
-            {
-                ClassLoader loader = getClassLoader();
-                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
-                try
-                {
-                    __context.set(this);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(loader);
-
-                    consumer.accept(t);
-                }
-                finally
-                {
-                    __context.set(lastContext);
-                    if (loader != null)
-                        Thread.currentThread().setContextClassLoader(lastLoader);
-                }
-            }
-        }
-
+        @Override
         public void run(Runnable task)
         {
             try
@@ -712,6 +690,20 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 LOG.warn("Failed to run in {}", _displayName, e);
                 throw new RuntimeException(e);
             }
+        }
+
+        @Override
+        public Handler getErrorHandler()
+        {
+            return ContextHandler.this.getErrorHandler();
+        }
+
+        @Override
+        public void execute(Runnable runnable)
+        {
+            // TODO review this direct call to the server context, as it will bypass any Context wrappers.
+            //      However, this does allow a single context instance to be used for the ContextHandler
+            getServer().getContext().execute(() -> run(runnable));
         }
     }
 

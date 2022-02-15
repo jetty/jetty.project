@@ -16,10 +16,10 @@ package org.eclipse.jetty.core.server;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.file.Path;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -30,10 +30,51 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.thread.Invocable;
 
 // TODO lots of javadoc
-public interface Request extends Attributes, Executor, Content.Provider
+public interface Request extends Attributes, Content.Provider
 {
+    interface Context extends Attributes, Executor
+    {
+        /**
+         * @return The URI prefix for the context, or null for the {@link Server#getContext()}.  This may differ from the
+         * Servlet specification of a context path, where the root context may be returned as null.
+         */
+        String getContextPath();
+
+        ClassLoader getClassLoader();
+
+        Path getResourceBase();
+
+        /**
+         * Execute a Callable in the context scope by calling it withing the scope of the call to this method.
+         * @param callable The task to run
+         * @see #run(Runnable)
+         * @see #execute(Runnable)
+         */
+        void call(Invocable.Callable callable) throws Exception;
+
+        /**
+         * Execute a Runnable in the context scope by calling it withing the scope of the call to this method.
+         * @param task The task to run
+         * @see #call(Invocable.Callable)
+         * @see #execute(Runnable)
+         */
+        void run(Runnable task);
+
+        /**
+         * Execute a Runnable in the context scope using the {@link Server#getThreadPool()}
+         * @param task The task to run
+         * @see #call(Invocable.Callable)
+         * @see #run(Runnable)
+         */
+        @Override
+        void execute(Runnable task);
+
+        Handler getErrorHandler();
+    }
+
     /**
      * Accept the request for handling and provide the {@link Response} instance.
      * @return The response instance or null if the request has already been accepted.
@@ -74,6 +115,8 @@ public interface Request extends Attributes, Executor, Content.Provider
     String getMethod();
 
     HttpURI getHttpURI();
+
+    Context getContext();
 
     String getPath();
 
@@ -214,31 +257,6 @@ public interface Request extends Attributes, Executor, Content.Provider
         }
     }
 
-    @SuppressWarnings("unchecked")
-    default <R extends Request> R as(Class<R> type)
-    {
-        Request r = this;
-        while (r != null)
-        {
-            if (type.isInstance(r))
-                return (R)r;
-            r = r.getWrapped();
-        }
-        return null;
-    }
-
-    default <T extends Request, R> R get(Class<T> type, Function<T, R> getter)
-    {
-        Request r = this;
-        while (r != null)
-        {
-            if (type.isInstance(r))
-                return getter.apply((T)r);
-            r = r.getWrapped();
-        }
-        return null;
-    }
-
     class Wrapper implements Request
     {
         private final Request _wrapped;
@@ -246,12 +264,6 @@ public interface Request extends Attributes, Executor, Content.Provider
         protected Wrapper(Request wrapped)
         {
             _wrapped = wrapped;
-        }
-
-        @Override
-        public void execute(Runnable task)
-        {
-            _wrapped.execute(task);
         }
 
         @Override
@@ -288,6 +300,12 @@ public interface Request extends Attributes, Executor, Content.Provider
         public HttpURI getHttpURI()
         {
             return _wrapped.getHttpURI();
+        }
+
+        @Override
+        public Context getContext()
+        {
+            return _wrapped.getContext();
         }
 
         @Override

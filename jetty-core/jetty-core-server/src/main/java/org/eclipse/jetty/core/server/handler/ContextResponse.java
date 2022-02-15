@@ -20,12 +20,9 @@ import org.eclipse.jetty.util.Callback;
 
 class ContextResponse extends Response.Wrapper
 {
-    private final ContextHandler _contextHandler;
-
     public ContextResponse(ContextRequest request, Response response)
     {
         super(request, response);
-        _contextHandler = request.getContext().getContextHandler();
     }
 
     @Override
@@ -36,13 +33,13 @@ class ContextResponse extends Response.Wrapper
             @Override
             public void succeeded()
             {
-                _contextHandler.getContext().run(callback::succeeded);
+                getRequest().getContext().run(callback::succeeded);
             }
 
             @Override
             public void failed(Throwable t)
             {
-                _contextHandler.getContext().accept(callback::failed, t);
+                getRequest().getContext().run(() -> callback.failed(t));
             }
         };
         super.write(last, contextCallback, content);
