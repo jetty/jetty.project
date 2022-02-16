@@ -34,6 +34,7 @@ public class ModuleGraphWriter
 {
     private String colorModuleBg;
     private String colorEnabledBg;
+    private String colorEdgeOptional;
     private String colorTransitiveBg;
     private String colorCellBg;
     private String colorHeaderBg;
@@ -43,6 +44,7 @@ public class ModuleGraphWriter
     {
         colorModuleBg = "#B8FFB8";
         colorEnabledBg = "#66FFCC";
+        colorEdgeOptional = "#33CC00";
         colorTransitiveBg = "#66CC66";
         colorCellBg = "#FFFFFF80";
         colorHeaderBg = "#00000020";
@@ -54,6 +56,7 @@ public class ModuleGraphWriter
         String prefix = "jetty.graph.";
         colorModuleBg = getProperty(props, prefix + "color.module.bg", colorModuleBg);
         colorEnabledBg = getProperty(props, prefix + "color.enabled.bg", colorEnabledBg);
+        colorEdgeOptional = getProperty(props, prefix + "color.edge.optiona", colorEdgeOptional);
         colorTransitiveBg = getProperty(props, prefix + "color.transitive.bg", colorTransitiveBg);
         colorCellBg = getProperty(props, prefix + "color.cell.bg", colorCellBg);
         colorHeaderBg = getProperty(props, prefix + "color.header.bg", colorHeaderBg);
@@ -252,7 +255,7 @@ public class ModuleGraphWriter
             }
             for (String optional : module.getOptional())
             {
-                out.printf("    \"%s\" => \"%s\";%n", module.getName(), optional);
+                out.printf("    \"%s\" -> \"%s\" [ color=\"%s\" ];%n", module.getName(), optional, colorEdgeOptional);
             }
         }
     }
