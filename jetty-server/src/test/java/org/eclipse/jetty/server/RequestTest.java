@@ -32,7 +32,6 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
@@ -215,7 +214,7 @@ public class RequestTest
             "Connection: close\n" +
             "Content-Length: 34\n" +
             "\n" +
-            "fifth=5&sixth=6&seventh=7&eighth=8";;
+            "fifth=5&sixth=6&seventh=7&eighth=8";
 
         String responses = _connector.getResponse(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
