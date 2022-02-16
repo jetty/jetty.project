@@ -28,7 +28,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
@@ -36,7 +35,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -171,8 +169,8 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         String ct = response.getContentType();
         if (ct != null)
         {
-            ct = MimeTypes.getContentTypeWithoutCharset(ct);
-            if (!_factory.isMimeTypeGzipable(StringUtil.asciiToLowerCase(ct)))
+            String baseType = HttpFields.valueParameters(ct, null);
+            if (!_factory.isMimeTypeGzipable(baseType))
             {
                 LOG.debug("{} exclude by mimeType {}", this, ct);
                 noCompression();
