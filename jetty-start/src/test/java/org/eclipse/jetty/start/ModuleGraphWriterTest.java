@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Duration;
 
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
@@ -36,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
@@ -74,13 +76,16 @@ public class ModuleGraphWriterTest
 
         assertThat("Output File Exists", FS.exists(dotFile), is(true));
 
-        if (execDotCmd("dot", "-V"))
+        assertTimeout(Duration.ofSeconds(3), () ->
         {
-            Path outputPng = testdir.getPath().resolve("output.png");
-            assertTrue(execDotCmd("dot", "-Tpng", "-o" + outputPng, dotFile.toString()));
+            if (execDotCmd("dot", "-V"))
+            {
+                Path outputPng = testdir.getPath().resolve("output.png");
+                assertTrue(execDotCmd("dot", "-Tpng", "-o" + outputPng, dotFile.toString()));
 
-            assertThat("PNG File Exists", FS.exists(outputPng));
-        }
+                assertThat("PNG File Exists", FS.exists(outputPng));
+            }
+        });
     }
 
     private boolean execDotCmd(String... args)
