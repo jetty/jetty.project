@@ -222,6 +222,37 @@ public class RequestTest
     }
 
     @Test
+    public void testParameterExtractionOrderingWithMerge() throws Exception
+    {
+        AtomicReference<Map<String, String[]>> reference = new AtomicReference<>();
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request, HttpServletResponse response)
+            {
+                reference.set(request.getParameterMap());
+                return true;
+            }
+        };
+
+        String request = "POST /?a=1&b=2&c=3&a=4 HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\n" +
+            "Connection: close\n" +
+            "Content-Length: 11\n" +
+            "\n" +
+            "c=5&b=6&a=7";
+
+        String responses = _connector.getResponse(request);
+        Map<String, String[]> returnedMap = reference.get();
+        assertTrue(responses.startsWith("HTTP/1.1 200"));
+        assertThat(new ArrayList<>(returnedMap.keySet()), is(Arrays.asList("a", "b", "c")));
+        assertTrue(Arrays.equals(returnedMap.get("a"), new String[]{"1", "4", "7"}));
+        assertTrue(Arrays.equals(returnedMap.get("b"), new String[]{"2", "6"}));
+        assertTrue(Arrays.equals(returnedMap.get("c"), new String[]{"3", "5"}));
+    }
+
+    @Test
     public void testParamExtractionBadSequence() throws Exception
     {
         _handler._checker = new RequestTester()
