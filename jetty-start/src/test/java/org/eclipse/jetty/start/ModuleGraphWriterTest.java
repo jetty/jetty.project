@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.start;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
@@ -33,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(WorkDirExtension.class)
 public class ModuleGraphWriterTest
@@ -63,11 +67,48 @@ public class ModuleGraphWriterTest
         Modules modules = new Modules(basehome, args);
         modules.registerAll();
 
-        Path outputFile = basehome.getBasePath("graph.dot");
+        Path dotFile = basehome.getBasePath("graph.dot");
 
         ModuleGraphWriter writer = new ModuleGraphWriter();
-        writer.write(modules, outputFile);
+        writer.write(modules, dotFile);
 
-        assertThat("Output File Exists", FS.exists(outputFile), is(true));
+        assertThat("Output File Exists", FS.exists(dotFile), is(true));
+
+        if (execDotCmd("dot", "-V"))
+        {
+            Path outputPng = testdir.getPath().resolve("output.png");
+            assertTrue(execDotCmd("dot", "-Tpng", "-o" + outputPng, dotFile.toString()));
+
+            assertThat("PNG File Exists", FS.exists(outputPng));
+        }
+    }
+
+    private boolean execDotCmd(String... args)
+    {
+        try
+        {
+            Process p = Runtime.getRuntime().exec(args);
+
+            try (BufferedReader bri = new BufferedReader(new InputStreamReader(p.getInputStream(), StandardCharsets.UTF_8));
+                 BufferedReader bre = new BufferedReader(new InputStreamReader(p.getErrorStream(), StandardCharsets.UTF_8)))
+            {
+                String line;
+                while ((line = bri.readLine()) != null)
+                {
+                    System.out.printf("[STDIN] %s%n", line);
+                }
+                while ((line = bre.readLine()) != null)
+                {
+                    System.out.printf("[STDERR] %s%n", line);
+                }
+            }
+            p.waitFor();
+            return true;
+        }
+        catch (IOException | InterruptedException e)
+        {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
