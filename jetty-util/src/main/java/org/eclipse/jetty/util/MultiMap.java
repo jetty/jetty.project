@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +32,7 @@ import java.util.Map;
  * @param <V> the entry type for multimap values
  */
 @SuppressWarnings("serial")
-public class MultiMap<V> extends HashMap<String, List<V>>
+public class MultiMap<V> extends LinkedHashMap<String, List<V>>
 {
     public MultiMap()
     {
@@ -321,13 +322,13 @@ public class MultiMap<V> extends HashMap<String, List<V>>
     @Override
     public String toString()
     {
-        Iterator<Entry<String, List<V>>> iter = entrySet().iterator();
+        Iterator<Map.Entry<String, List<V>>> iter = entrySet().iterator();
         StringBuilder sb = new StringBuilder();
         sb.append('{');
         boolean delim = false;
         while (iter.hasNext())
         {
-            Entry<String, List<V>> e = iter.next();
+            Map.Entry<String, List<V>> e = iter.next();
             if (delim)
             {
                 sb.append(", ");
@@ -355,7 +356,7 @@ public class MultiMap<V> extends HashMap<String, List<V>>
      */
     public Map<String, String[]> toStringArrayMap()
     {
-        HashMap<String, String[]> map = new HashMap<String, String[]>(size() * 3 / 2)
+        Map<String, String[]> map = new LinkedHashMap<String, String[]>(size() * 3 / 2)
         {
             @Override
             public String toString()
