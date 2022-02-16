@@ -2334,7 +2334,6 @@
                   <skip>${spotbugs.skip}</skip>
                   <failOnError>${spotbugs.failOnError}</failOnError>
                   <xmlOutput>true</xmlOutput>
-<!--                  <spotbugsXmlOutput>false</spotbugsXmlOutput>-->
                   <effort>${spotbugs.effort}</effort>
                   <threshold>${spotbugs.threshold}</threshold>
                   <fork>false</fork>
