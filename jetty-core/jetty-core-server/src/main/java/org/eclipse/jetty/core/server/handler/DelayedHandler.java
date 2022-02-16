@@ -34,12 +34,15 @@ public abstract class DelayedHandler extends Handler.Wrapper
     @Override
     public void handle(Request request) throws Exception
     {
-        // If no content or content available, then don't delay dispatch
+        // Defer to extended class to accept the request
         Response response = accept(request);
+
+        // If not accepted, then handle normally
         if (response == null)
             super.handle(request);
         else
         {
+            // If accepted then wrap with a DelayedRequest and schedule it for later execution
             DelayedRequest delayedRequest = new DelayedRequest(request, response);
             schedule(delayedRequest, delayedRequest);
         }
@@ -81,7 +84,10 @@ public abstract class DelayedHandler extends Handler.Wrapper
         {
             try
             {
+                // run is called when the delayed request is to be handled
                 DelayedHandler.super.handle(this);
+
+                // If the wrapped request was not accepted by the delayed handling, then 404 it
                 if (!isAccepted())
                     _response.writeError(HttpStatus.NOT_FOUND_404, _response.getCallback());
             }
@@ -97,6 +103,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
         @Override
         protected Response accept(Request request)
         {
+            // Accept the request if there is content
             if (request.getContentLength() > 0 || request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
                 return request.accept();
             return null;
@@ -123,9 +130,11 @@ public abstract class DelayedHandler extends Handler.Wrapper
         @Override
         protected Response accept(Request request)
         {
+            // Always accept the request, if not already accepted
             Response response = request.accept();
             if (response == null)
                 return null;
+            // wrap the response so that completion can be intercepted
             return new QoSResponse(request, response);
         }
 
