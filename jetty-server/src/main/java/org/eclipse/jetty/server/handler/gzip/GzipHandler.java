@@ -694,7 +694,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         String mimeType = context == null ? MimeTypes.getDefaultMimeByExtension(path) : context.getMimeType(path);
         if (mimeType != null)
         {
-            mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
+            mimeType = HttpField.valueParameters(mimeType, null);
             if (!isMimeTypeGzipable(mimeType))
             {
                 LOG.debug("{} excluded by path suffix mime type {}", this, request);
