@@ -14,6 +14,7 @@
 package org.eclipse.jetty.core.server.handler;
 
 import java.util.ArrayDeque;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -87,9 +88,19 @@ public abstract class DelayedHandler extends Handler.Wrapper
                 // run is called when the delayed request is to be handled
                 DelayedHandler.super.handle(this);
 
-                // If the wrapped request was not accepted by the delayed handling, then 404 it
+                // If the wrapped request was not accepted by the delayed handling, then
                 if (!isAccepted())
-                    _response.writeError(HttpStatus.NOT_FOUND_404, _response.getCallback());
+                {
+                    // Look for a default handler to pass the request to.
+                    // TODO make this either configurable and/or more flexible
+                    List<DefaultHandler> defaultHandlers = getServer().getChildHandlersByClass(DefaultHandler.class);
+                    if (defaultHandlers.size() == 1)
+                        defaultHandlers.get(0).handle(this);
+
+                    // If still not accepted, just 404 it
+                    if (!isAccepted())
+                        _response.writeError(HttpStatus.NOT_FOUND_404, _response.getCallback());
+                }
             }
             catch (Exception e)
             {

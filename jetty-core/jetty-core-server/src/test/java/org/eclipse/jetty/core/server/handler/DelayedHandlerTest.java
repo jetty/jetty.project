@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.core.server.Server;
@@ -63,7 +64,7 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testNotAccepted() throws Exception
+    public void testNotDelayed() throws Exception
     {
         DelayedHandler delayedHandler = new DelayedHandler()
         {
@@ -102,7 +103,7 @@ public class DelayedHandlerTest
     }
 
     @Test
-    public void testNotDelayed() throws Exception
+    public void testZeroDelayed() throws Exception
     {
         DelayedHandler delayedHandler = new DelayedHandler()
         {
@@ -327,6 +328,106 @@ public class DelayedHandlerTest
             assertEquals(HttpStatus.OK_200, response.getStatus());
             String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
             assertThat(content, containsString("Hello"));
+        }
+    }
+
+    @Test
+    public void testDelayed404() throws Exception
+    {
+        DelayedHandler delayedHandler = new DelayedHandler()
+        {
+            @Override
+            protected Response accept(Request request)
+            {
+                return request.accept();
+            }
+
+            @Override
+            protected void schedule(Request request, Runnable handle)
+            {
+                request.execute(handle);
+            }
+        };
+
+        _server.setHandler(delayedHandler);
+        delayedHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public void handle(Request request)
+            {
+                // Not accepted
+            }
+        });
+
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            String request = "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, containsString("<tr><th>MESSAGE:</th><td>Not Found</td></tr>"));
+        }
+    }
+
+    @Test
+    public void testDelayedDefault() throws Exception
+    {
+        Exchanger<Runnable> handleEx = new Exchanger<>();
+        DelayedHandler delayedHandler = new DelayedHandler()
+        {
+            @Override
+            protected Response accept(Request request)
+            {
+                return request.accept();
+            }
+
+            @Override
+            protected void schedule(Request request, Runnable handle)
+            {
+                request.execute(handle);
+            }
+        };
+
+        delayedHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public void handle(Request request)
+            {
+                // Not accepted
+            }
+        });
+
+        Handler.Collection handlers = new Handler.Collection();
+        handlers.setHandlers(delayedHandler, new DefaultHandler());
+        _server.setHandler(handlers);
+
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            String request = "GET / HTTP/1.1\r\n" +
+                "Host: localhost\r\n" +
+                "\r\n";
+            OutputStream output = socket.getOutputStream();
+            output.write(request.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertEquals(HttpStatus.NOT_FOUND_404, response.getStatus());
+            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, containsString("<p>No context on this server matched or handled this request.</p>"));
         }
     }
 
