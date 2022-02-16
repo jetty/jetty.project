@@ -34,6 +34,7 @@ import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -251,6 +252,64 @@ public class RequestTest
 
         String responses = _connector.getResponse(request);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
+    }
+
+    @Test
+    public void testParameterExtractionKeepOrderingIntact() throws Exception
+    {
+        AtomicReference<Map<String, String[]>> reference = new AtomicReference<>();
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request, HttpServletResponse response)
+            {
+                reference.set(request.getParameterMap());
+                return true;
+            }
+        };
+
+        String request = "POST /?first=1&second=2&third=3&fourth=4 HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\n" +
+            "Connection: close\n" +
+            "Content-Length: 34\n" +
+            "\n" +
+            "fifth=5&sixth=6&seventh=7&eighth=8";
+
+        String responses = _connector.getResponse(request);
+        assertTrue(responses.startsWith("HTTP/1.1 200"));
+        assertThat(new ArrayList<>(reference.get().keySet()), is(Arrays.asList("first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth")));
+    }
+
+    @Test
+    public void testParameterExtractionOrderingWithMerge() throws Exception
+    {
+        AtomicReference<Map<String, String[]>> reference = new AtomicReference<>();
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request, HttpServletResponse response)
+            {
+                reference.set(request.getParameterMap());
+                return true;
+            }
+        };
+
+        String request = "POST /?a=1&b=2&c=3&a=4 HTTP/1.1\r\n" +
+            "Host: whatever\r\n" +
+            "Content-Type: application/x-www-form-urlencoded\n" +
+            "Connection: close\n" +
+            "Content-Length: 11\n" +
+            "\n" +
+            "c=5&b=6&a=7";
+
+        String responses = _connector.getResponse(request);
+        Map<String, String[]> returnedMap = reference.get();
+        assertTrue(responses.startsWith("HTTP/1.1 200"));
+        assertThat(new ArrayList<>(returnedMap.keySet()), is(Arrays.asList("a", "b", "c")));
+        assertTrue(Arrays.equals(returnedMap.get("a"), new String[]{"1", "4", "7"}));
+        assertTrue(Arrays.equals(returnedMap.get("b"), new String[]{"2", "6"}));
+        assertTrue(Arrays.equals(returnedMap.get("c"), new String[]{"3", "5"}));
     }
 
     @Test

@@ -26,6 +26,8 @@ import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -534,6 +536,10 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 String response = IO.toString(is);
                 assertThat(response, is(""));
                 assertEquals(-1, is.read());
+            }
+            catch (SSLHandshakeException e)
+            {
+                LOG.debug("Legit possible SSL result", e);
             }
             catch (IOException e)
             {
