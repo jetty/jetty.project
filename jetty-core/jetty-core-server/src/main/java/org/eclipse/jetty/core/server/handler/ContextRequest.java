@@ -131,10 +131,10 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     {
         // return some hidden attributes for requestLog
         return switch (name)
-            {
-                case "o.e.j.s.h.ScopedRequest.contextPath" -> _contextHandler.getContext().getContextPath();
-                case "o.e.j.s.h.ScopedRequest.pathInContext" -> _pathInContext;
-                default -> super.getAttribute(name);
-            };
+        {
+            case "o.e.j.s.h.ScopedRequest.contextPath" -> _contextHandler.getContext().getContextPath();
+            case "o.e.j.s.h.ScopedRequest.pathInContext" -> _pathInContext;
+            default -> super.getAttribute(name);
+        };
     }
 }

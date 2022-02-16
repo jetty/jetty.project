@@ -14,8 +14,7 @@
 package org.eclipse.jetty.core.server;
 
 @FunctionalInterface
-public
-interface Processor
+public interface Processor
 {
-    void process(Request request, Response response) throws Exception;
+    public void process(Request request, Response response) throws Exception;
 }
