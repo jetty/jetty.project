@@ -54,9 +54,8 @@ public class SSLReadEOFAfterResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            protected void handle(Request request, Response response) throws Exception
             {
-                Response response = request.accept();
                 // First: read the whole content exactly
                 int length = bytes.length;
                 while (length > 0)

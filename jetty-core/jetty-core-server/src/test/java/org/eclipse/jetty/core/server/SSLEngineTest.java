@@ -355,9 +355,8 @@ public class SSLEngineTest
     private static class TestHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response) throws Exception
         {
-            Response response = request.accept();
             // System.err.println("HANDLE "+request.getRequestURI());
             SecureRequestCustomizer.SslSessionData sslData = (SecureRequestCustomizer.SslSessionData)
                 request.getAttribute("org.eclipse.jetty.servlet.request.ssl_session_data");

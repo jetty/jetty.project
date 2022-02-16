@@ -46,14 +46,9 @@ public class DumpHandler extends Handler.Abstract
     private final Blocking.Shared _blocker = new Blocking.Shared(); 
     private static final String _label = "Dump Handler";
 
-    public DumpHandler()
-    {
-    }
-
     @Override
-    public void handle(Request request) throws Exception
+    protected void handle(Request request, Response response) throws Exception
     {
-        Response response = request.accept();
         if (LOG.isDebugEnabled())
             LOG.debug("dump {}", request);
         HttpURI httpURI = request.getHttpURI();

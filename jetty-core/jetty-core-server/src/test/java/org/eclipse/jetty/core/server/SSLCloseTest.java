@@ -80,9 +80,8 @@ public class SSLCloseTest
     private static class WriteHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response) throws Exception
         {
-            Response response = request.accept();
             response.setStatus(200);
             response.setHeader("test", "value");
 

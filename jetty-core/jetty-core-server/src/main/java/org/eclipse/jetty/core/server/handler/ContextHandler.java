@@ -29,9 +29,8 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.core.server.ClassLoaderDump;
 import org.eclipse.jetty.core.server.Connector;
 import org.eclipse.jetty.core.server.Handler;
+import org.eclipse.jetty.core.server.Processor;
 import org.eclipse.jetty.core.server.Request;
-import org.eclipse.jetty.core.server.Response;
-import org.eclipse.jetty.core.server.Server;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -74,7 +73,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private String _contextPath = "/";
     private Path _resourceBase;
     private ClassLoader _classLoader;
-    private Handler _errorHandler;
+    private Processor _errorProcessor;
     private boolean _allowNullPathInfo;
 
     public ContextHandler()
@@ -117,14 +116,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     public void setAllowNullPathInfo(boolean allowNullPathInfo)
     {
         _allowNullPathInfo = allowNullPathInfo;
-    }
-
-    @Override
-    public void setServer(Server server)
-    {
-        super.setServer(server);
-        if (_errorHandler != null)
-            _errorHandler.setServer(server);
     }
 
     /**
@@ -446,7 +437,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public void handle(Request request) throws Exception
+    public void accept(Request request) throws Exception
     {
         if (getHandler() == null)
             return;
@@ -460,22 +451,25 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         if (pathInContext.isEmpty() && !getAllowNullPathInfo())
         {
-            String location = _contextPath + "/";
-            if (request.getHttpURI().getParam() != null)
-                location += ";" + request.getHttpURI().getParam();
-            if (request.getHttpURI().getQuery() != null)
-                location += ";" + request.getHttpURI().getQuery();
+            request.accept((rq, rs) ->
+            {
+                String location = _contextPath + "/";
+                if (rq.getHttpURI().getParam() != null)
+                    location += ";" + rq.getHttpURI().getParam();
+                if (rq.getHttpURI().getQuery() != null)
+                    location += ";" + rq.getHttpURI().getQuery();
 
-            Response response = request.accept();
-            response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
-            response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
-            response.getCallback().succeeded();
+                rs.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
+                rs.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
+                rs.getCallback().succeeded();
+            });
             return;
         }
 
         // TODO check availability and maybe return a 503
 
         ContextRequest scoped = wrap(request, pathInContext);
+        // TODO: why this check? scoped cannot be null.
         if (scoped == null)
             return; // TODO 404? 500? Error dispatch ???
 
@@ -524,24 +518,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     /**
      * @return Returns the errorHandler.
      */
-    @ManagedAttribute("The error handler to use for the context")
-    public Handler getErrorHandler()
+    @ManagedAttribute("The error processor to use for the context")
+    public Processor getErrorProcessor()
     {
         // TODO, do we need to wrap this so that we can establish the context
         //       Classloader?  Or will the caller already do that?
-        return _errorHandler;
+        return _errorProcessor;
     }
 
     /**
-     * @param errorHandler The errorHandler to set.
+     * @param errorProcessor The error processor to set.
      */
-    public void setErrorHandler(Handler errorHandler)
+    public void setErrorProcessor(Processor errorProcessor)
     {
-        Server server = getServer();
-        if (errorHandler != null && server != null)
-            errorHandler.setServer(server);
-        updateBean(_errorHandler, errorHandler, true);
-        _errorHandler = errorHandler;
+        updateBean(_errorProcessor, errorProcessor, true);
+        _errorProcessor = errorProcessor;
     }
 
     protected ContextRequest wrap(Request request, String pathInContext)

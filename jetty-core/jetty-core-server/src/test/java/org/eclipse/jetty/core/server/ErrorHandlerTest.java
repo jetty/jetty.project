@@ -24,7 +24,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 
 import org.eclipse.jetty.core.server.handler.ContextHandler;
 import org.eclipse.jetty.core.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.core.server.handler.ErrorHandler;
+import org.eclipse.jetty.core.server.handler.ErrorProcessor;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
@@ -67,10 +67,8 @@ public class ErrorHandlerTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            protected void handle(Request request, Response response)
             {
-
-                Response response = request.accept();
                 if (request.getPath().startsWith("/badmessage/"))
                 {
                     int code = Integer.parseInt(request.getPath().substring(request.getPath().lastIndexOf('/') + 1));
@@ -111,7 +109,7 @@ public class ErrorHandlerTest
                     throw new TestException(message);
                 }
 
-                response.writeError(404, response.getCallback());
+                response.writeError(request, 404, response.getCallback());
             }
         });
         server.start();
@@ -441,18 +439,13 @@ public class ErrorHandlerTest
     @Test
     public void testNoBodyErrorHandler() throws Exception
     {
-        server.setErrorHandler(new Handler.Abstract()
+        server.setErrorProcessor((request, response) ->
         {
-            @Override
-            public void handle(Request request)
-            {
-                Response response = request.accept();
-                response.setHeader(HttpHeader.LOCATION, "/error");
-                response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
-                response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
-                response.setStatus(302);
-                response.getCallback().succeeded();
-            }
+            response.setHeader(HttpHeader.LOCATION, "/error");
+            response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
+            response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
+            response.setStatus(302);
+            response.getCallback().succeeded();
         });
         String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
@@ -647,31 +640,28 @@ public class ErrorHandlerTest
         server.setHandler(contexts);
         ContextHandler context = new ContextHandler("/foo");
         contexts.addHandler(context);
-        context.setErrorHandler(new ErrorHandler()
+        context.setErrorProcessor(new ErrorProcessor()
         {
             @Override
-            public void handle(Request request)
+            public void process(Request request, Response response)
             {
-                Response response = request.accept();
                 response.write(true, response.getCallback(), BufferUtil.toBuffer("Context Error"));
             }
         });
         context.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            protected void handle(Request request, Response response)
             {
-                Response response = request.accept();
-                response.writeError(444, response.getCallback());
+                response.writeError(request, 444, response.getCallback());
             }
         });
 
-        server.setErrorHandler(new ErrorHandler()
+        server.setErrorProcessor(new ErrorProcessor()
         {
             @Override
-            public void handle(Request request)
+            public void process(Request request, Response response)
             {
-                Response response = request.accept();
                 response.write(true, response.getCallback(), BufferUtil.toBuffer("Server Error"));
             }
         });

@@ -16,7 +16,6 @@ package org.eclipse.jetty.core.server;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -35,10 +34,10 @@ import org.eclipse.jetty.util.UrlEncoded;
 public interface Request extends Attributes, Executor, Content.Provider
 {
     /**
-     * Accept the request for handling and provide the {@link Response} instance.
-     * @return The response instance or null if the request has already been accepted.
+     * Accepts the request for processing with the given {@link Processor}.
+     * @param processor the Processor that processes the request
      */
-    Response accept();
+    void accept(Processor processor) throws Exception;
 
     /**
      * Test if the request has been accepted.
@@ -50,7 +49,7 @@ public interface Request extends Attributes, Executor, Content.Provider
      *         // ...
      *     }
      * </pre>
-     * Instead, the {@link #accept()} method should be used and tested for a null result: <pre>
+     * Instead, the {@link #accept(Processor)} method should be used and tested for a null result: <pre>
      *     Response response = request.accept();
      *     if (response != null)
      *     {
@@ -59,7 +58,7 @@ public interface Request extends Attributes, Executor, Content.Provider
      * </pre>
      *
      * @return true if the request has been accepted, else null
-     * @see #accept()
+     * @see #accept(Processor)
      */
     boolean isAccepted();
 
@@ -92,11 +91,6 @@ public interface Request extends Attributes, Executor, Content.Provider
     void addErrorListener(Consumer<Throwable> onError);
 
     void addCompletionListener(Callback onComplete);
-
-    /**
-     * @return The response instance iff this request has been excepted, else null
-     */
-    Response getResponse();
 
     default Request getWrapped()
     {
@@ -199,18 +193,6 @@ public interface Request extends Attributes, Executor, Content.Provider
         return params;
     }
 
-    default Request getBaseRequest()
-    {
-        Request r = this;
-        while (true)
-        {
-            Request w = r.getWrapped();
-            if (w == null)
-                return r;
-            r = w;
-        }
-    }
-
     @SuppressWarnings("unchecked")
     default <R extends Request> R as(Class<R> type)
     {
@@ -236,75 +218,65 @@ public interface Request extends Attributes, Executor, Content.Provider
         return null;
     }
 
-    class Wrapper implements Request
+    class Wrapper extends Attributes.Wrapper implements Request
     {
-        private final Request _wrapped;
-        private final Response _response;
-
-        protected Wrapper(Request wrapped)
+        public Wrapper(Request wrapped)
         {
-            _wrapped = wrapped;
-            _response = null;
-        }
-
-        protected Wrapper(Request accepted, Response response)
-        {
-            _wrapped = accepted;
-            _response = response;
+            super(wrapped);
         }
 
         @Override
         public void execute(Runnable task)
         {
-            _wrapped.execute(task);
+            getWrapped().execute(task);
         }
 
         @Override
         public boolean isComplete()
         {
-            return _wrapped.isComplete();
+            return getWrapped().isComplete();
         }
 
         @Override
         public String getId()
         {
-            return _wrapped.getId();
+            return getWrapped().getId();
         }
 
         @Override
         public ConnectionMetaData getConnectionMetaData()
         {
-            return _wrapped.getConnectionMetaData();
+            return getWrapped().getConnectionMetaData();
         }
 
         @Override
         public HttpChannel getHttpChannel()
         {
-            return _wrapped.getHttpChannel();
+            return getWrapped().getHttpChannel();
         }
 
         @Override
         public String getMethod()
         {
-            return _wrapped.getMethod();
+            return getWrapped().getMethod();
         }
 
         @Override
         public HttpURI getHttpURI()
         {
-            return _wrapped.getHttpURI();
+            return getWrapped().getHttpURI();
         }
 
         @Override
         public String getPath()
         {
-            return _wrapped.getPath();
+            return getWrapped().getPath();
         }
 
         @Override
         public HttpFields getHeaders()
         {
-            return _wrapped.getHeaders();
+            return getWrapped().getHeaders();
         }
 
         @Override
@@ -316,85 +288,49 @@ public interface Request extends Attributes, Executor, Content.Provider
         @Override
         public long getContentLength()
         {
-            return _wrapped.getContentLength();
+            return getWrapped().getContentLength();
         }
 
         @Override
         public Content readContent()
         {
-            return _wrapped.readContent();
+            return getWrapped().readContent();
         }
 
         @Override
         public void demandContent(Runnable onContentAvailable)
         {
-            _wrapped.demandContent(onContentAvailable);
+            getWrapped().demandContent(onContentAvailable);
         }
 
         @Override
         public void addErrorListener(Consumer<Throwable> onError)
         {
-            _wrapped.addErrorListener(onError);
+            getWrapped().addErrorListener(onError);
         }
 
         @Override
         public void addCompletionListener(Callback onComplete)
         {
-            _wrapped.addCompletionListener(onComplete);
-        }
-
-        @Override
-        public Response getResponse()
-        {
-            return _response != null ? _response : _wrapped.getResponse();
+            getWrapped().addCompletionListener(onComplete);
         }
 
         @Override
         public Request getWrapped()
         {
-            return _wrapped;
+            return (Request)super.getWrapped();
         }
 
         @Override
-        public Response accept()
+        public void accept(Processor processor) throws Exception
         {
-            return _response == null ? _wrapped.accept() : null;
+            getWrapped().accept(processor);
         }
 
         @Override
         public boolean isAccepted()
         {
-            return _wrapped.isAccepted();
-        }
-
-        @Override
-        public Object removeAttribute(String name)
-        {
-            return _wrapped.removeAttribute(name);
-        }
-
-        @Override
-        public Object setAttribute(String name, Object attribute)
-        {
-            return _wrapped.setAttribute(name, attribute);
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            return _wrapped.getAttribute(name);
-        }
-
-        @Override
-        public Set<String> getAttributeNamesSet()
-        {
-            return _wrapped.getAttributeNamesSet();
-        }
-
-        @Override
-        public void clearAttributes()
-        {
-            _wrapped.clearAttributes();
+            return getWrapped().isAccepted();
         }
     }
 }

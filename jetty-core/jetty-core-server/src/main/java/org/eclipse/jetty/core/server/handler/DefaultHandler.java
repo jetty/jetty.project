@@ -84,16 +84,15 @@ public class DefaultHandler extends Handler.Abstract
     }
 
     @Override
-    public void handle(Request request) throws Exception
+    protected void handle(Request request, Response response) throws Exception
     {
-        Response response = request.accept();
-        if (response == null || response.isCommitted())
+        if (response.isCommitted())
             return;
 
         String method = request.getMethod();
 
         // little cheat for common request
-        if (_serveIcon && _favicon != null && HttpMethod.GET.is(method) && request.getPath().equals("/favicon.ico"))
+        if (isServeIcon() && _favicon != null && HttpMethod.GET.is(method) && request.getPath().equals("/favicon.ico"))
         {
             ByteBuffer content = BufferUtil.EMPTY_BUFFER;
             if (_faviconModifiedMs > 0 && request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE) == _faviconModifiedMs)
@@ -111,9 +110,9 @@ public class DefaultHandler extends Handler.Abstract
             return;
         }
 
-        if (!_showContexts || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
+        if (!isShowContexts() || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
         {
-            response.writeError(HttpStatus.NOT_FOUND_404, null, response.getCallback());
+            response.writeError(request, HttpStatus.NOT_FOUND_404, null, response.getCallback());
             return;
         }
 
@@ -202,7 +201,7 @@ public class DefaultHandler extends Handler.Abstract
      * @return Returns true if the handle can server the jetty favicon.ico
      */
     @ManagedAttribute("True if the favicon.ico should be served")
-    public boolean getServeIcon()
+    public boolean isServeIcon()
     {
         return _serveIcon;
     }
@@ -216,7 +215,7 @@ public class DefaultHandler extends Handler.Abstract
     }
 
     @ManagedAttribute("True if the contexts should be shown in the default 404 page")
-    public boolean getShowContexts()
+    public boolean isShowContexts()
     {
         return _showContexts;
     }

@@ -82,9 +82,8 @@ public class ProxyCustomizerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            protected void handle(Request request, Response response)
             {
-                Response response = request.accept();
                 response.addHeader("preexisting.attribute", request.getAttribute("some.attribute").toString());
                 ArrayList<String> attributeNames = new ArrayList<>(request.getAttributeNamesSet());
                 Collections.sort(attributeNames);
@@ -105,7 +104,7 @@ public class ProxyCustomizerTest
 
         server = new Server();
         HttpConfiguration httpConfiguration = new HttpConfiguration();
-        httpConfiguration.addCustomizer((connector, channelConfig, request) ->
+        httpConfiguration.addCustomizer((request, response, channelConfig) ->
         {
             request.setAttribute("some.attribute", "some value");
             return request;

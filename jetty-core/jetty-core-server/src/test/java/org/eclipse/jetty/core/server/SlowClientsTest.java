@@ -68,11 +68,10 @@ public class SlowClientsTest
             server.setHandler(new Handler.Abstract()
             {
                 @Override
-                public void handle(Request request) throws Exception
+                protected void handle(Request request, Response response)
                 {
                     LOG.info("SERVING {}", request);
                     // Write some big content.
-                    Response response = request.accept();
                     Callback callback = response.getCallback();
                     response.write(true, new Callback()
                         {
@@ -98,7 +97,7 @@ public class SlowClientsTest
 
             Assertions.assertTimeoutPreemptively(ofSeconds(10), () ->
             {
-                CompletableFuture[] futures = new CompletableFuture[2 * maxThreads];
+                CompletableFuture<?>[] futures = new CompletableFuture[2 * maxThreads];
                 ExecutorService executor = Executors.newFixedThreadPool(futures.length);
                 for (int i = 0; i < futures.length; i++)
                 {

@@ -30,9 +30,8 @@ import org.eclipse.jetty.util.StringUtil;
 public class EchoHandler extends Handler.Abstract
 {
     @Override
-    public void handle(Request request) throws Exception
+    protected void handle(Request request, Response response)
     {
-        Response response = request.accept();
         response.setStatus(200);
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (StringUtil.isNotBlank(contentType))
@@ -59,7 +58,7 @@ public class EchoHandler extends Handler.Abstract
         }
 
         @Override
-        protected Action process() throws Throwable
+        protected Action process()
         {
             Content content = _request.readContent();
             if (content == null)

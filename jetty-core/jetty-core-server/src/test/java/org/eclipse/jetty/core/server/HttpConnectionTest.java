@@ -297,25 +297,15 @@ public class HttpConnectionTest
         StringBuilder request = new StringBuilder();
         request.append("POST / HTTP/1.1\r\n");
         request.append("Host: local\r\n");
-        for (int n = 0; n < contentLengths.length; n++)
+        for (int contentLength : contentLengths)
         {
-            switch (contentLengths[n])
+            switch (contentLength)
             {
-                case CHUNKED:
-                    request.append("Transfer-Encoding: chunked\r\n");
-                    break;
-                case DQUOTED_CHUNKED:
-                    request.append("Transfer-Encoding: \"chunked\"\r\n");
-                    break;
-                case BAD_CHUNKED:
-                    request.append("Transfer-Encoding: 'chunked'\r\n");
-                    break;
-                case UNKNOWN_TE:
-                    request.append("Transfer-Encoding: bogus\r\n");
-                    break;
-                default:
-                    request.append("Content-Length: ").append(contentLengths[n]).append("\r\n");
-                    break;
+                case CHUNKED -> request.append("Transfer-Encoding: chunked\r\n");
+                case DQUOTED_CHUNKED -> request.append("Transfer-Encoding: \"chunked\"\r\n");
+                case BAD_CHUNKED -> request.append("Transfer-Encoding: 'chunked'\r\n");
+                case UNKNOWN_TE -> request.append("Transfer-Encoding: bogus\r\n");
+                default -> request.append("Content-Length: ").append(contentLength).append("\r\n");
             }
         }
         request.append("Content-Type: text/plain\r\n");
@@ -335,14 +325,14 @@ public class HttpConnectionTest
     public static Stream<Arguments> http11TransferEncodingChunked()
     {
         return Stream.of(
-            Arguments.of(Arrays.asList("chunked, ")), // results in 1 entry
-            Arguments.of(Arrays.asList(", chunked")),
+            Arguments.of(List.of("chunked, ")), // results in 1 entry
+            Arguments.of(List.of(", chunked")),
 
             // invalid tokens with chunked as last
             // no conflicts, chunked token is specified and is last, will result in chunked
-            Arguments.of(Arrays.asList("bogus, chunked")),
-            Arguments.of(Arrays.asList("'chunked', chunked")), // apostrophe characters with and without
-            Arguments.of(Arrays.asList("identity, chunked")), // identity was removed in RFC2616 errata and has been dropped in RFC7230
+            Arguments.of(List.of("bogus, chunked")),
+            Arguments.of(List.of("'chunked', chunked")), // apostrophe characters with and without
+            Arguments.of(List.of("identity, chunked")), // identity was removed in RFC2616 errata and has been dropped in RFC7230
 
             // multiple headers
             Arguments.of(Arrays.asList("identity", "chunked")), // 2 separate headers
@@ -379,25 +369,25 @@ public class HttpConnectionTest
             // == Results in 400 Bad Request
             Arguments.of(Arrays.asList("bogus", "identity")), // 2 separate headers
 
-            Arguments.of(Arrays.asList("bad")),
-            Arguments.of(Arrays.asList("identity")),  // identity was removed in RFC2616 errata and has been dropped in RFC7230
-            Arguments.of(Arrays.asList("'chunked'")), // apostrophe characters
-            Arguments.of(Arrays.asList("`chunked`")), // backtick "quote" characters
-            Arguments.of(Arrays.asList("[chunked]")), // bracketed (seen as mistake in several REST libraries)
-            Arguments.of(Arrays.asList("{chunked}")), // json'd (seen as mistake in several REST libraries)
-            Arguments.of(Arrays.asList("\u201Cchunked\u201D")), // opening and closing (fancy) double quotes characters
+            Arguments.of(List.of("bad")),
+            Arguments.of(List.of("identity")),  // identity was removed in RFC2616 errata and has been dropped in RFC7230
+            Arguments.of(List.of("'chunked'")), // apostrophe characters
+            Arguments.of(List.of("`chunked`")), // backtick "quote" characters
+            Arguments.of(List.of("[chunked]")), // bracketed (seen as mistake in several REST libraries)
+            Arguments.of(List.of("{chunked}")), // json'd (seen as mistake in several REST libraries)
+            Arguments.of(List.of("\u201Cchunked\u201D")), // opening and closing (fancy) double quotes characters
 
             // invalid tokens with chunked not as last
-            Arguments.of(Arrays.asList("chunked, bogus")),
-            Arguments.of(Arrays.asList("chunked, 'chunked'")),
-            Arguments.of(Arrays.asList("chunked, identity")),
-            Arguments.of(Arrays.asList("chunked, identity, chunked")), // duplicate chunked
-            Arguments.of(Arrays.asList("chunked", "identity")), // 2 separate header lines
+            Arguments.of(List.of("chunked, bogus")),
+            Arguments.of(List.of("chunked, 'chunked'")),
+            Arguments.of(List.of("chunked, identity")),
+            Arguments.of(List.of("chunked, identity, chunked")), // duplicate chunked
+            Arguments.of(List.of("chunked", "identity")), // 2 separate header lines
 
             // multiple chunked tokens present
-            Arguments.of(Arrays.asList("chunked", "identity", "chunked")), // 3 separate header lines
-            Arguments.of(Arrays.asList("chunked", "chunked")), // 2 separate header lines
-            Arguments.of(Arrays.asList("chunked, chunked")) // on same line
+            Arguments.of(List.of("chunked", "identity", "chunked")), // 3 separate header lines
+            Arguments.of(List.of("chunked", "chunked")), // 2 separate header lines
+            Arguments.of(List.of("chunked, chunked")) // on same line
         );
     }
 
@@ -508,7 +498,7 @@ public class HttpConnectionTest
     }
 
     @Test
-    public void test09() throws Exception
+    public void test09()
     {
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setHttpCompliance(HttpCompliance.RFC2616_LEGACY);
         LocalEndPoint endp = connector.executeRequest("GET /R1\n");
@@ -544,14 +534,13 @@ public class HttpConnectionTest
             "\r\n");
 
         int offset = 0;
-        offset = checkContains(response, offset, "HTTP/1.1 200");
+        checkContains(response, offset, "HTTP/1.1 200");
 
         response = connector.getResponse("GET /R1?empty=true HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "Connection: close\r\n" +
             "\r\n");
 
-        offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200");
         checkContains(response, offset, "Connection: close");
     }
@@ -705,7 +694,7 @@ public class HttpConnectionTest
 
         assertThat(postLine, equalTo(headLine));
         assertThat(postDate, equalTo(headDate));
-        assertTrue(postHeaders.equals(headHeaders));
+        assertEquals(postHeaders, headHeaders);
     }
 
     @Test
@@ -754,7 +743,7 @@ public class HttpConnectionTest
 
         assertThat(postLine, equalTo(headLine));
         assertThat(postDate, equalTo(headDate));
-        assertTrue(postHeaders.equals(headHeaders));
+        assertEquals(postHeaders, headHeaders);
     }
 
     @Test
@@ -859,9 +848,8 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            protected void handle(Request request, Response response)
             {
-                Response response = request.accept();
                 response.setStatus(200);
                 response.write(false, response.getCallback());
             }
@@ -1135,9 +1123,8 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            protected void handle(Request request, Response response)
             {
-                Response response = request.accept();
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.setHeader("LongStr", longstr);
                 Callback callback = response.getCallback();
@@ -1186,9 +1173,8 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            protected void handle(Request request, Response response)
             {
-                Response response = request.accept();
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.setHeader("LongStr", longstr);
 
@@ -1204,8 +1190,7 @@ public class HttpConnectionTest
         });
         server.start();
 
-        String response = null;
-        response = connector.getResponse("GET / HTTP/1.1\r\n" +
+        String response = connector.getResponse("GET / HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "\r\n"
         );
@@ -1301,9 +1286,8 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            protected void handle(Request request, Response response)
             {
-                Response response = request.accept();
                 while (true)
                 {
                     Content content = request.readContent();

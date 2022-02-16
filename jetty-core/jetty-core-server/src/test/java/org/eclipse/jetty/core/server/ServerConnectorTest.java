@@ -64,9 +64,8 @@ public class ServerConnectorTest
     public static class ReuseInfoHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response) throws Exception
         {
-            Response response = request.accept();
             response.setContentType("text/plain");
 
             EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
@@ -242,9 +241,8 @@ public class ServerConnectorTest
             server.setHandler(new Handler.Abstract()
             {
                 @Override
-                public void handle(Request request)
+                protected void handle(Request request, Response response)
                 {
-                    Response response = request.accept();
                     response.getCallback().succeeded();
                 }
             });

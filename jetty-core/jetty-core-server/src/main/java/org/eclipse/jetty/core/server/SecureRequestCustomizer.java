@@ -191,7 +191,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     @Override
-    public Request customize(Connector connector, HttpConfiguration channelConfig, Request request)
+    public Request customize(Request request, Response response, HttpConfiguration httpConfig)
     {
         EndPoint endp = request.getConnectionMetaData().getConnection().getEndPoint();
         HttpURI uri = request.getHttpURI();

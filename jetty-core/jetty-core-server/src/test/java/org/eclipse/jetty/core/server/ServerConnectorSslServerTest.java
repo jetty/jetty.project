@@ -36,8 +36,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -51,7 +49,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class ServerConnectorSslServerTest extends HttpServerTestBase
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ServerConnectorSslServerTest.class);
     private SSLContext _sslContext;
 
     public ServerConnectorSslServerTest()
@@ -109,24 +106,6 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         return socket;
     }
 
-    @Override
-    public void testFullHeader() throws Exception
-    {
-        super.testFullHeader();
-    }
-
-    @Override
-    public void testBlockingWhileReadingRequestContent() throws Exception
-    {
-        super.testBlockingWhileReadingRequestContent();
-    }
-
-    @Override
-    public void testBlockingWhileWritingResponseContent() throws Exception
-    {
-        super.testBlockingWhileWritingResponseContent();
-    }
-
     @Test
     public void testRequest2FixedFragments() throws Exception
     {
@@ -139,17 +118,15 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         Arrays.sort(points);
 
         URI uri = _server.getURI();
-        Socket client = newSocket(uri.getHost(), uri.getPort());
-        try
+        try (Socket client = newSocket(uri.getHost(), uri.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
             int last = 0;
 
             // Write out the fragments
-            for (int j = 0; j < points.length; ++j)
+            for (int point : points)
             {
-                int point = points[j];
                 os.write(bytes, last, point - last);
                 last = point;
                 os.flush();
@@ -166,10 +143,6 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
 
             // Check the response
             assertEquals(RESPONSE2, response);
-        }
-        finally
-        {
-            client.close();
         }
     }
 
@@ -226,9 +199,8 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
     public static class SecureRequestHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response) throws Exception
         {
-            Response response = request.accept();
             response.setStatus(200);
             StringBuilder out = new StringBuilder();
             SSLSession session = (SSLSession)request.getAttribute("SSL_SESSION");

@@ -86,7 +86,7 @@ public class SniSslConnectionFactoryTest
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
         httpConfiguration.addCustomizer(secureRequestCustomizer);
-        httpConfiguration.addCustomizer((connector, httpConfig, request) ->
+        httpConfiguration.addCustomizer((request, response, httpConfig) ->
         {
             EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
             SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
@@ -94,7 +94,7 @@ public class SniSslConnectionFactoryTest
             SSLEngine sslEngine = sslConnection.getSSLEngine();
             SSLSession session = sslEngine.getSession();
             for (Certificate c : session.getLocalCertificates())
-                request.getResponse().getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
+                response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
             return request;
         });
 
@@ -115,9 +115,8 @@ public class SniSslConnectionFactoryTest
         _server.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            protected void handle(Request request, Response response) throws Exception
             {
-                Response response = request.accept();
                 response.setStatus(200);
                 response.setHeader("X-URL", request.getHttpURI().toString());
                 response.setHeader("X-HOST", request.getServerName());

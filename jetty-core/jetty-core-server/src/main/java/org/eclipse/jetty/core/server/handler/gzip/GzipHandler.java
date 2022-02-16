@@ -15,8 +15,8 @@ package org.eclipse.jetty.core.server.handler.gzip;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.core.server.Content;
 import org.eclipse.jetty.core.server.Handler;
+import org.eclipse.jetty.core.server.Processor;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.HttpField;
@@ -30,74 +30,67 @@ public class GzipHandler extends Handler.Wrapper
     private static final HttpField CONTENT_ENCODING_GZIP = new HttpField(HttpHeader.CONTENT_ENCODING, "gzip");
 
     @Override
-    public void handle(Request request) throws Exception
+    public void accept(Request request) throws Exception
     {
         // TODO more conditions than this
         // TODO handle other encodings
         // TODO more efficient than this
-        if (!request.getHeaders().contains(ACCEPT_GZIP) && !request.getHeaders().contains(CONTENT_ENCODING_GZIP))
+        HttpFields headers = request.getHeaders();
+        if (!headers.contains(ACCEPT_GZIP) && !headers.contains(CONTENT_ENCODING_GZIP))
         {
-            super.handle(request);
-            return;
+            super.accept(request);
+        }
+        else
+        {
+            super.accept(new GzipRequest(request));
+        }
+    }
+
+    private static class GzipRequest extends Request.Wrapper
+    {
+        private GzipRequest(Request delegate)
+        {
+            super(delegate);
         }
 
-        HttpFields updated = HttpFields.from(request.getHeaders(), f ->
+        @Override
+        public void accept(Processor processor) throws Exception
         {
-            if (f.getHeader() != null)
+            getWrapped().accept((rq, rs) ->
             {
-                // TODO this is too simple
-                if (CONTENT_ENCODING_GZIP.equals(f))
-                    return null;
-                if (f.getHeader().equals(HttpHeader.CONTENT_LENGTH))
-                    return null;
-            }
-            return f;
-        });
-
-        // TODO look up cached or pool inflaters / deflated
-        final Object inflaterAndOrDeflator = request.getHttpChannel().getAttribute("o.e.j.s.h.gzip.cachedCompression");
-
-        super.handle(
-            new Request.Wrapper(request)
-            {
-                @Override
-                public HttpFields getHeaders()
+                HttpFields newHeaders = HttpFields.from(rq.getHeaders(), f ->
                 {
-                    return updated;
-                }
-
-                @Override
-                public long getContentLength()
-                {
-                    // TODO hide the content length
-                    return -1;
-                }
-
-                @Override
-                public Content readContent()
-                {
-                    // TODO inflate data
-                    return super.readContent();
-                }
-
-                @Override
-                public Response accept()
-                {
-                    Response response = super.accept();
-                    if (response != null)
+                    if (f.getHeader() != null)
                     {
-                        return new Response.Wrapper(request, request.accept())
-                        {
-                            @Override
-                            public void write(boolean last, Callback callback, ByteBuffer... content)
-                            {
-                                // TODO deflate data
-                                super.write(last, callback, content);
-                            }
-                        };
+                        // TODO this is too simple
+                        if (CONTENT_ENCODING_GZIP.equals(f))
+                            return null;
+                        if (f.getHeader().equals(HttpHeader.CONTENT_LENGTH))
+                            return null;
                     }
-                    return null;
-                }
+                    return f;
+                });
+
+                // TODO look up cached or pool inflaters / deflated
+
+                // TODO: override getHttpFields(), getContentLength(), etc.
+                processor.process(this, new GzipResponse(rs));
             });
+        }
+    }
+
+    private static class GzipResponse extends Response.Wrapper
+    {
+        private GzipResponse(Response wrapped)
+        {
+            super(wrapped);
+        }
+
+        @Override
+        public void write(boolean last, Callback callback, ByteBuffer... content)
+        {
+            // TODO: deflate data.
+            super.write(last, callback, content);
+        }
     }
 }

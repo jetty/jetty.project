@@ -15,6 +15,7 @@ package org.eclipse.jetty.core.server.handler;
 
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.core.server.Processor;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.BadMessageException;
@@ -27,6 +28,7 @@ import org.slf4j.LoggerFactory;
 public class ContextRequest extends Request.Wrapper implements Invocable.Callable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
+
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
     private volatile Response _response;
@@ -39,19 +41,13 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     }
 
     @Override
-    public Response accept()
+    public void accept(Processor processor) throws Exception
     {
-        Response response = super.accept();
-        if (response == null)
-            return null;
-        _response = new ContextResponse(this, response);
-        return _response;
-    }
-
-    @Override
-    public Response getResponse()
-    {
-        return _response;
+        super.accept((rq, rs) ->
+        {
+            _response = new ContextResponse(this, rs);
+            processor.process(this, _response);
+        });
     }
 
     @Override
@@ -59,7 +55,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     {
         try
         {
-            _contextHandler.getHandler().handle(this);
+            _contextHandler.getHandler().accept(this);
         }
         catch (Throwable t)
         {
@@ -75,7 +71,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
                 Response response = _response;
                 if (!response.isCommitted())
                 {
-                    response.writeError(t, response.getCallback());
+                    response.writeError(this, t, response.getCallback());
                     return;
                 }
                 throw t;
@@ -134,14 +130,11 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     public Object getAttribute(String name)
     {
         // return some hidden attributes for requestLog
-        switch (name)
-        {
-            case "o.e.j.s.h.ScopedRequest.contextPath":
-                return _contextHandler.getContext().getContextPath();
-            case "o.e.j.s.h.ScopedRequest.pathInContext":
-                return _pathInContext;
-            default:
-                return super.getAttribute(name);
-        }
+        return switch (name)
+            {
+                case "o.e.j.s.h.ScopedRequest.contextPath" -> _contextHandler.getContext().getContextPath();
+                case "o.e.j.s.h.ScopedRequest.pathInContext" -> _pathInContext;
+                default -> super.getAttribute(name);
+            };
     }
 }

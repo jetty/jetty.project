@@ -26,7 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.core.server.handler.ContextHandler;
-import org.eclipse.jetty.core.server.handler.ErrorHandler;
+import org.eclipse.jetty.core.server.handler.ErrorProcessor;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
@@ -36,7 +36,6 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.Uptime;
@@ -62,7 +61,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
-    private Handler _errorHandler;
+    private Processor _errorProcessor;
     private RequestLog _requestLog;
     private boolean _dryRun;
     private final AutoLock _dateLock = new AutoLock();
@@ -113,52 +112,33 @@ public class Server extends Handler.Wrapper implements Attributes
         setServer(this);
     }
 
-    @Override
-    public void handle(Request request)
+    void process(Request request, Response response)
     {
         if (!isStarted())
             return;
 
         try
         {
-            // Customize
+            // Customize before accepting.
             Request customizedRequest = request;
             HttpConfiguration configuration = request.getHttpChannel().getHttpConfiguration();
             for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
             {
-                Request customized = customizer.customize(request.getConnectionMetaData().getConnector(), configuration, customizedRequest);
+                // TODO: what if customize() throws?
+                Request customized = customizer.customize(customizedRequest, response, configuration);
                 customizedRequest = customized == null ? request : customized;
-                if (request.isAccepted())
+                if (customizedRequest.isAccepted())
                     return;
             }
 
-            // Handle
-            Handler next = getHandler();
-            if (next != null)
-                next.handle(customizedRequest);
-
-            // Try to accept to test if already accepted
-            Response response = request.accept();
-            if (response != null)
-            {
-                Callback callback = response.getCallback();
-                if (response.isCommitted())
-                    callback.failed(new IllegalStateException("No Handler for committed request"));
-                else
-                    response.writeError(404, null, callback);
-            }
+            request = new ServerRequest(customizedRequest);
+            accept(request);
+            if (!request.isAccepted())
+                response.writeError(request, 404, response.getCallback());
         }
         catch (Throwable t)
         {
-            // Let's be less verbose with BadMessageExceptions & QuietExceptions
-            if (!LOG.isDebugEnabled() && (t instanceof BadMessageException || t instanceof QuietException))
-                LOG.warn("bad message {}", t.getMessage());
-            else
-                LOG.warn("handle failed {}", this, t);
-
-            Response response = request.accept();
-            if (response == null)
-                response = request.getResponse();
+            // TODO: improve error handling.
             response.getCallback().failed(t);
         }
     }
@@ -178,9 +158,9 @@ public class Server extends Handler.Wrapper implements Attributes
         return _requestLog;
     }
 
-    public Handler getErrorHandler()
+    public Processor getErrorProcessor()
     {
-        return _errorHandler;
+        return _errorProcessor;
     }
 
     public void setRequestLog(RequestLog requestLog)
@@ -189,12 +169,10 @@ public class Server extends Handler.Wrapper implements Attributes
         _requestLog = requestLog;
     }
 
-    public void setErrorHandler(Handler errorHandler)
+    public void setErrorProcessor(Processor errorProcessor)
     {
-        updateBean(_errorHandler, errorHandler);
-        _errorHandler = errorHandler;
-        if (errorHandler != null)
-            ((Handler.Abstract)errorHandler).setServer(this);
+        updateBean(_errorProcessor, errorProcessor);
+        _errorProcessor = errorProcessor;
     }
 
     @ManagedAttribute("version of this server")
@@ -252,7 +230,7 @@ public class Server extends Handler.Wrapper implements Attributes
     public Connector[] getConnectors()
     {
         List<Connector> connectors = new ArrayList<>(_connectors);
-        return connectors.toArray(new Connector[connectors.size()]);
+        return connectors.toArray(new Connector[0]);
     }
 
     public void addConnector(Connector connector)
@@ -397,8 +375,8 @@ public class Server extends Handler.Wrapper implements Attributes
             //Start a thread waiting to receive "stop" commands.
             ShutdownMonitor.getInstance().start(); // initialize
 
-            if (_errorHandler == null)
-                setErrorHandler(new DynamicErrorHandler());
+            if (_errorProcessor == null)
+                setErrorProcessor(new DynamicErrorProcessor());
 
             String gitHash = Jetty.GIT_HASH;
             String timestamp = Jetty.BUILD_TIMESTAMP;
@@ -543,8 +521,8 @@ public class Server extends Handler.Wrapper implements Attributes
             mex.add(e);
         }
 
-        if (getErrorHandler() instanceof DynamicErrorHandler)
-            setErrorHandler(null);
+        if (getErrorProcessor() instanceof DynamicErrorProcessor)
+            setErrorProcessor(null);
 
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
@@ -684,5 +662,36 @@ public class Server extends Handler.Wrapper implements Attributes
         }
     }
 
-    private static class DynamicErrorHandler extends ErrorHandler {}
+    private static class DynamicErrorProcessor extends ErrorProcessor {}
+
+    private static class ServerRequest extends Request.Wrapper
+    {
+        private ServerRequest(Request wrapped)
+        {
+            super(wrapped);
+        }
+
+        @Override
+        public void accept(Processor processor) throws Exception
+        {
+            getWrapped().accept((rq, rs) ->
+            {
+                try
+                {
+                    processor.process(this, rs);
+                }
+                catch (Throwable x)
+                {
+                    // Let's be less verbose with BadMessageExceptions & QuietExceptions
+                    // TODO: improve log messages.
+                    if (!LOG.isDebugEnabled() && (x instanceof BadMessageException || x instanceof QuietException))
+                        LOG.warn("bad message {}", x.getMessage());
+                    else
+                        LOG.warn("handle failed {}", this, x);
+
+                    rs.getCallback().failed(x);
+                }
+            });
+        }
+    }
 }

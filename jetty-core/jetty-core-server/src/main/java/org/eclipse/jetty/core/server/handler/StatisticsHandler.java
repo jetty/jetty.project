@@ -26,16 +26,16 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
-public class RequestStatsHandler extends Handler.Wrapper
+public class StatisticsHandler extends Handler.Wrapper
 {
-    private ConcurrentHashMap<String, Object> _connectionStats = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Object> _connectionStats = new ConcurrentHashMap<>();
 
     private final CounterStatistic _requestStats = new CounterStatistic();
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
 
     @Override
-    public void handle(Request request) throws Exception
+    public void accept(Request request) throws Exception
     {
         Object connectionStats = _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {
@@ -96,7 +96,7 @@ public class RequestStatsHandler extends Handler.Wrapper
 
         try
         {
-            super.handle(new Request.Wrapper(request)
+            super.accept(new Request.Wrapper(request)
             {
                 // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
                 @Override

@@ -272,7 +272,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void accept(Request request) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -301,7 +301,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void accept(Request request) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -332,9 +332,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            protected void handle(Request request, Response response) throws Exception
             {
-                Response response = request.accept();
                 long contentLength = request.getContentLength();
                 long read = 0;
                 while (read < contentLength)
@@ -996,6 +995,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         byte[] buf = new byte[128 * 1024];
 
+        private BigBlockHandler()
         {
             for (int i = 0; i < buf.length; i++)
             {
@@ -1004,9 +1004,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response) throws Exception
         {
-            Response response = request.accept();
             response.setStatus(200);
             response.setContentType("text/plain");
 
@@ -1025,7 +1024,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             StringBuilder out = new StringBuilder();
             out.append("\n");
             for (long t : times)
+            {
                 out.append(t).append(",");
+            }
 
             response.write(true, response.getCallback(), BufferUtil.toBuffer(out.toString()));
         }
@@ -1038,10 +1039,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new HelloHandler("Hello\n")
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void accept(Request request) throws Exception
             {
                 served.incrementAndGet();
-                super.handle(request);
+                super.accept(request);
             }
         });
 
@@ -1214,9 +1215,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public EndPoint _endp;
 
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response) throws Exception
         {
-            Response response = request.accept();
             _endp = request.getConnectionMetaData().getConnection().getEndPoint();
             response.setHeader("test", "value");
             response.setStatus(200);
@@ -1332,32 +1332,28 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         final OutputStream out = client.getOutputStream();
 
-        new Thread()
+        new Thread(() ->
         {
-            @Override
-            public void run()
+            try
             {
-                try
-                {
-                    byte[] bytes = ("GET / HTTP/1.1\r\n" +
-                        "Host: localhost\r\n" +
-                        "Content-Length: " + cl + "\r\n" +
-                        "\r\n" +
-                        content).getBytes(StandardCharsets.ISO_8859_1);
+                byte[] bytes = ("GET / HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Content-Length: " + cl + "\r\n" +
+                    "\r\n" +
+                    content).getBytes(StandardCharsets.ISO_8859_1);
 
-                    for (int i = 0; i < REQS; i++)
-                    {
-                        out.write(bytes, 0, bytes.length);
-                    }
-                    out.write("GET /last HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
-                    out.flush();
-                }
-                catch (Exception e)
+                for (int i = 0; i < REQS; i++)
                 {
-                    e.printStackTrace();
+                    out.write(bytes, 0, bytes.length);
                 }
+                out.write("GET /last HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+                out.flush();
             }
-        }.start();
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }).start();
 
         String resps = readResponse(client);
 
@@ -1423,9 +1419,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response)
         {
-            Response response = request.accept();
             response.setStatus(304);
             response.write(false, response.getCallback(), BufferUtil.toBuffer("yuck"));
         }
@@ -1434,10 +1429,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     public static class NoopHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response)
         {
             //don't read the input, just send something back
-            Response response = request.accept();
             response.setStatus(200);
             response.getCallback().succeeded();
         }
@@ -1536,9 +1530,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            protected void handle(Request request, Response response) throws Exception
             {
-                Response response = request.accept();
                 request.getHttpChannel().addConnectionCloseListener(t -> closed.countDown());
                 while (true)
                 {
@@ -1619,23 +1612,25 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
     public static class TestHandler extends EchoHandler
     {
-        boolean _musthavecontent = true;
+        boolean _mustHaveContent;
 
         public TestHandler()
         {
+            this(true);
         }
 
         public TestHandler(boolean content)
         {
-            _musthavecontent = false;
+            _mustHaveContent = content;
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public void accept(Request request) throws Exception
         {
-            super.handle(new Request.Wrapper(request)
+            super.accept(new Request.Wrapper(request)
             {
                 volatile boolean hasContent = false;
+
                 @Override
                 public Content readContent()
                 {
@@ -1646,29 +1641,29 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
 
                 @Override
-                public Response accept()
+                public void accept(Processor processor) throws Exception
                 {
-                    Response response = super.accept();
-                    if (response == null)
-                        return null;
-                    return new Response.Wrapper(request, response)
+                    getWrapped().accept((rq, rs) ->
                     {
-                        @Override
-                        public Callback getCallback()
+                        processor.process(this, new Response.Wrapper(rs)
                         {
-                            return new Callback.Nested(super.getCallback())
+                            @Override
+                            public Callback getCallback()
                             {
-                                @Override
-                                public void succeeded()
+                                return new Callback.Nested(super.getCallback())
                                 {
-                                    if (_musthavecontent && !hasContent)
-                                        super.failed(new IllegalStateException("No Test Content"));
-                                    else
-                                        super.succeeded();
-                                }
-                            };
-                        }
-                    };
+                                    @Override
+                                    public void succeeded()
+                                    {
+                                        if (_mustHaveContent && !hasContent)
+                                            super.failed(new IllegalStateException("No Test Content"));
+                                        else
+                                            super.succeeded();
+                                    }
+                                };
+                            }
+                        });
+                    });
                 }
             });
         }

@@ -160,10 +160,9 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            protected void handle(Request request, Response response)
             {
                 assertInContext(request);
-                Response response = request.accept();
                 response.setStatus(200);
                 response.getCallback().succeeded();
             }
@@ -192,10 +191,9 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            protected void handle(Request request, Response response)
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
-                Response response = request.accept();
                 Callback callback = response.getCallback();
                 request.demandContent(() ->
                 {
@@ -260,11 +258,9 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            protected void handle(Request request, Response response) throws Exception
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
-
-                Response response = request.accept();
 
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demandContent(() ->
@@ -378,13 +374,12 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(Request request) throws Exception
+            protected void handle(Request request, Response response)
             {
-                request.accept();
                 throw new RuntimeException("Testing");
             }
         });
-        _contextHandler.setErrorHandler(new ErrorHandler()
+        _contextHandler.setErrorProcessor(new ErrorProcessor()
         {
             @Override
             protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException

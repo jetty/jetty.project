@@ -322,9 +322,8 @@ public class SSLSelectChannelConnectorLoadTest
     private static class TestHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response) throws Exception
         {
-            Response response = request.accept();
             ByteBuffer input = Content.readBytes(request);
             response.write(true, response.getCallback(), BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()));
         }

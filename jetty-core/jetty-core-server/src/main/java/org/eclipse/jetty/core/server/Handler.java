@@ -33,36 +33,35 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Incoming requests to the Server (itself a Handler) are passed to one or more Handlers
  * until the request is handled and a response is produced.  Handlers are asynchronous,
- * so handling may happen during or after a call to {@link #handle(Request)}.
+ * so handling may happen during or after a call to {@link #accept(Request)}.
  *
  * <p>
- * A call to {@link #handle(Request)} may:
+ * A call to {@link #accept(Request)} may:
  * <ul>
  * <li>Do nothing</li>
  * <li>Completely generate the HTTP Response and call {@link Callback#succeeded()} on the {@link Callback}
- * returned from {@link Request#accept()}.</li>
- * <li>Call {@link Request#accept()} and arrange for an async process to generate the HTTP Response and call
+ * returned from {@link Request#accept(Processor)}.</li>
+ * <li>Call {@link Request#accept(Processor)} and arrange for an async process to generate the HTTP Response and call
  * {@link Callback#succeeded()} or {@link Callback#failed(Throwable)} on the {@link Callback} returned.</li>
  * <li>Pass the request to one or more other Handlers.</li>
  * <li>Wrap the request and/or response and pass them to one or more other Handlers.</li>
  * <li>Fail the request by calling {@link Callback#failed(Throwable)} on the {@link Callback} returned from
- * {@link Request#accept()}.</li>
+ * {@link Request#accept(Processor)}.</li>
  * </ul>
  *
  */
 @ManagedObject("Handler")
 public interface Handler extends LifeCycle, Destroyable
 {
-
     /**
      * Handle an HTTP request and produce a response.
      * @param request The immutable request, which is also a {@link Callback} used to signal success or failure. The Handler
-     * or one of it's nested Handlers must call {@link Request#accept()} to indicate that it will ultimately succeed or
+     * or one of it's nested Handlers must call {@link Request#accept(Processor)} to indicate that it will ultimately succeed or
      * fail the {@link Callback} returned.
      *
      * @throws Exception Thrown if there is a problem handling.
      */
-    void handle(Request request) throws Exception;
+    void accept(Request request) throws Exception;
 
     @ManagedAttribute(value = "the jetty server for this handler", readonly = true)
     Server getServer();
@@ -122,7 +121,19 @@ public interface Handler extends LifeCycle, Destroyable
     abstract class Abstract extends ContainerLifeCycle implements Handler
     {
         private static final Logger LOG = LoggerFactory.getLogger(Abstract.class);
+
+        private final Processor _processor = this::handle;
         private Server _server;
+
+        @Override
+        public void accept(Request request) throws Exception
+        {
+            request.accept(_processor);
+        }
+
+        protected void handle(Request request, Response response) throws Exception
+        {
+        }
 
         @Override
         public Server getServer()
@@ -146,7 +157,7 @@ public interface Handler extends LifeCycle, Destroyable
             if (LOG.isDebugEnabled())
                 LOG.debug("starting {}", this);
             if (_server == null)
-                throw new IllegalStateException(String.format("No Server set for {}", this));
+                throw new IllegalStateException(String.format("No Server set for %s", this));
             super.doStart();
         }
 
@@ -223,8 +234,7 @@ public interface Handler extends LifeCycle, Destroyable
             super.setServer(server);
             for (Handler h : getHandlers())
             {
-                if (h instanceof Abstract)
-                    ((Abstract)h).setServer(server);
+                h.setServer(server);
             }
         }
     }
@@ -248,8 +258,7 @@ public interface Handler extends LifeCycle, Destroyable
                 ((Handler.Container)handler).getChildHandlers().contains(this)))
                 throw new IllegalStateException("setHandler loop");
 
-            if (handler instanceof Abstract)
-                ((Abstract)handler).setServer(getServer());
+            handler.setServer(getServer());
             updateBean(_handler, handler);
             _handler = handler;
         }
@@ -280,16 +289,16 @@ public interface Handler extends LifeCycle, Destroyable
         public void setServer(Server server)
         {
             super.setServer(server);
-            if (_handler instanceof Abstract)
-                ((Abstract)_handler).setServer(getServer());
+            if (_handler != null)
+                _handler.setServer(getServer());
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public void accept(Request request) throws Exception
         {
             Handler next = getHandler();
             if (next != null)
-                next.handle(request);
+                next.accept(request);
         }
     }
 
@@ -317,7 +326,7 @@ public interface Handler extends LifeCycle, Destroyable
 
     /**
      * A Handler Container that wraps a list of other Handlers.
-     * By default, each handler is called in turn until one returns true from {@link Handler#handle(Request)}.
+     * By default, each handler is called in turn until one returns true from {@link Handler#accept(Request)}.
      */
     class Collection extends AbstractContainer
     {
@@ -335,12 +344,12 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public void accept(Request request) throws Exception
         {
             for (Handler h : _handlers)
             {
                 if (!request.isAccepted())
-                    h.handle(request);
+                    h.accept(request);
             }
         }
 
@@ -372,8 +381,7 @@ public interface Handler extends LifeCycle, Destroyable
                 if (handler == this || (handler instanceof Handler.Container &&
                     ((Handler.Container)handler).getChildHandlers().contains(this)))
                     throw new IllegalStateException("setHandler loop");
-                if (handler instanceof Abstract)
-                    ((Abstract)handler).setServer(getServer());
+                handler.setServer(getServer());
             }
 
             updateBeans(_handlers, handlers);

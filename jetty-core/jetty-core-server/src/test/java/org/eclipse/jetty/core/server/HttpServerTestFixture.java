@@ -27,15 +27,10 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpServerTestFixture
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpServerTestFixture.class);
-
-    // Useful constants
     protected static final long PAUSE = 10L;
     protected static final int LOOPS = 50;
 
@@ -95,9 +90,8 @@ public class HttpServerTestFixture
     protected static class OptionsHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response)
         {
-            Response response = request.accept();
             if (request.getMethod().equals("OPTIONS"))
                 response.setStatus(200);
             else
@@ -112,11 +106,6 @@ public class HttpServerTestFixture
         private final int code;
         private final String message;
 
-        public SendErrorHandler()
-        {
-            this(500, null);
-        }
-
         public SendErrorHandler(int code, String message)
         {
             this.code = code;
@@ -124,16 +113,15 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response)
         {
-            Response response = request.accept();
-            response.writeError(code, message, response.getCallback());
+            response.writeError(request, code, message, response.getCallback());
         }
     }
 
     protected static class ReadExactHandler extends Handler.Abstract
     {
-        private int expected;
+        private final int expected;
 
         public ReadExactHandler()
         {
@@ -146,9 +134,8 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response) throws Exception
         {
-            Response response = request.accept();
             long len = expected < 0 ? request.getContentLength() : expected;
             if (len < 0)
                 throw new IllegalStateException();
@@ -188,9 +175,8 @@ public class HttpServerTestFixture
     protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response)
         {
-            Response response = request.accept();
             response.setStatus(200);
             Callback callback = response.getCallback();
             Content.readUtf8String(request, Promise.from(
@@ -203,9 +189,8 @@ public class HttpServerTestFixture
     protected static class DataHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        protected void handle(Request request, Response response) throws Exception
         {
-            Response response = request.accept();
             response.setStatus(200);
 
             String input = Content.readUtf8String(request);

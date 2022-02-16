@@ -29,11 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.core.server.Content;
-import org.eclipse.jetty.core.server.Handler;
+import org.eclipse.jetty.core.server.Processor;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.core.server.Server;
@@ -55,14 +54,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handler for Error pages
- * An ErrorHandler is registered with {@link Server#setErrorHandler(Handler)}.
- * It is called by the {@link Response#writeError(int, String, Callback)}
+ * An ErrorHandler is registered with {@link Server#setErrorProcessor(Processor)}.
+ * It is called by the {@link Response#writeError(Request, int, String, Callback)}
  * to generate an error page.
  */
-public class ErrorHandler extends Handler.Abstract
+public class ErrorProcessor implements Processor
 {
     // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
-    private static final Logger LOG = LoggerFactory.getLogger(ErrorHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ErrorProcessor.class);
     public static final String ERROR_STATUS = "org.eclipse.jetty.server.error_status";
     public static final String ERROR_MESSAGE = "org.eclipse.jetty.server.error_message";
     public static final String ERROR_EXCEPTION = "org.eclipse.jetty.server.error_exception";
@@ -75,7 +74,7 @@ public class ErrorHandler extends Handler.Abstract
     boolean _showMessageInTitle = true;
     HttpField _cacheControl = new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, "must-revalidate,no-cache,no-store");
 
-    public ErrorHandler()
+    public ErrorProcessor()
     {
     }
 
@@ -84,10 +83,10 @@ public class ErrorHandler extends Handler.Abstract
         return ERROR_METHODS.contains(method);
     }
 
-    public void handle(Request request) throws IOException
+    @Override
+    public void process(Request request, Response response)
     {
-        Response response = request.accept();
-        if (response == null || response.isCommitted())
+        if (response.isCommitted())
             return;
 
         if (_cacheControl != null)
@@ -96,10 +95,10 @@ public class ErrorHandler extends Handler.Abstract
         int code = response.getStatus();
         String message = (String)request.getAttribute(ERROR_MESSAGE);
         Throwable cause = (Throwable)request.getAttribute(ERROR_EXCEPTION);
-        if (cause instanceof BadMessageException)
+        if (cause instanceof BadMessageException bad)
         {
-            BadMessageException bad = (BadMessageException)cause;
-            response.setStatus(code = bad.getCode());
+            code = bad.getCode();
+            response.setStatus(code);
             if (message == null)
                 message = bad.getReason();
         }
@@ -113,12 +112,19 @@ public class ErrorHandler extends Handler.Abstract
             if (message == null)
                 message = cause == null ? HttpStatus.getMessage(code) : cause.toString();
 
-            generateAcceptableResponse(request, response, code, message, cause);
+            try
+            {
+                generateAcceptableResponse(request, response, code, message, cause);
+            }
+            catch (Throwable x)
+            {
+                // TODO: cannot write the error response, give up and close the stream.
+                x.printStackTrace();
+            }
         }
     }
 
-    protected void generateAcceptableResponse(Request request, Response response, int code, String message, Throwable cause)
-        throws IOException
+    protected void generateAcceptableResponse(Request request, Response response, int code, String message, Throwable cause) throws IOException
     {
         List<String> acceptable = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
         if (acceptable.isEmpty())
@@ -164,8 +170,7 @@ public class ErrorHandler extends Handler.Abstract
         response.getCallback().succeeded();
     }
 
-    protected boolean generateAcceptableResponse(Request request, Response response, String contentType, List<Charset> charsets, int code, String message, Throwable cause)
-        throws IOException
+    protected boolean generateAcceptableResponse(Request request, Response response, String contentType, List<Charset> charsets, int code, String message, Throwable cause) throws IOException
     {
         Type type;
         Charset charset;
@@ -214,17 +219,10 @@ public class ErrorHandler extends Handler.Abstract
 
                 switch (type)
                 {
-                    case TEXT_HTML:
-                        writeErrorHtml(request, writer, charset, code, message, cause, showStacks);
-                        break;
-                    case TEXT_JSON:
-                        writeErrorJson(request, writer, code, message, cause, showStacks);
-                        break;
-                    case TEXT_PLAIN:
-                        writeErrorPlain(request, writer, code, message, cause, showStacks);
-                        break;
-                    default:
-                        throw new IllegalStateException();
+                    case TEXT_HTML -> writeErrorHtml(request, writer, charset, code, message, cause, showStacks);
+                    case TEXT_JSON -> writeErrorJson(request, writer, code, message, cause, showStacks);
+                    case TEXT_PLAIN -> writeErrorPlain(request, writer, code, message, cause, showStacks);
+                    default -> throw new IllegalStateException();
                 }
 
                 writer.flush();
@@ -273,8 +271,7 @@ public class ErrorHandler extends Handler.Abstract
         return true;
     }
 
-    protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause, boolean showStacks)
-        throws IOException
+    protected void writeErrorHtml(Request request, Writer writer, Charset charset, int code, String message, Throwable cause, boolean showStacks) throws IOException
     {
         if (message == null)
             message = HttpStatus.getMessage(code);
@@ -286,17 +283,15 @@ public class ErrorHandler extends Handler.Abstract
         writeErrorHtmlBody(request, writer, code, message, cause, showStacks);
         writer.write("\n</body>\n</html>\n");
     }
-    
-    protected void writeErrorHtmlMeta(Request request, Writer writer, Charset charset)
-        throws IOException
+
+    protected void writeErrorHtmlMeta(Request request, Writer writer, Charset charset) throws IOException
     {
         writer.write("<meta http-equiv=\"Content-Type\" content=\"text/html;charset=");
         writer.write(charset.name());
         writer.write("\"/>\n");
     }
-    
-    protected void writeErrorHtmlHead(Request request, Writer writer, int code, String message)
-        throws IOException
+
+    protected void writeErrorHtmlHead(Request request, Writer writer, int code, String message) throws IOException
     {
         writer.write("<title>Error ");
         String status = Integer.toString(code);
@@ -309,21 +304,19 @@ public class ErrorHandler extends Handler.Abstract
         writer.write("</title>\n");
     }
 
-    protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks)
-        throws IOException
+    protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException
     {
         String uri = request.getHttpURI().toString();
 
         writeErrorHtmlMessage(request, writer, code, message, cause, uri);
         if (showStacks)
             writeErrorHtmlStacks(request, writer);
-        
+
         request.getHttpChannel().getHttpConfiguration()
             .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 
-    protected void writeErrorHtmlMessage(Request request, Writer writer, int code, String message, Throwable cause, String uri)
-        throws IOException
+    protected void writeErrorHtmlMessage(Request request, Writer writer, int code, String message, Throwable cause, String uri) throws IOException
     {
         writer.write("<h2>HTTP ERROR ");
         String status = Integer.toString(code);
@@ -346,8 +339,7 @@ public class ErrorHandler extends Handler.Abstract
         writer.write("</table>\n");
     }
 
-    private void htmlRow(Writer writer, String tag, Object value)
-        throws IOException
+    private void htmlRow(Writer writer, String tag, Object value) throws IOException
     {
         writer.write("<tr><th>");
         writer.write(tag);
@@ -393,14 +385,13 @@ public class ErrorHandler extends Handler.Abstract
         }
 
         writer.append(json.entrySet().stream()
-                .map(e -> QuotedStringTokenizer.quote(e.getKey()) +
-                        ":" +
-                    QuotedStringTokenizer.quote(StringUtil.sanitizeXmlString((e.getValue()))))
-                .collect(Collectors.joining(",\n", "{\n", "\n}")));
+            .map(e -> QuotedStringTokenizer.quote(e.getKey()) +
+                ":" +
+                QuotedStringTokenizer.quote(StringUtil.sanitizeXmlString((e.getValue()))))
+            .collect(Collectors.joining(",\n", "{\n", "\n}")));
     }
 
-    protected void writeErrorHtmlStacks(Request request, Writer writer)
-        throws IOException
+    protected void writeErrorHtmlStacks(Request request, Writer writer) throws IOException
     {
         Throwable th = (Throwable)request.getAttribute(ERROR_EXCEPTION);
         if (th != null)
@@ -506,8 +497,7 @@ public class ErrorHandler extends Handler.Abstract
         return _showMessageInTitle;
     }
 
-    protected void write(Writer writer, String string)
-        throws IOException
+    protected void write(Writer writer, String string) throws IOException
     {
         if (string == null)
             return;
@@ -515,52 +505,28 @@ public class ErrorHandler extends Handler.Abstract
         writer.write(StringUtil.sanitizeXmlString(string));
     }
 
-    public static Handler getErrorHandler(Server server, ContextHandler context)
+    public static Processor getErrorProcessor(Server server, ContextHandler context)
     {
-        Handler errorHandler = null;
+        Processor errorProcessor = null;
         if (context != null)
-            errorHandler = context.getErrorHandler();
-        if (errorHandler == null && server != null)
-            errorHandler = server.getErrorHandler();
-        return errorHandler;
+            errorProcessor = context.getErrorProcessor();
+        if (errorProcessor == null && server != null)
+            errorProcessor = server.getErrorProcessor();
+        return errorProcessor;
     }
 
     public static class ErrorRequest extends Request.Wrapper
     {
-        private final Response _response;
         private final int _status;
         private final String _message;
         private final Throwable _cause;
-        private final AtomicBoolean _accepted = new AtomicBoolean();
-        private final Callback _callback;
 
-        public ErrorRequest(Request request, Response response, int status, String message, Throwable cause, Callback callback)
+        public ErrorRequest(Request request, int status, String message, Throwable cause)
         {
             super(request);
-            _response = new Response.Wrapper(request, response)
-            {
-                @Override
-                public Callback getCallback()
-                {
-                    return callback;
-                }
-            };
-            _callback = callback;
             _status = status;
             _message = message;
             _cause = cause;
-        }
-
-        @Override
-        public Response accept()
-        {
-            return _accepted.compareAndSet(false, true) ? _response : null;
-        }
-
-        @Override
-        public boolean isAccepted()
-        {
-            return _accepted.get();
         }
 
         @Override
@@ -584,20 +550,13 @@ public class ErrorHandler extends Handler.Abstract
         @Override
         public Object getAttribute(String name)
         {
-            switch (name)
+            return switch (name)
             {
-                case ERROR_MESSAGE:
-                    return _message;
-
-                case ERROR_EXCEPTION:
-                    return _cause;
-
-                case ERROR_STATUS:
-                    return _status;
-
-                default:
-                    return super.getAttribute(name);
-            }
+                case ERROR_MESSAGE -> _message;
+                case ERROR_EXCEPTION -> _cause;
+                case ERROR_STATUS -> _status;
+                default -> super.getAttribute(name);
+            };
         }
 
         @Override
