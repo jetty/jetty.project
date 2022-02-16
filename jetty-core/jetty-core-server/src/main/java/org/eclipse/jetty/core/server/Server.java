@@ -120,26 +120,41 @@ public class Server extends Handler.Wrapper implements Attributes
         try
         {
             // Customize before accepting.
-            Request customizedRequest = request;
             HttpConfiguration configuration = request.getHttpChannel().getHttpConfiguration();
             for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
             {
                 // TODO: what if customize() throws?
-                Request customized = customizer.customize(customizedRequest, response, configuration);
-                customizedRequest = customized == null ? request : customized;
-                if (customizedRequest.isAccepted())
+                Request customized = customizer.customize(request, response, configuration);
+                request = customized == null ? request : customized;
+                if (request.isAccepted())
                     return;
             }
 
-            request = new ServerRequest(customizedRequest);
+            request = new ServerRequest(request);
             accept(request);
             if (!request.isAccepted())
                 response.writeError(request, 404, response.getCallback());
         }
-        catch (Throwable t)
+        catch (Throwable x)
         {
-            // TODO: improve error handling.
-            response.getCallback().failed(t);
+            if (!request.isAccepted())
+                acceptAndFail(request, x);
+            else
+                response.getCallback().failed(x);
+        }
+    }
+
+    private void acceptAndFail(Request request, Throwable failure)
+    {
+        try
+        {
+            request.accept((rq, rs) -> rs.getCallback().failed(failure));
+        }
+        catch (Throwable x)
+        {
+            // Tried to fail, but could not, give up.
+            if (LOG.isTraceEnabled())
+                LOG.trace("could not fail request processing for {}", request);
         }
     }
 
