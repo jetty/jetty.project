@@ -63,10 +63,9 @@ public class ProxyProtocolTest
         start(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 SocketAddress addr = request.getConnectionMetaData().getRemoteAddress();
-                Callback callback = response.getCallback();
                 if (addr instanceof InetSocketAddress iAddr)
                 {
                     if (iAddr.getHostString().equals(remoteAddr) && iAddr.getPort() == remotePort)
@@ -132,9 +131,8 @@ public class ProxyProtocolTest
         start(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
-                Callback callback = response.getCallback();
                 if (validateEndPoint(request) &&
                     remoteAddr.equals(request.getRemoteAddr()) &&
                     remotePort == request.getRemotePort())
@@ -231,9 +229,9 @@ public class ProxyProtocolTest
         start(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         });
 

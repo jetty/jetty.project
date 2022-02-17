@@ -26,6 +26,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
@@ -107,10 +108,10 @@ public class SslUploadTest
     private static class EmptyHandler extends Handler.Abstract
     {
         @Override
-        protected void handle(Request request, Response response) throws Exception
+        protected void handle(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.readBytes(request);
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));
+            response.write(true, callback, BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));
         }
     }
 }

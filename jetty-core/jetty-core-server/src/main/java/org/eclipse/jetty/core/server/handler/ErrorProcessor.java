@@ -84,7 +84,7 @@ public class ErrorProcessor implements Processor
     }
 
     @Override
-    public void process(Request request, Response response)
+    public void process(Request request, Response response, Callback callback)
     {
         if (response.isCommitted())
             return;
@@ -105,7 +105,7 @@ public class ErrorProcessor implements Processor
 
         if (!errorPageForMethod(request.getMethod()) || HttpStatus.hasNoBody(code))
         {
-            response.getCallback().succeeded();
+            callback.succeeded();
         }
         else
         {
@@ -114,7 +114,7 @@ public class ErrorProcessor implements Processor
 
             try
             {
-                generateAcceptableResponse(request, response, code, message, cause);
+                generateAcceptableResponse(request, response, code, message, cause, callback);
             }
             catch (Throwable x)
             {
@@ -124,14 +124,14 @@ public class ErrorProcessor implements Processor
         }
     }
 
-    protected void generateAcceptableResponse(Request request, Response response, int code, String message, Throwable cause) throws IOException
+    protected void generateAcceptableResponse(Request request, Response response, int code, String message, Throwable cause, Callback callback) throws IOException
     {
         List<String> acceptable = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
         if (acceptable.isEmpty())
         {
             if (request.getHeaders().contains(HttpHeader.ACCEPT))
             {
-                response.getCallback().succeeded();
+                callback.succeeded();
                 return;
             }
             acceptable = Collections.singletonList(Type.TEXT_HTML.asString());
@@ -157,20 +157,20 @@ public class ErrorProcessor implements Processor
             charsets = List.of(StandardCharsets.ISO_8859_1, StandardCharsets.UTF_8);
             if (request.getHeaders().contains(HttpHeader.ACCEPT_CHARSET))
             {
-                response.getCallback().succeeded();
+                callback.succeeded();
                 return;
             }
         }
 
         for (String mimeType : acceptable)
         {
-            if (generateAcceptableResponse(request, response, mimeType, charsets, code, message, cause))
+            if (generateAcceptableResponse(request, response, callback, mimeType, charsets, code, message, cause))
                 return;
         }
-        response.getCallback().succeeded();
+        callback.succeeded();
     }
 
-    protected boolean generateAcceptableResponse(Request request, Response response, String contentType, List<Charset> charsets, int code, String message, Throwable cause) throws IOException
+    protected boolean generateAcceptableResponse(Request request, Response response, Callback callback, String contentType, List<Charset> charsets, int code, String message, Throwable cause) throws IOException
     {
         Type type;
         Charset charset;
@@ -246,12 +246,12 @@ public class ErrorProcessor implements Processor
 
         if (!buffer.hasRemaining())
         {
-            response.getCallback().succeeded();
+            callback.succeeded();
             return true;
         }
 
         response.getHeaders().put(type.getContentTypeField(charset));
-        response.write(true, new Callback.Nested(response.getCallback())
+        response.write(true, new Callback.Nested(callback)
         {
             @Override
             public void succeeded()

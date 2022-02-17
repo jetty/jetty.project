@@ -24,6 +24,7 @@ import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Jetty;
@@ -97,7 +98,7 @@ public class HttpConfiguration implements Dumpable
      */
     public interface Customizer
     {
-        Request customize(Request request, Response response, HttpConfiguration httpConfig);
+        Request customize(Request request, Response response, Callback callback, HttpConfiguration httpConfig);
     }
 
     public interface ConnectionFactory

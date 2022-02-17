@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Adds a missing {@code Host} header (for example, HTTP 1.0 or 2.0 requests).
@@ -52,7 +53,7 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
     }
 
     @Override
-    public Request customize(Request request, Response response, HttpConfiguration httpConfig)
+    public Request customize(Request request, Response response, Callback callback, HttpConfiguration httpConfig)
     {
         if (request.getConnectionMetaData().getVersion() == HttpVersion.HTTP_1_1 || request.getHeaders().contains(HttpHeader.HOST))
             return request;

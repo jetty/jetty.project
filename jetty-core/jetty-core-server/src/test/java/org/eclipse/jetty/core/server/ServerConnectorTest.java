@@ -40,6 +40,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -64,7 +65,7 @@ public class ServerConnectorTest
     public static class ReuseInfoHandler extends Handler.Abstract
     {
         @Override
-        protected void handle(Request request, Response response) throws Exception
+        protected void handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setContentType("text/plain");
 
@@ -92,7 +93,7 @@ public class ServerConnectorTest
             }
             out.printf("socket.getReuseAddress() = %b%n", socket.getReuseAddress());
             out.flush();
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(buffer.toByteArray()));
+            response.write(true, callback, BufferUtil.toBuffer(buffer.toByteArray()));
         }
     }
 
@@ -241,9 +242,9 @@ public class ServerConnectorTest
             server.setHandler(new Handler.Abstract()
             {
                 @Override
-                protected void handle(Request request, Response response)
+                protected void handle(Request request, Response response, Callback callback)
                 {
-                    response.getCallback().succeeded();
+                    callback.succeeded();
                 }
             });
 

@@ -36,6 +36,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.Uptime;
@@ -112,7 +113,7 @@ public class Server extends Handler.Wrapper implements Attributes
         setServer(this);
     }
 
-    void process(Request request, Response response)
+    void process(Request request, Response response, Callback callback)
     {
         if (!isStarted())
             return;
@@ -124,7 +125,7 @@ public class Server extends Handler.Wrapper implements Attributes
             for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
             {
                 // TODO: what if customize() throws?
-                Request customized = customizer.customize(request, response, configuration);
+                Request customized = customizer.customize(request, response, callback, configuration);
                 request = customized == null ? request : customized;
                 if (request.isAccepted())
                     return;
@@ -133,14 +134,14 @@ public class Server extends Handler.Wrapper implements Attributes
             request = new ServerRequest(request);
             accept(request);
             if (!request.isAccepted())
-                request.accept((rq, rs) -> rs.writeError(rq, 404, rs.getCallback()));
+                request.accept((rq, rs, cb) -> rs.writeError(rq, 404, cb));
         }
         catch (Throwable x)
         {
             if (!request.isAccepted())
                 acceptAndFail(request, x);
             else
-                response.getCallback().failed(x);
+                callback.failed(x);
         }
     }
 
@@ -148,7 +149,7 @@ public class Server extends Handler.Wrapper implements Attributes
     {
         try
         {
-            request.accept((rq, rs) -> rs.getCallback().failed(failure));
+            request.accept((rq, rs, cb) -> cb.failed(failure));
         }
         catch (Throwable x)
         {
@@ -689,11 +690,11 @@ public class Server extends Handler.Wrapper implements Attributes
         @Override
         public void accept(Processor processor) throws Exception
         {
-            getWrapped().accept((rq, rs) ->
+            getWrapped().accept((rq, rs, cb) ->
             {
                 try
                 {
-                    processor.process(this, rs);
+                    processor.process(this, rs, cb);
                 }
                 catch (Throwable x)
                 {
@@ -704,7 +705,7 @@ public class Server extends Handler.Wrapper implements Attributes
                     else
                         LOG.warn("handle failed {}", this, x);
 
-                    rs.getCallback().failed(x);
+                    cb.failed(x);
                 }
             });
         }

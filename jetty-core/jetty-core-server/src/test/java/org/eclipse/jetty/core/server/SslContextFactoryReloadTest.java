@@ -245,10 +245,10 @@ public class SslContextFactoryReloadTest
             }
             else
             {
-                request.accept((rq, rs) ->
+                request.accept((rq, rs, cb) ->
                 {
                     rs.setContentLength(0);
-                    rs.getCallback().succeeded();
+                    cb.succeeded();
                 });
             }
         }

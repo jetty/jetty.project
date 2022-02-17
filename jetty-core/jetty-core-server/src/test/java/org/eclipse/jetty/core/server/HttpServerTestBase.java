@@ -332,7 +332,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response) throws Exception
+            protected void handle(Request request, Response response, Callback callback) throws Exception
             {
                 long contentLength = request.getContentLength();
                 long read = 0;
@@ -366,7 +366,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
                     if (content.isLast())
                     {
-                        response.getCallback().succeeded();
+                        callback.succeeded();
                         break;
                     }
                 }
@@ -1004,7 +1004,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        protected void handle(Request request, Response response) throws Exception
+        protected void handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             response.setContentType("text/plain");
@@ -1028,7 +1028,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 out.append(t).append(",");
             }
 
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(out.toString()));
+            response.write(true, callback, BufferUtil.toBuffer(out.toString()));
         }
     }
 
@@ -1215,7 +1215,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public EndPoint _endp;
 
         @Override
-        protected void handle(Request request, Response response) throws Exception
+        protected void handle(Request request, Response response, Callback callback) throws Exception
         {
             _endp = request.getConnectionMetaData().getConnection().getEndPoint();
             response.setHeader("test", "value");
@@ -1419,21 +1419,21 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Abstract
     {
         @Override
-        protected void handle(Request request, Response response)
+        protected void handle(Request request, Response response, Callback callback)
         {
             response.setStatus(304);
-            response.write(false, response.getCallback(), BufferUtil.toBuffer("yuck"));
+            response.write(false, callback, BufferUtil.toBuffer("yuck"));
         }
     }
 
     public static class NoopHandler extends Handler.Abstract
     {
         @Override
-        protected void handle(Request request, Response response)
+        protected void handle(Request request, Response response, Callback callback)
         {
             //don't read the input, just send something back
             response.setStatus(200);
-            response.getCallback().succeeded();
+            callback.succeeded();
         }
     }
 
@@ -1530,7 +1530,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response) throws Exception
+            protected void handle(Request request, Response response, Callback callback) throws Exception
             {
                 request.getHttpChannel().addConnectionCloseListener(t -> closed.countDown());
                 while (true)
@@ -1555,7 +1555,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
 
                 response.setStatus(200);
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         });
 
@@ -1643,24 +1643,17 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 @Override
                 public void accept(Processor processor) throws Exception
                 {
-                    getWrapped().accept((rq, rs) ->
+                    getWrapped().accept((rq, rs, cb) ->
                     {
-                        processor.process(this, new Response.Wrapper(rs)
+                        processor.process(this, rs, new Callback.Nested(cb)
                         {
                             @Override
-                            public Callback getCallback()
+                            public void succeeded()
                             {
-                                return new Callback.Nested(super.getCallback())
-                                {
-                                    @Override
-                                    public void succeeded()
-                                    {
-                                        if (_mustHaveContent && !hasContent)
-                                            super.failed(new IllegalStateException("No Test Content"));
-                                        else
-                                            super.succeeded();
-                                    }
-                                };
+                                if (_mustHaveContent && !hasContent)
+                                    super.failed(new IllegalStateException("No Test Content"));
+                                else
+                                    super.succeeded();
                             }
                         });
                     });

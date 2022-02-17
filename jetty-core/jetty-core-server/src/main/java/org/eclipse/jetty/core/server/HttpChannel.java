@@ -378,7 +378,7 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public void run()
         {
-            _server.process(_request, _request._response);
+            _server.process(_request, _request._response, _request._callback);
         }
     }
 
@@ -634,7 +634,7 @@ public class HttpChannel extends Attributes.Lazy
                 // TODO: use system property to record what thread accepted it.
                 _accepted = true;
             }
-            processor.process(this, _response);
+            processor.process(this, _response, _callback);
         }
 
         @Override
@@ -791,12 +791,6 @@ public class HttpChannel extends Attributes.Lazy
         private ChannelResponse(ChannelRequest request)
         {
             _request = request;
-        }
-
-        @Override
-        public Callback getCallback()
-        {
-            return _request._callback;
         }
 
         @Override

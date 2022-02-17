@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -82,7 +83,7 @@ public class ProxyCustomizerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 response.addHeader("preexisting.attribute", request.getAttribute("some.attribute").toString());
                 ArrayList<String> attributeNames = new ArrayList<>(request.getAttributeNamesSet());
@@ -98,13 +99,13 @@ public class ProxyCustomizerTest
                 if (remoteAddress != null)
                     response.addHeader("proxyRemoteAddress", remoteAddress + ":" + request.getAttribute(ProxyCustomizer.REMOTE_PORT_ATTRIBUTE_NAME));
 
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         };
 
         server = new Server();
         HttpConfiguration httpConfiguration = new HttpConfiguration();
-        httpConfiguration.addCustomizer((request, response, channelConfig) ->
+        httpConfiguration.addCustomizer((request, response, callback, channelConfig) ->
         {
             request.setAttribute("some.attribute", "some value");
             return request;

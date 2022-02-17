@@ -160,11 +160,11 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 response.setStatus(200);
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         };
         _contextHandler.setHandler(handler);
@@ -191,10 +191,9 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
-                Callback callback = response.getCallback();
                 request.demandContent(() ->
                 {
                     assertInContext(request);
@@ -258,7 +257,7 @@ public class ContextHandlerTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response) throws Exception
+            protected void handle(Request request, Response response, Callback callback) throws Exception
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
 
@@ -277,7 +276,7 @@ public class ContextHandlerTest
                 assertTrue(content.isLast());
                 content.release();
                 response.setStatus(200);
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         };
         _contextHandler.setHandler(handler);
@@ -374,7 +373,7 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 throw new RuntimeException("Testing");
             }

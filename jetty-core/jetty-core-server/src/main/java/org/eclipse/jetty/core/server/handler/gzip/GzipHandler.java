@@ -56,7 +56,7 @@ public class GzipHandler extends Handler.Wrapper
         @Override
         public void accept(Processor processor) throws Exception
         {
-            getWrapped().accept((rq, rs) ->
+            getWrapped().accept((rq, rs, cb) ->
             {
                 HttpFields newHeaders = HttpFields.from(rq.getHeaders(), f ->
                 {
@@ -74,7 +74,7 @@ public class GzipHandler extends Handler.Wrapper
                 // TODO look up cached or pool inflaters / deflated
 
                 // TODO: override getHttpFields(), getContentLength(), etc.
-                processor.process(this, new GzipResponse(rs));
+                processor.process(this, new GzipResponse(rs), cb);
             });
         }
     }

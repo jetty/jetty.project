@@ -38,6 +38,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -355,7 +356,7 @@ public class SSLEngineTest
     private static class TestHandler extends Handler.Abstract
     {
         @Override
-        protected void handle(Request request, Response response) throws Exception
+        protected void handle(Request request, Response response, Callback callback) throws Exception
         {
             // System.err.println("HANDLE "+request.getRequestURI());
             SecureRequestCustomizer.SslSessionData sslData = (SecureRequestCustomizer.SslSessionData)
@@ -372,11 +373,11 @@ public class SSLEngineTest
                 {
                     buf[i] = (byte)('0' + (i % 10));
                 }
-                response.write(true, response.getCallback(), BufferUtil.toBuffer(buf));
+                response.write(true, callback, BufferUtil.toBuffer(buf));
             }
             else
             {
-                response.write(true, response.getCallback(), BufferUtil.toBuffer(HELLO_WORLD));
+                response.write(true, callback, BufferUtil.toBuffer(HELLO_WORLD));
             }
         }
     }

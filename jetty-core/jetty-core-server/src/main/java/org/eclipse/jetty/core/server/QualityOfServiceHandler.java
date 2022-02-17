@@ -45,7 +45,7 @@ public class QualityOfServiceHandler extends Handler.Abstract
             entry = queue.poll();
         }
         if (entry != null)
-            entry.request.execute(() -> entry.request.handle(entry.processor, entry.response));
+            entry.request.execute(() -> entry.request.handle(entry.processor, entry.response, entry.callback));
     }
 
     private class QualityOfServiceRequest extends Request.Wrapper
@@ -58,10 +58,10 @@ public class QualityOfServiceHandler extends Handler.Abstract
         @Override
         public void accept(Processor processor) throws Exception
         {
-            getWrapped().accept((rq, rs) -> handle(processor, rs));
+            getWrapped().accept((rq, rs, cb) -> handle(processor, rs, cb));
         }
 
-        private void handle(Processor processor, Response response)
+        private void handle(Processor processor, Response response, Callback callback)
         {
             while (true)
             {
@@ -75,15 +75,7 @@ public class QualityOfServiceHandler extends Handler.Abstract
 
                 if (process)
                 {
-                    process(processor, new Response.Wrapper(response)
-                    {
-                        @Override
-                        public Callback getCallback()
-                        {
-                            // TODO: do not create one every time.
-                            return Callback.from(super.getCallback(), QualityOfServiceHandler.this::release);
-                        }
-                    });
+                    process(processor, this, response, Callback.from(callback, QualityOfServiceHandler.this::release));
                     return;
                 }
 
@@ -93,27 +85,27 @@ public class QualityOfServiceHandler extends Handler.Abstract
                     if (permits > 0)
                         continue;
 
-                    queue.offer(new Entry(processor, this, response));
+                    queue.offer(new Entry(processor, this, response, callback));
                     return;
                 }
             }
         }
 
-        private void process(Processor processor, Response response)
+        private void process(Processor processor, Request request, Response response, Callback callback)
         {
             try
             {
-                processor.process(this, response);
+                processor.process(request, response, callback);
             }
             catch (Exception x)
             {
                 // TODO: better exception handling?
-                response.getCallback().failed(x);
+                callback.failed(x);
             }
         }
     }
 
-    private record Entry(Processor processor, QualityOfServiceRequest request, Response response)
+    private record Entry(Processor processor, QualityOfServiceRequest request, Response response, Callback callback)
     {
     }
 }

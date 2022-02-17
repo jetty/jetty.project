@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -84,7 +85,7 @@ public class DefaultHandler extends Handler.Abstract
     }
 
     @Override
-    protected void handle(Request request, Response response) throws Exception
+    protected void handle(Request request, Response response, Callback callback) throws Exception
     {
         if (response.isCommitted())
             return;
@@ -106,13 +107,13 @@ public class DefaultHandler extends Handler.Abstract
                 response.setHeader(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
                 content = _favicon.slice();
             }
-            response.write(true, response.getCallback(), content);
+            response.write(true, callback, content);
             return;
         }
 
         if (!isShowContexts() || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
         {
-            response.writeError(request, HttpStatus.NOT_FOUND_404, null, response.getCallback());
+            response.writeError(request, HttpStatus.NOT_FOUND_404, null, callback);
             return;
         }
 
@@ -193,7 +194,7 @@ public class DefaultHandler extends Handler.Abstract
             writer.flush();
             ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
             response.setContentLength(content.remaining());
-            response.write(true, response.getCallback(), content);
+            response.write(true, callback, content);
         }
     }
 

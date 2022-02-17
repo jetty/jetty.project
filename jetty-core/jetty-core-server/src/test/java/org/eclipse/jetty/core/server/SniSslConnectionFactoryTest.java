@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
@@ -86,7 +87,7 @@ public class SniSslConnectionFactoryTest
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
         httpConfiguration.addCustomizer(secureRequestCustomizer);
-        httpConfiguration.addCustomizer((request, response, httpConfig) ->
+        httpConfiguration.addCustomizer((request, response, callback, httpConfig) ->
         {
             EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
             SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
@@ -115,12 +116,12 @@ public class SniSslConnectionFactoryTest
         _server.setHandler(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response) throws Exception
+            protected void handle(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.setHeader("X-URL", request.getHttpURI().toString());
                 response.setHeader("X-HOST", request.getServerName());
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         });
 

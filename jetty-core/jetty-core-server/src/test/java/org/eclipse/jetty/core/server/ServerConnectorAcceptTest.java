@@ -25,6 +25,7 @@ import java.util.stream.IntStream;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ManagedSelector;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -44,9 +45,9 @@ public class ServerConnectorAcceptTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         });
         server.start();

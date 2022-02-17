@@ -390,11 +390,11 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.setContentLength(10);
-                response.write(false, Callback.from(response.getCallback(), () ->
+                response.write(false, Callback.from(callback, () ->
                 {
                     throw new Error("testing");
                 }));
@@ -427,9 +427,9 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("12345"));
+                response.write(true, callback, BufferUtil.toBuffer("12345"));
             }
         };
         _server.setHandler(handler);
@@ -458,10 +458,10 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 response.setContentLength(10);
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("12345"));
+                response.write(true, callback, BufferUtil.toBuffer("12345"));
             }
         };
         _server.setHandler(handler);
@@ -490,10 +490,9 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 response.setContentLength(10);
-                Callback callback = response.getCallback();
                 response.write(false, Callback.from(() -> response.write(true, callback)), BufferUtil.toBuffer("12345"));
             }
         };
@@ -522,10 +521,10 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 response.setContentLength(5);
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("1234567890"));
+                response.write(true, callback, BufferUtil.toBuffer("1234567890"));
             }
         };
         _server.setHandler(handler);
@@ -554,10 +553,9 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 response.setContentLength(5);
-                Callback callback = response.getCallback();
                 response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("567890"))), BufferUtil.toBuffer("1234"));
             }
         };
@@ -620,12 +618,11 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.setContentLength(5);
-                Callback callback = response.getCallback();
                 response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
             }
         };
@@ -663,13 +660,12 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.addHeader(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.setContentLength(5);
-                Callback callback = response.getCallback();
                 response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
             }
         };
@@ -960,7 +956,7 @@ public class HttpChannelTest
         _server.setHandler(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response) throws Exception
+            protected void handle(Request request, Response response, Callback callback) throws Exception
             {
                 LongAdder contentSize = new LongAdder();
                 CountDownLatch latch = new CountDownLatch(1);
@@ -979,7 +975,6 @@ public class HttpChannelTest
                     }
                 };
                 request.demandContent(onContentAvailable);
-                Callback callback = response.getCallback();
                 if (latch.await(30, TimeUnit.SECONDS))
                 {
                     response.setStatus(200);
@@ -1041,7 +1036,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 handling.set(request);
                 request.addErrorListener(t -> {});

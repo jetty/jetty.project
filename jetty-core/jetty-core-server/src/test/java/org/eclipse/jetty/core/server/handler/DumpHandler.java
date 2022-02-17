@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -47,7 +48,7 @@ public class DumpHandler extends Handler.Abstract
     private static final String _label = "Dump Handler";
 
     @Override
-    protected void handle(Request request, Response response) throws Exception
+    protected void handle(Request request, Response response, Callback callback) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("dump {}", request);
@@ -67,7 +68,7 @@ public class DumpHandler extends Handler.Abstract
         if (Boolean.parseBoolean(params.getValue("empty")))
         {
             response.setStatus(200);
-            response.getCallback().succeeded();
+            callback.succeeded();
             return;
         }
 
@@ -97,7 +98,7 @@ public class DumpHandler extends Handler.Abstract
 
                 if (content instanceof Content.Error)
                 {
-                    response.getCallback().failed(((Content.Error)content).getCause());
+                    callback.failed(((Content.Error)content).getCause());
                     return;
                 }
 
@@ -128,7 +129,7 @@ public class DumpHandler extends Handler.Abstract
         if (params.getValue("error") != null)
         {
             response.setStatus(Integer.parseInt(params.getValue("error")));
-            response.getCallback().succeeded();
+            callback.succeeded();
             return;
         }
 
@@ -197,6 +198,6 @@ public class DumpHandler extends Handler.Abstract
             response.write(true, blocker, BufferUtil.toBuffer(padding.getBytes(StandardCharsets.ISO_8859_1)));
         }
 
-        response.getCallback().succeeded();
+        callback.succeeded();
     }
 }

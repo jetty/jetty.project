@@ -34,6 +34,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -322,10 +323,10 @@ public class SSLSelectChannelConnectorLoadTest
     private static class TestHandler extends Handler.Abstract
     {
         @Override
-        protected void handle(Request request, Response response) throws Exception
+        protected void handle(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.readBytes(request);
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()));
+            response.write(true, callback, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()));
         }
     }
 }

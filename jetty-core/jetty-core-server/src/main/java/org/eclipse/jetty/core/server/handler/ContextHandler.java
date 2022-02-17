@@ -451,7 +451,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         if (pathInContext.isEmpty() && !getAllowNullPathInfo())
         {
-            request.accept((rq, rs) ->
+            request.accept((rq, rs, cb) ->
             {
                 String location = _contextPath + "/";
                 if (rq.getHttpURI().getParam() != null)
@@ -461,7 +461,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
                 rs.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
                 rs.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
-                rs.getCallback().succeeded();
+                cb.succeeded();
             });
             return;
         }

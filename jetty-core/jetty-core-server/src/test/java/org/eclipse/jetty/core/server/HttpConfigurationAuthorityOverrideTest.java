@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
@@ -654,7 +655,7 @@ public class HttpConfigurationAuthorityOverrideTest
         {
             if (request.getPath().startsWith("/dump"))
             {
-                request.accept((rq, rs) ->
+                request.accept((rq, rs, cb) ->
                 {
                     rs.setContentType("text/plain; charset=utf-8");
                     try (StringWriter stringWriter = new StringWriter();
@@ -666,7 +667,7 @@ public class HttpConfigurationAuthorityOverrideTest
                         out.printf("LocalName=[%s]%n", rq.getLocalAddr());
                         out.printf("LocalPort=[%s]%n", rq.getLocalPort());
                         out.printf("HttpURI=[%s]%n", rq.getHttpURI());
-                        rs.write(true, rs.getCallback(), stringWriter.getBuffer().toString());
+                        rs.write(true, cb, stringWriter.getBuffer().toString());
                     }
                 });
             }
@@ -680,11 +681,11 @@ public class HttpConfigurationAuthorityOverrideTest
         {
             if (request.getPath().startsWith("/redirect"))
             {
-                request.accept((rq, rs) ->
+                request.accept((rq, rs, cb) ->
                 {
                     rs.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
                     rs.setHeader(HttpHeader.LOCATION, HttpURI.build(rq.getHttpURI(), "/dump").toString());
-                    rs.getCallback().succeeded();
+                    cb.succeeded();
                 });
             }
         }
@@ -697,10 +698,10 @@ public class HttpConfigurationAuthorityOverrideTest
         {
             if (request.getPath().startsWith("/error"))
             {
-                request.accept((rq, rs) ->
+                request.accept((rq, rs, cb) ->
                 {
                     rs.setContentType("text/plain; charset=utf-8");
-                    rs.write(true, rs.getCallback(), "Generic Error Page.");
+                    rs.write(true, cb, "Generic Error Page.");
                 });
             }
         }
@@ -709,7 +710,7 @@ public class HttpConfigurationAuthorityOverrideTest
     public static class RedirectErrorProcessor extends ErrorProcessor
     {
         @Override
-        public void process(Request request, Response response)
+        public void process(Request request, Response response, Callback callback)
         {
             response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
             response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
@@ -718,7 +719,7 @@ public class HttpConfigurationAuthorityOverrideTest
             if (scheme == null)
                 scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
             response.setHeader(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
-            response.write(true, response.getCallback());
+            response.write(true, callback);
         }
     }
 

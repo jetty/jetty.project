@@ -1300,9 +1300,8 @@ public class ForwardedRequestCustomizerTest
         private RequestTester requestTester;
 
         @Override
-        protected void handle(Request request, Response response) throws Exception
+        protected void handle(Request request, Response response, Callback callback) throws Exception
         {
-            Callback callback = response.getCallback();
             if (requestTester != null && requestTester.check(request, response))
             {
                 response.setStatus(200);

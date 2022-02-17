@@ -21,6 +21,7 @@ import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Dump request handler.
@@ -49,11 +50,11 @@ public class HelloHandler extends Handler.Abstract
     }
 
     @Override
-    protected void handle(Request request, Response response) throws Exception
+    protected void handle(Request request, Response response, Callback callback) throws Exception
     {
         response.setStatus(200);
         response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
         response.setContentLength(_byteBuffer.remaining());
-        response.write(true, response.getCallback(), _byteBuffer.slice());
+        response.write(true, callback, _byteBuffer.slice());
     }
 }

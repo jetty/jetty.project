@@ -90,14 +90,14 @@ public class HttpServerTestFixture
     protected static class OptionsHandler extends Handler.Abstract
     {
         @Override
-        protected void handle(Request request, Response response)
+        protected void handle(Request request, Response response, Callback callback)
         {
             if (request.getMethod().equals("OPTIONS"))
                 response.setStatus(200);
             else
                 response.setStatus(500);
             response.setHeader("Allow", "GET");
-            response.getCallback().succeeded();
+            callback.succeeded();
         }
     }
 
@@ -113,9 +113,9 @@ public class HttpServerTestFixture
         }
 
         @Override
-        protected void handle(Request request, Response response)
+        protected void handle(Request request, Response response, Callback callback)
         {
-            response.writeError(request, code, message, response.getCallback());
+            response.writeError(request, code, message, callback);
         }
     }
 
@@ -134,7 +134,7 @@ public class HttpServerTestFixture
         }
 
         @Override
-        protected void handle(Request request, Response response) throws Exception
+        protected void handle(Request request, Response response, Callback callback) throws Exception
         {
             long len = expected < 0 ? request.getContentLength() : expected;
             if (len < 0)
@@ -168,17 +168,16 @@ public class HttpServerTestFixture
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
             response.setContentLength(reply.length());
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
+            response.write(true, callback, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
         }
     }
 
     protected static class ReadHandler extends Handler.Abstract
     {
         @Override
-        protected void handle(Request request, Response response)
+        protected void handle(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
-            Callback callback = response.getCallback();
             Content.readUtf8String(request, Promise.from(
                 s -> response.write(true, callback, "read %d%n" + s.length()),
                 t -> response.write(true, callback, String.format("caught %s%n", t))
@@ -189,7 +188,7 @@ public class HttpServerTestFixture
     protected static class DataHandler extends Handler.Abstract
     {
         @Override
-        protected void handle(Request request, Response response) throws Exception
+        protected void handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
 
@@ -238,7 +237,7 @@ public class HttpServerTestFixture
                     }
                 }
             }
-            response.getCallback().succeeded();
+            callback.succeeded();
         }
     }
 }

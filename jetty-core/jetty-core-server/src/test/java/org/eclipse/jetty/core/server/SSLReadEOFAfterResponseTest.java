@@ -25,6 +25,7 @@ import javax.net.ssl.SSLContext;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -54,7 +55,7 @@ public class SSLReadEOFAfterResponseTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response) throws Exception
+            protected void handle(Request request, Response response, Callback callback) throws Exception
             {
                 // First: read the whole content exactly
                 int length = bytes.length;
@@ -76,7 +77,7 @@ public class SSLReadEOFAfterResponseTest
                         c.release();
                     }
                     if (c == Content.EOF)
-                        response.getCallback().failed(new IllegalStateException());
+                        callback.failed(new IllegalStateException());
                 }
 
                 // Second: write the response.
@@ -93,7 +94,7 @@ public class SSLReadEOFAfterResponseTest
                 Content content = request.readContent();
                 if (!content.isLast())
                     throw new IllegalStateException();
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         });
         server.start();

@@ -848,10 +848,10 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
-                response.write(false, response.getCallback());
+                response.write(false, callback);
             }
         });
         server.start();
@@ -1123,11 +1123,10 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.setHeader("LongStr", longstr);
-                Callback callback = response.getCallback();
                 response.write(false,
                     Callback.from(callback::succeeded, t ->
                     {
@@ -1173,12 +1172,11 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.setHeader("LongStr", longstr);
 
-                Callback callback = response.getCallback();
                 response.write(false,
                     Callback.from(callback::succeeded, t ->
                     {
@@ -1286,7 +1284,7 @@ public class HttpConnectionTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 while (true)
                 {
@@ -1317,7 +1315,7 @@ public class HttpConnectionTest
                 long bytesIn = connection.getBytesIn();
                 assertThat(bytesIn, greaterThan(dataLength));
 
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         });
         server.start();

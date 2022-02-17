@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,7 +68,7 @@ public class ErrorHandlerTest
         server.setHandler(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
                 if (request.getPath().startsWith("/badmessage/"))
                 {
@@ -109,7 +110,7 @@ public class ErrorHandlerTest
                     throw new TestException(message);
                 }
 
-                response.writeError(request, 404, response.getCallback());
+                response.writeError(request, 404, callback);
             }
         });
         server.start();
@@ -439,13 +440,13 @@ public class ErrorHandlerTest
     @Test
     public void testNoBodyErrorHandler() throws Exception
     {
-        server.setErrorProcessor((request, response) ->
+        server.setErrorProcessor((request, response, callback) ->
         {
             response.setHeader(HttpHeader.LOCATION, "/error");
             response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
             response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
             response.setStatus(302);
-            response.getCallback().succeeded();
+            callback.succeeded();
         });
         String rawResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +
@@ -643,26 +644,26 @@ public class ErrorHandlerTest
         context.setErrorProcessor(new ErrorProcessor()
         {
             @Override
-            public void process(Request request, Response response)
+            public void process(Request request, Response response, Callback callback)
             {
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("Context Error"));
+                response.write(true, callback, BufferUtil.toBuffer("Context Error"));
             }
         });
         context.setHandler(new Handler.Abstract()
         {
             @Override
-            protected void handle(Request request, Response response)
+            protected void handle(Request request, Response response, Callback callback)
             {
-                response.writeError(request, 444, response.getCallback());
+                response.writeError(request, 444, callback);
             }
         });
 
         server.setErrorProcessor(new ErrorProcessor()
         {
             @Override
-            public void process(Request request, Response response)
+            public void process(Request request, Response response, Callback callback)
             {
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("Server Error"));
+                response.write(true, callback, BufferUtil.toBuffer("Server Error"));
             }
         });
 

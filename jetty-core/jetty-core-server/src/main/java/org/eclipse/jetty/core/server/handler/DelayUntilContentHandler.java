@@ -47,7 +47,7 @@ public class DelayUntilContentHandler extends Handler.Wrapper
             // The nested Handler is accepting the exchange.
 
             // Accept the wrapped request.
-            getWrapped().accept((rq, rs) ->
+            getWrapped().accept((rq, rs, cb) ->
             {
                 // Demand for content.
                 demandContent(() ->
@@ -55,12 +55,12 @@ public class DelayUntilContentHandler extends Handler.Wrapper
                     try
                     {
                         // When the content is available, process the nested exchange.
-                        processor.process(this, rs);
+                        processor.process(this, rs, cb);
                     }
                     catch (Throwable x)
                     {
                         // TODO: improve exception handling.
-                        rs.getCallback().failed(x);
+                        cb.failed(x);
                     }
                 });
             });

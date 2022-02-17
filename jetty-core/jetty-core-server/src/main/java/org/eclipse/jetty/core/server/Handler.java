@@ -131,7 +131,7 @@ public interface Handler extends LifeCycle, Destroyable
             request.accept(_processor);
         }
 
-        protected void handle(Request request, Response response) throws Exception
+        protected void handle(Request request, Response response, Callback callback) throws Exception
         {
         }
 

@@ -13,8 +13,10 @@
 
 package org.eclipse.jetty.core.server;
 
+import org.eclipse.jetty.util.Callback;
+
 @FunctionalInterface
 public interface Processor
 {
-    public void process(Request request, Response response) throws Exception;
+    public void process(Request request, Response response, Callback callback) throws Exception;
 }

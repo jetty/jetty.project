@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
@@ -199,7 +200,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
     public static class SecureRequestHandler extends Handler.Abstract
     {
         @Override
-        protected void handle(Request request, Response response) throws Exception
+        protected void handle(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             StringBuilder out = new StringBuilder();
@@ -215,7 +216,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
             out.append("key_size='").append(data == null ? "" : data.getKeySize()).append("'").append('\n');
             out.append("ssl_session_id='").append(data == null ? "" : data.getId()).append("'").append('\n');
             out.append("ssl_session='").append(session).append("'").append('\n');
-            response.write(true, response.getCallback(), out.toString());
+            response.write(true, callback, out.toString());
         }
     }
 }

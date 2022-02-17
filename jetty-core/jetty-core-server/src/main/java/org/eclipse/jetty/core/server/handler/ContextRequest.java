@@ -32,6 +32,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
     private volatile Response _response;
+    private Callback _callback;
 
     protected ContextRequest(ContextHandler contextHandler, Request wrapped, String pathInContext)
     {
@@ -43,23 +44,25 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     @Override
     public void accept(Processor processor) throws Exception
     {
-        super.accept((rq, rs) ->
+        super.accept((rq, rs, cb) ->
         {
             _response = new ContextResponse(this, rs);
-            process(processor, this, _response);
+            _callback = cb;
+            process(processor, this, _response, cb);
         });
     }
 
-    private void process(Processor processor, Request request, Response response)
+    private void process(Processor processor, Request request, Response response, Callback callback)
     {
         try
         {
-            processor.process(request, response);
+            processor.process(request, response, callback);
         }
         catch (Throwable x)
         {
+            // TODO: see below about QuietException.
             if (!response.isCommitted())
-                response.writeError(request, x, response.getCallback());
+                response.writeError(request, x, callback);
         }
     }
 
@@ -83,7 +86,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
             {
                 Response response = _response;
                 if (!response.isCommitted())
-                    response.writeError(this, t, response.getCallback());
+                    response.writeError(this, t, _callback);
             }
         }
     }

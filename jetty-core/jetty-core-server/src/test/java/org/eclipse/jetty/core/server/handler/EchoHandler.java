@@ -30,7 +30,7 @@ import org.eclipse.jetty.util.StringUtil;
 public class EchoHandler extends Handler.Abstract
 {
     @Override
-    protected void handle(Request request, Response response)
+    protected void handle(Request request, Response response, Callback callback)
     {
         response.setStatus(200);
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
@@ -41,7 +41,7 @@ public class EchoHandler extends Handler.Abstract
             response.setContentLength(contentLength);
         if (request.getHeaders().contains(HttpHeader.TRAILER))
             response.getTrailers();
-        new Echo(request, response, response.getCallback()).iterate();
+        new Echo(request, response, callback).iterate();
     }
 
     static class Echo extends IteratingCallback

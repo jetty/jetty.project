@@ -33,8 +33,6 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface Response
 {
-    Callback getCallback();
-
     int getStatus();
 
     void setStatus(int code);
@@ -131,18 +129,10 @@ public interface Response
 
         if (errorProcessor != null)
         {
-            Response errorResponse = new Wrapper(this)
-            {
-                @Override
-                public Callback getCallback()
-                {
-                    return callback;
-                }
-            };
             Request errorRequest = new ErrorProcessor.ErrorRequest(request, status, message, cause);
             try
             {
-                errorProcessor.process(errorRequest, errorResponse);
+                errorProcessor.process(errorRequest, this, callback);
                 if (errorRequest.isComplete())
                     return;
             }
@@ -167,58 +157,57 @@ public interface Response
             _wrapped = wrapped;
         }
 
-        @Override
-        public Callback getCallback()
+        public Response getWrapped()
         {
-            return _wrapped.getCallback();
+            return _wrapped;
         }
-
+        
         @Override
         public int getStatus()
         {
-            return _wrapped.getStatus();
+            return getWrapped().getStatus();
         }
 
         @Override
         public void setStatus(int code)
         {
-            _wrapped.setStatus(code);
+            getWrapped().setStatus(code);
         }
 
         @Override
         public HttpFields.Mutable getHeaders()
         {
-            return _wrapped.getHeaders();
+            return getWrapped().getHeaders();
         }
 
         @Override
         public HttpFields.Mutable getTrailers()
         {
-            return _wrapped.getTrailers();
+            return getWrapped().getTrailers();
         }
 
         @Override
         public void write(boolean last, Callback callback, ByteBuffer... content)
         {
-            _wrapped.write(last, callback, content);
+            getWrapped().write(last, callback, content);
         }
 
         @Override
         public void push(MetaData.Request request)
         {
-            _wrapped.push(request);
+            getWrapped().push(request);
         }
 
         @Override
         public boolean isCommitted()
         {
-            return _wrapped.isCommitted();
+            return getWrapped().isCommitted();
         }
 
         @Override
         public void reset()
         {
-            _wrapped.reset();
+            getWrapped().reset();
         }
     }
 }
