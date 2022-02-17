@@ -13,37 +13,9 @@
 
 package org.eclipse.jetty.core.server.handler;
 
-import java.io.OutputStream;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Exchanger;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.jetty.core.server.Handler;
-import org.eclipse.jetty.core.server.Request;
-import org.eclipse.jetty.core.server.Response;
-import org.eclipse.jetty.core.server.Server;
-import org.eclipse.jetty.core.server.ServerConnector;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpTester;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 public class DelayedHandlerTest
 {
+/*
     private Server _server;
     private ServerConnector _connector;
 
@@ -441,4 +413,5 @@ public class DelayedHandlerTest
             Thread.onSpinWait();
         }
     }
+*/
 }

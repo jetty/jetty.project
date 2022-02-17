@@ -45,10 +45,7 @@ public class QualityOfServiceHandler extends Handler.Abstract
             entry = queue.poll();
         }
         if (entry != null)
-        {
-            // TODO: possible StackOverflow?
-            entry.request.handle(entry.processor, entry.response);
-        }
+            entry.request.execute(() -> entry.request.handle(entry.processor, entry.response));
     }
 
     private class QualityOfServiceRequest extends Request.Wrapper

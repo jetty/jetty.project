@@ -13,21 +13,11 @@
 
 package org.eclipse.jetty.core.server.handler;
 
-import java.util.ArrayDeque;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.eclipse.jetty.core.server.Handler;
-import org.eclipse.jetty.core.server.Request;
-import org.eclipse.jetty.core.server.Response;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.thread.Invocable;
 
 public abstract class DelayedHandler extends Handler.Wrapper
 {
+/*
     protected abstract Response accept(Request request);
 
     protected abstract void schedule(Request request, Runnable handle);
@@ -206,4 +196,5 @@ public abstract class DelayedHandler extends Handler.Wrapper
             }
         }
     }
+*/
 }

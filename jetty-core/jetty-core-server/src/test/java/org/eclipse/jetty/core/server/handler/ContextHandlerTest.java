@@ -369,7 +369,7 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testThrownUsesContextErrorHandler() throws Exception
+    public void testThrownUsesContextErrorProcessor() throws Exception
     {
         _contextHandler.setHandler(new Handler.Abstract()
         {

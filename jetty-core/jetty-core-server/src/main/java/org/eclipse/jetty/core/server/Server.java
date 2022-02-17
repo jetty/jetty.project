@@ -133,7 +133,7 @@ public class Server extends Handler.Wrapper implements Attributes
             request = new ServerRequest(request);
             accept(request);
             if (!request.isAccepted())
-                response.writeError(request, 404, response.getCallback());
+                request.accept((rq, rs) -> rs.writeError(rq, 404, rs.getCallback()));
         }
         catch (Throwable x)
         {

@@ -282,7 +282,7 @@ public interface Request extends Attributes, Executor, Content.Provider
         @Override
         public boolean isSecure()
         {
-            return _wrapped.isSecure();
+            return getWrapped().isSecure();
         }
 
         @Override

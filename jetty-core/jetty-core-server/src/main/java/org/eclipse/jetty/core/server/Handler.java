@@ -258,8 +258,11 @@ public interface Handler extends LifeCycle, Destroyable
                 ((Handler.Container)handler).getChildHandlers().contains(this)))
                 throw new IllegalStateException("setHandler loop");
 
-            handler.setServer(getServer());
+            if (handler != null)
+                handler.setServer(getServer());
+
             updateBean(_handler, handler);
+
             _handler = handler;
         }
 

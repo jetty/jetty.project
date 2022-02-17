@@ -142,7 +142,7 @@ public interface Response
             Request errorRequest = new ErrorProcessor.ErrorRequest(request, status, message, cause);
             try
             {
-                errorProcessor.process(errorRequest, this);
+                errorProcessor.process(errorRequest, errorResponse);
                 if (errorRequest.isComplete())
                     return;
             }

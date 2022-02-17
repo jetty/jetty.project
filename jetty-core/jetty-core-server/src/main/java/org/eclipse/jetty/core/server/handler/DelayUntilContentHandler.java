@@ -50,12 +50,12 @@ public class DelayUntilContentHandler extends Handler.Wrapper
             getWrapped().accept((rq, rs) ->
             {
                 // Demand for content.
-                rq.demandContent(() ->
+                demandContent(() ->
                 {
                     try
                     {
                         // When the content is available, process the nested exchange.
-                        processor.process(rq, rs);
+                        processor.process(this, rs);
                     }
                     catch (Throwable x)
                     {

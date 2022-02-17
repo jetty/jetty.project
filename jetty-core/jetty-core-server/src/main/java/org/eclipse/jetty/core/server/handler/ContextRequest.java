@@ -46,8 +46,21 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
         super.accept((rq, rs) ->
         {
             _response = new ContextResponse(this, rs);
-            processor.process(this, _response);
+            process(processor, this, _response);
         });
+    }
+
+    private void process(Processor processor, Request request, Response response)
+    {
+        try
+        {
+            processor.process(request, response);
+        }
+        catch (Throwable x)
+        {
+            if (!response.isCommitted())
+                response.writeError(request, x, response.getCallback());
+        }
     }
 
     @Override
@@ -70,11 +83,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
             {
                 Response response = _response;
                 if (!response.isCommitted())
-                {
                     response.writeError(this, t, response.getCallback());
-                    return;
-                }
-                throw t;
             }
         }
     }
