@@ -79,10 +79,7 @@ public interface Request extends Attributes, Executor, Content.Provider
 
     HttpFields getHeaders();
 
-    default boolean isSecure()
-    {
-        return HttpScheme.HTTPS.is(getHttpURI().getScheme());
-    }
+    boolean isSecure();
 
     long getContentLength();
 
@@ -308,6 +305,12 @@ public interface Request extends Attributes, Executor, Content.Provider
         public HttpFields getHeaders()
         {
             return _wrapped.getHeaders();
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return _wrapped.isSecure();
         }
 
         @Override
