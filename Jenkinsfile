@@ -12,7 +12,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk17", "clean install", "maven3")
+                mavenBuild( "jdk17", "clean install -Perrorprone", "maven3")
                 // Collect up the jacoco execution results (only on main build)
                 jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
                        exclusionPattern: '' +
@@ -31,7 +31,7 @@ pipeline {
                        execPattern: '**/target/jacoco.exec',
                        classPattern: '**/target/classes',
                        sourcePattern: '**/src/main/java'
-                recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle()]
+                recordIssues id: "jdk17", name: "Static Analysis jdk17", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), errorProne(), spotBugs()]
               }
             }
           }
@@ -42,8 +42,8 @@ pipeline {
           steps {
             container( 'jetty-build' ) {
               timeout( time: 120, unit: 'MINUTES' ) {
-                mavenBuild( "jdk11", "clean install -Dspotbugs.skip=true -Djacoco.skip=true -Perrorprone", "maven3")
-                recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), errorProne()]
+                mavenBuild( "jdk11", "clean install -Dspotbugs.skip=true -Djacoco.skip=true", "maven3")
+                recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle()]
               }
             }
           }

@@ -24,6 +24,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ajax.JSON;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.slf4j.Logger;
@@ -86,8 +87,13 @@ public class OpenIdConfiguration extends ContainerLifeCycle
      * @param authMethod Authentication method to use with the Token Endpoint.
      * @param httpClient The {@link HttpClient} instance to use.
      */
-    public OpenIdConfiguration(String issuer, String authorizationEndpoint, String tokenEndpoint,
-                               String clientId, String clientSecret, String authMethod, HttpClient httpClient)
+    public OpenIdConfiguration(@Name("issuer") String issuer,
+                               @Name("authorizationEndpoint") String authorizationEndpoint,
+                               @Name("tokenEndpoint") String tokenEndpoint,
+                               @Name("clientId") String clientId,
+                               @Name("clientSecret") String clientSecret,
+                               @Name("authMethod") String authMethod,
+                               @Name("httpClient") HttpClient httpClient)
     {
         this.issuer = issuer;
         this.clientId = clientId;
