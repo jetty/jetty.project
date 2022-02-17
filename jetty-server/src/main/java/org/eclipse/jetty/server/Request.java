@@ -1435,8 +1435,10 @@ public class Request implements HttpServletRequest
             RequestLog requestLog = httpChannel.getRequestLog();
             if (requestLog != null)
             {
-                // Don't allow pulling more parameters
+                // Don't allow pulling more parameters from request body content
                 _contentParamsExtracted = true;
+                if (_contentParameters == null)
+                    _contentParameters = NO_PARAMS;
 
                 // Reset the status code to what was committed
                 MetaData.Response committedResponse = getResponse().getCommittedMetaData();
