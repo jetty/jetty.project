@@ -202,7 +202,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
                         _permits--;
                 }
                 if (request instanceof DelayedRequest delayed)
-                    request.execute(delayed);
+                    request.getContext().execute(delayed);
             }
         }
     }

@@ -345,7 +345,7 @@ public class DelayedHandlerTest
             @Override
             protected void schedule(Request request, Runnable handle)
             {
-                request.execute(handle);
+                request.getContext().execute(handle);
             }
         };
 
@@ -382,7 +382,6 @@ public class DelayedHandlerTest
     @Test
     public void testDelayedDefault() throws Exception
     {
-        Exchanger<Runnable> handleEx = new Exchanger<>();
         DelayedHandler delayedHandler = new DelayedHandler()
         {
             @Override
@@ -394,7 +393,7 @@ public class DelayedHandlerTest
             @Override
             protected void schedule(Request request, Runnable handle)
             {
-                request.execute(handle);
+                request.getContext().execute(handle);
             }
         };
 
