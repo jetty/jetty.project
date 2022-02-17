@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -523,6 +524,12 @@ public class HttpChannel extends Attributes.Lazy
         public HttpFields getHeaders()
         {
             return _metaData.getFields();
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return HttpScheme.HTTPS.is(getHttpURI().getScheme());
         }
 
         @Override

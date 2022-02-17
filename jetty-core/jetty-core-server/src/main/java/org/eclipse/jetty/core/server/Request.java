@@ -122,10 +122,7 @@ public interface Request extends Attributes, Content.Provider
 
     HttpFields getHeaders();
 
-    default boolean isSecure()
-    {
-        return HttpScheme.HTTPS.is(getHttpURI().getScheme());
-    }
+    boolean isSecure();
 
     long getContentLength();
 
@@ -260,10 +257,18 @@ public interface Request extends Attributes, Content.Provider
     class Wrapper implements Request
     {
         private final Request _wrapped;
+        private final Response _response;
 
         protected Wrapper(Request wrapped)
         {
             _wrapped = wrapped;
+            _response = null;
+        }
+
+        protected Wrapper(Request accepted, Response response)
+        {
+            _wrapped = accepted;
+            _response = response;
         }
 
         @Override
@@ -321,6 +326,12 @@ public interface Request extends Attributes, Content.Provider
         }
 
         @Override
+        public boolean isSecure()
+        {
+            return _wrapped.isSecure();
+        }
+
+        @Override
         public long getContentLength()
         {
             return _wrapped.getContentLength();
@@ -353,7 +364,7 @@ public interface Request extends Attributes, Content.Provider
         @Override
         public Response getResponse()
         {
-            return _wrapped.getResponse();
+            return _response != null ? _response : _wrapped.getResponse();
         }
 
         @Override
@@ -365,7 +376,7 @@ public interface Request extends Attributes, Content.Provider
         @Override
         public Response accept()
         {
-            return _wrapped.accept();
+            return _response == null ? _wrapped.accept() : null;
         }
 
         @Override
