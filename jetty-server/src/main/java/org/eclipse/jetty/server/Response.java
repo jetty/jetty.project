@@ -20,6 +20,8 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,7 +51,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
@@ -327,10 +328,18 @@ public class Response implements HttpServletResponse
         if (sessionManager == null)
             return url;
 
-        HttpURI uri = null;
+        URI uri = null;
         if (sessionManager.isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
         {
-            uri = new HttpURI(url);
+            try
+            {
+                uri = new URI(url);
+            }
+            catch (URISyntaxException e)
+            {
+                LOG.debug("Unable to encode invalid URI: " + url, e);
+                return url;
+            }
             String path = uri.getPath();
             path = (path == null ? "" : path);
             int port = uri.getPort();
@@ -384,7 +393,17 @@ public class Response implements HttpServletResponse
         String id = sessionManager.getExtendedId(session);
 
         if (uri == null)
-            uri = new HttpURI(url);
+        {
+            try
+            {
+                uri = new URI(url);
+            }
+            catch (URISyntaxException e)
+            {
+                LOG.debug("Unable to encode invalid URI: " + url, e);
+                return url;
+            }
+        }
 
         // Already encoded
         int prefix = url.indexOf(sessionURLPrefix);
@@ -404,16 +423,27 @@ public class Response implements HttpServletResponse
         int suffix = url.indexOf('?');
         if (suffix < 0)
             suffix = url.indexOf('#');
+
         if (suffix < 0)
         {
-            return url +
-                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
-                sessionURLPrefix + id;
+            StringBuilder encodedUrl = new StringBuilder(url);
+            // if no path, insert the root path
+            if ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && StringUtil.isBlank(uri.getPath()))
+                encodedUrl.append('/');
+            encodedUrl.append(sessionURLPrefix);
+            encodedUrl.append(id);
+            return encodedUrl.toString();
         }
 
-        return url.substring(0, suffix) +
-            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
-            sessionURLPrefix + id + url.substring(suffix);
+        StringBuilder encodedUrl = new StringBuilder();
+        encodedUrl.append(url, 0, suffix);
+        // if no path, insert the root path
+        if ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && StringUtil.isBlank(uri.getPath()))
+            encodedUrl.append('/');
+        encodedUrl.append(sessionURLPrefix);
+        encodedUrl.append(id);
+        encodedUrl.append(url.substring(suffix));
+        return encodedUrl.toString();
     }
 
     @Override
