@@ -132,7 +132,11 @@ public class MockHttpStream implements HttpStream
     public void demandContent()
     {
         if (!_content.compareAndSet(null, DEMAND))
-            _channel.onContentAvailable();
+        {
+            Runnable todo = _channel.onContentAvailable();
+            if (todo != null)
+                todo.run();
+        }
     }
 
     @Override
