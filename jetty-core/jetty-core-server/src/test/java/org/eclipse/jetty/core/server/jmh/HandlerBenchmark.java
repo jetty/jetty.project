@@ -44,7 +44,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -57,8 +56,8 @@ import static org.hamcrest.Matchers.nullValue;
 
 @State(Scope.Benchmark)
 @Threads(4)
-@Warmup(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 7, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 7, time = 1000, timeUnit = TimeUnit.MILLISECONDS)
 public class HandlerBenchmark
 {
     static Server _server = new Server();
@@ -120,7 +119,8 @@ public class HandlerBenchmark
             .include(HandlerBenchmark.class.getSimpleName())
             .warmupIterations(20)
             .measurementIterations(10)
-            .addProfiler(GCProfiler.class)
+//            .addProfiler(GCProfiler.class)
+//            .addProfiler(AsyncProfiler.class, "output=flamegraph")
             .forks(1)
             .threads(10)
             .build();
