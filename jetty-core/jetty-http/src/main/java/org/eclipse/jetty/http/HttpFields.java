@@ -671,7 +671,7 @@ public interface HttpFields extends Iterable<HttpField>
             if (fields instanceof Immutable)
             {
                 Immutable b = (Immutable)fields;
-                System.arraycopy(b._fields, 0, _fields, _size, b._fields.length);
+                System.arraycopy(b._fields, 0, _fields, _size, b._size);
                 _size += b._fields.length;
             }
             else if (fields instanceof Mutable)
