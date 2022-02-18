@@ -966,10 +966,7 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public boolean isCommitted()
         {
-            try (AutoLock ignored = _lock.lock())
-            {
-                return _headers.isReadOnly();
-            }
+            return _headers.isReadOnly();
         }
 
         @Override
