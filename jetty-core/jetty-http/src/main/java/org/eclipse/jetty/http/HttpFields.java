@@ -756,7 +756,7 @@ public interface HttpFields extends Iterable<HttpField>
         @Override
         public HttpFields asImmutable()
         {
-            HttpField[] fields = _fields;
+            HttpField[] fields = _fields == null ? new HttpField[0] : _fields;
             int size = _size;
             _fields = null;
             _size = 0;
@@ -1473,6 +1473,7 @@ public interface HttpFields extends Iterable<HttpField>
 
         Immutable(HttpField[] fields, int size)
         {
+            Objects.requireNonNull(fields);
             _fields = fields;
             _size = size;
         }
