@@ -19,7 +19,7 @@ import java.util.Queue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
 
-public class QualityOfServiceHandler extends Handler.Abstract
+public class QualityOfServiceHandler extends Handler.Wrapper
 {
     private final AutoLock lock = new AutoLock();
     private final Queue<Entry> queue = new ArrayDeque<>();
