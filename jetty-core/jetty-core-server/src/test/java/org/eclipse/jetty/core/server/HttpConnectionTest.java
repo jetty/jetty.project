@@ -845,10 +845,10 @@ public class HttpConnectionTest
     public void testEmptyFlush() throws Exception
     {
         server.stop();
-        server.setHandler(new Handler.Abstract()
+        server.setHandler(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(false, callback);
@@ -1120,10 +1120,10 @@ public class HttpConnectionTest
         final String longstr = str;
         final CountDownLatch checkError = new CountDownLatch(1);
         server.stop();
-        server.setHandler(new Handler.Abstract()
+        server.setHandler(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.setHeader("LongStr", longstr);
@@ -1169,10 +1169,10 @@ public class HttpConnectionTest
         final String longstr = "thisisastringthatshouldreachover12kbytes-" + new String(bytes, StandardCharsets.ISO_8859_1) + "_Z_";
         final CountDownLatch checkError = new CountDownLatch(1);
         server.stop();
-        server.setHandler(new Handler.Abstract()
+        server.setHandler(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
                 response.setHeader("LongStr", longstr);
@@ -1281,10 +1281,10 @@ public class HttpConnectionTest
         String chunk2 = IntStream.range(0, 64).mapToObj(i -> chunk1).collect(Collectors.joining());
         long dataLength = chunk1.length() + chunk2.length();
         server.stop();
-        server.setHandler(new Handler.Abstract()
+        server.setHandler(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 while (true)
                 {

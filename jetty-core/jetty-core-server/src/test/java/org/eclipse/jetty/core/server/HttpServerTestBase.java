@@ -329,10 +329,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
         final CountDownLatch earlyEOFException = new CountDownLatch(1);
-        configureServer(new Handler.Abstract()
+        configureServer(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 long contentLength = request.getContentLength();
                 long read = 0;
@@ -991,7 +991,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     // Handler that sends big blocks of data in each of 10 writes, and then sends the time it took for each big block.
-    protected static class BigBlockHandler extends Handler.Abstract
+    protected static class BigBlockHandler extends Handler.AbstractProcessor
     {
         byte[] buf = new byte[128 * 1024];
 
@@ -1004,7 +1004,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        protected void handle(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             response.setContentType("text/plain");
@@ -1176,7 +1176,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testCommittedError() throws Exception
     {
-        CommittedErrorHandler handler = new CommittedErrorHandler();
+        CommittedErrorProcessor handler = new CommittedErrorProcessor();
         configureServer(handler);
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -1210,12 +1210,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    public static class CommittedErrorHandler extends Handler.Abstract
+    public static class CommittedErrorProcessor extends Handler.AbstractProcessor
     {
         public EndPoint _endp;
 
         @Override
-        protected void handle(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             _endp = request.getConnectionMetaData().getConnection().getEndPoint();
             response.setHeader("test", "value");
@@ -1416,20 +1416,20 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         while (line != null);
     }
 
-    private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Abstract
+    private static class WriteBodyAfterNoBodyResponseHandler extends Handler.AbstractProcessor
     {
         @Override
-        protected void handle(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(304);
             response.write(false, callback, BufferUtil.toBuffer("yuck"));
         }
     }
 
-    public static class NoopHandler extends Handler.Abstract
+    public static class NoopHandler extends Handler.AbstractProcessor
     {
         @Override
-        protected void handle(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             //don't read the input, just send something back
             response.setStatus(200);
@@ -1527,10 +1527,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         final int bufferSize = 1024;
         _connector.getConnectionFactory(HttpConnectionFactory.class).setInputBufferSize(bufferSize);
         CountDownLatch closed = new CountDownLatch(1);
-        configureServer(new Handler.Abstract()
+        configureServer(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 request.getHttpChannel().addConnectionCloseListener(t -> closed.countDown());
                 while (true)

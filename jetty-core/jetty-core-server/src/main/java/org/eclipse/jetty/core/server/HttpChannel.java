@@ -625,7 +625,7 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        public void accept(Processor processor) throws Exception
+        public void accept(Handler.Processor processor) throws Exception
         {
             try (AutoLock ignored = _lock.lock())
             {

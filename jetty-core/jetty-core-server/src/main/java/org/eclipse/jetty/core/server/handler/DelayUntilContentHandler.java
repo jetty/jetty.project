@@ -14,7 +14,6 @@
 package org.eclipse.jetty.core.server.handler;
 
 import org.eclipse.jetty.core.server.Handler;
-import org.eclipse.jetty.core.server.Processor;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.HttpHeader;
@@ -26,14 +25,9 @@ public class DelayUntilContentHandler extends Handler.Wrapper
     public void accept(Request request) throws Exception
     {
         // If no content or content available, then don't delay dispatch.
-        if (request.getContentLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
-        {
-            super.accept(request);
-        }
-        else
-        {
+        if (request.getContentLength() > 0 || request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
             super.accept(new DelayUntilContentRequest(request));
-        }
+        super.accept(request);
     }
 
     private static class DelayUntilContentRequest extends Request.Wrapper implements Processor, Runnable

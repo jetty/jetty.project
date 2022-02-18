@@ -122,18 +122,7 @@ public interface Handler extends LifeCycle, Destroyable
     {
         private static final Logger LOG = LoggerFactory.getLogger(Abstract.class);
 
-        private final Processor _processor = this::handle;
         private Server _server;
-
-        @Override
-        public void accept(Request request) throws Exception
-        {
-            request.accept(_processor);
-        }
-
-        protected void handle(Request request, Response response, Callback callback) throws Exception
-        {
-        }
 
         @Override
         public Server getServer()
@@ -403,6 +392,21 @@ public interface Handler extends LifeCycle, Destroyable
             List<Handler> list = new ArrayList<>(getHandlers());
             if (list.remove(handler))
                 setHandlers(list);
+        }
+    }
+
+    @FunctionalInterface
+    interface Processor
+    {
+        public void process(Request request, Response response, Callback callback) throws Exception;
+    }
+
+    abstract class AbstractProcessor extends Abstract implements Processor
+    {
+        @Override
+        public void accept(Request request) throws Exception
+        {
+            request.accept(this);
         }
     }
 }

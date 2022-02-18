@@ -387,10 +387,10 @@ public class HttpChannelTest
     @Test
     public void testThrowCommitted() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.setContentLength(10);
@@ -424,10 +424,10 @@ public class HttpChannelTest
     @Test
     public void testAutoContentLength() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.write(true, callback, BufferUtil.toBuffer("12345"));
             }
@@ -455,10 +455,10 @@ public class HttpChannelTest
     @Test
     public void testInsufficientContentWritten1() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setContentLength(10);
                 response.write(true, callback, BufferUtil.toBuffer("12345"));
@@ -487,10 +487,10 @@ public class HttpChannelTest
     @Test
     public void testInsufficientContentWritten2() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setContentLength(10);
                 response.write(false, Callback.from(() -> response.write(true, callback)), BufferUtil.toBuffer("12345"));
@@ -518,10 +518,10 @@ public class HttpChannelTest
     @Test
     public void testExcessContentWritten1() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setContentLength(5);
                 response.write(true, callback, BufferUtil.toBuffer("1234567890"));
@@ -550,10 +550,10 @@ public class HttpChannelTest
     @Test
     public void testExcessContentWritten2() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setContentLength(5);
                 response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("567890"))), BufferUtil.toBuffer("1234"));
@@ -615,10 +615,10 @@ public class HttpChannelTest
     @Test
     public void testUnconsumedContentUnavailable() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
@@ -657,10 +657,10 @@ public class HttpChannelTest
     @Test
     public void testUnconsumedContentUnavailableClosed() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.addHeader(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
@@ -953,10 +953,10 @@ public class HttpChannelTest
     @Test
     public void testDemandRecursion() throws Exception
     {
-        _server.setHandler(new Handler.Abstract()
+        _server.setHandler(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 LongAdder contentSize = new LongAdder();
                 CountDownLatch latch = new CountDownLatch(1);
@@ -1033,10 +1033,10 @@ public class HttpChannelTest
     {
         AtomicReference<Request> handling = new AtomicReference<>();
         AtomicReference<Throwable> error = new AtomicReference<>();
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 handling.set(request);
                 request.addErrorListener(t -> {});

@@ -62,6 +62,7 @@ import static org.hamcrest.Matchers.nullValue;
 public class HandlerBenchmark
 {
     static Server _server = new Server();
+    static HttpConfiguration _httpConfig = new HttpConfiguration();
 
     @Setup(Level.Trial)
     public static void setupServer() throws Exception
@@ -89,7 +90,7 @@ public class HandlerBenchmark
     public long testPost()
     {
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        HttpChannel channel = new HttpChannel(_server, connectionMetaData, _httpConfig);
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         String message = "ECHO Echo echo";

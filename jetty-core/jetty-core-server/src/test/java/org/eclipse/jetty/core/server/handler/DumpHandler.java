@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class DumpHandler extends Handler.Abstract
+public class DumpHandler extends Handler.AbstractProcessor
 {
     private static final Logger LOG = LoggerFactory.getLogger(DumpHandler.class);
 
@@ -48,7 +48,7 @@ public class DumpHandler extends Handler.Abstract
     private static final String _label = "Dump Handler";
 
     @Override
-    protected void handle(Request request, Response response, Callback callback) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         if (LOG.isDebugEnabled())
             LOG.debug("dump {}", request);

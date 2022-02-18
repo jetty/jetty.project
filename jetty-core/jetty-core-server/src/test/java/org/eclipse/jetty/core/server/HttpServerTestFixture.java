@@ -87,10 +87,10 @@ public class HttpServerTestFixture
         handler.start();
     }
 
-    protected static class OptionsHandler extends Handler.Abstract
+    protected static class OptionsHandler extends Handler.AbstractProcessor
     {
         @Override
-        protected void handle(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             if (request.getMethod().equals("OPTIONS"))
                 response.setStatus(200);
@@ -101,7 +101,7 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class SendErrorHandler extends Handler.Abstract
+    protected static class SendErrorHandler extends Handler.AbstractProcessor
     {
         private final int code;
         private final String message;
@@ -113,13 +113,13 @@ public class HttpServerTestFixture
         }
 
         @Override
-        protected void handle(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             response.writeError(request, code, message, callback);
         }
     }
 
-    protected static class ReadExactHandler extends Handler.Abstract
+    protected static class ReadExactHandler extends Handler.AbstractProcessor
     {
         private final int expected;
 
@@ -134,7 +134,7 @@ public class HttpServerTestFixture
         }
 
         @Override
-        protected void handle(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             long len = expected < 0 ? request.getContentLength() : expected;
             if (len < 0)
@@ -172,10 +172,10 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class ReadHandler extends Handler.Abstract
+    protected static class ReadHandler extends Handler.AbstractProcessor
     {
         @Override
-        protected void handle(Request request, Response response, Callback callback)
+        public void process(Request request, Response response, Callback callback)
         {
             response.setStatus(200);
             Content.readUtf8String(request, Promise.from(
@@ -185,10 +185,10 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class DataHandler extends Handler.Abstract
+    protected static class DataHandler extends Handler.AbstractProcessor
     {
         @Override
-        protected void handle(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
 

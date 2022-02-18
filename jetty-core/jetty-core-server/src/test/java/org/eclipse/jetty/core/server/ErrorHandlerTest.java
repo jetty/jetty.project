@@ -65,10 +65,10 @@ public class ErrorHandlerTest
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        server.setHandler(new Handler.Abstract()
+        server.setHandler(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 if (request.getPath().startsWith("/badmessage/"))
                 {
@@ -649,10 +649,10 @@ public class ErrorHandlerTest
                 response.write(true, callback, BufferUtil.toBuffer("Context Error"));
             }
         });
-        context.setHandler(new Handler.Abstract()
+        context.setHandler(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.writeError(request, 444, callback);
             }

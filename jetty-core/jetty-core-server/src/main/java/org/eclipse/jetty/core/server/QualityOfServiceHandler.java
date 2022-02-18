@@ -75,7 +75,16 @@ public class QualityOfServiceHandler extends Handler.Wrapper
 
                 if (process)
                 {
-                    process(processor, this, response, Callback.from(callback, QualityOfServiceHandler.this::release));
+                    callback = Callback.from(callback, QualityOfServiceHandler.this::release);
+                    try
+                    {
+                        processor.process(this, response, callback);
+                    }
+                    catch (Exception x)
+                    {
+                        // TODO: better exception handling?
+                        callback.failed(x);
+                    }
                     return;
                 }
 
@@ -88,19 +97,6 @@ public class QualityOfServiceHandler extends Handler.Wrapper
                     queue.offer(new Entry(processor, this, response, callback));
                     return;
                 }
-            }
-        }
-
-        private void process(Processor processor, Request request, Response response, Callback callback)
-        {
-            try
-            {
-                processor.process(request, response, callback);
-            }
-            catch (Exception x)
-            {
-                // TODO: better exception handling?
-                callback.failed(x);
             }
         }
     }

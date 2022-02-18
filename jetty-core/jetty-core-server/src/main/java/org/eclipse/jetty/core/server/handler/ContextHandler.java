@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.core.server.ClassLoaderDump;
 import org.eclipse.jetty.core.server.Connector;
 import org.eclipse.jetty.core.server.Handler;
-import org.eclipse.jetty.core.server.Processor;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;

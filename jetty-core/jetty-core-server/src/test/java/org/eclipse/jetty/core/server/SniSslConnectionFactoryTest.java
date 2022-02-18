@@ -113,10 +113,10 @@ public class SniSslConnectionFactoryTest
             new HttpConnectionFactory(httpConfiguration));
         _server.addConnector(_connector);
 
-        _server.setHandler(new Handler.Abstract()
+        _server.setHandler(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.setHeader("X-URL", request.getHttpURI().toString());

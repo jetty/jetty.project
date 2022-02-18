@@ -34,10 +34,10 @@ import org.eclipse.jetty.util.UrlEncoded;
 public interface Request extends Attributes, Executor, Content.Provider
 {
     /**
-     * Accepts the request for processing with the given {@link Processor}.
+     * Accepts the request for processing with the given {@link Handler.Processor}.
      * @param processor the Processor that processes the request
      */
-    void accept(Processor processor) throws Exception;
+    void accept(Handler.Processor processor) throws Exception;
 
     /**
      * Test if the request has been accepted.
@@ -49,7 +49,7 @@ public interface Request extends Attributes, Executor, Content.Provider
      *         // ...
      *     }
      * </pre>
-     * Instead, the {@link #accept(Processor)} method should be used and tested for a null result: <pre>
+     * Instead, the {@link #accept(Handler.Processor)} method should be used and tested for a null result: <pre>
      *     Response response = request.accept();
      *     if (response != null)
      *     {
@@ -58,7 +58,7 @@ public interface Request extends Attributes, Executor, Content.Provider
      * </pre>
      *
      * @return true if the request has been accepted, else null
-     * @see #accept(Processor)
+     * @see #accept(Handler.Processor)
      */
     boolean isAccepted();
 
@@ -322,7 +322,7 @@ public interface Request extends Attributes, Executor, Content.Provider
         }
 
         @Override
-        public void accept(Processor processor) throws Exception
+        public void accept(Handler.Processor processor) throws Exception
         {
             getWrapped().accept(processor);
         }

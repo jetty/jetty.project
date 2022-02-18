@@ -157,10 +157,10 @@ public class ContextHandlerTest
     @Test
     public void testSimpleInContext() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
                 response.setStatus(200);
@@ -188,10 +188,10 @@ public class ContextHandlerTest
     @Test
     public void testCallbackInContext() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
                 request.demandContent(() ->
@@ -254,10 +254,10 @@ public class ContextHandlerTest
     {
         CountDownLatch blocking = new CountDownLatch(1);
 
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
 
@@ -370,10 +370,10 @@ public class ContextHandlerTest
     @Test
     public void testThrownUsesContextErrorProcessor() throws Exception
     {
-        _contextHandler.setHandler(new Handler.Abstract()
+        _contextHandler.setHandler(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 throw new RuntimeException("Testing");
             }

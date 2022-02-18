@@ -82,10 +82,10 @@ public class SslConnectionFactoryTest
 
         _server.addConnector(https);
 
-        _server.setHandler(new Handler.Abstract()
+        _server.setHandler(new Handler.AbstractProcessor()
         {
             @Override
-            protected void handle(Request request, Response response, Callback callback)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.write(true, callback, BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + request.getServerName()));

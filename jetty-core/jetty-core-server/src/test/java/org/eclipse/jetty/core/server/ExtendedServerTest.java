@@ -139,10 +139,10 @@ public class ExtendedServerTest extends HttpServerTestBase
         }
     }
 
-    protected static class DispatchedAtHandler extends Handler.Abstract
+    protected static class DispatchedAtHandler extends Handler.AbstractProcessor
     {
         @Override
-        protected void handle(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             response.write(true, callback, BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"));

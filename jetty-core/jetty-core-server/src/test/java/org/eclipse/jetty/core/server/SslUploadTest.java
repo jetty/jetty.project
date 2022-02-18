@@ -105,10 +105,10 @@ public class SslUploadTest
         assertEquals(requestContent.length, 0);
     }
 
-    private static class EmptyHandler extends Handler.Abstract
+    private static class EmptyHandler extends Handler.AbstractProcessor
     {
         @Override
-        protected void handle(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.readBytes(request);
             response.write(true, callback, BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));

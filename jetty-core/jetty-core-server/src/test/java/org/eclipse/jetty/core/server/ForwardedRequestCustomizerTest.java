@@ -1295,12 +1295,12 @@ public class ForwardedRequestCustomizerTest
         boolean check(Request request, Response response) throws IOException;
     }
 
-    private static class RequestHandler extends Handler.Abstract
+    private static class RequestHandler extends Handler.AbstractProcessor
     {
         private RequestTester requestTester;
 
         @Override
-        protected void handle(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (requestTester != null && requestTester.check(request, response))
             {

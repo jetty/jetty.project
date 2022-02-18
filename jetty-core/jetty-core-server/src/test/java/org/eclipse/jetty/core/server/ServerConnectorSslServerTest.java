@@ -197,10 +197,10 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         }
     }
 
-    public static class SecureRequestHandler extends Handler.Abstract
+    public static class SecureRequestHandler extends Handler.AbstractProcessor
     {
         @Override
-        protected void handle(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             StringBuilder out = new StringBuilder();

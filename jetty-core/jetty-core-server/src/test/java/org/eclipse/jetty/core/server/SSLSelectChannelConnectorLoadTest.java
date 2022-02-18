@@ -320,10 +320,10 @@ public class SSLSelectChannelConnectorLoadTest
         }
     }
 
-    private static class TestHandler extends Handler.Abstract
+    private static class TestHandler extends Handler.AbstractProcessor
     {
         @Override
-        protected void handle(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             ByteBuffer input = Content.readBytes(request);
             response.write(true, callback, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()));

@@ -15,7 +15,7 @@ package org.eclipse.jetty.core.server.handler;
 
 import java.util.function.Consumer;
 
-import org.eclipse.jetty.core.server.Processor;
+import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.BadMessageException;
@@ -42,7 +42,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     }
 
     @Override
-    public void accept(Processor processor) throws Exception
+    public void accept(Handler.Processor processor) throws Exception
     {
         super.accept((rq, rs, cb) ->
         {
@@ -52,7 +52,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
         });
     }
 
-    private void process(Processor processor, Request request, Response response, Callback callback)
+    private void process(Handler.Processor processor, Request request, Response response, Callback callback)
     {
         try
         {
@@ -61,8 +61,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
         catch (Throwable x)
         {
             // TODO: see below about QuietException.
-            if (!response.isCommitted())
-                response.writeError(request, x, callback);
+            response.writeError(request, x, callback);
         }
     }
 
@@ -85,8 +84,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
             if (isAccepted())
             {
                 Response response = _response;
-                if (!response.isCommitted())
-                    response.writeError(this, t, _callback);
+                response.writeError(this, t, _callback);
             }
         }
     }

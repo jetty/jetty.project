@@ -16,7 +16,6 @@ package org.eclipse.jetty.core.server.handler.gzip;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.core.server.Handler;
-import org.eclipse.jetty.core.server.Processor;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.HttpField;
@@ -36,14 +35,9 @@ public class GzipHandler extends Handler.Wrapper
         // TODO handle other encodings
         // TODO more efficient than this
         HttpFields headers = request.getHeaders();
-        if (!headers.contains(ACCEPT_GZIP) && !headers.contains(CONTENT_ENCODING_GZIP))
-        {
-            super.accept(request);
-        }
-        else
-        {
+        if (headers.contains(ACCEPT_GZIP) || headers.contains(CONTENT_ENCODING_GZIP))
             super.accept(new GzipRequest(request));
-        }
+        super.accept(request);
     }
 
     private static class GzipRequest extends Request.Wrapper

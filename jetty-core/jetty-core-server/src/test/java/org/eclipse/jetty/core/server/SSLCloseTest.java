@@ -77,10 +77,10 @@ public class SSLCloseTest
         }
     }
 
-    private static class WriteHandler extends Handler.Abstract
+    private static class WriteHandler extends Handler.AbstractProcessor
     {
         @Override
-        protected void handle(Request request, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
             response.setHeader("test", "value");

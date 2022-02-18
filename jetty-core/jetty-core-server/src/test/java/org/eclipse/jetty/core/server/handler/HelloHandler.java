@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.Callback;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class HelloHandler extends Handler.Abstract
+public class HelloHandler extends Handler.AbstractProcessor
 {
     private final String _message;
     private final ByteBuffer _byteBuffer;
@@ -50,7 +50,7 @@ public class HelloHandler extends Handler.Abstract
     }
 
     @Override
-    protected void handle(Request request, Response response, Callback callback) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
         response.setStatus(200);
         response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
