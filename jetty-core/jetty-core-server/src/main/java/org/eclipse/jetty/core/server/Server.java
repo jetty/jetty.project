@@ -133,7 +133,9 @@ public class Server extends Handler.Wrapper implements Attributes
             }
 
             // Handle
-            super.handle(customizedRequest);
+            Handler next = getHandler();
+            if (next != null)
+                next.handle(customizedRequest);
 
             // Try to accept to test if already accepted
             Response response = request.accept();

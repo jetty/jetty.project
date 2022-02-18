@@ -86,7 +86,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
             try
             {
                 // run is called when the delayed request is to be handled
-                DelayedHandler.super.handle(this);
+                getHandler().handle(this);
 
                 // If the wrapped request was not accepted by the delayed handling, then
                 if (!isAccepted())
