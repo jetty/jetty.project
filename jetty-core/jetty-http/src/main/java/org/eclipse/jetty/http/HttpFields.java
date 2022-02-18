@@ -649,6 +649,8 @@ public interface HttpFields extends Iterable<HttpField>
         {
             if (field != null)
             {
+                if (_fields == null)
+                    _fields = new HttpField[16];
                 if (_size == _fields.length)
                     _fields = Arrays.copyOf(_fields, _size * 2);
                 _fields[_size++] = field;
@@ -754,7 +756,12 @@ public interface HttpFields extends Iterable<HttpField>
         @Override
         public HttpFields asImmutable()
         {
-            return new Immutable(Arrays.copyOf(_fields, _size));
+            HttpField[] fields = _fields;
+            int size = _size;
+            _fields = null;
+            _size = 0;
+
+            return new Immutable(fields, size);
         }
 
         public Mutable clear()
@@ -1452,6 +1459,7 @@ public interface HttpFields extends Iterable<HttpField>
     class Immutable implements HttpFields
     {
         final HttpField[] _fields;
+        final int _size;
 
         /**
          * Initialize HttpFields from copy.
@@ -1460,7 +1468,13 @@ public interface HttpFields extends Iterable<HttpField>
          */
         Immutable(HttpField[] fields)
         {
+            this(fields, fields.length);
+        }
+
+        Immutable(HttpField[] fields, int size)
+        {
             _fields = fields;
+            _size = size;
         }
 
         @Override
@@ -1485,7 +1499,7 @@ public interface HttpFields extends Iterable<HttpField>
         {
             // default impl overridden for efficiency
             for (HttpField f : _fields)
-                if (f.is(header))
+                if (f != null && f.is(header))
                     return f.getValue();
             return null;
         }
@@ -1495,7 +1509,7 @@ public interface HttpFields extends Iterable<HttpField>
         {
             // default impl overridden for efficiency
             for (HttpField f : _fields)
-                if (f.getHeader() == header)
+                if (f != null && f.getHeader() == header)
                     return f.getValue();
             return null;
         }
@@ -1505,7 +1519,7 @@ public interface HttpFields extends Iterable<HttpField>
         {
             // default impl overridden for efficiency
             for (HttpField f : _fields)
-                if (f.getHeader() == header)
+                if (f != null && f.getHeader() == header)
                     return f;
             return null;
         }
@@ -1515,7 +1529,7 @@ public interface HttpFields extends Iterable<HttpField>
         {
             // default impl overridden for efficiency
             for (HttpField f : _fields)
-                if (f.is(name))
+                if (f != null && f.is(name))
                     return f;
             return null;
         }
@@ -1547,7 +1561,7 @@ public interface HttpFields extends Iterable<HttpField>
                 @Override
                 public boolean hasNext()
                 {
-                    return _index < _fields.length;
+                    return _index < _size;
                 }
 
                 @Override
@@ -1561,13 +1575,13 @@ public interface HttpFields extends Iterable<HttpField>
         @Override
         public int size()
         {
-            return _fields.length;
+            return _size;
         }
 
         @Override
         public Stream<HttpField> stream()
         {
-            return Arrays.stream(_fields);
+            return Arrays.stream(_fields).filter(Objects::nonNull);
         }
 
         @Override
