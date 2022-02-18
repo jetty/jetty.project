@@ -151,6 +151,46 @@ public class DistributionTests extends AbstractJettyHomeTest
             }
         }
     }
+    
+    @Test
+    public void testClassLoaderIsolation() throws Exception
+    {
+        Path jettyBase = newTestJettyBaseDirectory();
+        String jettyVersion = System.getProperty("jettyVersion");
+        String monitorVersion = System.getProperty("monitor.version");
+        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
+            .jettyVersion(jettyVersion)
+            .jettyBase(jettyBase)
+            .mavenLocalRepository(System.getProperty("mavenRepoPath"))
+            .build();
+
+        String[] args1 = {
+            "--create-start-ini",
+            "--approve-all-licenses",
+            "--add-modules=http,demo-spec"
+        };
+        
+        try (JettyHomeTester.Run run1 = distribution.start(args1))
+        {
+            assertTrue(run1.awaitFor(10, TimeUnit.SECONDS));
+            assertEquals(0, run1.getExitValue());
+
+            // Verify that --create-start-ini works
+            assertTrue(Files.exists(jettyBase.resolve("start.ini")));
+            int port = distribution.freePort();
+            
+            try (JettyHomeTester.Run run2 = distribution.start("jetty.http.port=" + port))
+            {
+                assertTrue(run2.awaitConsoleLogsFor("Started Server@", 10, TimeUnit.SECONDS));
+
+                startHttpClient();
+                ContentResponse response = client.GET("http://localhost:" + port + "/test-spec/classloader");
+                assertEquals(HttpStatus.OK_200, response.getStatus());
+                assertThat(response.getContentAsString(), containsString("Version Result: <span class=\"pass\">PASS</span>"));
+                assertThat(response.getContentAsString(), containsString("URI Result: <span class=\"pass\">PASS</span>"));
+            }
+        }
+    }
 
     @Test
     public void testSimpleWebAppWithJSP() throws Exception

@@ -109,6 +109,8 @@
     <maven.resolver.version>1.7.3</maven.resolver.version>
     <maven.version>3.8.4</maven.version>
     <mongodb.version>3.2.2</mongodb.version>
+    <monitor.version>9.3.30.v20211001</monitor.version>
+    <monitor.old.version>9.3.29.v20201019</monitor.old.version>
     <openpojo.version>0.9.1</openpojo.version>
     <org.osgi.annotation.version>8.1.0</org.osgi.annotation.version>
     <org.osgi.core.version>6.0.0</org.osgi.core.version>

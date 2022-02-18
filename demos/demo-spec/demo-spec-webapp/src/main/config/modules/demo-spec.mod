@@ -19,3 +19,4 @@ demo-mock-resources
 [files]
 basehome:modules/demo.d/demo-spec.xml|webapps/demo-spec.xml
 maven://org.eclipse.jetty.demos/demo-spec-webapp/${jetty.version}/war|webapps/demo-spec.war
+maven://org.eclipse.jetty/jetty-monitor/@monitor.version@/jar|lib/ext/jetty-monitor-@monitor.version@.jar

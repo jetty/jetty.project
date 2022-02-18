@@ -25,7 +25,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.monitor.thread.ThreadMonitorInfo;
 
 @WebServlet(urlPatterns = "/classloader")
 public class ClassLoaderServlet extends HttpServlet
@@ -41,15 +41,14 @@ public class ClassLoaderServlet extends HttpServlet
             writer.println("<body>");
             writer.println("<h1>ClassLoader Isolation Test</h1>");
 
-            Class<?> webappIO = IO.class;
-            URI webappURI = getLocationOfClass(webappIO);
-            String webappVersion = webappIO.getPackage().getImplementationVersion();
-            Class<?> serverIO = req.getServletContext().getClass().getClassLoader().loadClass("org.eclipse.jetty.util.IO");
-            URI serverURI = getLocationOfClass(serverIO);
-            String serverVersion = serverIO.getPackage().getImplementationVersion();
-
-            writer.printf("<p>Webapp loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n", webappVersion, webappURI);
-            writer.printf("<br/>Server loaded <code>org.eclipse.jetty.util.IO</code>(%s) from %s%n", serverVersion, serverURI);
+            Class<?> webappClass = ThreadMonitorInfo.class;
+            URI webappURI = getLocationOfClass(webappClass);
+            String webappVersion = webappClass.getPackage().getImplementationVersion();
+            Class<?> serverClass = req.getServletContext().getClass().getClassLoader().loadClass("org.eclipse.jetty.monitor.thread.ThreadMonitorInfo");
+            URI serverURI = getLocationOfClass(serverClass);
+            String serverVersion = serverClass.getPackage().getImplementationVersion();
+            writer.printf("<p>Webapp loaded <code>org.eclipse.jetty.monitor.thread.ThreadMonitorInfo</code>(%s) from %s%n", webappVersion, webappURI);
+            writer.printf("<br/>Server loaded <code>org.eclipse.jetty.monitor.thread.ThreadMonitorInfo</code>(%s) from %s%n", serverVersion, serverURI);
             if (webappVersion.equals(serverVersion))
                 writer.println("<br/><b>Version Result: <span class=\"fail\">FAIL</span></b>");
             else

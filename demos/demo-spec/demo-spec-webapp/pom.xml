@@ -177,6 +177,12 @@
               <artifactId>demo-mock-resources</artifactId>
               <version>${project.version}</version>
             </dependency>
+            <!-- deliberately newer version to test with -->
+            <dependency>
+              <groupId>org.eclipse.jetty</groupId>
+              <artifactId>jetty-monitor</artifactId>
+              <version>${monitor.version}</version>
+            </dependency>
           </dependencies>
         </plugin>
       </plugins>
@@ -211,12 +217,28 @@
     <!-- deliberately old version to test classloading -->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-util</artifactId>
-      <version>9.4.45.v20220203</version>
+      <artifactId>jetty-monitor</artifactId>
+      <version>${monitor.old.version}</version>
       <exclusions>
         <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>javax.servlet-api</artifactId>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-util</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-io</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-xml</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-http</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.eclipse.jetty</groupId>
+          <artifactId>jetty-client</artifactId>
         </exclusion>
       </exclusions>
     </dependency>
