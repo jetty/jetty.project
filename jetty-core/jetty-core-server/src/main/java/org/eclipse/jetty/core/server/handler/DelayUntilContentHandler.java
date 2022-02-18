@@ -16,7 +16,9 @@ package org.eclipse.jetty.core.server.handler;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Processor;
 import org.eclipse.jetty.core.server.Request;
+import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.Callback;
 
 public class DelayUntilContentHandler extends Handler.Wrapper
 {
@@ -34,8 +36,12 @@ public class DelayUntilContentHandler extends Handler.Wrapper
         }
     }
 
-    private static class DelayUntilContentRequest extends Request.Wrapper
+    private static class DelayUntilContentRequest extends Request.Wrapper implements Processor, Runnable
     {
+        private Processor _processor;
+        private Response _response;
+        private Callback _callback;
+
         private DelayUntilContentRequest(Request wrapped)
         {
             super(wrapped);
@@ -45,25 +51,34 @@ public class DelayUntilContentHandler extends Handler.Wrapper
         public void accept(Processor processor) throws Exception
         {
             // The nested Handler is accepting the exchange.
+            _processor = processor;
 
             // Accept the wrapped request.
-            getWrapped().accept((rq, rs, cb) ->
+            getWrapped().accept(this);
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
+            _response = response;
+            _callback = callback;
+            // Demand for content.
+            demandContent(this);
+        }
+
+        @Override
+        public void run()
+        {
+            try
             {
-                // Demand for content.
-                demandContent(() ->
-                {
-                    try
-                    {
-                        // When the content is available, process the nested exchange.
-                        processor.process(this, rs, cb);
-                    }
-                    catch (Throwable x)
-                    {
-                        // TODO: improve exception handling.
-                        cb.failed(x);
-                    }
-                });
-            });
+                // When the content is available, process the nested exchange.
+                _processor.process(this, _response, _callback);
+            }
+            catch (Throwable x)
+            {
+                // TODO: improve exception handling.
+                _callback.failed(x);
+            }
         }
     }
 }

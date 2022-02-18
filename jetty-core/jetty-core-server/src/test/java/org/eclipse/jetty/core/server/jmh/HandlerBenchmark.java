@@ -24,7 +24,7 @@ import org.eclipse.jetty.core.server.MockHttpStream;
 import org.eclipse.jetty.core.server.Server;
 import org.eclipse.jetty.core.server.handler.ContextHandler;
 import org.eclipse.jetty.core.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.core.server.handler.DelayedHandler;
+import org.eclipse.jetty.core.server.handler.DelayUntilContentHandler;
 import org.eclipse.jetty.core.server.handler.EchoHandler;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -44,6 +44,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.profile.LinuxPerfAsmProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -56,8 +57,8 @@ import static org.hamcrest.Matchers.nullValue;
 
 @State(Scope.Benchmark)
 @Threads(4)
-@Warmup(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 7, time = 500, timeUnit = TimeUnit.MILLISECONDS)
+@Warmup(iterations = 7, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
+@Measurement(iterations = 7, time = 2000, timeUnit = TimeUnit.MILLISECONDS)
 public class HandlerBenchmark
 {
     static Server _server = new Server();
@@ -65,8 +66,8 @@ public class HandlerBenchmark
     @Setup(Level.Trial)
     public static void setupServer() throws Exception
     {
-        DelayedHandler.UntilContent delayedHandler = new DelayedHandler.UntilContent();
-//        DelayUntilContentHandler delayedHandler = new DelayUntilContentHandler();
+//        DelayedHandler.UntilContent delayedHandler = new DelayedHandler.UntilContent();
+        DelayUntilContentHandler delayedHandler = new DelayUntilContentHandler();
         _server.setHandler(delayedHandler);
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         delayedHandler.setHandler(contexts);
@@ -120,6 +121,7 @@ public class HandlerBenchmark
             .warmupIterations(20)
             .measurementIterations(10)
             // .addProfiler(GCProfiler.class)
+            .addProfiler(LinuxPerfAsmProfiler.class)
             .forks(1)
             .threads(10)
             .build();

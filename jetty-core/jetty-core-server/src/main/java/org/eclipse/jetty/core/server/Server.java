@@ -680,8 +680,10 @@ public class Server extends Handler.Wrapper implements Attributes
 
     private static class DynamicErrorProcessor extends ErrorProcessor {}
 
-    private static class ServerRequest extends Request.Wrapper
+    private static class ServerRequest extends Request.Wrapper implements Processor
     {
+        private Processor _processor;
+
         private ServerRequest(Request wrapped)
         {
             super(wrapped);
@@ -690,24 +692,28 @@ public class Server extends Handler.Wrapper implements Attributes
         @Override
         public void accept(Processor processor) throws Exception
         {
-            getWrapped().accept((rq, rs, cb) ->
-            {
-                try
-                {
-                    processor.process(this, rs, cb);
-                }
-                catch (Throwable x)
-                {
-                    // Let's be less verbose with BadMessageExceptions & QuietExceptions
-                    // TODO: improve log messages.
-                    if (!LOG.isDebugEnabled() && (x instanceof BadMessageException || x instanceof QuietException))
-                        LOG.warn("bad message {}", x.getMessage());
-                    else
-                        LOG.warn("handle failed {}", this, x);
+            _processor = processor;
+            getWrapped().accept(this);
+        }
 
-                    cb.failed(x);
-                }
-            });
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
+            try
+            {
+                _processor.process(this, response, callback);
+            }
+            catch (Throwable x)
+            {
+                // Let's be less verbose with BadMessageExceptions & QuietExceptions
+                // TODO: improve log messages.
+                if (!LOG.isDebugEnabled() && (x instanceof BadMessageException || x instanceof QuietException))
+                    LOG.warn("bad message {}", x.getMessage());
+                else
+                    LOG.warn("handle failed {}", this, x);
+
+                callback.failed(x);
+            }
         }
     }
 }
