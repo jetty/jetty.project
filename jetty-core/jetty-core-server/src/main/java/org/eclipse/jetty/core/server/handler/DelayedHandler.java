@@ -109,7 +109,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
         }
     }
 
-    public static class OnContent extends DelayedHandler
+    public static class UntilContent extends DelayedHandler
     {
         @Override
         protected Response accept(Request request)

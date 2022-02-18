@@ -221,7 +221,7 @@ public class DelayedHandlerTest
     @Test
     public void testOnContent() throws Exception
     {
-        DelayedHandler delayedHandler = new DelayedHandler.OnContent();
+        DelayedHandler delayedHandler = new DelayedHandler.UntilContent();
 
         _server.setHandler(delayedHandler);
         CountDownLatch handling = new CountDownLatch(1);
