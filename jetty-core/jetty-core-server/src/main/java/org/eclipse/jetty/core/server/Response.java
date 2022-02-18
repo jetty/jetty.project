@@ -24,8 +24,11 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An asynchronous HTTP response.
@@ -33,6 +36,8 @@ import org.eclipse.jetty.util.Callback;
  */
 public interface Response
 {
+    Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
+
     Request getRequest();
 
     Callback getCallback();
@@ -99,9 +104,8 @@ public interface Response
             cause = new Throwable("unknown cause");
         int status = HttpStatus.INTERNAL_SERVER_ERROR_500;
         String message = cause.toString();
-        if (cause instanceof BadMessageException)
+        if (cause instanceof BadMessageException bad)
         {
-            BadMessageException bad = (BadMessageException)cause;
             status = bad.getCode();
             message = bad.getReason();
         }
@@ -120,9 +124,15 @@ public interface Response
 
     default void writeError(int status, String message, Throwable cause, Callback callback)
     {
+        // Let's be less verbose with BadMessageExceptions & QuietExceptions
+        if (!LOG.isDebugEnabled() && (cause instanceof BadMessageException || cause instanceof QuietException))
+            LOG.warn("{} {}", message, cause.getMessage());
+        else
+            LOG.warn("{} {}", message, this, cause);
+
         if (isCommitted())
         {
-            callback.failed(new IllegalStateException("Committed"));
+            callback.failed(cause == null ? new IllegalStateException(message == null ? "Committed" : message) : cause);
             return;
         }
 

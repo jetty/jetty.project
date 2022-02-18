@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.QuietException;
@@ -142,10 +143,7 @@ public class Server extends Handler.Wrapper implements Attributes
             if (response != null)
             {
                 Callback callback = response.getCallback();
-                if (response.isCommitted())
-                    callback.failed(new IllegalStateException("No Handler for committed request"));
-                else
-                    response.writeError(404, null, callback);
+                response.writeError(HttpStatus.NOT_FOUND_404, "Not accepted", callback);
             }
         }
         catch (Throwable t)

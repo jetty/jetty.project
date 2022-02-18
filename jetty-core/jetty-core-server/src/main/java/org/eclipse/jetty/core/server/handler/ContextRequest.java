@@ -17,16 +17,11 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
-import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ContextRequest extends Request.Wrapper implements Invocable.Callable
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
     private volatile Response _response;
@@ -63,23 +58,11 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
         }
         catch (Throwable t)
         {
-            // Let's be less verbose with BadMessageExceptions & QuietExceptions
-            if (!LOG.isDebugEnabled() && (t instanceof BadMessageException || t instanceof QuietException))
-                LOG.warn("context bad message {}", t.getMessage());
-            else
-                LOG.warn("context handle failed {}", this, t);
-
             // Only handle exception if request was accepted
-            if (isAccepted())
-            {
-                Response response = _response;
-                if (!response.isCommitted())
-                {
-                    response.writeError(t, response.getCallback());
-                    return;
-                }
+            if (!isAccepted())
                 throw t;
-            }
+            Response response = _response;
+            response.writeError(t, response.getCallback());
         }
     }
 
@@ -134,14 +117,11 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     public Object getAttribute(String name)
     {
         // return some hidden attributes for requestLog
-        switch (name)
+        return switch (name)
         {
-            case "o.e.j.s.h.ScopedRequest.contextPath":
-                return _contextHandler.getContext().getContextPath();
-            case "o.e.j.s.h.ScopedRequest.pathInContext":
-                return _pathInContext;
-            default:
-                return super.getAttribute(name);
-        }
+            case "o.e.j.s.h.ScopedRequest.contextPath" -> _contextHandler.getContext().getContextPath();
+            case "o.e.j.s.h.ScopedRequest.pathInContext" -> _pathInContext;
+            default -> super.getAttribute(name);
+        };
     }
 }

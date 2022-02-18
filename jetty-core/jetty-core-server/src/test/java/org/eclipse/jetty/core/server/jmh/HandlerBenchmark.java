@@ -61,10 +61,12 @@ import static org.hamcrest.Matchers.nullValue;
 public class HandlerBenchmark
 {
     static Server _server = new Server();
+    static HttpConfiguration _httpConfig;
 
     @Setup(Level.Trial)
     public static void setupServer() throws Exception
     {
+        _httpConfig = new HttpConfiguration();
         DelayedHandler.UntilContent delayedHandler = new DelayedHandler.UntilContent();
 //        DelayUntilContentHandler delayedHandler = new DelayUntilContentHandler();
         _server.setHandler(delayedHandler);
@@ -88,7 +90,7 @@ public class HandlerBenchmark
     public long testPost()
     {
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        HttpChannel channel = new HttpChannel(_server, connectionMetaData, _httpConfig);
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         String message = "ECHO Echo echo";
