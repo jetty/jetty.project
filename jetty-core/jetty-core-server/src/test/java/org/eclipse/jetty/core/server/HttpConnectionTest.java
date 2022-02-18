@@ -979,6 +979,7 @@ public class HttpConnectionTest
                 "Host: localhost\r\n" +
                 "Transfer-Encoding: chunked\r\n" +
                 "Content-Type: application/data; charset=utf-8\r\n" +
+                "Some: header\r\n" +
                 "\r\n" +
                 "5;\r\n" +
                 "12345\r\n" +
@@ -997,10 +998,11 @@ public class HttpConnectionTest
         LocalEndPoint endp = connector.executeRequest(requests);
         String response = endp.getResponse() + endp.getResponse();
 
+        assertThat(response, not(containsString("Some: header")));
         offset = checkContains(response, offset, "HTTP/1.1 599");
         offset = checkContains(response, offset, "HTTP/1.1 200");
         offset = checkContains(response, offset, "/R2");
-        offset = checkContains(response, offset, "charset=utf-8");
+        offset = checkContains(response, offset, "text/plain; charset=UTF-8");
         checkContains(response, offset, "abcdefghij");
     }
 

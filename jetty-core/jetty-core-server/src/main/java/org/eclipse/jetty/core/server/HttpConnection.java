@@ -954,6 +954,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             Http1Stream stream = newHttpStream(method, uri, version);
             if (!_stream.compareAndSet(null, stream))
                 throw new IllegalStateException("Stream pending");
+            _headerBuilder.clear();
             _channel.setStream(stream);
         }
 
