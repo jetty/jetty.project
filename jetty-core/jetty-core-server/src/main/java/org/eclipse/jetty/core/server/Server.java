@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Attributes;
@@ -138,7 +139,7 @@ public class Server extends Handler.Wrapper implements Attributes
             accepted = true;
             request.setAccepted();
             if (processor == null)
-                response.writeError(request, 404, callback);
+                response.writeError(request, HttpStatus.NOT_FOUND_404, callback);
             else
                 processor.process(customized, response, callback);
         }

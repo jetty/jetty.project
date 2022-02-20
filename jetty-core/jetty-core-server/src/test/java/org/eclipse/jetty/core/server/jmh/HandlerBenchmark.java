@@ -44,7 +44,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
-import org.openjdk.jmh.profile.LinuxPerfAsmProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -122,7 +121,7 @@ public class HandlerBenchmark
             .warmupIterations(20)
             .measurementIterations(10)
             // .addProfiler(GCProfiler.class)
-            .addProfiler(LinuxPerfAsmProfiler.class)
+            // .addProfiler(LinuxPerfAsmProfiler.class)
             .forks(1)
             .threads(10)
             .build();

@@ -78,6 +78,12 @@ public interface HttpFields extends Iterable<HttpField>
 
     HttpFields asImmutable();
 
+    /**
+     * Efficiently take the fields as an Immutable. If this HttpFields was mutable, then it is cleared.
+     * @return An immutable version of the fields.
+     */
+    HttpFields takeAsImmutable();
+
     default String asString()
     {
         StringBuilder buffer = new StringBuilder();
@@ -755,6 +761,12 @@ public interface HttpFields extends Iterable<HttpField>
 
         @Override
         public HttpFields asImmutable()
+        {
+            return new Immutable(Arrays.copyOf(_fields, _size));
+        }
+
+        @Override
+        public HttpFields takeAsImmutable()
         {
             HttpField[] fields = _fields == null ? new HttpField[0] : _fields;
             int size = _size;
@@ -1480,6 +1492,12 @@ public interface HttpFields extends Iterable<HttpField>
 
         @Override
         public HttpFields asImmutable()
+        {
+            return this;
+        }
+
+        @Override
+        public HttpFields takeAsImmutable()
         {
             return this;
         }

@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 public class ContextRequest extends Request.Wrapper implements Invocable, Supplier<Handler.Processor>, Handler.Processor, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
-
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
     private Handler.Processor _processor;

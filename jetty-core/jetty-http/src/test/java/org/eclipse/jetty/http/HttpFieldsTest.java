@@ -143,6 +143,24 @@ public class HttpFieldsTest
     }
 
     @Test
+    public void testTakeImmutable()
+    {
+        HttpFields.Mutable mutable = HttpFields.build();
+        HttpFields immutable = mutable.takeAsImmutable();
+        assertThat(immutable.get(HttpHeader.HOST), nullValue());
+        assertThat(immutable.size(), is(0));
+
+        immutable = mutable
+            .put("name0", "value0")
+            .put("name1", "value1").takeAsImmutable();
+
+        assertThat(mutable.get("name0"), nullValue());
+        assertThat(mutable.get("name1"), nullValue());
+        assertThat(immutable.get("name0"), is("value0"));
+        assertThat(immutable.get("name1"), is("value1"));
+    }
+
+    @Test
     public void testMap()
     {
         Map<HttpFields, String> map = new HashMap<>();

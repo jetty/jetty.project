@@ -362,7 +362,7 @@ public class HttpChannel extends Attributes.Lazy
             }
             catch (Throwable t)
             {
-                t.printStackTrace();
+                LOG.warn("onConnectionComplete.accept", t);
             }
         }
     }
@@ -932,10 +932,7 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public boolean isCommitted()
         {
-            try (AutoLock ignored = _lock.lock())
-            {
-                return _headers.isReadOnly();
-            }
+            return _headers.isReadOnly();
         }
 
         @Override
