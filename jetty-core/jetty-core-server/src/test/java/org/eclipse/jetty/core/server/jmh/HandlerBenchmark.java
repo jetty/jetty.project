@@ -63,6 +63,15 @@ public class HandlerBenchmark
     static Server _server = new Server();
     static HttpConfiguration _httpConfig = new HttpConfiguration();
 
+    static String message = "ECHO Echo echo";
+    static ByteBuffer body = BufferUtil.toBuffer(message);
+    static HttpFields fields = HttpFields.build()
+        .add(HttpHeader.HOST, "localhost")
+        .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
+        .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
+        .asImmutable();
+    static HttpURI uri = HttpURI.from("http://localhost/ctx/path");
+
     @Setup(Level.Trial)
     public static void setupServer() throws Exception
     {
@@ -92,16 +101,8 @@ public class HandlerBenchmark
         HttpChannel channel = new HttpChannel(_server, connectionMetaData, _httpConfig);
         MockHttpStream stream = new MockHttpStream(channel, false);
 
-        String message = "ECHO Echo echo";
-        ByteBuffer body = BufferUtil.toBuffer(message);
-        HttpFields fields = HttpFields.build()
-            .add(HttpHeader.HOST, "localhost")
-            .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
-            .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
-            .asImmutable();
-        stream.addContent(body, true);
-        MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, message.length());
-
+        stream.addContent(body.slice(), true);
+        MetaData.Request request = new MetaData.Request("POST", uri, HttpVersion.HTTP_1_1, fields, message.length());
         Runnable todo = channel.onRequest(request);
         todo.run();
 

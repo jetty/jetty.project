@@ -461,7 +461,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (scoped == null)
             return null;
 
-        return scoped.asProcessor(_context.call(scoped));
+        return scoped.asProcessor(_context.get(scoped));
     }
 
     void processMove(Request request, Response response, Callback callback)
@@ -641,7 +641,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return _resourceBase;
         }
 
-        public <T> T call(Supplier<T> supplier) throws Exception
+        public <T> T get(Supplier<T> supplier) throws Exception
         {
             Context lastContext = __context.get();
             if (lastContext == this)
@@ -721,7 +721,28 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         {
             try
             {
-                call(task::run);
+                Context lastContext = __context.get();
+                if (lastContext == this)
+                    task.run();
+                else
+                {
+                    ClassLoader loader = getClassLoader();
+                    ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                    try
+                    {
+                        __context.set(this);
+                        if (loader != null)
+                            Thread.currentThread().setContextClassLoader(loader);
+
+                        task.run();
+                    }
+                    finally
+                    {
+                        __context.set(lastContext);
+                        if (loader != null)
+                            Thread.currentThread().setContextClassLoader(lastLoader);
+                    }
+                }
             }
             catch (Exception e)
             {
