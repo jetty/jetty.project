@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.core.server.ClassLoaderDump;
@@ -436,21 +437,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public void accept(Request request) throws Exception
+    public Processor offer(Request request) throws Exception
     {
         if (getHandler() == null)
-            return;
+            return null;
 
         if (!checkVirtualHost(request))
-            return;
+            return null;
 
         String pathInContext = getPathInContext(request);
         if (pathInContext == null)
-            return;
+            return null;
 
         if (pathInContext.isEmpty() && !getAllowNullPathInfo())
         {
-            request.accept((rq, rs, cb) ->
+            return (rq, rs, cb) ->
             {
                 String location = _contextPath + "/";
                 if (rq.getHttpURI().getParam() != null)
@@ -461,18 +462,20 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 rs.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
                 rs.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
                 cb.succeeded();
-            });
-            return;
+            };
         }
 
         // TODO check availability and maybe return a 503
 
         ContextRequest scoped = wrap(request, pathInContext);
-        // TODO: why this check? scoped cannot be null.
         if (scoped == null)
-            return; // TODO 404? 500? Error dispatch ???
+            return null;
 
-        _context.call(scoped);
+        Processor processor = _context.call(scoped);
+        if (processor == null)
+            return null;
+        scoped.setProcessor(processor);
+        return scoped;
     }
 
     /**
@@ -637,6 +640,30 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         public Path getResourceBase()
         {
             return _resourceBase;
+        }
+
+        public <T> T call(Supplier<T> supplier) throws Exception
+        {
+            Context lastContext = __context.get();
+            if (lastContext == this)
+                return supplier.get();
+
+            ClassLoader loader = getClassLoader();
+            ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+            try
+            {
+                __context.set(this);
+                if (loader != null)
+                    Thread.currentThread().setContextClassLoader(loader);
+
+                return supplier.get();
+            }
+            finally
+            {
+                __context.set(lastContext);
+                if (loader != null)
+                    Thread.currentThread().setContextClassLoader(lastLoader);
+            }
         }
 
         public void call(Invocable.Callable callable) throws Exception

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.core.server.handler;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
@@ -25,13 +26,14 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextRequest extends Request.Wrapper implements Invocable.Callable
+public class ContextRequest extends Request.Wrapper implements Invocable, Supplier<Handler.Processor>, Handler.Processor, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
 
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
-    private volatile Response _response;
+    private Handler.Processor _processor;
+    private Response _response;
     private Callback _callback;
 
     protected ContextRequest(ContextHandler contextHandler, Request wrapped, String pathInContext)
@@ -42,35 +44,11 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     }
 
     @Override
-    public void accept(Handler.Processor processor) throws Exception
-    {
-        super.accept((rq, rs, cb) ->
-        {
-            _response = new ContextResponse(this, rs);
-            _callback = cb;
-            process(processor, this, _response, cb);
-        });
-    }
-
-    private void process(Handler.Processor processor, Request request, Response response, Callback callback)
+    public Handler.Processor get()
     {
         try
         {
-            processor.process(request, response, callback);
-        }
-        catch (Throwable x)
-        {
-            // TODO: see below about QuietException.
-            response.writeError(request, x, callback);
-        }
-    }
-
-    @Override
-    public void call() throws Exception
-    {
-        try
-        {
-            _contextHandler.getHandler().accept(this);
+            return _contextHandler.getHandler().offer(this);
         }
         catch (Throwable t)
         {
@@ -79,13 +57,33 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
                 LOG.warn("context bad message {}", t.getMessage());
             else
                 LOG.warn("context handle failed {}", this, t);
+        }
+        return null;
+    }
 
-            // Only handle exception if request was accepted
-            if (isAccepted())
-            {
-                Response response = _response;
-                response.writeError(this, t, _callback);
-            }
+    void setProcessor(Handler.Processor processor)
+    {
+        _processor = processor;
+    }
+
+    @Override
+    public void process(Request request, Response response, Callback callback) throws Exception
+    {
+        _response = response;
+        _callback = callback;
+        _contextHandler.getContext().run(this);
+    }
+
+    @Override
+    public void run()
+    {
+        try
+        {
+            _processor.process(this, new ContextResponse(this, _response), _callback);
+        }
+        catch (Throwable t)
+        {
+            _response.writeError(this, t, _callback);
         }
     }
 

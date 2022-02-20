@@ -27,14 +27,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.core.server.handler.ContextHandler;
 import org.eclipse.jetty.core.server.handler.ErrorProcessor;
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
@@ -113,49 +111,42 @@ public class Server extends Handler.Wrapper implements Attributes
         setServer(this);
     }
 
-    void process(Request request, Response response, Callback callback)
+    void process(HttpChannel.ChannelRequest request, Response response, Callback callback)
     {
         if (!isStarted())
             return;
 
+        Request customized = request;
+        boolean accepted = false;
         try
         {
             // Customize before accepting.
             HttpConfiguration configuration = request.getHttpChannel().getHttpConfiguration();
+
             for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
             {
                 // TODO: what if customize() throws?
-                Request customized = customizer.customize(request, response, callback, configuration);
-                request = customized == null ? request : customized;
-                if (request.isAccepted())
-                    return;
+                // TODO: how can a customizer wrap the response?
+                Request next = customizer.customize(request, response, callback, configuration);
+                customized = next == null ? customized : next;
+                // TODO can a customizer accept?
+//                if (request.isAccepted())
+//                    return;
             }
 
-            request = new ServerRequest(request);
-            accept(request);
-            if (!request.isAccepted())
-                request.accept((rq, rs, cb) -> rs.writeError(rq, 404, cb));
-        }
-        catch (Throwable x)
-        {
-            if (!request.isAccepted())
-                acceptAndFail(request, x);
+            Processor processor = offer(customized);
+            accepted = true;
+            request.setAccepted();
+            if (processor == null)
+                response.writeError(request, 404, callback);
             else
-                callback.failed(x);
-        }
-    }
-
-    private void acceptAndFail(Request request, Throwable failure)
-    {
-        try
-        {
-            request.accept((rq, rs, cb) -> cb.failed(failure));
+                processor.process(customized, response, callback);
         }
         catch (Throwable x)
         {
-            // Tried to fail, but could not, give up.
-            if (LOG.isTraceEnabled())
-                LOG.trace("could not fail request processing for {}", request);
+            if (!accepted)
+                request.setAccepted();
+            callback.failed(x);
         }
     }
 
@@ -679,41 +670,4 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     private static class DynamicErrorProcessor extends ErrorProcessor {}
-
-    private static class ServerRequest extends Request.Wrapper implements Processor
-    {
-        private Processor _processor;
-
-        private ServerRequest(Request wrapped)
-        {
-            super(wrapped);
-        }
-
-        @Override
-        public void accept(Processor processor) throws Exception
-        {
-            _processor = processor;
-            getWrapped().accept(this);
-        }
-
-        @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
-        {
-            try
-            {
-                _processor.process(this, response, callback);
-            }
-            catch (Throwable x)
-            {
-                // Let's be less verbose with BadMessageExceptions & QuietExceptions
-                // TODO: improve log messages.
-                if (!LOG.isDebugEnabled() && (x instanceof BadMessageException || x instanceof QuietException))
-                    LOG.warn("bad message {}", x.getMessage());
-                else
-                    LOG.warn("handle failed {}", this, x);
-
-                callback.failed(x);
-            }
-        }
-    }
 }

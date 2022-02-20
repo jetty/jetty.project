@@ -651,59 +651,60 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class DumpHandler extends Handler.Abstract
     {
         @Override
-        public void accept(Request request) throws Exception
+        public Processor offer(Request request) throws Exception
         {
-            if (request.getPath().startsWith("/dump"))
+            if (!request.getPath().startsWith("/dump"))
+                return null;
+            return (rq, rs, cb) ->
             {
-                request.accept((rq, rs, cb) ->
+                rs.setContentType("text/plain; charset=utf-8");
+                try (StringWriter stringWriter = new StringWriter();
+                     PrintWriter out = new PrintWriter(stringWriter))
                 {
-                    rs.setContentType("text/plain; charset=utf-8");
-                    try (StringWriter stringWriter = new StringWriter();
-                         PrintWriter out = new PrintWriter(stringWriter))
-                    {
-                        out.printf("ServerName=[%s]%n", rq.getServerName());
-                        out.printf("ServerPort=[%d]%n", rq.getServerPort());
-                        out.printf("LocalAddr=[%s]%n", rq.getLocalAddr());
-                        out.printf("LocalName=[%s]%n", rq.getLocalAddr());
-                        out.printf("LocalPort=[%s]%n", rq.getLocalPort());
-                        out.printf("HttpURI=[%s]%n", rq.getHttpURI());
-                        rs.write(true, cb, stringWriter.getBuffer().toString());
-                    }
-                });
-            }
+                    out.printf("ServerName=[%s]%n", rq.getServerName());
+                    out.printf("ServerPort=[%d]%n", rq.getServerPort());
+                    out.printf("LocalAddr=[%s]%n", rq.getLocalAddr());
+                    out.printf("LocalName=[%s]%n", rq.getLocalAddr());
+                    out.printf("LocalPort=[%s]%n", rq.getLocalPort());
+                    out.printf("HttpURI=[%s]%n", rq.getHttpURI());
+                    rs.write(true, cb, stringWriter.getBuffer().toString());
+                }
+            };
         }
     }
 
     private static class RedirectHandler extends Handler.Abstract
     {
         @Override
-        public void accept(Request request) throws Exception
+        public Processor offer(Request request) throws Exception
         {
-            if (request.getPath().startsWith("/redirect"))
+            if (!request.getPath().startsWith("/redirect"))
+                return null;
+
+            return (rq, rs, cb) ->
             {
-                request.accept((rq, rs, cb) ->
-                {
-                    rs.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-                    rs.setHeader(HttpHeader.LOCATION, HttpURI.build(rq.getHttpURI(), "/dump").toString());
-                    cb.succeeded();
-                });
-            }
+                rs.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
+                rs.setHeader(HttpHeader.LOCATION, HttpURI.build(rq.getHttpURI(), "/dump").toString());
+                cb.succeeded();
+            };
         }
     }
 
-    private static class ErrorMsgHandler extends Handler.Abstract
+    private static class ErrorMsgHandler extends Handler.AbstractProcessor
     {
         @Override
-        public void accept(Request request) throws Exception
+        public Processor offer(Request request) throws Exception
         {
-            if (request.getPath().startsWith("/error"))
-            {
-                request.accept((rq, rs, cb) ->
-                {
-                    rs.setContentType("text/plain; charset=utf-8");
-                    rs.write(true, cb, "Generic Error Page.");
-                });
-            }
+            if (!request.getPath().startsWith("/error"))
+                return null;
+            return super.offer(request);
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
+            response.setContentType("text/plain; charset=utf-8");
+            response.write(true, callback, "Generic Error Page.");
         }
     }
 

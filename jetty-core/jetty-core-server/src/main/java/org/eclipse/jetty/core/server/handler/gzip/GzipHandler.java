@@ -29,15 +29,19 @@ public class GzipHandler extends Handler.Wrapper
     private static final HttpField CONTENT_ENCODING_GZIP = new HttpField(HttpHeader.CONTENT_ENCODING, "gzip");
 
     @Override
-    public void accept(Request request) throws Exception
+    public Processor offer(Request request) throws Exception
     {
         // TODO more conditions than this
         // TODO handle other encodings
         // TODO more efficient than this
         HttpFields headers = request.getHeaders();
-        if (headers.contains(ACCEPT_GZIP) || headers.contains(CONTENT_ENCODING_GZIP))
-            super.accept(new GzipRequest(request));
-        super.accept(request);
+        if (!headers.contains(ACCEPT_GZIP) && !headers.contains(CONTENT_ENCODING_GZIP))
+            return super.offer(request);
+
+
+        GzipRequest gzipRequest = new GzipRequest(request);
+        // TODO wrap the response
+        return Processor.wrap(super.offer(gzipRequest), gzipRequest);
     }
 
     private static class GzipRequest extends Request.Wrapper
@@ -48,27 +52,20 @@ public class GzipHandler extends Handler.Wrapper
         }
 
         @Override
-        public void accept(Processor processor) throws Exception
+        public HttpFields getHeaders()
         {
-            getWrapped().accept((rq, rs, cb) ->
+            // TODO only if we are gzipping and cache this
+            return HttpFields.from(super.getHeaders(), f ->
             {
-                HttpFields newHeaders = HttpFields.from(rq.getHeaders(), f ->
+                if (f.getHeader() != null)
                 {
-                    if (f.getHeader() != null)
-                    {
-                        // TODO this is too simple
-                        if (CONTENT_ENCODING_GZIP.equals(f))
-                            return null;
-                        if (f.getHeader().equals(HttpHeader.CONTENT_LENGTH))
-                            return null;
-                    }
-                    return f;
-                });
-
-                // TODO look up cached or pool inflaters / deflated
-
-                // TODO: override getHttpFields(), getContentLength(), etc.
-                processor.process(this, new GzipResponse(rs), cb);
+                    // TODO this is too simple
+                    if (CONTENT_ENCODING_GZIP.equals(f))
+                        return null;
+                    if (f.getHeader().equals(HttpHeader.CONTENT_LENGTH))
+                        return null;
+                }
+                return f;
             });
         }
     }

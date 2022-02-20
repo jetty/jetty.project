@@ -168,10 +168,10 @@ public class HttpChannel extends Attributes.Lazy
     }
 
     /**
-     * Start request handling by returning a Runnable that will call {@link Handler#accept(Request)}.
+     * Start request handling by returning a Runnable that will call {@link Handler#offer(Request)}.
      *
      * @param request The request metadata to handle.
-     * @return A Runnable that will call {@link Handler#accept(Request)}.  Unlike all other Runnables
+     * @return A Runnable that will call {@link Handler#offer(Request)}.  Unlike all other Runnables
      * returned by HttpChannel methods, this runnable is not mutually excluded or serialized against the other
      * Runnables.
      */
@@ -382,7 +382,7 @@ public class HttpChannel extends Attributes.Lazy
         }
     }
 
-    private class ChannelRequest implements Attributes, Request
+    class ChannelRequest implements Attributes, Request
     {
         final MetaData.Request _metaData;
         final String _id;
@@ -624,8 +624,7 @@ public class HttpChannel extends Attributes.Lazy
             });
         }
 
-        @Override
-        public void accept(Handler.Processor processor) throws Exception
+        public void setAccepted()
         {
             try (AutoLock ignored = _lock.lock())
             {
@@ -633,16 +632,6 @@ public class HttpChannel extends Attributes.Lazy
                     throw new IllegalStateException("request already accepted " + this);
                 // TODO: use system property to record what thread accepted it.
                 _accepted = true;
-            }
-            processor.process(this, _response, _callback);
-        }
-
-        @Override
-        public boolean isAccepted()
-        {
-            try (AutoLock ignored = _lock.lock())
-            {
-                return _accepted;
             }
         }
 

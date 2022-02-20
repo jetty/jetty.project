@@ -22,42 +22,37 @@ import org.eclipse.jetty.util.Callback;
 public class DelayUntilContentHandler extends Handler.Wrapper
 {
     @Override
-    public void accept(Request request) throws Exception
+    public Processor offer(Request request) throws Exception
     {
         // If no content or content available, then don't delay dispatch.
-        if (request.getContentLength() > 0 || request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
-            super.accept(new DelayUntilContentRequest(request));
-        super.accept(request);
+        if (request.getContentLength() < 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
+            return super.offer(request);
+
+        Processor processor = super.offer(request);
+        if (processor == null)
+            return null;
+        return new DelayedProcessor(processor);
     }
 
-    private static class DelayUntilContentRequest extends Request.Wrapper implements Processor, Runnable
+    static class DelayedProcessor implements Processor, Runnable
     {
-        private Processor _processor;
+        private final Processor _processor;
+        private Request _request;
         private Response _response;
         private Callback _callback;
 
-        private DelayUntilContentRequest(Request wrapped)
+        DelayedProcessor(Processor processor)
         {
-            super(wrapped);
-        }
-
-        @Override
-        public void accept(Processor processor) throws Exception
-        {
-            // The nested Handler is accepting the exchange.
             _processor = processor;
-
-            // Accept the wrapped request.
-            getWrapped().accept(this);
         }
 
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
+            _request = request;
             _response = response;
             _callback = callback;
-            // Demand for content.
-            demandContent(this);
+            request.demandContent(this);
         }
 
         @Override
@@ -65,13 +60,11 @@ public class DelayUntilContentHandler extends Handler.Wrapper
         {
             try
             {
-                // When the content is available, process the nested exchange.
-                _processor.process(this, _response, _callback);
+                _processor.process(_request, _response, _callback);
             }
-            catch (Throwable x)
+            catch (Throwable t)
             {
-                // TODO: improve exception handling.
-                _callback.failed(x);
+                _response.writeError(_request, t, _callback);
             }
         }
     }

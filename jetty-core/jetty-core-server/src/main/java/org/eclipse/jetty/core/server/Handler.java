@@ -33,21 +33,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Incoming requests to the Server (itself a Handler) are passed to one or more Handlers
  * until the request is handled and a response is produced.  Handlers are asynchronous,
- * so handling may happen during or after a call to {@link #accept(Request)}.
- *
- * <p>
- * A call to {@link #accept(Request)} may:
- * <ul>
- * <li>Do nothing</li>
- * <li>Completely generate the HTTP Response and call {@link Callback#succeeded()} on the {@link Callback}
- * returned from {@link Request#accept(Processor)}.</li>
- * <li>Call {@link Request#accept(Processor)} and arrange for an async process to generate the HTTP Response and call
- * {@link Callback#succeeded()} or {@link Callback#failed(Throwable)} on the {@link Callback} returned.</li>
- * <li>Pass the request to one or more other Handlers.</li>
- * <li>Wrap the request and/or response and pass them to one or more other Handlers.</li>
- * <li>Fail the request by calling {@link Callback#failed(Throwable)} on the {@link Callback} returned from
- * {@link Request#accept(Processor)}.</li>
- * </ul>
+ * so handling may happen during or after a call to {@link #offer(Request)}.
  *
  */
 @ManagedObject("Handler")
@@ -56,12 +42,13 @@ public interface Handler extends LifeCycle, Destroyable
     /**
      * Handle an HTTP request and produce a response.
      * @param request The immutable request, which is also a {@link Callback} used to signal success or failure. The Handler
-     * or one of it's nested Handlers must call {@link Request#accept(Processor)} to indicate that it will ultimately succeed or
+     * or one of it's nested Handlers must return a  {@link Handler.Processor} to indicate that it will ultimately succeed or
      * fail the {@link Callback} returned.
      *
      * @throws Exception Thrown if there is a problem handling.
+     * @return A Processor to handler the request or null if the request is not accepted.
      */
-    void accept(Request request) throws Exception;
+    Processor offer(Request request) throws Exception;
 
     @ManagedAttribute(value = "the jetty server for this handler", readonly = true)
     Server getServer();
@@ -286,11 +273,10 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public void accept(Request request) throws Exception
+        public Processor offer(Request request) throws Exception
         {
             Handler next = getHandler();
-            if (next != null)
-                next.accept(request);
+            return next == null ? null : next.offer(request);
         }
     }
 
@@ -318,7 +304,7 @@ public interface Handler extends LifeCycle, Destroyable
 
     /**
      * A Handler Container that wraps a list of other Handlers.
-     * By default, each handler is called in turn until one returns true from {@link Handler#accept(Request)}.
+     * By default, each handler is called in turn until one returns true from {@link Handler#offer(Request)}.
      */
     class Collection extends AbstractContainer
     {
@@ -336,13 +322,15 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public void accept(Request request) throws Exception
+        public Processor offer(Request request) throws Exception
         {
             for (Handler h : _handlers)
             {
-                if (!request.isAccepted())
-                    h.accept(request);
+                Processor processor = h.offer(request);
+                if (processor != null)
+                    return processor;
             }
+            return null;
         }
 
         @Override
@@ -398,15 +386,20 @@ public interface Handler extends LifeCycle, Destroyable
     @FunctionalInterface
     interface Processor
     {
-        public void process(Request request, Response response, Callback callback) throws Exception;
+        void process(Request request, Response response, Callback callback) throws Exception;
+
+        static Processor wrap(Processor processor, Request request)
+        {
+            return processor == null ? null : (ignored, response, callback) -> processor.process(request, response, callback);
+        }
     }
 
     abstract class AbstractProcessor extends Abstract implements Processor
     {
         @Override
-        public void accept(Request request) throws Exception
+        public Processor offer(Request request) throws Exception
         {
-            request.accept(this);
+            return this;
         }
     }
 }

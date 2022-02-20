@@ -326,8 +326,9 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void accept(Request request)
+            public Processor offer(Request request)
             {
+                return null;
             }
         };
         _server.setHandler(handler);
@@ -356,7 +357,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void accept(Request request)
+            public Processor offer(Request request)
             {
                 throw new UnsupportedOperationException("testing");
             }
@@ -1058,7 +1059,6 @@ public class HttpChannelTest
 
         // check we are handling
         assertNotNull(handling.get());
-        assertTrue(handling.get().isAccepted());
         assertThat(stream.isComplete(), is(false));
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), nullValue());
@@ -1115,10 +1115,10 @@ public class HttpChannelTest
         EchoHandler echoHandler = new EchoHandler()
         {
             @Override
-            public void accept(Request request) throws Exception
+            public Processor offer(Request request) throws Exception
             {
                 request.addCompletionListener(Callback.from(completed::countDown));
-                super.accept(request);
+                return super.offer(request);
             }
         };
         _server.setHandler(echoHandler);

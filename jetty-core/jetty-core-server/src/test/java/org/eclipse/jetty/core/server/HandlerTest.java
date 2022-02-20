@@ -262,8 +262,9 @@ public class HandlerTest
         c.setHandler(new Handler.Abstract()
         {
             @Override
-            public void accept(Request request)
+            public Processor offer(Request request)
             {
+                return null;
             }
         });
 

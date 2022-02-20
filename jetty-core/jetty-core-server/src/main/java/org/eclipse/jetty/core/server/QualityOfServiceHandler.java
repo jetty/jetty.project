@@ -31,9 +31,11 @@ public class QualityOfServiceHandler extends Handler.Wrapper
     }
 
     @Override
-    public void accept(Request request) throws Exception
+    public Processor offer(Request request) throws Exception
     {
-        super.accept(new QualityOfServiceRequest(request));
+        QualityOfServiceRequest qualityOfServiceRequest = new QualityOfServiceRequest(request);
+        Processor processor = super.offer(qualityOfServiceRequest);
+        return Processor.wrap(processor, qualityOfServiceRequest);
     }
 
     private void release()
@@ -53,12 +55,6 @@ public class QualityOfServiceHandler extends Handler.Wrapper
         private QualityOfServiceRequest(Request wrapped)
         {
             super(wrapped);
-        }
-
-        @Override
-        public void accept(Processor processor) throws Exception
-        {
-            getWrapped().accept((rq, rs, cb) -> handle(processor, rs, cb));
         }
 
         private void handle(Processor processor, Response response, Callback callback)

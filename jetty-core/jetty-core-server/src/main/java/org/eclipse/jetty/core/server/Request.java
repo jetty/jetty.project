@@ -33,35 +33,6 @@ import org.eclipse.jetty.util.UrlEncoded;
 // TODO lots of javadoc
 public interface Request extends Attributes, Executor, Content.Provider
 {
-    /**
-     * Accepts the request for processing with the given {@link Handler.Processor}.
-     * @param processor the Processor that processes the request
-     */
-    void accept(Handler.Processor processor) throws Exception;
-
-    /**
-     * Test if the request has been accepted.
-     * <p>This should not be used if the caller intends to accept the request.  Specifically
-     * the following is an anti-pattern: <pre>
-     *     if (!request.isAccepted())
-     *     {
-     *         Response response = request.accept();
-     *         // ...
-     *     }
-     * </pre>
-     * Instead, the {@link #accept(Handler.Processor)} method should be used and tested for a null result: <pre>
-     *     Response response = request.accept();
-     *     if (response != null)
-     *     {
-     *         // ...
-     *     }
-     * </pre>
-     *
-     * @return true if the request has been accepted, else null
-     * @see #accept(Handler.Processor)
-     */
-    boolean isAccepted();
-
     String getId();
 
     HttpChannel getHttpChannel();
@@ -319,18 +290,6 @@ public interface Request extends Attributes, Executor, Content.Provider
         public Request getWrapped()
         {
             return (Request)super.getWrapped();
-        }
-
-        @Override
-        public void accept(Handler.Processor processor) throws Exception
-        {
-            getWrapped().accept(processor);
-        }
-
-        @Override
-        public boolean isAccepted()
-        {
-            return getWrapped().isAccepted();
         }
     }
 }

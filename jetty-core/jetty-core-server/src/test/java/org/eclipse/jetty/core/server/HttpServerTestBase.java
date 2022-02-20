@@ -272,7 +272,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public void accept(Request request) throws Exception
+            public Processor offer(Request request) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -301,7 +301,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public void accept(Request request) throws Exception
+            public Processor offer(Request request) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -1039,10 +1039,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new HelloHandler("Hello\n")
         {
             @Override
-            public void accept(Request request) throws Exception
+            public Processor offer(Request request) throws Exception
             {
                 served.incrementAndGet();
-                super.accept(request);
+                return super.offer(request);
             }
         });
 
@@ -1625,40 +1625,33 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public void accept(Request request) throws Exception
+        public Processor offer(Request request) throws Exception
         {
-            super.accept(new Request.Wrapper(request)
+            AtomicBoolean hasContent = new AtomicBoolean();
+            Request.Wrapper wrapper = new Request.Wrapper(request)
             {
-                volatile boolean hasContent = false;
-
                 @Override
                 public Content readContent()
                 {
                     Content c = super.readContent();
                     if (c != null && c.hasRemaining())
-                        hasContent = true;
+                        hasContent.set(true);
                     return c;
                 }
+            };
 
-                @Override
-                public void accept(Processor processor) throws Exception
+            Processor processor = super.offer(request);
+            if (processor == null)
+                return null;
+
+            return (ignored, response, callback) ->
+                processor.process(wrapper, response, Callback.from(() ->
                 {
-                    getWrapped().accept((rq, rs, cb) ->
-                    {
-                        processor.process(this, rs, new Callback.Nested(cb)
-                        {
-                            @Override
-                            public void succeeded()
-                            {
-                                if (_mustHaveContent && !hasContent)
-                                    super.failed(new IllegalStateException("No Test Content"));
-                                else
-                                    super.succeeded();
-                            }
-                        });
-                    });
-                }
-            });
+                    if (_mustHaveContent && !hasContent.get())
+                        callback.failed(new IllegalStateException("No Test Content"));
+                    else
+                        callback.succeeded();
+                }, callback::failed));
         }
     }
 }

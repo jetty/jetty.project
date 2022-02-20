@@ -35,7 +35,7 @@ public class StatisticsHandler extends Handler.Wrapper
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
 
     @Override
-    public void accept(Request request) throws Exception
+    public Processor offer(Request request) throws Exception
     {
         Object connectionStats = _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {
@@ -94,32 +94,29 @@ public class StatisticsHandler extends Handler.Wrapper
             }
         });
 
-        try
+        Processor processor = super.offer(new Request.Wrapper(request)
         {
-            super.accept(new Request.Wrapper(request)
+            // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
+            @Override
+            public Object getAttribute(String name)
             {
-                // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
-                @Override
-                public Object getAttribute(String name)
+                // return hidden attributes for requestLog
+                switch (name)
                 {
-                    // return hidden attributes for requestLog
-                    switch (name)
-                    {
-                        case "o.e.j.s.h.StatsHandler.bytesRead":
-                            return bytesRead;
-                        case "o.e.j.s.h.StatsHandler.bytesWritten":
-                            return bytesWritten;
-                        default:
-                            return super.getAttribute(name);
-                    }
+                    case "o.e.j.s.h.StatsHandler.bytesRead":
+                        return bytesRead;
+                    case "o.e.j.s.h.StatsHandler.bytesWritten":
+                        return bytesWritten;
+                    default:
+                        return super.getAttribute(name);
                 }
-            });
-        }
-        finally
-        {
-            if (request.isAccepted())
-                _handleTimeStats.record(System.nanoTime() - request.getHttpChannel().getHttpStream().getNanoTimeStamp());
-            // TODO initial dispatch duration stats collected here.
-        }
+            }
+        });
+
+        if (processor == null)
+            return null;
+
+        return (rq, rs, cb) -> processor.process(rq, rs, Callback.from(cb, () -> _handleTimeStats.record(System.nanoTime() - rq.getHttpChannel().getHttpStream().getNanoTimeStamp())));
+
     }
 }
