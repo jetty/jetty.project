@@ -38,13 +38,11 @@ public class GzipHandler extends Handler.Wrapper
         if (!headers.contains(ACCEPT_GZIP) && !headers.contains(CONTENT_ENCODING_GZIP))
             return super.offer(request);
 
-
         GzipRequest gzipRequest = new GzipRequest(request);
-        // TODO wrap the response
-        return Processor.wrap(super.offer(gzipRequest), gzipRequest);
+        return gzipRequest.asProcessor(super.offer(gzipRequest));
     }
 
-    private static class GzipRequest extends Request.Wrapper
+    private static class GzipRequest extends Request.ProcessingWrapper
     {
         private GzipRequest(Request delegate)
         {
@@ -67,6 +65,12 @@ public class GzipHandler extends Handler.Wrapper
                 }
                 return f;
             });
+        }
+
+        @Override
+        public void process(Request ignored, Response response, Callback callback) throws Exception
+        {
+            getProcessor().process(this, new GzipResponse(response), callback);
         }
     }
 

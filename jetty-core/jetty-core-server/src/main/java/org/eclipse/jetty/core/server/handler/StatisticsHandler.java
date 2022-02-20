@@ -21,6 +21,7 @@ import org.eclipse.jetty.core.server.Content;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.HttpStream;
 import org.eclipse.jetty.core.server.Request;
+import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -94,29 +95,70 @@ public class StatisticsHandler extends Handler.Wrapper
             }
         });
 
-        Processor processor = super.offer(new Request.Wrapper(request)
+        StatsRequest statsRequest = new StatsRequest(request, bytesRead, bytesWritten);
+        return statsRequest.asProcessor(super.offer(statsRequest));
+    }
+
+    private class StatsRequest extends Request.ProcessingWrapper implements Callback
+    {
+        private final LongAdder _bytesRead;
+        private final LongAdder _bytesWritten;
+
+        public StatsRequest(Request request, LongAdder bytesRead, LongAdder bytesWritten)
         {
-            // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
-            @Override
-            public Object getAttribute(String name)
+            super(request);
+            _bytesRead = bytesRead;
+            _bytesWritten = bytesWritten;
+        }
+
+        // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
+        @Override
+        public Object getAttribute(String name)
+        {
+            // return hidden attributes for requestLog
+            return switch (name)
             {
-                // return hidden attributes for requestLog
-                switch (name)
-                {
-                    case "o.e.j.s.h.StatsHandler.bytesRead":
-                        return bytesRead;
-                    case "o.e.j.s.h.StatsHandler.bytesWritten":
-                        return bytesWritten;
-                    default:
-                        return super.getAttribute(name);
-                }
+                case "o.e.j.s.h.StatsHandler.bytesRead" -> _bytesRead;
+                case "o.e.j.s.h.StatsHandler.bytesWritten" -> _bytesWritten;
+                default -> super.getAttribute(name);
+            };
+        }
+
+        @Override
+        public void process(Request ignored, Response response, Callback callback) throws Exception
+        {
+            getProcessor().process(this, response, this);
+        }
+
+        @Override
+        public void succeeded()
+        {
+            try
+            {
+                Callback.super.succeeded();
             }
-        });
+            finally
+            {
+                complete();
+            }
+        }
 
-        if (processor == null)
-            return null;
+        @Override
+        public void failed(Throwable x)
+        {
+            try
+            {
+                Callback.super.failed(x);
+            }
+            finally
+            {
+                complete();
+            }
+        }
 
-        return (rq, rs, cb) -> processor.process(rq, rs, Callback.from(cb, () -> _handleTimeStats.record(System.nanoTime() - rq.getHttpChannel().getHttpStream().getNanoTimeStamp())));
-
+        private void complete()
+        {
+            _handleTimeStats.record(System.nanoTime() - getHttpChannel().getHttpStream().getNanoTimeStamp());
+        }
     }
 }

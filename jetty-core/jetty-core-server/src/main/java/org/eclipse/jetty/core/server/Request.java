@@ -292,4 +292,31 @@ public interface Request extends Attributes, Executor, Content.Provider
             return (Request)super.getWrapped();
         }
     }
+
+    abstract class ProcessingWrapper extends Wrapper implements Handler.Processor
+    {
+        private Handler.Processor _processor;
+
+        public ProcessingWrapper(Request wrapped)
+        {
+            super(wrapped);
+        }
+
+        public Handler.Processor asProcessor(Handler.Processor processor)
+        {
+            _processor = processor;
+            return (_processor == null) ? null : this;
+        }
+
+        public Handler.Processor getProcessor()
+        {
+            return _processor;
+        }
+
+        @Override
+        public void process(Request ignored, Response response, Callback callback) throws Exception
+        {
+            _processor.process(this, response, callback);
+        }
+    }
 }

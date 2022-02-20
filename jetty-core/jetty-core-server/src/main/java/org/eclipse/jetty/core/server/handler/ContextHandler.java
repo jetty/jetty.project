@@ -31,10 +31,12 @@ import org.eclipse.jetty.core.server.ClassLoaderDump;
 import org.eclipse.jetty.core.server.Connector;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
+import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -450,32 +452,29 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return null;
 
         if (pathInContext.isEmpty() && !getAllowNullPathInfo())
-        {
-            return (rq, rs, cb) ->
-            {
-                String location = _contextPath + "/";
-                if (rq.getHttpURI().getParam() != null)
-                    location += ";" + rq.getHttpURI().getParam();
-                if (rq.getHttpURI().getQuery() != null)
-                    location += ";" + rq.getHttpURI().getQuery();
-
-                rs.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
-                rs.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
-                cb.succeeded();
-            };
-        }
+            return this::processMove;
 
         // TODO check availability and maybe return a 503
 
         ContextRequest scoped = wrap(request, pathInContext);
+        // wrap might fail (eg ServletContextHandler could not match a servlet)
         if (scoped == null)
             return null;
 
-        Processor processor = _context.call(scoped);
-        if (processor == null)
-            return null;
-        scoped.setProcessor(processor);
-        return scoped;
+        return scoped.asProcessor(_context.call(scoped));
+    }
+
+    void processMove(Request request, Response response, Callback callback)
+    {
+        String location = _contextPath + "/";
+        if (request.getHttpURI().getParam() != null)
+            location += ";" + request.getHttpURI().getParam();
+        if (request.getHttpURI().getQuery() != null)
+            location += ";" + request.getHttpURI().getQuery();
+
+        response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
+        response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
+        callback.succeeded();
     }
 
     /**

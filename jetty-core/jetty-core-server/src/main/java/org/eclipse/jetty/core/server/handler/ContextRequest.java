@@ -26,12 +26,11 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextRequest extends Request.Wrapper implements Invocable, Supplier<Handler.Processor>, Handler.Processor, Runnable
+public class ContextRequest extends Request.ProcessingWrapper implements Invocable, Supplier<Handler.Processor>, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
-    private Handler.Processor _processor;
     private Response _response;
     private Callback _callback;
 
@@ -60,11 +59,6 @@ public class ContextRequest extends Request.Wrapper implements Invocable, Suppli
         return null;
     }
 
-    void setProcessor(Handler.Processor processor)
-    {
-        _processor = processor;
-    }
-
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {
@@ -78,7 +72,7 @@ public class ContextRequest extends Request.Wrapper implements Invocable, Suppli
     {
         try
         {
-            _processor.process(this, new ContextResponse(this, _response), _callback);
+            getProcessor().process(this, new ContextResponse(this, _response), _callback);
         }
         catch (Throwable t)
         {

@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -242,11 +243,13 @@ public class SslContextFactoryReloadTest
             if (HttpMethod.POST.is(request.getMethod()))
                 return super.offer(request);
 
-            return (rq, rs, cb) ->
-            {
-                rs.setContentLength(0);
-                cb.succeeded();
-            };
+            return this::processNoContent;
+        }
+
+        public void processNoContent(Request request, Response response, Callback callback)
+        {
+            response.setContentLength(0);
+            callback.succeeded();
         }
     }
 }
