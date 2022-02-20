@@ -13,114 +13,83 @@
 
 package org.eclipse.jetty.core.server.handler;
 
+import java.util.ArrayDeque;
+import java.util.Queue;
+
 import org.eclipse.jetty.core.server.Handler;
+import org.eclipse.jetty.core.server.Request;
+import org.eclipse.jetty.core.server.Response;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.util.Callback;
 
 public abstract class DelayedHandler extends Handler.Wrapper
 {
-/*
-    protected abstract Response accept(Request request);
-
-    protected abstract void schedule(Request request, Runnable handle);
-
     @Override
-    public void handle(Request request) throws Exception
+    public Processor offer(Request request) throws Exception
     {
-        // Defer to extended class to accept the request
-        Response response = accept(request);
-
-        // If not accepted, then handle normally
-        if (response == null)
-            super.handle(request);
-        else
-        {
-            // If accepted then wrap with a DelayedRequest and schedule it for later execution
-            DelayedRequest delayedRequest = new DelayedRequest(request, response);
-            schedule(delayedRequest, delayedRequest);
-        }
-    }
-
-    private class DelayedRequest extends Request.Wrapper implements Runnable, Invocable
-    {
-        final AtomicBoolean _accepted = new AtomicBoolean();
-        final Response _response;
-
-        public DelayedRequest(Request request, Response response)
-        {
-            super(request, response);
-            _response = response;
-        }
-
-        @Override
-        public Response accept()
-        {
-            if (_accepted.compareAndSet(false, true))
-                return _response;
+        Handler handler = getHandler();
+        if (handler == null)
             return null;
-        }
+        Processor processor = handler.offer(request);
+        if (processor == null)
+            return null;
 
-        @Override
-        public Response getResponse()
-        {
-            return _accepted.get() ? _response : null;
-        }
-
-        @Override
-        public boolean isAccepted()
-        {
-            return _accepted.get();
-        }
-
-        @Override
-        public void run()
-        {
-            try
-            {
-                // run is called when the delayed request is to be handled
-                getHandler().handle(this);
-
-                // If the wrapped request was not accepted by the delayed handling, then
-                if (!isAccepted())
-                {
-                    // Look for a default handler to pass the request to.
-                    // TODO make this either configurable and/or more flexible
-                    List<DefaultHandler> defaultHandlers = getServer().getChildHandlersByClass(DefaultHandler.class);
-                    if (defaultHandlers.size() == 1)
-                        defaultHandlers.get(0).handle(this);
-
-                    // If still not accepted, just 404 it
-                    if (!isAccepted())
-                        _response.writeError(HttpStatus.NOT_FOUND_404, _response.getCallback());
-                }
-            }
-            catch (Exception e)
-            {
-                _response.getCallback().failed(e);
-            }
-        }
+        return delayed(request, processor);
     }
+
+    protected abstract Processor delayed(Request request, Processor processor);
 
     public static class UntilContent extends DelayedHandler
     {
         @Override
-        protected Response accept(Request request)
+        protected Processor delayed(Request request, Processor processor)
         {
-            // Accept the request if there is content
-            if (request.getContentLength() > 0 || request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
-                return request.accept();
-            return null;
+            if (request.getContentLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
+                return processor;
+
+            return new DelayedProcessor(request, processor);
         }
 
-        @Override
-        protected void schedule(Request request, Runnable handle)
+        private static class DelayedProcessor implements Processor, Runnable
         {
-            request.demandContent(handle);
+            private final Processor _processor;
+            private final Request _request;
+            private Response _response;
+            private Callback _callback;
+
+            public DelayedProcessor(Request request, Processor processor)
+            {
+                _request = request;
+                _processor = processor;
+            }
+
+            @Override
+            public void process(Request ignored, Response response, Callback callback) throws Exception
+            {
+                _response = response;
+                _callback = callback;
+                _request.demandContent(this);
+            }
+
+            @Override
+            public void run()
+            {
+                try
+                {
+                    _processor.process(_request, _response, _callback);
+                }
+                catch (Throwable t)
+                {
+                    _response.writeError(_request, t, _callback);
+                }
+            }
         }
     }
 
     public static class QualityOfService extends DelayedHandler
     {
         private final int _maxPermits;
-        private final Queue<Request> _queue = new ArrayDeque<>();
+        private final Queue<QosProcessor> _queue = new ArrayDeque<>();
         private int _permits;
 
         public QualityOfService(int permits)
@@ -129,72 +98,94 @@ public abstract class DelayedHandler extends Handler.Wrapper
         }
 
         @Override
-        protected Response accept(Request request)
+        protected Processor delayed(Request request, Processor processor)
         {
-            // Always accept the request, if not already accepted
-            Response response = request.accept();
-            if (response == null)
-                return null;
-            // wrap the response so that completion can be intercepted
-            return new QoSResponse(request, response);
+            return new QosProcessor(request, processor);
         }
 
-        @Override
-        protected void schedule(Request request, Runnable handle)
+        private class QosProcessor implements Processor, Callback
         {
-            boolean accepted;
-            synchronized (this)
+            private final Processor _processor;
+            private final Request _request;
+            private Response _response;
+            private Callback _callback;
+
+            private QosProcessor(Request request, Processor processor)
             {
-                accepted = _permits < _maxPermits;
-                if (accepted)
-                    _permits++;
-                else
-                    _queue.add(request);
+                _processor = processor;
+                _request = request;
             }
-            if (accepted)
-                handle.run();
-        }
 
-        private class QoSResponse extends Response.Wrapper implements Callback
-        {
-            public QoSResponse(Request request, Response response)
+            @Override
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                super(request, response);
+                boolean accepted;
+                synchronized (QualityOfService.this)
+                {
+                    _callback = callback;
+                    accepted = _permits < _maxPermits;
+                    if (accepted)
+                        _permits++;
+                    else
+                    {
+                        _response = response;
+                        _queue.add(this);
+                    }
+                }
+                if (accepted)
+                    _processor.process(request, response, this);
             }
 
             @Override
             public void succeeded()
             {
-                release();
-                getWrapped().getCallback().succeeded();
+                try
+                {
+                    _callback.succeeded();
+                    release();
+                }
+                finally
+                {
+                    release();
+                }
             }
 
             @Override
             public void failed(Throwable x)
             {
-                release();
-                getWrapped().getCallback().failed(x);
-            }
-
-            @Override
-            public Callback getCallback()
-            {
-                return this;
+                try
+                {
+                    _callback.failed(x);
+                    release();
+                }
+                finally
+                {
+                    release();
+                }
             }
 
             private void release()
             {
-                Request request;
+                QosProcessor processor;
                 synchronized (QualityOfService.this)
                 {
-                    request = _queue.poll();
-                    if (request == null)
+                    processor = _queue.poll();
+                    if (processor == null)
                         _permits--;
                 }
-                if (request instanceof DelayedRequest delayed)
-                    request.execute(delayed);
+
+                if (processor != null)
+                {
+                    try
+                    {
+                        processor._processor.process(processor._request, processor._response, processor);
+                    }
+                    catch (Throwable t)
+                    {
+                        processor._response.writeError(processor._request, t, processor);
+                    }
+                }
             }
         }
     }
-*/
 }
