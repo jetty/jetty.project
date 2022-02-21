@@ -19,7 +19,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.Callback;
 
 /**
  * <p>Customizer that extracts the real local and remote address:port pairs from a {@link ProxyConnectionFactory}
@@ -48,7 +47,7 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
     public static final String LOCAL_PORT_ATTRIBUTE_NAME = "org.eclipse.jetty.proxy.local.port";
 
     @Override
-    public Request customize(Request request, Response response, Callback callback, HttpConfiguration httpConfig)
+    public Request customize(Request request)
     {
         EndPoint endPoint = request.getHttpChannel().getConnection().getEndPoint();
         if (endPoint instanceof ProxyConnectionFactory.ProxyEndPoint)

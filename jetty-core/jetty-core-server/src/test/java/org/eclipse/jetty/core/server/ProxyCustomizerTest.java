@@ -105,7 +105,7 @@ public class ProxyCustomizerTest
 
         server = new Server();
         HttpConfiguration httpConfiguration = new HttpConfiguration();
-        httpConfiguration.addCustomizer((request, response, callback, channelConfig) ->
+        httpConfiguration.addCustomizer((request) ->
         {
             request.setAttribute("some.attribute", "some value");
             return request;

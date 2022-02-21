@@ -127,13 +127,9 @@ public class Server extends Handler.Wrapper implements Attributes
 
             for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
             {
-                // TODO: what if customize() throws?
                 // TODO: how can a customizer wrap the response?
-                Request next = customizer.customize(request, response, callback, configuration);
+                Request next = customizer.customize(request);
                 customized = next == null ? customized : next;
-                // TODO can a customizer accept?
-//                if (request.isAccepted())
-//                    return;
             }
 
             Request.Processor processor = handle(customized);
