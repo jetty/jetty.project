@@ -69,9 +69,10 @@ public abstract class AbstractConnection implements Connection, Invocable
     }
 
     @Override
-    public void removeEventListener(EventListener listener)
+    public void removeEventListener(EventListener eventListener)
     {
-        _listeners.remove(listener);
+        if (eventListener instanceof Listener listener)
+            _listeners.remove(listener);
     }
 
     public int getInputBufferSize()
