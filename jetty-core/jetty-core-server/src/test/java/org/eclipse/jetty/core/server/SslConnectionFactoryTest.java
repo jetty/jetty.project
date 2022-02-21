@@ -82,7 +82,7 @@ public class SslConnectionFactoryTest
 
         _server.addConnector(https);
 
-        _server.setHandler(new Handler.AbstractProcessor()
+        _server.setHandler(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)

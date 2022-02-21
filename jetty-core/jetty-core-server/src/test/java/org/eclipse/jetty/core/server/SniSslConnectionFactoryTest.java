@@ -113,7 +113,7 @@ public class SniSslConnectionFactoryTest
             new HttpConnectionFactory(httpConfiguration));
         _server.addConnector(_connector);
 
-        _server.setHandler(new Handler.AbstractProcessor()
+        _server.setHandler(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception

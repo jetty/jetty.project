@@ -189,6 +189,12 @@ public interface Request extends Attributes, Executor, Content.Provider
         return null;
     }
 
+    @FunctionalInterface
+    interface Processor
+    {
+        void process(Request request, Response response, Callback callback) throws Exception;
+    }
+
     class Wrapper extends Attributes.Wrapper implements Request
     {
         public Wrapper(Request wrapped)
@@ -293,22 +299,22 @@ public interface Request extends Attributes, Executor, Content.Provider
         }
     }
 
-    abstract class ProcessingWrapper extends Wrapper implements Handler.Processor
+    abstract class ProcessingWrapper extends Wrapper implements Processor
     {
-        private Handler.Processor _processor;
+        private Processor _processor;
 
         public ProcessingWrapper(Request wrapped)
         {
             super(wrapped);
         }
 
-        public Handler.Processor asProcessor(Handler.Processor processor)
+        public Processor asProcessor(Processor processor)
         {
             _processor = processor;
             return (_processor == null) ? null : this;
         }
 
-        public Handler.Processor getProcessor()
+        public Processor getProcessor()
         {
             return _processor;
         }

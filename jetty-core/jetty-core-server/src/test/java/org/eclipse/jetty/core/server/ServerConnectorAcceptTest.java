@@ -42,7 +42,7 @@ public class ServerConnectorAcceptTest
         Server server = new Server();
         ServerConnector connector = new ServerConnector(server, acceptors, 1);
         server.addConnector(connector);
-        server.setHandler(new Handler.AbstractProcessor()
+        server.setHandler(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)

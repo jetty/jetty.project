@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.core.server.Content;
-import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.core.server.Server;
@@ -54,11 +53,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handler for Error pages
- * An ErrorHandler is registered with {@link Server#setErrorProcessor(Handler.Processor)}.
+ * An ErrorHandler is registered with {@link Server#setErrorProcessor(Request.Processor)}.
  * It is called by the {@link Response#writeError(Request, int, String, Callback)}
  * to generate an error page.
  */
-public class ErrorProcessor implements Handler.Processor
+public class ErrorProcessor implements Request.Processor
 {
     // TODO This classes API needs to be majorly refactored/cleanup in jetty-10
     private static final Logger LOG = LoggerFactory.getLogger(ErrorProcessor.class);
@@ -502,9 +501,9 @@ public class ErrorProcessor implements Handler.Processor
         writer.write(StringUtil.sanitizeXmlString(string));
     }
 
-    public static Handler.Processor getErrorProcessor(Server server, ContextHandler context)
+    public static Request.Processor getErrorProcessor(Server server, ContextHandler context)
     {
-        Handler.Processor errorProcessor = null;
+        Request.Processor errorProcessor = null;
         if (context != null)
             errorProcessor = context.getErrorProcessor();
         if (errorProcessor == null && server != null)

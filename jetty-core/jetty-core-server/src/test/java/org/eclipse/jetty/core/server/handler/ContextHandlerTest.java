@@ -158,7 +158,7 @@ public class ContextHandlerTest
     @Test
     public void testSimpleInContext() throws Exception
     {
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -189,7 +189,7 @@ public class ContextHandlerTest
     @Test
     public void testCallbackInContext() throws Exception
     {
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -255,7 +255,7 @@ public class ContextHandlerTest
     {
         CountDownLatch blocking = new CountDownLatch(1);
 
-        Handler handler = new Handler.AbstractProcessor(Invocable.InvocationType.BLOCKING)
+        Handler handler = new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -371,7 +371,7 @@ public class ContextHandlerTest
     @Test
     public void testThrownUsesContextErrorProcessor() throws Exception
     {
-        _contextHandler.setHandler(new Handler.AbstractProcessor()
+        _contextHandler.setHandler(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)

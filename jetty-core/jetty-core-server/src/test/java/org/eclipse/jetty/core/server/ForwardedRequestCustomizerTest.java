@@ -1295,7 +1295,7 @@ public class ForwardedRequestCustomizerTest
         boolean check(Request request, Response response) throws IOException;
     }
 
-    private static class RequestHandler extends Handler.AbstractProcessor
+    private static class RequestHandler extends Handler.Processor
     {
         private RequestTester requestTester;
 

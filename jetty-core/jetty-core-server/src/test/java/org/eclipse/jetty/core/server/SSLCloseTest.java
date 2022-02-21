@@ -77,7 +77,7 @@ public class SSLCloseTest
         }
     }
 
-    private static class WriteHandler extends Handler.AbstractProcessor
+    private static class WriteHandler extends Handler.Processor
     {
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception

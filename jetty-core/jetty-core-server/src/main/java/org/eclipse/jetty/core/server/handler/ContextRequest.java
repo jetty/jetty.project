@@ -16,7 +16,6 @@ package org.eclipse.jetty.core.server.handler;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.BadMessageException;
@@ -26,7 +25,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextRequest extends Request.ProcessingWrapper implements Invocable, Supplier<Handler.Processor>, Runnable
+public class ContextRequest extends Request.ProcessingWrapper implements Invocable, Supplier<Request.Processor>, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final String _pathInContext;
@@ -42,7 +41,7 @@ public class ContextRequest extends Request.ProcessingWrapper implements Invocab
     }
 
     @Override
-    public Handler.Processor get()
+    public Processor get()
     {
         try
         {

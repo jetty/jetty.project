@@ -53,7 +53,7 @@ public class SSLReadEOFAfterResponseTest
 
         String content = "the quick brown fox jumped over the lazy dog";
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        server.setHandler(new Handler.AbstractProcessor(Invocable.InvocationType.BLOCKING)
+        server.setHandler(new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception

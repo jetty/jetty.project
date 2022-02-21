@@ -65,7 +65,7 @@ public class ErrorHandlerTest
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
-        server.setHandler(new Handler.AbstractProcessor()
+        server.setHandler(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -649,7 +649,7 @@ public class ErrorHandlerTest
                 response.write(true, callback, BufferUtil.toBuffer("Context Error"));
             }
         });
-        context.setHandler(new Handler.AbstractProcessor()
+        context.setHandler(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)

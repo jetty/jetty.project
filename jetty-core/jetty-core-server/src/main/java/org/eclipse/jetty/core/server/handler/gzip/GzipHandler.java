@@ -29,7 +29,7 @@ public class GzipHandler extends Handler.Wrapper
     private static final HttpField CONTENT_ENCODING_GZIP = new HttpField(HttpHeader.CONTENT_ENCODING, "gzip");
 
     @Override
-    public Processor handle(Request request) throws Exception
+    public Request.Processor handle(Request request) throws Exception
     {
         // TODO more conditions than this
         // TODO handle other encodings

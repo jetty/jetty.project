@@ -122,7 +122,7 @@ public class ContextHandlerCollection extends Handler.Collection
     }
 
     @Override
-    public Processor handle(Request request) throws Exception
+    public Request.Processor handle(Request request) throws Exception
     {
         List<Handler> handlers = getHandlers();
 
@@ -168,7 +168,7 @@ public class ContextHandlerCollection extends Handler.Collection
                 {
                     try
                     {
-                        Processor processor = branch.getHandler().handle(request);
+                        Request.Processor processor = branch.getHandler().handle(request);
                         if (processor != null)
                             return processor;
                     }

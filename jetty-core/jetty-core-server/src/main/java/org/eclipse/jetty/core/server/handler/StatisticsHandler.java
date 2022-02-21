@@ -36,7 +36,7 @@ public class StatisticsHandler extends Handler.Wrapper
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
 
     @Override
-    public Processor handle(Request request) throws Exception
+    public Request.Processor handle(Request request) throws Exception
     {
         Object connectionStats = _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {

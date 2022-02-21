@@ -846,7 +846,7 @@ public class HttpConnectionTest
     public void testEmptyFlush() throws Exception
     {
         _server.stop();
-        _server.setHandler(new Handler.AbstractProcessor()
+        _server.setHandler(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -1121,7 +1121,7 @@ public class HttpConnectionTest
         final String longstr = str;
         final CountDownLatch checkError = new CountDownLatch(1);
         _server.stop();
-        _server.setHandler(new Handler.AbstractProcessor()
+        _server.setHandler(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -1170,7 +1170,7 @@ public class HttpConnectionTest
         final String longstr = "thisisastringthatshouldreachover12kbytes-" + new String(bytes, StandardCharsets.ISO_8859_1) + "_Z_";
         final CountDownLatch checkError = new CountDownLatch(1);
         _server.stop();
-        _server.setHandler(new Handler.AbstractProcessor()
+        _server.setHandler(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -1282,7 +1282,7 @@ public class HttpConnectionTest
         String chunk2 = IntStream.range(0, 64).mapToObj(i -> chunk1).collect(Collectors.joining());
         long dataLength = chunk1.length() + chunk2.length();
         _server.stop();
-        _server.setHandler(new Handler.AbstractProcessor(Invocable.InvocationType.BLOCKING)
+        _server.setHandler(new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback)
