@@ -103,6 +103,7 @@ public class StatisticsHandler extends Handler.Wrapper
     {
         private final LongAdder _bytesRead;
         private final LongAdder _bytesWritten;
+        private Callback _callback;
 
         public StatsRequest(Request request, LongAdder bytesRead, LongAdder bytesWritten)
         {
@@ -127,6 +128,7 @@ public class StatisticsHandler extends Handler.Wrapper
         @Override
         public void process(Request ignored, Response response, Callback callback) throws Exception
         {
+            _callback = callback;
             getProcessor().process(this, response, this);
         }
 
@@ -135,7 +137,7 @@ public class StatisticsHandler extends Handler.Wrapper
         {
             try
             {
-                Callback.super.succeeded();
+                _callback.succeeded();
             }
             finally
             {
@@ -148,7 +150,7 @@ public class StatisticsHandler extends Handler.Wrapper
         {
             try
             {
-                Callback.super.failed(x);
+                _callback.failed(x);
             }
             finally
             {

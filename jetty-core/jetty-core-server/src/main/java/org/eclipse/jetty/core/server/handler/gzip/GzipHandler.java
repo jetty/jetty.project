@@ -70,7 +70,7 @@ public class GzipHandler extends Handler.Wrapper
         @Override
         public void process(Request ignored, Response response, Callback callback) throws Exception
         {
-            getProcessor().process(this, new GzipResponse(response), callback);
+            super.process(this, new GzipResponse(response), callback);
         }
     }
 

@@ -452,7 +452,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return null;
 
         if (pathInContext.isEmpty() && !getAllowNullPathInfo())
-            return this::processMove;
+            return this::processMovedPermanently;
 
         // TODO check availability and maybe return a 503
 
@@ -464,7 +464,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return scoped.asProcessor(_context.get(scoped));
     }
 
-    void processMove(Request request, Response response, Callback callback)
+    void processMovedPermanently(Request request, Response response, Callback callback)
     {
         String location = _contextPath + "/";
         if (request.getHttpURI().getParam() != null)

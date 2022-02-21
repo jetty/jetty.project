@@ -278,7 +278,7 @@ public class HttpChannel extends Attributes.Lazy
             Runnable invokeOnError = onError == null ? null : () -> onError.accept(x);
 
             // Serialize all the error actions.
-            request._accepted = true;
+            request._processing = true;
             return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError, () -> request._callback.failed(x));
         }
     }
@@ -378,7 +378,7 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public void run()
         {
-            _server.process(_request, _request._response, _request._callback);
+            _server.customizeHandleAndProcess(_request, _request._response, _request._callback);
         }
 
         @Override
@@ -396,7 +396,7 @@ public class HttpChannel extends Attributes.Lazy
         Content.Error _error;
         Consumer<Throwable> _onError;
         Runnable _onContentAvailable;
-        boolean _accepted;
+        boolean _processing;
         private final Callback _callback = new RequestCallback();
 
         ChannelRequest(MetaData.Request metaData)
@@ -539,8 +539,8 @@ public class HttpChannel extends Attributes.Lazy
             {
                 if (_error != null)
                     return _error;
-                if (!_accepted)
-                    return new Content.Error(new IllegalStateException("Not Accepted"));
+                if (!_processing)
+                    return new Content.Error(new IllegalStateException("not processing"));
             }
             return getStream().readContent();
         }
@@ -551,7 +551,7 @@ public class HttpChannel extends Attributes.Lazy
             boolean error;
             try (AutoLock ignored = _lock.lock())
             {
-                error = _error != null || !_accepted;
+                error = _error != null || !_processing;
                 if (!error)
                 {
                     if (_onContentAvailable != null)
@@ -630,14 +630,14 @@ public class HttpChannel extends Attributes.Lazy
             });
         }
 
-        public void setAccepted()
+        public void enableProcessing()
         {
             try (AutoLock ignored = _lock.lock())
             {
-                if (_accepted)
-                    throw new IllegalStateException("request already accepted " + this);
+                if (_processing)
+                    throw new IllegalStateException("request already processing " + this);
                 // TODO: use system property to record what thread accepted it.
-                _accepted = true;
+                _processing = true;
             }
         }
 
@@ -653,8 +653,8 @@ public class HttpChannel extends Attributes.Lazy
                 long written;
                 try (AutoLock ignored = _lock.lock())
                 {
-                    if (!_accepted)
-                        throw new IllegalStateException("Not Accepted");
+                    if (!_processing)
+                        throw new IllegalStateException("not processing");
 
                     // We are being tough on handler implementations and expect them to not have pending operations
                     // when calling succeeded or failed
@@ -700,8 +700,8 @@ public class HttpChannel extends Attributes.Lazy
                     if (_stream == null || _request != ChannelRequest.this)
                         return;
 
-                    if (!_accepted)
-                        throw new IllegalStateException("Not Accepted");
+                    if (!_processing)
+                        throw new IllegalStateException("not processing");
 
                     // Can we write out an error response
                     committed = _stream.isCommitted();
@@ -842,8 +842,8 @@ public class HttpChannel extends Attributes.Lazy
             {
                 if (_onWriteComplete != null)
                     failure = new IllegalStateException("write pending");
-                else if (!_request._accepted)
-                    failure = new IllegalStateException("not accepted");
+                else if (!_request._processing)
+                    failure = new IllegalStateException("not processing");
                 else if (_request._error != null)
                     failure = _request._error.getCause();
                 if (_stream == null)

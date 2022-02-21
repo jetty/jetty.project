@@ -113,13 +113,13 @@ public class Server extends Handler.Wrapper implements Attributes
         setServer(this);
     }
 
-    void process(HttpChannel.ChannelRequest request, Response response, Callback callback)
+    void customizeHandleAndProcess(HttpChannel.ChannelRequest request, Response response, Callback callback)
     {
         if (!isStarted())
             return;
 
         Request customized = request;
-        boolean accepted = false;
+        boolean processing = false;
         try
         {
             // Customize before accepting.
@@ -133,8 +133,8 @@ public class Server extends Handler.Wrapper implements Attributes
             }
 
             Request.Processor processor = handle(customized);
-            accepted = true;
-            request.setAccepted();
+            processing = true;
+            request.enableProcessing();
             if (processor == null)
                 response.writeError(request, HttpStatus.NOT_FOUND_404, callback);
             else
@@ -142,8 +142,8 @@ public class Server extends Handler.Wrapper implements Attributes
         }
         catch (Throwable x)
         {
-            if (!accepted)
-                request.setAccepted();
+            if (!processing)
+                request.enableProcessing();
             callback.failed(x);
         }
     }
