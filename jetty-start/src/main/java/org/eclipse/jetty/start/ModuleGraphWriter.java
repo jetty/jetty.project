@@ -29,6 +29,8 @@ public class ModuleGraphWriter
 {
     private String colorModuleBg;
     private String colorEnabledBg;
+    private String colorEdgeBefore;
+    private String colorEdgeAfter;
     private String colorTransitiveBg;
     private String colorCellBg;
     private String colorHeaderBg;
@@ -38,6 +40,8 @@ public class ModuleGraphWriter
     {
         colorModuleBg = "#B8FFB8";
         colorEnabledBg = "#66FFCC";
+        colorEdgeAfter = "#00CC33";
+        colorEdgeAfter = "#33CC00";
         colorTransitiveBg = "#66CC66";
         colorCellBg = "#FFFFFF80";
         colorHeaderBg = "#00000020";
@@ -49,6 +53,8 @@ public class ModuleGraphWriter
         String prefix = "jetty.graph.";
         colorModuleBg = getProperty(props, prefix + "color.module.bg", colorModuleBg);
         colorEnabledBg = getProperty(props, prefix + "color.enabled.bg", colorEnabledBg);
+        colorEdgeBefore = getProperty(props, prefix + "color.edge.before", colorEdgeBefore);
+        colorEdgeAfter = getProperty(props, prefix + "color.edge.after", colorEdgeAfter);
         colorTransitiveBg = getProperty(props, prefix + "color.transitive.bg", colorTransitiveBg);
         colorCellBg = getProperty(props, prefix + "color.cell.bg", colorCellBg);
         colorHeaderBg = getProperty(props, prefix + "color.header.bg", colorHeaderBg);
@@ -73,7 +79,7 @@ public class ModuleGraphWriter
     public void write(Modules modules, Path outputFile) throws IOException
     {
         try (BufferedWriter writer = Files.newBufferedWriter(outputFile, StandardCharsets.UTF_8, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE);
-             PrintWriter out = new PrintWriter(writer);)
+             PrintWriter out = new PrintWriter(writer))
         {
             writeHeaderMessage(out, outputFile);
 
@@ -245,13 +251,13 @@ public class ModuleGraphWriter
                 depends = Module.normalizeModuleName(depends);
                 out.printf("    \"%s\" -> \"%s\";%n", module.getName(), depends);
             }
+            for (String optional : module.getAfter())
+            {
+                out.printf("    \"%s\" -> \"%s\" [ color=\"%s\" ];%n", module.getName(), optional, colorEdgeAfter);
+            }
             for (String before : module.getBefore())
             {
-                out.printf("    \"%s\" << \"%s\";%n", module.getName(), before);
-            }
-            for (String after : module.getAfter())
-            {
-                out.printf("    \"%s\" >> \"%s\";%n", module.getName(), after);
+                out.printf("    \"%s\" -> \"%s\" [ color=\"%s\" ];%n", before, module.getName(), colorEdgeBefore);
             }
         }
     }
