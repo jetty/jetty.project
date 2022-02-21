@@ -85,17 +85,28 @@ public class SniSslConnectionFactoryTest
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
         httpConfiguration.addCustomizer(secureRequestCustomizer);
-        httpConfiguration.addCustomizer((request, response, callback, httpConfig) ->
+
+        Handler.Wrapper xCertHandler = new Handler.Wrapper()
         {
-            EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-            SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
-            SslConnection sslConnection = sslEndPoint.getSslConnection();
-            SSLEngine sslEngine = sslConnection.getSSLEngine();
-            SSLSession session = sslEngine.getSession();
-            for (Certificate c : session.getLocalCertificates())
-                response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
-            return request;
-        });
+            @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                Request.Processor processor = getHandler().handle(request);
+                if (processor == null)
+                    return null;
+                return (ignored, response, callback) ->
+                {
+                    EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                    SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
+                    SslConnection sslConnection = sslEndPoint.getSslConnection();
+                    SSLEngine sslEngine = sslConnection.getSSLEngine();
+                    SSLSession session = sslEngine.getSession();
+                    for (Certificate c : session.getLocalCertificates())
+                        response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
+                    processor.process(request, response, callback);
+                };
+            }
+        };
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         config.accept(sslContextFactory, secureRequestCustomizer);
@@ -110,8 +121,8 @@ public class SniSslConnectionFactoryTest
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(httpConfiguration));
         _server.addConnector(_connector);
-
-        _server.setHandler(new Handler.Processor()
+        _server.setHandler(xCertHandler);
+        xCertHandler.setHandler(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception

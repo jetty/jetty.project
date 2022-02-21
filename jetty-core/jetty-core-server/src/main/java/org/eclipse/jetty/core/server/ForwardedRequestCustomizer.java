@@ -28,7 +28,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.QuotedCSVParser;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
@@ -457,8 +456,9 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     @Override
-    public Request customize(Request request, Response response, Callback callback, HttpConfiguration httpConfig)
+    public Request customize(Request request)
     {
+        HttpConfiguration httpConfig = request.getHttpChannel().getHttpConfiguration();
         HttpFields httpFields = request.getHeaders();
 
         // Do a single pass through the header fields as it is a more efficient single iteration.
