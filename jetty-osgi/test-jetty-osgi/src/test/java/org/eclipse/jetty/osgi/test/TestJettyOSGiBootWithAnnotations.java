@@ -78,6 +78,21 @@ public class TestJettyOSGiBootWithAnnotations
         res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.mail.glassfish").version("1.4.1.v201005082020").noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-container-initializer").versionAsInProject());
         res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-mock-resources").versionAsInProject());
+        // Deploy 2 versions of a jar (and dependencies): one will be on the server classpath and the other on the webapp classpath.
+        // Tests webapp isolated classloading.
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-monitor").version(System.getProperty("monitor.version")).noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-client").version(System.getProperty("monitor.version")).noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").version(System.getProperty("monitor.version")).noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-io").version(System.getProperty("monitor.version")).noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-xml").version(System.getProperty("monitor.version")).noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-http").version(System.getProperty("monitor.version")).noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-monitor").version(System.getProperty("monitor.old.version")).noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-client").version(System.getProperty("monitor.old.version")).noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-util").version(System.getProperty("monitor.old.version")).noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-io").version(System.getProperty("monitor.old.version")).noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-xml").version(System.getProperty("monitor.old.version")).noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-http").version(System.getProperty("monitor.old.version")).noStart());
+        res.add(mavenBundle().groupId("javax.servlet").artifactId("javax.servlet-api").version("3.1.0").noStart());
         //test webapp bundle
         res.add(mavenBundle().groupId("org.eclipse.jetty.demos").artifactId("demo-spec-webapp").classifier("webbundle").versionAsInProject());
         return res;

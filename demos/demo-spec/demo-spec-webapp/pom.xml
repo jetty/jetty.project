@@ -65,9 +65,9 @@
           </supportedProjectTypes>
           <instructions>
             <Bundle-Description>Test Webapp for Servlet 4.0 Features</Bundle-Description>
-            <!-- TODO Add 'org.eclipse.jetty.util;version="[9.4.19,9.4.20)",' below, once 9.4.19 is released with a fix for #3726 -->
+            <!-- Specifically import an old jar to test webapp isolated classloading -->
             <Import-Package>
-              javax.transaction*;version="[1.1,2.0)", javax.servlet*;version="[2.6,4.1)", org.eclipse.jetty*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))", org.eclipse.jetty.webapp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.eclipse.jetty.plus.jndi;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", *
+                javax.transaction*;version="[1.1,2.0)", javax.servlet*;version="[2.6,4.1)", org.eclipse.jetty.webapp;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", org.eclipse.jetty.plus.jndi;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))";resolution:="optional", com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}", org.eclipse.jetty.monitor.thread;version="(9.3.29, 9.3.30]", *
             </Import-Package>
             <_nouses />
             <Export-Package>com.acme.test;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}";-noimport:=true</Export-Package>

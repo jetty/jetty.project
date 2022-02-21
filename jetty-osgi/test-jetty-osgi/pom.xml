@@ -521,6 +521,8 @@
             <systemPropertyVariables>
               <mavenRepoPath>${settings.localRepository}</mavenRepoPath>
               <settingsFilePath>${env.GLOBAL_MVN_SETTINGS}</settingsFilePath>
+              <monitor.version>${monitor.version}</monitor.version>
+              <monitor.old.version>${monitor.old.version}</monitor.old.version>
             </systemPropertyVariables>
             <argLine>-Dconscrypt-version=${conscrypt.version}</argLine>
           </configuration>

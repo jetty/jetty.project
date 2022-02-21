@@ -25,8 +25,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.monitor.thread.ThreadMonitorInfo;
-
 @WebServlet(urlPatterns = "/classloader")
 public class ClassLoaderServlet extends HttpServlet
 {
@@ -41,7 +39,7 @@ public class ClassLoaderServlet extends HttpServlet
             writer.println("<body>");
             writer.println("<h1>ClassLoader Isolation Test</h1>");
 
-            Class<?> webappClass = ThreadMonitorInfo.class;
+            Class<?> webappClass = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.monitor.thread.ThreadMonitorInfo");
             URI webappURI = getLocationOfClass(webappClass);
             String webappVersion = webappClass.getPackage().getImplementationVersion();
             Class<?> serverClass = req.getServletContext().getClass().getClassLoader().loadClass("org.eclipse.jetty.monitor.thread.ThreadMonitorInfo");
