@@ -1061,9 +1061,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (LOG.isDebugEnabled())
                 LOG.debug("early EOF {}", HttpConnection.this);
             _generator.setPersistent(false);
-            Runnable todo = _channel.onError(new BadMessageException("Early EOF"));
-            if (todo != null)
-                getServer().getThreadPool().execute(todo);
+            if (_stream.get() != null)
+            {
+                Runnable todo = _channel.onError(new BadMessageException("Early EOF"));
+                if (todo != null)
+                    getServer().getThreadPool().execute(todo);
+            }
         }
     }
 
