@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
  *
  */
 @ManagedObject("Handler")
-public interface Handler extends LifeCycle, Destroyable
+public interface Handler extends LifeCycle, Destroyable, Invocable
 {
     /**
      * Handle an HTTP request by providing a {@link Processor}.
@@ -108,7 +109,6 @@ public interface Handler extends LifeCycle, Destroyable
     abstract class Abstract extends ContainerLifeCycle implements Handler
     {
         private static final Logger LOG = LoggerFactory.getLogger(Abstract.class);
-
         private Server _server;
 
         @Override
@@ -213,6 +213,15 @@ public interface Handler extends LifeCycle, Destroyable
                 h.setServer(server);
             }
         }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            InvocationType invocationType = InvocationType.NON_BLOCKING;
+            for (Handler h : getHandlers())
+                invocationType = Invocable.combine(invocationType, h.getInvocationType());
+            return invocationType;
+        }
     }
 
     /**
@@ -229,6 +238,11 @@ public interface Handler extends LifeCycle, Destroyable
 
         public void setHandler(Handler handler)
         {
+            Server server = getServer();
+            if (server != null && server.isStarted() && handler != null &&
+                server.getInvocationType() != Invocable.combine(server.getInvocationType(), handler.getInvocationType()))
+                throw new IllegalArgumentException("Cannot change invocation type of started server");
+
             // check for loops
             if (handler == this || (handler instanceof Handler.Container &&
                 ((Handler.Container)handler).getChildHandlers().contains(this)))
@@ -278,6 +292,13 @@ public interface Handler extends LifeCycle, Destroyable
             Handler next = getHandler();
             return next == null ? null : next.handle(request);
         }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            Handler next = getHandler();
+            return next == null ? InvocationType.NON_BLOCKING : next.getInvocationType();
+        }
     }
 
     // TODO review
@@ -299,6 +320,13 @@ public interface Handler extends LifeCycle, Destroyable
             if (isStarted())
                 LifeCycle.start(handler);
             _hotHandler = handler;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            // TODO Not really
+            return InvocationType.BLOCKING;
         }
     }
 
@@ -355,12 +383,23 @@ public interface Handler extends LifeCycle, Destroyable
         {
             List<Handler> newHandlers = newHandlers(handlers);
 
-            // check for loops
+            Server server = getServer();
+            InvocationType invocationType = server == null ? null : server.getInvocationType();
+
+            // check for loops && Invocation type change
             for (Handler handler : newHandlers)
             {
+                if (handler == null)
+                    continue;
+
                 if (handler == this || (handler instanceof Handler.Container &&
                     ((Handler.Container)handler).getChildHandlers().contains(this)))
                     throw new IllegalStateException("setHandler loop");
+                invocationType = Invocable.combine(invocationType, handler.getInvocationType());
+                if (server != null && server.isStarted() &&
+                    server.getInvocationType() != Invocable.combine(server.getInvocationType(), handler.getInvocationType()))
+                    throw new IllegalArgumentException("Cannot change invocation type of started server");
+
                 handler.setServer(getServer());
             }
 
@@ -396,10 +435,28 @@ public interface Handler extends LifeCycle, Destroyable
 
     abstract class AbstractProcessor extends Abstract implements Processor
     {
+        private final InvocationType _type;
+
+        public AbstractProcessor()
+        {
+            this(InvocationType.NON_BLOCKING);
+        }
+
+        public AbstractProcessor(InvocationType type)
+        {
+            _type = type;
+        }
+
         @Override
         public Processor handle(Request request) throws Exception
         {
             return this;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _type;
         }
     }
 }

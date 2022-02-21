@@ -42,6 +42,8 @@ import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -117,7 +119,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testSimple() throws Exception
     {
-        configureServer(new HelloHandler());
+        startServer(new HelloHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -141,7 +143,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testOPTIONS() throws Exception
     {
-        configureServer(new OptionsHandler());
+        startServer(new OptionsHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -164,7 +166,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testGETStar() throws Exception
     {
-        configureServer(new OptionsHandler());
+        startServer(new OptionsHandler());
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
             OutputStream os = client.getOutputStream();
@@ -189,7 +191,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testFullMethod() throws Exception
     {
-        configureServer(new HelloHandler());
+        startServer(new HelloHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
              StacklessLogging ignored = new StacklessLogging(HttpConnection.class))
@@ -217,7 +219,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testFullURI() throws Exception
     {
-        configureServer(new HelloHandler());
+        startServer(new HelloHandler());
 
         int maxHeaderSize = 1000;
         _httpConfiguration.setRequestHeaderSize(maxHeaderSize);
@@ -250,7 +252,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBadURI() throws Exception
     {
-        configureServer(new HelloHandler());
+        startServer(new HelloHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -269,7 +271,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testExceptionThrownInHandlerLoop() throws Exception
     {
-        configureServer(new Handler.Abstract()
+        startServer(new Handler.Abstract()
         {
             @Override
             public Processor handle(Request request) throws Exception
@@ -298,7 +300,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testExceptionThrownInHandler() throws Exception
     {
-        configureServer(new Handler.Abstract()
+        startServer(new Handler.Abstract()
         {
             @Override
             public Processor handle(Request request) throws Exception
@@ -329,7 +331,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
         final CountDownLatch earlyEOFException = new CountDownLatch(1);
-        configureServer(new Handler.AbstractProcessor()
+        startServer(new Handler.AbstractProcessor(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -399,7 +401,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     public void testFullHeader() throws Exception
     {
 
-        configureServer(new HelloHandler());
+        startServer(new HelloHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
              StacklessLogging ignored = new StacklessLogging(HttpConnection.class))
@@ -457,7 +459,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRequest1() throws Exception
     {
-        configureServer(new HelloHandler());
+        startServer(new HelloHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -477,7 +479,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testFragmentedChunk() throws Exception
     {
-        configureServer(new TestHandler());
+        startServer(new TestHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -509,7 +511,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testTrailingContent() throws Exception
     {
-        configureServer(new TestHandler());
+        startServer(new TestHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -539,7 +541,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRequest1Fragments() throws Exception
     {
-        configureServer(new HelloHandler());
+        startServer(new HelloHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -566,7 +568,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testRequest2() throws Exception
     {
-        configureServer(new TestHandler());
+        startServer(new TestHandler());
 
         byte[] bytes = REQUEST2.getBytes();
         for (int i = 0; i < LOOPS; i++)
@@ -597,7 +599,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testRequest2Sliced2() throws Exception
     {
-        configureServer(new TestHandler());
+        startServer(new TestHandler());
 
         byte[] bytes = REQUEST2.getBytes();
         int splits = bytes.length - REQUEST2_CONTENT.length() + 5;
@@ -629,7 +631,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @DisabledIfSystemProperty(named = "env", matches = "ci") // TODO: SLOW, needs review
     public void testRequest2Sliced3() throws Exception
     {
-        configureServer(new TestHandler());
+        startServer(new TestHandler());
 
         byte[] bytes = REQUEST2.getBytes();
         int splits = bytes.length - REQUEST2_CONTENT.length() + 5;
@@ -660,7 +662,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test // TODO: Parameterize
     public void testFlush() throws Exception
     {
-        configureServer(new DataHandler());
+        startServer(new DataHandler());
 
         String[] encoding = {"NONE", "UTF-8", "ISO-8859-1", "ISO-8859-2"};
         for (int e = 0; e < encoding.length; e++)
@@ -693,7 +695,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBlockingWhileReadingRequestContent() throws Exception
     {
-        configureServer(new DataHandler());
+        startServer(new DataHandler());
 
         long start = System.currentTimeMillis();
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
@@ -753,7 +755,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBlockingReadBadChunk() throws Exception
     {
-        configureServer(new ReadHandler());
+        startServer(new ReadHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -800,7 +802,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBlockingWhileWritingResponseContent() throws Exception
     {
-        configureServer(new DataHandler());
+        startServer(new DataHandler());
 
         long start = System.currentTimeMillis();
         int total = 0;
@@ -843,7 +845,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testCloseWhileWriteBlocked() throws Exception
     {
-        configureServer(new DataHandler());
+        startServer(new DataHandler());
 
         try (StacklessLogging ignored = new StacklessLogging(Server.class))
         {
@@ -894,7 +896,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBigBlocks() throws Exception
     {
-        configureServer(new BigBlockHandler());
+        startServer(new BigBlockHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -997,6 +999,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         private BigBlockHandler()
         {
+            super(InvocationType.BLOCKING);
             for (int i = 0; i < buf.length; i++)
             {
                 buf[i] = (byte)("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_".charAt(i % 63));
@@ -1036,7 +1039,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     public void testPipeline() throws Exception
     {
         AtomicInteger served = new AtomicInteger();
-        configureServer(new HelloHandler("Hello\n")
+        startServer(new HelloHandler("Hello\n")
         {
             @Override
             public Processor handle(Request request) throws Exception
@@ -1098,7 +1101,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testHead() throws Exception
     {
-        configureServer(new TestHandler(false));
+        startServer(new TestHandler(false));
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -1141,7 +1144,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBlockedClient() throws Exception
     {
-        configureServer(new HelloHandler());
+        startServer(new HelloHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -1176,8 +1179,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testCommittedError() throws Exception
     {
-        CommittedErrorProcessor handler = new CommittedErrorProcessor();
-        configureServer(handler);
+        CommittedErrorHandler handler = new CommittedErrorHandler();
+        startServer(handler);
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
              StacklessLogging ignored = new StacklessLogging(Server.class))
@@ -1210,9 +1213,14 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    public static class CommittedErrorProcessor extends Handler.AbstractProcessor
+    public static class CommittedErrorHandler extends Handler.AbstractProcessor
     {
         public EndPoint _endp;
+
+        public CommittedErrorHandler()
+        {
+            super(InvocationType.BLOCKING);
+        }
 
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
@@ -1234,7 +1242,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testDualRequest1() throws Exception
     {
-        configureServer(new HelloHandler());
+        startServer(new HelloHandler());
 
         try (Socket client1 = newSocket(_serverURI.getHost(), _serverURI.getPort());
              Socket client2 = newSocket(_serverURI.getHost(), _serverURI.getPort()))
@@ -1286,6 +1294,31 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
+    protected static String readResponseHeader(Socket client) throws IOException
+    {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(client.getInputStream())))
+        {
+            String line;
+
+            while ((line = br.readLine()) != null)
+            {
+                sb.append(line);
+                sb.append('\n');
+
+                if (StringUtil.isEmpty(line))
+                    break;
+            }
+
+            return sb.toString();
+        }
+        catch (IOException e)
+        {
+            System.err.println(e + " while reading '" + sb + "'");
+            throw e;
+        }
+    }
+
     protected void writeFragments(byte[] bytes, int[] points, StringBuilder message, OutputStream os) throws IOException, InterruptedException
     {
         int last = 0;
@@ -1315,7 +1348,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testUnreadInput() throws Exception
     {
-        configureServer(new NoopHandler());
+        startServer(new NoopHandler());
         final int REQS = 2;
         final String content = "This is a coooooooooooooooooooooooooooooooooo" +
             "ooooooooooooooooooooooooooooooooooooooooooooo" +
@@ -1369,7 +1402,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testWriteBodyAfterNoBodyResponse() throws Exception
     {
-        configureServer(new WriteBodyAfterNoBodyResponseHandler());
+        startServer(new WriteBodyAfterNoBodyResponseHandler());
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         final OutputStream out = client.getOutputStream();
 
@@ -1440,7 +1473,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testShutdown() throws Exception
     {
-        configureServer(new ReadExactHandler());
+        startServer(new ReadExactHandler());
         byte[] content = new byte[4096];
         Arrays.fill(content, (byte)'X');
 
@@ -1480,7 +1513,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testChunkedShutdown() throws Exception
     {
-        configureServer(new ReadExactHandler(4096));
+        startServer(new ReadExactHandler(4096));
         byte[] content = new byte[4096];
         Arrays.fill(content, (byte)'X');
 
@@ -1527,7 +1560,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         final int bufferSize = 1024;
         _connector.getConnectionFactory(HttpConnectionFactory.class).setInputBufferSize(bufferSize);
         CountDownLatch closed = new CountDownLatch(1);
-        configureServer(new Handler.AbstractProcessor()
+        startServer(new Handler.AbstractProcessor(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception

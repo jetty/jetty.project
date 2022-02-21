@@ -67,6 +67,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private final AutoLock _dateLock = new AutoLock();
     private volatile DateField _dateField;
     private long _stopTimeout;
+    private InvocationType _invocationType = InvocationType.NON_BLOCKING;
 
     public Server()
     {
@@ -149,6 +150,16 @@ public class Server extends Handler.Wrapper implements Attributes
                 request.setAccepted();
             callback.failed(x);
         }
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        Handler handler = getHandler();
+        if (handler == null)
+            return InvocationType.NON_BLOCKING;
+        // Return cached type to avoid a full handler tree walk.
+        return isRunning() ? _invocationType : handler.getInvocationType();
     }
 
     public boolean isDryRun()
@@ -421,6 +432,11 @@ public class Server extends Handler.Wrapper implements Attributes
             // Start the server and components, but not connectors!
             // #start(LifeCycle) is overridden so that connectors are not started
             super.doStart();
+
+            // Cache the invocation type to avoid runtime walk of handler tree
+            // Handlers must check they don't change the InvocationType of a started server
+            Handler handler = getHandler();
+            _invocationType = handler == null ? InvocationType.NON_BLOCKING : handler.getInvocationType();
 
             if (_dryRun)
             {

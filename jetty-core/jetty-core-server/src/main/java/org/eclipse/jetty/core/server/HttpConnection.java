@@ -129,6 +129,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             LOG.debug("New HTTP Connection {}", this);
     }
 
+    @Override
+    public InvocationType getInvocationType()
+    {
+        return getServer().getInvocationType();
+    }
+
     public HttpConfiguration getHttpConfiguration()
     {
         return _configuration;

@@ -54,8 +54,6 @@ public class DelayedHandlerTest
         _server = new Server();
         _connector = new ServerConnector(_server);
         _server.addConnector(_connector);
-
-        _server.start();
     }
 
     @AfterEach
@@ -229,6 +227,12 @@ public class DelayedHandlerTest
                 processing.incrementAndGet();
                 semaphore.acquire();
                 super.process(request, response, callback);
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.BLOCKING;
             }
         });
         _server.start();

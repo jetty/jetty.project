@@ -47,6 +47,11 @@ public class DumpHandler extends Handler.AbstractProcessor
     private final Blocking.Shared _blocker = new Blocking.Shared(); 
     private static final String _label = "Dump Handler";
 
+    public DumpHandler()
+    {
+        super(InvocationType.BLOCKING);
+    }
+
     @Override
     public void process(Request request, Response response, Callback callback) throws Exception
     {

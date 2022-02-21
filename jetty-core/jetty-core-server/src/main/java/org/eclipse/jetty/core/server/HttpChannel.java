@@ -373,12 +373,18 @@ public class HttpChannel extends Attributes.Lazy
         return String.format("%s@%x{r=%s}", this.getClass().getSimpleName(), hashCode(), _request);
     }
 
-    private class RunHandle implements Runnable
+    private class RunHandle implements Invocable.Task
     {
         @Override
         public void run()
         {
             _server.process(_request, _request._response, _request._callback);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _server.getInvocationType();
         }
     }
 
