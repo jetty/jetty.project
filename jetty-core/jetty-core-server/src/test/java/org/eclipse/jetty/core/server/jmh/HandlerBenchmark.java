@@ -51,7 +51,7 @@ public class HandlerBenchmark
     static ServerConnector _connector = new ServerConnector(_server);
 
     static final byte[] GET = """
-                    POST /ctx/path HTTP/1.1\r
+                    GET /ctx/path HTTP/1.1\r
                     Host: localhost\r
                     X-Forwarded-For: 192.168.0.1\r
                     \r
@@ -63,6 +63,17 @@ public class HandlerBenchmark
                     Content-Length: 16\r
                     Content-Type: text/plain; charset=iso-8859-1\r
                     X-Forwarded-For: 192.168.0.1\r
+                    \r
+                    ECHO Echo echo\r
+                    """.getBytes(StandardCharsets.ISO_8859_1);
+
+    static final byte[] POST_CLOSE = """
+                    POST /ctx/path HTTP/1.1\r
+                    Host: localhost\r
+                    Content-Length: 16\r
+                    Content-Type: text/plain; charset=iso-8859-1\r
+                    X-Forwarded-For: 192.168.0.1\r
+                    Connection: close\r
                     \r
                     ECHO Echo echo\r
                     """.getBytes(StandardCharsets.ISO_8859_1);
@@ -118,7 +129,7 @@ public class HandlerBenchmark
             // Do some POSTs
             for (int i = 5; i-- > 0;)
             {
-                out.write(POST);
+                out.write(i == 0 ? POST_CLOSE : POST);
                 out.flush();
 
                 String line = in.readLine();
