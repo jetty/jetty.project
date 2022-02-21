@@ -105,7 +105,7 @@ public class StatisticsHandler extends Handler.Wrapper
         private final LongAdder _bytesWritten;
         private Callback _callback;
 
-        public StatsRequest(Request request, LongAdder bytesRead, LongAdder bytesWritten)
+        private StatsRequest(Request request, LongAdder bytesRead, LongAdder bytesWritten)
         {
             super(request);
             _bytesRead = bytesRead;

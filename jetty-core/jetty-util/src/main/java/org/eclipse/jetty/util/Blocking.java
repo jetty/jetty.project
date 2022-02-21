@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>Non shared Runnable</h2>
  * <pre>
- *     try(BlockUtil.Runnable onAction = BlockUtil.runnable())
+ *     try(Blocking.Runnable onAction = Blocking.runnable())
  *     {
  *         someMethod(onAction);
  *         onAction.block();
@@ -40,9 +40,9 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>Shared Runnable</h2>
  * <pre>
- *     BlockUtil.SharedRunnable shared = new BlockUtil.Shared();
+ *     Blocking.SharedRunnable shared = new Blocking.Shared();
  *     // ...
- *     try(BlockUtil.Runnable onAction = shared.runnable())
+ *     try(Blocking.Runnable onAction = shared.runnable())
  *     {
  *         someMethod(onAction);
  *         onAction.block();
@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>Non shared Callback</h2>
  * <pre>
- *     try(BlockUtil.Callback callback = BlockUtil.callback())
+ *     try(Blocking.Callback callback = Blocking.callback())
  *     {
  *         someMethod(callback);
  *         onAction.block();
@@ -60,9 +60,9 @@ import org.slf4j.LoggerFactory;
  *
  * <h2>Shared Callback</h2>
  * <pre>
- *     BlockUtil.SharedCallback blocker = new BlockUtil.Shared();
+ *     Blocking.SharedCallback blocker = new Blocking.Shared();
  *     // ...
- *     try(BlockUtil.Runnable onAction = blocker.callback())
+ *     try(Blocking.Runnable onAction = blocker.callback())
  *     {
  *         someMethod(onAction);
  *         onAction.block();
@@ -132,9 +132,9 @@ public class Blocking
                 if (_complete.getCount() != 0)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.warn("BlockUtil.Runnable incomplete", new Throwable());
+                        LOG.warn("Blocking.Runnable incomplete", new Throwable());
                     else
-                        LOG.warn("BlockUtil.Runnable incomplete");
+                        LOG.warn("Blocking.Runnable incomplete");
                 }
             }
         };
@@ -192,16 +192,16 @@ public class Blocking
                 if (!_future.isDone())
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.warn("BlockUtil.Callback incomplete", new Throwable());
+                        LOG.warn("Blocking.Callback incomplete", new Throwable());
                     else
-                        LOG.warn("BlockUtil.Callback incomplete");
+                        LOG.warn("Blocking.Callback incomplete");
                 }
             }
         };
     }
 
     /**
-     * A shared reusable BlockUtil source.
+     * A shared reusable Blocking source.
      * TODO Review need for this, as it is currently unused.
      */
     public static class Shared
@@ -297,9 +297,9 @@ public class Blocking
                 if (!completed)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.warn("BlockUtil.Shared incomplete", new Throwable());
+                        LOG.warn("Blocking.Shared incomplete", new Throwable());
                     else
-                        LOG.warn("BlockUtil.Shared incomplete");
+                        LOG.warn("Blocking.Shared incomplete");
                 }
             }
         };
