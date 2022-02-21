@@ -75,7 +75,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private String _contextPath = "/";
     private Path _resourceBase;
     private ClassLoader _classLoader;
-    private Processor _errorProcessor;
+    private Request.Processor _errorProcessor;
     private boolean _allowNullPathInfo;
 
     public ContextHandler()
@@ -439,7 +439,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public Processor handle(Request request) throws Exception
+    public Request.Processor handle(Request request) throws Exception
     {
         if (getHandler() == null)
             return null;
@@ -520,7 +520,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * @return Returns the errorHandler.
      */
     @ManagedAttribute("The error processor to use for the context")
-    public Processor getErrorProcessor()
+    public Request.Processor getErrorProcessor()
     {
         // TODO, do we need to wrap this so that we can establish the context
         //       Classloader?  Or will the caller already do that?
@@ -530,7 +530,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     /**
      * @param errorProcessor The error processor to set.
      */
-    public void setErrorProcessor(Processor errorProcessor)
+    public void setErrorProcessor(Request.Processor errorProcessor)
     {
         updateBean(_errorProcessor, errorProcessor, true);
         _errorProcessor = errorProcessor;

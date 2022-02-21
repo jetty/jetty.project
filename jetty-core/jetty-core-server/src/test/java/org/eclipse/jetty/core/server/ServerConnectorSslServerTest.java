@@ -199,7 +199,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         }
     }
 
-    public static class SecureRequestHandler extends Handler.AbstractProcessor
+    public static class SecureRequestHandler extends Handler.Processor
     {
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception

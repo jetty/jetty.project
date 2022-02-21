@@ -80,7 +80,7 @@ public class ProxyCustomizerTest
     @BeforeEach
     void setUp() throws Exception
     {
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)

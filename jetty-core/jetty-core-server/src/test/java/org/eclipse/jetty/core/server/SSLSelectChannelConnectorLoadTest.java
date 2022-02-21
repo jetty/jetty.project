@@ -320,7 +320,7 @@ public class SSLSelectChannelConnectorLoadTest
         }
     }
 
-    private static class TestHandler extends Handler.AbstractProcessor
+    private static class TestHandler extends Handler.Processor
     {
         public TestHandler()
         {

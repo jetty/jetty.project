@@ -274,7 +274,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new Handler.Abstract()
         {
             @Override
-            public Processor handle(Request request) throws Exception
+            public Request.Processor handle(Request request) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -303,7 +303,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new Handler.Abstract()
         {
             @Override
-            public Processor handle(Request request) throws Exception
+            public Request.Processor handle(Request request) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -331,7 +331,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         final AtomicBoolean fourBytesRead = new AtomicBoolean(false);
         final CountDownLatch earlyEOFException = new CountDownLatch(1);
-        startServer(new Handler.AbstractProcessor(Invocable.InvocationType.BLOCKING)
+        startServer(new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -993,7 +993,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
     // Handler that sends big blocks of data in each of 10 writes, and then sends the time it took for each big block.
-    protected static class BigBlockHandler extends Handler.AbstractProcessor
+    protected static class BigBlockHandler extends Handler.Processor
     {
         byte[] buf = new byte[128 * 1024];
 
@@ -1042,7 +1042,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         startServer(new HelloHandler("Hello\n")
         {
             @Override
-            public Processor handle(Request request) throws Exception
+            public Request.Processor handle(Request request) throws Exception
             {
                 served.incrementAndGet();
                 return super.handle(request);
@@ -1213,7 +1213,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    public static class CommittedErrorHandler extends Handler.AbstractProcessor
+    public static class CommittedErrorHandler extends Handler.Processor
     {
         public EndPoint _endp;
 
@@ -1449,7 +1449,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         while (line != null);
     }
 
-    private static class WriteBodyAfterNoBodyResponseHandler extends Handler.AbstractProcessor
+    private static class WriteBodyAfterNoBodyResponseHandler extends Handler.Processor
     {
         @Override
         public void process(Request request, Response response, Callback callback)
@@ -1459,7 +1459,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
     }
 
-    public static class NoopHandler extends Handler.AbstractProcessor
+    public static class NoopHandler extends Handler.Processor
     {
         @Override
         public void process(Request request, Response response, Callback callback)
@@ -1560,7 +1560,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         final int bufferSize = 1024;
         _connector.getConnectionFactory(HttpConnectionFactory.class).setInputBufferSize(bufferSize);
         CountDownLatch closed = new CountDownLatch(1);
-        startServer(new Handler.AbstractProcessor(Invocable.InvocationType.BLOCKING)
+        startServer(new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -1658,7 +1658,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public Processor handle(Request request) throws Exception
+        public Request.Processor handle(Request request) throws Exception
         {
             AtomicBoolean hasContent = new AtomicBoolean();
             Request.Wrapper wrapper = new Request.Wrapper(request)
@@ -1673,7 +1673,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             };
 
-            Processor processor = super.handle(request);
+            Request.Processor processor = super.handle(request);
             if (processor == null)
                 return null;
 

@@ -68,7 +68,7 @@ public class DelayedHandlerTest
         DelayedHandler delayedHandler = new DelayedHandler()
         {
             @Override
-            protected Processor delayed(Request request, Processor processor)
+            protected Request.Processor delayed(Request request, Request.Processor processor)
             {
                 return processor;
             }
@@ -105,7 +105,7 @@ public class DelayedHandlerTest
         DelayedHandler delayedHandler = new DelayedHandler()
         {
             @Override
-            protected Processor delayed(Request request, Processor processor)
+            protected Request.Processor delayed(Request request, Request.Processor processor)
             {
                 return (ignored, response, callback) -> handleEx.exchange(() ->
                 {
@@ -278,7 +278,7 @@ public class DelayedHandlerTest
         DelayedHandler delayedHandler = new DelayedHandler()
         {
             @Override
-            protected Processor delayed(Request request, Processor processor)
+            protected Request.Processor delayed(Request request, Request.Processor processor)
             {
                 return (ignored, response, callback) -> request.execute(() ->
                 {
@@ -299,7 +299,7 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public Processor handle(Request request)
+            public Request.Processor handle(Request request)
             {
                 return null;
             }
@@ -333,7 +333,7 @@ public class DelayedHandlerTest
         DelayedHandler delayedHandler = new DelayedHandler()
         {
             @Override
-            protected Processor delayed(Request request, Processor processor)
+            protected Request.Processor delayed(Request request, Request.Processor processor)
             {
                 return (ignored, response, callback) -> request.execute(() ->
                 {
@@ -352,7 +352,7 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public Processor handle(Request request)
+            public Request.Processor handle(Request request)
             {
                 return null;
             }

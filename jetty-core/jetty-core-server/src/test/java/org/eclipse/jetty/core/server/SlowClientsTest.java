@@ -65,7 +65,7 @@ public class SlowClientsTest
             ServerConnector connector = new ServerConnector(server, 1, 1, sslContextFactory);
             connector.setPort(8888);
             server.addConnector(connector);
-            server.setHandler(new Handler.AbstractProcessor()
+            server.setHandler(new Handler.Processor()
             {
                 @Override
                 public void process(Request request, Response response, Callback callback)

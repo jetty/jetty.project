@@ -139,7 +139,7 @@ public class ExtendedServerTest extends HttpServerTestBase
         }
     }
 
-    protected static class DispatchedAtHandler extends Handler.AbstractProcessor
+    protected static class DispatchedAtHandler extends Handler.Processor
     {
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception

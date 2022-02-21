@@ -105,7 +105,7 @@ public class SslUploadTest
         assertEquals(requestContent.length, 0);
     }
 
-    private static class EmptyHandler extends Handler.AbstractProcessor
+    private static class EmptyHandler extends Handler.Processor
     {
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception

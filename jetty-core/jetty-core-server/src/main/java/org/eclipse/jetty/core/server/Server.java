@@ -61,7 +61,7 @@ public class Server extends Handler.Wrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
-    private Processor _errorProcessor;
+    private Request.Processor _errorProcessor;
     private RequestLog _requestLog;
     private boolean _dryRun;
     private final AutoLock _dateLock = new AutoLock();
@@ -136,7 +136,7 @@ public class Server extends Handler.Wrapper implements Attributes
 //                    return;
             }
 
-            Processor processor = handle(customized);
+            Request.Processor processor = handle(customized);
             accepted = true;
             request.setAccepted();
             if (processor == null)
@@ -177,7 +177,7 @@ public class Server extends Handler.Wrapper implements Attributes
         return _requestLog;
     }
 
-    public Processor getErrorProcessor()
+    public Request.Processor getErrorProcessor()
     {
         return _errorProcessor;
     }
@@ -188,7 +188,7 @@ public class Server extends Handler.Wrapper implements Attributes
         _requestLog = requestLog;
     }
 
-    public void setErrorProcessor(Processor errorProcessor)
+    public void setErrorProcessor(Request.Processor errorProcessor)
     {
         updateBean(_errorProcessor, errorProcessor);
         _errorProcessor = errorProcessor;

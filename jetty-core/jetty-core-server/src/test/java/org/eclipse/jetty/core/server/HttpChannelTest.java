@@ -327,7 +327,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public Processor handle(Request request)
+            public Request.Processor handle(Request request)
             {
                 return null;
             }
@@ -358,7 +358,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public Processor handle(Request request)
+            public Request.Processor handle(Request request)
             {
                 throw new UnsupportedOperationException("testing");
             }
@@ -389,7 +389,7 @@ public class HttpChannelTest
     @Test
     public void testThrowCommitted() throws Exception
     {
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -426,7 +426,7 @@ public class HttpChannelTest
     @Test
     public void testAutoContentLength() throws Exception
     {
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -457,7 +457,7 @@ public class HttpChannelTest
     @Test
     public void testInsufficientContentWritten1() throws Exception
     {
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -489,7 +489,7 @@ public class HttpChannelTest
     @Test
     public void testInsufficientContentWritten2() throws Exception
     {
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -520,7 +520,7 @@ public class HttpChannelTest
     @Test
     public void testExcessContentWritten1() throws Exception
     {
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -552,7 +552,7 @@ public class HttpChannelTest
     @Test
     public void testExcessContentWritten2() throws Exception
     {
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -617,7 +617,7 @@ public class HttpChannelTest
     @Test
     public void testUnconsumedContentUnavailable() throws Exception
     {
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -659,7 +659,7 @@ public class HttpChannelTest
     @Test
     public void testUnconsumedContentUnavailableClosed() throws Exception
     {
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -955,7 +955,7 @@ public class HttpChannelTest
     @Test
     public void testDemandRecursion() throws Exception
     {
-        _server.setHandler(new Handler.AbstractProcessor(Invocable.InvocationType.BLOCKING)
+        _server.setHandler(new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -1035,7 +1035,7 @@ public class HttpChannelTest
     {
         AtomicReference<Request> handling = new AtomicReference<>();
         AtomicReference<Throwable> error = new AtomicReference<>();
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
@@ -1116,7 +1116,7 @@ public class HttpChannelTest
         EchoHandler echoHandler = new EchoHandler()
         {
             @Override
-            public Processor handle(Request request) throws Exception
+            public Request.Processor handle(Request request) throws Exception
             {
                 request.addCompletionListener(Callback.from(completed::countDown));
                 return super.handle(request);

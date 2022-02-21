@@ -79,7 +79,7 @@ public class HttpServerTestFixture
         _serverURI = _server.getURI();
     }
 
-    protected static class OptionsHandler extends Handler.AbstractProcessor
+    protected static class OptionsHandler extends Handler.Processor
     {
         @Override
         public void process(Request request, Response response, Callback callback)
@@ -93,7 +93,7 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class SendErrorHandler extends Handler.AbstractProcessor
+    protected static class SendErrorHandler extends Handler.Processor
     {
         private final int code;
         private final String message;
@@ -111,7 +111,7 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class ReadExactHandler extends Handler.AbstractProcessor
+    protected static class ReadExactHandler extends Handler.Processor
     {
         private final int expected;
 
@@ -164,7 +164,7 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class ReadHandler extends Handler.AbstractProcessor
+    protected static class ReadHandler extends Handler.Processor
     {
         @Override
         public void process(Request request, Response response, Callback callback)
@@ -177,7 +177,7 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class DataHandler extends Handler.AbstractProcessor
+    protected static class DataHandler extends Handler.Processor
     {
         public DataHandler()
         {

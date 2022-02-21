@@ -353,7 +353,7 @@ public class SSLEngineTest
         return sb.toString();
     }
 
-    private static class TestHandler extends Handler.AbstractProcessor
+    private static class TestHandler extends Handler.Processor
     {
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception

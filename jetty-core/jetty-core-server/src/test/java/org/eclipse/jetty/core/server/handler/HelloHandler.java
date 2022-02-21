@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.Callback;
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class HelloHandler extends Handler.AbstractProcessor
+public class HelloHandler extends Handler.Processor
 {
     private final String _message;
     private final ByteBuffer _byteBuffer;

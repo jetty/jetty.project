@@ -47,7 +47,7 @@ public class HandlerStackTest
         Handler.Wrapper stackSnap = new Handler.Wrapper()
         {
             @Override
-            public Processor handle(Request request) throws Exception
+            public Request.Processor handle(Request request) throws Exception
             {
                 request.getHttpChannel().addStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {

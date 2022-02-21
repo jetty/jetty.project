@@ -41,15 +41,15 @@ import org.slf4j.LoggerFactory;
 public interface Handler extends LifeCycle, Destroyable, Invocable
 {
     /**
-     * Handle an HTTP request by providing a {@link Processor}.
+     * Handle an HTTP request by providing a {@link Request.Processor}.
      * @param request The immutable request, which is also a {@link Callback} used to signal success or failure. The Handler
-     * or one of it's nested Handlers must return a  {@link Handler.Processor} to indicate that it will ultimately succeed or
+     * or one of it's nested Handlers must return a  {@link Request.Processor} to indicate that it will ultimately succeed or
      * fail the {@link Callback} returned.
      *
      * @throws Exception Thrown if there is a problem handling.
      * @return A Processor to handler the request or null if the request is not accepted.
      */
-    Processor handle(Request request) throws Exception;
+    Request.Processor handle(Request request) throws Exception;
 
     @ManagedAttribute(value = "the jetty server for this handler", readonly = true)
     Server getServer();
@@ -229,6 +229,11 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
      */
     class Wrapper extends AbstractContainer
     {
+        public static Request.Processor wrapProcessor(Request.Processor processor, Request request)
+        {
+            return processor == null ? null : (ignored, response, callback) -> processor.process(request, response, callback);
+        }
+
         private Handler _handler;
 
         public Handler getHandler()
@@ -287,7 +292,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         @Override
-        public Processor handle(Request request) throws Exception
+        public Request.Processor handle(Request request) throws Exception
         {
             Handler next = getHandler();
             return next == null ? null : next.handle(request);
@@ -298,35 +303,6 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         {
             Handler next = getHandler();
             return next == null ? InvocationType.NON_BLOCKING : next.getInvocationType();
-        }
-    }
-
-    // TODO review
-    @Deprecated
-    class HotSwap extends Wrapper
-    {
-        volatile Handler _hotHandler;
-
-        @Override
-        public Handler getHandler()
-        {
-            return _hotHandler;
-        }
-
-        @Override
-        public void setHandler(Handler handler)
-        {
-            super.setHandler(handler);
-            if (isStarted())
-                LifeCycle.start(handler);
-            _hotHandler = handler;
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            // TODO Not really
-            return InvocationType.BLOCKING;
         }
     }
 
@@ -350,11 +326,11 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         @Override
-        public Processor handle(Request request) throws Exception
+        public Request.Processor handle(Request request) throws Exception
         {
             for (Handler h : _handlers)
             {
-                Processor processor = h.handle(request);
+                Request.Processor processor = h.handle(request);
                 if (processor != null)
                     return processor;
             }
@@ -422,33 +398,22 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
     }
 
-    @FunctionalInterface
-    interface Processor
-    {
-        void process(Request request, Response response, Callback callback) throws Exception;
-
-        static Processor wrap(Processor processor, Request request)
-        {
-            return processor == null ? null : (ignored, response, callback) -> processor.process(request, response, callback);
-        }
-    }
-
-    abstract class AbstractProcessor extends Abstract implements Processor
+    abstract class Processor extends Abstract implements Request.Processor
     {
         private final InvocationType _type;
 
-        public AbstractProcessor()
+        public Processor()
         {
             this(InvocationType.NON_BLOCKING);
         }
 
-        public AbstractProcessor(InvocationType type)
+        public Processor(InvocationType type)
         {
             _type = type;
         }
 
         @Override
-        public Processor handle(Request request) throws Exception
+        public Request.Processor handle(Request request) throws Exception
         {
             return this;
         }

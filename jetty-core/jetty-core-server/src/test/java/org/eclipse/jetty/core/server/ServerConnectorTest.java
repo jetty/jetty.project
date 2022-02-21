@@ -62,7 +62,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServerConnectorTest
 {
-    public static class ReuseInfoHandler extends Handler.AbstractProcessor
+    public static class ReuseInfoHandler extends Handler.Processor
     {
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
@@ -239,7 +239,7 @@ public class ServerConnectorTest
             connector2.setPort(port);
             server.addConnector(connector2);
 
-            server.setHandler(new Handler.AbstractProcessor()
+            server.setHandler(new Handler.Processor()
             {
                 @Override
                 public void process(Request request, Response response, Callback callback)

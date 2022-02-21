@@ -25,24 +25,24 @@ import org.eclipse.jetty.util.Callback;
 public abstract class DelayedHandler extends Handler.Wrapper
 {
     @Override
-    public Processor handle(Request request) throws Exception
+    public Request.Processor handle(Request request) throws Exception
     {
         Handler handler = getHandler();
         if (handler == null)
             return null;
-        Processor processor = handler.handle(request);
+        Request.Processor processor = handler.handle(request);
         if (processor == null)
             return null;
 
         return delayed(request, processor);
     }
 
-    protected abstract Processor delayed(Request request, Processor processor);
+    protected abstract Request.Processor delayed(Request request, Request.Processor processor);
 
     public static class UntilContent extends DelayedHandler
     {
         @Override
-        protected Processor delayed(Request request, Processor processor)
+        protected Request.Processor delayed(Request request, Request.Processor processor)
         {
             // TODO remove this setting from HttpConfig?
             if (!request.getHttpChannel().getHttpConfiguration().isDelayDispatchUntilContent())
@@ -53,14 +53,14 @@ public abstract class DelayedHandler extends Handler.Wrapper
             return new DelayedProcessor(request, processor);
         }
 
-        private static class DelayedProcessor implements Processor, Runnable
+        private static class DelayedProcessor implements Request.Processor, Runnable
         {
-            private final Processor _processor;
+            private final Request.Processor _processor;
             private final Request _request;
             private Response _response;
             private Callback _callback;
 
-            public DelayedProcessor(Request request, Processor processor)
+            public DelayedProcessor(Request request, Request.Processor processor)
             {
                 _request = request;
                 _processor = processor;
@@ -101,19 +101,19 @@ public abstract class DelayedHandler extends Handler.Wrapper
         }
 
         @Override
-        protected Processor delayed(Request request, Processor processor)
+        protected Request.Processor delayed(Request request, Request.Processor processor)
         {
             return new QosProcessor(request, processor);
         }
 
-        private class QosProcessor implements Processor, Callback
+        private class QosProcessor implements Request.Processor, Callback
         {
-            private final Processor _processor;
+            private final Request.Processor _processor;
             private final Request _request;
             private Response _response;
             private Callback _callback;
 
-            private QosProcessor(Request request, Processor processor)
+            private QosProcessor(Request request, Request.Processor processor)
             {
                 _processor = processor;
                 _request = request;
