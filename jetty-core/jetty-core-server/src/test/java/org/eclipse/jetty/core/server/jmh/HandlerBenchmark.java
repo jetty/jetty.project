@@ -14,7 +14,6 @@
 package org.eclipse.jetty.core.server.jmh;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.core.server.ConnectionMetaData;
 import org.eclipse.jetty.core.server.HttpChannel;
@@ -36,17 +35,15 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+import org.openjdk.jmh.runner.options.TimeValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -55,9 +52,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
 @State(Scope.Benchmark)
-@Threads(2)
-@Warmup(iterations = 5, time = 4000, timeUnit = TimeUnit.MILLISECONDS)
-@Measurement(iterations = 5, time = 4000, timeUnit = TimeUnit.MILLISECONDS)
 public class HandlerBenchmark
 {
     static Server _server = new Server();
@@ -118,8 +112,10 @@ public class HandlerBenchmark
     {
         Options opt = new OptionsBuilder()
             .include(HandlerBenchmark.class.getSimpleName())
-            .warmupIterations(20)
+            .warmupIterations(10)
+            .warmupTime(TimeValue.seconds(4))
             .measurementIterations(10)
+            .measurementTime(TimeValue.seconds(4))
             // .addProfiler(GCProfiler.class)
             // .addProfiler(LinuxPerfAsmProfiler.class)
             .forks(1)
