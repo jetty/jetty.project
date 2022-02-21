@@ -13,25 +13,21 @@
 
 package org.eclipse.jetty.core.server.jmh;
 
-import java.nio.ByteBuffer;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.core.server.ConnectionMetaData;
-import org.eclipse.jetty.core.server.HttpChannel;
-import org.eclipse.jetty.core.server.HttpConfiguration;
-import org.eclipse.jetty.core.server.MockConnectionMetaData;
-import org.eclipse.jetty.core.server.MockHttpStream;
+import org.eclipse.jetty.core.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.core.server.HttpConnectionFactory;
 import org.eclipse.jetty.core.server.Server;
+import org.eclipse.jetty.core.server.ServerConnector;
 import org.eclipse.jetty.core.server.handler.ContextHandler;
 import org.eclipse.jetty.core.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.core.server.handler.DelayedHandler;
 import org.eclipse.jetty.core.server.handler.EchoHandler;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.StringUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Level;
@@ -46,29 +42,36 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.containsString;
 
 @State(Scope.Benchmark)
 public class HandlerBenchmark
 {
     static Server _server = new Server();
-    static HttpConfiguration _httpConfig = new HttpConfiguration();
+    static ServerConnector _connector = new ServerConnector(_server);
 
-    static String message = "ECHO Echo echo";
-    static ByteBuffer body = BufferUtil.toBuffer(message);
-    static HttpFields fields = HttpFields.build()
-        .add(HttpHeader.HOST, "localhost")
-        .putLongField(HttpHeader.CONTENT_LENGTH, body.remaining())
-        .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
-        .asImmutable();
-    static HttpURI uri = HttpURI.from("http://localhost/ctx/path");
+    static final byte[] GET = """
+                    POST /ctx/path HTTP/1.1\r
+                    Host: localhost\r
+                    X-Forwarded-For: 192.168.0.1\r
+                    \r
+                    """.getBytes(StandardCharsets.ISO_8859_1);
+
+    static final byte[] POST = """
+                    POST /ctx/path HTTP/1.1\r
+                    Host: localhost\r
+                    Content-Length: 16\r
+                    Content-Type: text/plain; charset=iso-8859-1\r
+                    X-Forwarded-For: 192.168.0.1\r
+                    \r
+                    ECHO Echo echo\r
+                    """.getBytes(StandardCharsets.ISO_8859_1);
 
     @Setup(Level.Trial)
     public static void setupServer() throws Exception
     {
+        _server.addConnector(_connector);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().addCustomizer(new ForwardedRequestCustomizer());
         DelayedHandler.UntilContent delayedHandler = new DelayedHandler.UntilContent();
         _server.setHandler(delayedHandler);
         ContextHandlerCollection contexts = new ContextHandlerCollection();
@@ -88,24 +91,48 @@ public class HandlerBenchmark
 
     @Benchmark
     @BenchmarkMode({Mode.Throughput})
-    public long testPost()
+    public long testPost() throws Exception
     {
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, _httpConfig);
-        MockHttpStream stream = new MockHttpStream(channel, false);
+        try (Socket client = new Socket("127.0.0.1", _connector.getLocalPort()))
+        {
+            OutputStream out = client.getOutputStream();
+            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
 
-        stream.addContent(body.slice(), true);
-        MetaData.Request request = new MetaData.Request("POST", uri, HttpVersion.HTTP_1_1, fields, message.length());
-        Runnable todo = channel.onRequest(request);
-        todo.run();
+            long result = 0;
 
-        assertThat(stream.isComplete(), is(true));
-        assertThat(stream.getFailure(), nullValue());
-        assertThat(stream.getResponse(), notNullValue());
-        assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
-        assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
-        return stream.getResponseContentAsString().hashCode();
+            // Do some GETs
+            for (int i = 5; i-- > 0;)
+            {
+                out.write(GET);
+                out.flush();
+
+                String line = in.readLine();
+                assertThat(line, containsString(" 200 OK"));
+                while (StringUtil.isNotBlank(line))
+                {
+                    line = in.readLine();
+                    result ^= line.hashCode();
+                }
+            }
+
+            // Do some POSTs
+            for (int i = 5; i-- > 0;)
+            {
+                out.write(POST);
+                out.flush();
+
+                String line = in.readLine();
+                assertThat(line, containsString(" 200 OK"));
+                while (StringUtil.isNotBlank(line))
+                {
+                    line = in.readLine();
+                    result ^= line.hashCode();
+                }
+                line = in.readLine();
+                assertThat(line, containsString("ECHO Echo echo"));
+            }
+            return result;
+        }
     }
 
     public static void main(String[] args) throws Exception

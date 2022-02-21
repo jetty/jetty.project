@@ -121,6 +121,12 @@ public class Http3Fields implements HttpFields
     }
 
     @Override
+    public HttpFields takeAsImmutable()
+    {
+        return asImmutable();
+    }
+
+    @Override
     public HttpField getField(int index)
     {
         return stream().skip(index).findFirst().orElse(null);
