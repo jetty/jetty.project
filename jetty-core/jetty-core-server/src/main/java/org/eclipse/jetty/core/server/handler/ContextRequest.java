@@ -46,7 +46,7 @@ public class ContextRequest extends Request.ProcessingWrapper implements Invocab
     {
         try
         {
-            return _contextHandler.getHandler().offer(this);
+            return _contextHandler.getHandler().handle(this);
         }
         catch (Throwable t)
         {

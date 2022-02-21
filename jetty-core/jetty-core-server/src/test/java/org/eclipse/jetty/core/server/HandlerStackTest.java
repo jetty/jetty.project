@@ -19,7 +19,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.core.server.handler.ContextHandler;
 import org.eclipse.jetty.core.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.core.server.handler.DelayUntilContentHandler;
+import org.eclipse.jetty.core.server.handler.DelayedHandler;
 import org.eclipse.jetty.core.server.handler.EchoHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -47,7 +47,7 @@ public class HandlerStackTest
         Handler.Wrapper stackSnap = new Handler.Wrapper()
         {
             @Override
-            public Processor offer(Request request) throws Exception
+            public Processor handle(Request request) throws Exception
             {
                 request.getHttpChannel().addStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
@@ -58,13 +58,12 @@ public class HandlerStackTest
                         super.succeeded();
                     }
                 });
-                return super.offer(request);
+                return super.handle(request);
             }
         };
         _server.setHandler(stackSnap);
 
-//        DelayedHandler.UntilContent delayedHandler = new DelayedHandler.UntilContent();
-        DelayUntilContentHandler delayedHandler = new DelayUntilContentHandler();
+        DelayedHandler.UntilContent delayedHandler = new DelayedHandler.UntilContent();
         stackSnap.setHandler(delayedHandler);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();

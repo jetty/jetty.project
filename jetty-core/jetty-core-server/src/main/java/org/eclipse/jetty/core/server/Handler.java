@@ -33,14 +33,14 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Incoming requests to the Server (itself a Handler) are passed to one or more Handlers
  * until the request is handled and a response is produced.  Handlers are asynchronous,
- * so handling may happen during or after a call to {@link #offer(Request)}.
+ * so handling may happen during or after a call to {@link #handle(Request)}.
  *
  */
 @ManagedObject("Handler")
 public interface Handler extends LifeCycle, Destroyable
 {
     /**
-     * Handle an HTTP request and produce a response.
+     * Handle an HTTP request by providing a {@link Processor}.
      * @param request The immutable request, which is also a {@link Callback} used to signal success or failure. The Handler
      * or one of it's nested Handlers must return a  {@link Handler.Processor} to indicate that it will ultimately succeed or
      * fail the {@link Callback} returned.
@@ -48,7 +48,7 @@ public interface Handler extends LifeCycle, Destroyable
      * @throws Exception Thrown if there is a problem handling.
      * @return A Processor to handler the request or null if the request is not accepted.
      */
-    Processor offer(Request request) throws Exception;
+    Processor handle(Request request) throws Exception;
 
     @ManagedAttribute(value = "the jetty server for this handler", readonly = true)
     Server getServer();
@@ -273,10 +273,10 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public Processor offer(Request request) throws Exception
+        public Processor handle(Request request) throws Exception
         {
             Handler next = getHandler();
-            return next == null ? null : next.offer(request);
+            return next == null ? null : next.handle(request);
         }
     }
 
@@ -304,7 +304,7 @@ public interface Handler extends LifeCycle, Destroyable
 
     /**
      * A Handler Container that wraps a list of other Handlers.
-     * By default, each handler is called in turn until one returns true from {@link Handler#offer(Request)}.
+     * By default, each handler is called in turn until one returns true from {@link Handler#handle(Request)}.
      */
     class Collection extends AbstractContainer
     {
@@ -322,11 +322,11 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public Processor offer(Request request) throws Exception
+        public Processor handle(Request request) throws Exception
         {
             for (Handler h : _handlers)
             {
-                Processor processor = h.offer(request);
+                Processor processor = h.handle(request);
                 if (processor != null)
                     return processor;
             }
@@ -397,7 +397,7 @@ public interface Handler extends LifeCycle, Destroyable
     abstract class AbstractProcessor extends Abstract implements Processor
     {
         @Override
-        public Processor offer(Request request) throws Exception
+        public Processor handle(Request request) throws Exception
         {
             return this;
         }

@@ -439,7 +439,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public Processor offer(Request request) throws Exception
+    public Processor handle(Request request) throws Exception
     {
         if (getHandler() == null)
             return null;

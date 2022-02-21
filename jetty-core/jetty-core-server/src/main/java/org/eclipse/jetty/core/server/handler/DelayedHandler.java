@@ -25,12 +25,12 @@ import org.eclipse.jetty.util.Callback;
 public abstract class DelayedHandler extends Handler.Wrapper
 {
     @Override
-    public Processor offer(Request request) throws Exception
+    public Processor handle(Request request) throws Exception
     {
         Handler handler = getHandler();
         if (handler == null)
             return null;
-        Processor processor = handler.offer(request);
+        Processor processor = handler.handle(request);
         if (processor == null)
             return null;
 
@@ -44,6 +44,9 @@ public abstract class DelayedHandler extends Handler.Wrapper
         @Override
         protected Processor delayed(Request request, Processor processor)
         {
+            // TODO remove this setting from HttpConfig?
+            if (!request.getHttpChannel().getHttpConfiguration().isDelayDispatchUntilContent())
+                return processor;
             if (request.getContentLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
                 return processor;
 

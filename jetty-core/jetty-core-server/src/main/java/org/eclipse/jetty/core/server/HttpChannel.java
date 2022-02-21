@@ -168,10 +168,10 @@ public class HttpChannel extends Attributes.Lazy
     }
 
     /**
-     * Start request handling by returning a Runnable that will call {@link Handler#offer(Request)}.
+     * Start request handling by returning a Runnable that will call {@link Handler#handle(Request)}.
      *
      * @param request The request metadata to handle.
-     * @return A Runnable that will call {@link Handler#offer(Request)}.  Unlike all other Runnables
+     * @return A Runnable that will call {@link Handler#handle(Request)}.  Unlike all other Runnables
      * returned by HttpChannel methods, this runnable is not mutually excluded or serialized against the other
      * Runnables.
      */
@@ -1019,9 +1019,7 @@ public class HttpChannel extends Attributes.Lazy
             try (AutoLock ignored = _lock.lock())
             {
                 for (ByteBuffer b : content)
-                {
                     _request._response._written += b.remaining();
-                }
                 commit = _request._response.commitResponse(last);
             }
 

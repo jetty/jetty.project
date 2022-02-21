@@ -24,7 +24,7 @@ import org.eclipse.jetty.util.HostPort;
 public class ProxiedRequestHandler extends Handler.Wrapper
 {
     @Override
-    public Processor offer(Request request) throws Exception
+    public Processor handle(Request request) throws Exception
     {
         ConnectionMetaData proxiedFor = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
         {
@@ -72,6 +72,6 @@ public class ProxiedRequestHandler extends Handler.Wrapper
                 return proxiedFor;
             }
         };
-        return Processor.wrap(super.offer(wrapper), wrapper);
+        return Processor.wrap(super.handle(wrapper), wrapper);
     }
 }

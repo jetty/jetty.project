@@ -238,10 +238,10 @@ public class SslContextFactoryReloadTest
     private static class TestHandler extends EchoHandler
     {
         @Override
-        public Processor offer(Request request) throws Exception
+        public Processor handle(Request request) throws Exception
         {
             if (HttpMethod.POST.is(request.getMethod()))
-                return super.offer(request);
+                return super.handle(request);
 
             return this::processNoContent;
         }

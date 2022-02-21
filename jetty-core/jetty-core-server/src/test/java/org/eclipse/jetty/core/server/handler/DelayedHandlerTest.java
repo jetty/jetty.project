@@ -295,7 +295,7 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public Processor offer(Request request)
+            public Processor handle(Request request)
             {
                 return null;
             }
@@ -348,7 +348,7 @@ public class DelayedHandlerTest
         delayedHandler.setHandler(new Handler.Abstract()
         {
             @Override
-            public Processor offer(Request request)
+            public Processor handle(Request request)
             {
                 return null;
             }

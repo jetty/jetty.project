@@ -29,17 +29,17 @@ public class GzipHandler extends Handler.Wrapper
     private static final HttpField CONTENT_ENCODING_GZIP = new HttpField(HttpHeader.CONTENT_ENCODING, "gzip");
 
     @Override
-    public Processor offer(Request request) throws Exception
+    public Processor handle(Request request) throws Exception
     {
         // TODO more conditions than this
         // TODO handle other encodings
         // TODO more efficient than this
         HttpFields headers = request.getHeaders();
         if (!headers.contains(ACCEPT_GZIP) && !headers.contains(CONTENT_ENCODING_GZIP))
-            return super.offer(request);
+            return super.handle(request);
 
         GzipRequest gzipRequest = new GzipRequest(request);
-        return gzipRequest.asProcessor(super.offer(gzipRequest));
+        return gzipRequest.asProcessor(super.handle(gzipRequest));
     }
 
     private static class GzipRequest extends Request.ProcessingWrapper

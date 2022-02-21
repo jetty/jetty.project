@@ -122,7 +122,7 @@ public class ContextHandlerCollection extends Handler.Collection
     }
 
     @Override
-    public Processor offer(Request request) throws Exception
+    public Processor handle(Request request) throws Exception
     {
         List<Handler> handlers = getHandlers();
 
@@ -131,13 +131,13 @@ public class ContextHandlerCollection extends Handler.Collection
             return null;
 
         if (!(handlers instanceof Mapping))
-            return super.offer(request);
+            return super.handle(request);
 
         Mapping mapping = (Mapping)getHandlers();
 
         // handle only a single context.
         if (handlers.size() == 1)
-            return handlers.get(0).offer(request);
+            return handlers.get(0).handle(request);
 
         // handle many contexts
         Index<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
@@ -147,7 +147,7 @@ public class ContextHandlerCollection extends Handler.Collection
         String path = request.getPath();
         if (!path.startsWith("/"))
         {
-            super.offer(request);
+            super.handle(request);
             return null;
         }
 
@@ -168,7 +168,7 @@ public class ContextHandlerCollection extends Handler.Collection
                 {
                     try
                     {
-                        Processor processor = branch.getHandler().offer(request);
+                        Processor processor = branch.getHandler().handle(request);
                         if (processor != null)
                             return processor;
                     }

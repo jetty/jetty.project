@@ -272,7 +272,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public Processor offer(Request request) throws Exception
+            public Processor handle(Request request) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -301,7 +301,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new Handler.Abstract()
         {
             @Override
-            public Processor offer(Request request) throws Exception
+            public Processor handle(Request request) throws Exception
             {
                 throw new Exception("TEST handler exception");
             }
@@ -1039,10 +1039,10 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         configureServer(new HelloHandler("Hello\n")
         {
             @Override
-            public Processor offer(Request request) throws Exception
+            public Processor handle(Request request) throws Exception
             {
                 served.incrementAndGet();
-                return super.offer(request);
+                return super.handle(request);
             }
         });
 
@@ -1625,7 +1625,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         @Override
-        public Processor offer(Request request) throws Exception
+        public Processor handle(Request request) throws Exception
         {
             AtomicBoolean hasContent = new AtomicBoolean();
             Request.Wrapper wrapper = new Request.Wrapper(request)
@@ -1640,7 +1640,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 }
             };
 
-            Processor processor = super.offer(request);
+            Processor processor = super.handle(request);
             if (processor == null)
                 return null;
 

@@ -135,7 +135,7 @@ public class Server extends Handler.Wrapper implements Attributes
 //                    return;
             }
 
-            Processor processor = offer(customized);
+            Processor processor = handle(customized);
             accepted = true;
             request.setAccepted();
             if (processor == null)
@@ -352,7 +352,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
         if (df == null || df._seconds != seconds)
         {
-            try (AutoLock lock = _dateLock.lock())
+            try (AutoLock ignore = _dateLock.lock())
             {
                 df = _dateField;
                 if (df == null || df._seconds != seconds)
@@ -652,7 +652,7 @@ public class Server extends Handler.Wrapper implements Attributes
         dumpObjects(out, indent, new ClassLoaderDump(this.getClass().getClassLoader()));
     }
 
-    public static void main(String... args) throws Exception
+    public static void main(String... args)
     {
         System.err.println(getVersion());
     }
