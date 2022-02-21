@@ -55,7 +55,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
         final int requestCount = 32;
         final CountDownLatch latch = new CountDownLatch(requestCount);
 
-        configureServer(new HelloHandler());
+        startServer(new HelloHandler());
         URI uri = _server.getURI();
 
         try (Socket client = newSocket(uri.getHost(), uri.getPort()))
@@ -125,7 +125,7 @@ public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
     @Test
     public void testCloseBetweenChunks() throws Exception
     {
-        configureServer(new EchoHandler());
+        startServer(new EchoHandler());
 
         URI uri = _server.getURI();
 

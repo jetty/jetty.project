@@ -56,20 +56,12 @@ public class HttpServerTestFixture
         _server = new Server(_threadPool);
     }
 
-    protected void startServer(ServerConnector connector) throws Exception
-    {
-        startServer(connector, new Handler.HotSwap());
-    }
-
-    protected void startServer(ServerConnector connector, Handler handler) throws Exception
+    protected void initServer(ServerConnector connector) throws Exception
     {
         _connector = connector;
         _httpConfiguration = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _httpConfiguration.setSendDateHeader(false);
         _server.addConnector(_connector);
-        _server.setHandler(handler);
-        _server.start();
-        _serverURI = _server.getURI();
     }
 
     @AfterEach
@@ -80,11 +72,11 @@ public class HttpServerTestFixture
         _server.setConnectors(new Connector[]{});
     }
 
-    protected void configureServer(Handler handler) throws Exception
+    protected void startServer(Handler handler) throws Exception
     {
-        Handler.HotSwap swapper = (Handler.HotSwap)_server.getHandler();
-        swapper.setHandler(handler);
-        handler.start();
+        _server.setHandler(handler);
+        _server.start();
+        _serverURI = _server.getURI();
     }
 
     protected static class OptionsHandler extends Handler.AbstractProcessor
@@ -187,6 +179,11 @@ public class HttpServerTestFixture
 
     protected static class DataHandler extends Handler.AbstractProcessor
     {
+        public DataHandler()
+        {
+            super(InvocationType.BLOCKING);
+        }
+
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {

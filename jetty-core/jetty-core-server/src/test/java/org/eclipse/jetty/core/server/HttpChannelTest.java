@@ -39,6 +39,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -954,7 +955,7 @@ public class HttpChannelTest
     @Test
     public void testDemandRecursion() throws Exception
     {
-        _server.setHandler(new Handler.AbstractProcessor()
+        _server.setHandler(new Handler.AbstractProcessor(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception

@@ -45,6 +45,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -254,7 +255,7 @@ public class ContextHandlerTest
     {
         CountDownLatch blocking = new CountDownLatch(1);
 
-        Handler handler = new Handler.AbstractProcessor()
+        Handler handler = new Handler.AbstractProcessor(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception

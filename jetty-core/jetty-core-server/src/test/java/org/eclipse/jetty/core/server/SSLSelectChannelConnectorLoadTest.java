@@ -100,7 +100,7 @@ public class SSLSelectChannelConnectorLoadTest
         int mebiByte = 1048510;
         int clients = 1;
         int iterations = 2;
-        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(clients, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
+        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(clients, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>());
         threadPool.prestartAllCoreThreads();
         Worker[] workers = new Worker[clients];
         Future[] tasks = new Future[clients];
@@ -322,6 +322,11 @@ public class SSLSelectChannelConnectorLoadTest
 
     private static class TestHandler extends Handler.AbstractProcessor
     {
+        public TestHandler()
+        {
+            super(InvocationType.BLOCKING);
+        }
+
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {

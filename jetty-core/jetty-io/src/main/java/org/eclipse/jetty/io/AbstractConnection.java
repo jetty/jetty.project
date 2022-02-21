@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  * will schedule a callback to {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
  * as appropriate.</p>
  */
-public abstract class AbstractConnection implements Connection
+public abstract class AbstractConnection implements Connection, Invocable
 {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractConnection.class);
 
@@ -309,7 +309,7 @@ public abstract class AbstractConnection implements Connection
         return String.format("%s@%h", getClass().getSimpleName(), hashCode());
     }
 
-    private class ReadCallback implements Callback
+    private class ReadCallback implements Callback, Invocable
     {
         @Override
         public void succeeded()
@@ -327,6 +327,12 @@ public abstract class AbstractConnection implements Connection
         public String toString()
         {
             return String.format("AC.ReadCB@%h{%s}", AbstractConnection.this, AbstractConnection.this);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return AbstractConnection.this.getInvocationType();
         }
     }
 }

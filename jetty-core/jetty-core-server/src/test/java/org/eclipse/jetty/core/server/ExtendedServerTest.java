@@ -42,7 +42,7 @@ public class ExtendedServerTest extends HttpServerTestBase
     @BeforeEach
     public void init() throws Exception
     {
-        startServer(new ServerConnector(_server, new HttpConnectionFactory()
+        initServer(new ServerConnector(_server, new HttpConnectionFactory()
         {
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
@@ -111,7 +111,7 @@ public class ExtendedServerTest extends HttpServerTestBase
     @Test
     public void testExtended() throws Exception
     {
-        configureServer(new DispatchedAtHandler());
+        startServer(new DispatchedAtHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {

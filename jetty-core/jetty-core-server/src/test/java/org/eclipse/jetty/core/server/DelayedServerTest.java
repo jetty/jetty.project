@@ -30,7 +30,7 @@ public class DelayedServerTest extends HttpServerTestBase
     @BeforeEach
     public void init() throws Exception
     {
-        startServer(new ServerConnector(_server, new HttpConnectionFactory()
+        initServer(new ServerConnector(_server, new HttpConnectionFactory()
         {
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
