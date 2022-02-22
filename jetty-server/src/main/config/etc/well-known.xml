@@ -12,7 +12,7 @@
             <Arg><Property name="jetty.wellknown.dir" default=".well-known"/></Arg>
           </Call>
         </Set>
-        <Set name="directoriesListed">false</Set>
+        <Set name="directoriesListed"><Property name="jetty.wellknown.listDirectories" default="false"/></Set>
       </New>
     </Set>
   </New>
