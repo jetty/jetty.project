@@ -44,7 +44,7 @@
 
   <build>
     <plugins>
-      <!-- necessary because 10.0.0-M5 is not a valid osgi version -->
+      <!-- necessary because x.y.x-SNAPSHOT is not a valid osgi version -->
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
