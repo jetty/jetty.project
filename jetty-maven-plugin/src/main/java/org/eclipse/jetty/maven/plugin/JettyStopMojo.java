@@ -129,13 +129,14 @@ public class JettyStopMojo extends AbstractWebAppMojo
                 //wait for pid to stop
                 getLog().info("Waiting " + stopWait + " seconds for jetty " + pid + " to stop");
                 Optional<ProcessHandle> optional = ProcessHandle.of(pid);
+                final long remotePid = pid.longValue();
                 optional.ifPresentOrElse(p -> 
                 {
                     try
                     {
                         //if running in the same process, just send the stop
                         //command and wait for the response
-                        if (DeploymentMode.EMBED.equals(deployMode))
+                        if (ProcessHandle.current().pid() == remotePid)
                         {
                             send(stopKey + "\r\n" + command + "\r\n", stopWait);
                         }
