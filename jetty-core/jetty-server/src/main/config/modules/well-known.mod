@@ -22,4 +22,4 @@ etc/well-known.xml
 # end::documentation[]
 
 ## Allow contents of the well-known directory to be listed.
-# jetty.wellknown.directoriesListed=false
+# jetty.wellknown.listDirectories=false
