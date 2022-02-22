@@ -133,17 +133,27 @@ public class JettyStopMojo extends AbstractWebAppMojo
                 {
                     try
                     {
-                        send(stopKey + "\r\n" + command + "\r\n", 0);
-                        CompletableFuture<ProcessHandle> future = p.onExit();
-                        if (p.isAlive())
+                        //if running in the same process, just send the stop
+                        //command and wait for the response
+                        if (DeploymentMode.EMBED.equals(deployMode))
                         {
-                            p = future.get(stopWait, TimeUnit.SECONDS);
+                            send(stopKey + "\r\n" + command + "\r\n", stopWait);
                         }
-
-                        if (p.isAlive())
-                            getLog().info("Couldn't verify server process stop");
                         else
-                            getLog().info("Server process stopped");
+                        {
+                            //running forked, so wait for the process
+                            send(stopKey + "\r\n" + command + "\r\n", 0);
+                            CompletableFuture<ProcessHandle> future = p.onExit();
+                            if (p.isAlive())
+                            {
+                                p = future.get(stopWait, TimeUnit.SECONDS);
+                            }
+
+                            if (p.isAlive())
+                                getLog().info("Couldn't verify server process stop");
+                            else
+                                getLog().info("Server process stopped");
+                        }
                     }
                     catch (ConnectException e)
                     {
