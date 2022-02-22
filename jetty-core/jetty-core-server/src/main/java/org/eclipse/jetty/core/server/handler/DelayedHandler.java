@@ -15,12 +15,17 @@ package org.eclipse.jetty.core.server.handler;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
+import java.util.function.BiConsumer;
 
+import org.eclipse.jetty.core.server.Content;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
+import org.eclipse.jetty.util.StringUtil;
 
 public abstract class DelayedHandler extends Handler.Wrapper
 {
@@ -50,33 +55,93 @@ public abstract class DelayedHandler extends Handler.Wrapper
             if (request.getContentLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
                 return processor;
 
-            return new DelayedProcessor(request, processor);
+            return new OnContentProcessor(request, processor);
+        }
+    }
+
+    private static class OnContentProcessor implements Request.Processor, Runnable
+    {
+        private final Request.Processor _processor;
+        private final Request _request;
+        private Response _response;
+        private Callback _callback;
+
+        public OnContentProcessor(Request request, Request.Processor processor)
+        {
+            _request = request;
+            _processor = processor;
         }
 
-        private static class DelayedProcessor implements Request.Processor, Runnable
+        @Override
+        public void process(Request ignored, Response response, Callback callback) throws Exception
         {
-            private final Request.Processor _processor;
-            private final Request _request;
-            private Response _response;
-            private Callback _callback;
+            _response = response;
+            _callback = callback;
+            _request.demandContent(this);
+        }
 
-            public DelayedProcessor(Request request, Request.Processor processor)
+        @Override
+        public void run()
+        {
+            try
             {
-                _request = request;
-                _processor = processor;
+                _processor.process(_request, _response, _callback);
             }
-
-            @Override
-            public void process(Request ignored, Response response, Callback callback) throws Exception
+            catch (Throwable t)
             {
-                _response = response;
-                _callback = callback;
-                _request.demandContent(this);
+                _response.writeError(_request, t, _callback);
             }
+        }
+    }
 
-            @Override
-            public void run()
+    public static class UntilContentOrForm extends DelayedHandler
+    {
+        @Override
+        protected Request.Processor delayed(Request request, Request.Processor processor)
+        {
+            if (!request.getHttpChannel().getHttpConfiguration().isDelayDispatchUntilContent())
+                return processor;
+            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
+            if (request.getContentLength() == 0 || StringUtil.isBlank(contentType))
+                return processor;
+
+            MimeTypes.Type type = MimeTypes.CACHE.get(contentType);
+            if (MimeTypes.Type.FORM_ENCODED == type)
+                return new OnFormProcessor(request, processor);
+            return new OnContentProcessor(request, processor);
+        }
+    }
+
+    private static class OnFormProcessor implements Request.Processor, BiConsumer<Fields, Throwable>
+    {
+        private final Request.Processor _processor;
+        private final Request _request;
+        private Response _response;
+        private Callback _callback;
+
+        public OnFormProcessor(Request request, Request.Processor processor)
+        {
+            _request = request;
+            _processor = processor;
+        }
+
+        @Override
+        public void process(Request ignored, Response response, Callback callback) throws Exception
+        {
+            _response = response;
+            _callback = callback;
+            // TODO pass in HttpConfiguration size limits
+            new Content.FieldsFuture(_request).whenComplete(this);
+        }
+
+        @Override
+        public void accept(Fields fields, Throwable throwable)
+        {
+            if (throwable != null)
+                _response.writeError(_request, throwable, _callback);
+            else
             {
+                _request.setAttribute(UntilContentOrForm.class.getName(), fields);
                 try
                 {
                     _processor.process(_request, _response, _callback);
