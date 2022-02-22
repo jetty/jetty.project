@@ -47,7 +47,7 @@ public class HandlerStackTest
         Handler.Wrapper stackSnap = new Handler.Wrapper()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public Request.Processor handle(Request request) throws Exception
             {
                 request.getHttpChannel().addStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
@@ -58,13 +58,12 @@ public class HandlerStackTest
                         super.succeeded();
                     }
                 });
-                getHandler().handle(request);
+                return super.handle(request);
             }
         };
         _server.setHandler(stackSnap);
 
         DelayedHandler.UntilContent delayedHandler = new DelayedHandler.UntilContent();
-//        DelayUntilContentHandler delayedHandler = new DelayUntilContentHandler();
         stackSnap.setHandler(delayedHandler);
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();

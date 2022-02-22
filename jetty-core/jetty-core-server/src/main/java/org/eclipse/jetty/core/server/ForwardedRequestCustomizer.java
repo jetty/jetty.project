@@ -456,12 +456,13 @@ public class ForwardedRequestCustomizer implements Customizer
     }
 
     @Override
-    public Request customize(Connector connector, HttpConfiguration config, Request request)
+    public Request customize(Request request)
     {
+        HttpConfiguration httpConfig = request.getHttpChannel().getHttpConfiguration();
         HttpFields httpFields = request.getHeaders();
 
         // Do a single pass through the header fields as it is a more efficient single iteration.
-        Forwarded forwarded = new Forwarded(request, config);
+        Forwarded forwarded = new Forwarded(request, httpConfig);
         boolean match = false;
         for (HttpField field : httpFields)
         {
@@ -506,7 +507,7 @@ public class ForwardedRequestCustomizer implements Customizer
         // Set scheme if header implies secure scheme is to be used (see #isSslIsSecure())
         else if (forwarded._secureScheme)
         {
-            builder.scheme(config.getSecureScheme());
+            builder.scheme(httpConfig.getSecureScheme());
             httpUriChanged = true;
         }
 
@@ -528,7 +529,7 @@ public class ForwardedRequestCustomizer implements Customizer
             }
 
             // Don't change port if port == IMPLIED.
-            if (request.getHttpURI().getPort() == 0 && port > 0 && port == HttpScheme.CACHE.get(config.getSecureScheme()).getDefaultPort())
+            if (request.getHttpURI().getPort() == 0 && port > 0 && port == HttpScheme.CACHE.get(httpConfig.getSecureScheme()).getDefaultPort())
                 port = 0;
 
             // Update authority if different from metadata

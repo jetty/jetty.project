@@ -45,6 +45,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -157,15 +158,14 @@ public class ContextHandlerTest
     @Test
     public void testSimpleInContext() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
-                Response response = request.accept();
                 response.setStatus(200);
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         };
         _contextHandler.setHandler(handler);
@@ -189,14 +189,12 @@ public class ContextHandlerTest
     @Test
     public void testCallbackInContext() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(Request request)
+            public void process(Request request, Response response, Callback callback)
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
-                Response response = request.accept();
-                Callback callback = response.getCallback();
                 request.demandContent(() ->
                 {
                     assertInContext(request);
@@ -257,14 +255,12 @@ public class ContextHandlerTest
     {
         CountDownLatch blocking = new CountDownLatch(1);
 
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 request.addCompletionListener(Callback.from(() -> assertInContext(request)));
-
-                Response response = request.accept();
 
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demandContent(() ->
@@ -281,7 +277,7 @@ public class ContextHandlerTest
                 assertTrue(content.isLast());
                 content.release();
                 response.setStatus(200);
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         };
         _contextHandler.setHandler(handler);
@@ -373,18 +369,17 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testThrownUsesContextErrorHandler() throws Exception
+    public void testThrownUsesContextErrorProcessor() throws Exception
     {
-        _contextHandler.setHandler(new Handler.Abstract()
+        _contextHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                request.accept();
                 throw new RuntimeException("Testing");
             }
         });
-        _contextHandler.setErrorHandler(new ErrorHandler()
+        _contextHandler.setErrorProcessor(new ErrorProcessor()
         {
             @Override
             protected void writeErrorHtmlBody(Request request, Writer writer, int code, String message, Throwable cause, boolean showStacks) throws IOException

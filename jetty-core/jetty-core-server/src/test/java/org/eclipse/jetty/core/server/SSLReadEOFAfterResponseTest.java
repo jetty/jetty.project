@@ -25,8 +25,10 @@ import javax.net.ssl.SSLContext;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -51,12 +53,11 @@ public class SSLReadEOFAfterResponseTest
 
         String content = "the quick brown fox jumped over the lazy dog";
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        server.setHandler(new Handler.Abstract()
+        server.setHandler(new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Response response = request.accept();
                 // First: read the whole content exactly
                 int length = bytes.length;
                 while (length > 0)
@@ -77,7 +78,7 @@ public class SSLReadEOFAfterResponseTest
                         c.release();
                     }
                     if (c == Content.EOF)
-                        response.getCallback().failed(new IllegalStateException());
+                        callback.failed(new IllegalStateException());
                 }
 
                 // Second: write the response.
@@ -94,7 +95,7 @@ public class SSLReadEOFAfterResponseTest
                 Content content = request.readContent();
                 if (!content.isLast())
                     throw new IllegalStateException();
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         });
         server.start();

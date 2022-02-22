@@ -1295,15 +1295,13 @@ public class ForwardedRequestCustomizerTest
         boolean check(Request request, Response response) throws IOException;
     }
 
-    private class RequestHandler extends Handler.Abstract
+    private static class RequestHandler extends Handler.Processor
     {
         private RequestTester requestTester;
 
         @Override
-        public void handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Response response = request.accept();
-            Callback callback = response.getCallback();
             if (requestTester != null && requestTester.check(request, response))
             {
                 response.setStatus(200);
@@ -1311,7 +1309,7 @@ public class ForwardedRequestCustomizerTest
             }
             else
             {
-                response.writeError(500, "failed", callback);
+                response.writeError(request, 500, "failed", callback);
             }
         }
     }

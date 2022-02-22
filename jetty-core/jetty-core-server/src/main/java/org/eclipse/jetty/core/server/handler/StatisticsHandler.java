@@ -21,21 +21,22 @@ import org.eclipse.jetty.core.server.Content;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.HttpStream;
 import org.eclipse.jetty.core.server.Request;
+import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
-public class RequestStatsHandler extends Handler.Wrapper
+public class StatisticsHandler extends Handler.Wrapper
 {
-    private ConcurrentHashMap<String, Object> _connectionStats = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Object> _connectionStats = new ConcurrentHashMap<>();
 
     private final CounterStatistic _requestStats = new CounterStatistic();
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
 
     @Override
-    public void handle(Request request) throws Exception
+    public Request.Processor handle(Request request) throws Exception
     {
         Object connectionStats = _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {
@@ -94,32 +95,72 @@ public class RequestStatsHandler extends Handler.Wrapper
             }
         });
 
-        try
+        StatisticsRequest statisticsRequest = new StatisticsRequest(request, bytesRead, bytesWritten);
+        return statisticsRequest.asProcessor(super.handle(statisticsRequest));
+    }
+
+    private class StatisticsRequest extends Request.ProcessingWrapper implements Callback
+    {
+        private final LongAdder _bytesRead;
+        private final LongAdder _bytesWritten;
+        private Callback _callback;
+
+        private StatisticsRequest(Request request, LongAdder bytesRead, LongAdder bytesWritten)
         {
-            super.handle(new Request.Wrapper(request)
-            {
-                // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
-                @Override
-                public Object getAttribute(String name)
-                {
-                    // return hidden attributes for requestLog
-                    switch (name)
-                    {
-                        case "o.e.j.s.h.StatsHandler.bytesRead":
-                            return bytesRead;
-                        case "o.e.j.s.h.StatsHandler.bytesWritten":
-                            return bytesWritten;
-                        default:
-                            return super.getAttribute(name);
-                    }
-                }
-            });
+            super(request);
+            _bytesRead = bytesRead;
+            _bytesWritten = bytesWritten;
         }
-        finally
+
+        // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
+        @Override
+        public Object getAttribute(String name)
         {
-            if (request.isAccepted())
-                _handleTimeStats.record(System.nanoTime() - request.getHttpChannel().getHttpStream().getNanoTimeStamp());
-            // TODO initial dispatch duration stats collected here.
+            // return hidden attributes for requestLog
+            return switch (name)
+            {
+                case "o.e.j.s.h.StatsHandler.bytesRead" -> _bytesRead;
+                case "o.e.j.s.h.StatsHandler.bytesWritten" -> _bytesWritten;
+                default -> super.getAttribute(name);
+            };
+        }
+
+        @Override
+        public void process(Request ignored, Response response, Callback callback) throws Exception
+        {
+            _callback = callback;
+            getProcessor().process(this, response, this);
+        }
+
+        @Override
+        public void succeeded()
+        {
+            try
+            {
+                _callback.succeeded();
+            }
+            finally
+            {
+                complete();
+            }
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            try
+            {
+                _callback.failed(x);
+            }
+            finally
+            {
+                complete();
+            }
+        }
+
+        private void complete()
+        {
+            _handleTimeStats.record(System.nanoTime() - getHttpChannel().getHttpStream().getNanoTimeStamp());
         }
     }
 }

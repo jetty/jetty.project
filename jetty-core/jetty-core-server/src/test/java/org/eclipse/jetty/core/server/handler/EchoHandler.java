@@ -13,91 +13,111 @@
 
 package org.eclipse.jetty.core.server.handler;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.jetty.core.server.Content;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * Dump request handler.
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class EchoHandler extends Handler.Abstract
+public class EchoHandler extends Handler.Processor
 {
     @Override
-    public void handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback)
     {
-        Response response = request.accept();
         response.setStatus(200);
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (StringUtil.isNotBlank(contentType))
             response.setContentType(contentType);
+        HttpFields.Mutable trailers = null;
+        if (request.getHeaders().contains(HttpHeader.TRAILER))
+            trailers = response.getTrailers();
         long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
         if (contentLength >= 0)
             response.setContentLength(contentLength);
-        if (request.getHeaders().contains(HttpHeader.TRAILER))
-            response.getTrailers();
-        new Echo(request, response, response.getCallback()).iterate();
+        if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
+            new Echo(request, response, trailers, callback).run();
+        else
+            callback.succeeded();
     }
 
-    static class Echo extends IteratingCallback
+    static class Echo implements Runnable, Invocable, Callback
     {
+        private static final Content ITERATING = new Content.Abstract(true, false){};
         private final Request _request;
         private final Response _response;
+        private final HttpFields.Mutable _trailers;
         private final Callback _callback;
+        private final AtomicReference<Content> _content = new AtomicReference<>();
 
-        Echo(Request request, Response response, Callback callback)
+        Echo(Request request, Response response, HttpFields.Mutable trailers, Callback callback)
         {
             _request = request;
             _response = response;
+            _trailers = trailers;
             _callback = callback;
         }
 
         @Override
-        protected Action process() throws Throwable
+        public InvocationType getInvocationType()
         {
-            Content content = _request.readContent();
-            if (content == null)
-            {
-                _request.demandContent(this::succeeded);
-                return Action.SCHEDULED;
-            }
-
-            if (content instanceof Content.Trailers)
-            {
-                _response.getTrailers()
-                    .add("Echo", "Trailers")
-                    .add(((Content.Trailers)content).getTrailers());
-                content.release();
-                this.succeeded();
-                return Action.SCHEDULED;
-            }
-
-            if (!content.hasRemaining() && content.isLast())
-            {
-                content.release();
-                return Action.SUCCEEDED;
-            }
-
-            _response.write(content.isLast(), Callback.from(this, content::release), content.getByteBuffer());
-            return Action.SCHEDULED;
+            return InvocationType.NON_BLOCKING;
         }
 
         @Override
-        protected void onCompleteSuccess()
+        public void run()
         {
-            _callback.succeeded();
+            while (true)
+            {
+                Content content = _request.readContent();
+                if (content == null)
+                {
+                    _request.demandContent(this);
+                    return;
+                }
+
+                if (content instanceof Content.Trailers && _trailers != null)
+                    _trailers.add("Echo", "Trailers").add(((Content.Trailers)content).getTrailers());
+
+                if (!content.hasRemaining() && content.isLast())
+                {
+                    content.release();
+                    _callback.succeeded();
+                    return;
+                }
+
+                _content.set(ITERATING);
+                _response.write(content.isLast(), this, content.getByteBuffer());
+                if (_content.compareAndSet(ITERATING, content))
+                    return;
+                content.release();
+            }
         }
 
         @Override
-        protected void onCompleteFailure(Throwable cause)
+        public void succeeded()
         {
-            _callback.failed(cause);
+            Content content = _content.getAndSet(null);
+            if (content == ITERATING)
+                return;
+            content.release();
+            run();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            _callback.failed(x);
         }
     }
 }

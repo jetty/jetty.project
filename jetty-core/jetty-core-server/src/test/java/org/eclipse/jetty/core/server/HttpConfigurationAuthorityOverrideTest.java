@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.core.server;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
@@ -23,11 +22,12 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-import org.eclipse.jetty.core.server.handler.ErrorHandler;
+import org.eclipse.jetty.core.server.handler.ErrorProcessor;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.junit.jupiter.api.Test;
@@ -642,7 +642,7 @@ public class HttpConfigurationAuthorityOverrideTest
         handlers.addHandler(new ErrorMsgHandler());
         server.setHandler(handlers);
 
-        server.setErrorHandler(new RedirectErrorHandler());
+        server.setErrorProcessor(new RedirectErrorProcessor());
         server.start();
 
         return new CloseableServer(server, connector);
@@ -651,70 +651,76 @@ public class HttpConfigurationAuthorityOverrideTest
     private static class DumpHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public Request.Processor handle(Request request) throws Exception
         {
-            if (request.getPath().startsWith("/dump"))
+            if (!request.getPath().startsWith("/dump"))
+                return null;
+            return (rq, rs, cb) ->
             {
-                Response response = request.accept();
-                response.setContentType("text/plain; charset=utf-8");
+                rs.setContentType("text/plain; charset=utf-8");
                 try (StringWriter stringWriter = new StringWriter();
                      PrintWriter out = new PrintWriter(stringWriter))
                 {
-                    out.printf("ServerName=[%s]%n", request.getServerName());
-                    out.printf("ServerPort=[%d]%n", request.getServerPort());
-                    out.printf("LocalAddr=[%s]%n", request.getLocalAddr());
-                    out.printf("LocalName=[%s]%n", request.getLocalAddr());
-                    out.printf("LocalPort=[%s]%n", request.getLocalPort());
-                    out.printf("HttpURI=[%s]%n", request.getHttpURI());
-                    response.write(true, response.getCallback(), stringWriter.getBuffer().toString());
+                    out.printf("ServerName=[%s]%n", rq.getServerName());
+                    out.printf("ServerPort=[%d]%n", rq.getServerPort());
+                    out.printf("LocalAddr=[%s]%n", rq.getLocalAddr());
+                    out.printf("LocalName=[%s]%n", rq.getLocalAddr());
+                    out.printf("LocalPort=[%s]%n", rq.getLocalPort());
+                    out.printf("HttpURI=[%s]%n", rq.getHttpURI());
+                    rs.write(true, cb, stringWriter.getBuffer().toString());
                 }
-            }
+            };
         }
     }
 
     private static class RedirectHandler extends Handler.Abstract
     {
         @Override
-        public void handle(Request request) throws Exception
+        public Request.Processor handle(Request request) throws Exception
         {
-            if (request.getPath().startsWith("/redirect"))
+            if (!request.getPath().startsWith("/redirect"))
+                return null;
+
+            return (rq, rs, cb) ->
             {
-                Response response = request.accept();
-                response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-                response.setHeader(HttpHeader.LOCATION, HttpURI.build(request.getHttpURI(), "/dump").toString());
-                response.getCallback().succeeded();
-            }
+                rs.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
+                rs.setHeader(HttpHeader.LOCATION, HttpURI.build(rq.getHttpURI(), "/dump").toString());
+                cb.succeeded();
+            };
         }
     }
 
-    private static class ErrorMsgHandler extends Handler.Abstract
+    private static class ErrorMsgHandler extends Handler.Processor
     {
         @Override
-        public void handle(Request request) throws Exception
+        public Request.Processor handle(Request request) throws Exception
         {
-            if (request.getPath().startsWith("/error"))
-            {
-                Response response = request.accept();
-                response.setContentType("text/plain; charset=utf-8");
-                response.write(true, response.getCallback(), "Generic Error Page.");
-            }
+            if (!request.getPath().startsWith("/error"))
+                return null;
+            return super.handle(request);
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
+            response.setContentType("text/plain; charset=utf-8");
+            response.write(true, callback, "Generic Error Page.");
         }
     }
 
-    public static class RedirectErrorHandler extends ErrorHandler
+    public static class RedirectErrorProcessor extends ErrorProcessor
     {
         @Override
-        public void handle(Request request) throws IOException
+        public void process(Request request, Response response, Callback callback)
         {
-            Response response = request.accept();
             response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
-            response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorHandler.ERROR_MESSAGE)));
+            response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
             response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
             String scheme = request.getHttpURI().getScheme();
             if (scheme == null)
                 scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
             response.setHeader(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
-            response.write(true, response.getCallback());
+            response.write(true, callback);
         }
     }
 

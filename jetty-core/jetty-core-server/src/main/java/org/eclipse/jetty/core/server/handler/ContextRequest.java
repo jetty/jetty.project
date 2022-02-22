@@ -14,17 +14,24 @@
 package org.eclipse.jetty.core.server.handler;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ContextRequest extends Request.Wrapper implements Invocable.Callable
+public class ContextRequest extends Request.ProcessingWrapper implements Invocable, Supplier<Request.Processor>, Runnable
 {
+    private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
-    private volatile Response _response;
+    private Response _response;
+    private Callback _callback;
 
     protected ContextRequest(ContextHandler contextHandler, Request wrapped, String pathInContext)
     {
@@ -34,35 +41,41 @@ public class ContextRequest extends Request.Wrapper implements Invocable.Callabl
     }
 
     @Override
-    public Response accept()
-    {
-        Response response = super.accept();
-        if (response == null)
-            return null;
-        _response = new ContextResponse(this, response);
-        return _response;
-    }
-
-    @Override
-    public Response getResponse()
-    {
-        return _response;
-    }
-
-    @Override
-    public void call() throws Exception
+    public Processor get()
     {
         try
         {
-            _contextHandler.getHandler().handle(this);
+            return _contextHandler.getHandler().handle(this);
         }
         catch (Throwable t)
         {
-            // Only handle exception if request was accepted
-            if (!isAccepted())
-                throw t;
-            Response response = _response;
-            response.writeError(t, response.getCallback());
+            // Let's be less verbose with BadMessageExceptions & QuietExceptions
+            if (!LOG.isDebugEnabled() && (t instanceof BadMessageException || t instanceof QuietException))
+                LOG.warn("context bad message {}", t.getMessage());
+            else
+                LOG.warn("context handle failed {}", this, t);
+        }
+        return null;
+    }
+
+    @Override
+    public void process(Request request, Response response, Callback callback) throws Exception
+    {
+        _response = response;
+        _callback = callback;
+        _contextHandler.getContext().run(this);
+    }
+
+    @Override
+    public void run()
+    {
+        try
+        {
+            getProcessor().process(this, new ContextResponse(this, _response), _callback);
+        }
+        catch (Throwable t)
+        {
+            _response.writeError(this, t, _callback);
         }
     }
 

@@ -29,7 +29,7 @@ package org.eclipse.jetty.util.thread;
  */
 public interface Invocable
 {
-    static ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
+    ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 
     enum InvocationType
     {
@@ -127,6 +127,12 @@ public interface Invocable
         }
     }
 
+    /**
+     * Combine two invocation type.
+     * @param it1 A type
+     * @param it2 Another type
+     * @return The combination of both type, where any tendency to block overrules any non blocking.
+     */
     static InvocationType combine(InvocationType it1, InvocationType it2)
     {
         if (it1 != null && it2 != null)

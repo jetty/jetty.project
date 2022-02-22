@@ -122,39 +122,33 @@ public class ContextHandlerCollection extends Handler.Collection
     }
 
     @Override
-    public void handle(Request request) throws Exception
+    public Request.Processor handle(Request request) throws Exception
     {
         List<Handler> handlers = getHandlers();
 
         // Handle no contexts
         if (handlers == null || handlers.isEmpty())
-            return;
+            return null;
 
         if (!(handlers instanceof Mapping))
-        {
-            super.handle(request);
-            return;
-        }
+            return super.handle(request);
 
         Mapping mapping = (Mapping)getHandlers();
 
         // handle only a single context.
         if (handlers.size() == 1)
-        {
-            handlers.get(0).handle(request);
-            return;
-        }
+            return handlers.get(0).handle(request);
 
         // handle many contexts
         Index<Map.Entry<String, Branch[]>> pathBranches = mapping._pathBranches;
         if (pathBranches == null)
-            return;
+            return null;
 
         String path = request.getPath();
         if (!path.startsWith("/"))
         {
             super.handle(request);
-            return;
+            return null;
         }
 
         int limit = path.length() - 1;
@@ -174,21 +168,20 @@ public class ContextHandlerCollection extends Handler.Collection
                 {
                     try
                     {
-                        branch.getHandler().handle(request);
+                        Request.Processor processor = branch.getHandler().handle(request);
+                        if (processor != null)
+                            return processor;
                     }
                     catch (Throwable t)
                     {
-                        if (request.isAccepted())
-                            throw t;
                         LOG.warn("Unaccepted error {}", this, t);
                     }
-                    if (request.isAccepted())
-                        return;
                 }
             }
 
             limit = l - 2;
         }
+        return null;
     }
 
     /**

@@ -60,17 +60,14 @@ public class ProxyProtocolTest
     {
         final String remoteAddr = "192.168.0.0";
         final int remotePort = 12345;
-        start(new Handler.Abstract()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 SocketAddress addr = request.getConnectionMetaData().getRemoteAddress();
-                Response response = request.accept();
-                Callback callback = response.getCallback();
-                if (addr instanceof InetSocketAddress)
+                if (addr instanceof InetSocketAddress iAddr)
                 {
-                    InetSocketAddress iAddr = (InetSocketAddress)addr;
                     if (iAddr.getHostString().equals(remoteAddr) && iAddr.getPort() == remotePort)
                         callback.succeeded();
                     else
@@ -131,13 +128,11 @@ public class ProxyProtocolTest
         final byte[] customE0 = new byte[] {1, 2};
         final byte[] customE1 = new byte[] {-1, -1, -1};
 
-        start(new Handler.Abstract()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                Response response = request.accept();
-                Callback callback = response.getCallback();
                 if (validateEndPoint(request) &&
                     remoteAddr.equals(request.getRemoteAddr()) &&
                     remotePort == request.getRemotePort())
@@ -231,13 +226,12 @@ public class ProxyProtocolTest
     @Test
     public void testProxyProtocolV2Local() throws Exception
     {
-        start(new Handler.Abstract()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                Response response = request.accept();
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         });
 

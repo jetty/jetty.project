@@ -34,6 +34,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -99,7 +100,7 @@ public class SSLSelectChannelConnectorLoadTest
         int mebiByte = 1048510;
         int clients = 1;
         int iterations = 2;
-        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(clients, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
+        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(clients, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS, new SynchronousQueue<>());
         threadPool.prestartAllCoreThreads();
         Worker[] workers = new Worker[clients];
         Future[] tasks = new Future[clients];
@@ -319,14 +320,18 @@ public class SSLSelectChannelConnectorLoadTest
         }
     }
 
-    private static class TestHandler extends Handler.Abstract
+    private static class TestHandler extends Handler.Processor
     {
-        @Override
-        public void handle(Request request) throws Exception
+        public TestHandler()
         {
-            Response response = request.accept();
+            super(InvocationType.BLOCKING);
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
             ByteBuffer input = Content.readBytes(request);
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()));
+            response.write(true, callback, BufferUtil.toBuffer(String.valueOf(input.remaining()).getBytes()));
         }
     }
 }

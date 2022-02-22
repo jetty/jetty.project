@@ -26,8 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.core.server.handler.ContextHandler;
-import org.eclipse.jetty.core.server.handler.ErrorHandler;
-import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.core.server.handler.ErrorProcessor;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -35,7 +34,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
@@ -63,12 +61,13 @@ public class Server extends Handler.Wrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
-    private Handler _errorHandler;
+    private Request.Processor _errorProcessor;
     private RequestLog _requestLog;
     private boolean _dryRun;
     private final AutoLock _dateLock = new AutoLock();
     private volatile DateField _dateField;
     private long _stopTimeout;
+    private InvocationType _invocationType = InvocationType.NON_BLOCKING;
 
     public Server()
     {
@@ -114,51 +113,49 @@ public class Server extends Handler.Wrapper implements Attributes
         setServer(this);
     }
 
-    @Override
-    public void handle(Request request)
+    void customizeHandleAndProcess(HttpChannel.ChannelRequest request, Response response, Callback callback)
     {
         if (!isStarted())
             return;
 
+        Request customized = request;
+        boolean processing = false;
         try
         {
-            // Customize
-            Request customizedRequest = request;
+            // Customize before accepting.
             HttpConfiguration configuration = request.getHttpChannel().getHttpConfiguration();
+
             for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
             {
-                Request customized = customizer.customize(request.getConnectionMetaData().getConnector(), configuration, customizedRequest);
-                customizedRequest = customized == null ? request : customized;
-                if (request.isAccepted())
-                    return;
+                // TODO: how can a customizer wrap the response?
+                Request next = customizer.customize(request);
+                customized = next == null ? customized : next;
             }
 
-            // Handle
-            Handler next = getHandler();
-            if (next != null)
-                next.handle(customizedRequest);
-
-            // Try to accept to test if already accepted
-            Response response = request.accept();
-            if (response != null)
-            {
-                Callback callback = response.getCallback();
-                response.writeError(HttpStatus.NOT_FOUND_404, "Not accepted", callback);
-            }
-        }
-        catch (Throwable t)
-        {
-            // Let's be less verbose with BadMessageExceptions & QuietExceptions
-            if (!LOG.isDebugEnabled() && (t instanceof BadMessageException || t instanceof QuietException))
-                LOG.warn("bad message {}", t.getMessage());
+            Request.Processor processor = handle(customized);
+            processing = true;
+            request.enableProcessing();
+            if (processor == null)
+                response.writeError(request, HttpStatus.NOT_FOUND_404, callback);
             else
-                LOG.warn("handle failed {}", this, t);
-
-            Response response = request.accept();
-            if (response == null)
-                response = request.getResponse();
-            response.getCallback().failed(t);
+                processor.process(customized, response, callback);
         }
+        catch (Throwable x)
+        {
+            if (!processing)
+                request.enableProcessing();
+            callback.failed(x);
+        }
+    }
+
+    @Override
+    public InvocationType getInvocationType()
+    {
+        Handler handler = getHandler();
+        if (handler == null)
+            return InvocationType.NON_BLOCKING;
+        // Return cached type to avoid a full handler tree walk.
+        return isRunning() ? _invocationType : handler.getInvocationType();
     }
 
     public boolean isDryRun()
@@ -176,9 +173,9 @@ public class Server extends Handler.Wrapper implements Attributes
         return _requestLog;
     }
 
-    public Handler getErrorHandler()
+    public Request.Processor getErrorProcessor()
     {
-        return _errorHandler;
+        return _errorProcessor;
     }
 
     public void setRequestLog(RequestLog requestLog)
@@ -187,12 +184,10 @@ public class Server extends Handler.Wrapper implements Attributes
         _requestLog = requestLog;
     }
 
-    public void setErrorHandler(Handler errorHandler)
+    public void setErrorProcessor(Request.Processor errorProcessor)
     {
-        updateBean(_errorHandler, errorHandler);
-        _errorHandler = errorHandler;
-        if (errorHandler != null)
-            ((Handler.Abstract)errorHandler).setServer(this);
+        updateBean(_errorProcessor, errorProcessor);
+        _errorProcessor = errorProcessor;
     }
 
     @ManagedAttribute("version of this server")
@@ -250,7 +245,7 @@ public class Server extends Handler.Wrapper implements Attributes
     public Connector[] getConnectors()
     {
         List<Connector> connectors = new ArrayList<>(_connectors);
-        return connectors.toArray(new Connector[connectors.size()]);
+        return connectors.toArray(new Connector[0]);
     }
 
     public void addConnector(Connector connector)
@@ -364,7 +359,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
         if (df == null || df._seconds != seconds)
         {
-            try (AutoLock lock = _dateLock.lock())
+            try (AutoLock ignore = _dateLock.lock())
             {
                 df = _dateField;
                 if (df == null || df._seconds != seconds)
@@ -395,8 +390,8 @@ public class Server extends Handler.Wrapper implements Attributes
             //Start a thread waiting to receive "stop" commands.
             ShutdownMonitor.getInstance().start(); // initialize
 
-            if (_errorHandler == null)
-                setErrorHandler(new DynamicErrorHandler());
+            if (_errorProcessor == null)
+                setErrorProcessor(new DynamicErrorProcessor());
 
             String gitHash = Jetty.GIT_HASH;
             String timestamp = Jetty.BUILD_TIMESTAMP;
@@ -433,6 +428,11 @@ public class Server extends Handler.Wrapper implements Attributes
             // Start the server and components, but not connectors!
             // #start(LifeCycle) is overridden so that connectors are not started
             super.doStart();
+
+            // Cache the invocation type to avoid runtime walk of handler tree
+            // Handlers must check they don't change the InvocationType of a started server
+            Handler handler = getHandler();
+            _invocationType = handler == null ? InvocationType.NON_BLOCKING : handler.getInvocationType();
 
             if (_dryRun)
             {
@@ -541,8 +541,8 @@ public class Server extends Handler.Wrapper implements Attributes
             mex.add(e);
         }
 
-        if (getErrorHandler() instanceof DynamicErrorHandler)
-            setErrorHandler(null);
+        if (getErrorProcessor() instanceof DynamicErrorProcessor)
+            setErrorProcessor(null);
 
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
@@ -664,7 +664,7 @@ public class Server extends Handler.Wrapper implements Attributes
         dumpObjects(out, indent, new ClassLoaderDump(this.getClass().getClassLoader()));
     }
 
-    public static void main(String... args) throws Exception
+    public static void main(String... args)
     {
         System.err.println(getVersion());
     }
@@ -682,5 +682,5 @@ public class Server extends Handler.Wrapper implements Attributes
         }
     }
 
-    private static class DynamicErrorHandler extends ErrorHandler {}
+    private static class DynamicErrorProcessor extends ErrorProcessor {}
 }

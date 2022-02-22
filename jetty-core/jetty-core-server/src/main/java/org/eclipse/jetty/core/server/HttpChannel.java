@@ -172,7 +172,7 @@ public class HttpChannel extends Attributes.Lazy
      *
      * @param request The request metadata to handle.
      * @return A Runnable that will call {@link Handler#handle(Request)}.  Unlike all other Runnables
-     * returned by {@link HttpChannel} methods, this runnable is not mutually excluded or serialized against the other
+     * returned by HttpChannel methods, this runnable is not mutually excluded or serialized against the other
      * Runnables.
      */
     public Runnable onRequest(MetaData.Request request)
@@ -278,7 +278,7 @@ public class HttpChannel extends Attributes.Lazy
             Runnable invokeOnError = onError == null ? null : () -> onError.accept(x);
 
             // Serialize all the error actions.
-            request._accepted = true;
+            request._processing = true;
             return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError, () -> request._callback.failed(x));
         }
     }
@@ -373,19 +373,22 @@ public class HttpChannel extends Attributes.Lazy
         return String.format("%s@%x{r=%s}", this.getClass().getSimpleName(), hashCode(), _request);
     }
 
-    private class RunHandle implements Runnable
+    private class RunHandle implements Invocable.Task
     {
         @Override
         public void run()
         {
-            Request request = _request;
-            _server.handle(request);
-            if (!request.isAccepted())
-                throw new IllegalStateException();
+            _server.customizeHandleAndProcess(_request, _request._response, _request._callback);
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _server.getInvocationType();
         }
     }
 
-    private class ChannelRequest implements Attributes, Request
+    class ChannelRequest implements Attributes, Request
     {
         final MetaData.Request _metaData;
         final String _id;
@@ -393,7 +396,7 @@ public class HttpChannel extends Attributes.Lazy
         Content.Error _error;
         Consumer<Throwable> _onError;
         Runnable _onContentAvailable;
-        boolean _accepted;
+        boolean _processing;
         private final Callback _callback = new RequestCallback();
 
         ChannelRequest(MetaData.Request metaData)
@@ -406,15 +409,6 @@ public class HttpChannel extends Attributes.Lazy
             _id = Integer.toString(_requests);
             _metaData = metaData;
             _response = new ChannelResponse(this);
-        }
-
-        @Override
-        public Response getResponse()
-        {
-            try (AutoLock ignored = _lock.lock())
-            {
-                return _accepted ? _response : null;
-            }
         }
 
         @Override
@@ -545,8 +539,8 @@ public class HttpChannel extends Attributes.Lazy
             {
                 if (_error != null)
                     return _error;
-                if (!_accepted)
-                    return new Content.Error(new IllegalStateException("Not Accepted"));
+                if (!_processing)
+                    return new Content.Error(new IllegalStateException("not processing"));
             }
             return getStream().readContent();
         }
@@ -557,7 +551,7 @@ public class HttpChannel extends Attributes.Lazy
             boolean error;
             try (AutoLock ignored = _lock.lock())
             {
-                error = _error != null || !_accepted;
+                error = _error != null || !_processing;
                 if (!error)
                 {
                     if (_onContentAvailable != null)
@@ -636,24 +630,14 @@ public class HttpChannel extends Attributes.Lazy
             });
         }
 
-        @Override
-        public Response accept()
+        public void enableProcessing()
         {
             try (AutoLock ignored = _lock.lock())
             {
-                if (_accepted)
-                    return null;
-                _accepted = true;
-            }
-            return _response;
-        }
-
-        @Override
-        public boolean isAccepted()
-        {
-            try (AutoLock ignored = _lock.lock())
-            {
-                return _accepted;
+                if (_processing)
+                    throw new IllegalStateException("request already processing " + this);
+                // TODO: use system property to record what thread accepted it.
+                _processing = true;
             }
         }
 
@@ -669,8 +653,8 @@ public class HttpChannel extends Attributes.Lazy
                 long written;
                 try (AutoLock ignored = _lock.lock())
                 {
-                    if (!_accepted)
-                        throw new IllegalStateException("Not Accepted");
+                    if (!_processing)
+                        throw new IllegalStateException("not processing");
 
                     // We are being tough on handler implementations and expect them to not have pending operations
                     // when calling succeeded or failed
@@ -716,8 +700,8 @@ public class HttpChannel extends Attributes.Lazy
                     if (_stream == null || _request != ChannelRequest.this)
                         return;
 
-                    if (!_accepted)
-                        throw new IllegalStateException("Not Accepted");
+                    if (!_processing)
+                        throw new IllegalStateException("not processing");
 
                     // Can we write out an error response
                     committed = _stream.isCommitted();
@@ -747,7 +731,7 @@ public class HttpChannel extends Attributes.Lazy
                 else
                 {
                     Response response = new ErrorResponse(request, stream);
-                    response.writeError(x, Callback.from(
+                    response.writeError(request, x, Callback.from(
                         () ->
                         {
                             // ErrorHandler has succeeded the ErrorRequest, so we need to ensure
@@ -805,18 +789,6 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        public Request getRequest()
-        {
-            return _request;
-        }
-
-        @Override
-        public Callback getCallback()
-        {
-            return _request._callback;
-        }
-
-        @Override
         public int getStatus()
         {
             return _status;
@@ -870,8 +842,8 @@ public class HttpChannel extends Attributes.Lazy
             {
                 if (_onWriteComplete != null)
                     failure = new IllegalStateException("write pending");
-                else if (!_request._accepted)
-                    failure = new IllegalStateException("not accepted");
+                else if (!_request._processing)
+                    failure = new IllegalStateException("not processing");
                 else if (_request._error != null)
                     failure = _request._error.getCause();
                 if (_stream == null)
@@ -1035,7 +1007,7 @@ public class HttpChannel extends Attributes.Lazy
 
         public ErrorResponse(ChannelRequest request, HttpStream stream)
         {
-            super(request, request._response);
+            super(request._response);
             _request = request;
             _stream = stream;
         }
@@ -1053,9 +1025,7 @@ public class HttpChannel extends Attributes.Lazy
             try (AutoLock ignored = _lock.lock())
             {
                 for (ByteBuffer b : content)
-                {
                     _request._response._written += b.remaining();
-                }
                 commit = _request._response.commitResponse(last);
             }
 

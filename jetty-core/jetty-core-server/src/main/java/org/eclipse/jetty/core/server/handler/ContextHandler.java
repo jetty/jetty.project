@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.core.server.ClassLoaderDump;
@@ -31,11 +32,11 @@ import org.eclipse.jetty.core.server.Connector;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
-import org.eclipse.jetty.core.server.Server;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -74,7 +75,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private String _contextPath = "/";
     private Path _resourceBase;
     private ClassLoader _classLoader;
-    private Handler _errorHandler;
+    private Request.Processor _errorProcessor;
     private boolean _allowNullPathInfo;
 
     public ContextHandler()
@@ -117,14 +118,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     public void setAllowNullPathInfo(boolean allowNullPathInfo)
     {
         _allowNullPathInfo = allowNullPathInfo;
-    }
-
-    @Override
-    public void setServer(Server server)
-    {
-        super.setServer(server);
-        if (_errorHandler != null)
-            _errorHandler.setServer(server);
     }
 
     /**
@@ -446,40 +439,42 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @Override
-    public void handle(Request request) throws Exception
+    public Request.Processor handle(Request request) throws Exception
     {
         if (getHandler() == null)
-            return;
+            return null;
 
         if (!checkVirtualHost(request))
-            return;
+            return null;
 
         String pathInContext = getPathInContext(request);
         if (pathInContext == null)
-            return;
+            return null;
 
         if (pathInContext.isEmpty() && !getAllowNullPathInfo())
-        {
-            String location = _contextPath + "/";
-            if (request.getHttpURI().getParam() != null)
-                location += ";" + request.getHttpURI().getParam();
-            if (request.getHttpURI().getQuery() != null)
-                location += ";" + request.getHttpURI().getQuery();
-
-            Response response = request.accept();
-            response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
-            response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
-            response.getCallback().succeeded();
-            return;
-        }
+            return this::processMovedPermanently;
 
         // TODO check availability and maybe return a 503
 
         ContextRequest scoped = wrap(request, pathInContext);
+        // wrap might fail (eg ServletContextHandler could not match a servlet)
         if (scoped == null)
-            return; // TODO 404? 500? Error dispatch ???
+            return null;
 
-        _context.call(scoped);
+        return scoped.asProcessor(_context.get(scoped));
+    }
+
+    void processMovedPermanently(Request request, Response response, Callback callback)
+    {
+        String location = _contextPath + "/";
+        if (request.getHttpURI().getParam() != null)
+            location += ";" + request.getHttpURI().getParam();
+        if (request.getHttpURI().getQuery() != null)
+            location += ";" + request.getHttpURI().getQuery();
+
+        response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
+        response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
+        callback.succeeded();
     }
 
     /**
@@ -524,24 +519,21 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     /**
      * @return Returns the errorHandler.
      */
-    @ManagedAttribute("The error handler to use for the context")
-    public Handler getErrorHandler()
+    @ManagedAttribute("The error processor to use for the context")
+    public Request.Processor getErrorProcessor()
     {
         // TODO, do we need to wrap this so that we can establish the context
         //       Classloader?  Or will the caller already do that?
-        return _errorHandler;
+        return _errorProcessor;
     }
 
     /**
-     * @param errorHandler The errorHandler to set.
+     * @param errorProcessor The error processor to set.
      */
-    public void setErrorHandler(Handler errorHandler)
+    public void setErrorProcessor(Request.Processor errorProcessor)
     {
-        Server server = getServer();
-        if (errorHandler != null && server != null)
-            errorHandler.setServer(server);
-        updateBean(_errorHandler, errorHandler, true);
-        _errorHandler = errorHandler;
+        updateBean(_errorProcessor, errorProcessor, true);
+        _errorProcessor = errorProcessor;
     }
 
     protected ContextRequest wrap(Request request, String pathInContext)
@@ -649,6 +641,30 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return _resourceBase;
         }
 
+        public <T> T get(Supplier<T> supplier) throws Exception
+        {
+            Context lastContext = __context.get();
+            if (lastContext == this)
+                return supplier.get();
+
+            ClassLoader loader = getClassLoader();
+            ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+            try
+            {
+                __context.set(this);
+                if (loader != null)
+                    Thread.currentThread().setContextClassLoader(loader);
+
+                return supplier.get();
+            }
+            finally
+            {
+                __context.set(lastContext);
+                if (loader != null)
+                    Thread.currentThread().setContextClassLoader(lastLoader);
+            }
+        }
+
         public void call(Invocable.Callable callable) throws Exception
         {
             Context lastContext = __context.get();
@@ -705,7 +721,28 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         {
             try
             {
-                call(task::run);
+                Context lastContext = __context.get();
+                if (lastContext == this)
+                    task.run();
+                else
+                {
+                    ClassLoader loader = getClassLoader();
+                    ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                    try
+                    {
+                        __context.set(this);
+                        if (loader != null)
+                            Thread.currentThread().setContextClassLoader(loader);
+
+                        task.run();
+                    }
+                    finally
+                    {
+                        __context.set(lastContext);
+                        if (loader != null)
+                            Thread.currentThread().setContextClassLoader(lastLoader);
+                    }
+                }
             }
             catch (Exception e)
             {

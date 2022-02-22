@@ -77,12 +77,11 @@ public class SSLCloseTest
         }
     }
 
-    private static class WriteHandler extends Handler.Abstract
+    private static class WriteHandler extends Handler.Processor
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Response response = request.accept();
             response.setStatus(200);
             response.setHeader("test", "value");
 
@@ -94,7 +93,6 @@ public class SSLCloseTest
             data = data + data + data + data;
             byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
 
-            Callback callback = response.getCallback();
             response.write(false,
                 Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer(bytes)), callback::failed),
                 BufferUtil.toBuffer(bytes));

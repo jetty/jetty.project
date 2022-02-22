@@ -26,6 +26,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterAll;
@@ -36,14 +37,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- *
- */
 public class SslUploadTest
 {
     private static Server server;
     private static ServerConnector connector;
-    private static int total;
 
     @BeforeAll
     public static void startServer() throws Exception
@@ -85,33 +82,8 @@ public class SslUploadTest
         SSLContext sslContext = SSLContext.getInstance("SSL");
         sslContext.init(null, trustManagerFactory.getTrustManagers(), null);
 
-        final SSLSocket socket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort());
+        SSLSocket socket = (SSLSocket)sslContext.getSocketFactory().createSocket("localhost", connector.getLocalPort());
 
-        // Simulate async close
-        /*
-        new Thread()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    sleep(100);
-                    socket.close();
-                }
-                catch (IOException x)
-                {
-                    x.printStackTrace();
-                }
-                catch (InterruptedException x)
-                {
-                    Thread.currentThread().interrupt();
-                }
-            }
-        }.start();
-        */
-
-        long start = System.nanoTime();
         OutputStream out = socket.getOutputStream();
         out.write("POST / HTTP/1.1\r\n".getBytes());
         out.write("Host: localhost\r\n".getBytes());
@@ -129,21 +101,17 @@ public class SslUploadTest
         InputStream in = socket.getInputStream();
         String response = IO.toString(in);
         assertTrue(response.indexOf("200") > 0);
-        // System.err.println(response);
 
-        // long end = System.nanoTime();
-        // System.out.println("upload time: " + TimeUnit.NANOSECONDS.toMillis(end - start));
-        assertEquals(requestContent.length, total);
+        assertEquals(requestContent.length, 0);
     }
 
-    private static class EmptyHandler extends Handler.Abstract
+    private static class EmptyHandler extends Handler.Processor
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Response response = request.accept();
             ByteBuffer input = Content.readBytes(request);
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));
+            response.write(true, callback, BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));
         }
     }
 }

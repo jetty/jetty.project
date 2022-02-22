@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.core.server.handler.ContextHandler;
 import org.eclipse.jetty.core.server.handler.ContextRequest;
-import org.eclipse.jetty.core.server.handler.ErrorHandler;
+import org.eclipse.jetty.core.server.handler.ErrorProcessor;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -37,10 +37,6 @@ import org.slf4j.LoggerFactory;
 public interface Response
 {
     Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
-
-    Request getRequest();
-
-    Callback getCallback();
 
     int getStatus();
 
@@ -62,11 +58,6 @@ public interface Response
     boolean isCommitted();
 
     void reset();
-
-    default Response getWrapped()
-    {
-        return null;
-    }
 
     default void addHeader(String name, String value)
     {
@@ -98,7 +89,7 @@ public interface Response
         getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
     }
 
-    default void writeError(Throwable cause, Callback callback)
+    default void writeError(Request request, Throwable cause, Callback callback)
     {
         if (cause == null)
             cause = new Throwable("unknown cause");
@@ -109,20 +100,20 @@ public interface Response
             status = bad.getCode();
             message = bad.getReason();
         }
-        writeError(status, message, cause, callback);
+        writeError(request, status, message, cause, callback);
     }
 
-    default void writeError(int status, Callback callback)
+    default void writeError(Request request, int status, Callback callback)
     {
-        writeError(status, null, null, callback);
+        writeError(request, status, null, null, callback);
     }
 
-    default void writeError(int status, String message, Callback callback)
+    default void writeError(Request request, int status, String message, Callback callback)
     {
-        writeError(status, message, null, callback);
+        writeError(request, status, message, null, callback);
     }
 
-    default void writeError(int status, String message, Throwable cause, Callback callback)
+    default void writeError(Request request, int status, String message, Throwable cause, Callback callback)
     {
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
         if (!LOG.isDebugEnabled() && (cause instanceof BadMessageException || cause instanceof QuietException))
@@ -143,16 +134,16 @@ public interface Response
 
         setStatus(status);
 
-        ContextHandler.Context context = getRequest().get(ContextRequest.class, ContextRequest::getContext);
-        Handler errorHandler = ErrorHandler.getErrorHandler(getRequest().getHttpChannel().getServer(), context == null ? null : context.getContextHandler());
+        ContextHandler.Context context = request.get(ContextRequest.class, ContextRequest::getContext);
+        Request.Processor errorProcessor = ErrorProcessor.getErrorProcessor(request.getHttpChannel().getServer(), context == null ? null : context.getContextHandler());
 
-        if (errorHandler != null)
+        if (errorProcessor != null)
         {
-            Request errorRequest = new ErrorHandler.ErrorRequest(getRequest(), this, status, message, cause, callback);
+            Request errorRequest = new ErrorProcessor.ErrorRequest(request, status, message, cause);
             try
             {
-                errorHandler.handle(errorRequest);
-                if (errorRequest.isAccepted())
+                errorProcessor.process(errorRequest, this, callback);
+                if (errorRequest.isComplete())
                     return;
             }
             catch (Exception e)
@@ -163,85 +154,70 @@ public interface Response
         }
 
         // fall back to very empty error page
-        getHeaders().put(ErrorHandler.ERROR_CACHE_CONTROL);
+        getHeaders().put(ErrorProcessor.ERROR_CACHE_CONTROL);
         write(true, callback);
     }
 
     class Wrapper implements Response
     {
-        private final Request _request;
         private final Response _wrapped;
 
-        public Wrapper(Request request, Response wrapped)
+        public Wrapper(Response wrapped)
         {
-            _request = request;
             _wrapped = wrapped;
         }
 
-        @Override
-        public Callback getCallback()
+        public Response getWrapped()
         {
-            return _wrapped.getCallback();
+            return _wrapped;
         }
-
+        
         @Override
         public int getStatus()
         {
-            return _wrapped.getStatus();
+            return getWrapped().getStatus();
         }
 
         @Override
         public void setStatus(int code)
         {
-            _wrapped.setStatus(code);
+            getWrapped().setStatus(code);
         }
 
         @Override
         public HttpFields.Mutable getHeaders()
         {
-            return _wrapped.getHeaders();
+            return getWrapped().getHeaders();
         }
 
         @Override
         public HttpFields.Mutable getTrailers()
         {
-            return _wrapped.getTrailers();
+            return getWrapped().getTrailers();
         }
 
         @Override
         public void write(boolean last, Callback callback, ByteBuffer... content)
         {
-            _wrapped.write(last, callback, content);
+            getWrapped().write(last, callback, content);
         }
 
         @Override
         public void push(MetaData.Request request)
         {
-            _wrapped.push(request);
+            getWrapped().push(request);
         }
 
         @Override
         public boolean isCommitted()
         {
-            return _wrapped.isCommitted();
+            return getWrapped().isCommitted();
         }
 
         @Override
         public void reset()
         {
-            _wrapped.reset();
-        }
-
-        @Override
-        public Response getWrapped()
-        {
-            return _wrapped;
-        }
-
-        @Override
-        public Request getRequest()
-        {
-            return _request;
+            getWrapped().reset();
         }
     }
 }

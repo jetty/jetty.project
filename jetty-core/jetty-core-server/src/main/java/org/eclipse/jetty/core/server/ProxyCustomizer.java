@@ -47,7 +47,7 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
     public static final String LOCAL_PORT_ATTRIBUTE_NAME = "org.eclipse.jetty.proxy.local.port";
 
     @Override
-    public Request customize(Connector connector, HttpConfiguration channelConfig, Request request)
+    public Request customize(Request request)
     {
         EndPoint endPoint = request.getHttpChannel().getConnection().getEndPoint();
         if (endPoint instanceof ProxyConnectionFactory.ProxyEndPoint)

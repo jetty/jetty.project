@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -50,7 +51,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * For requests to '/' a 404 with a list of known contexts is served.
  * For all other requests a normal 404 is served.
  */
-public class DefaultHandler extends Handler.Abstract
+public class DefaultHandler extends Handler.Processor
 {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultHandler.class);
 
@@ -84,16 +85,12 @@ public class DefaultHandler extends Handler.Abstract
     }
 
     @Override
-    public void handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
-        Response response = request.accept();
-        if (response == null || response.isCommitted())
-            return;
-
         String method = request.getMethod();
 
         // little cheat for common request
-        if (_serveIcon && _favicon != null && HttpMethod.GET.is(method) && request.getPath().equals("/favicon.ico"))
+        if (isServeIcon() && _favicon != null && HttpMethod.GET.is(method) && request.getPath().equals("/favicon.ico"))
         {
             ByteBuffer content = BufferUtil.EMPTY_BUFFER;
             if (_faviconModifiedMs > 0 && request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE) == _faviconModifiedMs)
@@ -107,13 +104,13 @@ public class DefaultHandler extends Handler.Abstract
                 response.setHeader(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
                 content = _favicon.slice();
             }
-            response.write(true, response.getCallback(), content);
+            response.write(true, callback, content);
             return;
         }
 
-        if (!_showContexts || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
+        if (!isShowContexts() || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
         {
-            response.writeError(HttpStatus.NOT_FOUND_404, null, response.getCallback());
+            response.writeError(request, HttpStatus.NOT_FOUND_404, null, callback);
             return;
         }
 
@@ -194,7 +191,7 @@ public class DefaultHandler extends Handler.Abstract
             writer.flush();
             ByteBuffer content = BufferUtil.toBuffer(outputStream.toByteArray());
             response.setContentLength(content.remaining());
-            response.write(true, response.getCallback(), content);
+            response.write(true, callback, content);
         }
     }
 
@@ -202,7 +199,7 @@ public class DefaultHandler extends Handler.Abstract
      * @return Returns true if the handle can server the jetty favicon.ico
      */
     @ManagedAttribute("True if the favicon.ico should be served")
-    public boolean getServeIcon()
+    public boolean isServeIcon()
     {
         return _serveIcon;
     }
@@ -216,7 +213,7 @@ public class DefaultHandler extends Handler.Abstract
     }
 
     @ManagedAttribute("True if the contexts should be shown in the default 404 page")
-    public boolean getShowContexts()
+    public boolean isShowContexts()
     {
         return _showContexts;
     }

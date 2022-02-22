@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -237,16 +238,18 @@ public class SslContextFactoryReloadTest
     private static class TestHandler extends EchoHandler
     {
         @Override
-        public void handle(Request request) throws Exception
+        public Request.Processor handle(Request request) throws Exception
         {
             if (HttpMethod.POST.is(request.getMethod()))
-                super.handle(request);
-            else
-            {
-                Response response = request.accept();
-                response.setContentLength(0);
-                response.getCallback().succeeded();
-            }
+                return super.handle(request);
+
+            return this::processNoContent;
+        }
+
+        public void processNoContent(Request request, Response response, Callback callback)
+        {
+            response.setContentLength(0);
+            callback.succeeded();
         }
     }
 }

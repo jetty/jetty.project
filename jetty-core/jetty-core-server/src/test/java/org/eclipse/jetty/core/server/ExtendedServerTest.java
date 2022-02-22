@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,7 @@ public class ExtendedServerTest extends HttpServerTestBase
     @BeforeEach
     public void init() throws Exception
     {
-        startServer(new ServerConnector(_server, new HttpConnectionFactory()
+        initServer(new ServerConnector(_server, new HttpConnectionFactory()
         {
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
@@ -110,7 +111,7 @@ public class ExtendedServerTest extends HttpServerTestBase
     @Test
     public void testExtended() throws Exception
     {
-        configureServer(new DispatchedAtHandler());
+        startServer(new DispatchedAtHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -138,14 +139,13 @@ public class ExtendedServerTest extends HttpServerTestBase
         }
     }
 
-    protected static class DispatchedAtHandler extends Handler.Abstract
+    protected static class DispatchedAtHandler extends Handler.Processor
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Response response = request.accept();
             response.setStatus(200);
-            response.write(true, response.getCallback(), BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"));
+            response.write(true, callback, BufferUtil.toBuffer("DispatchedAt=" + request.getAttribute("DispatchedAt") + "\r\n"));
         }
     }
 }

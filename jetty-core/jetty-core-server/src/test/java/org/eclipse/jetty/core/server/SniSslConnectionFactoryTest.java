@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
@@ -51,7 +52,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.X509;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -63,7 +63,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@Disabled // TODO fix
 public class SniSslConnectionFactoryTest
 {
     private Server _server;
@@ -86,17 +85,28 @@ public class SniSslConnectionFactoryTest
         HttpConfiguration httpConfiguration = new HttpConfiguration();
         SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
         httpConfiguration.addCustomizer(secureRequestCustomizer);
-        httpConfiguration.addCustomizer((connector, httpConfig, request) ->
+
+        Handler.Wrapper xCertHandler = new Handler.Wrapper()
         {
-            EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
-            SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
-            SslConnection sslConnection = sslEndPoint.getSslConnection();
-            SSLEngine sslEngine = sslConnection.getSSLEngine();
-            SSLSession session = sslEngine.getSession();
-            for (Certificate c : session.getLocalCertificates())
-                request.getResponse().getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
-            return request;
-        });
+            @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                Request.Processor processor = getHandler().handle(request);
+                if (processor == null)
+                    return null;
+                return (ignored, response, callback) ->
+                {
+                    EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
+                    SslConnection.DecryptedEndPoint sslEndPoint = (SslConnection.DecryptedEndPoint)endPoint;
+                    SslConnection sslConnection = sslEndPoint.getSslConnection();
+                    SSLEngine sslEngine = sslConnection.getSSLEngine();
+                    SSLSession session = sslEngine.getSession();
+                    for (Certificate c : session.getLocalCertificates())
+                        response.getHeaders().add("X-CERT", ((X509Certificate)c).getSubjectDN().toString());
+                    processor.process(request, response, callback);
+                };
+            }
+        };
 
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         config.accept(sslContextFactory, secureRequestCustomizer);
@@ -111,17 +121,16 @@ public class SniSslConnectionFactoryTest
             new SslConnectionFactory(sslContextFactory, HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(httpConfiguration));
         _server.addConnector(_connector);
-
-        _server.setHandler(new Handler.Abstract()
+        _server.setHandler(xCertHandler);
+        xCertHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(Request request)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Response response = request.accept();
                 response.setStatus(200);
-                response.setHeader("X-URL", request.getHttpURI().toString());
+                response.setHeader("X-URL", request.getPath());
                 response.setHeader("X-HOST", request.getServerName());
-                response.getCallback().succeeded();
+                callback.succeeded();
             }
         });
 
@@ -474,8 +483,8 @@ public class SniSslConnectionFactoryTest
 
         assertEquals("customize connector class org.eclipse.jetty.io.ssl.SslConnection,false", history.poll());
         assertEquals("customize ssl class org.eclipse.jetty.io.ssl.SslConnection,false", history.poll());
-        assertEquals("customize connector class org.eclipse.jetty.server.HttpConnection,true", history.poll());
-        assertEquals("customize http class org.eclipse.jetty.server.HttpConnection,true", history.poll());
+        assertEquals("customize connector class org.eclipse.jetty.core.server.HttpConnection,true", history.poll());
+        assertEquals("customize http class org.eclipse.jetty.core.server.HttpConnection,true", history.poll());
         assertEquals(0, history.size());
     }
 

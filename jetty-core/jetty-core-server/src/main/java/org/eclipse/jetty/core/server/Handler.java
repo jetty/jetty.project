@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,34 +36,20 @@ import org.slf4j.LoggerFactory;
  * until the request is handled and a response is produced.  Handlers are asynchronous,
  * so handling may happen during or after a call to {@link #handle(Request)}.
  *
- * <p>
- * A call to {@link #handle(Request)} may:
- * <ul>
- * <li>Do nothing</li>
- * <li>Completely generate the HTTP Response and call {@link Callback#succeeded()} on the {@link Callback}
- * returned from {@link Request#accept()}.</li>
- * <li>Call {@link Request#accept()} and arrange for an async process to generate the HTTP Response and call
- * {@link Callback#succeeded()} or {@link Callback#failed(Throwable)} on the {@link Callback} returned.</li>
- * <li>Pass the request to one or more other Handlers.</li>
- * <li>Wrap the request and/or response and pass them to one or more other Handlers.</li>
- * <li>Fail the request by calling {@link Callback#failed(Throwable)} on the {@link Callback} returned from
- * {@link Request#accept()}.</li>
- * </ul>
- *
  */
 @ManagedObject("Handler")
-public interface Handler extends LifeCycle, Destroyable
+public interface Handler extends LifeCycle, Destroyable, Invocable
 {
-
     /**
-     * Handle an HTTP request and produce a response.
+     * Handle an HTTP request by providing a {@link Request.Processor}.
      * @param request The immutable request, which is also a {@link Callback} used to signal success or failure. The Handler
-     * or one of it's nested Handlers must call {@link Request#accept()} to indicate that it will ultimately succeed or
+     * or one of it's nested Handlers must return a  {@link Request.Processor} to indicate that it will ultimately succeed or
      * fail the {@link Callback} returned.
      *
      * @throws Exception Thrown if there is a problem handling.
+     * @return A Processor to handler the request or null if the request is not accepted.
      */
-    void handle(Request request) throws Exception;
+    Request.Processor handle(Request request) throws Exception;
 
     @ManagedAttribute(value = "the jetty server for this handler", readonly = true)
     Server getServer();
@@ -146,7 +133,7 @@ public interface Handler extends LifeCycle, Destroyable
             if (LOG.isDebugEnabled())
                 LOG.debug("starting {}", this);
             if (_server == null)
-                throw new IllegalStateException(String.format("No Server set for {}", this));
+                throw new IllegalStateException(String.format("No Server set for %s", this));
             super.doStart();
         }
 
@@ -223,9 +210,17 @@ public interface Handler extends LifeCycle, Destroyable
             super.setServer(server);
             for (Handler h : getHandlers())
             {
-                if (h instanceof Abstract)
-                    ((Abstract)h).setServer(server);
+                h.setServer(server);
             }
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            InvocationType invocationType = InvocationType.NON_BLOCKING;
+            for (Handler h : getHandlers())
+                invocationType = Invocable.combine(invocationType, h.getInvocationType());
+            return invocationType;
         }
     }
 
@@ -234,6 +229,11 @@ public interface Handler extends LifeCycle, Destroyable
      */
     class Wrapper extends AbstractContainer
     {
+        public static Request.Processor wrapProcessor(Request.Processor processor, Request request)
+        {
+            return processor == null ? null : (ignored, response, callback) -> processor.process(request, response, callback);
+        }
+
         private Handler _handler;
 
         public Handler getHandler()
@@ -243,14 +243,21 @@ public interface Handler extends LifeCycle, Destroyable
 
         public void setHandler(Handler handler)
         {
+            Server server = getServer();
+            if (server != null && server.isStarted() && handler != null &&
+                server.getInvocationType() != Invocable.combine(server.getInvocationType(), handler.getInvocationType()))
+                throw new IllegalArgumentException("Cannot change invocation type of started server");
+
             // check for loops
             if (handler == this || (handler instanceof Handler.Container &&
                 ((Handler.Container)handler).getChildHandlers().contains(this)))
                 throw new IllegalStateException("setHandler loop");
 
-            if (handler instanceof Abstract)
-                ((Abstract)handler).setServer(getServer());
+            if (handler != null)
+                handler.setServer(getServer());
+
             updateBean(_handler, handler);
+
             _handler = handler;
         }
 
@@ -280,38 +287,22 @@ public interface Handler extends LifeCycle, Destroyable
         public void setServer(Server server)
         {
             super.setServer(server);
-            if (_handler instanceof Abstract)
-                ((Abstract)_handler).setServer(getServer());
+            if (_handler != null)
+                _handler.setServer(getServer());
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public Request.Processor handle(Request request) throws Exception
         {
             Handler next = getHandler();
-            if (next != null)
-                next.handle(request);
-        }
-    }
-
-    // TODO review
-    @Deprecated
-    class HotSwap extends Wrapper
-    {
-        volatile Handler _hotHandler;
-
-        @Override
-        public Handler getHandler()
-        {
-            return _hotHandler;
+            return next == null ? null : next.handle(request);
         }
 
         @Override
-        public void setHandler(Handler handler)
+        public InvocationType getInvocationType()
         {
-            super.setHandler(handler);
-            if (isStarted())
-                LifeCycle.start(handler);
-            _hotHandler = handler;
+            Handler next = getHandler();
+            return next == null ? InvocationType.NON_BLOCKING : next.getInvocationType();
         }
     }
 
@@ -335,13 +326,15 @@ public interface Handler extends LifeCycle, Destroyable
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public Request.Processor handle(Request request) throws Exception
         {
             for (Handler h : _handlers)
             {
-                if (!request.isAccepted())
-                    h.handle(request);
+                Request.Processor processor = h.handle(request);
+                if (processor != null)
+                    return processor;
             }
+            return null;
         }
 
         @Override
@@ -366,14 +359,24 @@ public interface Handler extends LifeCycle, Destroyable
         {
             List<Handler> newHandlers = newHandlers(handlers);
 
-            // check for loops
+            Server server = getServer();
+            InvocationType invocationType = server == null ? null : server.getInvocationType();
+
+            // check for loops && Invocation type change
             for (Handler handler : newHandlers)
             {
+                if (handler == null)
+                    continue;
+
                 if (handler == this || (handler instanceof Handler.Container &&
                     ((Handler.Container)handler).getChildHandlers().contains(this)))
                     throw new IllegalStateException("setHandler loop");
-                if (handler instanceof Abstract)
-                    ((Abstract)handler).setServer(getServer());
+                invocationType = Invocable.combine(invocationType, handler.getInvocationType());
+                if (server != null && server.isStarted() &&
+                    server.getInvocationType() != Invocable.combine(server.getInvocationType(), handler.getInvocationType()))
+                    throw new IllegalArgumentException("Cannot change invocation type of started server");
+
+                handler.setServer(getServer());
             }
 
             updateBeans(_handlers, handlers);
@@ -392,6 +395,33 @@ public interface Handler extends LifeCycle, Destroyable
             List<Handler> list = new ArrayList<>(getHandlers());
             if (list.remove(handler))
                 setHandlers(list);
+        }
+    }
+
+    abstract class Processor extends Abstract implements Request.Processor
+    {
+        private final InvocationType _type;
+
+        public Processor()
+        {
+            this(InvocationType.NON_BLOCKING);
+        }
+
+        public Processor(InvocationType type)
+        {
+            _type = type;
+        }
+
+        @Override
+        public Request.Processor handle(Request request) throws Exception
+        {
+            return this;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _type;
         }
     }
 }

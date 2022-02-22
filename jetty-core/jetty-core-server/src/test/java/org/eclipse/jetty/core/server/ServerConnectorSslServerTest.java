@@ -27,17 +27,17 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.TrustManagerFactory;
 
+import org.eclipse.jetty.core.server.handler.HelloHandler;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -51,7 +51,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class ServerConnectorSslServerTest extends HttpServerTestBase
 {
-    private static final Logger LOG = LoggerFactory.getLogger(ServerConnectorSslServerTest.class);
     private SSLContext _sslContext;
 
     public ServerConnectorSslServerTest()
@@ -74,7 +73,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         secureRequestCustomer.setSslSessionAttribute("SSL_SESSION");
         httpConnectionFactory.getHttpConfiguration().addCustomizer(secureRequestCustomer);
 
-        startServer(connector);
+        initServer(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
         try (InputStream stream = sslContextFactory.getKeyStoreResource().getInputStream())
@@ -109,28 +108,10 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         return socket;
     }
 
-    @Override
-    public void testFullHeader() throws Exception
-    {
-        super.testFullHeader();
-    }
-
-    @Override
-    public void testBlockingWhileReadingRequestContent() throws Exception
-    {
-        super.testBlockingWhileReadingRequestContent();
-    }
-
-    @Override
-    public void testBlockingWhileWritingResponseContent() throws Exception
-    {
-        super.testBlockingWhileWritingResponseContent();
-    }
-
     @Test
     public void testRequest2FixedFragments() throws Exception
     {
-        configureServer(new TestHandler());
+        startServer(new TestHandler());
 
         byte[] bytes = REQUEST2.getBytes();
         int[] points = new int[]{74, 325};
@@ -139,17 +120,15 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         Arrays.sort(points);
 
         URI uri = _server.getURI();
-        Socket client = newSocket(uri.getHost(), uri.getPort());
-        try
+        try (Socket client = newSocket(uri.getHost(), uri.getPort()))
         {
             OutputStream os = client.getOutputStream();
 
             int last = 0;
 
             // Write out the fragments
-            for (int j = 0; j < points.length; ++j)
+            for (int point : points)
             {
-                int point = points[j];
                 os.write(bytes, last, point - last);
                 last = point;
                 os.flush();
@@ -167,23 +146,20 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
             // Check the response
             assertEquals(RESPONSE2, response);
         }
-        finally
-        {
-            client.close();
-        }
     }
 
     @Override
     @Test
-    public void testInterruptedRequest()
+    public void testInterruptedRequest() throws Exception
     {
+        startServer(new HelloHandler());
         Assumptions.assumeFalse(_serverURI.getScheme().equals("https"), "SSLSocket.shutdownOutput() is not supported, but shutdownOutput() is needed by the test");
     }
 
     @Test
     public void testSecureRequestCustomizer() throws Exception
     {
-        configureServer(new SecureRequestHandler());
+        startServer(new SecureRequestHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -223,12 +199,11 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
         }
     }
 
-    public static class SecureRequestHandler extends Handler.Abstract
+    public static class SecureRequestHandler extends Handler.Processor
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Response response = request.accept();
             response.setStatus(200);
             StringBuilder out = new StringBuilder();
             SSLSession session = (SSLSession)request.getAttribute("SSL_SESSION");
@@ -243,7 +218,7 @@ public class ServerConnectorSslServerTest extends HttpServerTestBase
             out.append("key_size='").append(data == null ? "" : data.getKeySize()).append("'").append('\n');
             out.append("ssl_session_id='").append(data == null ? "" : data.getId()).append("'").append('\n');
             out.append("ssl_session='").append(session).append("'").append('\n');
-            response.write(true, response.getCallback(), out.toString());
+            response.write(true, callback, out.toString());
         }
     }
 }

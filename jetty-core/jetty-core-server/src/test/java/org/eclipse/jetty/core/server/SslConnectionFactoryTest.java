@@ -32,6 +32,7 @@ import javax.net.ssl.SSLSocketFactory;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -81,14 +82,13 @@ public class SslConnectionFactoryTest
 
         _server.addConnector(https);
 
-        _server.setHandler(new Handler.Abstract()
+        _server.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                Response response = request.accept();
                 response.setStatus(200);
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + request.getServerName()));
+                response.write(true, callback, BufferUtil.toBuffer("url=" + request.getHttpURI() + "\nhost=" + request.getServerName()));
             }
         });
 

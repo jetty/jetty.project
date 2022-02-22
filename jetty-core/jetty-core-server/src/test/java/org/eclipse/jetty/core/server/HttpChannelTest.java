@@ -39,6 +39,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -326,8 +327,9 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            public Request.Processor handle(Request request)
             {
+                return null;
             }
         };
         _server.setHandler(handler);
@@ -356,7 +358,7 @@ public class HttpChannelTest
         Handler handler = new Handler.Abstract()
         {
             @Override
-            public void handle(Request request)
+            public Request.Processor handle(Request request)
             {
                 throw new UnsupportedOperationException("testing");
             }
@@ -387,15 +389,14 @@ public class HttpChannelTest
     @Test
     public void testThrowCommitted() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                Response response = request.accept();
                 response.setStatus(200);
                 response.setContentLength(10);
-                response.write(false, Callback.from(response.getCallback(), () ->
+                response.write(false, Callback.from(callback, () ->
                 {
                     throw new Error("testing");
                 }));
@@ -425,13 +426,12 @@ public class HttpChannelTest
     @Test
     public void testAutoContentLength() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                Response response = request.accept();
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("12345"));
+                response.write(true, callback, BufferUtil.toBuffer("12345"));
             }
         };
         _server.setHandler(handler);
@@ -457,14 +457,13 @@ public class HttpChannelTest
     @Test
     public void testInsufficientContentWritten1() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                Response response = request.accept();
                 response.setContentLength(10);
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("12345"));
+                response.write(true, callback, BufferUtil.toBuffer("12345"));
             }
         };
         _server.setHandler(handler);
@@ -490,14 +489,12 @@ public class HttpChannelTest
     @Test
     public void testInsufficientContentWritten2() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                Response response = request.accept();
                 response.setContentLength(10);
-                Callback callback = response.getCallback();
                 response.write(false, Callback.from(() -> response.write(true, callback)), BufferUtil.toBuffer("12345"));
             }
         };
@@ -523,14 +520,13 @@ public class HttpChannelTest
     @Test
     public void testExcessContentWritten1() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                Response response = request.accept();
                 response.setContentLength(5);
-                response.write(true, response.getCallback(), BufferUtil.toBuffer("1234567890"));
+                response.write(true, callback, BufferUtil.toBuffer("1234567890"));
             }
         };
         _server.setHandler(handler);
@@ -556,14 +552,12 @@ public class HttpChannelTest
     @Test
     public void testExcessContentWritten2() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                Response response = request.accept();
                 response.setContentLength(5);
-                Callback callback = response.getCallback();
                 response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("567890"))), BufferUtil.toBuffer("1234"));
             }
         };
@@ -623,16 +617,14 @@ public class HttpChannelTest
     @Test
     public void testUnconsumedContentUnavailable() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                Response response = request.accept();
                 response.setStatus(200);
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.setContentLength(5);
-                Callback callback = response.getCallback();
                 response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
             }
         };
@@ -667,17 +659,15 @@ public class HttpChannelTest
     @Test
     public void testUnconsumedContentUnavailableClosed() throws Exception
     {
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                Response response = request.accept();
                 response.setStatus(200);
                 response.addHeader(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
                 response.setContentLength(5);
-                Callback callback = response.getCallback();
                 response.write(false, Callback.from(() -> response.write(true, callback, BufferUtil.toBuffer("12345"))));
             }
         };
@@ -965,12 +955,11 @@ public class HttpChannelTest
     @Test
     public void testDemandRecursion() throws Exception
     {
-        _server.setHandler(new Handler.Abstract()
+        _server.setHandler(new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public void handle(Request request) throws Exception
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Response response = request.accept();
                 LongAdder contentSize = new LongAdder();
                 CountDownLatch latch = new CountDownLatch(1);
                 Runnable onContentAvailable = new Runnable()
@@ -988,7 +977,6 @@ public class HttpChannelTest
                     }
                 };
                 request.demandContent(onContentAvailable);
-                Callback callback = response.getCallback();
                 if (latch.await(30, TimeUnit.SECONDS))
                 {
                     response.setStatus(200);
@@ -1047,12 +1035,11 @@ public class HttpChannelTest
     {
         AtomicReference<Request> handling = new AtomicReference<>();
         AtomicReference<Throwable> error = new AtomicReference<>();
-        Handler handler = new Handler.Abstract()
+        Handler handler = new Handler.Processor()
         {
             @Override
-            public void handle(Request request)
+            public void process(Request request, Response response, Callback callback)
             {
-                request.accept();
                 handling.set(request);
                 request.addErrorListener(t -> {});
                 request.addErrorListener(error::set);
@@ -1073,7 +1060,6 @@ public class HttpChannelTest
 
         // check we are handling
         assertNotNull(handling.get());
-        assertTrue(handling.get().isAccepted());
         assertThat(stream.isComplete(), is(false));
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), nullValue());
@@ -1130,10 +1116,10 @@ public class HttpChannelTest
         EchoHandler echoHandler = new EchoHandler()
         {
             @Override
-            public void handle(Request request) throws Exception
+            public Request.Processor handle(Request request) throws Exception
             {
                 request.addCompletionListener(Callback.from(completed::countDown));
-                super.handle(request);
+                return super.handle(request);
             }
         };
         _server.setHandler(echoHandler);

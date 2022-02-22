@@ -21,17 +21,15 @@ import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.BufferUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Dump request handler.
  * Dumps GET and POST requests.
  * Useful for testing and debugging.
  */
-public class HelloHandler extends Handler.Abstract
+public class HelloHandler extends Handler.Processor
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HelloHandler.class);
     private final String _message;
     private final ByteBuffer _byteBuffer;
 
@@ -52,12 +50,11 @@ public class HelloHandler extends Handler.Abstract
     }
 
     @Override
-    public void handle(Request request) throws Exception
+    public void process(Request request, Response response, Callback callback) throws Exception
     {
-        Response response = request.accept();
         response.setStatus(200);
         response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
         response.setContentLength(_byteBuffer.remaining());
-        response.write(true, response.getCallback(), _byteBuffer.slice());
+        response.write(true, callback, _byteBuffer.slice());
     }
 }

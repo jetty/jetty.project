@@ -24,7 +24,7 @@ class ContextResponse extends Response.Wrapper
 
     public ContextResponse(ContextRequest request, Response response)
     {
-        super(request, response);
+        super(response);
         _contextHandler = request.getContext().getContextHandler();
     }
 

@@ -65,15 +65,13 @@ public class SlowClientsTest
             ServerConnector connector = new ServerConnector(server, 1, 1, sslContextFactory);
             connector.setPort(8888);
             server.addConnector(connector);
-            server.setHandler(new Handler.Abstract()
+            server.setHandler(new Handler.Processor()
             {
                 @Override
-                public void handle(Request request) throws Exception
+                public void process(Request request, Response response, Callback callback)
                 {
                     LOG.info("SERVING {}", request);
                     // Write some big content.
-                    Response response = request.accept();
-                    Callback callback = response.getCallback();
                     response.write(true, new Callback()
                         {
                             @Override
@@ -98,7 +96,7 @@ public class SlowClientsTest
 
             Assertions.assertTimeoutPreemptively(ofSeconds(10), () ->
             {
-                CompletableFuture[] futures = new CompletableFuture[2 * maxThreads];
+                CompletableFuture<?>[] futures = new CompletableFuture[2 * maxThreads];
                 ExecutorService executor = Executors.newFixedThreadPool(futures.length);
                 for (int i = 0; i < futures.length; i++)
                 {

@@ -27,15 +27,10 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpServerTestFixture
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpServerTestFixture.class);
-
-    // Useful constants
     protected static final long PAUSE = 10L;
     protected static final int LOOPS = 50;
 
@@ -61,20 +56,12 @@ public class HttpServerTestFixture
         _server = new Server(_threadPool);
     }
 
-    protected void startServer(ServerConnector connector) throws Exception
-    {
-        startServer(connector, new Handler.HotSwap());
-    }
-
-    protected void startServer(ServerConnector connector, Handler handler) throws Exception
+    protected void initServer(ServerConnector connector) throws Exception
     {
         _connector = connector;
         _httpConfiguration = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _httpConfiguration.setSendDateHeader(false);
         _server.addConnector(_connector);
-        _server.setHandler(handler);
-        _server.start();
-        _serverURI = _server.getURI();
     }
 
     @AfterEach
@@ -85,37 +72,31 @@ public class HttpServerTestFixture
         _server.setConnectors(new Connector[]{});
     }
 
-    protected void configureServer(Handler handler) throws Exception
+    protected void startServer(Handler handler) throws Exception
     {
-        Handler.HotSwap swapper = (Handler.HotSwap)_server.getHandler();
-        swapper.setHandler(handler);
-        handler.start();
+        _server.setHandler(handler);
+        _server.start();
+        _serverURI = _server.getURI();
     }
 
-    protected static class OptionsHandler extends Handler.Abstract
+    protected static class OptionsHandler extends Handler.Processor
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback)
         {
-            Response response = request.accept();
             if (request.getMethod().equals("OPTIONS"))
                 response.setStatus(200);
             else
                 response.setStatus(500);
             response.setHeader("Allow", "GET");
-            response.getCallback().succeeded();
+            callback.succeeded();
         }
     }
 
-    protected static class SendErrorHandler extends Handler.Abstract
+    protected static class SendErrorHandler extends Handler.Processor
     {
         private final int code;
         private final String message;
-
-        public SendErrorHandler()
-        {
-            this(500, null);
-        }
 
         public SendErrorHandler(int code, String message)
         {
@@ -124,16 +105,15 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback)
         {
-            Response response = request.accept();
-            response.writeError(code, message, response.getCallback());
+            response.writeError(request, code, message, callback);
         }
     }
 
-    protected static class ReadExactHandler extends Handler.Abstract
+    protected static class ReadExactHandler extends Handler.Processor
     {
-        private int expected;
+        private final int expected;
 
         public ReadExactHandler()
         {
@@ -146,9 +126,8 @@ public class HttpServerTestFixture
         }
 
         @Override
-        public void handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            Response response = request.accept();
             long len = expected < 0 ? request.getContentLength() : expected;
             if (len < 0)
                 throw new IllegalStateException();
@@ -181,18 +160,16 @@ public class HttpServerTestFixture
             response.setStatus(200);
             String reply = "Read " + offset + "\r\n";
             response.setContentLength(reply.length());
-            response.write(true, response.getCallback(), BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
+            response.write(true, callback, BufferUtil.toBuffer(reply, StandardCharsets.ISO_8859_1));
         }
     }
 
-    protected static class ReadHandler extends Handler.Abstract
+    protected static class ReadHandler extends Handler.Processor
     {
         @Override
-        public void handle(Request request) throws Exception
+        public void process(Request request, Response response, Callback callback)
         {
-            Response response = request.accept();
             response.setStatus(200);
-            Callback callback = response.getCallback();
             Content.readUtf8String(request, Promise.from(
                 s -> response.write(true, callback, "read %d%n" + s.length()),
                 t -> response.write(true, callback, String.format("caught %s%n", t))
@@ -200,12 +177,16 @@ public class HttpServerTestFixture
         }
     }
 
-    protected static class DataHandler extends Handler.Abstract
+    protected static class DataHandler extends Handler.Processor
     {
-        @Override
-        public void handle(Request request) throws Exception
+        public DataHandler()
         {
-            Response response = request.accept();
+            super(InvocationType.BLOCKING);
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
             response.setStatus(200);
 
             String input = Content.readUtf8String(request);
@@ -253,7 +234,7 @@ public class HttpServerTestFixture
                     }
                 }
             }
-            response.getCallback().succeeded();
+            callback.succeeded();
         }
     }
 }
