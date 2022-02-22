@@ -32,13 +32,9 @@ public abstract class DelayedHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        Handler handler = getHandler();
-        if (handler == null)
-            return null;
-        Request.Processor processor = handler.handle(request);
+        Request.Processor processor = super.handle(request);
         if (processor == null)
             return null;
-
         return delayed(request, processor);
     }
 
@@ -55,18 +51,18 @@ public abstract class DelayedHandler extends Handler.Wrapper
             if (request.getContentLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
                 return processor;
 
-            return new OnContentProcessor(request, processor);
+            return new UntilContentProcessor(request, processor);
         }
     }
 
-    private static class OnContentProcessor implements Request.Processor, Runnable
+    private static class UntilContentProcessor implements Request.Processor, Runnable
     {
         private final Request.Processor _processor;
         private final Request _request;
         private Response _response;
         private Callback _callback;
 
-        public OnContentProcessor(Request request, Request.Processor processor)
+        public UntilContentProcessor(Request request, Request.Processor processor)
         {
             _request = request;
             _processor = processor;
@@ -107,19 +103,19 @@ public abstract class DelayedHandler extends Handler.Wrapper
 
             MimeTypes.Type type = MimeTypes.CACHE.get(contentType);
             if (MimeTypes.Type.FORM_ENCODED == type)
-                return new OnFormProcessor(request, processor);
-            return new OnContentProcessor(request, processor);
+                return new UntilFormProcessor(request, processor);
+            return new UntilContentProcessor(request, processor);
         }
     }
 
-    private static class OnFormProcessor implements Request.Processor, BiConsumer<Fields, Throwable>
+    private static class UntilFormProcessor implements Request.Processor, BiConsumer<Fields, Throwable>
     {
         private final Request.Processor _processor;
         private final Request _request;
         private Response _response;
         private Callback _callback;
 
-        public OnFormProcessor(Request request, Request.Processor processor)
+        public UntilFormProcessor(Request request, Request.Processor processor)
         {
             _request = request;
             _processor = processor;
@@ -157,7 +153,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
     public static class QualityOfService extends DelayedHandler
     {
         private final int _maxPermits;
-        private final Queue<QosProcessor> _queue = new ArrayDeque<>();
+        private final Queue<QualityOfServiceProcessor> _queue = new ArrayDeque<>();
         private int _permits;
 
         public QualityOfService(int permits)
@@ -168,17 +164,17 @@ public abstract class DelayedHandler extends Handler.Wrapper
         @Override
         protected Request.Processor delayed(Request request, Request.Processor processor)
         {
-            return new QosProcessor(request, processor);
+            return new QualityOfServiceProcessor(request, processor);
         }
 
-        private class QosProcessor implements Request.Processor, Callback
+        private class QualityOfServiceProcessor implements Request.Processor, Callback
         {
             private final Request.Processor _processor;
             private final Request _request;
             private Response _response;
             private Callback _callback;
 
-            private QosProcessor(Request request, Request.Processor processor)
+            private QualityOfServiceProcessor(Request request, Request.Processor processor)
             {
                 _processor = processor;
                 _request = request;
@@ -234,7 +230,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
 
             private void release()
             {
-                QosProcessor processor;
+                QualityOfServiceProcessor processor;
                 synchronized (QualityOfService.this)
                 {
                     processor = _queue.poll();

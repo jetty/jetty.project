@@ -19,6 +19,7 @@ import org.eclipse.jetty.core.server.Content;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
@@ -38,13 +39,14 @@ public class EchoHandler extends Handler.Processor
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (StringUtil.isNotBlank(contentType))
             response.setContentType(contentType);
+        HttpFields.Mutable trailers = null;
         if (request.getHeaders().contains(HttpHeader.TRAILER))
-            response.getTrailers();
+            trailers = response.getTrailers();
         long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
         if (contentLength >= 0)
             response.setContentLength(contentLength);
         if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
-            new Echo(request, response, callback).run();
+            new Echo(request, response, trailers, callback).run();
         else
             callback.succeeded();
     }
@@ -54,13 +56,15 @@ public class EchoHandler extends Handler.Processor
         private static final Content ITERATING = new Content.Abstract(true, false){};
         private final Request _request;
         private final Response _response;
+        private final HttpFields.Mutable _trailers;
         private final Callback _callback;
         private final AtomicReference<Content> _content = new AtomicReference<>();
 
-        Echo(Request request, Response response, Callback callback)
+        Echo(Request request, Response response, HttpFields.Mutable trailers, Callback callback)
         {
             _request = request;
             _response = response;
+            _trailers = trailers;
             _callback = callback;
         }
 
@@ -82,15 +86,8 @@ public class EchoHandler extends Handler.Processor
                     return;
                 }
 
-                if (content instanceof Content.Trailers)
-                {
-                    _response.getTrailers()
-                        .add("Echo", "Trailers")
-                        .add(((Content.Trailers)content).getTrailers());
-                    content.release();
-                    _callback.succeeded();
-                    return;
-                }
+                if (content instanceof Content.Trailers && _trailers != null)
+                    _trailers.add("Echo", "Trailers").add(((Content.Trailers)content).getTrailers());
 
                 if (!content.hasRemaining() && content.isLast())
                 {

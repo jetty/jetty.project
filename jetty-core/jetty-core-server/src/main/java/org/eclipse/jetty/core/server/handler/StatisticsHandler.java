@@ -95,17 +95,17 @@ public class StatisticsHandler extends Handler.Wrapper
             }
         });
 
-        StatsRequest statsRequest = new StatsRequest(request, bytesRead, bytesWritten);
-        return statsRequest.asProcessor(super.handle(statsRequest));
+        StatisticsRequest statisticsRequest = new StatisticsRequest(request, bytesRead, bytesWritten);
+        return statisticsRequest.asProcessor(super.handle(statisticsRequest));
     }
 
-    private class StatsRequest extends Request.ProcessingWrapper implements Callback
+    private class StatisticsRequest extends Request.ProcessingWrapper implements Callback
     {
         private final LongAdder _bytesRead;
         private final LongAdder _bytesWritten;
         private Callback _callback;
 
-        private StatsRequest(Request request, LongAdder bytesRead, LongAdder bytesWritten)
+        private StatisticsRequest(Request request, LongAdder bytesRead, LongAdder bytesWritten)
         {
             super(request);
             _bytesRead = bytesRead;
