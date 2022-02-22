@@ -43,58 +43,59 @@ import org.eclipse.jetty.util.UrlEncoded;
  * <p>Only during the processing phase the {@code Request} content can be read.</p>
  * <p>The typical idiom to read request content is the following:</p>
  * <pre>{@code
- * class YourHandler
+ * public void process(Request request, Response response, Callback callback)
  * {
- *     @Override
- *     public void process(Request request, Response response, Callback callback)
+ *     while (true)
  *     {
- *         processRequestContent(request);
- *
- *         // Generate a response.
- *
- *         callback.succeeded();
- *     }
- *
- *     private void processRequestContent(Request request)
- *     {
- *         while (true)
+ *         Content content = request.readContent();
+ *         if (content == null)
  *         {
- *             Content content = request.readContent();
- *             if (content == null)
- *             {
- *                 // The content is not currently available, demand to be called back.
- *                 request.demandContent(() -> processRequestContent(request));
- *                 return;
- *             }
+ *             // The content is not currently available, demand to be called back.
+ *             request.demandContent(() -> process(request, response, callback));
+ *             return;
+ *         }
  *
- *             if (content instanceof Content.Error error)
- *             {
- *                 Throwable failure = error.getCause();
+ *         if (content instanceof Content.Error error)
+ *         {
+ *             Throwable failure = error.getCause();
  *
- *                 // Handle errors.
+ *             // Handle errors.
  *
- *                 return;
- *             }
+ *             // Mark the processing as complete, either generating a custom
+ *             // response and succeeding the callback, or failing the callback.
+ *             callback.failed(failure);
  *
- *             if (content instanceof Content.Trailers trailers)
- *             {
- *                 HttpFields fields = trailers.getTrailers();
+ *             return;
+ *         }
  *
- *                 // Handle trailers.
+ *         if (content instanceof Content.Trailers trailers)
+ *         {
+ *             HttpFields fields = trailers.getTrailers();
  *
- *                 return;
- *             }
+ *             // Handle trailers.
  *
- *             // Normal content, process it.
- *             processContent(content);
- *             // Release the content after processing.
- *             content.release();
+ *             // Generate a response.
  *
- *             if (content.isLast())
- *             {
- *                 // Reached end-of-file.
- *                 return;
- *             }
+ *             // Mark the processing as complete.
+ *             callback.succeeded();
+ *
+ *             return;
+ *         }
+ *
+ *         // Normal content, process it.
+ *         processContent(content);
+ *         // Release the content after processing.
+ *         content.release();
+ *
+ *         // Reached end-of-file?
+ *         if (content.isLast())
+ *         {
+ *             // Generate a response.
+ *
+ *             // Mark the processing as complete.
+ *             callback.succeeded();
+ *
+ *             return;
  *         }
  *     }
  * }
@@ -468,13 +469,8 @@ public interface Request extends Attributes, Executor, Content.Provider
      *         // Wrap the request.
      *         WrapperProcessor wrapped = new YourWrapperProcessor(request);
      *
-     *         // Delegate handling using the wrapped request.
-     *         Processor processor = super.handle(wrapped);
-     *
-     *         // Wrap the processor.
-     *         wrapped.wrapProcessor(processor);
-     *
-     *         return wrapped;
+     *         // Delegate processing using the wrapped request to wrap a Processor.
+     *         return wrapped.wrapProcessor(super.handle(wrapped));
      *     }
      * }
      * </pre>
@@ -489,11 +485,15 @@ public interface Request extends Attributes, Executor, Content.Provider
         }
 
         /**
-         * @param processor the {@code Processor} to wrap within this instance
+         * <p>Wraps the given {@code Processor} within this instance and returns this instance.</p>
+         *
+         * @param processor the {@code Processor} to wrap
+         * @return this instance
          */
-        public void setProcessor(Processor processor)
+        public WrapperProcessor wrapProcessor(Processor processor)
         {
             _processor = processor;
+            return processor == null ? null : this;
         }
 
         @Override

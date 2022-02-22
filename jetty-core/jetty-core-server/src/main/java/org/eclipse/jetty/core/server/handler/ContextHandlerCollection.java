@@ -263,7 +263,7 @@ public class ContextHandlerCollection extends Handler.Collection
             }
             else if (handler instanceof Handler.Container)
             {
-                List<ContextHandler> contexts = ((Handler.Container)handler).getDescendantsByClass(ContextHandler.class);
+                List<ContextHandler> contexts = ((Handler.Container)handler).getDescendants(ContextHandler.class);
                 _contexts = new ContextHandler[contexts.size()];
                 System.arraycopy(contexts, 0, _contexts, 0, contexts.size());
             }

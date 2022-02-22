@@ -61,6 +61,47 @@ import org.slf4j.LoggerFactory;
  *          |  `- YourAdminHandler
  *          `- DefaultHandler
  * </pre>
+ * <p>A simple {@code Handler} implementation could be:</p>
+ * <pre>{@code
+ * class SimpleHandler extends Handler.Processor
+ * {
+ *     @Override
+ *     public void process(Request request, Response response, Callback callback)
+ *     {
+ *         // Mark the processing as completed.
+ *         // Implicitly sends a 200 OK response with no content.
+ *         callback.succeeded();
+ *     }
+ * }
+ * }</pre>
+ * <p>A more sophisticated example of a {@code Handler} that decides whether to handle
+ * requests based on their URI path:</p>
+ * <pre>{@code
+ * class YourHelloHandler extends Handler.Abstract
+ * {
+ *     @Override
+ *     public Processor handle(Request request)
+ *     {
+ *         if (request.getHttpURI().getPath().startsWith("/yourPath")
+ *         {
+ *             // The request is for this Handler, process it.
+ *             return this::process;
+ *         }
+ *         else
+ *         {
+ *             // The request is not for this Handler.
+ *             return null;
+ *         }
+ *     }
+ *
+ *     private void process(Request request, Response response, Callback callback)
+ *     {
+ *         response.setStatus(200);
+ *         // The callback is completed when the write is completed.
+ *         response.write(true, callback, "hello");
+ *     }
+ * }
+ * }</pre>
  *
  * @see Request.Processor
  */
@@ -124,7 +165,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
          */
         default List<Handler> getDescendants()
         {
-            return getDescendantsByClass(Handler.class);
+            return getDescendants(Handler.class);
         }
 
         /**
@@ -153,9 +194,9 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             if (handler == null)
                 return null;
 
-            for (T container : getDescendantsByClass(type))
+            for (T container : getDescendants(type))
             {
-                if (container.getDescendantsByClass(handler.getClass()).contains(handler))
+                if (container.getDescendants(handler.getClass()).contains(handler))
                     return container;
             }
             return null;
@@ -220,7 +261,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     abstract class AbstractContainer extends Abstract implements Container
     {
         @Override
-        public <T extends Handler> List<T> getDescendantsByClass(Class<T> type)
+        public <T extends Handler> List<T> getDescendants(Class<T> type)
         {
             List<T> list = new ArrayList<>();
             expandHandler(this, list, type);
@@ -242,7 +283,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         @Override
-        public <T extends Handler> T getDescendantByClass(Class<T> type)
+        public <T extends Handler> T getDescendant(Class<T> type)
         {
             return findHandler(this, type);
         }

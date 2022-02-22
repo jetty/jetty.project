@@ -72,10 +72,6 @@ public class ProxiedRequestHandler extends Handler.Wrapper
                 return proxiedFor;
             }
         };
-        Request.Processor processor = super.handle(wrapper);
-        if (processor == null)
-            return null;
-        wrapper.setProcessor(processor);
-        return wrapper;
+        return wrapper.wrapProcessor(super.handle(wrapper));
     }
 }

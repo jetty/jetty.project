@@ -607,7 +607,7 @@ public class Server extends Handler.Wrapper implements Attributes
         if (connector == null)
             return null;
 
-        ContextHandler context = getDescendantByClass(ContextHandler.class);
+        ContextHandler context = getDescendant(ContextHandler.class);
 
         try
         {

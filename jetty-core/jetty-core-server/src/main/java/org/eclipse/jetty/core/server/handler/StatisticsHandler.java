@@ -96,11 +96,7 @@ public class StatisticsHandler extends Handler.Wrapper
         });
 
         StatisticsRequest statisticsRequest = new StatisticsRequest(request, bytesRead, bytesWritten);
-        Request.Processor processor = super.handle(statisticsRequest);
-        if (processor == null)
-            return null;
-        statisticsRequest.setProcessor(processor);
-        return statisticsRequest;
+        return statisticsRequest.wrapProcessor(super.handle(statisticsRequest));
     }
 
     private class StatisticsRequest extends Request.WrapperProcessor implements Callback

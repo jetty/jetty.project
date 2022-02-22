@@ -24,11 +24,7 @@ public class RewriteHandler extends Handler.Wrapper
     public Request.Processor handle(Request request) throws Exception
     {
         Request.WrapperProcessor rewritten = rewrite(request);
-        Request.Processor processor = super.handle(rewritten);
-        if (processor == null)
-            return null;
-        rewritten.setProcessor(processor);
-        return rewritten;
+        return rewritten.wrapProcessor(super.handle(rewritten));
     }
 
     private Request.WrapperProcessor rewrite(Request request)

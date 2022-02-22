@@ -39,11 +39,7 @@ public class GzipHandler extends Handler.Wrapper
             return super.handle(request);
 
         GzipRequest gzipRequest = new GzipRequest(request);
-        Request.Processor processor = super.handle(gzipRequest);
-        if (processor == null)
-            return null;
-        gzipRequest.setProcessor(processor);
-        return gzipRequest;
+        return gzipRequest.wrapProcessor(super.handle(gzipRequest));
     }
 
     private static class GzipRequest extends Request.WrapperProcessor

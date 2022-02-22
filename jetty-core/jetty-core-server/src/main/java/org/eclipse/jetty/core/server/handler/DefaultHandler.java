@@ -138,7 +138,7 @@ public class DefaultHandler extends Handler.Processor
             writer.append("</tr></thead><tbody>\n");
 
             Server server = getServer();
-            List<ContextHandler> handlers = server == null ? Collections.emptyList() : server.getDescendantsByClass(ContextHandler.class);
+            List<ContextHandler> handlers = server == null ? Collections.emptyList() : server.getDescendants(ContextHandler.class);
 
             for (ContextHandler context : handlers)
             {

@@ -37,7 +37,7 @@ public class ServerMBean extends ObjectMBean
     @ManagedAttribute("The contexts on this server")
     public List<ContextHandler> getContexts()
     {
-        return server.getDescendantsByClass(ContextHandler.class);
+        return server.getDescendants(ContextHandler.class);
     }
 
     @ManagedAttribute("The startup time since January 1st, 1970 (in ms)")
