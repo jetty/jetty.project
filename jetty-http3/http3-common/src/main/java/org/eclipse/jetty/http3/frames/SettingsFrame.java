@@ -17,11 +17,18 @@ import java.util.Map;
 
 public class SettingsFrame extends Frame
 {
+    public static final long MAX_TABLE_CAPACITY = 0x01;
     public static final long MAX_FIELD_SECTION_SIZE = 0x06;
+    public static final long MAX_BLOCKED_STREAMS = 0x07;
 
     public static boolean isReserved(long key)
     {
-        return key >= 0 && key <= 5;
+        if (key == MAX_TABLE_CAPACITY ||
+            key == MAX_FIELD_SECTION_SIZE ||
+            key == MAX_BLOCKED_STREAMS)
+            return false;
+        // Other HTTP/2 settings are reserved and must not be sent/received.
+        return key >= 0x00 && key <= 0x05;
     }
 
     private final Map<Long, Long> settings;

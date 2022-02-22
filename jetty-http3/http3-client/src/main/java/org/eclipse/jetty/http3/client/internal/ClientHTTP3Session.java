@@ -92,6 +92,11 @@ public class ClientHTTP3Session extends ClientProtocolSession
         return decoder;
     }
 
+    public QpackEncoder getQpackEncoder()
+    {
+        return encoder;
+    }
+
     public HTTP3SessionClient getSessionClient()
     {
         return session;

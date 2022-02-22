@@ -91,7 +91,7 @@ public class QpackEncoder implements Dumpable
     private final List<Instruction> _instructions = new ArrayList<>();
     private final Instruction.Handler _handler;
     private final QpackContext _context;
-    private final int _maxBlockedStreams;
+    private int _maxBlockedStreams;
     private final Map<Long, StreamInfo> _streamInfoMap = new HashMap<>();
     private final EncoderInstructionParser _parser;
     private final InstructionHandler _instructionHandler = new InstructionHandler();
@@ -104,6 +104,21 @@ public class QpackEncoder implements Dumpable
         _context = new QpackContext();
         _maxBlockedStreams = maxBlockedStreams;
         _parser = new EncoderInstructionParser(_instructionHandler);
+    }
+
+    public int getMaxBlockedStreams()
+    {
+        return _maxBlockedStreams;
+    }
+
+    public void setMaxBlockedStreams(int maxBlockedStreams)
+    {
+        _maxBlockedStreams = maxBlockedStreams;
+    }
+
+    public int getCapacity()
+    {
+        return _context.getDynamicTable().getCapacity();
     }
 
     /**
@@ -411,7 +426,7 @@ public class QpackEncoder implements Dumpable
             return true;
         }
 
-        if (_blockedStreams < _maxBlockedStreams)
+        if (_blockedStreams < getMaxBlockedStreams())
         {
             _blockedStreams++;
             sectionInfo.block();
