@@ -395,6 +395,12 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-jspc-maven-plugin</artifactId>
       <scope>provided</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.annotation</groupId>
+          <artifactId>javax.annotation-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
