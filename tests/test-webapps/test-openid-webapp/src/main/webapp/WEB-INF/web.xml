@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app
+        xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+        metadata-complete="false"
+        version="3.1">
+
+  <login-config>
+    <auth-method>OPENID</auth-method>
+  </login-config>
+
+  <servlet>
+    <servlet-name>AdminPage</servlet-name>
+    <servlet-class>org.eclipse.jetty.test.openid.AdminPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>AdminPage</servlet-name>
+    <url-pattern>/admin</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>ErrorPage</servlet-name>
+    <servlet-class>org.eclipse.jetty.test.openid.ErrorPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>ErrorPage</servlet-name>
+    <url-pattern>/error</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>HomePage</servlet-name>
+    <servlet-class>org.eclipse.jetty.test.openid.HomePage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>HomePage</servlet-name>
+    <url-pattern/>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>LoginPage</servlet-name>
+    <servlet-class>org.eclipse.jetty.test.openid.LoginPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>LoginPage</servlet-name>
+    <url-pattern>/login</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>LogoutPage</servlet-name>
+    <servlet-class>org.eclipse.jetty.test.openid.LogoutPage</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>LogoutPage</servlet-name>
+    <url-pattern>/logout</url-pattern>
+  </servlet-mapping>
+
+  <security-role>
+    <role-name>admin</role-name>
+  </security-role>
+  <security-role>
+    <role-name>**</role-name>
+  </security-role>
+
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>User Pages</web-resource-name>
+      <url-pattern>/profile</url-pattern>
+      <url-pattern>/login</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>**</role-name>
+    </auth-constraint>
+  </security-constraint>
+
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Admin Page</web-resource-name>
+      <url-pattern>/admin</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>admin</role-name>
+    </auth-constraint>
+  </security-constraint>
+  
+</web-app>

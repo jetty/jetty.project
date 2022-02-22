@@ -24,6 +24,8 @@ updates:
         versions: [ ">=1.1.0" ]
       - dependency-name: "org.infinispan:*"
         versions: [ ">=12" ]
+      - dependency-name: "org.jboss.weld.servlet:*"
+        versions: [ ">=4.0.0" ]
 
   - package-ecosystem: "maven"
     directory: "/"
