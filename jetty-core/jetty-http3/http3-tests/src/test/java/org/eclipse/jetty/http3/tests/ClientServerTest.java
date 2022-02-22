@@ -14,6 +14,7 @@
 package org.eclipse.jetty.http3.tests;
 
 import java.nio.ByteBuffer;
+import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -34,6 +35,7 @@ import org.eclipse.jetty.http3.frames.SettingsFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.http3.internal.HTTP3Session;
 import org.eclipse.jetty.http3.server.AbstractHTTP3ServerConnectionFactory;
+import org.eclipse.jetty.http3.server.internal.HTTP3SessionServer;
 import org.eclipse.jetty.quic.client.ClientQuicSession;
 import org.eclipse.jetty.quic.common.QuicSession;
 import org.junit.jupiter.api.Test;
@@ -41,6 +43,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -88,6 +91,59 @@ public class ClientServerTest extends AbstractClientServerTest
 
         assertTrue(serverSettingsLatch.await(5, TimeUnit.SECONDS));
         assertTrue(clientSettingsLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testSettings() throws Exception
+    {
+        Map.Entry<Long, Long> maxTableCapacity = new AbstractMap.SimpleEntry<>(SettingsFrame.MAX_TABLE_CAPACITY, 1024L);
+        Map.Entry<Long, Long> maxHeaderSize = new AbstractMap.SimpleEntry<>(SettingsFrame.MAX_FIELD_SECTION_SIZE, 2048L);
+        Map.Entry<Long, Long> maxBlockedStreams = new AbstractMap.SimpleEntry<>(SettingsFrame.MAX_BLOCKED_STREAMS, 16L);
+        CountDownLatch settingsLatch = new CountDownLatch(2);
+        AtomicReference<HTTP3SessionServer> serverSessionRef = new AtomicReference<>();
+        start(new Session.Server.Listener()
+        {
+            @Override
+            public Map<Long, Long> onPreface(Session session)
+            {
+                serverSessionRef.set((HTTP3SessionServer)session);
+                return Map.ofEntries(maxTableCapacity, maxHeaderSize, maxBlockedStreams);
+            }
+
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+        });
+
+        HTTP3SessionClient clientSession = (HTTP3SessionClient)newSession(new Session.Client.Listener()
+        {
+            @Override
+            public Map<Long, Long> onPreface(Session session)
+            {
+                return Map.ofEntries(maxTableCapacity, maxHeaderSize, maxBlockedStreams);
+            }
+
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.countDown();
+            }
+        });
+
+        assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
+
+        HTTP3SessionServer serverSession = serverSessionRef.get();
+        assertEquals(maxTableCapacity.getValue(), serverSession.getProtocolSession().getQpackEncoder().getCapacity());
+        assertEquals(maxBlockedStreams.getValue(), serverSession.getProtocolSession().getQpackEncoder().getMaxBlockedStreams());
+        assertEquals(maxBlockedStreams.getValue(), serverSession.getProtocolSession().getQpackDecoder().getMaxBlockedStreams());
+        assertEquals(maxHeaderSize.getValue(), serverSession.getProtocolSession().getQpackDecoder().getMaxHeaderSize());
+
+        assertEquals(maxTableCapacity.getValue(), clientSession.getProtocolSession().getQpackEncoder().getCapacity());
+        assertEquals(maxBlockedStreams.getValue(), clientSession.getProtocolSession().getQpackEncoder().getMaxBlockedStreams());
+        assertEquals(maxBlockedStreams.getValue(), clientSession.getProtocolSession().getQpackDecoder().getMaxBlockedStreams());
+        assertEquals(maxHeaderSize.getValue(), clientSession.getProtocolSession().getQpackDecoder().getMaxHeaderSize());
     }
 
     @Test

@@ -371,7 +371,30 @@ public abstract class HTTP3Session extends ContainerLifeCycle implements Session
     {
         if (LOG.isDebugEnabled())
             LOG.debug("received {} on {}", frame, this);
+
+        frame.getSettings().forEach((key, value) ->
+        {
+            if (key == SettingsFrame.MAX_TABLE_CAPACITY)
+                onSettingMaxTableCapacity(value);
+            else if (key == SettingsFrame.MAX_FIELD_SECTION_SIZE)
+                onSettingMaxFieldSectionSize(value);
+            else if (key == SettingsFrame.MAX_BLOCKED_STREAMS)
+                onSettingMaxBlockedStreams(value);
+        });
+
         notifySettings(frame);
+    }
+
+    protected void onSettingMaxTableCapacity(long value)
+    {
+    }
+
+    protected void onSettingMaxFieldSectionSize(long value)
+    {
+    }
+
+    protected void onSettingMaxBlockedStreams(long value)
+    {
     }
 
     private void notifySettings(SettingsFrame frame)

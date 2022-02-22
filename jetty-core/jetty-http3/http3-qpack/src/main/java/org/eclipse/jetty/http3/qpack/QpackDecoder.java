@@ -50,7 +50,8 @@ public class QpackDecoder implements Dumpable
     private final List<EncodedFieldSection> _encodedFieldSections = new ArrayList<>();
     private final NBitIntegerParser _integerDecoder = new NBitIntegerParser();
     private final InstructionHandler _instructionHandler = new InstructionHandler();
-    private final int _maxHeaderSize;
+    private int _maxHeaderSize;
+    private int _maxBlockedStreams;
 
     private static class MetaDataNotification
     {
@@ -87,6 +88,27 @@ public class QpackDecoder implements Dumpable
         return _context;
     }
 
+    public int getMaxHeaderSize()
+    {
+        return _maxHeaderSize;
+    }
+
+    public void setMaxHeaderSize(int maxHeaderSize)
+    {
+        _maxHeaderSize = maxHeaderSize;
+    }
+
+    public int getMaxBlockedStreams()
+    {
+        // TODO: implement logic about blocked streams by calling this method.
+        return _maxBlockedStreams;
+    }
+
+    public void setMaxBlockedStreams(int maxBlockedStreams)
+    {
+        _maxBlockedStreams = maxBlockedStreams;
+    }
+
     public interface Handler
     {
         void onMetaData(long streamId, MetaData metadata);
@@ -110,7 +132,8 @@ public class QpackDecoder implements Dumpable
             LOG.debug("Decoding: streamId={}, buffer={}", streamId, BufferUtil.toDetailString(buffer));
 
         // If the buffer is big, don't even think about decoding it
-        if (buffer.remaining() > _maxHeaderSize)
+        int maxHeaderSize = getMaxHeaderSize();
+        if (buffer.remaining() > maxHeaderSize)
             throw new QpackException.SessionException(QPACK_DECOMPRESSION_FAILED, "header_too_large");
 
         _integerDecoder.setPrefix(8);
@@ -139,7 +162,7 @@ public class QpackDecoder implements Dumpable
             // Decode it straight away if we can, otherwise add it to the list of EncodedFieldSections.
             if (requiredInsertCount <= insertCount)
             {
-                MetaData metaData = encodedFieldSection.decode(_context, _maxHeaderSize);
+                MetaData metaData = encodedFieldSection.decode(_context, maxHeaderSize);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Decoded: streamId={}, metadata={}", streamId, metaData);
                 _metaDataNotifications.add(new MetaDataNotification(streamId, metaData, handler));
