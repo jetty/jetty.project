@@ -14,7 +14,6 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.WritePendingException;
@@ -205,15 +204,18 @@ public abstract class WriteFlusher
     private class PendingState extends State
     {
         private final Callback _callback;
-        private final SocketAddress _address;
         private final ByteBuffer[] _buffers;
 
-        private PendingState(Callback callback, SocketAddress address, ByteBuffer[] buffers)
+        private PendingState(ByteBuffer[] buffers, Callback callback)
         {
             super(StateType.PENDING);
-            _callback = callback;
-            _address = address;
             _buffers = buffers;
+            _callback = callback;
+        }
+
+        public ByteBuffer[] getBuffers()
+        {
+            return _buffers;
         }
 
         InvocationType getCallbackInvocationType()
@@ -251,11 +253,6 @@ public abstract class WriteFlusher
      */
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
-        write(callback, null, buffers);
-    }
-
-    public void write(Callback callback, SocketAddress address, ByteBuffer... buffers) throws WritePendingException
-    {
         Objects.requireNonNull(callback);
 
         if (isFailed())
@@ -272,13 +269,13 @@ public abstract class WriteFlusher
 
         try
         {
-            buffers = flush(address, buffers);
+            buffers = flush(buffers);
 
             if (buffers != null)
             {
                 if (DEBUG)
                     LOG.debug("flushed incomplete");
-                PendingState pending = new PendingState(callback, address, buffers);
+                PendingState pending = new PendingState(buffers, callback);
                 if (updateState(__WRITING, pending))
                     onIncompleteFlush();
                 else
@@ -371,17 +368,16 @@ public abstract class WriteFlusher
         Callback callback = pending._callback;
         try
         {
-            ByteBuffer[] buffers = pending._buffers;
-            SocketAddress address = pending._address;
+            ByteBuffer[] buffers = pending.getBuffers();
 
-            buffers = flush(address, buffers);
+            buffers = flush(buffers);
 
             if (buffers != null)
             {
                 if (DEBUG)
                     LOG.debug("flushed incomplete {}", BufferUtil.toDetailString(buffers));
-                if (buffers != pending._buffers)
-                    pending = new PendingState(callback, address, buffers);
+                if (buffers != pending.getBuffers())
+                    pending = new PendingState(buffers, callback);
                 if (updateState(__COMPLETING, pending))
                     onIncompleteFlush();
                 else
@@ -412,13 +408,13 @@ public abstract class WriteFlusher
      * @return The unflushed buffers, or null if all flushed
      * @throws IOException if unable to flush
      */
-    protected ByteBuffer[] flush(SocketAddress address, ByteBuffer[] buffers) throws IOException
+    protected ByteBuffer[] flush(ByteBuffer[] buffers) throws IOException
     {
         boolean progress = true;
         while (progress && buffers != null)
         {
             long before = BufferUtil.remaining(buffers);
-            boolean flushed = address == null ? _endPoint.flush(buffers) : ((DatagramChannelEndPoint)_endPoint).send(address, buffers);
+            boolean flushed = _endPoint.flush(buffers);
             long after = BufferUtil.remaining(buffers);
             long written = before - after;
 

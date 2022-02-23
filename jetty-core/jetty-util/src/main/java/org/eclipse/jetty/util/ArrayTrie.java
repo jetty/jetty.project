@@ -450,9 +450,6 @@ class ArrayTrie<V> extends AbstractTrie<V>
         int pos = b.position() + offset;
         for (int i = 0; i < len; i++)
         {
-            if (pos >= b.limit())
-                return null;
-
             byte c = b.get(pos++);
             int next = lookup(row, (char)(c & 0xff));
             if (next < 0)

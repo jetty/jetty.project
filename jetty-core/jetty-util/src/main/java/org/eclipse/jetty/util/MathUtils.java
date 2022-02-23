@@ -57,24 +57,4 @@ public class MathUtils
             return Long.MAX_VALUE;
         }
     }
-
-    /**
-     * Returns the sum of its arguments, capping to {@code maxValue}.
-     *
-     * @param a the first value
-     * @param b the second value
-     * @return the sum of the values, capped to {@code maxValue}
-     */
-    public static int cappedAdd(int a, int b, int maxValue)
-    {
-        try
-        {
-            int sum = Math.addExact(a, b);
-            return Math.min(sum, maxValue);
-        }
-        catch (ArithmeticException x)
-        {
-            return maxValue;
-        }
-    }
 }

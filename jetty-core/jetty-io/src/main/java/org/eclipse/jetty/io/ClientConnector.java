@@ -21,15 +21,14 @@ import java.net.SocketException;
 import java.net.SocketOption;
 import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
-import java.nio.channels.NetworkChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.IO;
@@ -77,7 +76,6 @@ public class ClientConnector extends ContainerLifeCycle
     public static final String REMOTE_SOCKET_ADDRESS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".remoteSocketAddress";
     public static final String CLIENT_CONNECTION_FACTORY_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".clientConnectionFactory";
     public static final String CONNECTION_PROMISE_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".connectionPromise";
-    public static final String APPLICATION_PROTOCOLS_CONTEXT_KEY = CLIENT_CONNECTOR_CONTEXT_KEY + ".applicationProtocols";
     private static final Logger LOG = LoggerFactory.getLogger(ClientConnector.class);
 
     /**
@@ -88,10 +86,10 @@ public class ClientConnector extends ContainerLifeCycle
      */
     public static ClientConnector forUnixDomain(Path path)
     {
-        return new ClientConnector(Configurator.forUnixDomain(path));
+        return new ClientConnector(SocketChannelWithAddress.Factory.forUnixDomain(path));
     }
 
-    private final Configurator configurator;
+    private final SocketChannelWithAddress.Factory factory;
     private Executor executor;
     private Scheduler scheduler;
     private ByteBufferPool byteBufferPool;
@@ -110,23 +108,12 @@ public class ClientConnector extends ContainerLifeCycle
 
     public ClientConnector()
     {
-        this(new Configurator());
+        this((address, context) -> new SocketChannelWithAddress(SocketChannel.open(), address));
     }
 
-    public ClientConnector(Configurator configurator)
+    private ClientConnector(SocketChannelWithAddress.Factory factory)
     {
-        this.configurator = Objects.requireNonNull(configurator);
-        addBean(configurator);
-    }
-
-    /**
-     * @param address the SocketAddress to connect to
-     * @return whether the connection to the given SocketAddress is intrinsically secure
-     * @see Configurator#isIntrinsicallySecure(ClientConnector, SocketAddress)
-     */
-    public boolean isIntrinsicallySecure(SocketAddress address)
-    {
-        return configurator.isIntrinsicallySecure(this, address);
+        this.factory = Objects.requireNonNull(factory);
     }
 
     public Executor getExecutor()
@@ -397,45 +384,37 @@ public class ClientConnector extends ContainerLifeCycle
 
     public void connect(SocketAddress address, Map<String, Object> context)
     {
-        SelectableChannel channel = null;
+        SocketChannel channel = null;
         try
         {
             if (context == null)
-                context = new ConcurrentHashMap<>();
+                context = new HashMap<>();
             context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, this);
             context.putIfAbsent(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY, address);
 
-            Configurator.ChannelWithAddress channelWithAddress = configurator.newChannelWithAddress(this, address, context);
-            channel = channelWithAddress.getSelectableChannel();
+            SocketChannelWithAddress channelWithAddress = factory.newSocketChannelWithAddress(address, context);
+            channel = channelWithAddress.getSocketChannel();
             address = channelWithAddress.getSocketAddress();
 
             configure(channel);
 
             SocketAddress bindAddress = getBindAddress();
-            if (bindAddress != null && channel instanceof NetworkChannel)
-                bind((NetworkChannel)channel, bindAddress);
+            if (bindAddress != null)
+                bind(channel, bindAddress);
 
             boolean connected = true;
-            if (channel instanceof SocketChannel)
+            boolean blocking = isConnectBlocking() && address instanceof InetSocketAddress;
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connecting {} to {}", blocking ? "blocking" : "non-blocking", address);
+            if (blocking)
             {
-                SocketChannel socketChannel = (SocketChannel)channel;
-                boolean blocking = isConnectBlocking() && address instanceof InetSocketAddress;
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Connecting {} to {}", blocking ? "blocking" : "non-blocking", address);
-                if (blocking)
-                {
-                    socketChannel.socket().connect(address, (int)getConnectTimeout().toMillis());
-                    socketChannel.configureBlocking(false);
-                }
-                else
-                {
-                    socketChannel.configureBlocking(false);
-                    connected = socketChannel.connect(address);
-                }
+                channel.socket().connect(address, (int)getConnectTimeout().toMillis());
+                channel.configureBlocking(false);
             }
             else
             {
                 channel.configureBlocking(false);
+                connected = channel.connect(address);
             }
 
             if (connected)
@@ -456,11 +435,10 @@ public class ClientConnector extends ContainerLifeCycle
         }
     }
 
-    public void accept(SelectableChannel selectable, Map<String, Object> context)
+    public void accept(SocketChannel channel, Map<String, Object> context)
     {
         try
         {
-            SocketChannel channel = (SocketChannel)selectable;
             context.put(ClientConnector.CLIENT_CONNECTOR_CONTEXT_KEY, this);
             if (!channel.isConnected())
                 throw new IllegalStateException("SocketChannel must be connected");
@@ -471,39 +449,35 @@ public class ClientConnector extends ContainerLifeCycle
         catch (Throwable failure)
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Could not accept {}", selectable);
-            IO.close(selectable);
+                LOG.debug("Could not accept {}", channel);
+            IO.close(channel);
             Promise<?> promise = (Promise<?>)context.get(CONNECTION_PROMISE_CONTEXT_KEY);
             if (promise != null)
                 promise.failed(failure);
         }
     }
 
-    private void bind(NetworkChannel channel, SocketAddress bindAddress) throws IOException
+    private void bind(SocketChannel channel, SocketAddress bindAddress) throws IOException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Binding {} to {}", channel, bindAddress);
         channel.bind(bindAddress);
     }
 
-    protected void configure(SelectableChannel selectable) throws IOException
+    protected void configure(SocketChannel channel) throws IOException
     {
-        if (selectable instanceof NetworkChannel)
-        {
-            NetworkChannel channel = (NetworkChannel)selectable;
-            setSocketOption(channel, StandardSocketOptions.TCP_NODELAY, isTCPNoDelay());
-            setSocketOption(channel, StandardSocketOptions.SO_REUSEADDR, getReuseAddress());
-            setSocketOption(channel, StandardSocketOptions.SO_REUSEPORT, isReusePort());
-            int receiveBufferSize = getReceiveBufferSize();
-            if (receiveBufferSize >= 0)
-                setSocketOption(channel, StandardSocketOptions.SO_RCVBUF, receiveBufferSize);
-            int sendBufferSize = getSendBufferSize();
-            if (sendBufferSize >= 0)
-                setSocketOption(channel, StandardSocketOptions.SO_SNDBUF, sendBufferSize);
-        }
+        setSocketOption(channel, StandardSocketOptions.TCP_NODELAY, isTCPNoDelay());
+        setSocketOption(channel, StandardSocketOptions.SO_REUSEADDR, getReuseAddress());
+        setSocketOption(channel, StandardSocketOptions.SO_REUSEPORT, isReusePort());
+        int receiveBufferSize = getReceiveBufferSize();
+        if (receiveBufferSize >= 0)
+            setSocketOption(channel, StandardSocketOptions.SO_RCVBUF, receiveBufferSize);
+        int sendBufferSize = getSendBufferSize();
+        if (sendBufferSize >= 0)
+            setSocketOption(channel, StandardSocketOptions.SO_SNDBUF, sendBufferSize);
     }
 
-    private <T> void setSocketOption(NetworkChannel channel, SocketOption<T> option, T value)
+    private <T> void setSocketOption(SocketChannel channel, SocketOption<T> option, T value)
     {
         try
         {
@@ -511,23 +485,14 @@ public class ClientConnector extends ContainerLifeCycle
         }
         catch (Throwable x)
         {
-            if (LOG.isTraceEnabled())
-                LOG.trace("Could not configure {} to {} on {}", option, value, channel, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not configure {} to {} on {}", option, value, channel, x);
         }
     }
 
-    protected EndPoint newEndPoint(SelectableChannel selectable, ManagedSelector selector, SelectionKey selectionKey)
+    protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey)
     {
-        @SuppressWarnings("unchecked")
-        Map<String, Object> context = (Map<String, Object>)selectionKey.attachment();
-        SocketAddress address = (SocketAddress)context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-        return configurator.newEndPoint(this, address, selectable, selector, selectionKey);
-    }
-
-    protected Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
-    {
-        SocketAddress address = (SocketAddress)context.get(REMOTE_SOCKET_ADDRESS_CONTEXT_KEY);
-        return configurator.newConnection(this, address, endPoint, context);
+        return new SocketChannelEndPoint(channel, selector, selectionKey, getScheduler());
     }
 
     protected void connectFailed(Throwable failure, Map<String, Object> context)
@@ -549,7 +514,7 @@ public class ClientConnector extends ContainerLifeCycle
         @Override
         protected EndPoint newEndPoint(SelectableChannel channel, ManagedSelector selector, SelectionKey selectionKey)
         {
-            EndPoint endPoint = ClientConnector.this.newEndPoint(channel, selector, selectionKey);
+            EndPoint endPoint = ClientConnector.this.newEndPoint((SocketChannel)channel, selector, selectionKey);
             endPoint.setIdleTimeout(getIdleTimeout().toMillis());
             return endPoint;
         }
@@ -559,15 +524,14 @@ public class ClientConnector extends ContainerLifeCycle
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;
-            return ClientConnector.this.newConnection(endPoint, context);
+            ClientConnectionFactory factory = (ClientConnectionFactory)context.get(CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
+            return factory.newConnection(endPoint, context);
         }
 
         @Override
         public void connectionOpened(Connection connection, Object context)
         {
             super.connectionOpened(connection, context);
-            // TODO: the block below should be moved to Connection.onOpen() in each implementation,
-            //  so that each implementation can decide when to notify the promise, possibly not in onOpen().
             @SuppressWarnings("unchecked")
             Map<String, Object> contextMap = (Map<String, Object>)context;
             @SuppressWarnings("unchecked")
@@ -586,96 +550,37 @@ public class ClientConnector extends ContainerLifeCycle
     }
 
     /**
-     * <p>Configures a {@link ClientConnector}.</p>
+     * <p>A pair/record holding a {@link SocketChannel} and a {@link SocketAddress} to connect to.</p>
      */
-    public static class Configurator
+    private static class SocketChannelWithAddress
     {
-        /**
-         * <p>Returns whether the connection to a given {@link SocketAddress} is intrinsically secure.</p>
-         * <p>A protocol such as HTTP/1.1 can be transported by TCP; however, TCP is not secure because
-         * it does not offer any encryption.</p>
-         * <p>Encryption is provided by using TLS to wrap the HTTP/1.1 bytes, and then transporting the
-         * TLS bytes over TCP.</p>
-         * <p>On the other hand, protocols such as QUIC are intrinsically secure, and therefore it is
-         * not necessary to wrap the HTTP/1.1 bytes with TLS: the HTTP/1.1 bytes are transported over
-         * QUIC in an intrinsically secure way.</p>
-         *
-         * @param clientConnector the ClientConnector
-         * @param address the SocketAddress to connect to
-         * @return whether the connection to the given SocketAddress is intrinsically secure
-         */
-        public boolean isIntrinsicallySecure(ClientConnector clientConnector, SocketAddress address)
+        private final SocketChannel channel;
+        private final SocketAddress address;
+
+        private SocketChannelWithAddress(SocketChannel channel, SocketAddress address)
         {
-            return false;
+            this.channel = channel;
+            this.address = address;
+        }
+
+        private SocketChannel getSocketChannel()
+        {
+            return channel;
+        }
+
+        private SocketAddress getSocketAddress()
+        {
+            return address;
         }
 
         /**
-         * <p>Creates a new {@link SocketChannel} to connect to a {@link SocketAddress}
-         * derived from the input socket address.</p>
-         * <p>The input socket address represents the destination socket address to
-         * connect to, as it is typically specified by a URI authority, for example
-         * {@code localhost:8080} if the URI is {@code http://localhost:8080/path}.</p>
-         * <p>However, the returned socket address may be different as the implementation
-         * may use a Unix-Domain socket address to physically connect to the virtual
-         * destination socket address given as input.</p>
-         * <p>The return type is a pair/record holding the socket channel and the
-         * socket address, with the socket channel not yet connected.
-         * The implementation of this methods must not call
-         * {@link SocketChannel#connect(SocketAddress)}, as this is done later,
-         * after configuring the socket, by the {@link ClientConnector} implementation.</p>
-         *
-         * @param address the destination socket address, typically specified in a URI
-         * @param context the context to create the new socket channel
-         * @return a new {@link SocketChannel} with an associated {@link SocketAddress} to connect to
-         * @throws IOException if the socket channel or the socket address cannot be created
+         * <p>A factory for {@link SocketChannelWithAddress} instances.</p>
          */
-        public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context) throws IOException
+        private interface Factory
         {
-            return new ChannelWithAddress(SocketChannel.open(), address);
-        }
-
-        public EndPoint newEndPoint(ClientConnector clientConnector, SocketAddress address, SelectableChannel selectable, ManagedSelector selector, SelectionKey selectionKey)
-        {
-            return new SocketChannelEndPoint((SocketChannel)selectable, selector, selectionKey, clientConnector.getScheduler());
-        }
-
-        public Connection newConnection(ClientConnector clientConnector, SocketAddress address, EndPoint endPoint, Map<String, Object> context) throws IOException
-        {
-            ClientConnectionFactory factory = (ClientConnectionFactory)context.get(CLIENT_CONNECTION_FACTORY_CONTEXT_KEY);
-            return factory.newConnection(endPoint, context);
-        }
-
-        /**
-         * <p>A pair/record holding a {@link SelectableChannel} and a {@link SocketAddress} to connect to.</p>
-         */
-        public static class ChannelWithAddress
-        {
-            private final SelectableChannel channel;
-            private final SocketAddress address;
-
-            public ChannelWithAddress(SelectableChannel channel, SocketAddress address)
+            private static Factory forUnixDomain(Path path)
             {
-                this.channel = channel;
-                this.address = address;
-            }
-
-            public SelectableChannel getSelectableChannel()
-            {
-                return channel;
-            }
-
-            public SocketAddress getSocketAddress()
-            {
-                return address;
-            }
-        }
-
-        private static Configurator forUnixDomain(Path path)
-        {
-            return new Configurator()
-            {
-                @Override
-                public ChannelWithAddress newChannelWithAddress(ClientConnector clientConnector, SocketAddress address, Map<String, Object> context)
+                return (address, context) ->
                 {
                     try
                     {
@@ -683,15 +588,37 @@ public class ClientConnector extends ContainerLifeCycle
                         SocketChannel socketChannel = (SocketChannel)SocketChannel.class.getMethod("open", ProtocolFamily.class).invoke(null, family);
                         Class<?> addressClass = Class.forName("java.net.UnixDomainSocketAddress");
                         SocketAddress socketAddress = (SocketAddress)addressClass.getMethod("of", Path.class).invoke(null, path);
-                        return new ChannelWithAddress(socketChannel, socketAddress);
+                        return new SocketChannelWithAddress(socketChannel, socketAddress);
                     }
                     catch (Throwable x)
                     {
                         String message = "Unix-Domain SocketChannels are available starting from Java 16, your Java version is: " + JavaVersion.VERSION;
                         throw new UnsupportedOperationException(message, x);
                     }
-                }
-            };
+                };
+            }
+
+            /**
+             * <p>Creates a new {@link SocketChannel} to connect to a {@link SocketAddress}
+             * derived from the input socket address.</p>
+             * <p>The input socket address represents the destination socket address to
+             * connect to, as it is typically specified by a URI authority, for example
+             * {@code localhost:8080} if the URI is {@code http://localhost:8080/path}.</p>
+             * <p>However, the returned socket address may be different as the implementation
+             * may use a Unix-Domain socket address to physically connect to the virtual
+             * destination socket address given as input.</p>
+             * <p>The return type is a pair/record holding the socket channel and the
+             * socket address, with the socket channel not yet connected.
+             * The implementation of this methods must not call
+             * {@link SocketChannel#connect(SocketAddress)}, as this is done later,
+             * after configuring the socket, by the {@link ClientConnector} implementation.</p>
+             *
+             * @param address the destination socket address, typically specified in a URI
+             * @param context the context to create the new socket channel
+             * @return a new {@link SocketChannel} with an associated {@link SocketAddress} to connect to
+             * @throws IOException if the socket channel or the socket address cannot be created
+             */
+            public SocketChannelWithAddress newSocketChannelWithAddress(SocketAddress address, Map<String, Object> context) throws IOException;
         }
     }
 }

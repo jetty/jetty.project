@@ -377,7 +377,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _selectorManager.endPointClosed(endPoint);
     }
 
-    void createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
+    private void createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
     {
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
         Object context = selectionKey.attachment();
@@ -990,42 +990,36 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         @Override
         public void update(Selector selector)
         {
-            try
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closing {} connections on {}", selector.keys().size(), ManagedSelector.this);
+            for (SelectionKey key : selector.keys())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Closing {} connections on {}", selector.keys().size(), ManagedSelector.this);
-                for (SelectionKey key : selector.keys())
+                if (key != null && key.isValid())
                 {
-                    if (key != null && key.isValid())
+                    Closeable closeable = null;
+                    Object attachment = key.attachment();
+                    if (attachment instanceof EndPoint)
                     {
-                        Closeable closeable = null;
-                        Object attachment = key.attachment();
-                        if (attachment instanceof EndPoint)
-                        {
-                            EndPoint endPoint = (EndPoint)attachment;
-                            Connection connection = endPoint.getConnection();
-                            closeable = Objects.requireNonNullElse(connection, endPoint);
-                        }
+                        EndPoint endPoint = (EndPoint)attachment;
+                        Connection connection = endPoint.getConnection();
+                        closeable = Objects.requireNonNullElse(connection, endPoint);
+                    }
 
-                        if (closeable != null)
+                    if (closeable != null)
+                    {
+                        if (_closed == null)
                         {
-                            if (_closed == null)
-                            {
-                                IO.close(closeable);
-                            }
-                            else if (!_closed.contains(closeable))
-                            {
-                                _closed.add(closeable);
-                                IO.close(closeable);
-                            }
+                            IO.close(closeable);
+                        }
+                        else if (!_closed.contains(closeable))
+                        {
+                            _closed.add(closeable);
+                            IO.close(closeable);
                         }
                     }
                 }
             }
-            finally
-            {
-                _complete.countDown();
-            }
+            _complete.countDown();
         }
     }
 
@@ -1036,24 +1030,18 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         @Override
         public void update(Selector selector)
         {
-            try
+            for (SelectionKey key : selector.keys())
             {
-                for (SelectionKey key : selector.keys())
-                {
-                    // Key may be null when using the UnixSocket selector.
-                    if (key == null)
-                        continue;
-                    Object attachment = key.attachment();
-                    if (attachment instanceof Closeable)
-                        IO.close((Closeable)attachment);
-                }
-                _selector = null;
-                IO.close(selector);
+                // Key may be null when using the UnixSocket selector.
+                if (key == null)
+                    continue;
+                Object attachment = key.attachment();
+                if (attachment instanceof Closeable)
+                    IO.close((Closeable)attachment);
             }
-            finally
-            {
-                _stopped.countDown();
-            }
+            _selector = null;
+            IO.close(selector);
+            _stopped.countDown();
         }
     }
 
