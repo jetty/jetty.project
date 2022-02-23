@@ -24,6 +24,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
@@ -508,15 +509,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     @Override
-    public Enumeration<String> getAttributeNames()
+    public Set<String> getAttributeNamesSet()
     {
-        return AttributesMap.getAttributeNamesCopy(_attributes);
-    }
-
-    @Override
-    public Set<String> getAttributeNameSet()
-    {
-        return _attributes.getAttributeNameSet();
+        return AttributesMap.getAttributeNamesSetCopy(_attributes);
     }
 
     /**
@@ -1534,9 +1529,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     @Override
-    public void removeAttribute(String name)
+    public Object removeAttribute(String name)
     {
-        _attributes.removeAttribute(name);
+        return _attributes.removeAttribute(name);
     }
 
     /*
@@ -1546,9 +1541,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * @see jakarta.servlet.ServletContext#setAttribute(java.lang.String, java.lang.Object)
      */
     @Override
-    public void setAttribute(String name, Object value)
+    public Object setAttribute(String name, Object value)
     {
-        _attributes.setAttribute(name, value);
+        return _attributes.setAttribute(name, value);
     }
 
     /**
@@ -2383,11 +2378,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             {
                 set.add(e.nextElement());
             }
-            e = ContextHandler.this.getAttributeNames();
-            while (e.hasMoreElements())
-            {
-                set.add(e.nextElement());
-            }
+            set.addAll(ContextHandler.this.getAttributeNamesSet());
             return Collections.enumeration(set);
         }
 
@@ -2614,8 +2605,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * ContextHandler.  This is also used as the base for all other ServletContext
      * implementations.
      */
-    public static class StaticContext extends AttributesMap implements ServletContext
+    public static class StaticContext implements ServletContext
     {
+        private final Attributes.Lazy _attributes = new Attributes.Lazy();
         private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
         private int _effectiveMinorVersion = SERVLET_MINOR_VERSION;
 
@@ -2754,6 +2746,50 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         public boolean setInitParameter(String name, String value)
         {
             return false;
+        }
+
+        public Attributes getAttributes()
+        {
+            return _attributes;
+        }
+
+        public void clearAttributes()
+        {
+            _attributes.clearAttributes();
+        }
+
+        public Collection<?> getAttributeEntrySet()
+        {
+            return _attributes.getAttributeEntriesSet();
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return _attributes.getAttribute(name);
+        }
+
+        public Set<String> getAttributeNamesSet()
+        {
+            return _attributes.getAttributeNamesSet();
+        }
+
+        @Override
+        public Enumeration<String> getAttributeNames()
+        {
+            return Collections.enumeration(_attributes.getAttributeNamesSet());
+        }
+
+        @Override
+        public void setAttribute(String name, Object object)
+        {
+            _attributes.setAttribute(name, object);
+        }
+
+        @Override
+        public void removeAttribute(String name)
+        {
+            _attributes.removeAttribute(name);
         }
 
         @Override

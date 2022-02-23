@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.concurrent.Callable;
-
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
  * that declares how it will behave when invoked:</p>
@@ -31,12 +29,72 @@ import java.util.concurrent.Callable;
  */
 public interface Invocable
 {
+    ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
+
     enum InvocationType
     {
         BLOCKING, NON_BLOCKING, EITHER
     }
 
-    ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
+    /**
+     * <p>A task with an {@link InvocationType}.</p>
+     * TODO Review. Note sure what the value of this is
+     */
+    interface Task extends Invocable, Runnable
+    {
+        void run();
+    }
+
+    // TODO review.  Handy for lambdas that throw (eg LifeCycle#start())
+    interface Callable extends Invocable
+    {
+        void call() throws Exception;
+    }
+
+    /**
+     * <p>A {@link Runnable} decorated with an {@link InvocationType}.</p>
+     */
+    class ReadyTask implements Task
+    {
+        private final InvocationType type;
+        private final Runnable task;
+
+        public ReadyTask(InvocationType type, Runnable task)
+        {
+            this.type = type;
+            this.task = task;
+        }
+
+        @Override
+        public void run()
+        {
+            task.run();
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return type;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x[%s|%s]", getClass().getSimpleName(), hashCode(), type, task);
+        }
+    }
+
+    /**
+     * <p>Creates a {@link Task} from the given InvocationType and Runnable.</p>
+     *
+     * @param type the InvocationType
+     * @param task the Runnable
+     * @return a new Task
+     */
+    public static Task from(InvocationType type, Runnable task)
+    {
+        return new ReadyTask(type, task);
+    }
 
     /**
      * Test if the current thread has been tagged as non blocking
@@ -69,6 +127,12 @@ public interface Invocable
         }
     }
 
+    /**
+     * Combine two invocation type.
+     * @param it1 A type
+     * @param it2 Another type
+     * @return The combination of both type, where any tendency to block overrules any non blocking.
+     */
     static InvocationType combine(InvocationType it1, InvocationType it2)
     {
         if (it1 != null && it2 != null)
@@ -103,13 +167,5 @@ public interface Invocable
     default InvocationType getInvocationType()
     {
         return InvocationType.BLOCKING;
-    }
-
-    /**
-     * A Runnable-like Invocable interface, that throws Exception
-     */
-    interface Task extends Invocable
-    {
-        void run() throws Exception;
     }
 }
