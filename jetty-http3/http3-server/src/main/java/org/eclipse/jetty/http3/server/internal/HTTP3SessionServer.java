@@ -95,6 +95,26 @@ public class HTTP3SessionServer extends HTTP3Session implements Session.Server
         return super.newGoAwayFrame(graceful);
     }
 
+    @Override
+    protected void onSettingMaxTableCapacity(long value)
+    {
+        getProtocolSession().getQpackEncoder().setCapacity((int)value);
+    }
+
+    @Override
+    protected void onSettingMaxFieldSectionSize(long value)
+    {
+        getProtocolSession().getQpackDecoder().setMaxHeaderSize((int)value);
+    }
+
+    @Override
+    protected void onSettingMaxBlockedStreams(long value)
+    {
+        ServerHTTP3Session session = getProtocolSession();
+        session.getQpackDecoder().setMaxBlockedStreams((int)value);
+        session.getQpackEncoder().setMaxBlockedStreams((int)value);
+    }
+
     private void notifyAccept()
     {
         Server.Listener listener = getListener();
