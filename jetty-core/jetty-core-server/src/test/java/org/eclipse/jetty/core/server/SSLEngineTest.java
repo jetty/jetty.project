@@ -364,7 +364,7 @@ public class SSLEngineTest
             String sslId = sslData.getId();
             assertNotNull(sslId);
 
-            MultiMap<String> params = request.extractQueryParameters();
+            MultiMap<String> params = Request.extractQueryParameters(request);
             if (params.get("dump") != null)
             {
                 byte[] buf = new byte[Integer.parseInt(params.getValue("dump"))];

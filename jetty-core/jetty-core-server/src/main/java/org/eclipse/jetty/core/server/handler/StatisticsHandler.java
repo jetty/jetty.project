@@ -96,10 +96,14 @@ public class StatisticsHandler extends Handler.Wrapper
         });
 
         StatisticsRequest statisticsRequest = new StatisticsRequest(request, bytesRead, bytesWritten);
-        return statisticsRequest.asProcessor(super.handle(statisticsRequest));
+        Request.Processor processor = super.handle(statisticsRequest);
+        if (processor == null)
+            return null;
+        statisticsRequest.setProcessor(processor);
+        return statisticsRequest;
     }
 
-    private class StatisticsRequest extends Request.ProcessingWrapper implements Callback
+    private class StatisticsRequest extends Request.WrapperProcessor implements Callback
     {
         private final LongAdder _bytesRead;
         private final LongAdder _bytesWritten;
@@ -129,7 +133,7 @@ public class StatisticsHandler extends Handler.Wrapper
         public void process(Request ignored, Response response, Callback callback) throws Exception
         {
             _callback = callback;
-            getProcessor().process(this, response, this);
+            super.process(this, response, this);
         }
 
         @Override

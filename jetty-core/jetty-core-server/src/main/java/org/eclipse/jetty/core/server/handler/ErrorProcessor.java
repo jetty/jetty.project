@@ -526,12 +526,6 @@ public class ErrorProcessor implements Request.Processor
         }
 
         @Override
-        public boolean isComplete()
-        {
-            return false;
-        }
-
-        @Override
         public Content readContent()
         {
             return Content.EOF;

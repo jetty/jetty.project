@@ -134,8 +134,8 @@ public class ProxyProtocolTest
             public void process(Request request, Response response, Callback callback)
             {
                 if (validateEndPoint(request) &&
-                    remoteAddr.equals(request.getRemoteAddr()) &&
-                    remotePort == request.getRemotePort())
+                    remoteAddr.equals(Request.getRemoteAddr(request)) &&
+                    remotePort == Request.getRemotePort(request))
                     callback.succeeded();
                 else
                     callback.failed(new Throwable());

@@ -411,15 +411,6 @@ public class HttpChannel extends Attributes.Lazy
             _response = new ChannelResponse(this);
         }
 
-        @Override
-        public boolean isComplete()
-        {
-            try (AutoLock ignored = _lock.lock())
-            {
-                return _stream == null || _stream.isComplete();
-            }
-        }
-
         HttpStream getStream()
         {
             try (AutoLock ignored = _lock.lock())
@@ -731,7 +722,7 @@ public class HttpChannel extends Attributes.Lazy
                 else
                 {
                     Response response = new ErrorResponse(request, stream);
-                    response.writeError(request, x, Callback.from(
+                    Response.writeError(request, response, Callback.from(
                         () ->
                         {
                             // ErrorHandler has succeeded the ErrorRequest, so we need to ensure
@@ -754,7 +745,7 @@ public class HttpChannel extends Attributes.Lazy
                                 x.addSuppressed(t);
                             stream.failed(x);
                         }
-                    ));
+                    ), x);
                 }
             }
 

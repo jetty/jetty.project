@@ -115,7 +115,7 @@ public class DelayedHandlerTest
                     }
                     catch (Throwable e)
                     {
-                        response.writeError(request, e, callback);
+                        Response.writeError(request, response, callback, e);
                     }
                 });
             }
@@ -288,7 +288,7 @@ public class DelayedHandlerTest
                     }
                     catch (Throwable t)
                     {
-                        response.writeError(request, t, callback);
+                        Response.writeError(request, response, callback, t);
                     }
                 });
             }
@@ -343,7 +343,7 @@ public class DelayedHandlerTest
                     }
                     catch (Throwable t)
                     {
-                        response.writeError(request, t, callback);
+                        Response.writeError(request, response, callback, t);
                     }
                 });
             }

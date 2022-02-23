@@ -1073,7 +1073,6 @@ public class HttpChannelTest
         assertThat(error.get(), nullValue());
 
         // request still handling
-        assertFalse(handling.get().isComplete());
         assertFalse(stream.isComplete());
 
         // but now we cannot read, demand nor write
@@ -1104,7 +1103,6 @@ public class HttpChannelTest
         assertThat(callback.get(5, TimeUnit.SECONDS), sameInstance(failure));
 
         // request completed handling
-        assertTrue(handling.get().isComplete());
         assertTrue(stream.isComplete());
     }
 

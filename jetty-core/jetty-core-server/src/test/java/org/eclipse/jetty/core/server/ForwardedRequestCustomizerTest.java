@@ -106,10 +106,10 @@ public class ForwardedRequestCustomizerTest
             actual.sslSession.set(String.valueOf(request.getAttribute("jakarta.servlet.request.ssl_session_id")));
             actual.sslCertificate.set(String.valueOf(request.getAttribute("jakarta.servlet.request.cipher_suite")));
             actual.scheme.set(request.getHttpURI().getScheme());
-            actual.serverName.set(request.getServerName());
-            actual.serverPort.set(request.getServerPort());
-            actual.remoteAddr.set(request.getRemoteAddr());
-            actual.remotePort.set(request.getRemotePort());
+            actual.serverName.set(Request.getServerName(request));
+            actual.serverPort.set(Request.getServerPort(request));
+            actual.remoteAddr.set(Request.getRemoteAddr(request));
+            actual.remotePort.set(Request.getRemotePort(request));
             actual.requestURI.set(request.getHttpURI().toString());
             return true;
         };
@@ -1309,7 +1309,7 @@ public class ForwardedRequestCustomizerTest
             }
             else
             {
-                response.writeError(request, 500, "failed", callback);
+                Response.writeError(request, response, callback, 500, "failed");
             }
         }
     }

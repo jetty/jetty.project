@@ -85,7 +85,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
             }
             catch (Throwable t)
             {
-                _response.writeError(_request, t, _callback);
+                Response.writeError(_request, _response, _callback, t);
             }
         }
     }
@@ -134,7 +134,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
         public void accept(Fields fields, Throwable throwable)
         {
             if (throwable != null)
-                _response.writeError(_request, throwable, _callback);
+                Response.writeError(_request, _response, _callback, throwable);
             else
             {
                 _request.setAttribute(UntilContentOrForm.class.getName(), fields);
@@ -144,7 +144,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
                 }
                 catch (Throwable t)
                 {
-                    _response.writeError(_request, t, _callback);
+                    Response.writeError(_request, _response, _callback, t);
                 }
             }
         }
@@ -246,7 +246,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
                     }
                     catch (Throwable t)
                     {
-                        processor._response.writeError(processor._request, t, processor);
+                        Response.writeError(processor._request, processor._response, processor, t);
                     }
                 }
             }

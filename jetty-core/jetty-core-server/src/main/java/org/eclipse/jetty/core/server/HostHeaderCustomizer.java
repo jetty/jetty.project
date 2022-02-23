@@ -57,8 +57,8 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
         if (request.getConnectionMetaData().getVersion() == HttpVersion.HTTP_1_1 || request.getHeaders().contains(HttpHeader.HOST))
             return request;
 
-        String host = serverName == null ? request.getServerName() : serverName;
-        int port = HttpScheme.normalizePort(request.getHttpURI().getScheme(), serverPort == 0 ? request.getServerPort() : serverPort);
+        String host = serverName == null ? Request.getServerName(request) : serverName;
+        int port = HttpScheme.normalizePort(request.getHttpURI().getScheme(), serverPort == 0 ? Request.getServerPort(request) : serverPort);
 
         HttpURI uri = (serverName != null || serverPort > 0)
             ? HttpURI.build(request.getHttpURI()).authority(host, port).asImmutable()

@@ -39,10 +39,14 @@ public class GzipHandler extends Handler.Wrapper
             return super.handle(request);
 
         GzipRequest gzipRequest = new GzipRequest(request);
-        return gzipRequest.asProcessor(super.handle(gzipRequest));
+        Request.Processor processor = super.handle(gzipRequest);
+        if (processor == null)
+            return null;
+        gzipRequest.setProcessor(processor);
+        return gzipRequest;
     }
 
-    private static class GzipRequest extends Request.ProcessingWrapper
+    private static class GzipRequest extends Request.WrapperProcessor
     {
         private GzipRequest(Request delegate)
         {

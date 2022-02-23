@@ -146,9 +146,9 @@ public class DumpHandler extends Handler.Processor
         writer.write("<pre>httpURI=" + httpURI + "</pre><br/>\n");
         writer.write("<pre>path=" + request.getPath() + "</pre><br/>\n");
         writer.write("<pre>contentType=" + request.getHeaders().get(HttpHeader.CONTENT_TYPE) + "</pre><br/>\n");
-        writer.write("<pre>servername=" + request.getServerName() + "</pre><br/>\n");
-        writer.write("<pre>local=" + request.getLocalAddr() + ":" + request.getLocalPort() + "</pre><br/>\n");
-        writer.write("<pre>remote=" + request.getRemoteAddr() + ":" + request.getRemotePort() + "</pre><br/>\n");
+        writer.write("<pre>servername=" + Request.getServerName(request) + "</pre><br/>\n");
+        writer.write("<pre>local=" + Request.getLocalAddr(request) + ":" + Request.getLocalPort(request) + "</pre><br/>\n");
+        writer.write("<pre>remote=" + Request.getRemoteAddr(request) + ":" + Request.getRemotePort(request) + "</pre><br/>\n");
         writer.write("<h3>Header:</h3><pre>");
         writer.write(String.format("%4s %s %s\n", request.getMethod(), httpURI.getPathQuery(), request.getConnectionMetaData().getProtocol()));
         for (HttpField field : request.getHeaders())

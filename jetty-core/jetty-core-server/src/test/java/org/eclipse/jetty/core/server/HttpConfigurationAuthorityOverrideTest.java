@@ -661,11 +661,11 @@ public class HttpConfigurationAuthorityOverrideTest
                 try (StringWriter stringWriter = new StringWriter();
                      PrintWriter out = new PrintWriter(stringWriter))
                 {
-                    out.printf("ServerName=[%s]%n", rq.getServerName());
-                    out.printf("ServerPort=[%d]%n", rq.getServerPort());
-                    out.printf("LocalAddr=[%s]%n", rq.getLocalAddr());
-                    out.printf("LocalName=[%s]%n", rq.getLocalAddr());
-                    out.printf("LocalPort=[%s]%n", rq.getLocalPort());
+                    out.printf("ServerName=[%s]%n", Request.getServerName(rq));
+                    out.printf("ServerPort=[%d]%n", Request.getServerPort(rq));
+                    out.printf("LocalAddr=[%s]%n", Request.getLocalAddr(rq));
+                    out.printf("LocalName=[%s]%n", Request.getLocalAddr(rq));
+                    out.printf("LocalPort=[%s]%n", Request.getLocalPort(rq));
                     out.printf("HttpURI=[%s]%n", rq.getHttpURI());
                     rs.write(true, cb, stringWriter.getBuffer().toString());
                 }

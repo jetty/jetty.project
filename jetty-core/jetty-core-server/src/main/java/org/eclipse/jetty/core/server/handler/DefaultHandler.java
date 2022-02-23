@@ -110,7 +110,7 @@ public class DefaultHandler extends Handler.Processor
 
         if (!isShowContexts() || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
         {
-            response.writeError(request, HttpStatus.NOT_FOUND_404, null, callback);
+            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404, null);
             return;
         }
 
@@ -138,7 +138,7 @@ public class DefaultHandler extends Handler.Processor
             writer.append("</tr></thead><tbody>\n");
 
             Server server = getServer();
-            List<ContextHandler> handlers = server == null ? Collections.emptyList() : server.getChildHandlersByClass(ContextHandler.class);
+            List<ContextHandler> handlers = server == null ? Collections.emptyList() : server.getDescendantsByClass(ContextHandler.class);
 
             for (ContextHandler context : handlers)
             {
