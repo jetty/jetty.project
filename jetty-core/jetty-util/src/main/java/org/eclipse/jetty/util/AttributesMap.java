@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,10 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.component.Dumpable;
 
-/**
- * @deprecated use {@link Attributes.Lazy}
- */
-@Deprecated
 public class AttributesMap implements Attributes, Dumpable
 {
     private final AtomicReference<ConcurrentMap<String, Object>> _map = new AtomicReference<>();
@@ -65,18 +60,20 @@ public class AttributesMap implements Attributes, Dumpable
     }
 
     @Override
-    public Object removeAttribute(String name)
+    public void removeAttribute(String name)
     {
         Map<String, Object> map = map();
-        return map == null ? null : map.remove(name);
+        if (map != null)
+            map.remove(name);
     }
 
     @Override
-    public Object setAttribute(String name, Object attribute)
+    public void setAttribute(String name, Object attribute)
     {
         if (attribute == null)
-            return removeAttribute(name);
-        return ensureMap().put(name, attribute);
+            removeAttribute(name);
+        else
+            ensureMap().put(name, attribute);
     }
 
     @Override
@@ -87,9 +84,15 @@ public class AttributesMap implements Attributes, Dumpable
     }
 
     @Override
-    public Set<String> getAttributeNamesSet()
+    public Enumeration<String> getAttributeNames()
     {
-        return Collections.unmodifiableSet(keySet());
+        return Collections.enumeration(getAttributeNameSet());
+    }
+
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        return keySet();
     }
 
     public Set<Map.Entry<String, Object>> getAttributeEntrySet()
@@ -103,17 +106,8 @@ public class AttributesMap implements Attributes, Dumpable
         if (attrs instanceof AttributesMap)
             return Collections.enumeration(((AttributesMap)attrs).keySet());
 
-        List<String> names = new ArrayList<>(attrs.getAttributeNamesSet());
+        List<String> names = new ArrayList<>(Collections.list(attrs.getAttributeNames()));
         return Collections.enumeration(names);
-    }
-
-    public static Set<String> getAttributeNamesSetCopy(Attributes attrs)
-    {
-        if (attrs instanceof AttributesMap)
-            return ((AttributesMap)attrs).keySet();
-
-        List<String> names = new ArrayList<>(attrs.getAttributeNamesSet());
-        return new HashSet<>(names);
     }
 
     @Override
@@ -140,13 +134,17 @@ public class AttributesMap implements Attributes, Dumpable
     private Set<String> keySet()
     {
         Map<String, Object> map = map();
-        return map == null ? Collections.emptySet() : map.keySet();
+        return map == null ? Collections.<String>emptySet() : map.keySet();
     }
 
     public void addAll(Attributes attributes)
     {
-        for (String name : attributes.getAttributeNamesSet())
+        Enumeration<String> e = attributes.getAttributeNames();
+        while (e.hasMoreElements())
+        {
+            String name = e.nextElement();
             setAttribute(name, attributes.getAttribute(name));
+        }
     }
 
     @Override

@@ -36,7 +36,7 @@ public class ContextHandlerMBean extends AbstractHandlerMBean
     {
         Map<String, Object> map = new HashMap<String, Object>();
         Attributes attrs = ((ContextHandler)_managed).getAttributes();
-        for (String name : attrs.getAttributeNamesSet())
+        for (String name : attrs.getAttributeNameSet())
         {
             Object value = attrs.getAttribute(name);
             map.put(name, value);

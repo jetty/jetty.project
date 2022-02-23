@@ -14,6 +14,8 @@
 package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -30,25 +32,23 @@ public class AttributeContainerMap extends ContainerLifeCycle implements Attribu
     private final Map<String, Object> _map = new HashMap<>();
 
     @Override
-    public Object setAttribute(String name, Object attribute)
+    public void setAttribute(String name, Object attribute)
     {
         try (AutoLock l = _lock.lock())
         {
             Object old = _map.put(name, attribute);
             updateBean(old, attribute);
-            return old;
         }
     }
 
     @Override
-    public Object removeAttribute(String name)
+    public void removeAttribute(String name)
     {
         try (AutoLock l = _lock.lock())
         {
             Object removed = _map.remove(name);
             if (removed != null)
                 removeBean(removed);
-            return removed;
         }
     }
 
@@ -62,7 +62,16 @@ public class AttributeContainerMap extends ContainerLifeCycle implements Attribu
     }
 
     @Override
-    public Set<String> getAttributeNamesSet()
+    public Enumeration<String> getAttributeNames()
+    {
+        try (AutoLock l = _lock.lock())
+        {
+            return Collections.enumeration(_map.keySet());
+        }
+    }
+
+    @Override
+    public Set<String> getAttributeNameSet()
     {
         try (AutoLock l = _lock.lock())
         {

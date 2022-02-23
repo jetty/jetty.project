@@ -40,7 +40,6 @@ import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -125,23 +124,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
     private FlushState _flushState = FlushState.IDLE;
     private FillState _fillState = FillState.IDLE;
     private boolean _underflown;
-
-    private abstract class RunnableTask implements Runnable, Invocable
-    {
-        private final String _operation;
-
-        protected RunnableTask(String op)
-        {
-            _operation = op;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("SSL:%s:%s:%s", SslConnection.this, _operation, getInvocationType());
-        }
-    }
-
     private final Runnable _runFillable = new RunnableTask("runFillable")
     {
         @Override
@@ -156,7 +138,6 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             return _decryptedEndPoint.getFillInterest().getCallbackInvocationType();
         }
     };
-
     private final Callback _sslReadCallback = new Callback()
     {
         @Override
@@ -653,7 +634,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                     {
                                         Throwable failure = _failure;
                                         if (failure != null)
-                                            throw IO.rethrow(failure);
+                                            rethrow(failure);
                                         if (_sslEngine.isInboundDone())
                                             return filled = -1;
                                         continue;
@@ -735,7 +716,7 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
                                 case CLOSED:
                                     Throwable failure = _failure;
                                     if (failure != null)
-                                        throw IO.rethrow(failure);
+                                        rethrow(failure);
                                     return filled = -1;
 
                                 case BUFFER_UNDERFLOW:
@@ -837,7 +818,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             catch (Throwable x)
             {
                 close(x);
-                throw IO.rethrow(x);
+                rethrow(x);
+                // Never reached.
+                throw new AssertionError();
             }
         }
 
@@ -1190,7 +1173,9 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             catch (Throwable x)
             {
                 close(x);
-                throw IO.rethrow(x);
+                rethrow(x);
+                // Never reached.
+                throw new AssertionError();
             }
         }
 
@@ -1524,10 +1509,21 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             }
         }
 
+        private void rethrow(Throwable x) throws IOException
+        {
+            if (x instanceof RuntimeException)
+                throw (RuntimeException)x;
+            if (x instanceof Error)
+                throw (Error)x;
+            if (x instanceof IOException)
+                throw (IOException)x;
+            throw new IOException(x);
+        }
+
         @Override
         public String toString()
         {
-            return super.toEndPointString();
+            return String.format("%s@%x[%s]", getClass().getSimpleName(), hashCode(), toEndPointString());
         }
 
         private final class IncompleteWriteCallback implements Callback, Invocable
@@ -1596,6 +1592,22 @@ public class SslConnection extends AbstractConnection implements Connection.Upgr
             {
                 return String.format("SSL@%h.DEP.writeCallback", SslConnection.this);
             }
+        }
+    }
+
+    private abstract class RunnableTask implements Invocable.Task
+    {
+        private final String _operation;
+
+        protected RunnableTask(String op)
+        {
+            _operation = op;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("SSL:%s:%s:%s", SslConnection.this, _operation, getInvocationType());
         }
     }
 }
