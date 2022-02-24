@@ -74,10 +74,10 @@ public interface Invocable
      */
     interface Task extends Invocable, Runnable
     {
-        void run();
     }
 
     // TODO review.  Handy for lambdas that throw (eg LifeCycle#start())
+    // TODO: there is already java.util.Callable, can we use it?
     interface Callable extends Invocable
     {
         void call() throws Exception;

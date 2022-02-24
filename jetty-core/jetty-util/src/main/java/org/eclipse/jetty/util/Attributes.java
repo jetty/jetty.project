@@ -144,12 +144,14 @@ public interface Attributes
             _attributes.clearAttributes();
         }
 
+        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public int hashCode()
         {
             return _attributes.hashCode();
         }
 
+        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public boolean equals(Object obj)
         {
@@ -224,12 +226,14 @@ public interface Attributes
                 setAttribute(name, attributes.getAttribute(name));
         }
 
+        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public int hashCode()
         {
             return _map.hashCode();
         }
 
+        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public boolean equals(Object o)
         {
@@ -358,6 +362,7 @@ public interface Attributes
     /**
      * An {@link Attributes} implementation backed by another {@link Attributes} instance, which is treated as immutable, but with a
      * ConcurrentHashMap used as a mutable layer over it.
+     * // TODO: can we extend Wrapper with a contains wrapped?
      */
     class Layer implements Attributes
     {
@@ -438,6 +443,7 @@ public interface Attributes
             _map.entrySet().removeIf(e -> e.getValue() != REMOVED);
         }
 
+        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public int hashCode()
         {
@@ -447,6 +453,7 @@ public interface Attributes
             return hash;
         }
 
+        // TODO: remove? or fix (don't want the wrapped and wrapper to match)
         @Override
         public boolean equals(Object o)
         {
