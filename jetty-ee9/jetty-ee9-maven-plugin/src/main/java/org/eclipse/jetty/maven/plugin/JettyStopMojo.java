@@ -129,21 +129,32 @@ public class JettyStopMojo extends AbstractWebAppMojo
                 //wait for pid to stop
                 getLog().info("Waiting " + stopWait + " seconds for jetty " + pid + " to stop");
                 Optional<ProcessHandle> optional = ProcessHandle.of(pid);
+                final long remotePid = pid.longValue();
                 optional.ifPresentOrElse(p -> 
                 {
                     try
                     {
-                        send(stopKey + "\r\n" + command + "\r\n", 0);
-                        CompletableFuture<ProcessHandle> future = p.onExit();
-                        if (p.isAlive())
+                        //if running in the same process, just send the stop
+                        //command and wait for the response
+                        if (ProcessHandle.current().pid() == remotePid)
                         {
-                            p = future.get(stopWait, TimeUnit.SECONDS);
+                            send(stopKey + "\r\n" + command + "\r\n", stopWait);
                         }
-
-                        if (p.isAlive())
-                            getLog().info("Couldn't verify server process stop");
                         else
-                            getLog().info("Server process stopped");
+                        {
+                            //running forked, so wait for the process
+                            send(stopKey + "\r\n" + command + "\r\n", 0);
+                            CompletableFuture<ProcessHandle> future = p.onExit();
+                            if (p.isAlive())
+                            {
+                                p = future.get(stopWait, TimeUnit.SECONDS);
+                            }
+
+                            if (p.isAlive())
+                                getLog().info("Couldn't verify server process stop");
+                            else
+                                getLog().info("Server process stopped");
+                        }
                     }
                     catch (ConnectException e)
                     {
