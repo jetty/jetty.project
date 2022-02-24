@@ -377,7 +377,7 @@ public class ManagedSelector extends ContainerLifeCycle implements Dumpable
         _selectorManager.endPointClosed(endPoint);
     }
 
-    private void createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
+    void createEndPoint(SelectableChannel channel, SelectionKey selectionKey) throws IOException
     {
         EndPoint endPoint = _selectorManager.newEndPoint(channel, this, selectionKey);
         Object context = selectionKey.attachment();

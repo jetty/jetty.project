@@ -16,11 +16,12 @@ package org.eclipse.jetty.io;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
+import java.util.function.IntConsumer;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -154,67 +155,66 @@ public interface ByteBufferPool
         private final int _maxSize;
         private final AtomicInteger _size;
         private final AtomicLong _lastUpdate = new AtomicLong(System.nanoTime());
+        private final IntConsumer _memoryFunction;
 
+        @Deprecated
         public Bucket(int capacity, int maxSize)
+        {
+            this(capacity, maxSize, i -> {});
+        }
+
+        public Bucket(int capacity, int maxSize, IntConsumer memoryFunction)
         {
             _capacity = capacity;
             _maxSize = maxSize;
             _size = maxSize > 0 ? new AtomicInteger() : null;
+            _memoryFunction = Objects.requireNonNull(memoryFunction);
         }
 
         public ByteBuffer acquire()
         {
-            ByteBuffer buffer = queuePoll();
-            if (buffer == null)
-                return null;
-            if (_size != null)
-                _size.decrementAndGet();
+            ByteBuffer buffer = _queue.poll();
+            if (buffer != null)
+            {
+                if (_size != null)
+                    _size.decrementAndGet();
+                _memoryFunction.accept(-buffer.capacity());
+            }
+
             return buffer;
         }
 
         public void release(ByteBuffer buffer)
         {
-            _lastUpdate.setOpaque(System.nanoTime());
-            BufferUtil.clear(buffer);
-            if (_size == null)
-                queueOffer(buffer);
-            else if (_size.incrementAndGet() <= _maxSize)
-                queueOffer(buffer);
+            resetUpdateTime();
+            BufferUtil.reset(buffer);
+            if (_size == null || _size.incrementAndGet() <= _maxSize)
+            {
+                _queue.offer(buffer);
+                _memoryFunction.accept(buffer.capacity());
+            }
             else
+            {
                 _size.decrementAndGet();
+            }
+        }
+
+        void resetUpdateTime()
+        {
+            _lastUpdate.lazySet(System.nanoTime());
         }
 
         public void clear()
         {
-            clear(null);
-        }
-
-        void clear(Consumer<ByteBuffer> memoryFn)
-        {
             int size = _size == null ? 0 : _size.get() - 1;
             while (size >= 0)
             {
-                ByteBuffer buffer = queuePoll();
+                ByteBuffer buffer = acquire();
                 if (buffer == null)
                     break;
-                if (memoryFn != null)
-                    memoryFn.accept(buffer);
                 if (_size != null)
-                {
-                    _size.decrementAndGet();
                     --size;
-                }
             }
-        }
-
-        private void queueOffer(ByteBuffer buffer)
-        {
-            _queue.offer(buffer);
-        }
-
-        private ByteBuffer queuePoll()
-        {
-            return _queue.poll();
         }
 
         boolean isEmpty()
@@ -235,7 +235,7 @@ public interface ByteBufferPool
         @Override
         public String toString()
         {
-            return String.format("%s@%x{%d/%d@%d}", getClass().getSimpleName(), hashCode(), size(), _maxSize, _capacity);
+            return String.format("%s@%x{capacity=%d, size=%d, maxSize=%d}", getClass().getSimpleName(), hashCode(), _capacity, size(), _maxSize);
         }
     }
 }

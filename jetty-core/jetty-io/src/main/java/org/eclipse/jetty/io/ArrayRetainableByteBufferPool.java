@@ -124,7 +124,7 @@ public class ArrayRetainableByteBufferPool implements RetainableByteBufferPool, 
             {
                 buffer = newRetainableByteBuffer(bucket._capacity, direct, byteBuffer ->
                 {
-                    BufferUtil.clear(byteBuffer);
+                    BufferUtil.reset(byteBuffer);
                     reservedEntry.release();
                 });
                 reservedEntry.enable(buffer, true);

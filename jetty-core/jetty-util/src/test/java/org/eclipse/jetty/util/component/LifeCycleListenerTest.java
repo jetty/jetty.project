@@ -102,7 +102,7 @@ public class LifeCycleListenerTest
         // System.out.println("STOPING TIME : " + listener.stoppingTime + " : " + listener.stoppedTime);
 
         // check that the lifecycle's state is stopped
-        assertTrue(lifecycle.isStopped(), "The lifecycle state is not stooped");
+        assertTrue(lifecycle.isStopped(), "The lifecycle state is not stopped");
     }
 
     @Test

@@ -148,7 +148,7 @@ public abstract class SelectorManager extends ContainerLifeCycle implements Dump
         return _selectors.length;
     }
 
-    private ManagedSelector chooseSelector()
+    protected ManagedSelector chooseSelector()
     {
         return _selectors[_selectorIndex.updateAndGet(_selectorIndexUpdate)];
     }

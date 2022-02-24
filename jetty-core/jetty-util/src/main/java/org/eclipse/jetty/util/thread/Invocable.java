@@ -31,21 +31,53 @@ public interface Invocable
 {
     ThreadLocal<Boolean> __nonBlocking = new ThreadLocal<>();
 
+    /**
+     * <p>The behavior of an {@link Invocable} when it is invoked.</p>
+     * <p>Typically, {@link Runnable}s or {@link Callback}s declare their
+     * invocation type; this information is then used by the code that should
+     * invoke the {@code Runnable} or {@code Callback} to decide whether to
+     * invoke it directly, or submit it to a thread pool to be invoked by
+     * a different thread.</p>
+     */
     enum InvocationType
     {
-        BLOCKING, NON_BLOCKING, EITHER
+        /**
+         * <p>Invoking the {@link Invocable} may block the invoker thread,
+         * and the invocation may be performed immediately (possibly blocking
+         * the invoker thread) or deferred to a later time, for example
+         * by submitting the {@code Invocable} to a thread pool.</p>
+         * <p>This invocation type is suitable for {@code Invocable}s that
+         * call application code, for example to process an HTTP request.</p>
+         */
+        BLOCKING,
+        /**
+         * <p>Invoking the {@link Invocable} does not block the invoker thread,
+         * and the invocation may be performed immediately in the invoker thread.</p>
+         * <p>This invocation type is suitable for {@code Invocable}s that
+         * call implementation code that is guaranteed to never block the
+         * invoker thread.</p>
+         */
+        NON_BLOCKING,
+        /**
+         * <p>Invoking the {@link Invocable} may block the invoker thread,
+         * but the invocation cannot be deferred to a later time, differently
+         * from {@link #BLOCKING}.</p>
+         * <p>This invocation type is suitable for {@code Invocable}s that
+         * themselves perform the non-deferrable action in a non-blocking way,
+         * thus advancing a possibly stalled system.</p>
+         */
+        EITHER
     }
 
     /**
      * <p>A task with an {@link InvocationType}.</p>
-     * TODO Review. Note sure what the value of this is
      */
     interface Task extends Invocable, Runnable
     {
-        void run();
     }
 
     // TODO review.  Handy for lambdas that throw (eg LifeCycle#start())
+    // TODO: there is already java.util.Callable, can we use it?
     interface Callable extends Invocable
     {
         void call() throws Exception;
