@@ -78,7 +78,7 @@ public class ProxyCustomizerTest
     }
 
     @BeforeEach
-    void setUp() throws Exception
+    public void setUp() throws Exception
     {
         Handler handler = new Handler.Processor()
         {
@@ -118,7 +118,7 @@ public class ProxyCustomizerTest
     }
 
     @AfterEach
-    void tearDown() throws Exception
+    public void tearDown() throws Exception
     {
         server.stop();
         server = null;

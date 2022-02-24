@@ -461,7 +461,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (scoped == null)
             return null;
 
-        return scoped.asProcessor(_context.get(scoped));
+        return scoped.wrapProcessor(_context.get(scoped));
     }
 
     void processMovedPermanently(Request request, Response response, Callback callback)

@@ -282,7 +282,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                 x509 = new X509(null, (X509Certificate)certificates[0]);
                 session.putValue(X509_CERT, x509);
             }
-            String serverName = request.getServerName();
+            String serverName = Request.getServerName(request);
             if (LOG.isDebugEnabled())
                 LOG.debug("Host={}, SNI={}, SNI Certificate={}", serverName, sniHost, x509);
 

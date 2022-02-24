@@ -129,7 +129,7 @@ public class SniSslConnectionFactoryTest
             {
                 response.setStatus(200);
                 response.setHeader("X-URL", request.getPath());
-                response.setHeader("X-HOST", request.getServerName());
+                response.setHeader("X-HOST", Request.getServerName(request));
                 callback.succeeded();
             }
         });

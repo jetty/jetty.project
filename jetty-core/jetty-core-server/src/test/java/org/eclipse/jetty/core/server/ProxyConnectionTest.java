@@ -359,7 +359,7 @@ public class ProxyConnectionTest
         }
     }
 
-    static Stream<Arguments> requestProcessors()
+    public static Stream<Arguments> requestProcessors()
     {
         return Stream.of(
             Arguments.of(new RequestProcessor()

@@ -19,14 +19,11 @@ import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Server;
 import org.eclipse.jetty.core.server.handler.ContextHandler;
 import org.eclipse.jetty.jmx.ObjectMBean;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class HandlerIAbstractMBean extends ObjectMBean
+// TODO: can this handle inner classes like Handler.Abstract, etc.?
+public class AbstractHandlerMBean extends ObjectMBean
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HandlerIAbstractMBean.class);
-
-    public HandlerIAbstractMBean(Object managedObject)
+    public AbstractHandlerMBean(Object managedObject)
     {
         super(managedObject);
     }
@@ -37,24 +34,20 @@ public class HandlerIAbstractMBean extends ObjectMBean
         if (_managed != null)
         {
             String basis = null;
-            if (_managed instanceof ContextHandler)
+            if (_managed instanceof ContextHandler contextHandler)
             {
-                ContextHandler contextHandler = (ContextHandler)_managed;
                 String contextName = getContextName(contextHandler);
                 if (contextName == null)
                     contextName = contextHandler.getDisplayName();
                 if (contextName != null)
                     return contextName;
             }
-            else if (_managed instanceof Handler.Abstract)
+            else if (_managed instanceof Handler.Abstract handler)
             {
-                Handler.Abstract handler = (Handler.Abstract)_managed;
                 Server server = handler.getServer();
                 if (server != null)
                 {
-                    ContextHandler context =
-                        Handler.findContainerOf(server, ContextHandler.class, handler);
-
+                    ContextHandler context = server.getContainer(handler, ContextHandler.class);
                     if (context != null)
                         basis = getContextName(context);
                 }

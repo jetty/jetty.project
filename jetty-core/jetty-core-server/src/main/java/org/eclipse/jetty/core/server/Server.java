@@ -136,7 +136,7 @@ public class Server extends Handler.Wrapper implements Attributes
             processing = true;
             request.enableProcessing();
             if (processor == null)
-                response.writeError(request, HttpStatus.NOT_FOUND_404, callback);
+                Response.writeError(response, request, HttpStatus.NOT_FOUND_404, callback);
             else
                 processor.process(customized, response, callback);
         }
@@ -607,7 +607,7 @@ public class Server extends Handler.Wrapper implements Attributes
         if (connector == null)
             return null;
 
-        ContextHandler context = getChildHandlerByClass(ContextHandler.class);
+        ContextHandler context = getDescendant(ContextHandler.class);
 
         try
         {

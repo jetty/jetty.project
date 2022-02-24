@@ -107,7 +107,7 @@ public class HttpServerTestFixture
         @Override
         public void process(Request request, Response response, Callback callback)
         {
-            response.writeError(request, code, message, callback);
+            Response.writeError(request, response, callback, code, message);
         }
     }
 
@@ -190,7 +190,7 @@ public class HttpServerTestFixture
             response.setStatus(200);
 
             String input = Content.readUtf8String(request);
-            MultiMap<String> params = request.extractQueryParameters();
+            MultiMap<String> params = Request.extractQueryParameters(request);
 
             String tmp = params.getValue("writes");
             int writes = Integer.parseInt(tmp == null ? "10" : tmp);

@@ -678,9 +678,9 @@ public interface Content
                     return;
                 }
 
-                if (content instanceof Error)
+                if (content instanceof Error error)
                 {
-                    completeExceptionally(((Error)content).getCause());
+                    completeExceptionally(error.getCause());
                     content.release();
                     return;
                 }

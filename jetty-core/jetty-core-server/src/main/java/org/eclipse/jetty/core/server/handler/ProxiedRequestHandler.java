@@ -57,7 +57,7 @@ public class ProxiedRequestHandler extends Handler.Wrapper
             }
         };
 
-        Request.Wrapper wrapper = new Request.Wrapper(request)
+        Request.WrapperProcessor wrapper = new Request.WrapperProcessor(request)
         {
             @Override
             public HttpURI getHttpURI()
@@ -72,6 +72,6 @@ public class ProxiedRequestHandler extends Handler.Wrapper
                 return proxiedFor;
             }
         };
-        return wrapProcessor(super.handle(wrapper), wrapper);
+        return wrapper.wrapProcessor(super.handle(wrapper));
     }
 }

@@ -23,14 +23,14 @@ public class RewriteHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        Request rewritten = rewrite(request);
-        return wrapProcessor(super.handle(rewritten), rewritten);
+        Request.WrapperProcessor rewritten = rewrite(request);
+        return rewritten.wrapProcessor(super.handle(rewritten));
     }
 
-    protected Request rewrite(Request request)
+    private Request.WrapperProcessor rewrite(Request request)
     {
         // TODO run the rules, but ultimately wrap for any changes:
-        return new Request.Wrapper(request)
+        return new Request.WrapperProcessor(request)
         {
             @Override
             public HttpURI getHttpURI()

@@ -25,7 +25,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +49,7 @@ public interface Response
 
     default void write(boolean last, Callback callback, String utf8Content)
     {
-        write(last, callback, BufferUtil.toBuffer(utf8Content, StandardCharsets.UTF_8));
+        write(last, callback, StandardCharsets.UTF_8.encode(utf8Content));
     }
 
     void push(MetaData.Request request);
@@ -59,37 +58,43 @@ public interface Response
 
     void reset();
 
+    // TODO: inline and remove
     default void addHeader(String name, String value)
     {
         getHeaders().add(name, value);
     }
 
+    // TODO: inline and remove
     default void addHeader(HttpHeader header, String value)
     {
         getHeaders().add(header, value);
     }
 
+    // TODO: inline and remove
     default void setHeader(String name, String value)
     {
         getHeaders().put(name, value);
     }
 
+    // TODO: inline and remove
     default void setHeader(HttpHeader header, String value)
     {
         getHeaders().put(header, value);
     }
 
+    // TODO: inline and remove
     default void setContentType(String mimeType)
     {
         getHeaders().put(HttpHeader.CONTENT_TYPE, mimeType);
     }
 
+    // TODO: inline and remove
     default void setContentLength(long length)
     {
         getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
     }
 
-    default void writeError(Request request, Throwable cause, Callback callback)
+    static void writeError(Request request, Response response, Callback callback, Throwable cause)
     {
         if (cause == null)
             cause = new Throwable("unknown cause");
@@ -100,28 +105,28 @@ public interface Response
             status = bad.getCode();
             message = bad.getReason();
         }
-        writeError(request, status, message, cause, callback);
+        writeError(request, response, callback, status, message, cause);
     }
 
-    default void writeError(Request request, int status, Callback callback)
+    static void writeError(Response response, Request request, int status, Callback callback)
     {
-        writeError(request, status, null, null, callback);
+        writeError(request, response, callback, status, null, null);
     }
 
-    default void writeError(Request request, int status, String message, Callback callback)
+    static void writeError(Request request, Response response, Callback callback, int status, String message)
     {
-        writeError(request, status, message, null, callback);
+        writeError(request, response, callback, status, message, null);
     }
 
-    default void writeError(Request request, int status, String message, Throwable cause, Callback callback)
+    static void writeError(Request request, Response response, Callback callback, int status, String message, Throwable cause)
     {
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
         if (!LOG.isDebugEnabled() && (cause instanceof BadMessageException || cause instanceof QuietException))
             LOG.warn("{} {}", message, cause.getMessage());
         else
-            LOG.warn("{} {}", message, this, cause);
+            LOG.warn("{} {}", message, response, cause);
 
-        if (isCommitted())
+        if (response.isCommitted())
         {
             callback.failed(cause == null ? new IllegalStateException(message == null ? "Committed" : message) : cause);
             return;
@@ -132,7 +137,7 @@ public interface Response
         if (message == null)
             message = HttpStatus.getMessage(status);
 
-        setStatus(status);
+        response.setStatus(status);
 
         ContextHandler.Context context = request.get(ContextRequest.class, ContextRequest::getContext);
         Request.Processor errorProcessor = ErrorProcessor.getErrorProcessor(request.getHttpChannel().getServer(), context == null ? null : context.getContextHandler());
@@ -142,9 +147,8 @@ public interface Response
             Request errorRequest = new ErrorProcessor.ErrorRequest(request, status, message, cause);
             try
             {
-                errorProcessor.process(errorRequest, this, callback);
-                if (errorRequest.isComplete())
-                    return;
+                errorProcessor.process(errorRequest, response, callback);
+                return;
             }
             catch (Exception e)
             {
@@ -154,8 +158,8 @@ public interface Response
         }
 
         // fall back to very empty error page
-        getHeaders().put(ErrorProcessor.ERROR_CACHE_CONTROL);
-        write(true, callback);
+        response.getHeaders().put(ErrorProcessor.ERROR_CACHE_CONTROL);
+        response.write(true, callback);
     }
 
     class Wrapper implements Response
