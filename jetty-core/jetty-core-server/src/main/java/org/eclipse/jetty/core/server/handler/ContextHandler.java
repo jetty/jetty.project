@@ -20,15 +20,19 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EventListener;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.core.server.ClassLoaderDump;
 import org.eclipse.jetty.core.server.Connector;
+import org.eclipse.jetty.core.server.Context;
 import org.eclipse.jetty.core.server.Handler;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
@@ -37,6 +41,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -67,8 +72,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return __context.get();
     }
 
+    // TODO should persistent attributes be an Attributes.Layer over server attributes?
     private final Attributes _persistentAttributes = new Mapped();
-    private final Context _context = new Context();
+    private final ScopedContext _context = new ScopedContext();
+    private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 
     private String _displayName;
@@ -317,6 +324,80 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return "ROOT";
         return _contextPath;
     }
+    
+    /**
+     * Add a context event listeners.
+     *
+     * @param listener the event listener to add
+     * @return true if the listener was added
+     * @see ContextScopeListener
+     * @see org.eclipse.jetty.util.component.ContainerLifeCycle#addEventListener(EventListener) 
+     */
+    @Override
+    public boolean addEventListener(EventListener listener)
+    {
+        if (super.addEventListener(listener))
+        {
+            if (listener instanceof ContextScopeListener)
+            {
+                _contextListeners.add((ContextScopeListener)listener);
+                if (__context.get() != null)
+                    ((ContextScopeListener)listener).enterScope(__context.get(), null);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean removeEventListener(EventListener listener)
+    {
+        if (super.removeEventListener(listener))
+        {
+            if (listener instanceof ContextScopeListener)
+                _contextListeners.remove(listener);
+
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @param request A request that is applicable to the scope, or null
+     *
+     */
+    protected void enterScope(Request request)
+    {
+        for (ContextScopeListener listener : _contextListeners)
+        {
+            try
+            {
+                listener.enterScope(_context, request);
+            }
+            catch (Throwable e)
+            {
+                LOG.warn("Unable to enter scope", e);
+            }
+        }
+    }
+
+    /**
+     * @param request A request that is applicable to the scope, or null
+     */
+    protected void exitScope(Request request)
+    {
+        for (int i = _contextListeners.size(); i-- > 0; )
+        {
+            try
+            {
+                _contextListeners.get(i).exitScope(_context, request);
+            }
+            catch (Throwable e)
+            {
+                LOG.warn("Unable to exit scope", e);
+            }
+        }
+    }
 
     /**
      * @return true if this context is shutting down
@@ -461,7 +542,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (scoped == null)
             return null;
 
-        return scoped.wrapProcessor(_context.get(scoped));
+        return scoped.wrapProcessor(_context.apply(scoped, scoped));
     }
 
     void processMovedPermanently(Request request, Response response, Callback callback)
@@ -538,7 +619,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     protected ContextRequest wrap(Request request, String pathInContext)
     {
-        return new ContextRequest(this, request, pathInContext);
+        return new ContextRequest(this, _context, request, pathInContext);
     }
 
     @Override
@@ -599,10 +680,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return host;
     }
 
-    public class Context extends Attributes.Layer
+    public class ScopedContext extends Attributes.Layer implements Context
     {
-        public Context()
+        public ScopedContext()
         {
+            // TODO Hmmm now we have attributes from the server context and from the persistent attributes?
+            //      Currently not delegating to server context.
             super(_persistentAttributes);
         }
 
@@ -620,6 +703,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return super.getAttribute(name);
         }
 
+        @Override
+        public Request.Processor getErrorProcessor()
+        {
+            return ContextHandler.this.getErrorProcessor();
+        }
+
+        @Override
         public String getContextPath()
         {
             return _contextPath;
@@ -631,16 +721,19 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return "Context@" + ContextHandler.this.toString();
         }
 
+        @Override
         public ClassLoader getClassLoader()
         {
             return _classLoader;
         }
 
+        @Override
         public Path getResourceBase()
         {
             return _resourceBase;
         }
 
+        @Override
         public <T> T get(Supplier<T> supplier) throws Exception
         {
             Context lastContext = __context.get();
@@ -655,16 +748,19 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 if (loader != null)
                     Thread.currentThread().setContextClassLoader(loader);
 
+                enterScope(null);
                 return supplier.get();
             }
             finally
             {
+                exitScope(null);
                 __context.set(lastContext);
                 if (loader != null)
                     Thread.currentThread().setContextClassLoader(lastLoader);
             }
         }
 
+        @Override
         public void call(Invocable.Callable callable) throws Exception
         {
             Context lastContext = __context.get();
@@ -680,14 +776,44 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                     if (loader != null)
                         Thread.currentThread().setContextClassLoader(loader);
 
+                    enterScope(null);
                     callable.call();
                 }
                 finally
                 {
+                    exitScope(null);
                     __context.set(lastContext);
                     if (loader != null)
                         Thread.currentThread().setContextClassLoader(lastLoader);
                 }
+            }
+        }
+
+        @Override
+        public <T, R> R apply(Function<T, R> function, T arg) throws Exception
+        {
+            Context lastContext = __context.get();
+            if (lastContext == this)
+                return function.apply(arg);
+
+            Request request = (arg instanceof Request) ? (Request)arg : null;
+
+            ClassLoader loader = getClassLoader();
+            ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+            try
+            {
+                __context.set(this);
+                if (loader != null)
+                    Thread.currentThread().setContextClassLoader(loader);
+                enterScope(request);
+                return function.apply(arg);
+            }
+            finally
+            {
+                exitScope(request);
+                __context.set(lastContext);
+                if (loader != null)
+                    Thread.currentThread().setContextClassLoader(lastLoader);
             }
         }
 
@@ -705,11 +831,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                     __context.set(this);
                     if (loader != null)
                         Thread.currentThread().setContextClassLoader(loader);
-
+                    enterScope(null);
                     consumer.accept(t);
                 }
                 finally
                 {
+                    exitScope(null);
                     __context.set(lastContext);
                     if (loader != null)
                         Thread.currentThread().setContextClassLoader(lastLoader);
@@ -717,6 +844,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             }
         }
 
+        @Override
         public void run(Runnable task)
         {
             try
@@ -733,11 +861,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                         __context.set(this);
                         if (loader != null)
                             Thread.currentThread().setContextClassLoader(loader);
-
+                        enterScope(null);
                         task.run();
                     }
                     finally
                     {
+                        exitScope(null);
                         __context.set(lastContext);
                         if (loader != null)
                             Thread.currentThread().setContextClassLoader(lastLoader);
@@ -750,6 +879,54 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 throw new RuntimeException(e);
             }
         }
+
+        @Override
+        public void execute(Runnable runnable)
+        {
+            getServer().getContext().execute(() -> run(runnable));
+        }
+
+        @Override
+        public <T> T decorate(T o)
+        {
+            // TODO cache factory lookup?
+            DecoratedObjectFactory factory = ContextHandler.this.getBean(DecoratedObjectFactory.class);
+            if (factory != null)
+                return factory.decorate(o);
+            factory = getServer().getBean(DecoratedObjectFactory.class);
+            if (factory != null)
+                return factory.decorate(o);
+            return o;
+        }
+
+        @Override
+        public void destroy(Object o)
+        {
+            // TODO cache factory lookup?
+            DecoratedObjectFactory factory = ContextHandler.this.getBean(DecoratedObjectFactory.class);
+            if (factory == null)
+                factory = getServer().getBean(DecoratedObjectFactory.class);
+            if (factory != null)
+                factory.destroy(o);
+        }
+    }
+
+    /**
+     * Listener for all threads entering context scope, including async IO callbacks
+     */
+    public interface ContextScopeListener extends EventListener
+    {
+        /**
+         * @param context The context being entered
+         * @param request A request that is applicable to the scope, or null
+         */
+        void enterScope(Context context, Request request);
+
+        /**
+         * @param context The context being exited
+         * @param request A request that is applicable to the scope, or null
+         */
+        void exitScope(Context context, Request request);
     }
 
     private static class VHost

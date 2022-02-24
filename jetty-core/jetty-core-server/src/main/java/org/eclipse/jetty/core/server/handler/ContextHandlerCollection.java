@@ -144,7 +144,7 @@ public class ContextHandlerCollection extends Handler.Collection
         if (pathBranches == null)
             return null;
 
-        String path = request.getPath();
+        String path = request.getPathInContext();
         if (!path.startsWith("/"))
         {
             super.handle(request);

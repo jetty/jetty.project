@@ -16,7 +16,6 @@ package org.eclipse.jetty.core.server;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.core.server.handler.ContextHandler;
 import org.eclipse.jetty.core.server.handler.ContextRequest;
 import org.eclipse.jetty.core.server.handler.ErrorProcessor;
 import org.eclipse.jetty.http.BadMessageException;
@@ -139,8 +138,8 @@ public interface Response
 
         response.setStatus(status);
 
-        ContextHandler.Context context = request.get(ContextRequest.class, ContextRequest::getContext);
-        Request.Processor errorProcessor = ErrorProcessor.getErrorProcessor(request.getHttpChannel().getServer(), context == null ? null : context.getContextHandler());
+        Context context = request.getContext();
+        Request.Processor errorProcessor = context.getErrorProcessor();
 
         if (errorProcessor != null)
         {

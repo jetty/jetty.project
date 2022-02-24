@@ -14,8 +14,9 @@
 package org.eclipse.jetty.core.server.handler;
 
 import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
+import org.eclipse.jetty.core.server.Context;
 import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.http.BadMessageException;
@@ -25,27 +26,29 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextRequest extends Request.WrapperProcessor implements Invocable, Supplier<Request.Processor>, Runnable
+public class ContextRequest extends Request.WrapperProcessor implements Invocable, Function<Request, Request.Processor>, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
+    private final ContextHandler.ScopedContext _context;
     private Response _response;
     private Callback _callback;
 
-    protected ContextRequest(ContextHandler contextHandler, Request wrapped, String pathInContext)
+    protected ContextRequest(ContextHandler contextHandler, ContextHandler.ScopedContext context, Request wrapped, String pathInContext)
     {
         super(wrapped);
         _pathInContext = pathInContext;
         _contextHandler = contextHandler;
+        _context = context;
     }
 
     @Override
-    public Processor get()
+    public Processor apply(Request request)
     {
         try
         {
-            return _contextHandler.getHandler().handle(this);
+            return _contextHandler.getHandler().handle(request);
         }
         catch (Throwable t)
         {
@@ -63,7 +66,7 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     {
         _response = response;
         _callback = callback;
-        _contextHandler.getContext().run(this);
+        _context.run(this);
     }
 
     @Override
@@ -71,7 +74,7 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     {
         try
         {
-            super.process(this, new ContextResponse(this, _response), _callback);
+            super.process(this, new ContextResponse(_context, _response), _callback);
         }
         catch (Throwable t)
         {
@@ -80,21 +83,15 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     }
 
     @Override
-    public void execute(Runnable task)
-    {
-        super.execute(() -> _contextHandler.getContext().run(task));
-    }
-
-    @Override
     public void demandContent(Runnable onContentAvailable)
     {
-        super.demandContent(() -> _contextHandler.getContext().run(onContentAvailable));
+        super.demandContent(() -> _context.run(onContentAvailable));
     }
 
     @Override
     public void addErrorListener(Consumer<Throwable> onError)
     {
-        super.addErrorListener(t -> _contextHandler.getContext().accept(onError, t));
+        super.addErrorListener(t -> _context.accept(onError, t));
     }
 
     @Override
@@ -105,23 +102,24 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
             @Override
             public void succeeded()
             {
-                _contextHandler.getContext().run(onComplete::succeeded);
+                _context.run(onComplete::succeeded);
             }
 
             @Override
             public void failed(Throwable t)
             {
-                _contextHandler.getContext().accept(onComplete::failed, t);
+                _context.accept(onComplete::failed, t);
             }
         });
     }
 
-    public ContextHandler.Context getContext()
+    @Override
+    public Context getContext()
     {
-        return _contextHandler.getContext();
+        return _context;
     }
 
-    public String getPath()
+    public String getPathInContext()
     {
         return _pathInContext;
     }
@@ -132,7 +130,7 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
         // return some hidden attributes for requestLog
         return switch (name)
         {
-            case "o.e.j.s.h.ScopedRequest.contextPath" -> _contextHandler.getContext().getContextPath();
+            case "o.e.j.s.h.ScopedRequest.contextPath" -> _context.getContextPath();
             case "o.e.j.s.h.ScopedRequest.pathInContext" -> _pathInContext;
             default -> super.getAttribute(name);
         };
