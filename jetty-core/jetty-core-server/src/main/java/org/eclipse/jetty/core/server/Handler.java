@@ -453,9 +453,10 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     }
 
     /**
-     * <p>A {@link Handler.Abstract} that implements {@link Request.Processor},
-     * therefore handling any {@link Request} so that subclasses only need to
-     * implement {@link #process(Request, Response, Callback)}.</p>
+     * <p>A {@link Handler} that itself implements {@link Request.Processor}
+     * and that returns itself from a call to {@link Handler#handle(Request)}.
+     * Subclasses only need to implement 
+     * {@link #process(Request, Response, Callback)}.</p>
      */
     abstract class Processor extends Abstract implements Request.Processor
     {
