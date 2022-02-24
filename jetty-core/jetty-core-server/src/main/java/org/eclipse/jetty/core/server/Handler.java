@@ -140,7 +140,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
          * @return the first {@code Handler} of the given type, descendants of this {@code Handler},
          * or null if no such {@code Handler} exist
          */
-        <T extends Handler> T getDescendantByClass(Class<T> type);
+        <T extends Handler> T getDescendant(Class<T> type);
 
         /**
          * @param handler the child {@code Handler}
