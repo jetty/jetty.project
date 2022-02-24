@@ -26,8 +26,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.eclipse.jetty.core.server.handler.ContextHandler;
 import org.eclipse.jetty.core.server.handler.ErrorProcessor;
@@ -721,21 +719,9 @@ public class Server extends Handler.Wrapper implements Attributes
         }
 
         @Override
-        public <T> T get(Supplier<T> supplier) throws Exception
-        {
-            return supplier.get();
-        }
-
-        @Override
         public void accept(Consumer<Throwable> consumer, Throwable t)
         {
             consumer.accept(t);
-        }
-
-        @Override
-        public <T, R> R apply(Function<T, R> function, T arg) throws Exception
-        {
-            return function.apply(arg);
         }
 
         @Override

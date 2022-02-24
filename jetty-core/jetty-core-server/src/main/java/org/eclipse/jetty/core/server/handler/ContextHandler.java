@@ -26,7 +26,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -542,7 +541,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (scoped == null)
             return null;
 
-        return scoped.wrapProcessor(_context.apply(scoped, scoped));
+        return scoped.wrapProcessor(_context.get(scoped, scoped));
     }
 
     void processMovedPermanently(Request request, Response response, Callback callback)
@@ -733,8 +732,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return _resourceBase;
         }
 
-        @Override
-        public <T> T get(Supplier<T> supplier) throws Exception
+        public <T> T get(Supplier<T> supplier, Request request) throws Exception
         {
             Context lastContext = __context.get();
             if (lastContext == this)
@@ -748,12 +746,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                 if (loader != null)
                     Thread.currentThread().setContextClassLoader(loader);
 
-                enterScope(null);
+                enterScope(request);
                 return supplier.get();
             }
             finally
             {
-                exitScope(null);
+                exitScope(request);
                 __context.set(lastContext);
                 if (loader != null)
                     Thread.currentThread().setContextClassLoader(lastLoader);
@@ -762,6 +760,11 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         @Override
         public void call(Invocable.Callable callable) throws Exception
+        {
+            call(callable, null);
+        }
+
+        public void call(Invocable.Callable callable, Request request) throws Exception
         {
             Context lastContext = __context.get();
             if (lastContext == this)
@@ -776,12 +779,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                     if (loader != null)
                         Thread.currentThread().setContextClassLoader(loader);
 
-                    enterScope(null);
+                    enterScope(request);
                     callable.call();
                 }
                 finally
                 {
-                    exitScope(null);
+                    exitScope(request);
                     __context.set(lastContext);
                     if (loader != null)
                         Thread.currentThread().setContextClassLoader(lastLoader);
@@ -790,34 +793,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        public <T, R> R apply(Function<T, R> function, T arg) throws Exception
+        public void accept(Consumer<Throwable> consumer, Throwable t)
         {
-            Context lastContext = __context.get();
-            if (lastContext == this)
-                return function.apply(arg);
-
-            Request request = (arg instanceof Request) ? (Request)arg : null;
-
-            ClassLoader loader = getClassLoader();
-            ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
-            try
-            {
-                __context.set(this);
-                if (loader != null)
-                    Thread.currentThread().setContextClassLoader(loader);
-                enterScope(request);
-                return function.apply(arg);
-            }
-            finally
-            {
-                exitScope(request);
-                __context.set(lastContext);
-                if (loader != null)
-                    Thread.currentThread().setContextClassLoader(lastLoader);
-            }
+            accept(consumer, t, null);
         }
 
-        public void accept(Consumer<Throwable> consumer, Throwable t)
+        public void accept(Consumer<Throwable> consumer, Throwable t, Request request)
         {
             Context lastContext = __context.get();
             if (lastContext == this)
@@ -831,12 +812,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                     __context.set(this);
                     if (loader != null)
                         Thread.currentThread().setContextClassLoader(loader);
-                    enterScope(null);
+                    enterScope(request);
                     consumer.accept(t);
                 }
                 finally
                 {
-                    exitScope(null);
+                    exitScope(request);
                     __context.set(lastContext);
                     if (loader != null)
                         Thread.currentThread().setContextClassLoader(lastLoader);
@@ -845,13 +826,18 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        public void run(Runnable task)
+        public void run(Runnable runnable)
+        {
+            run(runnable, null);
+        }
+
+        void run(Runnable runnable, Request request)
         {
             try
             {
                 Context lastContext = __context.get();
                 if (lastContext == this)
-                    task.run();
+                    runnable.run();
                 else
                 {
                     ClassLoader loader = getClassLoader();
@@ -861,12 +847,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
                         __context.set(this);
                         if (loader != null)
                             Thread.currentThread().setContextClassLoader(loader);
-                        enterScope(null);
-                        task.run();
+                        enterScope(request);
+                        runnable.run();
                     }
                     finally
                     {
-                        exitScope(null);
+                        exitScope(request);
                         __context.set(lastContext);
                         if (loader != null)
                             Thread.currentThread().setContextClassLoader(lastLoader);
@@ -920,13 +906,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
          */
-        void enterScope(Context context, Request request);
+        default void enterScope(Context context, Request request) {}
 
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        void exitScope(Context context, Request request);
+        default void exitScope(Context context, Request request) {}
     }
 
     private static class VHost

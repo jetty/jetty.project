@@ -14,7 +14,7 @@
 package org.eclipse.jetty.core.server.handler;
 
 import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.core.server.Context;
 import org.eclipse.jetty.core.server.Request;
@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ContextRequest extends Request.WrapperProcessor implements Invocable, Function<Request, Request.Processor>, Runnable
+public class ContextRequest extends Request.WrapperProcessor implements Invocable, Supplier<Request.Processor>, Runnable
 {
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final String _pathInContext;
@@ -44,11 +44,11 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     }
 
     @Override
-    public Processor apply(Request request)
+    public Processor get()
     {
         try
         {
-            return _contextHandler.getHandler().handle(request);
+            return _contextHandler.getHandler().handle(this);
         }
         catch (Throwable t)
         {
@@ -66,7 +66,7 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     {
         _response = response;
         _callback = callback;
-        _context.run(this);
+        _context.run(this, this);
     }
 
     @Override
@@ -74,7 +74,7 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     {
         try
         {
-            super.process(this, new ContextResponse(_context, _response), _callback);
+            super.process(this, new ContextResponse(_context, this, _response), _callback);
         }
         catch (Throwable t)
         {
@@ -85,13 +85,13 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     @Override
     public void demandContent(Runnable onContentAvailable)
     {
-        super.demandContent(() -> _context.run(onContentAvailable));
+        super.demandContent(() -> _context.run(onContentAvailable, this));
     }
 
     @Override
     public void addErrorListener(Consumer<Throwable> onError)
     {
-        super.addErrorListener(t -> _context.accept(onError, t));
+        super.addErrorListener(t -> _context.accept(onError, t, ContextRequest.this));
     }
 
     @Override
@@ -102,13 +102,13 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
             @Override
             public void succeeded()
             {
-                _context.run(onComplete::succeeded);
+                _context.run(onComplete::succeeded, ContextRequest.this);
             }
 
             @Override
             public void failed(Throwable t)
             {
-                _context.accept(onComplete::failed, t);
+                _context.accept(onComplete::failed, t, ContextRequest.this);
             }
         });
     }

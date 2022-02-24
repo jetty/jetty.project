@@ -58,7 +58,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ContextHandlerTest
@@ -159,12 +161,16 @@ public class ContextHandlerTest
     @Test
     public void testSimpleInContext() throws Exception
     {
+        ScopeListener scopeListener = new ScopeListener();
+        _contextHandler.addEventListener(scopeListener);
+
         Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
             {
                 assertInContext(request);
+                scopeListener.assertInContext(request.getContext(), request);
                 response.setStatus(200);
                 callback.succeeded();
             }
@@ -190,15 +196,31 @@ public class ContextHandlerTest
     @Test
     public void testCallbackInContext() throws Exception
     {
+        ScopeListener scopeListener = new ScopeListener();
+        _contextHandler.addEventListener(scopeListener);
+
         Handler handler = new Handler.Processor()
         {
             @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                assertInContext(request);
+                scopeListener.assertInContext(request.getContext(), request);
+                return super.handle(request);
+            }
+
+            @Override
             public void process(Request request, Response response, Callback callback)
             {
-                request.addCompletionListener(Callback.from(() -> assertInContext(request)));
+                request.addCompletionListener(Callback.from(() ->
+                {
+                    assertInContext(request);
+                    scopeListener.assertInContext(request.getContext(), request);
+                }));
                 request.demandContent(() ->
                 {
                     assertInContext(request);
+                    scopeListener.assertInContext(request.getContext(), request);
                     Content content = request.readContent();
                     assertTrue(content.hasRemaining());
                     assertTrue(content.isLast());
@@ -208,6 +230,7 @@ public class ContextHandlerTest
                         {
                             content.release();
                             assertInContext(request);
+                            scopeListener.assertInContext(request.getContext(), request);
                             callback.succeeded();
                         },
                         t ->
@@ -255,6 +278,8 @@ public class ContextHandlerTest
     public void testBlockingInContext() throws Exception
     {
         CountDownLatch blocking = new CountDownLatch(1);
+        ScopeListener scopeListener = new ScopeListener();
+        _contextHandler.addEventListener(scopeListener);
 
         Handler handler = new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
@@ -267,6 +292,7 @@ public class ContextHandlerTest
                 request.demandContent(() ->
                 {
                     assertInContext(request);
+                    scopeListener.assertInContext(request.getContext(), request);
                     latch.countDown();
                 });
 
@@ -297,6 +323,59 @@ public class ContextHandlerTest
         stream.addContent(BufferUtil.toBuffer("Hello"), true).run();
 
         assertTrue(stream.waitForComplete(5, TimeUnit.SECONDS));
+        assertThat(stream.isComplete(), is(true));
+        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getResponse(), notNullValue());
+        assertThat(stream.getResponse().getStatus(), equalTo(200));
+    }
+
+    @Test
+    public void testFunctionalInContext() throws Exception
+    {
+        CountDownLatch complete = new CountDownLatch(1);
+        ScopeListener scopeListener = new ScopeListener();
+        _contextHandler.addEventListener(scopeListener);
+
+        Handler handler = new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                assertInContext(request);
+                scopeListener.assertInContext(request.getContext(), request);
+                response.setStatus(200);
+
+                Context context = request.getContext();
+                _server.getThreadPool().execute(() ->
+                {
+                    context.run(() -> scopeListener.assertInContext(request.getContext(), null));
+                    assertDoesNotThrow(() -> context.call(() -> scopeListener.assertInContext(request.getContext(), null)));
+                    context.accept(t ->
+                    {
+                        scopeListener.assertInContext(request.getContext(), null);
+                        assertThat(t.getMessage(), is("Xxx"));
+                    }, new Throwable("Xxx"));
+                    context.execute(() ->
+                    {
+                        scopeListener.assertInContext(request.getContext(), null);
+                        callback.succeeded();
+                        complete.countDown();
+                    });
+                });
+            }
+        };
+        _contextHandler.setHandler(handler);
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
+        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        MockHttpStream stream = new MockHttpStream(channel);
+
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0);
+        Runnable task = channel.onRequest(request);
+        task.run();
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
@@ -411,5 +490,36 @@ public class ContextHandlerTest
         assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_HTML_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("<h1>Context: /ctx</h1>"));
         assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("java.lang.RuntimeException: Testing"));
+    }
+
+    private static class ScopeListener implements ContextHandler.ContextScopeListener
+    {
+        private static final Request NULL = new Request.Wrapper(null);
+        private final ThreadLocal<Context> _context = new ThreadLocal<>();
+        private final ThreadLocal<Request> _request = new ThreadLocal<>();
+
+        @Override
+        public void enterScope(Context context, Request request)
+        {
+            _context.set(context);
+            _request.set(request == null ? NULL : request);
+        }
+
+        @Override
+        public void exitScope(Context context, Request request)
+        {
+            _context.set(null);
+            _request.set(null);
+        }
+
+        void assertInContext(Context context, Request request)
+        {
+            assertThat(_context.get(), sameInstance(context));
+            Request r = _request.get();
+            if (r == NULL)
+                assertNull(request);
+            else
+                assertThat(r, sameInstance(request));
+        }
     }
 }
