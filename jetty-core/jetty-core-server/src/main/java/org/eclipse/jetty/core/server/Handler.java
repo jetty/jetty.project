@@ -132,7 +132,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
          * @param <T> the type of {@code Handler}
          * @return an immutable collection of {@code Handler}s of the given type, descendants of this {@code Handler}
          */
-        <T extends Handler> List<T> getDescendantsByClass(Class<T> type);
+        <T extends Handler> List<T> getDescendants(Class<T> type);
 
         /**
          * @param type the type of {@code Handler}
