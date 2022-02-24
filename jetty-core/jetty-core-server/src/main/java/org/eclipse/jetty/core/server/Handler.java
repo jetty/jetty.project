@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
  * which may recursively forward it to their children {@code Handler}s, until one of them
  * returns a non-null {@link Request.Processor}.</p>
  * <p>Returning a non-null {@code Request.Processor} indicates that the {@code Handler}
- * wants to process the HTTP request, and subsequent sibling or children {@code Handler}s
+ * will process the HTTP request, and subsequent sibling or children {@code Handler}s
  * are not invoked.</p>
  * <p>If none of the {@code Handler}s returns a {@code Request.Processor}, a default HTTP 404
  * response is generated.</p>
