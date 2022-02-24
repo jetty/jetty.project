@@ -311,12 +311,14 @@ public abstract class AbstractConnection implements Connection, Invocable
     @Override
     public final String toString()
     {
-        return String.format("%s@%h::%s", getClass().getSimpleName(), hashCode(), getEndPoint());
+        return String.format("%s@%h::%s", getClass().getSimpleName(), this, getEndPoint());
     }
 
     public String toConnectionString()
     {
-        return String.format("%s@%h", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%h",
+            getClass().getSimpleName(),
+            this);
     }
 
     private class ReadCallback implements Callback, Invocable

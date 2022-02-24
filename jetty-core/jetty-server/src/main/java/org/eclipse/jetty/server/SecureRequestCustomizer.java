@@ -396,9 +396,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         @Override
-        public Set<String> getAttributeNamesSet()
+        public Set<String> getAttributeNameSet()
         {
-            Set<String> names = new HashSet<>(_attributes.getAttributeNamesSet());
+            Set<String> names = new HashSet<>(_attributes.getAttributeNameSet());
             names.remove(JAKARTA_SERVLET_REQUEST_X_509_CERTIFICATE);
             names.remove(JAKARTA_SERVLET_REQUEST_CIPHER_SUITE);
             names.remove(JAKARTA_SERVLET_REQUEST_KEY_SIZE);

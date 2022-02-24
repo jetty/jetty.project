@@ -15,8 +15,8 @@ package org.eclipse.jetty.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,11 +26,8 @@ import java.util.Map;
  * @param <V> the entry type for multimap values
  */
 @SuppressWarnings("serial")
-public class MultiMap<V> extends LinkedHashMap<String, List<V>>
+public class MultiMap<V> extends HashMap<String, List<V>>
 {
-    // TODO review if this is really still needed or can we just use Map<List<V>> instead?
-    //      or org.eclipse.util.Fields ?
-
     public MultiMap()
     {
         super();
@@ -64,24 +61,13 @@ public class MultiMap<V> extends LinkedHashMap<String, List<V>>
     }
 
     /**
-     * Get the first value from a multiple value.
-     *
-     * @param name The entry key.
-     * @return a value from index 0.
-     */
-    public V getValue(String name)
-    {
-        return getValue(name, 0);
-    }
-
-    /**
      * Get a value from a multiple value.
      * If the value is not a multivalue, then index 0 retrieves the
      * value or null.
      *
      * @param name The entry key.
      * @param i Index of element to get.
-     * @return a value.
+     * @return Unmodifieable List of values.
      */
     public V getValue(String name, int i)
     {
@@ -330,13 +316,13 @@ public class MultiMap<V> extends LinkedHashMap<String, List<V>>
     @Override
     public String toString()
     {
-        Iterator<Map.Entry<String, List<V>>> iter = entrySet().iterator();
+        Iterator<Entry<String, List<V>>> iter = entrySet().iterator();
         StringBuilder sb = new StringBuilder();
         sb.append('{');
         boolean delim = false;
         while (iter.hasNext())
         {
-            Map.Entry<String, List<V>> e = iter.next();
+            Entry<String, List<V>> e = iter.next();
             if (delim)
             {
                 sb.append(", ");
@@ -364,7 +350,7 @@ public class MultiMap<V> extends LinkedHashMap<String, List<V>>
      */
     public Map<String, String[]> toStringArrayMap()
     {
-        Map<String, String[]> map = new LinkedHashMap<String, String[]>(size() * 3 / 2)
+        HashMap<String, String[]> map = new HashMap<String, String[]>(size() * 3 / 2)
         {
             @Override
             public String toString()

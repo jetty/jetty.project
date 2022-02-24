@@ -32,7 +32,6 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-@Deprecated
 public class SharedBlockingCallbackTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(SharedBlockingCallback.class);

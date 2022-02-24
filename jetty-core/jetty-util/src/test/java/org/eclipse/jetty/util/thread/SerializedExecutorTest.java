@@ -13,90 +13,75 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class SerializedExecutorTest
 {
-    QueuedThreadPool _threadPool = new QueuedThreadPool(10, 1);
-    SerializedExecutor _serialExec;
-
-    @BeforeEach
-    public void beforeEach() throws Exception
-    {
-        _threadPool.start();
-        _serialExec = new SerializedExecutor(_threadPool);
-    }
-
-    @AfterEach
-    public void afterEach() throws Exception
-    {
-        _threadPool.stop();
-    }
-
     @Test
-    public void testSimple() throws Exception
+    public void test() throws Exception
     {
-        CountDownLatch running0 = new CountDownLatch(1);
-        CountDownLatch waiting0 = new CountDownLatch(1);
-        _serialExec.execute(() ->
+        int threads = 64;
+        int loops = 1000;
+        int depth = 100;
+
+        AtomicInteger ran = new AtomicInteger();
+        AtomicBoolean running = new AtomicBoolean();
+        SerializedExecutor executor = new SerializedExecutor();
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch stop = new CountDownLatch(threads);
+        Random random = new Random();
+
+        for (int t = threads; t-- > 0; )
         {
-            try
+            new Thread(() ->
             {
-                running0.countDown();
-                waiting0.await();
-            }
-            catch (InterruptedException e)
-            {
-                e.printStackTrace();
-            }
-        });
+                try
+                {
+                    start.await();
 
-        assertTrue(running0.await(10, TimeUnit.SECONDS));
-        assertThat(_threadPool.getThreads(), is(1));
-        assertThat(_threadPool.getIdleThreads(), is(0));
+                    for (int l = loops; l-- > 0; )
+                    {
+                        final AtomicInteger d = new AtomicInteger(depth);
+                        executor.execute(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                ran.incrementAndGet();
+                                if (!running.compareAndSet(false, true))
+                                    throw new IllegalStateException();
+                                if (d.decrementAndGet() > 0)
+                                    executor.execute(this);
+                                if (!running.compareAndSet(true, false))
+                                    throw new IllegalStateException();
+                            }
+                        });
+                        Thread.sleep(random.nextInt(5));
+                    }
+                }
+                catch (Throwable th)
+                {
+                    th.printStackTrace();
+                }
+                finally
+                {
+                    stop.countDown();
+                }
+            }).start();
+        }
 
-        CountDownLatch running1 = new CountDownLatch(1);
-        CountDownLatch waiting1 = new CountDownLatch(1);
-        _serialExec.execute(() ->
-        {
-            try
-            {
-                running1.countDown();
-                waiting1.await();
-            }
-            catch (InterruptedException e)
-            {
-                e.printStackTrace();
-            }
-        });
-
-        assertFalse(running1.await(100, TimeUnit.MILLISECONDS));
-        assertThat(_threadPool.getThreads(), is(1));
-        assertThat(_threadPool.getIdleThreads(), is(0));
-
-        waiting0.countDown();
-
-        assertTrue(running1.await(10, TimeUnit.SECONDS));
-        assertThat(_threadPool.getThreads(), is(1));
-        assertThat(_threadPool.getIdleThreads(), is(0));
-
-        waiting1.countDown();
-        long start = System.nanoTime();
-        while (TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - start) < 10)
-            if (_threadPool.getIdleThreads() == 1)
-                break;
-
-        assertThat(_threadPool.getThreads(), is(1));
-        assertThat(_threadPool.getIdleThreads(), is(1));
+        start.countDown();
+        assertTrue(stop.await(30, TimeUnit.SECONDS));
+        assertThat(ran.get(), Matchers.is(threads * loops * depth));
     }
 }
