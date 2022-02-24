@@ -104,7 +104,9 @@ public final class UriCompliance implements ComplianceViolation.Mode
      * additional violations to avoid most ambiguous URIs.
      * This mode does allow {@link Violation#AMBIGUOUS_PATH_SEPARATOR}, but disallows all out {@link Violation}s.
      */
-    public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT", of(Violation.AMBIGUOUS_PATH_SEPARATOR));
+    public static final UriCompliance DEFAULT = new UriCompliance("DEFAULT",
+        of(Violation.AMBIGUOUS_PATH_SEPARATOR,
+            Violation.AMBIGUOUS_PATH_ENCODING));
 
     /**
      * LEGACY compliance mode that models Jetty-9.4 behavior by allowing {@link Violation#AMBIGUOUS_PATH_SEGMENT},

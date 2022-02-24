@@ -417,14 +417,14 @@ public class Module implements Comparable<Module>
                             case "DEFAULTS": // old name introduced in 9.2.x
                             case "INI": // new name for 9.3+
                             {
-                                // All default properties are to be treated as `<k>?=<v>` by the configuration system
-                                // even if they are present as `<k>=<v>`
+                                // If a property is specified as `<k>=<v>` it is to be treated as `<k>?=<v>`.
+                                // All other property usages are left as-is (eg: `<k>+=<v>`)
                                 int idx = line.indexOf('=');
                                 if (idx > 0)
                                 {
                                     String key = line.substring(0, idx);
                                     String value = line.substring(idx + 1);
-                                    if (key.endsWith("?"))
+                                    if (key.endsWith("?") || key.endsWith("+"))
                                     {
                                         // already the correct way
                                         _defaultConfig.add(line);

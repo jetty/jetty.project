@@ -89,7 +89,7 @@ public class QuicServerConnector extends AbstractNetworkConnector
         // One bidirectional stream to simulate the TCP stream, and no unidirectional streams.
         quicConfiguration.setMaxBidirectionalRemoteStreams(1);
         quicConfiguration.setMaxUnidirectionalRemoteStreams(0);
-        quicConfiguration.setVerifyPeerCertificates(true);
+        quicConfiguration.setVerifyPeerCertificates(false);
     }
 
     public QuicConfiguration getQuicConfiguration()
