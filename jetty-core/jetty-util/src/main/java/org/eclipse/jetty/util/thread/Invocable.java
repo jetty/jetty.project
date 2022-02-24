@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.concurrent.Callable;
-
-import org.eclipse.jetty.util.Callback;
-
 /**
  * <p>A task (typically either a {@link Runnable} or {@link Callable}
  * that declares how it will behave when invoked:</p>
@@ -78,6 +74,13 @@ public interface Invocable
      */
     interface Task extends Invocable, Runnable
     {
+        void run();
+    }
+
+    // TODO review.  Handy for lambdas that throw (eg LifeCycle#start())
+    interface Callable extends Invocable
+    {
+        void call() throws Exception;
     }
 
     /**
@@ -156,6 +159,12 @@ public interface Invocable
         }
     }
 
+    /**
+     * Combine two invocation type.
+     * @param it1 A type
+     * @param it2 Another type
+     * @return The combination of both type, where any tendency to block overrules any non blocking.
+     */
     static InvocationType combine(InvocationType it1, InvocationType it2)
     {
         if (it1 != null && it2 != null)
@@ -190,13 +199,5 @@ public interface Invocable
     default InvocationType getInvocationType()
     {
         return InvocationType.BLOCKING;
-    }
-
-    /**
-     * A Runnable-like Invocable interface, that throws Exception
-     */
-    interface Task extends Invocable
-    {
-        void run() throws Exception;
     }
 }

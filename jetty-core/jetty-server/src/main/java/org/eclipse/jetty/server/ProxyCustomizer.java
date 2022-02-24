@@ -96,9 +96,9 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
         }
 
         @Override
-        public Set<String> getAttributeNameSet()
+        public Set<String> getAttributeNamesSet()
         {
-            Set<String> names = new HashSet<>(_attributes.getAttributeNameSet());
+            Set<String> names = new HashSet<>(_attributes.getAttributeNamesSet());
             names.remove(REMOTE_ADDRESS_ATTRIBUTE_NAME);
             names.remove(LOCAL_ADDRESS_ATTRIBUTE_NAME);
 

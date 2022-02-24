@@ -14,6 +14,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -57,7 +58,8 @@ public interface Attributes
      * Get the immutable set of attribute names.
      * @return Set of attribute names
      */
-    Set<String> getAttributeNames();
+    // TODO: change to getAttributeNames() once jetty-core is cleaned of servlet-api usages
+    Set<String> getAttributeNamesSet();
 
     /**
      * Clear all attribute names
@@ -131,9 +133,9 @@ public interface Attributes
         }
 
         @Override
-        public Set<String> getAttributeNames()
+        public Set<String> getAttributeNamesSet()
         {
-            return _attributes.getAttributeNames();
+            return _attributes.getAttributeNamesSet();
         }
 
         @Override
@@ -194,7 +196,7 @@ public interface Attributes
         }
 
         @Override
-        public Set<String> getAttributeNames()
+        public Set<String> getAttributeNamesSet()
         {
             return _names;
         }
@@ -218,7 +220,7 @@ public interface Attributes
 
         public void addAll(Attributes attributes)
         {
-            for (String name : attributes.getAttributeNames())
+            for (String name : attributes.getAttributeNamesSet())
                 setAttribute(name, attributes.getAttribute(name));
         }
 
@@ -296,8 +298,13 @@ public interface Attributes
             return map == null ? null : map.get(name);
         }
 
+        public Collection<Object> getAttributeEntriesSet()
+        {
+            return map().values();
+        }
+
         @Override
-        public Set<String> getAttributeNames()
+        public Set<String> getAttributeNamesSet()
         {
             return Collections.unmodifiableSet(keySet());
         }
@@ -331,7 +338,7 @@ public interface Attributes
 
         public void addAll(Attributes attributes)
         {
-            for (String name : attributes.getAttributeNames())
+            for (String name : attributes.getAttributeNamesSet())
                 setAttribute(name, attributes.getAttribute(name));
         }
 
@@ -410,9 +417,9 @@ public interface Attributes
         }
 
         @Override
-        public Set<String> getAttributeNames()
+        public Set<String> getAttributeNamesSet()
         {
-            Set<String> names = new HashSet<>(_persistent.getAttributeNames());
+            Set<String> names = new HashSet<>(_persistent.getAttributeNamesSet());
             for (Map.Entry<String, Object> entry : _map.entrySet())
             {
                 if (entry.getValue() == REMOVED)
@@ -426,7 +433,7 @@ public interface Attributes
         @Override
         public void clearAttributes()
         {
-            for (String n : _persistent.getAttributeNames())
+            for (String n : _persistent.getAttributeNamesSet())
                 _map.put(n, REMOVED);
             _map.entrySet().removeIf(e -> e.getValue() != REMOVED);
         }
@@ -435,7 +442,7 @@ public interface Attributes
         public int hashCode()
         {
             int hash = 0;
-            for (String name : getAttributeNames())
+            for (String name : getAttributeNamesSet())
                 hash += name.hashCode() ^ getAttribute(name).hashCode();
             return hash;
         }
@@ -446,8 +453,8 @@ public interface Attributes
             if (o instanceof Attributes)
             {
                 Attributes a = (Attributes)o;
-                Set<String> ours = getAttributeNames();
-                Set<String> theirs = getAttributeNames();
+                Set<String> ours = getAttributeNamesSet();
+                Set<String> theirs = getAttributeNamesSet();
                 if (!ours.equals(theirs))
                     return false;
 

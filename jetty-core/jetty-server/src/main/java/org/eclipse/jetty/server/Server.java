@@ -19,7 +19,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -691,27 +690,21 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     @Override
-    public Enumeration<String> getAttributeNames()
+    public Set<String> getAttributeNamesSet()
     {
-        return _attributes.getAttributeNames();
+        return _attributes.getAttributeNamesSet();
     }
 
     @Override
-    public Set<String> getAttributeNameSet()
+    public Object removeAttribute(String name)
     {
-        return _attributes.getAttributeNameSet();
+        return _attributes.removeAttribute(name);
     }
 
     @Override
-    public void removeAttribute(String name)
+    public Object setAttribute(String name, Object attribute)
     {
-        _attributes.removeAttribute(name);
-    }
-
-    @Override
-    public void setAttribute(String name, Object attribute)
-    {
-        _attributes.setAttribute(name, attribute);
+        return _attributes.setAttribute(name, attribute);
     }
 
     /**

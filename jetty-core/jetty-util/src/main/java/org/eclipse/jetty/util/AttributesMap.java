@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -86,7 +87,7 @@ public class AttributesMap implements Attributes, Dumpable
     }
 
     @Override
-    public Set<String> getAttributeNames()
+    public Set<String> getAttributeNamesSet()
     {
         return Collections.unmodifiableSet(keySet());
     }
@@ -102,8 +103,17 @@ public class AttributesMap implements Attributes, Dumpable
         if (attrs instanceof AttributesMap)
             return Collections.enumeration(((AttributesMap)attrs).keySet());
 
-        List<String> names = new ArrayList<>(attrs.getAttributeNames());
+        List<String> names = new ArrayList<>(attrs.getAttributeNamesSet());
         return Collections.enumeration(names);
+    }
+
+    public static Set<String> getAttributeNamesSetCopy(Attributes attrs)
+    {
+        if (attrs instanceof AttributesMap)
+            return ((AttributesMap)attrs).keySet();
+
+        List<String> names = new ArrayList<>(attrs.getAttributeNamesSet());
+        return new HashSet<>(names);
     }
 
     @Override
@@ -135,7 +145,7 @@ public class AttributesMap implements Attributes, Dumpable
 
     public void addAll(Attributes attributes)
     {
-        for (String name : attributes.getAttributeNames())
+        for (String name : attributes.getAttributeNamesSet())
             setAttribute(name, attributes.getAttribute(name));
     }
 
