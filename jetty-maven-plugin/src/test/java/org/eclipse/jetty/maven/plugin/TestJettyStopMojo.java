@@ -22,6 +22,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.maven.plugin.AbstractWebAppMojo.DeploymentMode;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
@@ -209,6 +210,30 @@ public class TestJettyStopMojo
         log.assertContains("Server reports itself as stopped");
     }
 
+    @Test
+    public void testStopSameProcess() throws Exception
+    {
+        //test that if we need to stop a jetty in the same process as us
+        //we will wait for it to exit
+        String stopKey = "foo";
+        long thisPid = ProcessHandle.current().pid();
+        MockShutdownMonitorRunnable runnable = new MockShutdownMonitorRunnable();
+        runnable.setPidResponse(Long.toString(thisPid));
+        MockShutdownMonitor monitor = new MockShutdownMonitor(stopKey, runnable);
+        monitor.start();
+        
+        TestLog log = new TestLog();
+        JettyStopMojo mojo = new JettyStopMojo();
+        mojo.stopWait = 5;
+        mojo.stopKey = stopKey;
+        mojo.stopPort = monitor.getPort();
+        mojo.setLog(log);
+
+        mojo.execute();
+        
+        log.assertContains("Waiting 5 seconds for jetty " + Long.toString(thisPid) + " to stop");
+    }
+    
     @Test
     public void testStopWait() throws Exception
     {
