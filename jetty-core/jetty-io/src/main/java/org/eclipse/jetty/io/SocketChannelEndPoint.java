@@ -51,7 +51,8 @@ public class SocketChannelEndPoint extends SelectableChannelEndPoint
         }
         catch (Throwable x)
         {
-            LOG.trace("Could not retrieve remote socket address", x);
+            if (LOG.isTraceEnabled())
+                LOG.trace("Could not retrieve remote socket address", x);
             return null;
         }
     }

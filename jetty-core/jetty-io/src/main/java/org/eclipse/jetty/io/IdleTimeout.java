@@ -159,11 +159,12 @@ public abstract class IdleTimeout
             {
                 if (idleLeft <= 0)
                 {
+                    TimeoutException timeout = new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms");
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} idle timeout expired", this);
+                        LOG.debug("{} idle timeout expired", this, timeout);
                     try
                     {
-                        onIdleExpired(new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms"));
+                        onIdleExpired(timeout);
                     }
                     finally
                     {

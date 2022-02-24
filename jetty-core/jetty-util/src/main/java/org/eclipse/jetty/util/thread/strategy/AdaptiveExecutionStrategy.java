@@ -358,7 +358,7 @@ public class AdaptiveExecutionStrategy extends ContainerLifeCycle implements Exe
     {
         // Consume and/or execute task according to the selected mode.
         if (LOG.isDebugEnabled())
-            LOG.debug("ss={} t={}/{} {}", subStrategy, task, Invocable.getInvocationType(task), this);
+            LOG.debug("ss={}/{}/{} t={} {}", subStrategy, Invocable.isNonBlockingInvocation(), Invocable.getInvocationType(task), task, this);
         switch (subStrategy)
         {
             case PRODUCE_CONSUME:
