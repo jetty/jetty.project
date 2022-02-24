@@ -148,7 +148,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
          * @param <T> the type of {@code Handler}
          * @return the {@code Handler.Container} of the given type, parent of the given {@code Handler}
          */
-        default <T extends Handler.Container> T getContainerByClass(Handler handler, Class<T> type)
+        default <T extends Handler.Container> T getContainer(Handler handler, Class<T> type)
         {
             if (handler == null)
                 return null;
