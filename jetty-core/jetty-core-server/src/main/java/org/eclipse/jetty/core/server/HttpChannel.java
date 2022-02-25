@@ -662,7 +662,7 @@ public class HttpChannel extends Attributes.Lazy
                     _stream = null;
                     _request = null;
 
-                    commit = _response.commitResponse(true);
+                    commit = _response.commitResponse(stream, true);
                     contentLength = _response._contentLength;
                     written = _response._written;
                 }
@@ -847,7 +847,7 @@ public class HttpChannel extends Attributes.Lazy
                         _written += b.remaining();
                     }
 
-                    commit = commitResponse(last);
+                    commit = commitResponse(_stream, last);
                     stream = _stream;
                     contentLength = _contentLength;
                     written = _written;
@@ -947,7 +947,7 @@ public class HttpChannel extends Attributes.Lazy
             }
         }
 
-        private MetaData.Response commitResponse(boolean last)
+        private MetaData.Response commitResponse(HttpStream stream, boolean last)
         {
             if (!_lock.isHeldByCurrentThread())
                 throw new IllegalStateException();
@@ -974,6 +974,8 @@ public class HttpChannel extends Attributes.Lazy
             // Add the date header
             if (_configuration.getSendDateHeader() && !_headers.contains(HttpHeader.DATE))
                 _headers.put(getServer().getDateField());
+
+            stream.onCommit(_headers);
 
             // Freeze the headers and mark this response as committed
             _headers.toReadOnly();
@@ -1017,7 +1019,7 @@ public class HttpChannel extends Attributes.Lazy
             {
                 for (ByteBuffer b : content)
                     _request._response._written += b.remaining();
-                commit = _request._response.commitResponse(last);
+                commit = _request._response.commitResponse(_stream, last);
             }
 
             // Do the write
