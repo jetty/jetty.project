@@ -273,7 +273,7 @@ public class HttpTester
         }
     }
 
-    public abstract static class Message extends HttpFields.Mutable implements HttpParser.HttpHandler
+    public abstract static class Message extends HttpFields.Builder implements HttpParser.HttpHandler
     {
         boolean _earlyEOF;
         boolean _complete = false;

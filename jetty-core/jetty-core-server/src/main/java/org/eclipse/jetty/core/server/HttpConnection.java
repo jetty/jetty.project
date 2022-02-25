@@ -1344,7 +1344,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public void onCommit(HttpFields.Mutable headers)
+        public void prepareResponse(HttpFields.Mutable headers)
         {
             if (_connectionKeepAlive && _version == HttpVersion.HTTP_1_0 && !headers.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
                 headers.add(CONNECTION_KEEPALIVE);

@@ -639,8 +639,7 @@ public class HttpChannel extends Attributes.Lazy
             {
                 // Called when the request/response cycle is completing successfully.
                 HttpStream stream;
-                MetaData.Response commit;
-                long contentLength;
+                boolean commit;
                 long written;
                 try (AutoLock ignored = _lock.lock())
                 {
@@ -662,10 +661,11 @@ public class HttpChannel extends Attributes.Lazy
                     _stream = null;
                     _request = null;
 
-                    commit = _response.commitResponse(stream, true);
-                    contentLength = _response._contentLength;
                     written = _response._written;
+                    commit = _response._headers.commit();
                 }
+
+                MetaData.Response responseMetaData = commit ? _response.prepareResponse(stream, true) : null;
 
                 // is the request fully consumed?
                 Throwable unconsumed = stream.consumeAll();
@@ -673,10 +673,10 @@ public class HttpChannel extends Attributes.Lazy
                     LOG.debug("consumeAll {} ", this, unconsumed);
                 if (unconsumed != null && getConnectionMetaData().isPersistent())
                     stream.failed(unconsumed);
-                else if (contentLength >= 0L && contentLength != written)
-                    stream.failed(new IOException(String.format("contentLength %d != %d", contentLength, written)));
+                else if (_response._committedContentLength >= 0L && _response._committedContentLength != written)
+                    stream.failed(new IOException("content-length %d != %d written".formatted(_response._committedContentLength, written)));
                 else
-                    stream.send(commit, true, stream);
+                    stream.send(responseMetaData, true, stream);
             }
 
             @Override
@@ -764,19 +764,20 @@ public class HttpChannel extends Attributes.Lazy
         }
     }
 
-    private class ChannelResponse implements Response, Callback
+    private class ChannelResponse extends HttpFields.Builder implements Response, Callback
     {
         private final ChannelRequest _request;
-        private final ResponseHttpFields _headers = new ResponseHttpFields();
+        private final ResponseHttpFields _headers;
         private int _status;
         private ResponseHttpFields _trailers;
         private Callback _onWriteComplete;
         private long _written;
-        private long _contentLength = -1L;
+        private long _committedContentLength = -1L;
 
         private ChannelResponse(ChannelRequest request)
         {
             _request = request;
+            _headers = new ResponseHttpFields(this);
             // Add the date header
             if (_configuration.getSendDateHeader())
                 _headers.put(getServer().getDateField());
@@ -808,7 +809,7 @@ public class HttpChannel extends Attributes.Lazy
             {
                 // TODO check if trailers allowed in version and transport?
                 if (_trailers == null)
-                    _trailers = new ResponseHttpFields();
+                    _trailers = new ResponseHttpFields(HttpFields.build());
                 return _trailers;
             }
         }
@@ -827,11 +828,10 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public void write(boolean last, Callback callback, ByteBuffer... content)
         {
-            MetaData.Response commit = null;
             HttpStream stream = null;
-            long contentLength = -1;
             long written = -1;
             Throwable failure = null;
+            boolean commit;
             try (AutoLock ignored = _lock.lock())
             {
                 if (_onWriteComplete != null)
@@ -846,25 +846,27 @@ public class HttpChannel extends Attributes.Lazy
                 {
                     _onWriteComplete = callback;
                     for (ByteBuffer b : content)
-                    {
                         _written += b.remaining();
-                    }
 
-                    commit = commitResponse(_stream, last);
                     stream = _stream;
-                    contentLength = _contentLength;
                     written = _written;
                 }
+                commit = _headers.commit();
             }
 
+            MetaData.Response responseMetaData = null;
+            if (commit)
+                responseMetaData = prepareResponse(stream, last);
+
             // If the content lengths were not compatible with what was written, then we need to abort
+            long contentLength = _committedContentLength;
             if (contentLength >= 0)
             {
-                String lengthError = (contentLength < written) ? "content-length %d < %d"
-                    : (last && contentLength > written) ? "content-length %d > %d" : null;
+                String lengthError = (contentLength < written) ? "content-length %d < %d written"
+                    : (last && contentLength > written) ? "content-length %d > %d written" : null;
                 if (lengthError != null)
                 {
-                    String message = String.format(lengthError, contentLength, written);
+                    String message = lengthError.formatted(contentLength, written);
                     if (LOG.isDebugEnabled())
                         LOG.debug("fail {} {}", callback, message);
                     failure = new IOException(message);
@@ -879,7 +881,7 @@ public class HttpChannel extends Attributes.Lazy
             }
 
             // Do the write
-            stream.send(commit, last, this, content);
+            stream.send(responseMetaData, last, this, content);
         }
 
         @Override
@@ -943,41 +945,31 @@ public class HttpChannel extends Attributes.Lazy
                 if (_headers.isCommitted())
                     throw new IllegalStateException("Committed");
 
-                _headers.clear(); // TODO re-add or don't delete default fields
+                clear();
                 if (_trailers != null)
                     _trailers.clear();
                 _status = 0;
             }
         }
 
-        private MetaData.Response commitResponse(HttpStream stream, boolean last)
+        private MetaData.Response prepareResponse(HttpStream stream, boolean last)
         {
-            if (!_lock.isHeldByCurrentThread())
-                throw new IllegalStateException();
-
-            // Are we already committed?
-            if (_headers.isCommitted())
-                return null;
-
             // Assume 200 unless told otherwise
             if (_status == 0)
                 _status = HttpStatus.OK_200;
 
             // Can we set the content length?
-            _contentLength = _headers.getLongField(HttpHeader.CONTENT_LENGTH);
-            if (last && _contentLength < 0L)
+            _committedContentLength = getLongField(HttpHeader.CONTENT_LENGTH);
+            if (last && _committedContentLength < 0L)
             {
-                _contentLength = _written;
-                if (_contentLength == 0)
-                    _headers.put(CONTENT_LENGTH_0);
+                _committedContentLength = _written;
+                if (_committedContentLength == 0)
+                    put(CONTENT_LENGTH_0);
                 else
-                    _headers.putLongField(HttpHeader.CONTENT_LENGTH, _contentLength);
+                    putLongField(HttpHeader.CONTENT_LENGTH, _committedContentLength);
             }
 
-            stream.onCommit(_headers);
-
-            // Freeze the headers and mark this response as committed
-            _headers.commit();
+            stream.prepareResponse(this);
 
             // Provide trailers if they exist
             Supplier<HttpFields> trailers = _trailers == null ? null : this::takeTrailers;
@@ -986,8 +978,8 @@ public class HttpChannel extends Attributes.Lazy
                 getConnectionMetaData().getVersion(),
                 _status,
                 null,
-                _headers,
-                -1,
+                this,
+                _committedContentLength,
                 trailers);
         }
     }
@@ -1013,16 +1005,17 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public void write(boolean last, Callback callback, ByteBuffer... content)
         {
-            MetaData.Response commit;
+            boolean commit;
             try (AutoLock ignored = _lock.lock())
             {
                 for (ByteBuffer b : content)
                     _request._response._written += b.remaining();
-                commit = _request._response.commitResponse(_stream, last);
+                commit = _request._response._headers.commit();
             }
+            MetaData.Response responseMetaData = commit ? _request._response.prepareResponse(_stream, last) : null;
 
             // Do the write
-            _stream.send(commit, last, callback, content);
+            _stream.send(responseMetaData, last, callback, content);
         }
     }
 }

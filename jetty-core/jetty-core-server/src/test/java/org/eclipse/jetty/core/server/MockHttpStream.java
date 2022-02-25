@@ -141,7 +141,7 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public void onCommit(HttpFields.Mutable headers)
+    public void prepareResponse(HttpFields.Mutable headers)
     {
     }
 
