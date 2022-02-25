@@ -705,10 +705,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         @Override
         public Request.Processor getErrorProcessor()
         {
-            Request.Processor errorProcessor = ContextHandler.this.getErrorProcessor();
-            if (errorProcessor == null)
-                errorProcessor = getServer().getErrorProcessor();
-            return errorProcessor;
+            return ContextHandler.this.getErrorProcessor();
         }
 
         @Override

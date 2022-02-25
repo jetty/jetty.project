@@ -140,6 +140,8 @@ public interface Response
 
         Context context = request.getContext();
         Request.Processor errorProcessor = context.getErrorProcessor();
+        if (errorProcessor == null)
+            errorProcessor = request.getHttpChannel().getServer().getErrorProcessor();
 
         if (errorProcessor != null)
         {
