@@ -58,7 +58,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -349,12 +348,6 @@ public class ContextHandlerTest
                 _server.getThreadPool().execute(() ->
                 {
                     context.run(() -> scopeListener.assertInContext(request.getContext(), null));
-                    assertDoesNotThrow(() -> context.call(() -> scopeListener.assertInContext(request.getContext(), null)));
-                    context.accept(t ->
-                    {
-                        scopeListener.assertInContext(request.getContext(), null);
-                        assertThat(t.getMessage(), is("Xxx"));
-                    }, new Throwable("Xxx"));
                     context.execute(() ->
                     {
                         scopeListener.assertInContext(request.getContext(), null);

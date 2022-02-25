@@ -392,7 +392,6 @@ public class HttpChannel extends Attributes.Lazy
     {
         final MetaData.Request _metaData;
         final ChannelResponse _response;
-        final long _requestId;
         String _id;
         Content.Error _error;
         Consumer<Throwable> _onError;
@@ -405,7 +404,7 @@ public class HttpChannel extends Attributes.Lazy
             if (metaData == null)
                 new Throwable().printStackTrace();
             Objects.requireNonNull(metaData);
-            _requestId = ++_requests;
+            _requests++;
             _requestAttributes.clearAttributes();
             _metaData = metaData;
             _response = new ChannelResponse(this);
@@ -467,7 +466,7 @@ public class HttpChannel extends Attributes.Lazy
         public String getId()
         {
             if (_id == null)
-                _id = getConnectionMetaData().getId() + "#" + _requestId;
+                _id = getConnectionMetaData().getId() + "#" + _stream.getId();
             return _id;
         }
 

@@ -442,14 +442,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     protected void doStart() throws Exception
     {
         // TODO lots of stuff in previous doStart. Some might go here, but most probably goes to the ServletContentHandler ?
-        _context.call(super::doStart);
+        _context.call(super::doStart, null);
     }
 
     @Override
     protected void doStop() throws Exception
     {
         // TODO lots of stuff in previous doStart. Some might go here, but most probably goes to the ServletContentHandler ?
-        _context.call(super::doStop);
+        _context.call(super::doStop, null);
     }
 
     public boolean checkVirtualHost(Request request)
@@ -683,8 +683,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         public ScopedContext()
         {
-            // TODO Hmmm now we have attributes from the server context and from the persistent attributes?
-            //      Currently not delegating to server context.
+            // TODO Should the ScopedContext attributes be a layer over the ServerContext attributes?
             super(_persistentAttributes);
         }
 
@@ -732,7 +731,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return _resourceBase;
         }
 
-        public <T> T get(Supplier<T> supplier, Request request) throws Exception
+        private <T> T get(Supplier<T> supplier, Request request)
         {
             Context lastContext = __context.get();
             if (lastContext == this)
@@ -758,13 +757,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             }
         }
 
-        @Override
-        public void call(Invocable.Callable callable) throws Exception
-        {
-            call(callable, null);
-        }
-
-        public void call(Invocable.Callable callable, Request request) throws Exception
+        void call(Invocable.Callable callable, Request request) throws Exception
         {
             Context lastContext = __context.get();
             if (lastContext == this)
@@ -792,13 +785,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             }
         }
 
-        @Override
-        public void accept(Consumer<Throwable> consumer, Throwable t)
-        {
-            accept(consumer, t, null);
-        }
-
-        public void accept(Consumer<Throwable> consumer, Throwable t, Request request)
+        void accept(Consumer<Throwable> consumer, Throwable t, Request request)
         {
             Context lastContext = __context.get();
             if (lastContext == this)

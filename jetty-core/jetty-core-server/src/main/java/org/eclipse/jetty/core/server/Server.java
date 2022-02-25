@@ -25,7 +25,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.core.server.handler.ContextHandler;
 import org.eclipse.jetty.core.server.handler.ErrorProcessor;
@@ -716,18 +715,6 @@ public class Server extends Handler.Wrapper implements Attributes
         public Path getResourceBase()
         {
             return null;
-        }
-
-        @Override
-        public void accept(Consumer<Throwable> consumer, Throwable t)
-        {
-            consumer.accept(t);
-        }
-
-        @Override
-        public void call(Callable callable) throws Exception
-        {
-            callable.call();
         }
 
         @Override

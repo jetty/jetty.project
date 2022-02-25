@@ -15,11 +15,9 @@ package org.eclipse.jetty.core.server;
 
 import java.nio.file.Path;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Decorator;
-import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * A Context for handling/processing a request.
@@ -27,10 +25,8 @@ import org.eclipse.jetty.util.thread.Invocable;
  * a context provided by a ContextHandler.
  * <p>
  * A Context is also an {@link Executor}, which allows tasks to be run by a thread pool, but scoped
- * to the classloader and any other aspects of the context.   Methods {@link #run(Runnable)},
- * {@link #call(Invocable.Callable)} and {@link #accept(Consumer, Throwable)}
- * are also provided to allow various functional interfaces to be called scoped to the context,
- * without being executed in another thread.
+ * to the classloader and any other aspects of the context.   Method {@link #run(Runnable)}
+ * is also provided to allow the current Thread to be scoped to the context.
  * <p>
  * A Context is also a {@link Decorator}, allowing objects to be decorated in a context scope.
  *
@@ -48,9 +44,10 @@ public interface Context extends Attributes, Decorator, Executor
 
     Request.Processor getErrorProcessor();
 
-    void call(Invocable.Callable callable) throws Exception;
+    @Override
+    /** execute runnable in container thread scoped to context */
+    void execute(Runnable runnable);
 
-    void run(Runnable task);
-
-    void accept(Consumer<Throwable> consumer, Throwable t);
+    /** scope the calling thread to the context and run the runnable. */
+    void run(Runnable runnable);
 }
