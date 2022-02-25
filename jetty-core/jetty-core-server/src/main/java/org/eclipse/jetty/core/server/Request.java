@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,9 +16,7 @@ package org.eclipse.jetty.core.server;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.concurrent.Executor;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import org.eclipse.jetty.core.server.handler.ErrorProcessor;
 import org.eclipse.jetty.http.HttpFields;
@@ -101,7 +99,7 @@ import org.eclipse.jetty.util.UrlEncoded;
  * }
  * }</pre>
  */
-public interface Request extends Attributes, Executor, Content.Provider
+public interface Request extends Attributes, Content.Provider
 {
     /**
      * @return a unique ID for this request
@@ -128,10 +126,12 @@ public interface Request extends Attributes, Executor, Content.Provider
      */
     HttpURI getHttpURI();
 
-    // TODO: remove?
-    // TODO: with isSecure() there seems to be a reason to have getOriginalHttpURI() and getHttpURI()
-    //  because why only replacing scheme and path, and not authority, query, etc.?
-    String getPath();
+    Context getContext();
+
+    /**
+     * @return The part of the path of the URI after any context path prefix has been removed.
+     */
+    String getPathInContext();
 
     /**
      * @return the HTTP headers of this request
@@ -286,33 +286,6 @@ public interface Request extends Attributes, Executor, Content.Provider
         return params;
     }
 
-    // TODO: remove not used.
-    @SuppressWarnings("unchecked")
-    default <R extends Request> R as(Class<R> type)
-    {
-        Request r = this;
-        while (r != null)
-        {
-            if (type.isInstance(r))
-                return (R)r;
-            r = r.getWrapped();
-        }
-        return null;
-    }
-
-    // TODO remove when Request.getContext() is merged.
-    default <T extends Request, R> R get(Class<T> type, Function<T, R> getter)
-    {
-        Request r = this;
-        while (r != null)
-        {
-            if (type.isInstance(r))
-                return getter.apply((T)r);
-            r = r.getWrapped();
-        }
-        return null;
-    }
-
     /**
      * <p>A processor for an HTTP request and response.</p>
      * <p>The processing typically involves reading the request content (if any) and producing a response.</p>
@@ -366,12 +339,6 @@ public interface Request extends Attributes, Executor, Content.Provider
         }
 
         @Override
-        public void execute(Runnable task)
-        {
-            getWrapped().execute(task);
-        }
-
-        @Override
         public String getId()
         {
             return getWrapped().getId();
@@ -402,9 +369,15 @@ public interface Request extends Attributes, Executor, Content.Provider
         }
 
         @Override
-        public String getPath()
+        public Context getContext()
         {
-            return getWrapped().getPath();
+            return getWrapped().getContext();
+        }
+
+        @Override
+        public String getPathInContext()
+        {
+            return getWrapped().getPathInContext();
         }
 
         @Override

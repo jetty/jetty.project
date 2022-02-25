@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -70,21 +70,21 @@ public class ErrorHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                if (request.getPath().startsWith("/badmessage/"))
+                if (request.getPathInContext().startsWith("/badmessage/"))
                 {
-                    int code = Integer.parseInt(request.getPath().substring(request.getPath().lastIndexOf('/') + 1));
+                    int code = Integer.parseInt(request.getPathInContext().substring(request.getPathInContext().lastIndexOf('/') + 1));
                     throw new BadMessageException(code);
                 }
 
                 // produce an exception with an JSON formatted cause message
-                if (request.getPath().startsWith("/jsonmessage/"))
+                if (request.getPathInContext().startsWith("/jsonmessage/"))
                 {
                     String message = "\"}, \"glossary\": {\n \"title\": \"example\"\n }\n {\"";
                     throw new TestException(message);
                 }
 
                 // produce an exception with an XML cause message
-                if (request.getPath().startsWith("/xmlmessage/"))
+                if (request.getPathInContext().startsWith("/xmlmessage/"))
                 {
                     String message =
                         "<!DOCTYPE glossary PUBLIC \"-//OASIS//DTD DocBook V3.1//EN\">\n" +
@@ -95,14 +95,14 @@ public class ErrorHandlerTest
                 }
 
                 // produce an exception with an HTML cause message
-                if (request.getPath().startsWith("/htmlmessage/"))
+                if (request.getPathInContext().startsWith("/htmlmessage/"))
                 {
                     String message = "<hr/><script>alert(42)</script>%3Cscript%3E";
                     throw new TestException(message);
                 }
 
                 // produce an exception with a UTF-8 cause message
-                if (request.getPath().startsWith("/utf8message/"))
+                if (request.getPathInContext().startsWith("/utf8message/"))
                 {
                     // @checkstyle-disable-check : AvoidEscapedUnicodeCharacters
                     String message = "Euro is &euro; and \u20AC and %E2%82%AC";

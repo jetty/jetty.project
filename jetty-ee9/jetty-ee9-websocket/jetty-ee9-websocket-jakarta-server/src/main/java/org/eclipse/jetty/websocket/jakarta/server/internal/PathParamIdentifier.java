@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -52,13 +52,21 @@ public class PathParamIdentifier implements InvokerUtils.ParamIdentifier
     public static void validateType(Class<?> type)
     {
         if (!String.class.isAssignableFrom(type) &&
+            !Integer.class.isAssignableFrom(type) &&
             !Integer.TYPE.isAssignableFrom(type) &&
+            !Long.class.isAssignableFrom(type) &&
             !Long.TYPE.isAssignableFrom(type) &&
+            !Short.class.isAssignableFrom(type) &&
             !Short.TYPE.isAssignableFrom(type) &&
+            !Float.class.isAssignableFrom(type) &&
             !Float.TYPE.isAssignableFrom(type) &&
+            !Double.class.isAssignableFrom(type) &&
             !Double.TYPE.isAssignableFrom(type) &&
+            !Boolean.class.isAssignableFrom(type) &&
             !Boolean.TYPE.isAssignableFrom(type) &&
+            !Character.class.isAssignableFrom(type) &&
             !Character.TYPE.isAssignableFrom(type) &&
+            !Byte.class.isAssignableFrom(type) &&
             !Byte.TYPE.isAssignableFrom(type))
             throw new InvalidSignatureException("Unsupported PathParam Type: " + type);
     }

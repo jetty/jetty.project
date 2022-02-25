@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -280,7 +280,7 @@ public class DelayedHandlerTest
             @Override
             protected Request.Processor delayed(Request request, Request.Processor processor)
             {
-                return (ignored, response, callback) -> request.execute(() ->
+                return (ignored, response, callback) -> request.getContext().execute(() ->
                 {
                     try
                     {
@@ -335,7 +335,7 @@ public class DelayedHandlerTest
             @Override
             protected Request.Processor delayed(Request request, Request.Processor processor)
             {
-                return (ignored, response, callback) -> request.execute(() ->
+                return (ignored, response, callback) -> request.getContext().execute(() ->
                 {
                     try
                     {

@@ -37,5 +37,6 @@
     <module>test-cdi-common-webapp</module>
     <module>test-weld-cdi-webapp</module>
     <module>test-owb-cdi-webapp</module>
+    <module>test-openid-webapp</module>
   </modules>
 </project>
