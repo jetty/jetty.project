@@ -705,7 +705,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         @Override
         public Request.Processor getErrorProcessor()
         {
-            return ContextHandler.this.getErrorProcessor();
+            Request.Processor errorProcessor = ContextHandler.this.getErrorProcessor();
+            if (errorProcessor == null)
+                errorProcessor = getServer().getErrorProcessor();
+            return errorProcessor;
         }
 
         @Override
@@ -717,7 +720,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         @Override
         public String toString()
         {
-            return "Context@" + ContextHandler.this.toString();
+            return "%s@%x".formatted(getClass().getSimpleName(), hashCode());
         }
 
         @Override

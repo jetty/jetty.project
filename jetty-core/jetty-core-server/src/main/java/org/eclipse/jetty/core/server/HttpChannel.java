@@ -81,7 +81,7 @@ public class HttpChannel extends Attributes.Lazy
     private final HttpConfiguration _configuration;
     private final SerializedInvoker _serializedInvoker;
     private final Attributes _requestAttributes = new Attributes.Lazy();
-    private int _requests;
+    private long _requests;
 
     private HttpStream _stream;
     private ChannelRequest _request;
@@ -392,7 +392,7 @@ public class HttpChannel extends Attributes.Lazy
     {
         final MetaData.Request _metaData;
         final ChannelResponse _response;
-        final int _requestId;
+        final long _requestId;
         String _id;
         Content.Error _error;
         Consumer<Throwable> _onError;
