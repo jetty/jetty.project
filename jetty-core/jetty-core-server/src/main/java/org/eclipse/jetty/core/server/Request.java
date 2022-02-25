@@ -128,6 +128,9 @@ public interface Request extends Attributes, Content.Provider
 
     Context getContext();
 
+    /**
+     * @return The part of the path of the URI after any context path prefix has been removed.
+     */
     String getPathInContext();
 
     /**
