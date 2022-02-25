@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -36,6 +36,36 @@ public class ShutdownMonitorTest
     public void dispose()
     {
         ShutdownMonitor.reset();
+    }
+    
+    @Test
+    public void testPid() throws Exception
+    {
+        ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+        monitor.setPort(0);
+        monitor.setExitVm(false);
+        monitor.start();
+        String key = monitor.getKey();
+        int port = monitor.getPort();
+
+        // Try more than once to be sure that the ServerSocket has not been closed.
+        for (int i = 0; i < 2; ++i)
+        {
+            try (Socket socket = new Socket("localhost", port))
+            {
+                OutputStream output = socket.getOutputStream();
+                String command = "pid";
+                output.write((key + "\r\n" + command + "\r\n").getBytes());
+                output.flush();
+
+                BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                String reply = input.readLine();
+                String pid = String.valueOf(ProcessHandle.current().pid());
+                assertEquals(pid, reply);
+                // Socket must be closed afterwards.
+                assertNull(input.readLine());
+            }
+        }
     }
 
     @Test
