@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.core.server.handler.ContextRequest;
 import org.eclipse.jetty.core.server.handler.EchoHandler;
 import org.eclipse.jetty.core.server.handler.HelloHandler;
 import org.eclipse.jetty.http.HttpTester;
@@ -286,7 +287,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
-        try (StacklessLogging ignored = new StacklessLogging(Server.class))
+        try (StacklessLogging ignored = new StacklessLogging(ContextRequest.class))
         {
             LOG.info("Expecting Exception: TEST handler exception...");
             os.write(request.toString().getBytes());

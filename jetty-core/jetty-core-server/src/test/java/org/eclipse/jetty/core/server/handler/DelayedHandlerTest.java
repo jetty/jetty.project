@@ -280,7 +280,7 @@ public class DelayedHandlerTest
             @Override
             protected Request.Processor delayed(Request request, Request.Processor processor)
             {
-                return (ignored, response, callback) -> request.execute(() ->
+                return (ignored, response, callback) -> request.getContext().execute(() ->
                 {
                     try
                     {
@@ -335,7 +335,7 @@ public class DelayedHandlerTest
             @Override
             protected Request.Processor delayed(Request request, Request.Processor processor)
             {
-                return (ignored, response, callback) -> request.execute(() ->
+                return (ignored, response, callback) -> request.getContext().execute(() ->
                 {
                     try
                     {

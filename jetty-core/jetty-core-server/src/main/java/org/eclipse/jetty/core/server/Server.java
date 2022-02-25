@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.Uptime;
@@ -58,13 +60,14 @@ public class Server extends Handler.Wrapper implements Attributes
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
+    private final Context _serverContext = new ServerContext();
+    private final AutoLock _dateLock = new AutoLock();
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
     private Request.Processor _errorProcessor;
     private RequestLog _requestLog;
     private boolean _dryRun;
-    private final AutoLock _dateLock = new AutoLock();
     private volatile DateField _dateField;
     private long _stopTimeout;
     private InvocationType _invocationType = InvocationType.NON_BLOCKING;
@@ -111,6 +114,11 @@ public class Server extends Handler.Wrapper implements Attributes
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
+    }
+
+    public Context getContext()
+    {
+        return _serverContext;
     }
 
     void customizeHandleAndProcess(HttpChannel.ChannelRequest request, Response response, Callback callback)
@@ -683,4 +691,67 @@ public class Server extends Handler.Wrapper implements Attributes
     }
 
     private static class DynamicErrorProcessor extends ErrorProcessor {}
+
+    private class ServerContext extends Attributes.Wrapper implements Context
+    {
+        private ServerContext()
+        {
+            super(Server.this);
+        }
+
+        @Override
+        public String getContextPath()
+        {
+            return null;
+        }
+
+        @Override
+        public ClassLoader getClassLoader()
+        {
+            return Server.class.getClassLoader();
+        }
+
+        @Override
+        public Path getResourceBase()
+        {
+            return null;
+        }
+
+        @Override
+        public void run(Runnable runnable)
+        {
+            runnable.run();
+        }
+
+        @Override
+        public void execute(Runnable runnable)
+        {
+            getThreadPool().execute(runnable);
+        }
+
+        @Override
+        public Request.Processor getErrorProcessor()
+        {
+            return Server.this.getErrorProcessor();
+        }
+
+        @Override
+        public <T> T decorate(T o)
+        {
+            // TODO cache factory lookup?
+            DecoratedObjectFactory factory = Server.this.getBean(DecoratedObjectFactory.class);
+            if (factory != null)
+                return factory.decorate(o);
+            return o;
+        }
+
+        @Override
+        public void destroy(Object o)
+        {
+            // TODO cache factory lookup?
+            DecoratedObjectFactory factory = Server.this.getBean(DecoratedObjectFactory.class);
+            if (factory != null)
+                factory.destroy(o);
+        }
+    }
 }

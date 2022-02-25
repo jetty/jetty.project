@@ -90,7 +90,7 @@ public class DefaultHandler extends Handler.Processor
         String method = request.getMethod();
 
         // little cheat for common request
-        if (isServeIcon() && _favicon != null && HttpMethod.GET.is(method) && request.getPath().equals("/favicon.ico"))
+        if (isServeIcon() && _favicon != null && HttpMethod.GET.is(method) && request.getPathInContext().equals("/favicon.ico"))
         {
             ByteBuffer content = BufferUtil.EMPTY_BUFFER;
             if (_faviconModifiedMs > 0 && request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE) == _faviconModifiedMs)
@@ -108,7 +108,7 @@ public class DefaultHandler extends Handler.Processor
             return;
         }
 
-        if (!isShowContexts() || !HttpMethod.GET.is(method) || !request.getPath().equals("/"))
+        if (!isShowContexts() || !HttpMethod.GET.is(method) || !request.getPathInContext().equals("/"))
         {
             Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404, null);
             return;

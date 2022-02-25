@@ -15,17 +15,20 @@ package org.eclipse.jetty.core.server.handler;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.core.server.Request;
 import org.eclipse.jetty.core.server.Response;
 import org.eclipse.jetty.util.Callback;
 
 class ContextResponse extends Response.Wrapper
 {
-    private final ContextHandler _contextHandler;
+    private final ContextHandler.ScopedContext _context;
+    private final Request _request;
 
-    public ContextResponse(ContextRequest request, Response response)
+    public ContextResponse(ContextHandler.ScopedContext context, Request request, Response response)
     {
         super(response);
-        _contextHandler = request.getContext().getContextHandler();
+        _context = context;
+        _request = request;
     }
 
     @Override
@@ -36,13 +39,13 @@ class ContextResponse extends Response.Wrapper
             @Override
             public void succeeded()
             {
-                _contextHandler.getContext().run(callback::succeeded);
+                _context.run(callback::succeeded, _request);
             }
 
             @Override
             public void failed(Throwable t)
             {
-                _contextHandler.getContext().accept(callback::failed, t);
+                _context.accept(callback::failed, t, _request);
             }
         };
         super.write(last, contextCallback, content);

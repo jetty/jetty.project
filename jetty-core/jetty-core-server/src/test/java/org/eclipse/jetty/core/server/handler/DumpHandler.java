@@ -144,7 +144,7 @@ public class DumpHandler extends Handler.Processor
         Writer writer = new OutputStreamWriter(buf, StandardCharsets.ISO_8859_1);
         writer.write("<html><h1>" + _label + "</h1>\n");
         writer.write("<pre>httpURI=" + httpURI + "</pre><br/>\n");
-        writer.write("<pre>path=" + request.getPath() + "</pre><br/>\n");
+        writer.write("<pre>path=" + request.getPathInContext() + "</pre><br/>\n");
         writer.write("<pre>contentType=" + request.getHeaders().get(HttpHeader.CONTENT_TYPE) + "</pre><br/>\n");
         writer.write("<pre>servername=" + Request.getServerName(request) + "</pre><br/>\n");
         writer.write("<pre>local=" + Request.getLocalAddr(request) + ":" + Request.getLocalPort(request) + "</pre><br/>\n");

@@ -81,7 +81,7 @@ public class HttpChannel extends Attributes.Lazy
     private final HttpConfiguration _configuration;
     private final SerializedInvoker _serializedInvoker;
     private final Attributes _requestAttributes = new Attributes.Lazy();
-    private int _requests;
+    private long _requests;
 
     private HttpStream _stream;
     private ChannelRequest _request;
@@ -187,7 +187,7 @@ public class HttpChannel extends Attributes.Lazy
 
             _request = new ChannelRequest(request);
 
-            if (!HttpMethod.CONNECT.is(request.getMethod()) && !_request.getPath().startsWith("/") && !HttpMethod.OPTIONS.is(request.getMethod()))
+            if (!HttpMethod.CONNECT.is(request.getMethod()) && !_request.getPathInContext().startsWith("/") && !HttpMethod.OPTIONS.is(request.getMethod()))
                 throw new BadMessageException("Bad URI path");
 
             HttpURI uri = request.getURI();
@@ -391,8 +391,8 @@ public class HttpChannel extends Attributes.Lazy
     class ChannelRequest implements Attributes, Request
     {
         final MetaData.Request _metaData;
-        final String _id;
         final ChannelResponse _response;
+        String _id;
         Content.Error _error;
         Consumer<Throwable> _onError;
         Runnable _onContentAvailable;
@@ -406,7 +406,6 @@ public class HttpChannel extends Attributes.Lazy
             Objects.requireNonNull(metaData);
             _requests++;
             _requestAttributes.clearAttributes();
-            _id = Integer.toString(_requests);
             _metaData = metaData;
             _response = new ChannelResponse(this);
         }
@@ -464,14 +463,10 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        public void execute(Runnable task)
-        {
-            _server.getThreadPool().execute(task);
-        }
-
-        @Override
         public String getId()
         {
+            if (_id == null)
+                _id = getConnectionMetaData().getId() + "#" + _stream.getId();
             return _id;
         }
 
@@ -500,7 +495,13 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        public String getPath()
+        public Context getContext()
+        {
+            return getServer().getContext();
+        }
+
+        @Override
+        public String getPathInContext()
         {
             return _metaData.getURI().getDecodedPath();
         }
