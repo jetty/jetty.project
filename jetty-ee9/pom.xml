@@ -41,6 +41,7 @@
     <jakarta.websocket.api.version>2.0.0</jakarta.websocket.api.version>
 
     <sonar.skip>true</sonar.skip>
+    <skipTests>true</skipTests> <!-- TODO: Disable when we start working on ee9 tree -->
   </properties>
 
   <modules>
