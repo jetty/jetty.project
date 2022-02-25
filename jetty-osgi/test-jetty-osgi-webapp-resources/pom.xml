@@ -11,7 +11,7 @@
   <packaging>war</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp.resources</bundle-symbolic-name>
-    <maven.deploy.skip>false</maven.deploy.skip>
+    <maven.deploy.skip>true</maven.deploy.skip>
     <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
   <build>
