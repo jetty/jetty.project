@@ -554,7 +554,7 @@ public interface HttpFields extends Iterable<HttpField>
          *
          * @param capacity the capacity of the http fields
          */
-        Mutable(int capacity)
+        private Mutable(int capacity)
         {
             _fields = new HttpField[capacity];
         }
@@ -564,7 +564,7 @@ public interface HttpFields extends Iterable<HttpField>
          *
          * @param fields the fields to copy data from
          */
-        Mutable(HttpFields fields)
+        private Mutable(HttpFields fields)
         {
             add(fields);
         }
@@ -575,7 +575,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param fields the fields to copy data from
          * @param replaceField the replacement field
          */
-        Mutable(HttpFields fields, HttpField replaceField)
+        private Mutable(HttpFields fields, HttpField replaceField)
         {
             _fields = new HttpField[fields.size() + 4];
             _size = 0;
@@ -603,7 +603,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param fields the fields to copy data from
          * @param removeFields the the fields to remove
          */
-        Mutable(HttpFields fields, EnumSet<HttpHeader> removeFields)
+        private Mutable(HttpFields fields, EnumSet<HttpHeader> removeFields)
         {
             _fields = new HttpField[fields.size() + 4];
             _size = 0;

@@ -52,7 +52,7 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
     }
 
     @Override
-    public Request customize(Request request)
+    public Request customize(Request request, HttpFields.Mutable response)
     {
         if (request.getConnectionMetaData().getVersion() == HttpVersion.HTTP_1_1 || request.getHeaders().contains(HttpHeader.HOST))
             return request;

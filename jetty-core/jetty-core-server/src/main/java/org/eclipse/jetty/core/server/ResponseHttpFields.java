@@ -26,96 +26,102 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 
 class ResponseHttpFields extends HttpFields.Mutable
 {
-    private volatile boolean _readOnly;
+    private HttpFields.Mutable _fields;
+    private volatile boolean _committed;
 
-    HttpFields toReadOnly()
+    ResponseHttpFields()
     {
-        _readOnly = true;
+        _fields = this;
+    }
+
+    HttpFields commit()
+    {
+        _committed = true;
         return this;
     }
 
-    public boolean isReadOnly()
+    public boolean isCommitted()
     {
-        return _readOnly;
+        return _committed;
     }
 
     public void recycle()
     {
-        _readOnly = false;
-        super.clear();
+        _committed = false;
+        _fields.clear();
     }
 
     @Override
     public Mutable add(String name, String value)
     {
-        return _readOnly ? this : super.add(name, value);
+        return _committed ? this : _fields.add(name, value);
     }
 
     @Override
     public Mutable add(HttpHeader header, HttpHeaderValue value)
     {
-        return super.add(header, value);
+        return _fields.add(header, value);
     }
 
     @Override
     public Mutable add(HttpHeader header, String value)
     {
-        return _readOnly ? this : super.add(header, value);
+        return _committed ? this : _fields.add(header, value);
     }
 
     @Override
     public Mutable add(HttpField field)
     {
-        return _readOnly ? this : super.add(field);
+        return _committed ? this : _fields.add(field);
     }
 
     @Override
     public Mutable add(HttpFields fields)
     {
-        return _readOnly ? this : super.add(fields);
+        return _committed ? this : _fields.add(fields);
     }
 
     @Override
     public Mutable addCSV(HttpHeader header, String... values)
     {
-        return _readOnly ? this : super.addCSV(header, values);
+        return _committed ? this : _fields.addCSV(header, values);
     }
 
     @Override
     public Mutable addCSV(String name, String... values)
     {
-        return _readOnly ? this : super.addCSV(name, values);
+        return _committed ? this : _fields.addCSV(name, values);
     }
 
     @Override
     public Mutable addDateField(String name, long date)
     {
-        return _readOnly ? this : super.addDateField(name, date);
+        return _committed ? this : _fields.addDateField(name, date);
     }
 
     @Override
     public HttpFields asImmutable()
     {
-        return _readOnly ? this : super.asImmutable();
+        return _committed ? this : _fields.asImmutable();
     }
 
     @Override
     public Mutable clear()
     {
-        return _readOnly ? this : super.clear();
+        return _committed ? this : _fields.clear();
     }
 
     @Override
     public void ensureField(HttpField field)
     {
-        if (!_readOnly)
-            super.ensureField(field);
+        if (!_committed)
+            _fields.ensureField(field);
     }
 
     @Override
     public Iterator<HttpField> iterator()
     {
-        Iterator<HttpField> i = super.iterator();
+        Iterator<HttpField> i = _fields.iterator();
         return new Iterator<HttpField>()
         {
             @Override
@@ -133,7 +139,7 @@ class ResponseHttpFields extends HttpFields.Mutable
             @Override
             public void remove()
             {
-                if (_readOnly)
+                if (_committed)
                     throw new UnsupportedOperationException("Read Only");
                 i.remove();
             }
@@ -143,7 +149,7 @@ class ResponseHttpFields extends HttpFields.Mutable
     @Override
     public ListIterator<HttpField> listIterator()
     {
-        ListIterator<HttpField> i = super.listIterator();
+        ListIterator<HttpField> i = _fields.listIterator();
         return new ListIterator<HttpField>()
         {
             @Override
@@ -185,7 +191,7 @@ class ResponseHttpFields extends HttpFields.Mutable
             @Override
             public void remove()
             {
-                if (_readOnly)
+                if (_committed)
                     throw new UnsupportedOperationException("Read Only");
                 i.remove();
             }
@@ -193,7 +199,7 @@ class ResponseHttpFields extends HttpFields.Mutable
             @Override
             public void set(HttpField httpField)
             {
-                if (_readOnly)
+                if (_committed)
                     throw new UnsupportedOperationException("Read Only");
                 i.set(httpField);
             }
@@ -201,7 +207,7 @@ class ResponseHttpFields extends HttpFields.Mutable
             @Override
             public void add(HttpField httpField)
             {
-                if (_readOnly)
+                if (_committed)
                     throw new UnsupportedOperationException("Read Only");
                 i.add(httpField);
             }
@@ -211,86 +217,86 @@ class ResponseHttpFields extends HttpFields.Mutable
     @Override
     public Mutable put(HttpField field)
     {
-        return _readOnly ? this : super.put(field);
+        return _committed ? this : _fields.put(field);
     }
 
     @Override
     public Mutable put(String name, String value)
     {
-        return _readOnly ? this : super.put(name, value);
+        return _committed ? this : _fields.put(name, value);
     }
 
     @Override
     public Mutable put(HttpHeader header, HttpHeaderValue value)
     {
-        return _readOnly ? this : super.put(header, value);
+        return _committed ? this : _fields.put(header, value);
     }
 
     @Override
     public Mutable put(HttpHeader header, String value)
     {
-        return _readOnly ? this : super.put(header, value);
+        return _committed ? this : _fields.put(header, value);
     }
 
     @Override
     public Mutable put(String name, List<String> list)
     {
-        return _readOnly ? this : super.put(name, list);
+        return _committed ? this : _fields.put(name, list);
     }
 
     @Override
     public Mutable putDateField(HttpHeader name, long date)
     {
-        return _readOnly ? this : super.putDateField(name, date);
+        return _committed ? this : _fields.putDateField(name, date);
     }
 
     @Override
     public Mutable putDateField(String name, long date)
     {
-        return _readOnly ? this : super.putDateField(name, date);
+        return _committed ? this : _fields.putDateField(name, date);
     }
 
     @Override
     public Mutable putLongField(HttpHeader name, long value)
     {
-        return _readOnly ? this : super.putLongField(name, value);
+        return _committed ? this : _fields.putLongField(name, value);
     }
 
     @Override
     public Mutable putLongField(String name, long value)
     {
-        return _readOnly ? this : super.putLongField(name, value);
+        return _committed ? this : _fields.putLongField(name, value);
     }
 
     @Override
     public void computeField(HttpHeader header, BiFunction<HttpHeader, List<HttpField>, HttpField> computeFn)
     {
-        if (_readOnly)
-            super.computeField(header, computeFn);
+        if (_committed)
+            _fields.computeField(header, computeFn);
     }
 
     @Override
     public void computeField(String name, BiFunction<String, List<HttpField>, HttpField> computeFn)
     {
-        if (_readOnly)
-            super.computeField(name, computeFn);
+        if (_committed)
+            _fields.computeField(name, computeFn);
     }
 
     @Override
     public Mutable remove(HttpHeader name)
     {
-        return _readOnly ? this : super.remove(name);
+        return _committed ? this : _fields.remove(name);
     }
 
     @Override
     public Mutable remove(EnumSet<HttpHeader> fields)
     {
-        return _readOnly ? this : super.remove(fields);
+        return _committed ? this : _fields.remove(fields);
     }
 
     @Override
     public Mutable remove(String name)
     {
-        return _readOnly ? this : super.remove(name);
+        return _committed ? this : _fields.remove(name);
     }
 }

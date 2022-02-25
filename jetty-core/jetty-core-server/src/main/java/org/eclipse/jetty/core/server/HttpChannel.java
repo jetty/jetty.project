@@ -777,6 +777,9 @@ public class HttpChannel extends Attributes.Lazy
         private ChannelResponse(ChannelRequest request)
         {
             _request = request;
+            // Add the date header
+            if (_configuration.getSendDateHeader())
+                _headers.put(getServer().getDateField());
         }
 
         @Override
@@ -816,7 +819,7 @@ public class HttpChannel extends Attributes.Lazy
             {
                 ResponseHttpFields trailers = _trailers;
                 if (trailers != null)
-                    trailers.toReadOnly();
+                    trailers.commit();
                 return trailers;
             }
         }
@@ -929,7 +932,7 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public boolean isCommitted()
         {
-            return _headers.isReadOnly();
+            return _headers.isCommitted();
         }
 
         @Override
@@ -937,7 +940,7 @@ public class HttpChannel extends Attributes.Lazy
         {
             try (AutoLock ignored = _lock.lock())
             {
-                if (_headers.isReadOnly())
+                if (_headers.isCommitted())
                     throw new IllegalStateException("Committed");
 
                 _headers.clear(); // TODO re-add or don't delete default fields
@@ -953,7 +956,7 @@ public class HttpChannel extends Attributes.Lazy
                 throw new IllegalStateException();
 
             // Are we already committed?
-            if (_headers.isReadOnly())
+            if (_headers.isCommitted())
                 return null;
 
             // Assume 200 unless told otherwise
@@ -971,14 +974,10 @@ public class HttpChannel extends Attributes.Lazy
                     _headers.putLongField(HttpHeader.CONTENT_LENGTH, _contentLength);
             }
 
-            // Add the date header
-            if (_configuration.getSendDateHeader() && !_headers.contains(HttpHeader.DATE))
-                _headers.put(getServer().getDateField());
-
             stream.onCommit(_headers);
 
             // Freeze the headers and mark this response as committed
-            _headers.toReadOnly();
+            _headers.commit();
 
             // Provide trailers if they exist
             Supplier<HttpFields> trailers = _trailers == null ? null : this::takeTrailers;

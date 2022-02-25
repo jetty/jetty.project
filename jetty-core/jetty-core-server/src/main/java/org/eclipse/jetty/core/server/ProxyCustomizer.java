@@ -18,6 +18,7 @@ import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
 
 /**
@@ -47,7 +48,7 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
     public static final String LOCAL_PORT_ATTRIBUTE_NAME = "org.eclipse.jetty.proxy.local.port";
 
     @Override
-    public Request customize(Request request)
+    public Request customize(Request request, HttpFields.Mutable response)
     {
         EndPoint endPoint = request.getHttpChannel().getConnection().getEndPoint();
         if (endPoint instanceof ProxyConnectionFactory.ProxyEndPoint)

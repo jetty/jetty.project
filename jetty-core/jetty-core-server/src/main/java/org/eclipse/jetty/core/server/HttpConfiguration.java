@@ -21,6 +21,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.UriCompliance;
@@ -97,7 +98,7 @@ public class HttpConfiguration implements Dumpable
      */
     public interface Customizer
     {
-        Request customize(Request request);
+        Request customize(Request request, HttpFields.Mutable response);
     }
 
     public interface ConnectionFactory

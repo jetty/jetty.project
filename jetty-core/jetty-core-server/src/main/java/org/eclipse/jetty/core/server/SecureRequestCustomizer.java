@@ -191,7 +191,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     @Override
-    public Request customize(Request request)
+    public Request customize(Request request, HttpFields.Mutable response)
     {
         EndPoint endp = request.getConnectionMetaData().getConnection().getEndPoint();
         HttpURI uri = request.getHttpURI();
@@ -219,17 +219,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         if (_stsField != null)
-        {
-            request.getHttpChannel().addStreamWrapper(s -> new HttpStream.Wrapper(s)
-            {
-                @Override
-                public void onCommit(HttpFields.Mutable headers)
-                {
-                    headers.add(_stsField);
-                    super.onCommit(headers);
-                }
-            });
-        }
+            response.add(_stsField);
 
         return newSecureRequest(request, uri, sslEngine);
     }

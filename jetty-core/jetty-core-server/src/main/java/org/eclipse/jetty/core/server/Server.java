@@ -127,8 +127,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
             for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
             {
-                // TODO: how can a customizer wrap the response?
-                Request next = customizer.customize(request);
+                Request next = customizer.customize(request, response.getHeaders());
                 customized = next == null ? customized : next;
             }
 
