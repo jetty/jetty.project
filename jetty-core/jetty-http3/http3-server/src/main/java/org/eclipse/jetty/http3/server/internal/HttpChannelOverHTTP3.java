@@ -110,7 +110,7 @@ public class HttpChannelOverHTTP3 extends HttpChannel
 
             expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
-            HttpFields.Mutable response = getResponse().getHttpFields();
+            HttpFields.Builder response = getResponse().getHttpFields();
             if (getHttpConfiguration().getSendServerVersion())
                 response.add(SERVER_VERSION);
             if (getHttpConfiguration().getSendXPoweredBy())

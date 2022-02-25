@@ -46,7 +46,7 @@ public class PushBuilderImpl implements PushBuilder
         HttpMethod.TRACE);
 
     private final Request _request;
-    private final HttpFields.Mutable _fields;
+    private final HttpFields.Builder _fields;
     private String _method;
     private String _queryString;
     private String _sessionId;

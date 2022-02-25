@@ -418,7 +418,7 @@ public class ErrorProcessor implements Request.Processor
      * @param fields The header fields that will be sent with the response.
      * @return The content as a ByteBuffer, or null for no body.
      */
-    public ByteBuffer badMessageError(int status, String reason, HttpFields.Mutable fields)
+    public ByteBuffer badMessageError(int status, String reason, HttpFields.Builder fields)
     {
         if (reason == null)
             reason = HttpStatus.getMessage(status);

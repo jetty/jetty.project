@@ -98,7 +98,7 @@ public class HttpConfiguration implements Dumpable
      */
     public interface Customizer
     {
-        Request customize(Request request, HttpFields.Mutable response);
+        Request customize(Request request, HttpFields.Builder response);
     }
 
     public interface ConnectionFactory

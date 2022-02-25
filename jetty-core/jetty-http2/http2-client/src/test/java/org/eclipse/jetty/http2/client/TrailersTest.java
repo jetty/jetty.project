@@ -84,7 +84,7 @@ public class TrailersTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields.Mutable requestFields = HttpFields.build();
+        HttpFields.Builder requestFields = HttpFields.build();
         requestFields.put("X-Request", "true");
         MetaData.Request request = newRequest("GET", requestFields);
         HeadersFrame requestFrame = new HeadersFrame(request, null, false);
@@ -93,7 +93,7 @@ public class TrailersTest extends AbstractTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
 
         // Send the trailers.
-        HttpFields.Mutable trailerFields = HttpFields.build();
+        HttpFields.Builder trailerFields = HttpFields.build();
         trailerFields.put("X-Trailer", "true");
         MetaData trailers = new MetaData(HttpVersion.HTTP_2, trailerFields);
         HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), trailers, null, true);
@@ -135,7 +135,7 @@ public class TrailersTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        HttpFields.Mutable requestFields = HttpFields.build();
+        HttpFields.Builder requestFields = HttpFields.build();
         requestFields.put("X-Request", "true");
         MetaData.Request request = newRequest("GET", requestFields);
         HeadersFrame requestFrame = new HeadersFrame(request, null, false);
@@ -163,7 +163,7 @@ public class TrailersTest extends AbstractTest
         // Send the trailers.
         callback.thenRun(() ->
         {
-            HttpFields.Mutable trailerFields = HttpFields.build();
+            HttpFields.Builder trailerFields = HttpFields.build();
             trailerFields.put("X-Trailer", "true");
             MetaData trailers = new MetaData(HttpVersion.HTTP_2, trailerFields);
             HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), trailers, null, true);
@@ -181,7 +181,7 @@ public class TrailersTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                HttpFields.Mutable responseFields = HttpFields.build();
+                HttpFields.Builder responseFields = HttpFields.build();
                 responseFields.put("X-Response", "true");
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, responseFields);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
@@ -190,7 +190,7 @@ public class TrailersTest extends AbstractTest
                     @Override
                     public void succeeded()
                     {
-                        HttpFields.Mutable trailerFields = HttpFields.build();
+                        HttpFields.Builder trailerFields = HttpFields.build();
                         trailerFields.put("X-Trailer", "true");
                         MetaData trailer = new MetaData(HttpVersion.HTTP_2, trailerFields);
                         HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), trailer, null, true);
@@ -245,7 +245,7 @@ public class TrailersTest extends AbstractTest
             {
                 Request jettyRequest = (Request)request;
                 Response jettyResponse = jettyRequest.getResponse();
-                HttpFields.Mutable trailers = HttpFields.build();
+                HttpFields.Builder trailers = HttpFields.build();
                 jettyResponse.setTrailerFields(() ->
                     trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
 
@@ -311,7 +311,7 @@ public class TrailersTest extends AbstractTest
         completable.thenRun(() ->
         {
             // Invalid trailer: cannot contain pseudo headers.
-            HttpFields.Mutable trailerFields = HttpFields.build();
+            HttpFields.Builder trailerFields = HttpFields.build();
             trailerFields.put(HttpHeader.C_METHOD, "GET");
             MetaData trailer = new MetaData(HttpVersion.HTTP_2, trailerFields);
             HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), trailer, null, true);
@@ -370,7 +370,7 @@ public class TrailersTest extends AbstractTest
             // Disable checks for invalid headers.
             ((HTTP2Session)session).getGenerator().setValidateHpackEncoding(false);
             // Invalid trailer: cannot contain pseudo headers.
-            HttpFields.Mutable trailerFields = HttpFields.build();
+            HttpFields.Builder trailerFields = HttpFields.build();
             trailerFields.put(HttpHeader.C_METHOD, "GET");
             MetaData trailer = new MetaData(HttpVersion.HTTP_2, trailerFields);
             HeadersFrame trailerFrame = new HeadersFrame(stream.getId(), trailer, null, true);

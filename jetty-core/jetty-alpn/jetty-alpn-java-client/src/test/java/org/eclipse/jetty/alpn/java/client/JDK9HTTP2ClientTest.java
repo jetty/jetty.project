@@ -58,7 +58,7 @@ public class JDK9HTTP2ClientTest
             client.connect(sslContextFactory, new InetSocketAddress(host, port), new Session.Listener.Adapter(), sessionPromise);
             Session session = sessionPromise.get(15, TimeUnit.SECONDS);
 
-            HttpFields.Mutable requestFields = HttpFields.build();
+            HttpFields.Builder requestFields = HttpFields.build();
             requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
             MetaData.Request metaData = new MetaData.Request("GET", HttpURI.from("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
             HeadersFrame headersFrame = new HeadersFrame(metaData, null, true);

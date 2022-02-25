@@ -31,7 +31,7 @@ public interface HttpStream extends Callback
 
     void demandContent(); // Calls back on Channel#onDataAvailable
 
-    void prepareResponse(HttpFields.Mutable headers);
+    void prepareResponse(HttpFields.Builder headers);
 
     // TODO add MetaData.Request request.
     void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content);
@@ -108,7 +108,7 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public void prepareResponse(HttpFields.Mutable headers)
+        public void prepareResponse(HttpFields.Builder headers)
         {
             _wrapped.prepareResponse(headers);
         }

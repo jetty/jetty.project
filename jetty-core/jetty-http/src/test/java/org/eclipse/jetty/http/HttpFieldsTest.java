@@ -50,7 +50,7 @@ public class HttpFieldsTest
     @Test
     public void testPut()
     {
-        HttpFields.Mutable header = HttpFields.build()
+        HttpFields.Builder header = HttpFields.build()
             .put("name0", "value:0")
             .put("name1", "value1");
 
@@ -80,7 +80,7 @@ public class HttpFieldsTest
     @Test
     public void testPutTo()
     {
-        HttpFields.Mutable header = HttpFields.build()
+        HttpFields.Builder header = HttpFields.build()
             .put("name0", "value0")
             .put("name1", "value:A")
             .add("name1", "value:B")
@@ -145,7 +145,7 @@ public class HttpFieldsTest
     @Test
     public void testTakeImmutable()
     {
-        HttpFields.Mutable mutable = HttpFields.build();
+        HttpFields.Builder mutable = HttpFields.build();
         HttpFields immutable = mutable.takeAsImmutable();
         assertThat(immutable.get(HttpHeader.HOST), nullValue());
         assertThat(immutable.size(), is(0));
@@ -200,7 +200,7 @@ public class HttpFieldsTest
     @Test
     public void testGetKnown()
     {
-        HttpFields.Mutable header = HttpFields.build();
+        HttpFields.Builder header = HttpFields.build();
 
         header.put("Connection", "value0");
         header.put(HttpHeader.ACCEPT, "value1");
@@ -218,7 +218,7 @@ public class HttpFieldsTest
     @Test
     public void testCRLF()
     {
-        HttpFields.Mutable header = HttpFields.build();
+        HttpFields.Builder header = HttpFields.build();
 
         header.put("name0", "value\r\n0");
         header.put("name\r\n1", "value1");
@@ -237,7 +237,7 @@ public class HttpFieldsTest
     @Test
     public void testCachedPut()
     {
-        HttpFields.Mutable header = HttpFields.build();
+        HttpFields.Builder header = HttpFields.build();
 
         header.put("Connection", "Keep-Alive");
         header.put("tRansfer-EncOding", "CHUNKED");
@@ -257,7 +257,7 @@ public class HttpFieldsTest
     @Test
     public void testRePut()
     {
-        HttpFields.Mutable header = HttpFields.build();
+        HttpFields.Builder header = HttpFields.build();
 
         header.put("name0", "value0");
         header.put("name1", "xxxxxx");
@@ -297,7 +297,7 @@ public class HttpFieldsTest
     @Test
     public void testRemove()
     {
-        HttpFields.Mutable header = HttpFields.build(1)
+        HttpFields.Builder header = HttpFields.build(1)
             .put("name0", "value0")
             .add(HttpHeader.CONTENT_TYPE, "text")
             .add("name1", "WRONG")
@@ -343,7 +343,7 @@ public class HttpFieldsTest
     @Test
     public void testAdd()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         fields.add("name0", "value0");
         fields.add("name1", "valueA");
@@ -405,7 +405,7 @@ public class HttpFieldsTest
     {
         final PreEncodedHttpField X_XSS_PROTECTION_FIELD = new PreEncodedHttpField("X-XSS-Protection", "1; mode=block");
 
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add(X_XSS_PROTECTION_FIELD);
 
         assertThat("Fields output", fields.toString(), containsString("X-XSS-Protection: 1; mode=block"));
@@ -416,7 +416,7 @@ public class HttpFieldsTest
     {
         final HttpField X_XSS_PROTECTION_FIELD = new HttpField("X-XSS-Protection", "1; mode=block");
 
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add(X_XSS_PROTECTION_FIELD);
 
         assertThat("Fields output", fields.toString(), containsString("X-XSS-Protection: 1; mode=block"));
@@ -425,7 +425,7 @@ public class HttpFieldsTest
     @Test
     public void testGetValues()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         fields.put("name0", "value0A,value0B");
         fields.add("name0", "value0C,value0D");
@@ -465,7 +465,7 @@ public class HttpFieldsTest
     @Test
     public void testGetCSV()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         fields.put("name0", "value0A,value0B");
         fields.add("name0", "value0C,value0D");
@@ -505,7 +505,7 @@ public class HttpFieldsTest
     @Test
     public void testAddQuotedCSV()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         fields.put("some", "value");
         fields.add("name", "\"zero\"");
@@ -553,7 +553,7 @@ public class HttpFieldsTest
     @Test
     public void testGetQualityCSV()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         fields.put("some", "value");
         fields.add("name", "zero;q=0.9,four;q=0.1");
@@ -575,7 +575,7 @@ public class HttpFieldsTest
     @Test
     public void testGetQualityCSVHeader()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         fields.put("some", "value");
         fields.add("Accept", "zero;q=0.9,four;q=0.1");
@@ -597,7 +597,7 @@ public class HttpFieldsTest
     @Test
     public void testDateFields()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         fields.put("D0", "Wed, 31 Dec 1969 23:59:59 GMT");
         fields.put("D1", "Fri, 31 Dec 1999 23:59:59 GMT");
@@ -639,7 +639,7 @@ public class HttpFieldsTest
     @Test
     public void testNegDateFields()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         fields.putDateField("Dzero", 0);
         assertEquals("Thu, 01 Jan 1970 00:00:00 GMT", fields.get("Dzero"));
@@ -657,7 +657,7 @@ public class HttpFieldsTest
     @Test
     public void testLongFields()
     {
-        HttpFields.Mutable header = HttpFields.build();
+        HttpFields.Builder header = HttpFields.build();
 
         header.put("I1", "42");
         header.put("I2", " 43 99");
@@ -686,7 +686,7 @@ public class HttpFieldsTest
     @Test
     public void testContains()
     {
-        HttpFields.Mutable header = HttpFields.build();
+        HttpFields.Builder header = HttpFields.build();
 
         header.add("n0", "");
         header.add("n1", ",");
@@ -724,7 +724,7 @@ public class HttpFieldsTest
     @ValueSource(strings = {"Host", "host", "HOST", "HoSt", "Connection", "CONNECTION", "connection", "CoNnEcTiOn"})
     public void testContainsKeyTrue(String keyName)
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.put("Host", "localhost");
         HttpField namelessField = new HttpField(HttpHeader.CONNECTION, null, "bogus");
         fields.put(namelessField);
@@ -736,7 +736,7 @@ public class HttpFieldsTest
     @ValueSource(strings = {"Content-Type", "Content-Length", "X-Bogus", ""})
     public void testContainsKeyFalse(String keyName)
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add("Host", "localhost");
         HttpField namelessField = new HttpField(HttpHeader.CONNECTION, null, "bogus");
         fields.put(namelessField);
@@ -747,7 +747,7 @@ public class HttpFieldsTest
     @Test
     public void testAddNullName()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         assertThrows(NullPointerException.class, () -> fields.add((String)null, "bogus"));
         assertThat(fields.size(), is(0));
 
@@ -758,7 +758,7 @@ public class HttpFieldsTest
     @Test
     public void testAddHttpFields()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add("One", "1");
 
         fields = HttpFields.build(fields);
@@ -777,7 +777,7 @@ public class HttpFieldsTest
     @Test
     public void testPutNullName()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         assertThrows(NullPointerException.class, () -> fields.put((String)null, "bogus"));
         assertThat(fields.size(), is(0));
 
@@ -795,7 +795,7 @@ public class HttpFieldsTest
     @Test
     public void testPutNullValueList()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         assertThrows(NullPointerException.class, () -> fields.put("name", (List<String>)null));
         assertThat(fields.size(), is(0));
@@ -806,7 +806,7 @@ public class HttpFieldsTest
     {
         // Attempt various ways that may have put a null field in the array that
         // previously caused a NPE in put.
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add((HttpField)null); // should not result in field being added
         assertThat(fields.size(), is(0));
         fields.put(null); // should not result in field being added
@@ -833,7 +833,7 @@ public class HttpFieldsTest
     @Test
     public void testPreventNullField()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         assertThrows(NullPointerException.class, () ->
         {
             HttpField nullNullField = new HttpField(null, null, "bogus");
@@ -844,7 +844,7 @@ public class HttpFieldsTest
     @Test
     public void testIteration()
     {
-        HttpFields.Mutable header = HttpFields.build();
+        HttpFields.Builder header = HttpFields.build();
         Iterator<HttpField> i = header.iterator();
         assertThat(i.hasNext(), is(false));
 
@@ -918,7 +918,7 @@ public class HttpFieldsTest
     @Test
     public void testStream()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         assertThat(fields.stream().count(), is(0L));
         fields.put("name1", "valueA");
         fields.put("name2", "valueB");
@@ -930,7 +930,7 @@ public class HttpFieldsTest
     @Test
     public void testComputeField()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         assertThat(fields.size(), is(0));
         fields.computeField("Test", (n, f) -> null);
         assertThat(fields.size(), is(0));
@@ -958,7 +958,7 @@ public class HttpFieldsTest
     @Test
     public void testEnsureSingleValue()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         // 0 existing case
         assertThat(fields.size(), is(0));
@@ -988,7 +988,7 @@ public class HttpFieldsTest
     @Test
     public void testEnsureMultiValue()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         // zero existing case
         assertThat(fields.size(), is(0));
@@ -1026,7 +1026,7 @@ public class HttpFieldsTest
     @Test
     public void testEnsureStringSingleValue()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         // 0 existing case
         assertThat(fields.size(), is(0));
@@ -1056,7 +1056,7 @@ public class HttpFieldsTest
     @Test
     public void testEnsureStringMultiValue()
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         // zero existing case
         assertThat(fields.size(), is(0));

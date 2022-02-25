@@ -57,7 +57,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("GET", "/index.html", fields);
@@ -95,7 +95,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("Null", null);
         fields.add("Empty", "");
@@ -131,7 +131,7 @@ public class HttpGeneratorClientTest
     {
         HttpGenerator gen = new HttpGenerator();
 
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add("Host", "localhost");
         fields.add("Field", "SomeWhatLongValue");
         RequestInfo info = new RequestInfo("GET", "/index.html", HttpVersion.HTTP_1_0, fields);
@@ -173,7 +173,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("POST", "/index.html", fields);
@@ -213,7 +213,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("POST", "/index.html", fields);
@@ -259,7 +259,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("POST", "/index.html", fields);
@@ -331,7 +331,7 @@ public class HttpGeneratorClientTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         fields.add("Host", "something");
         fields.add("User-Agent", "test");
         RequestInfo info = new RequestInfo("POST", "/index.html", 58, fields);

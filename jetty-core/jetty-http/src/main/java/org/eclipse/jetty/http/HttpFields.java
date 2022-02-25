@@ -34,36 +34,36 @@ import java.util.stream.Stream;
 
 /**
  * Interface that represents on ordered collection of {@link HttpField}s.
- * Both {@link Builder} and {@link Immutable} implementations are available
+ * Both {@link Mutable} and {@link Immutable} implementations are available
  * via the static methods such as {@link #build()} and {@link #from(HttpField...)}.
  */
 public interface HttpFields extends Iterable<HttpField>
 {
     HttpFields EMPTY = build().asImmutable();
 
-    static Mutable build()
+    static Builder build()
     {
-        return new Builder();
+        return new Mutable();
     }
 
-    static Mutable build(int capacity)
+    static Builder build(int capacity)
     {
-        return new Builder(capacity);
+        return new Mutable(capacity);
     }
 
-    static Mutable build(HttpFields fields)
+    static Builder build(HttpFields fields)
     {
-        return new Builder(fields);
+        return new Mutable(fields);
     }
 
-    static Mutable build(HttpFields fields, HttpField replaceField)
+    static Builder build(HttpFields fields, HttpField replaceField)
     {
-        return new Builder(fields, replaceField);
+        return new Mutable(fields, replaceField);
     }
 
-    static Mutable build(HttpFields fields, EnumSet<HttpHeader> removeFields)
+    static Builder build(HttpFields fields, EnumSet<HttpHeader> removeFields)
     {
-        return new Builder(fields, removeFields);
+        return new Mutable(fields, removeFields);
     }
 
     static Immutable from(HttpField... fields)
@@ -531,7 +531,7 @@ public interface HttpFields extends Iterable<HttpField>
     /**
      * A mutable HttpFields interface.
      */
-    interface Mutable extends Iterable<HttpField>, HttpFields
+    interface Builder extends Iterable<HttpField>, HttpFields
     {
         /**
          * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
@@ -541,9 +541,9 @@ public interface HttpFields extends Iterable<HttpField>
          * @param value the value of the field.
          * @return this builder
          */
-        Mutable add(String name, String value);
+        Builder add(String name, String value);
 
-        Mutable add(HttpHeader header, HttpHeaderValue value);
+        Builder add(HttpHeader header, HttpHeaderValue value);
 
         /**
          * Add to or set a field. If the field is allowed to have multiple values, add will add multiple
@@ -553,11 +553,11 @@ public interface HttpFields extends Iterable<HttpField>
          * @param value the value of the field.
          * @return this builder
          */
-        Mutable add(HttpHeader header, String value);
+        Builder add(HttpHeader header, String value);
 
-        Mutable add(HttpField field);
+        Builder add(HttpField field);
 
-        Mutable add(HttpFields fields);
+        Builder add(HttpFields fields);
 
         /**
          * Add comma separated values, but only if not already
@@ -567,7 +567,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param values The value(s) to add
          * @return this builder
          */
-        Mutable addCSV(HttpHeader header, String... values);
+        Builder addCSV(HttpHeader header, String... values);
 
         /**
          * Add comma separated values, but only if not already
@@ -577,7 +577,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param values The value(s) to add
          * @return this builder
          */
-        Mutable addCSV(String name, String... values);
+        Builder addCSV(String name, String... values);
 
         /**
          * Sets the value of a date field.
@@ -586,7 +586,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param date the field date value
          * @return this builder
          */
-        Mutable addDateField(String name, long date);
+        Builder addDateField(String name, long date);
 
         @Override
         HttpFields asImmutable();
@@ -594,7 +594,7 @@ public interface HttpFields extends Iterable<HttpField>
         @Override
         HttpFields takeAsImmutable();
 
-        Mutable clear();
+        Builder clear();
 
         /**
          * Ensure that specific HttpField exists when the field may not exist or may
@@ -610,7 +610,7 @@ public interface HttpFields extends Iterable<HttpField>
 
         ListIterator<HttpField> listIterator();
 
-        Mutable put(HttpField field);
+        Builder put(HttpField field);
 
         /**
          * Set a field.
@@ -619,9 +619,9 @@ public interface HttpFields extends Iterable<HttpField>
          * @param value the value of the field. If null the field is cleared.
          * @return this builder
          */
-        Mutable put(String name, String value);
+        Builder put(String name, String value);
 
-        Mutable put(HttpHeader header, HttpHeaderValue value);
+        Builder put(HttpHeader header, HttpHeaderValue value);
 
         /**
          * Set a field.
@@ -630,7 +630,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param value the value of the field. If null the field is cleared.
          * @return this builder
          */
-        Mutable put(HttpHeader header, String value);
+        Builder put(HttpHeader header, String value);
 
         /**
          * Set a field.
@@ -639,7 +639,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param list the List value of the field. If null the field is cleared.
          * @return this builder
          */
-        Mutable put(String name, List<String> list);
+        Builder put(String name, List<String> list);
 
         /**
          * Sets the value of a date field.
@@ -648,7 +648,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param date the field date value
          * @return this builder
          */
-        Mutable putDateField(HttpHeader name, long date);
+        Builder putDateField(HttpHeader name, long date);
 
         /**
          * Sets the value of a date field.
@@ -657,7 +657,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param date the field date value
          * @return this builder
          */
-        Mutable putDateField(String name, long date);
+        Builder putDateField(String name, long date);
 
         /**
          * Sets the value of an long field.
@@ -666,7 +666,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param value the field long value
          * @return this builder
          */
-        Mutable putLongField(HttpHeader name, long value);
+        Builder putLongField(HttpHeader name, long value);
 
         /**
          * Sets the value of an long field.
@@ -675,7 +675,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param value the field long value
          * @return this builder
          */
-        Mutable putLongField(String name, long value);
+        Builder putLongField(String name, long value);
 
         /**
          * <p>Computes a single field for the given HttpHeader and for existing fields with the same header.</p>
@@ -769,9 +769,9 @@ public interface HttpFields extends Iterable<HttpField>
          * @param name the field to remove
          * @return this builder
          */
-        Mutable remove(HttpHeader name);
+        Builder remove(HttpHeader name);
 
-        Mutable remove(EnumSet<HttpHeader> fields);
+        Builder remove(EnumSet<HttpHeader> fields);
 
         /**
          * Remove a field.
@@ -779,7 +779,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param name the field to remove
          * @return this builder
          */
-        Mutable remove(String name);
+        Builder remove(String name);
     }
 
     /**
@@ -790,7 +790,7 @@ public interface HttpFields extends Iterable<HttpField>
      *
      * <p>The cookie handling provided by this class is guided by the Servlet specification and RFC6265.
      */
-    class Builder implements Mutable
+    class Mutable implements Builder
     {
         private HttpField[] _fields;
         private int _size;
@@ -798,7 +798,7 @@ public interface HttpFields extends Iterable<HttpField>
         /**
          * Initialize an empty HttpFields.
          */
-        protected Builder()
+        protected Mutable()
         {
             this(16);  // Based on small sample of Chrome requests.
         }
@@ -808,7 +808,7 @@ public interface HttpFields extends Iterable<HttpField>
          *
          * @param capacity the capacity of the http fields
          */
-        protected Builder(int capacity)
+        protected Mutable(int capacity)
         {
             _fields = new HttpField[capacity];
         }
@@ -818,7 +818,7 @@ public interface HttpFields extends Iterable<HttpField>
          *
          * @param fields the fields to copy data from
          */
-        protected Builder(HttpFields fields)
+        protected Mutable(HttpFields fields)
         {
             add(fields);
         }
@@ -829,7 +829,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param fields the fields to copy data from
          * @param replaceField the replacement field
          */
-        protected Builder(HttpFields fields, HttpField replaceField)
+        protected Mutable(HttpFields fields, HttpField replaceField)
         {
             _fields = new HttpField[fields.size() + 4];
             _size = 0;
@@ -857,7 +857,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param fields the fields to copy data from
          * @param removeFields the the fields to remove
          */
-        protected Builder(HttpFields fields, EnumSet<HttpHeader> removeFields)
+        protected Mutable(HttpFields fields, EnumSet<HttpHeader> removeFields)
         {
             _fields = new HttpField[fields.size() + 4];
             _size = 0;
@@ -869,7 +869,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable add(String name, String value)
+        public Builder add(String name, String value)
         {
             if (value != null)
                 return add(new HttpField(name, value));
@@ -877,13 +877,13 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable add(HttpHeader header, HttpHeaderValue value)
+        public Builder add(HttpHeader header, HttpHeaderValue value)
         {
             return add(header, value.toString());
         }
 
         @Override
-        public Mutable add(HttpHeader header, String value)
+        public Builder add(HttpHeader header, String value)
         {
             if (value == null)
                 throw new IllegalArgumentException("null value");
@@ -893,7 +893,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable add(HttpField field)
+        public Builder add(HttpField field)
         {
             if (field != null)
             {
@@ -907,7 +907,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable add(HttpFields fields)
+        public Builder add(HttpFields fields)
         {
             if (_fields == null)
                 _fields = new HttpField[fields.size() + 4];
@@ -923,9 +923,9 @@ public interface HttpFields extends Iterable<HttpField>
                 System.arraycopy(b._fields, 0, _fields, _size, b._size);
                 _size += b._fields.length;
             }
-            else if (fields instanceof Builder)
+            else if (fields instanceof Mutable)
             {
-                Builder b = (Builder)fields;
+                Mutable b = (Mutable)fields;
                 System.arraycopy(b._fields, 0, _fields, _size, b._size);
                 _size += b._size;
             }
@@ -938,7 +938,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable addCSV(HttpHeader header, String... values)
+        public Builder addCSV(HttpHeader header, String... values)
         {
             QuotedCSV existing = null;
             for (HttpField f : this)
@@ -957,7 +957,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable addCSV(String name, String... values)
+        public Builder addCSV(String name, String... values)
         {
             QuotedCSV existing = null;
             for (HttpField f : this)
@@ -976,7 +976,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable addDateField(String name, long date)
+        public Builder addDateField(String name, long date)
         {
             add(name, DateGenerator.formatDate(date));
             return this;
@@ -1000,7 +1000,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable clear()
+        public Builder clear()
         {
             _size = 0;
             return this;
@@ -1157,7 +1157,7 @@ public interface HttpFields extends Iterable<HttpField>
         {
             if (this == o)
                 return true;
-            if (!(o instanceof Builder))
+            if (!(o instanceof Mutable))
                 return false;
 
             return isEqualTo((HttpFields)o);
@@ -1210,7 +1210,7 @@ public interface HttpFields extends Iterable<HttpField>
                 {
                     if (_size == 0)
                         throw new IllegalStateException();
-                    Builder.this.remove(--_index);
+                    Mutable.this.remove(--_index);
                 }
             };
         }
@@ -1222,7 +1222,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable put(HttpField field)
+        public Builder put(HttpField field)
         {
             boolean put = false;
 
@@ -1246,7 +1246,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable put(String name, String value)
+        public Builder put(String name, String value)
         {
             return (value == null)
                 ? remove(name)
@@ -1254,13 +1254,13 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable put(HttpHeader header, HttpHeaderValue value)
+        public Builder put(HttpHeader header, HttpHeaderValue value)
         {
             return put(header, value.toString());
         }
 
         @Override
-        public Mutable put(HttpHeader header, String value)
+        public Builder put(HttpHeader header, String value)
         {
             return (value == null)
                 ? remove(header)
@@ -1268,7 +1268,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable put(String name, List<String> list)
+        public Builder put(String name, List<String> list)
         {
             Objects.requireNonNull(name, "name must not be null");
             Objects.requireNonNull(list, "list must not be null");
@@ -1282,25 +1282,25 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable putDateField(HttpHeader name, long date)
+        public Builder putDateField(HttpHeader name, long date)
         {
             return put(name, DateGenerator.formatDate(date));
         }
 
         @Override
-        public Mutable putDateField(String name, long date)
+        public Builder putDateField(String name, long date)
         {
             return put(name, DateGenerator.formatDate(date));
         }
 
         @Override
-        public Mutable putLongField(HttpHeader name, long value)
+        public Builder putLongField(HttpHeader name, long value)
         {
             return put(name, Long.toString(value));
         }
 
         @Override
-        public Mutable putLongField(String name, long value)
+        public Builder putLongField(String name, long value)
         {
             return put(name, Long.toString(value));
         }
@@ -1372,7 +1372,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable remove(HttpHeader name)
+        public Builder remove(HttpHeader name)
         {
             for (int i = 0; i < _size; i++)
             {
@@ -1384,7 +1384,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable remove(EnumSet<HttpHeader> fields)
+        public Builder remove(EnumSet<HttpHeader> fields)
         {
             for (int i = 0; i < _size; i++)
             {
@@ -1396,7 +1396,7 @@ public interface HttpFields extends Iterable<HttpField>
         }
 
         @Override
-        public Mutable remove(String name)
+        public Builder remove(String name)
         {
             for (int i = 0; i < _size; i++)
             {
@@ -1531,7 +1531,7 @@ public interface HttpFields extends Iterable<HttpField>
             {
                 if (_current < 0)
                     throw new IllegalStateException();
-                Builder.this.remove(_current);
+                Mutable.this.remove(_current);
                 _cursor = _current;
                 _current = -1;
             }

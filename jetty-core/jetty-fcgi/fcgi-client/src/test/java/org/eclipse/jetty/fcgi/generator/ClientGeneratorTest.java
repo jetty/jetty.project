@@ -33,7 +33,7 @@ public class ClientGeneratorTest
     @Test
     public void testGenerateRequestHeaders() throws Exception
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
 
         // Short name, short value
         final String shortShortName = "REQUEST_METHOD";

@@ -250,7 +250,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         Socket client = new Socket();
         client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
 
-        HttpFields.Mutable httpFields = newUpgradeRequest("nonExistentExtensionName");
+        HttpFields.Builder httpFields = newUpgradeRequest("nonExistentExtensionName");
         String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
         client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
         String response = getUpgradeResponse(client.getInputStream());
@@ -342,7 +342,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         Socket client = new Socket();
         client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
 
-        HttpFields.Mutable httpFields = newUpgradeRequest(null);
+        HttpFields.Builder httpFields = newUpgradeRequest(null);
         String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;
         client.getOutputStream().write(upgradeRequest.getBytes(StandardCharsets.ISO_8859_1));
         String response = getUpgradeResponse(client.getInputStream());
@@ -358,7 +358,7 @@ public class WebSocketNegotiationTest extends WebSocketTester
         Socket client = new Socket();
         client.connect(new InetSocketAddress("127.0.0.1", server.getLocalPort()));
 
-        HttpFields.Mutable httpFields = newUpgradeRequest(null);
+        HttpFields.Builder httpFields = newUpgradeRequest(null);
         httpFields.remove(HttpHeader.SEC_WEBSOCKET_KEY);
 
         String upgradeRequest = "GET / HTTP/1.1\r\n" + httpFields;

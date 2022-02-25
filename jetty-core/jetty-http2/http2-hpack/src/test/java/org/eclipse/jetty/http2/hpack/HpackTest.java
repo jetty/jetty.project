@@ -47,7 +47,7 @@ public class HpackTest
         HpackDecoder decoder = new HpackDecoder(4096, 8192);
         ByteBuffer buffer = BufferUtil.allocateDirect(16 * 1024);
 
-        HttpFields.Mutable fields0 = HttpFields.build()
+        HttpFields.Builder fields0 = HttpFields.build()
             .add(HttpHeader.CONTENT_TYPE, "text/html")
             .add(HttpHeader.CONTENT_LENGTH, "1024")
             .add(new HttpField(HttpHeader.CONTENT_ENCODING, (String)null))
@@ -75,7 +75,7 @@ public class HpackTest
 
         assertMetaDataResponseSame(nullToEmpty, decoded0b);
 
-        HttpFields.Mutable fields1 = HttpFields.build()
+        HttpFields.Builder fields1 = HttpFields.build()
             .add(HttpHeader.CONTENT_TYPE, "text/plain")
             .add(HttpHeader.CONTENT_LENGTH, "1234")
             .add(HttpHeader.CONTENT_ENCODING, " ")

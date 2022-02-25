@@ -870,7 +870,7 @@ public class ResourceService
         {
             Response r = (Response)response;
             r.putHeaders(content, contentLength, _etags);
-            HttpFields.Mutable fields = r.getHttpFields();
+            HttpFields.Builder fields = r.getHttpFields();
             if (_acceptRanges && !fields.contains(HttpHeader.ACCEPT_RANGES))
                 fields.add(ACCEPT_RANGES);
             if (_cacheControl != null && !fields.contains(HttpHeader.CACHE_CONTROL))

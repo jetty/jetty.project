@@ -610,7 +610,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         // Update headers for etags and inflation
         if (inflated || httpFields.contains(ETAG_HEADERS))
         {
-            HttpFields.Mutable newFields = HttpFields.build(httpFields.size() + 1);
+            HttpFields.Builder newFields = HttpFields.build(httpFields.size() + 1);
             for (HttpField field : httpFields)
             {
                 if (field.getHeader() == null)

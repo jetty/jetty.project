@@ -88,7 +88,7 @@ public class EvictionTest
 
     public HttpFields newRandomFields(int size)
     {
-        HttpFields.Mutable fields = HttpFields.build();
+        HttpFields.Builder fields = HttpFields.build();
         for (int i = 0; i < size; i++)
         {
             fields.add(newRandomField());

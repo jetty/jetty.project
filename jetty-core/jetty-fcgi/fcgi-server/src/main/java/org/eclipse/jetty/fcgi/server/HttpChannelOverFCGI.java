@@ -43,7 +43,7 @@ public class HttpChannelOverFCGI extends HttpChannel
 
     private final Callback asyncFillCallback = new AsyncFillCallback();
     private final ServerFCGIConnection connection;
-    private final HttpFields.Mutable fields = HttpFields.build();
+    private final HttpFields.Builder fields = HttpFields.build();
     private final Dispatcher dispatcher;
     private HttpInput.Content normalContent;
     private HttpInput.Content specialContent;

@@ -924,7 +924,7 @@ public class HttpGenerator
         }
     }
 
-    public static void putTo(HttpFields.Mutable fields, ByteBuffer bufferInFillMode)
+    public static void putTo(HttpFields.Builder fields, ByteBuffer bufferInFillMode)
     {
         for (HttpField field : fields)
         {

@@ -86,9 +86,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     private final LongAdder bytesIn = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
-    private final HttpFields.Mutable _headerBuilder = HttpFields.build();
+    private final HttpFields.Builder _headerBuilder = HttpFields.build();
     private volatile RetainableByteBuffer _retainableByteBuffer;
-    private HttpFields.Mutable _trailers;
+    private HttpFields.Builder _trailers;
     private Runnable _onRequest;
 
     // TODO why is this not on HttpConfiguration?
@@ -1344,7 +1344,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public void prepareResponse(HttpFields.Mutable headers)
+        public void prepareResponse(HttpFields.Builder headers)
         {
             if (_connectionKeepAlive && _version == HttpVersion.HTTP_1_0 && !headers.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
                 headers.add(CONNECTION_KEEPALIVE);

@@ -26,12 +26,12 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 
-class ResponseHttpFields implements HttpFields.Mutable
+class ResponseHttpFields implements HttpFields.Builder
 {
-    private final HttpFields.Mutable _fields;
+    private final Builder _fields;
     private final AtomicBoolean _committed = new AtomicBoolean();
 
-    ResponseHttpFields(HttpFields.Mutable fields)
+    ResponseHttpFields(Builder fields)
     {
         _fields = fields;
     }
@@ -79,49 +79,49 @@ class ResponseHttpFields implements HttpFields.Mutable
     }
 
     @Override
-    public Mutable add(String name, String value)
+    public Builder add(String name, String value)
     {
         return _committed.get() ? this : _fields.add(name, value);
     }
 
     @Override
-    public Mutable add(HttpHeader header, HttpHeaderValue value)
+    public Builder add(HttpHeader header, HttpHeaderValue value)
     {
         return _fields.add(header, value);
     }
 
     @Override
-    public Mutable add(HttpHeader header, String value)
+    public Builder add(HttpHeader header, String value)
     {
         return _committed.get() ? this : _fields.add(header, value);
     }
 
     @Override
-    public Mutable add(HttpField field)
+    public Builder add(HttpField field)
     {
         return _committed.get() ? this : _fields.add(field);
     }
 
     @Override
-    public Mutable add(HttpFields fields)
+    public Builder add(HttpFields fields)
     {
         return _committed.get() ? this : _fields.add(fields);
     }
 
     @Override
-    public Mutable addCSV(HttpHeader header, String... values)
+    public Builder addCSV(HttpHeader header, String... values)
     {
         return _committed.get() ? this : _fields.addCSV(header, values);
     }
 
     @Override
-    public Mutable addCSV(String name, String... values)
+    public Builder addCSV(String name, String... values)
     {
         return _committed.get() ? this : _fields.addCSV(name, values);
     }
 
     @Override
-    public Mutable addDateField(String name, long date)
+    public Builder addDateField(String name, long date)
     {
         return _committed.get() ? this : _fields.addDateField(name, date);
     }
@@ -133,7 +133,7 @@ class ResponseHttpFields implements HttpFields.Mutable
     }
 
     @Override
-    public Mutable clear()
+    public Builder clear()
     {
         return _committed.get() ? this : _fields.clear();
     }
@@ -242,55 +242,55 @@ class ResponseHttpFields implements HttpFields.Mutable
     }
 
     @Override
-    public Mutable put(HttpField field)
+    public Builder put(HttpField field)
     {
         return _committed.get() ? this : _fields.put(field);
     }
 
     @Override
-    public Mutable put(String name, String value)
+    public Builder put(String name, String value)
     {
         return _committed.get() ? this : _fields.put(name, value);
     }
 
     @Override
-    public Mutable put(HttpHeader header, HttpHeaderValue value)
+    public Builder put(HttpHeader header, HttpHeaderValue value)
     {
         return _committed.get() ? this : _fields.put(header, value);
     }
 
     @Override
-    public Mutable put(HttpHeader header, String value)
+    public Builder put(HttpHeader header, String value)
     {
         return _committed.get() ? this : _fields.put(header, value);
     }
 
     @Override
-    public Mutable put(String name, List<String> list)
+    public Builder put(String name, List<String> list)
     {
         return _committed.get() ? this : _fields.put(name, list);
     }
 
     @Override
-    public Mutable putDateField(HttpHeader name, long date)
+    public Builder putDateField(HttpHeader name, long date)
     {
         return _committed.get() ? this : _fields.putDateField(name, date);
     }
 
     @Override
-    public Mutable putDateField(String name, long date)
+    public Builder putDateField(String name, long date)
     {
         return _committed.get() ? this : _fields.putDateField(name, date);
     }
 
     @Override
-    public Mutable putLongField(HttpHeader name, long value)
+    public Builder putLongField(HttpHeader name, long value)
     {
         return _committed.get() ? this : _fields.putLongField(name, value);
     }
 
     @Override
-    public Mutable putLongField(String name, long value)
+    public Builder putLongField(String name, long value)
     {
         return _committed.get() ? this : _fields.putLongField(name, value);
     }
@@ -310,19 +310,19 @@ class ResponseHttpFields implements HttpFields.Mutable
     }
 
     @Override
-    public Mutable remove(HttpHeader name)
+    public Builder remove(HttpHeader name)
     {
         return _committed.get() ? this : _fields.remove(name);
     }
 
     @Override
-    public Mutable remove(EnumSet<HttpHeader> fields)
+    public Builder remove(EnumSet<HttpHeader> fields)
     {
         return _committed.get() ? this : _fields.remove(fields);
     }
 
     @Override
-    public Mutable remove(String name)
+    public Builder remove(String name)
     {
         return _committed.get() ? this : _fields.remove(name);
     }
