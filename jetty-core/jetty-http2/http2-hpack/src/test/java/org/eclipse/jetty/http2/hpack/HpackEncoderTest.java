@@ -34,7 +34,7 @@ public class HpackEncoderTest
     public void testUnknownFieldsContextManagement() throws Exception
     {
         HpackEncoder encoder = new HpackEncoder(38 * 5);
-        HttpFields.Builder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
 
         HttpField[] field =
             {
@@ -195,7 +195,7 @@ public class HpackEncoderTest
         HpackEncoder encoder = new HpackEncoder(38 * 5);
         ByteBuffer buffer = BufferUtil.allocate(4096);
 
-        HttpFields.Builder fields = HttpFields.build()
+        HttpFields.Mutable fields = HttpFields.build()
             .put("set-cookie", "some cookie value");
 
         // encode
@@ -224,7 +224,7 @@ public class HpackEncoderTest
     @Test
     public void testFieldLargerThanTable() throws Exception
     {
-        HttpFields.Builder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
 
         HpackEncoder encoder = new HpackEncoder(128);
         ByteBuffer buffer0 = BufferUtil.allocate(4096);

@@ -52,7 +52,7 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
     }
 
     @Override
-    public Request customize(Request request, HttpFields.Builder response)
+    public Request customize(Request request, HttpFields.Mutable response)
     {
         if (request.getConnectionMetaData().getVersion() == HttpVersion.HTTP_1_1 || request.getHeaders().contains(HttpHeader.HOST))
             return request;
@@ -65,7 +65,7 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
             : request.getHttpURI();
 
         HttpFields original = request.getHeaders();
-        HttpFields.Builder builder = HttpFields.build(original.size() + 1);
+        HttpFields.Mutable builder = HttpFields.build(original.size() + 1);
         builder.add(new HostPortHttpField(host, port));
         builder.add(request.getHeaders());
         HttpFields headers = builder.asImmutable();

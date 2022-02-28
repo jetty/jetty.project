@@ -81,9 +81,9 @@ public class WebSocketTester
         return newClient(port, false, extensions);
     }
 
-    protected static HttpFields.Builder newUpgradeRequest(String extensions)
+    protected static HttpFields.Mutable newUpgradeRequest(String extensions)
     {
-        HttpFields.Builder fields = HttpFields.build()
+        HttpFields.Mutable fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
             .add(HttpHeader.UPGRADE, "websocket")
             .add(HttpHeader.CONNECTION, "Upgrade")

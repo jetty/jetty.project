@@ -102,7 +102,7 @@ public class HttpClientTransportOverFCGI extends AbstractConnectorHttpClientTran
         return new HttpConnectionOverFCGI(endPoint, destination, promise);
     }
 
-    protected void customize(Request request, HttpFields.Builder fastCGIHeaders)
+    protected void customize(Request request, HttpFields.Mutable fastCGIHeaders)
     {
         fastCGIHeaders.put(FCGI.Headers.DOCUMENT_ROOT, getScriptRoot());
     }

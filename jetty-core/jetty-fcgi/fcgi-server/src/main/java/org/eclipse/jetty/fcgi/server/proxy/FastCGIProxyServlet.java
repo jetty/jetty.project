@@ -221,7 +221,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         super.sendProxyRequest(request, proxyResponse, proxyRequest);
     }
 
-    protected void customizeFastCGIHeaders(Request proxyRequest, HttpFields.Builder fastCGIHeaders)
+    protected void customizeFastCGIHeaders(Request proxyRequest, HttpFields.Mutable fastCGIHeaders)
     {
         for (String envName : fcgiEnvNames)
         {
@@ -283,7 +283,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         }
 
         @Override
-        protected void customize(Request request, HttpFields.Builder fastCGIHeaders)
+        protected void customize(Request request, HttpFields.Mutable fastCGIHeaders)
         {
             super.customize(request, fastCGIHeaders);
             customizeFastCGIHeaders(request, fastCGIHeaders);

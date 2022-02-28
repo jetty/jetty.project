@@ -40,9 +40,9 @@ public interface Response
 
     void setStatus(int code);
 
-    HttpFields.Builder getHeaders();
+    HttpFields.Mutable getHeaders();
 
-    HttpFields.Builder getTrailers();
+    HttpFields.Mutable getTrailers();
 
     void write(boolean last, Callback callback, ByteBuffer... content);
 
@@ -190,13 +190,13 @@ public interface Response
         }
 
         @Override
-        public HttpFields.Builder getHeaders()
+        public HttpFields.Mutable getHeaders()
         {
             return getWrapped().getHeaders();
         }
 
         @Override
-        public HttpFields.Builder getTrailers()
+        public HttpFields.Mutable getTrailers()
         {
             return getWrapped().getTrailers();
         }

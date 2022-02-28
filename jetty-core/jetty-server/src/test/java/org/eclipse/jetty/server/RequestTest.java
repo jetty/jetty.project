@@ -1917,7 +1917,7 @@ public class RequestTest
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("good", "thumbsup", 100), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bonza", "bewdy", 1), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bad", "thumbsdown", 0), CookieCompliance.RFC6265));
-        HttpFields.Builder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
         fields.add(HttpHeader.AUTHORIZATION, "Basic foo");
         request.setMetaData(new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_1_0, fields));
         assertTrue(request.isPushSupported());
@@ -1955,7 +1955,7 @@ public class RequestTest
                 return () -> "test";
             }
         };
-        HttpFields.Builder fields = HttpFields.build();
+        HttpFields.Mutable fields = HttpFields.build();
         request.setMetaData(new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_1_0, fields));
         assertTrue(request.isPushSupported());
         PushBuilder builder = request.newPushBuilder();

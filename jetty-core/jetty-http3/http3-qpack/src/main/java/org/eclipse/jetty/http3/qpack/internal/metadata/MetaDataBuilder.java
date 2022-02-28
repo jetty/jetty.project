@@ -28,7 +28,7 @@ import static org.eclipse.jetty.http3.qpack.QpackException.H3_GENERAL_PROTOCOL_E
 public class MetaDataBuilder
 {
     private final int _maxSize;
-    private final HttpFields.Builder _fields = HttpFields.build();
+    private final HttpFields.Mutable _fields = HttpFields.build();
     private int _size;
     private Integer _status;
     private String _method;
@@ -231,7 +231,7 @@ public class MetaDataBuilder
         if (_request && _response)
             throw new QpackException.StreamException(H3_GENERAL_PROTOCOL_ERROR, "Request and Response headers");
 
-        HttpFields.Builder fields = _fields;
+        HttpFields.Mutable fields = _fields;
         try
         {
             if (_request)

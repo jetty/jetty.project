@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or
  * {@link Server#setErrorHandler(ErrorHandler)}.
  * It is called by the HttpResponse.sendError method to write an error page via {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
- * or via {@link #badMessageError(int, String, HttpFields.Builder)} for bad requests for which a dispatch cannot be done.
+ * or via {@link #badMessageError(int, String, HttpFields.Mutable)} for bad requests for which a dispatch cannot be done.
  */
 public class ErrorHandler extends AbstractHandler
 {
@@ -524,7 +524,7 @@ public class ErrorHandler extends AbstractHandler
      * @param fields The header fields that will be sent with the response.
      * @return The content as a ByteBuffer, or null for no body.
      */
-    public ByteBuffer badMessageError(int status, String reason, HttpFields.Builder fields)
+    public ByteBuffer badMessageError(int status, String reason, HttpFields.Mutable fields)
     {
         if (reason == null)
             reason = HttpStatus.getMessage(status);

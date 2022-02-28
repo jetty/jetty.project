@@ -81,7 +81,7 @@ public class Response implements HttpServletResponse
     public static final String SET_INCLUDE_HEADER_PREFIX = "org.eclipse.jetty.server.include.";
 
     private final HttpChannel _channel;
-    private final HttpFields.Builder _fields = HttpFields.build();
+    private final HttpFields.Mutable _fields = HttpFields.build();
     private final AtomicBiInteger _errorSentAndIncludes = new AtomicBiInteger(); // hi is errorSent flag, lo is include count
     private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
@@ -1364,7 +1364,7 @@ public class Response implements HttpServletResponse
         return _reason;
     }
 
-    public HttpFields.Builder getHttpFields()
+    public HttpFields.Mutable getHttpFields()
     {
         return _fields;
     }
@@ -1485,7 +1485,7 @@ public class Response implements HttpServletResponse
             Map<String, String> t = _supplier.get();
             if (t == null)
                 return null;
-            HttpFields.Builder fields = HttpFields.build();
+            HttpFields.Mutable fields = HttpFields.build();
             for (Map.Entry<String, String> e : t.entrySet())
             {
                 fields.add(e.getKey(), e.getValue());

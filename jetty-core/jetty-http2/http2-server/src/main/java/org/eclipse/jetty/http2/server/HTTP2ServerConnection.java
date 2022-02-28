@@ -290,7 +290,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
         }
     }
 
-    public boolean upgrade(Request request, HttpFields.Builder responseFields)
+    public boolean upgrade(Request request, HttpFields.Mutable responseFields)
     {
         if (HttpMethod.PRI.is(request.getMethod()))
         {

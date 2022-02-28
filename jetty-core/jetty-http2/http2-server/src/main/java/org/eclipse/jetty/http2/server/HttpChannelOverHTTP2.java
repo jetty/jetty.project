@@ -110,7 +110,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel implements Closeable, Writ
 
             _expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
-            HttpFields.Builder response = getResponse().getHttpFields();
+            HttpFields.Mutable response = getResponse().getHttpFields();
             if (getHttpConfiguration().getSendServerVersion())
                 response.add(SERVER_VERSION);
             if (getHttpConfiguration().getSendXPoweredBy())

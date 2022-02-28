@@ -25,13 +25,13 @@ import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpResponse implements Response
 {
-    private final HttpFields.Builder headers = HttpFields.build();
+    private final HttpFields.Mutable headers = HttpFields.build();
     private final Request request;
     private final List<ResponseListener> listeners;
     private HttpVersion version;
     private int status;
     private String reason;
-    private HttpFields.Builder trailers;
+    private HttpFields.Mutable trailers;
 
     public HttpResponse(Request request, List<ResponseListener> listeners)
     {
@@ -93,7 +93,7 @@ public class HttpResponse implements Response
         return this;
     }
 
-    public HttpResponse headers(Consumer<HttpFields.Builder> consumer)
+    public HttpResponse headers(Consumer<HttpFields.Mutable> consumer)
     {
         consumer.accept(headers);
         return this;

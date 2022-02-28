@@ -57,7 +57,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
     private List<String> _complianceViolations;
-    private HttpFields.Builder _trailers;
+    private HttpFields.Mutable _trailers;
     // Field _content doesn't need to be volatile nor protected by a lock
     // as it is always accessed by the same thread, i.e.: we get notified by onFillable
     // that the socket contains new bytes and either schedule an onDataAvailable
@@ -649,7 +649,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
         }
 
         // Create new connection
-        HttpFields.Builder response101 = HttpFields.build();
+        HttpFields.Mutable response101 = HttpFields.build();
         Connection upgradeConnection = factory.upgradeConnection(getConnector(), getEndPoint(), _metadata, response101);
         if (upgradeConnection == null)
         {
@@ -701,7 +701,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
     private static class RequestBuilder
     {
-        private final HttpFields.Builder _fieldsBuilder = HttpFields.build();
+        private final HttpFields.Mutable _fieldsMutable = HttpFields.build();
         private final HttpURI.Mutable _uriBuilder = HttpURI.build();
         private String _method;
         private HttpVersion _version;
@@ -716,17 +716,17 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             _method = method;
             _uriBuilder.uri(method, uri);
             _version = version;
-            _fieldsBuilder.clear();
+            _fieldsMutable.clear();
         }
 
-        public HttpFields.Builder getFields()
+        public HttpFields.Mutable getFields()
         {
-            return _fieldsBuilder;
+            return _fieldsMutable;
         }
 
         public MetaData.Request build()
         {
-            return new MetaData.Request(_method, _uriBuilder, _version, _fieldsBuilder);
+            return new MetaData.Request(_method, _uriBuilder, _version, _fieldsMutable);
         }
 
         public HttpVersion version()

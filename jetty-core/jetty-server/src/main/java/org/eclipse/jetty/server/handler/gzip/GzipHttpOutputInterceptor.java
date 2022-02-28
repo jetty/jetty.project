@@ -169,7 +169,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         }
 
         // Has the Content-Encoding header already been set?
-        HttpFields.Builder fields = response.getHttpFields();
+        HttpFields.Mutable fields = response.getHttpFields();
         String ce = fields.get(HttpHeader.CONTENT_ENCODING);
         if (ce != null)
         {

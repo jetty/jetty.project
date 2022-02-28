@@ -62,8 +62,8 @@ public class MsieRule extends Rule
         if (baseRequest == null)
             return null;
 
-        HttpFields.Builder reqFields = HttpFields.build(baseRequest.getHttpFields());
-        HttpFields.Builder resFields = baseRequest.getResponse().getHttpFields();
+        HttpFields.Mutable reqFields = HttpFields.build(baseRequest.getHttpFields());
+        HttpFields.Mutable resFields = baseRequest.getResponse().getHttpFields();
         String userAgent = reqFields.get(HttpHeader.USER_AGENT);
         boolean acceptEncodings = reqFields.contains(HttpHeader.ACCEPT_ENCODING);
         if (acceptEncodings)

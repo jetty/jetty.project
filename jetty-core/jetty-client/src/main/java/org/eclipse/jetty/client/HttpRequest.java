@@ -60,7 +60,7 @@ public class HttpRequest implements Request
 {
     private static final URI NULL_URI = URI.create("null:0");
 
-    private final HttpFields.Builder headers = HttpFields.build();
+    private final HttpFields.Mutable headers = HttpFields.build();
     private final Fields params = new Fields(true);
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
     private final AtomicReference<Throwable> aborted = new AtomicReference<>();
@@ -373,7 +373,7 @@ public class HttpRequest implements Request
     }
 
     @Override
-    public Request headers(Consumer<HttpFields.Builder> consumer)
+    public Request headers(Consumer<HttpFields.Mutable> consumer)
     {
         consumer.accept(headers);
         return this;

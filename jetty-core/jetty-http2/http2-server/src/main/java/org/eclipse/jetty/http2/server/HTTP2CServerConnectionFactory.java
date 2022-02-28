@@ -66,7 +66,7 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory 
     }
 
     @Override
-    public Connection upgradeConnection(Connector connector, EndPoint endPoint, Request request, HttpFields.Builder response101) throws BadMessageException
+    public Connection upgradeConnection(Connector connector, EndPoint endPoint, Request request, HttpFields.Mutable response101) throws BadMessageException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} upgrading {}{}{}", this, request, System.lineSeparator(), request.getFields());

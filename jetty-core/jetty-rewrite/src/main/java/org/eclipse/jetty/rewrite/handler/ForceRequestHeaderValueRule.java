@@ -65,7 +65,7 @@ public class ForceRequestHeaderValueRule extends Rule
         if (baseRequest == null)
             return null;
 
-        HttpFields.Builder replacement = HttpFields.build(baseRequest.getHttpFields())
+        HttpFields.Mutable replacement = HttpFields.build(baseRequest.getHttpFields())
             .remove(headerName)
             .add(headerName, forcedValue);
         baseRequest.setHttpFields(replacement);

@@ -73,7 +73,7 @@ public class HttpGeneratorServerHTTPTest
 
     private static class Result
     {
-        private HttpFields.Builder _fields = HttpFields.build();
+        private HttpFields.Mutable _fields = HttpFields.build();
         private final String _body;
         private final int _code;
         private String _connection;
@@ -202,7 +202,7 @@ public class HttpGeneratorServerHTTPTest
             return "[" + _code + "," + _contentType + "," + _contentLength + "," + (_body == null ? "null" : "content") + "]";
         }
 
-        public HttpFields.Builder getHttpFields()
+        public HttpFields.Mutable getHttpFields()
         {
             return _fields;
         }

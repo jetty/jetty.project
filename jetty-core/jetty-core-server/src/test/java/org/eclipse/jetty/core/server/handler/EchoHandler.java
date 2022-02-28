@@ -39,7 +39,7 @@ public class EchoHandler extends Handler.Processor
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (StringUtil.isNotBlank(contentType))
             response.setContentType(contentType);
-        HttpFields.Builder trailers = null;
+        HttpFields.Mutable trailers = null;
         if (request.getHeaders().contains(HttpHeader.TRAILER))
             trailers = response.getTrailers();
         long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
@@ -56,11 +56,11 @@ public class EchoHandler extends Handler.Processor
         private static final Content ITERATING = new Content.Abstract(true, false){};
         private final Request _request;
         private final Response _response;
-        private final HttpFields.Builder _trailers;
+        private final HttpFields.Mutable _trailers;
         private final Callback _callback;
         private final AtomicReference<Content> _content = new AtomicReference<>();
 
-        Echo(Request request, Response response, HttpFields.Builder trailers, Callback callback)
+        Echo(Request request, Response response, HttpFields.Mutable trailers, Callback callback)
         {
             _request = request;
             _response = response;

@@ -71,7 +71,7 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
                 request.setHttpURI(HttpURI.build(request.getHttpURI()).authority(host, port));
 
             HttpFields original = request.getHttpFields();
-            HttpFields.Builder httpFields = HttpFields.build(original.size() + 1);
+            HttpFields.Mutable httpFields = HttpFields.build(original.size() + 1);
             httpFields.add(new HostPortHttpField(host, port));
             httpFields.add(request.getHttpFields());
             request.setHttpFields(httpFields);

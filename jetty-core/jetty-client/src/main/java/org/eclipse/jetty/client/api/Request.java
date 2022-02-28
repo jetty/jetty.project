@@ -172,7 +172,7 @@ public interface Request
      * @param consumer the code that modifies the headers of this request
      * @return this request object
      */
-    Request headers(Consumer<HttpFields.Builder> consumer);
+    Request headers(Consumer<HttpFields.Mutable> consumer);
 
     /**
      * @param name the name of the header

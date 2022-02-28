@@ -765,7 +765,7 @@ public class HttpChannel extends Attributes.Lazy
         }
     }
 
-    private class ChannelResponse extends HttpFields.Mutable implements Response, Callback
+    private class ChannelResponse extends HttpFields.MutableHttpFields implements Response, Callback
     {
         private final ChannelRequest _request;
         private final ResponseHttpFields _headers;
@@ -798,13 +798,13 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        public Builder getHeaders()
+        public Mutable getHeaders()
         {
             return _headers;
         }
 
         @Override
-        public Builder getTrailers()
+        public Mutable getTrailers()
         {
             try (AutoLock ignored = _lock.lock())
             {

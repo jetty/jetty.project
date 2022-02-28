@@ -310,7 +310,7 @@ public class Request implements HttpServletRequest
         if (!isPushSupported())
             return null;
 
-        HttpFields.Builder fields = HttpFields.build(getHttpFields(), NOT_PUSHED_HEADERS);
+        HttpFields.Mutable fields = HttpFields.build(getHttpFields(), NOT_PUSHED_HEADERS);
 
         HttpField authField = getHttpFields().getField(HttpHeader.AUTHORIZATION);
         //TODO check what to do for digest etc etc

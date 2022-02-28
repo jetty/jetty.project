@@ -56,7 +56,7 @@ public class HttpSenderOverFCGI extends HttpSender
         Request request = exchange.getRequest();
         // Copy the request headers to be able to convert them properly
         HttpFields headers = request.getHeaders();
-        HttpFields.Builder fcgiHeaders = HttpFields.build();
+        HttpFields.Mutable fcgiHeaders = HttpFields.build();
 
         // FastCGI headers based on the URI
         URI uri = request.getURI();
