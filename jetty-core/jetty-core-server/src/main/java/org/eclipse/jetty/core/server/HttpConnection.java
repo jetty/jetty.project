@@ -86,7 +86,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     private final LongAdder bytesIn = new LongAdder();
     private final LongAdder bytesOut = new LongAdder();
     private final AtomicBoolean _handling = new AtomicBoolean(false);
-    private final HttpFields.Mutable _headerMutable = HttpFields.build();
+    private final HttpFields.Mutable _headerBuilder = HttpFields.build();
     private volatile RetainableByteBuffer _retainableByteBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
@@ -962,7 +962,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             Http1Stream stream = newHttpStream(method, uri, version);
             if (!_stream.compareAndSet(null, stream))
                 throw new IllegalStateException("Stream pending");
-            _headerMutable.clear();
+            _headerBuilder.clear();
             _channel.setStream(stream);
         }
 
@@ -1162,7 +1162,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         break;
                 }
             }
-            _headerMutable.add(field);
+            _headerBuilder.add(field);
         }
 
         public Runnable headerComplete()
@@ -1205,7 +1205,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _uri.authority(hostPort.getHost(), port);
             }
 
-            _request = new MetaData.Request(_method, _uri.asImmutable(), _version, _headerMutable, _contentLength);
+            _request = new MetaData.Request(_method, _uri.asImmutable(), _version, _headerBuilder, _contentLength);
 
             Runnable handle = _channel.onRequest(_request);
 
@@ -1267,7 +1267,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
                     if (HttpMethod.PRI.is(_method) &&
                         "*".equals(_uri.getPath()) &&
-                        _headerMutable.size() == 0 &&
+                        _headerBuilder.size() == 0 &&
                         HttpConnection.this.upgrade())
                         return null; // TODO ?
 

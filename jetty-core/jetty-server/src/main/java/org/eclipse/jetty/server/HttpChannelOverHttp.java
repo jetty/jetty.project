@@ -701,7 +701,7 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
 
     private static class RequestBuilder
     {
-        private final HttpFields.Mutable _fieldsMutable = HttpFields.build();
+        private final HttpFields.Mutable _fieldsBuilder = HttpFields.build();
         private final HttpURI.Mutable _uriBuilder = HttpURI.build();
         private String _method;
         private HttpVersion _version;
@@ -716,17 +716,17 @@ public class HttpChannelOverHttp extends HttpChannel implements HttpParser.Reque
             _method = method;
             _uriBuilder.uri(method, uri);
             _version = version;
-            _fieldsMutable.clear();
+            _fieldsBuilder.clear();
         }
 
         public HttpFields.Mutable getFields()
         {
-            return _fieldsMutable;
+            return _fieldsBuilder;
         }
 
         public MetaData.Request build()
         {
-            return new MetaData.Request(_method, _uriBuilder, _version, _fieldsMutable);
+            return new MetaData.Request(_method, _uriBuilder, _version, _fieldsBuilder);
         }
 
         public HttpVersion version()
