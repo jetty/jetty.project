@@ -560,8 +560,6 @@ public class HttpConnectionTest
             \r
             """);
 
-        System.err.println(response);
-
         int offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200");
         checkContains(response, offset, "Content-Length: 0");

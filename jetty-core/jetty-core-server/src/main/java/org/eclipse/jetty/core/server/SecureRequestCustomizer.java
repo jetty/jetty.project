@@ -191,7 +191,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     @Override
-    public Request customize(Request request, HttpFields.Mutable response)
+    public Request customize(Request request, HttpFields.Mutable responseHeaders)
     {
         EndPoint endp = request.getConnectionMetaData().getConnection().getEndPoint();
         HttpURI uri = request.getHttpURI();
@@ -219,7 +219,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         if (_stsField != null)
-            response.add(_stsField);
+            responseHeaders.add(_stsField);
 
         return newSecureRequest(request, uri, sslEngine);
     }
