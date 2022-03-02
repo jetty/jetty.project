@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.autobahn;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.autobahn;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

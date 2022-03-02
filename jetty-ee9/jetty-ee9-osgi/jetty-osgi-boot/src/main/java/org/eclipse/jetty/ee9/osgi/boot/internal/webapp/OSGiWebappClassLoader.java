@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.internal.webapp;
+package org.eclipse.jetty.ee9.osgi.boot.internal.webapp;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,11 +24,11 @@ import java.util.Set;
 import java.util.jar.JarFile;
 
 import jakarta.servlet.http.HttpServlet;
-import org.eclipse.jetty.osgi.boot.utils.BundleClassLoaderHelperFactory;
+import org.eclipse.jetty.ee9.osgi.boot.utils.BundleClassLoaderHelperFactory;
+import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleReference;
 import org.slf4j.Logger;
@@ -150,7 +150,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * from the resource.  This implementation directly asks the osgi
      * bundle classloader to load the given class name.
      *
-     * @see org.eclipse.jetty.webapp.WebAppClassLoader#loadAsResource(java.lang.String, boolean)
+     * @see org.eclipse.jetty.ee9.webapp.WebAppClassLoader#loadAsResource(java.lang.String, boolean)
      */
     @Override
     protected Class<?> loadAsResource(String name, boolean checkSystemResource) throws ClassNotFoundException

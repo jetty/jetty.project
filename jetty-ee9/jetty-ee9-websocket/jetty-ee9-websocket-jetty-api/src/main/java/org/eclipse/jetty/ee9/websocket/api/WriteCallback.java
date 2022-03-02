@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.ee9.websocket.api;
 
 /**
  * Callback for Write events.

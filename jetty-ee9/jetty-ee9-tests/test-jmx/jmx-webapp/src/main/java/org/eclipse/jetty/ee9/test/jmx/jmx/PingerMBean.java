@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test.jmx.jmx;
+package org.eclipse.jetty.ee9.test.jmx.jmx;
 
+import org.eclipse.jetty.ee9.test.jmx.Pinger;
 import org.eclipse.jetty.jmx.ObjectMBean;
-import org.eclipse.jetty.test.jmx.Pinger;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;

@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.util;
+package org.eclipse.jetty.ee9.websocket.tests.util;
 
 import java.util.concurrent.Future;
 
+import org.eclipse.jetty.ee9.websocket.api.WriteCallback;
 import org.eclipse.jetty.util.FutureCallback;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

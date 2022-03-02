@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.demos;
+package org.eclipse.jetty.ee9.demos;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -20,19 +20,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.PropertiesConfigurationManager;
 import org.eclipse.jetty.deploy.bindings.DebugListenerBinding;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee9.security.HashLoginService;
+import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.rewrite.handler.ValidUrlRule;
-import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.AsyncRequestLogWriter;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.DebugListener;
@@ -50,7 +51,6 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.webapp.Configurations;
 
 /**
  * Starts the Jetty Distribution's demo-base directory using entirely

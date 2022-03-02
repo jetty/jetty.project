@@ -14,5 +14,5 @@
 /**
  * Jetty Servlets : Generally Useful Servlets, Handlers and Filters
  */
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.ee9.servlets;
 

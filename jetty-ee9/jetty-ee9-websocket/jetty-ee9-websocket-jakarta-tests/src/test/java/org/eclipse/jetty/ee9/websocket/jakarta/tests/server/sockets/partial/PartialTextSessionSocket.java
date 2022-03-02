@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server.sockets.partial;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.partial;
 
 import java.io.IOException;
 

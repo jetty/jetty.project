@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.ee9.websocket.server;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -24,17 +24,22 @@ import java.util.function.Consumer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketSessionListener;
+import org.eclipse.jetty.ee9.websocket.common.SessionTracker;
+import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeResponse;
+import org.eclipse.jetty.ee9.websocket.server.internal.JettyServerFrameHandlerFactory;
+import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.http.pathmap.PathSpec;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
-import org.eclipse.jetty.websocket.common.SessionTracker;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.WebSocketException;
@@ -44,11 +49,6 @@ import org.eclipse.jetty.websocket.core.server.WebSocketCreator;
 import org.eclipse.jetty.websocket.core.server.WebSocketMappings;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiator;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeRequest;
-import org.eclipse.jetty.websocket.server.internal.DelegatedServerUpgradeResponse;
-import org.eclipse.jetty.websocket.server.internal.JettyServerFrameHandlerFactory;
-import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -162,7 +162,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             }
             catch (Exception e)
             {
-                throw new org.eclipse.jetty.websocket.api.exceptions.WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
+                throw new org.eclipse.jetty.ee9.websocket.api.exceptions.WebSocketException("Unable to create instance of " + endpointClass.getName(), e);
             }
         });
     }

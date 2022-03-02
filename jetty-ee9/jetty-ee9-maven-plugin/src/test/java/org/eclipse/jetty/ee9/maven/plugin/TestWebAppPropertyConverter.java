@@ -11,19 +11,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin;
+package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.util.Arrays;
 import java.util.Properties;
 
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

@@ -3,7 +3,7 @@
 
 <Configure id="Contexts" class="org.eclipse.jetty.server.handler.HandlerCollection">
   <Call name="addHandler">
-    <New class="org.eclipse.jetty.webapp.WebAppContext">
+    <New class="org.eclipse.jetty.ee9.webapp.WebAppContext">
       <Set name="contextPath">/test-jetty-webapp</Set>
       <Set name="war"><Property name="test.webapps" default="." />/test-jetty-webapp.war</Set>
       <Call name="insertHandler">

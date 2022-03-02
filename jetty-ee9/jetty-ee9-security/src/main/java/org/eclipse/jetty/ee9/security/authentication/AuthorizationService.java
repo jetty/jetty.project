@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.authentication;
+package org.eclipse.jetty.ee9.security.authentication;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.server.UserIdentity;
 
 /**

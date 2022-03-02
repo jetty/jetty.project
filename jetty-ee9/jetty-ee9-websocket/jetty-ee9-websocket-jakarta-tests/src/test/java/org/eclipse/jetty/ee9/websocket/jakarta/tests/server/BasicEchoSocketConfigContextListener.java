@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.echo.BasicEchoSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.echo.BasicEchoSocket;
 
 /**
  * Example of adding a server socket (which extends {@link jakarta.websocket.Endpoint}) programmatically via the {@link ServerContainer#addEndpoint(ServerEndpointConfig)}

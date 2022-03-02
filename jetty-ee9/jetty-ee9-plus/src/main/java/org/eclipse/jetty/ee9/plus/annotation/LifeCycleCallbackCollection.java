@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.plus.annotation;
+package org.eclipse.jetty.ee9.plus.annotation;
 
 import java.util.Collection;
 import java.util.Collections;

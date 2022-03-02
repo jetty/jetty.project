@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.ee9.websocket.common;
 
 import java.util.Map;
 import java.util.Set;
@@ -21,7 +21,7 @@ import org.eclipse.jetty.websocket.core.ExtensionConfig;
 /**
  * Represents an Extension Configuration, as seen during the connection Handshake process.
  */
-public class JettyExtensionConfig implements org.eclipse.jetty.websocket.api.ExtensionConfig
+public class JettyExtensionConfig implements org.eclipse.jetty.ee9.websocket.api.ExtensionConfig
 {
 
     private final ExtensionConfig config;

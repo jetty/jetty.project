@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.test;
+package org.eclipse.jetty.ee9.osgi.test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +19,8 @@ import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;

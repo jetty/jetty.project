@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.common.messages;
+package org.eclipse.jetty.ee9.websocket.jakarta.common.messages;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
@@ -20,9 +20,9 @@ import java.util.function.Consumer;
 
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.Decoder;
-import org.eclipse.jetty.websocket.jakarta.common.AbstractSessionTest;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.websocket.jakarta.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.AbstractSessionTest;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
 
 public abstract class AbstractMessageSinkTest extends AbstractSessionTest
 {

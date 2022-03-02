@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jaas;
+package org.eclipse.jetty.ee9.jaas;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.eclipse.jetty.security.PropertyUserStore;
+import org.eclipse.jetty.ee9.security.PropertyUserStore;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

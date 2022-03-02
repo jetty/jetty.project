@@ -14,5 +14,5 @@
 /**
  * Jetty Ant : Ant Tasks and Configuration
  */
-package org.eclipse.jetty.ant;
+package org.eclipse.jetty.ee9.ant;
 

@@ -11,27 +11,27 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.ee9.websocket.common;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.ee9.websocket.api.Frame;
+import org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketFrameListener;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketListener;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketPartialListener;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketPingPongListener;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.Frame;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
-import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.internal.util.TextUtils;
 

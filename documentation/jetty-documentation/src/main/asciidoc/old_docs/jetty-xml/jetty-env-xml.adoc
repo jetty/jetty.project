@@ -23,7 +23,7 @@ You define global naming resources on the server via `jetty.xml`.
 [[jetty-env-root-element]]
 ==== jetty-env.xml Root Element
 
-Jetty applies `jetty-env.xml` on a per-webapp basis, and configures an instance of `org.eclipse.jetty.webapp.WebAppContext.`
+Jetty applies `jetty-env.xml` on a per-webapp basis, and configures an instance of `org.eclipse.jetty.ee9.webapp.WebAppContext.`
 
 [source, xml, subs="{sub-order}"]
 ----
@@ -31,7 +31,7 @@ Jetty applies `jetty-env.xml` on a per-webapp basis, and configures an instance 
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
  ..
 </Configure>
 
@@ -54,7 +54,7 @@ Place the `jetty-env.xml` file in your web application's WEB-INF folder.
  <?xml version="1.0"?>
  <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
- <Configure class="org.eclipse.jetty.webapp.WebAppContext">
+ <Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
 
    <!-- Add an EnvEntry only valid for this webapp               -->
    <New id="gargle"  class="org.eclipse.jetty.plus.jndi.EnvEntry">

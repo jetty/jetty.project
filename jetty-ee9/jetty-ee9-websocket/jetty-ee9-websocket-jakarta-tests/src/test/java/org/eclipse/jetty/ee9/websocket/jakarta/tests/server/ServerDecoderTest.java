@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import java.net.URI;
 import java.util.Collections;
@@ -25,13 +25,13 @@ import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.StringDecoder;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.EventSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEndpointTracker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jakarta.common.decoders.StringDecoder;
-import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.jakarta.tests.EventSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.WSEndpointTracker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

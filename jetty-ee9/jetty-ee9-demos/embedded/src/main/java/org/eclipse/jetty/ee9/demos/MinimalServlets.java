@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.demos;
+package org.eclipse.jetty.ee9.demos;
 
 import java.io.IOException;
 
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletHandler;
 
 public class MinimalServlets
 {

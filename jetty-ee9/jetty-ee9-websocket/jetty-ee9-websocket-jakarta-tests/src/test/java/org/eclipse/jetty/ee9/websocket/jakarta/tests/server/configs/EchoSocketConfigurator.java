@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server.configs;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.configs;
 
 import java.util.Collections;
 

@@ -11,22 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.server.browser;
+package org.eclipse.jetty.ee9.websocket.jakarta.server.browser;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Objects;
 
+import org.eclipse.jetty.ee9.servlet.DefaultServlet;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

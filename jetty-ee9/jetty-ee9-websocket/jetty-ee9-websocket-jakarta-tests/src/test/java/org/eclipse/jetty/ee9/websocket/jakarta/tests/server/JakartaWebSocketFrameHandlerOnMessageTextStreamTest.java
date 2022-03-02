@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -22,16 +22,16 @@ import java.util.function.Consumer;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandler;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequestAdapter;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEventTracker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandler;
-import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.jakarta.tests.WSEventTracker;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

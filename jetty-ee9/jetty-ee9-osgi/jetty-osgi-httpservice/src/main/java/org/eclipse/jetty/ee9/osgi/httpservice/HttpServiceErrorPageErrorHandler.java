@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.httpservice;
+package org.eclipse.jetty.ee9.osgi.httpservice;
 
 import java.io.IOException;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 
 /**
  * Extended error page handler.

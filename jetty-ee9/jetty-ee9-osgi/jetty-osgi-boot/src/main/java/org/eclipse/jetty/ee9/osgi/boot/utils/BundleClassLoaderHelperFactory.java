@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.utils;
+package org.eclipse.jetty.ee9.osgi.boot.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

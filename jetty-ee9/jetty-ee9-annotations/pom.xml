@@ -20,7 +20,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <argLine>
-            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.annotations/org.eclipse.jetty.annotations.resources=org.eclipse.jetty.plus
+            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.annotations/org.eclipse.jetty.ee9.annotations.resources=org.eclipse.jetty.plus
           </argLine>
         </configuration>
       </plugin>
@@ -34,7 +34,7 @@
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)", osgi.serviceloader; filter:="(osgi.serviceloader=jakarta.servlet.ServletContainerInitializer)";resolution:=optional;cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)";resolution:=optional
             </Require-Capability>
             <Provide-Capability>
-              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.webapp.Configuration
+              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration
             </Provide-Capability>
           </instructions>
         </configuration>

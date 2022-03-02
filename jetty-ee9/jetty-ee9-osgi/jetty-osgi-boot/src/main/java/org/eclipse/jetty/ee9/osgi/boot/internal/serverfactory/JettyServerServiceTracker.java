@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.internal.serverfactory;
+package org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory;
 
 import java.util.Dictionary;
 import java.util.Hashtable;
 
-import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.ee9.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.server.Server;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;

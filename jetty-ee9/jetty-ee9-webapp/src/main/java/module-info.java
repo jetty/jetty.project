@@ -11,29 +11,29 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.webapp
+module org.eclipse.jetty.ee9.webapp
 {
     requires org.slf4j;
 
     requires transitive java.instrument;
-    requires transitive org.eclipse.jetty.servlet;
+    requires transitive org.eclipse.jetty.ee9.servlet;
     requires transitive org.eclipse.jetty.xml;
 
-    exports org.eclipse.jetty.webapp;
+    exports org.eclipse.jetty.ee9.webapp;
 
-    uses org.eclipse.jetty.webapp.Configuration;
+    uses org.eclipse.jetty.ee9.webapp.Configuration;
 
-    provides org.eclipse.jetty.webapp.Configuration with 
-        org.eclipse.jetty.webapp.FragmentConfiguration,
-        org.eclipse.jetty.webapp.JaasConfiguration,
-        org.eclipse.jetty.webapp.JaspiConfiguration,
-        org.eclipse.jetty.webapp.JettyWebXmlConfiguration,
-        org.eclipse.jetty.webapp.JmxConfiguration,
-        org.eclipse.jetty.webapp.JndiConfiguration,
-        org.eclipse.jetty.webapp.JspConfiguration,
-        org.eclipse.jetty.webapp.MetaInfConfiguration,
-        org.eclipse.jetty.webapp.ServletsConfiguration,
-        org.eclipse.jetty.webapp.WebAppConfiguration,
-        org.eclipse.jetty.webapp.WebInfConfiguration,
-        org.eclipse.jetty.webapp.WebXmlConfiguration;
+    provides org.eclipse.jetty.ee9.webapp.Configuration with 
+        org.eclipse.jetty.ee9.webapp.FragmentConfiguration,
+        org.eclipse.jetty.ee9.webapp.JaasConfiguration,
+        org.eclipse.jetty.ee9.webapp.JaspiConfiguration,
+        org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration,
+        org.eclipse.jetty.ee9.webapp.JmxConfiguration,
+        org.eclipse.jetty.ee9.webapp.JndiConfiguration,
+        org.eclipse.jetty.ee9.webapp.JspConfiguration,
+        org.eclipse.jetty.ee9.webapp.MetaInfConfiguration,
+        org.eclipse.jetty.ee9.webapp.ServletsConfiguration,
+        org.eclipse.jetty.ee9.webapp.WebAppConfiguration,
+        org.eclipse.jetty.ee9.webapp.WebInfConfiguration,
+        org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 }

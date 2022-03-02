@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.common;
+package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
@@ -30,6 +30,12 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.PongMessage;
 import jakarta.websocket.server.ServerEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.messages.DecodedBinaryMessageSink;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.messages.DecodedBinaryStreamMessageSink;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.messages.DecodedTextMessageSink;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -45,12 +51,6 @@ import org.eclipse.jetty.websocket.core.internal.messages.PartialByteArrayMessag
 import org.eclipse.jetty.websocket.core.internal.messages.PartialByteBufferMessageSink;
 import org.eclipse.jetty.websocket.core.internal.messages.PartialStringMessageSink;
 import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
-import org.eclipse.jetty.websocket.jakarta.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.websocket.jakarta.common.decoders.RegisteredDecoder;
-import org.eclipse.jetty.websocket.jakarta.common.messages.DecodedBinaryMessageSink;
-import org.eclipse.jetty.websocket.jakarta.common.messages.DecodedBinaryStreamMessageSink;
-import org.eclipse.jetty.websocket.jakarta.common.messages.DecodedTextMessageSink;
-import org.eclipse.jetty.websocket.jakarta.common.messages.DecodedTextStreamMessageSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

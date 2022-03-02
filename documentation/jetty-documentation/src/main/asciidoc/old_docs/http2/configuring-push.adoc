@@ -32,7 +32,7 @@ HTTP/2 Push can be automated in your application by configuring a link:{JDURL}/o
     ...
     <filter>
         <filter-name>PushFilter</filter-name>
-        <filter-class>org.eclipse.jetty.servlets.PushCacheFilter</filter-class>
+        <filter-class>org.eclipse.jetty.ee9.servlets.PushCacheFilter</filter-class>
         <async-supported>true</async-supported>
     </filter>
     <filter-mapping>

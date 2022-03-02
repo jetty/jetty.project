@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeAll;

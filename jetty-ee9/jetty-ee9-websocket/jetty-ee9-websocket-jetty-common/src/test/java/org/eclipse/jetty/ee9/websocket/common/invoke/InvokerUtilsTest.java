@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.invoke;
+package org.eclipse.jetty.ee9.websocket.common.invoke;
 
 import java.io.File;
 import java.lang.invoke.MethodHandle;

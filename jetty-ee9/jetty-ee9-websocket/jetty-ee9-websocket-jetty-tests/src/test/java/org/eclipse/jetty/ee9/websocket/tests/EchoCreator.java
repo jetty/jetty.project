@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
+package org.eclipse.jetty.ee9.websocket.tests;
 
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
-import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
 
 public class EchoCreator implements JettyWebSocketCreator
 {

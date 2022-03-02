@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.autobahn;
+package org.eclipse.jetty.ee9.websocket.tests.autobahn;
 
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
 /**
  * WebSocket Server for use with <a href="https://github.com/crossbario/autobahn-testsuite">autobahn websocket testsuite</a> (wstest).

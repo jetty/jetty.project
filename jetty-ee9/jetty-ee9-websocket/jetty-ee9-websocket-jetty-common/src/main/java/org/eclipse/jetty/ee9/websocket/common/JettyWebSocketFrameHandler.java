@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.ee9.websocket.common;
 
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
@@ -19,14 +19,14 @@ import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.ee9.websocket.api.BatchMode;
+import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
+import org.eclipse.jetty.ee9.websocket.api.WriteCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.CoreSession;
@@ -494,27 +494,27 @@ public class JettyWebSocketFrameHandler implements FrameHandler
     public static Throwable convertCause(Throwable cause)
     {
         if (cause instanceof MessageTooLargeException)
-            return new org.eclipse.jetty.websocket.api.exceptions.MessageTooLargeException(cause.getMessage(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.MessageTooLargeException(cause.getMessage(), cause);
 
         if (cause instanceof ProtocolException)
-            return new org.eclipse.jetty.websocket.api.exceptions.ProtocolException(cause.getMessage(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.ProtocolException(cause.getMessage(), cause);
 
         if (cause instanceof BadPayloadException)
-            return new org.eclipse.jetty.websocket.api.exceptions.BadPayloadException(cause.getMessage(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.BadPayloadException(cause.getMessage(), cause);
 
         if (cause instanceof CloseException)
-            return new org.eclipse.jetty.websocket.api.exceptions.CloseException(((CloseException)cause).getStatusCode(), cause.getMessage(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.CloseException(((CloseException)cause).getStatusCode(), cause.getMessage(), cause);
 
         if (cause instanceof WebSocketTimeoutException)
-            return new org.eclipse.jetty.websocket.api.exceptions.WebSocketTimeoutException(cause.getMessage(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.WebSocketTimeoutException(cause.getMessage(), cause);
 
         if (cause instanceof InvalidSignatureException)
-            return new org.eclipse.jetty.websocket.api.exceptions.InvalidWebSocketException(cause.getMessage(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.InvalidWebSocketException(cause.getMessage(), cause);
 
         if (cause instanceof UpgradeException)
         {
             UpgradeException ue = (UpgradeException)cause;
-            return new org.eclipse.jetty.websocket.api.exceptions.UpgradeException(ue.getRequestURI(), ue.getResponseStatusCode(), cause);
+            return new org.eclipse.jetty.ee9.websocket.api.exceptions.UpgradeException(ue.getRequestURI(), ue.getResponseStatusCode(), cause);
         }
 
         return cause;

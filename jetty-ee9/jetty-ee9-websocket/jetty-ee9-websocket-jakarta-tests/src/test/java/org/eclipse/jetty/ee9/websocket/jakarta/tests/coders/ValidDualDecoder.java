@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.coders;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
 import java.nio.ByteBuffer;
 import java.text.DecimalFormat;

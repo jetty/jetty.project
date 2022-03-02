@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jaas.spi;
+package org.eclipse.jetty.ee9.jaas.spi;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,7 +22,7 @@ import java.util.Map;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.CallbackHandler;
 
-import org.eclipse.jetty.security.UserPrincipal;
+import org.eclipse.jetty.ee9.security.UserPrincipal;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

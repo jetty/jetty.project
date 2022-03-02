@@ -100,7 +100,7 @@ This example configures it as scoped to a web app with the id of __wac__:
 
 [source, xml, subs="{sub-order}"]
 ----
-<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid="wac"/></Arg>
     <Arg>jdbc/myds</Arg>
@@ -164,7 +164,7 @@ Here is an example of binding an http://activemq.apache.org[ActiveMQ] in-JVM con
 
 [source, xml, subs="{sub-order}"]
 ----
-<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New id="cf" class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid='wac'/></Arg>
     <Arg>jms/connectionFactory</Arg>
@@ -197,7 +197,7 @@ Jetty also provides infrastructure for access to `javax.mail.Sessions` from with
 
 [source, xml, subs="{sub-order}"]
 ----
-<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New id="mail" class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid="wac"/></Arg>
     <Arg>mail/Session</Arg>
@@ -259,7 +259,7 @@ In a context xml file:
 
 [source, xml, subs="{sub-order}"]
 ----
-<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid="wac"/></Arg>
     <Arg>jdbc/mydatasource</Arg>
@@ -295,7 +295,7 @@ In a context xml file declare `jdbc/mydatasource`:
 
 [source, xml, subs="{sub-order}"]
 ----
-<Configure id='wac' class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <New id="myds" class="org.eclipse.jetty.plus.jndi.Resource">
     <Arg><Ref refid="wac"/></Arg>
     <Arg>jdbc/mydatasource</Arg>

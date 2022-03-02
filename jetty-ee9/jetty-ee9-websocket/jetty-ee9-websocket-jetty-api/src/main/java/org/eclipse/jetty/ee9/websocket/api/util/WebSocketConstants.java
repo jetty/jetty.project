@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.util;
+package org.eclipse.jetty.ee9.websocket.api.util;
 
 public final class WebSocketConstants
 {

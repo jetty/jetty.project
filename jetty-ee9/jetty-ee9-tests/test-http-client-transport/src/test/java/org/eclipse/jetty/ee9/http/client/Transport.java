@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http.client;
+package org.eclipse.jetty.ee9.http.client;
 
 public enum Transport
 {

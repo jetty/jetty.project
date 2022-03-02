@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.endpoints.adapters;
+package org.eclipse.jetty.ee9.websocket.common.endpoints.adapters;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketListener;
 
 /**
  * Example EchoSocket using Listener.

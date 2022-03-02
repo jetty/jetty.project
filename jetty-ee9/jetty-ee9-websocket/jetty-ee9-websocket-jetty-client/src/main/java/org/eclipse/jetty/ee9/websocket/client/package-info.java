@@ -14,5 +14,5 @@
 /**
  * Jetty WebSocket API :: Client
  */
-package org.eclipse.jetty.websocket.client;
+package org.eclipse.jetty.ee9.websocket.client;
 

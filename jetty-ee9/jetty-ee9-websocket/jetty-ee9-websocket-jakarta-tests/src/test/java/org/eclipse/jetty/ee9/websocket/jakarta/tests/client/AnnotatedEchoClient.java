@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.client;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;

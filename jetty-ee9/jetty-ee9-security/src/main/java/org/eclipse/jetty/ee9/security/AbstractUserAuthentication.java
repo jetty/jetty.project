@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.io.Serializable;
 import java.util.Set;
 
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;

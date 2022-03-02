@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -37,7 +38,6 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,7 +102,7 @@ public class DeploymentTempDirTest
     {
         Path warPath = MavenTestingUtils.getTestResourcePath("webapps/foo-webapp-1.war");
         String deploymentXml = "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">\n" +
-            "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
+            "<Configure class=\"org.eclipse.jetty.ee9.webapp.WebAppContext\">\n" +
             "<Set name=\"war\">" + warPath + "</Set>\n" +
             "<Set name=\"tempDirectory\">" + tmpDir + "</Set>\n" +
             "<Set name=\"persistTempDirectory\">false</Set>\n" +
@@ -146,7 +146,7 @@ public class DeploymentTempDirTest
     {
         Path warPath = MavenTestingUtils.getTestResourcePath("webapps/foo-webapp-1.war");
         String deploymentXml = "<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"https://www.eclipse.org/jetty/configure_10_0.dtd\">\n" +
-            "<Configure class=\"org.eclipse.jetty.webapp.WebAppContext\">\n" +
+            "<Configure class=\"org.eclipse.jetty.ee9.webapp.WebAppContext\">\n" +
             "<Set name=\"war\">" + warPath + "</Set>\n" +
             "<Set name=\"tempDirectory\">" + tmpDir + "</Set>\n" +
             "<Set name=\"persistTempDirectory\">true</Set>\n" +

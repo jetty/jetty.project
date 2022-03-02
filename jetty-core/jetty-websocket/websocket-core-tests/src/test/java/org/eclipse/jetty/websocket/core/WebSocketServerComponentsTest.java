@@ -15,10 +15,10 @@ package org.eclipse.jetty.websocket.core;
 
 import java.util.zip.Deflater;
 
+import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.servlet.ServletContainerInitializerHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.compression.DeflaterPool;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;

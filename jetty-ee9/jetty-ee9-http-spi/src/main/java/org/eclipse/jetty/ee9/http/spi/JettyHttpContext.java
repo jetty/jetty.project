@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http.spi;
+package org.eclipse.jetty.ee9.http.spi;
 
 import java.util.ArrayList;
 import java.util.HashMap;

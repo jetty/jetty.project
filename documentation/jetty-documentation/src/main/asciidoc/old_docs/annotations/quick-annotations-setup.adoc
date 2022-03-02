@@ -28,7 +28,7 @@ Annotations and JNDI are pre-enabled for the Maven plugin.
 ==== Embedding
 
 To use annotations in an embedded scenario, you will need to include the `jetty-annotations` jar and all its dependencies onto your classpath.
-You will also need to include the `org.eclipse.jetty.annotations.AnnotationConfiguration` class into the list of link:#webapp-configurations[Configuration classes] applied to the `org.eclipse.jetty.webapp.WebAppContext` class representing your webapp.
+You will also need to include the `org.eclipse.jetty.annotations.AnnotationConfiguration` class into the list of link:#webapp-configurations[Configuration classes] applied to the `org.eclipse.jetty.ee9.webapp.WebAppContext` class representing your webapp.
 
 Below is an example application that sets up the standard `test-spec.war` webapp from the distribution in embedded fashion.
 It can also be found in the Jetty GitHub repository on the examples/embedded page as link:{GITBROWSEURL}/examples/embedded/src/main/java/org/eclipse/jetty/embedded[`ServerWithAnnotations.java`.]

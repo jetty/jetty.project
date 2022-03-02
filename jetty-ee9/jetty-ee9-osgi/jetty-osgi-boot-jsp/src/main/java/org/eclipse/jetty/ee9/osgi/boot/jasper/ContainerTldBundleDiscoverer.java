@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.jasper;
+package org.eclipse.jetty.ee9.osgi.boot.jasper;
 
 import java.io.File;
 import java.net.URL;
@@ -24,10 +24,10 @@ import java.util.regex.Pattern;
 
 import jakarta.servlet.jsp.JspFactory;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
-import org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration;
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
-import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
+import org.eclipse.jetty.ee9.osgi.boot.JettyBootstrapActivator;
+import org.eclipse.jetty.ee9.osgi.boot.OSGiMetaInfConfiguration;
+import org.eclipse.jetty.ee9.osgi.boot.utils.BundleFileLocatorHelper;
+import org.eclipse.jetty.ee9.osgi.boot.utils.TldBundleDiscoverer;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * Finds bundles that are considered as on the container classpath that
  * contain tlds.
  *
- * The System property org.eclipse.jetty.osgi.tldbundles is a comma
+ * The System property org.eclipse.jetty.ee9.osgi.tldbundles is a comma
  * separated list of exact symbolic names of bundles that have container classpath
  * tlds.
  *
@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
  * resources.
  *
  * Eg:
- * -Dorg.eclipse.jetty.osgi.tldbundles=org.springframework.web.servlet,com.opensymphony.module.sitemesh
+ * -Dorg.eclipse.jetty.ee9.osgi.tldbundles=org.springframework.web.servlet,com.opensymphony.module.sitemesh
  */
 public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
 {
@@ -74,7 +74,7 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
     private Bundle jstlBundle = null;
 
     /**
-     * Check the System property "org.eclipse.jetty.osgi.tldbundles" for names of
+     * Check the System property "org.eclipse.jetty.ee9.osgi.tldbundles" for names of
      * bundles that contain tlds and convert to URLs.
      *
      * @return The location of the jars that contain tld files as URLs.

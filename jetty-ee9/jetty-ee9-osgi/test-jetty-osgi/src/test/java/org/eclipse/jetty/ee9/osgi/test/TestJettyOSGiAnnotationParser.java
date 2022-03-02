@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.test;
+package org.eclipse.jetty.ee9.osgi.test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,8 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Inject;
 
 import aQute.bnd.osgi.Constants;
-import org.eclipse.jetty.annotations.ClassInheritanceHandler;
-import org.eclipse.jetty.osgi.annotations.AnnotationParser;
+import org.eclipse.jetty.ee9.annotations.ClassInheritanceHandler;
+import org.eclipse.jetty.ee9.osgi.annotations.AnnotationParser;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;

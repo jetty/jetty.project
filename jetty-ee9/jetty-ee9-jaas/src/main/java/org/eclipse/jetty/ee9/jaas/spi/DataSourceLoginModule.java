@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jaas.spi;
+package org.eclipse.jetty.ee9.jaas.spi;
 
 import java.sql.Connection;
 import java.util.Map;

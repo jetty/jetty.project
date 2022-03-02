@@ -57,7 +57,7 @@ You can specify a custom `webdefault.xml` for an individual web application in t
 [source, xml, subs="{sub-order}"]
 ----
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   ...
   <!-- Set up the absolute path to the custom webdefault.xml -->
   <Set name="defaultsDescriptor">/my/path/to/webdefault.xml</Set>
@@ -72,7 +72,7 @@ The equivalent in code is:
 [source, java, subs="{sub-order}"]
 ----
 
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 
     ...
 

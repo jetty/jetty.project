@@ -369,17 +369,17 @@
               </includes>
               <excludes>
                 <!-- Sabre Holdings -->
-                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ant/AntWebAppContext.java</exclude>
-                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ant/types/Connectors.java</exclude>
-                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ant/types/ContextHandlers.java</exclude>
-                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ant/types/FileMatchingConfiguration.java</exclude>
-                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ant/types/LoginServices.java</exclude>
-                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ant/types/SystemProperties.java</exclude>
-                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ant/utils/ServerProxy.java</exclude>
-                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ant/utils/TaskLog.java</exclude>
-                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ant/AntWebXmlConfiguration.java</exclude>
-                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ant/JettyRunTask.java</exclude>
-                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ant/ServerProxyImpl.java</exclude>
+                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ee9/ant/AntWebAppContext.java</exclude>
+                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ee9/ant/types/Connectors.java</exclude>
+                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ee9/ant/types/ContextHandlers.java</exclude>
+                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ee9/ant/types/FileMatchingConfiguration.java</exclude>
+                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ee9/ant/types/LoginServices.java</exclude>
+                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ee9/ant/types/SystemProperties.java</exclude>
+                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ee9/ant/utils/ServerProxy.java</exclude>
+                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ee9/ant/utils/TaskLog.java</exclude>
+                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ee9/ant/AntWebXmlConfiguration.java</exclude>
+                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ee9/ant/JettyRunTask.java</exclude>
+                <exclude>jetty-ee9/jetty-ee9-ant/src/main/java/org/eclipse/jetty/ee9/ant/ServerProxyImpl.java</exclude>
                 <!-- Aki Yoshida -->
                 <exclude>jetty-core/jetty-util/src/main/java/org/eclipse/jetty/util/security/UnixCrypt.java</exclude>
                 <!-- Distribution Text (no header, too noisy) -->

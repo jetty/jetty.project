@@ -14,4 +14,4 @@
 /**
  * Jetty Plus : Limited JEE Jndi Support
  */
-package org.eclipse.jetty.plus.jndi;
+package org.eclipse.jetty.ee9.plus.jndi;

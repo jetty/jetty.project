@@ -14,11 +14,11 @@
 package org.eclipse.jetty;
 
 import com.acme.DispatchServlet;
+import org.eclipse.jetty.ee9.servlet.DefaultServlet;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;

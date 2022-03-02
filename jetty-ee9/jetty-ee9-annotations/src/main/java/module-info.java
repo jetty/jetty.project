@@ -11,19 +11,19 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.annotations
+module org.eclipse.jetty.ee9.annotations
 {
     requires jakarta.annotation;
     requires java.naming;
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.plus;
+    requires transitive org.eclipse.jetty.ee9.plus;
     requires transitive org.objectweb.asm;
 
-    exports org.eclipse.jetty.annotations;
+    exports org.eclipse.jetty.ee9.annotations;
 
     uses jakarta.servlet.ServletContainerInitializer;
 
-    provides org.eclipse.jetty.webapp.Configuration with
-        org.eclipse.jetty.annotations.AnnotationConfiguration;
+    provides org.eclipse.jetty.ee9.webapp.Configuration with
+        org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 }

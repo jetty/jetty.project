@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.annotations;
+package org.eclipse.jetty.ee9.osgi.annotations;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -19,14 +19,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.servlet.ServletContainerInitializer;
-import org.eclipse.jetty.annotations.AnnotationParser.Handler;
-import org.eclipse.jetty.osgi.boot.OSGiMetaInfConfiguration;
-import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.Handler;
+import org.eclipse.jetty.ee9.osgi.boot.OSGiMetaInfConfiguration;
+import org.eclipse.jetty.ee9.osgi.boot.OSGiWebappConstants;
+import org.eclipse.jetty.ee9.webapp.Configuration;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.slf4j.Logger;
@@ -37,9 +37,9 @@ import org.slf4j.LoggerFactory;
  * Look for annotations inside WEB-INF/lib and also in the fragments and required bundles.
  * Discover them using a scanner adapted to OSGi instead of the jarscanner.
  */
-public class AnnotationConfiguration extends org.eclipse.jetty.annotations.AnnotationConfiguration
+public class AnnotationConfiguration extends org.eclipse.jetty.ee9.annotations.AnnotationConfiguration
 {
-    private static final Logger LOG = LoggerFactory.getLogger(org.eclipse.jetty.annotations.AnnotationConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(org.eclipse.jetty.ee9.annotations.AnnotationConfiguration.class);
 
     public class BundleParserTask extends ParserTask
     {
@@ -54,7 +54,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
         {
             if (_parser != null)
             {
-                org.eclipse.jetty.osgi.annotations.AnnotationParser osgiAnnotationParser = (org.eclipse.jetty.osgi.annotations.AnnotationParser)_parser;
+                org.eclipse.jetty.ee9.osgi.annotations.AnnotationParser osgiAnnotationParser = (org.eclipse.jetty.ee9.osgi.annotations.AnnotationParser)_parser;
                 Bundle bundle = osgiAnnotationParser.getBundle(_resource);
                 if (_stat != null)
                     _stat.start();
@@ -73,14 +73,14 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
     @Override
     public Class<? extends Configuration> replaces()
     {
-        return org.eclipse.jetty.annotations.AnnotationConfiguration.class;
+        return org.eclipse.jetty.ee9.annotations.AnnotationConfiguration.class;
     }
 
     /**
      * This parser scans the bundles using the OSGi APIs instead of assuming a jar.
      */
     @Override
-    protected org.eclipse.jetty.annotations.AnnotationParser createAnnotationParser(int javaTargetVersion)
+    protected org.eclipse.jetty.ee9.annotations.AnnotationParser createAnnotationParser(int javaTargetVersion)
     {
         return new AnnotationParser(javaTargetVersion);
     }
@@ -107,7 +107,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
      * </ol>
      */
     @Override
-    public void parseWebInfLib(WebAppContext context, org.eclipse.jetty.annotations.AnnotationParser parser)
+    public void parseWebInfLib(WebAppContext context, org.eclipse.jetty.ee9.annotations.AnnotationParser parser)
         throws Exception
     {
         AnnotationParser oparser = (AnnotationParser)parser;
@@ -197,7 +197,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
     }
 
     @Override
-    public void parseWebInfClasses(WebAppContext context, org.eclipse.jetty.annotations.AnnotationParser parser)
+    public void parseWebInfClasses(WebAppContext context, org.eclipse.jetty.ee9.annotations.AnnotationParser parser)
         throws Exception
     {
         Bundle webbundle = (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);

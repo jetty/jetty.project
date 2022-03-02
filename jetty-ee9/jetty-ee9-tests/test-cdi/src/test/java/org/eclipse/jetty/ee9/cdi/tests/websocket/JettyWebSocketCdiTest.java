@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.cdi.tests.websocket;
+package org.eclipse.jetty.ee9.cdi.tests.websocket;
 
 import java.io.IOException;
 import java.net.URI;
@@ -20,20 +20,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import jakarta.inject.Inject;
-import org.eclipse.jetty.cdi.CdiDecoratingListener;
-import org.eclipse.jetty.cdi.CdiServletContainerInitializer;
+import org.eclipse.jetty.ee9.cdi.CdiDecoratingListener;
+import org.eclipse.jetty.ee9.cdi.CdiServletContainerInitializer;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

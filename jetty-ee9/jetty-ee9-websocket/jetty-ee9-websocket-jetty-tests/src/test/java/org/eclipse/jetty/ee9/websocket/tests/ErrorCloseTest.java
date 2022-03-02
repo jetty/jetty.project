@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
+package org.eclipse.jetty.ee9.websocket.tests;
 
 import java.io.IOException;
 import java.net.URI;
@@ -21,17 +21,17 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketSessionListener;
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee9.websocket.common.WebSocketSession;
+import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

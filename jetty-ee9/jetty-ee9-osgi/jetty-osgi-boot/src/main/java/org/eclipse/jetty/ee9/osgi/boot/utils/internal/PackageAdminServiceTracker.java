@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.utils.internal;
+package org.eclipse.jetty.ee9.osgi.boot.utils.internal;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

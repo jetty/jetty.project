@@ -14,4 +14,4 @@
 /**
  * Jetty Plus : Limited JEE Security Support
  */
-package org.eclipse.jetty.plus.security;
+package org.eclipse.jetty.ee9.plus.security;

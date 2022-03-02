@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.ee9.servlets;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -27,14 +27,14 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.util.Locale;
@@ -38,7 +38,7 @@ public class JspPropertyGroupServlet extends GenericServlet
 {
     private static final long serialVersionUID = 3681783214726776945L;
 
-    public static final String NAME = "__org.eclipse.jetty.servlet.JspPropertyGroupServlet__";
+    public static final String NAME = "__org.eclipse.jetty.ee9.servlet.JspPropertyGroupServlet__";
     private final ServletHandler _servletHandler;
     private final ContextHandler _contextHandler;
     private ServletHolder _dftServlet;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -43,12 +43,12 @@ import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.Sha1Sum;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketClientContainerProvider;
-import org.eclipse.jetty.websocket.jakarta.tests.LocalServer;
-import org.eclipse.jetty.websocket.jakarta.tests.Sha1Sum;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

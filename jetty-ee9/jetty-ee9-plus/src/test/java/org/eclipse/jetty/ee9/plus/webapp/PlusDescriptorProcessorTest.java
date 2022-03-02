@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.plus.webapp;
+package org.eclipse.jetty.ee9.plus.webapp;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
@@ -19,19 +19,19 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
 
+import org.eclipse.jetty.ee9.plus.annotation.Injection;
+import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.ee9.plus.jndi.EnvEntry;
+import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.ee9.webapp.Configuration;
+import org.eclipse.jetty.ee9.webapp.Descriptor;
+import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
+import org.eclipse.jetty.ee9.webapp.Origin;
+import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.jndi.NamingUtil;
-import org.eclipse.jetty.plus.annotation.Injection;
-import org.eclipse.jetty.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.plus.jndi.EnvEntry;
-import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.IntrospectionUtil;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.Descriptor;
-import org.eclipse.jetty.webapp.FragmentDescriptor;
-import org.eclipse.jetty.webapp.Origin;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebDescriptor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,7 +126,7 @@ public class PlusDescriptorProcessorTest
         context.setConfigurations(new Configuration[]{new PlusConfiguration(), new EnvConfiguration()});
         context.preConfigure();
         context.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), context));
-        context.getServerClassMatcher().exclude("org.eclipse.jetty.plus.webapp."); //need visbility of the TestInjections class
+        context.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.plus.webapp."); //need visbility of the TestInjections class
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         Context icontext = new InitialContext();
@@ -134,22 +134,22 @@ public class PlusDescriptorProcessorTest
         Context envCtx = compCtx.createSubcontext("env");
 
         @SuppressWarnings("unused")
-        org.eclipse.jetty.plus.jndi.Resource ds = new org.eclipse.jetty.plus.jndi.Resource(context, "jdbc/mydatasource", new Object());
+        org.eclipse.jetty.ee9.plus.jndi.Resource ds = new org.eclipse.jetty.ee9.plus.jndi.Resource(context, "jdbc/mydatasource", new Object());
         
         //An EnvEntry that should override any value supplied in a web.xml file
-        org.eclipse.jetty.plus.jndi.EnvEntry fooStringEnvEntry = new org.eclipse.jetty.plus.jndi.EnvEntry("foo", "FOO", true);
+        org.eclipse.jetty.ee9.plus.jndi.EnvEntry fooStringEnvEntry = new org.eclipse.jetty.ee9.plus.jndi.EnvEntry("foo", "FOO", true);
         doEnvConfiguration(envCtx, fooStringEnvEntry);
         
         //An EnvEntry that should NOT override any value supplied in a web.xml file
-        org.eclipse.jetty.plus.jndi.EnvEntry bahStringEnvEntry = new org.eclipse.jetty.plus.jndi.EnvEntry("bah", "BAH", false);
+        org.eclipse.jetty.ee9.plus.jndi.EnvEntry bahStringEnvEntry = new org.eclipse.jetty.ee9.plus.jndi.EnvEntry("bah", "BAH", false);
         doEnvConfiguration(envCtx, bahStringEnvEntry);
         
         //An EnvEntry that will override an empty value in web.xml
-        org.eclipse.jetty.plus.jndi.EnvEntry emptyStringEnvEntry = new org.eclipse.jetty.plus.jndi.EnvEntry("empty", "EMPTY", true);
+        org.eclipse.jetty.ee9.plus.jndi.EnvEntry emptyStringEnvEntry = new org.eclipse.jetty.ee9.plus.jndi.EnvEntry("empty", "EMPTY", true);
         doEnvConfiguration(envCtx, emptyStringEnvEntry);
         
         //An EnvEntry that will NOT override an empty value in web.xml
-        org.eclipse.jetty.plus.jndi.EnvEntry vacuumStringEnvEntry = new org.eclipse.jetty.plus.jndi.EnvEntry("vacuum", "VACUUM", false);
+        org.eclipse.jetty.ee9.plus.jndi.EnvEntry vacuumStringEnvEntry = new org.eclipse.jetty.ee9.plus.jndi.EnvEntry("vacuum", "VACUUM", false);
         doEnvConfiguration(envCtx, vacuumStringEnvEntry);
 
         URL webXml = Thread.currentThread().getContextClassLoader().getResource("web.xml");

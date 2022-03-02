@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.test;
+package org.eclipse.jetty.ee9.osgi.test;
 
 /**
  * Just a simple bean

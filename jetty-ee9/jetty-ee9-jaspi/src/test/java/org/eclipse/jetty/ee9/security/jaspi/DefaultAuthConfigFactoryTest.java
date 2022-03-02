@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi;
+package org.eclipse.jetty.ee9.security.jaspi;
 
 import java.util.Map;
 
 import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.security.auth.message.config.AuthConfigProvider;
 import jakarta.security.auth.message.config.RegistrationListener;
-import org.eclipse.jetty.security.jaspi.provider.JaspiAuthConfigProvider;
+import org.eclipse.jetty.ee9.security.jaspi.provider.JaspiAuthConfigProvider;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,16 +20,16 @@ import java.util.List;
 import java.util.Map;
 
 import jakarta.websocket.server.ServerEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.Fuzzer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.coders.DateDecoder;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.coders.TimeEncoder;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.configs.EchoSocketConfigurator;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.ConfiguredEchoSocket;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.jakarta.tests.Fuzzer;
-import org.eclipse.jetty.websocket.jakarta.tests.LocalServer;
-import org.eclipse.jetty.websocket.jakarta.tests.coders.DateDecoder;
-import org.eclipse.jetty.websocket.jakarta.tests.coders.TimeEncoder;
-import org.eclipse.jetty.websocket.jakarta.tests.server.configs.EchoSocketConfigurator;
-import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.ConfiguredEchoSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

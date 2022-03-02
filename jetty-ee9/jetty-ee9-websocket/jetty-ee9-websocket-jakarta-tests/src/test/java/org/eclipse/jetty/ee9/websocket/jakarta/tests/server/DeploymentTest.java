@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -28,12 +28,12 @@ import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
-import org.eclipse.jetty.annotations.ServletContainerInitializersStarter;
+import org.eclipse.jetty.ee9.annotations.ServletContainerInitializersStarter;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.EventSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.websocket.jakarta.tests.EventSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.WSServer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

@@ -15,8 +15,8 @@ package org.eclipse.jetty.server.session;
 
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.BeforeEach;

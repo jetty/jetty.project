@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.util.Objects;
 
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * AnnotationDecorator

@@ -11,7 +11,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.ant;
+package org.eclipse.jetty.ee9.ant;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,11 +21,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jetty.ant.types.Connector;
-import org.eclipse.jetty.ant.types.ContextHandlers;
-import org.eclipse.jetty.ant.utils.ServerProxy;
-import org.eclipse.jetty.ant.utils.TaskLog;
-import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.ee9.ant.types.Connector;
+import org.eclipse.jetty.ee9.ant.types.ContextHandlers;
+import org.eclipse.jetty.ee9.ant.utils.ServerProxy;
+import org.eclipse.jetty.ee9.ant.utils.TaskLog;
+import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.demos;
+package org.eclipse.jetty.ee9.demos;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.plus.annotation;
+package org.eclipse.jetty.ee9.plus.annotation;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,9 +25,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import jakarta.servlet.ServletContainerInitializer;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

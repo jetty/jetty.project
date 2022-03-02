@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.demos;
+package org.eclipse.jetty.ee9.demos;
 
 import java.io.IOException;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.ee9.webapp.Configurations;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.webapp.Configurations;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 public class OneWebApp
 {

@@ -22,5 +22,5 @@
  * or the Jetty WebSocket Servlet API.
  * </p>
  */
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.ee9.websocket.common;
 

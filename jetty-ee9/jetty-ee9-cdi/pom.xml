@@ -44,7 +44,7 @@
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
             </Require-Capability>
             <Provide-Capability>
-                osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.webapp.Configuration,
+                osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration,
                 osgi.serviceloader; osgi.serviceloader=jakarta.servlet.ServletContainerInitializer
             </Provide-Capability>
           </instructions>
@@ -56,7 +56,7 @@
         <version>${maven.surefire.plugin.version}</version>
         <configuration>
           <!--<argLine>
-            @{argLine} ${jetty.surefire.argLine} &#45;&#45;add-opens=org.eclipse.jetty.cdi/org.eclipse.jetty.cdi=ALL-UNNAMED
+            @{argLine} ${jetty.surefire.argLine} &#45;&#45;add-opens=org.eclipse.jetty.ee9.cdi/org.eclipse.jetty.ee9.cdi=ALL-UNNAMED
           </argLine>-->
           <additionalClasspathElements />
         </configuration>

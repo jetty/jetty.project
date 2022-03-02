@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.util.Collections;
 import java.util.Enumeration;

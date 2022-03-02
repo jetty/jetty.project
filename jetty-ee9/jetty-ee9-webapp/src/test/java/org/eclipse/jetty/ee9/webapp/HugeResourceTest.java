@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +41,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.client.util.MultiPartRequestContent;
 import org.eclipse.jetty.client.util.PathRequestContent;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -49,7 +50,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;

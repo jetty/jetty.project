@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.AbstractHandler;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.ClassInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

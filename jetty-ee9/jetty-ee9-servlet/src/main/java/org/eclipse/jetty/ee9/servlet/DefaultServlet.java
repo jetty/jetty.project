@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * content, OPTION and TRACE methods for the context.
  * The following initParameters are supported, these can be set either
  * on the servlet itself or as ServletContext initParameters with a prefix
- * of org.eclipse.jetty.servlet.Default. :
+ * of org.eclipse.jetty.ee9.servlet.Default. :
  * <pre>
  *  acceptRanges      If true, range requests and responses are
  *                    supported
@@ -121,7 +121,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultServlet extends HttpServlet implements ResourceFactory, WelcomeFactory
 {
-    public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
+    public static final String CONTEXT_INIT = "org.eclipse.jetty.ee9.servlet.Default.";
 
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
 

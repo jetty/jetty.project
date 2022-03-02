@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.common.decoders;
+package org.eclipse.jetty.ee9.websocket.jakarta.common.decoders;
 
 import java.lang.reflect.InvocationTargetException;
 
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.InitException;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.jakarta.common.InitException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.server.config;
+package org.eclipse.jetty.ee9.websocket.jakarta.server.config;
 
 import java.util.ArrayList;
 import java.util.List;

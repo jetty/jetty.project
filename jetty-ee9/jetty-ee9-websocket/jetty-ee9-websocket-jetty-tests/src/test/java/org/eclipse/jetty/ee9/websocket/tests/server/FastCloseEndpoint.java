@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.server;
+package org.eclipse.jetty.ee9.websocket.tests.server;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.StatusCode;
 
 /**
  * On Connect, close socket

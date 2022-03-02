@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.coders;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
 import java.io.Reader;
 import java.lang.invoke.MethodHandle;
@@ -25,14 +25,14 @@ import java.util.function.Function;
 
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.Decoder;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.messages.DecodedTextStreamMessageSink;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.FunctionMethod;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.client.AbstractClientSessionTest;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
-import org.eclipse.jetty.websocket.jakarta.common.decoders.RegisteredDecoder;
-import org.eclipse.jetty.websocket.jakarta.common.messages.DecodedTextStreamMessageSink;
-import org.eclipse.jetty.websocket.jakarta.tests.FunctionMethod;
-import org.eclipse.jetty.websocket.jakarta.tests.client.AbstractClientSessionTest;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

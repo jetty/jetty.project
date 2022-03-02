@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.browser;
+package org.eclipse.jetty.ee9.websocket.server.browser;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -22,23 +22,23 @@ import java.util.List;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.servlet.DefaultServlet;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
+import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.websocket.api.ExtensionConfig;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
-import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

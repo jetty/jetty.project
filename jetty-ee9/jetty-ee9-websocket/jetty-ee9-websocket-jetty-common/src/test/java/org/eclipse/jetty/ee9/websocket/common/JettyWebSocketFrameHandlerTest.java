@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.ee9.websocket.common;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -20,14 +20,14 @@ import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.StatusCode;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketConnectionListener;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.Behavior;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.CoreSession;

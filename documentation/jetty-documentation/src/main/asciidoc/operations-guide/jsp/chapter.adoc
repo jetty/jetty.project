@@ -197,7 +197,7 @@ Here's an example of using a context xml file to add in a pattern to match files
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext"> <!--1-->
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext"> <!--1-->
     <Call name="setAttribute"> <!--2-->
       <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg> <!--3-->
       <Arg>.*/jetty-servlet-api-[^/]*\.jar$|.*/javax.servlet.jsp.jstl-.*\.jar$|.*/org.apache.taglibs.taglibs-standard-impl-.*\.jar$|.*/jsf-[^/]*\.jar$</Arg> <!--4-->

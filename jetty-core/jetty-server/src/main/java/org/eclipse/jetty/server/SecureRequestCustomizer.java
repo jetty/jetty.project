@@ -56,7 +56,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     public static final String JAKARTA_SERVLET_REQUEST_SSL_SESSION_ID = "jakarta.servlet.request.ssl_session_id";
     public static final String X509_CERT = "org.eclipse.jetty.server.x509_cert";
 
-    private String sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session";
+    private String sslSessionAttribute = "org.eclipse.jetty.ee9.servlet.request.ssl_session";
 
     private boolean _sniRequired;
     private boolean _sniHostCheck;

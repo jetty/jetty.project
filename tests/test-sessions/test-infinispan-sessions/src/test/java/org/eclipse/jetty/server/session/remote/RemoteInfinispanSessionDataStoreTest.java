@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server.session.remote;
 
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreFactory;
 import org.eclipse.jetty.server.session.AbstractSessionDataStoreTest;
 import org.eclipse.jetty.server.session.LoggingUtil;
@@ -21,7 +22,6 @@ import org.eclipse.jetty.server.session.SessionData;
 import org.eclipse.jetty.server.session.SessionDataStore;
 import org.eclipse.jetty.server.session.SessionDataStoreFactory;
 import org.eclipse.jetty.server.session.UnreadableSessionDataException;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;

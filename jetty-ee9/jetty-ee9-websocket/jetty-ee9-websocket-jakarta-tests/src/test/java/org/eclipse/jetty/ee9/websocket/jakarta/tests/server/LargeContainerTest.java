@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -20,6 +20,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.acme.websocket.LargeEchoDefaultSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSServer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.framehandlers.FrameHandlerTracker;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.Callback;
@@ -27,8 +29,6 @@ import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
 import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
-import org.eclipse.jetty.websocket.jakarta.tests.WSServer;
-import org.eclipse.jetty.websocket.jakarta.tests.framehandlers.FrameHandlerTracker;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

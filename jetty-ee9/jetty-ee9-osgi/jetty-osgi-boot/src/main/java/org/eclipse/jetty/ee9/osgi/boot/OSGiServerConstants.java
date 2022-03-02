@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot;
+package org.eclipse.jetty.ee9.osgi.boot;
 
 /**
  * OSGiServerConstants
@@ -56,7 +56,7 @@ public class OSGiServerConstants
     /**
      * PID of the jetty servers's ManagedFactory
      */
-    public static final String MANAGED_JETTY_SERVER_FACTORY_PID = "org.eclipse.jetty.osgi.boot.managedserverfactory";
+    public static final String MANAGED_JETTY_SERVER_FACTORY_PID = "org.eclipse.jetty.ee9.osgi.boot.managedserverfactory";
 
     /**
      * The associated value of that configuration parameter is the name under which this

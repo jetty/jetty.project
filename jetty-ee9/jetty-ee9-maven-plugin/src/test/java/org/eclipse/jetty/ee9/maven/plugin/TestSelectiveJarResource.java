@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin;
+package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.net.URL;
 import java.nio.file.Files;

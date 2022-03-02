@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test;
+package org.eclipse.jetty.ee9.test;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -37,20 +37,20 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.DigestAuthentication;
 import org.eclipse.jetty.client.util.StringRequestContent;
+import org.eclipse.jetty.ee9.security.AbstractLoginService;
+import org.eclipse.jetty.ee9.security.ConstraintMapping;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.security.RolePrincipal;
+import org.eclipse.jetty.ee9.security.UserPrincipal;
+import org.eclipse.jetty.ee9.security.authentication.DigestAuthenticator;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.security.AbstractLoginService;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.RolePrincipal;
-import org.eclipse.jetty.security.UserPrincipal;
-import org.eclipse.jetty.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;

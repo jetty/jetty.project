@@ -36,7 +36,7 @@ In either case the syntax of the XML file is the same:
 
 [source,xml,subs="{sub-order}"]
 ----
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Max Form Size                                                   -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->

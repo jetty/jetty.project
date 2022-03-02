@@ -16,7 +16,7 @@ module org.eclipse.jetty.fcgi.server
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.fcgi.client;
-    requires transitive org.eclipse.jetty.proxy;
+    requires transitive org.eclipse.jetty.ee9.proxy;
 
     // Only required if using the proxy features.
     requires static jetty.servlet.api;

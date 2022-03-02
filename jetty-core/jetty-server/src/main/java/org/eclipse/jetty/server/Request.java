@@ -115,7 +115,7 @@ import org.slf4j.LoggerFactory;
  * <li>the HTTP session methods will all return null sessions until such time as a request has been passed to a
  * {@link org.eclipse.jetty.server.session.SessionHandler} which checks for session cookies and enables the ability to create new sessions.</li>
  *
- * <li>The {@link Request#getServletPath()} method will return "" until the request has been passed to a <code>org.eclipse.jetty.servlet.ServletHandler</code>
+ * <li>The {@link Request#getServletPath()} method will return "" until the request has been passed to a <code>org.eclipse.jetty.ee9.servlet.ServletHandler</code>
  * and the pathInfo matched against the servlet URL patterns and {@link Request#setServletPathMapping(ServletPathMapping)} called as a result.</li>
  * </ul>
  *

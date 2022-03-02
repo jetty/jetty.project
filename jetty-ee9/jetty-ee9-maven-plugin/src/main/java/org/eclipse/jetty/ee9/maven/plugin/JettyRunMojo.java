@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin;
+package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -27,12 +27,12 @@ import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  *  This goal is used in-situ on a Maven project without first requiring that the project 

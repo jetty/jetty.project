@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test;
+package org.eclipse.jetty.ee9.test;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +32,11 @@ import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee9.webapp.Configuration;
+import org.eclipse.jetty.ee9.webapp.Configurations;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -48,11 +53,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.Configurations;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -111,9 +111,9 @@ public class DeploymentErrorTest
 
         // Setup Configurations
         Configurations.setServerDefault(server)
-            .add("org.eclipse.jetty.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.plus.webapp.PlusConfiguration",
-                "org.eclipse.jetty.annotations.AnnotationConfiguration",
+            .add("org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration",
+                "org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration",
+                "org.eclipse.jetty.ee9.annotations.AnnotationConfiguration",
                 TrackedConfiguration.class.getName()
             );
 

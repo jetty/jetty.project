@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.cdi;
+package org.eclipse.jetty.ee9.cdi;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.Decorator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

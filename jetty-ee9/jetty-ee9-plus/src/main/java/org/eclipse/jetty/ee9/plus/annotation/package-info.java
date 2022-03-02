@@ -14,4 +14,4 @@
 /**
  * Jetty Plus : Limited JEE Annotation Support
  */
-package org.eclipse.jetty.plus.annotation;
+package org.eclipse.jetty.ee9.plus.annotation;

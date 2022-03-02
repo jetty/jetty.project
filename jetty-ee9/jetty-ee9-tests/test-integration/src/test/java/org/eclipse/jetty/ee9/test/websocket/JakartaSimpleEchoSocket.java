@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test.websocket;
+package org.eclipse.jetty.ee9.test.websocket;
 
 import java.util.concurrent.CountDownLatch;
 

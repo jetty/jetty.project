@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.common;
+package org.eclipse.jetty.ee9.websocket.jakarta.common;
 
 import jakarta.websocket.Extension;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;

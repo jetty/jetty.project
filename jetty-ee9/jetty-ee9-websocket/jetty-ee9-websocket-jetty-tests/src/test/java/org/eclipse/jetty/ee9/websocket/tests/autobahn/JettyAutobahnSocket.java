@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.autobahn;
+package org.eclipse.jetty.ee9.websocket.tests.autobahn;
 
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee9.websocket.tests.EchoSocket;
 import org.eclipse.jetty.websocket.core.WebSocketConstants;
-import org.eclipse.jetty.websocket.tests.EchoSocket;
 
 @WebSocket
 public class JettyAutobahnSocket extends EchoSocket

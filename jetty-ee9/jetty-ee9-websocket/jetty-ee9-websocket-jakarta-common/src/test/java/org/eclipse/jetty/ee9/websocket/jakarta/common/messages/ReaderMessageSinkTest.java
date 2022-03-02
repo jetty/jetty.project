@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.common.messages;
+package org.eclipse.jetty.ee9.websocket.jakarta.common.messages;
 
 import java.io.IOException;
 import java.io.Reader;

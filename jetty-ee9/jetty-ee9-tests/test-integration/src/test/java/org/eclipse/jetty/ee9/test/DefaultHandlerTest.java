@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test;
+package org.eclipse.jetty.ee9.test;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -20,13 +20,13 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.URLConnection;
 
+import org.eclipse.jetty.ee9.test.support.XmlBasedJettyServer;
+import org.eclipse.jetty.ee9.test.support.rawhttp.HttpSocketImpl;
+import org.eclipse.jetty.ee9.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.test.support.XmlBasedJettyServer;
-import org.eclipse.jetty.test.support.rawhttp.HttpSocketImpl;
-import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

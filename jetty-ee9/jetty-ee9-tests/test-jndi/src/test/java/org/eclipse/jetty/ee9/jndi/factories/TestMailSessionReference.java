@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jndi.factories;
+package org.eclipse.jetty.ee9.jndi.factories;
 
 import java.util.Properties;
 import javax.naming.Context;
@@ -21,6 +21,7 @@ import javax.naming.Name;
 import javax.naming.NameParser;
 
 import org.eclipse.jetty.jndi.NamingUtil;
+import org.eclipse.jetty.jndi.factories.MailSessionReference;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

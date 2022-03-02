@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test.rfcs;
+package org.eclipse.jetty.ee9.test.rfcs;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +22,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
+import org.eclipse.jetty.ee9.test.support.StringUtil;
+import org.eclipse.jetty.ee9.test.support.XmlBasedJettyServer;
+import org.eclipse.jetty.ee9.test.support.rawhttp.HttpSocket;
+import org.eclipse.jetty.ee9.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -29,10 +33,6 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.test.support.StringUtil;
-import org.eclipse.jetty.test.support.XmlBasedJettyServer;
-import org.eclipse.jetty.test.support.rawhttp.HttpSocket;
-import org.eclipse.jetty.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.StringAssert;

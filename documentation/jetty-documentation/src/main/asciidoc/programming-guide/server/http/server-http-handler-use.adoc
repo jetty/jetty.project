@@ -383,7 +383,7 @@ Web applications cannot downcast Servlet's `HttpServletRequest` to Jetty's `Requ
 
 Lastly, the Servlet specification requires that other classes, also called _system classes_, such as `javax.servlet.http.HttpServletRequest` or JDK classes such as `java.lang.String` or `java.sql.Connection` cannot be modified by web applications by putting, for example, modified versions of those classes in `WEB-INF/classes` so that they are loaded first by the web application class loader (instead of the class-path class loader where they are normally loaded from).
 
-`WebAppContext` implements this class loader logic using a single class loader, `org.eclipse.jetty.webapp.WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _system class_ or a _server class_ and acts according to the Servlet specification.
+`WebAppContext` implements this class loader logic using a single class loader, `org.eclipse.jetty.ee9.webapp.WebAppClassLoader`, with filtering capabilities: when it loads a class, it checks whether the class is a _system class_ or a _server class_ and acts according to the Servlet specification.
 
 When `WebAppClassLoader` is asked to load a class, it first tries to find the class locally (since it must use the inverted child-first model); if the class is found, and it is not a _system class_, the class is loaded; otherwise the class is not found locally.
 If the class is not found locally, the parent class loader is asked to load the class; the parent class loader uses the standard parent-first model, so it delegates the class loading to its parent, and so on.

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test;
+package org.eclipse.jetty.ee9.test;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;

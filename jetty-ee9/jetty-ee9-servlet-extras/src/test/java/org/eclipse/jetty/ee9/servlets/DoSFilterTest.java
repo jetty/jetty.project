@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.ee9.servlets;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -22,9 +22,9 @@ import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
+import org.eclipse.jetty.ee9.servlets.DoSFilter.RateTracker;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.servlets.DoSFilter.RateTracker;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.hamcrest.Matchers;

@@ -11,18 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client.impl;
+package org.eclipse.jetty.ee9.websocket.client.impl;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.eclipse.jetty.client.HttpResponse;
+import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.common.JettyWebSocketFrameHandler;
+import org.eclipse.jetty.ee9.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandler;
-import org.eclipse.jetty.websocket.common.JettyWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.ExtensionConfig;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.client.CoreClientUpgradeRequest;

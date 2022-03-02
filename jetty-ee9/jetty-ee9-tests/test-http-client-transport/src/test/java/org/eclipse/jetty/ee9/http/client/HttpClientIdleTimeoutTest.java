@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http.client;
+package org.eclipse.jetty.ee9.http.client;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;

@@ -6,7 +6,7 @@
   <Set name="handler">
     <New class="org.eclipse.jetty.proxy.ConnectHandler">
       <Set name="handler">
-        <New class="org.eclipse.jetty.servlet.ServletHandler">
+        <New class="org.eclipse.jetty.ee9.servlet.ServletHandler">
           <Call id="proxyHolder" name="addServletWithMapping">
             <Arg><Property name="jetty.proxy.servletClass" default="org.eclipse.jetty.proxy.ProxyServlet"/></Arg>
             <Arg><Property name="jetty.proxy.servletMapping" default="/*"/></Arg>

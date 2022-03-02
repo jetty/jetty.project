@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.utils;
+package org.eclipse.jetty.ee9.osgi.boot.utils;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -19,7 +19,7 @@ import java.util.Dictionary;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.ee9.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.util.StringUtil;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;

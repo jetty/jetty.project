@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.openid;
+package org.eclipse.jetty.ee9.security.openid;
 
 import java.util.HashMap;
 import java.util.Map;

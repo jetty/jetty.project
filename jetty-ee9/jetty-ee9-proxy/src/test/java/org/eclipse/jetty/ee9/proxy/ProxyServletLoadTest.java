@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.proxy;
+package org.eclipse.jetty.ee9.proxy;
 
 import java.io.IOException;
 import java.util.Random;
@@ -27,13 +27,13 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesRequestContent;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ProcessorUtils;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;

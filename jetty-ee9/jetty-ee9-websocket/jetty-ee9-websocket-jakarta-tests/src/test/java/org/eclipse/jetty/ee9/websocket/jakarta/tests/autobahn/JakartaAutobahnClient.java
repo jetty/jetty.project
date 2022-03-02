@@ -11,17 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.autobahn;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.autobahn;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.CloseReason;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.EventSocket;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.websocket.jakarta.tests.EventSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

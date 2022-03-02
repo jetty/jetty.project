@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -27,7 +27,7 @@ import java.util.Set;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -442,7 +442,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
      * If set to true, then on authentication, the session associated with a reqeuest is invalidated and replaced with a new session.
      *
      * @param renew true to renew the authentication on session
-     * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
+     * @see org.eclipse.jetty.ee9.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
      */
     public void setSessionRenewedOnAuthentication(boolean renew)
     {

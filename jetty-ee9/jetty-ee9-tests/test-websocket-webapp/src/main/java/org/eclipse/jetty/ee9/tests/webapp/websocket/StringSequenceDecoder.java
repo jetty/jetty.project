@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tests.webapp.websocket;
+package org.eclipse.jetty.ee9.tests.webapp.websocket;
 
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;

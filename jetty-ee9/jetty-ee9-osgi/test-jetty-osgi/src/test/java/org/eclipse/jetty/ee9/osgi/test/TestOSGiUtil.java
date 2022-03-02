@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.test;
+package org.eclipse.jetty.ee9.osgi.test;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.ee9.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -39,7 +39,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
-import static org.ops4j.pax.exam.CoreOptions.wrappedBundle;
 
 /**
  * Helper methods for pax-exam tests

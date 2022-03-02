@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.autobahn;
+package org.eclipse.jetty.ee9.websocket.tests.autobahn;
 
 import java.io.IOException;
 import java.net.URI;
@@ -21,13 +21,13 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.StatusCode;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee9.websocket.tests.EchoSocket;
+import org.eclipse.jetty.ee9.websocket.tests.EventSocket;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.UrlEncoded;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.tests.EchoSocket;
-import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

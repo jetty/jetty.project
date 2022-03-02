@@ -45,7 +45,7 @@ Copy and paste the following content as `$JETTY_BASE/webapps/jetty-wordpress.xml
 ----
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
-<Configure class="org.eclipse.jetty.servlet.ServletContextHandler">
+<Configure class="org.eclipse.jetty.ee9.servlet.ServletContextHandler">
 
     <New id="root" class="java.lang.String">
         <Arg>/var/www/wordpress</Arg>
@@ -73,11 +73,11 @@ Copy and paste the following content as `$JETTY_BASE/webapps/jetty-wordpress.xml
 
     <Call name="addServlet">
         <Arg>
-            <New class="org.eclipse.jetty.servlet.ServletHolder">
+            <New class="org.eclipse.jetty.ee9.servlet.ServletHolder">
                 <Arg>default</Arg>
                 <Arg>
                     <Call name="forName" class="java.lang.Class">
-                        <Arg>org.eclipse.jetty.servlet.DefaultServlet</Arg>
+                        <Arg>org.eclipse.jetty.ee9.servlet.DefaultServlet</Arg>
                     </Call>
                 </Arg>
                 <Call name="setInitParameter">

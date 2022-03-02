@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.io.File;
 import java.net.URL;
@@ -20,13 +20,13 @@ import java.util.Arrays;
 import java.util.List;
 
 import jakarta.servlet.ServletContainerInitializer;
+import org.eclipse.jetty.ee9.webapp.RelativeOrdering;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.RelativeOrdering;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebDescriptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
+package org.eclipse.jetty.ee9.websocket.tests;
 
 import java.io.IOException;
 

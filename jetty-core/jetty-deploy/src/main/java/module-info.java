@@ -17,7 +17,7 @@ module org.eclipse.jetty.deploy
     requires org.eclipse.jetty.xml;
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.webapp;
+    requires transitive org.eclipse.jetty.ee9.webapp;
     requires static org.eclipse.jetty.server; // TODO: is this required?
 
     // Only required if using JMX.

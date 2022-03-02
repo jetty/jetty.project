@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot;
+package org.eclipse.jetty.ee9.osgi.boot;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
-import org.eclipse.jetty.osgi.boot.utils.EventSender;
+import org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.ee9.osgi.boot.utils.EventSender;
 
 /**
  * OSGiDeployer

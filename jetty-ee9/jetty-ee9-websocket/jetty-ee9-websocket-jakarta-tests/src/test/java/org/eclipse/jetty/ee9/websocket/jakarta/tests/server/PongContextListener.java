@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -21,7 +21,7 @@ import jakarta.websocket.server.HandshakeRequest;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
 import jakarta.websocket.server.ServerEndpointConfig.Configurator;
-import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.pong.PongMessageEndpoint;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.pong.PongMessageEndpoint;
 
 public class PongContextListener implements ServletContextListener
 {

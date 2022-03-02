@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.ee9.websocket.common;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,11 +19,11 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
 
 public class DummyContainer extends ContainerLifeCycle implements WebSocketContainer
 {

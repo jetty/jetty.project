@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test.jmx;
+package org.eclipse.jetty.ee9.test.jmx;
 
 import java.io.IOException;
 import java.util.Date;

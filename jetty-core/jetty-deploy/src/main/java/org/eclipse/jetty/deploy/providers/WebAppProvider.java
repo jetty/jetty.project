@@ -20,6 +20,7 @@ import java.util.Locale;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.ConfigurationManager;
 import org.eclipse.jetty.deploy.util.FileID;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
@@ -27,7 +28,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.LoggerFactory;
 

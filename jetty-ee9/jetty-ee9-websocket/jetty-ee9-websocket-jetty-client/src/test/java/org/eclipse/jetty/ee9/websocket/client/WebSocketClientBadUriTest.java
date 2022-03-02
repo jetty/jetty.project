@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.client;
+package org.eclipse.jetty.ee9.websocket.client;
 
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.toolchain.test.jupiter.TestTrackerExtension;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;

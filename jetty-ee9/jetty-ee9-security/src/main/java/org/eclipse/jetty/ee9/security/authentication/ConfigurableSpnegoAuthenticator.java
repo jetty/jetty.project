@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.authentication;
+package org.eclipse.jetty.ee9.security.authentication;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -23,12 +23,12 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee9.security.ServerAuthException;
+import org.eclipse.jetty.ee9.security.SpnegoUserIdentity;
+import org.eclipse.jetty.ee9.security.SpnegoUserPrincipal;
+import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.security.ServerAuthException;
-import org.eclipse.jetty.security.SpnegoUserIdentity;
-import org.eclipse.jetty.security.SpnegoUserPrincipal;
-import org.eclipse.jetty.security.UserAuthentication;
 import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.Request;

@@ -64,7 +64,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Bundle-SymbolicName>org.eclipse.jetty.osgi.testcontext;singleton:=true</Bundle-SymbolicName>
+            <Bundle-SymbolicName>org.eclipse.jetty.ee9.osgi.testcontext;singleton:=true</Bundle-SymbolicName>
             <Bundle-Name>Jetty OSGi Test Context</Bundle-Name>
             <Bundle-Activator>com.acme.osgi.Activator</Bundle-Activator>
             <Bundle-RequiredExecutionEnvironment>J2SE-1.5</Bundle-RequiredExecutionEnvironment>

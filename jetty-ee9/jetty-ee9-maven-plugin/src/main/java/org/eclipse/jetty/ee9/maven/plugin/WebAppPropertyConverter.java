@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin;
+package org.eclipse.jetty.ee9.maven.plugin;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.quickstart.QuickStartConfiguration;
+import org.eclipse.jetty.ee9.quickstart.QuickStartConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;

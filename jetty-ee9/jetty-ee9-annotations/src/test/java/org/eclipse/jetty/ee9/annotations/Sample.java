@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

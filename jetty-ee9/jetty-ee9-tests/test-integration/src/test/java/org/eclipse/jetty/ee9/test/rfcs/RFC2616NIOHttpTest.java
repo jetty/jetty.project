@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test.rfcs;
+package org.eclipse.jetty.ee9.test.rfcs;
 
+import org.eclipse.jetty.ee9.test.support.XmlBasedJettyServer;
+import org.eclipse.jetty.ee9.test.support.rawhttp.HttpSocket;
+import org.eclipse.jetty.ee9.test.support.rawhttp.HttpSocketImpl;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.test.support.XmlBasedJettyServer;
-import org.eclipse.jetty.test.support.rawhttp.HttpSocket;
-import org.eclipse.jetty.test.support.rawhttp.HttpSocketImpl;
 import org.junit.jupiter.api.BeforeAll;
 
 /**

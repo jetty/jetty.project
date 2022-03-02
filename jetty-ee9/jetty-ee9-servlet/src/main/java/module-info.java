@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.servlet
+module org.eclipse.jetty.ee9.servlet
 {
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.security;
+    requires transitive org.eclipse.jetty.ee9.security;
 
     // Only required if using IntrospectorCleaner.
     requires static java.desktop;
@@ -25,9 +25,9 @@ module org.eclipse.jetty.servlet
     requires static org.eclipse.jetty.jmx;
     requires static org.eclipse.jetty.util.ajax;
 
-    exports org.eclipse.jetty.servlet;
-    exports org.eclipse.jetty.servlet.listener;
+    exports org.eclipse.jetty.ee9.servlet;
+    exports org.eclipse.jetty.ee9.servlet.listener;
 
-    exports org.eclipse.jetty.servlet.jmx to
+    exports org.eclipse.jetty.ee9.servlet.jmx to
          org.eclipse.jetty.jmx;
 }

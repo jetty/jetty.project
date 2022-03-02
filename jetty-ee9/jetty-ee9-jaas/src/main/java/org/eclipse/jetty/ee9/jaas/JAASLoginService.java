@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jaas;
+package org.eclipse.jetty.ee9.jaas;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -32,10 +32,10 @@ import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
 
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.jaas.callback.DefaultCallbackHandler;
-import org.eclipse.jetty.security.DefaultIdentityService;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.ee9.jaas.callback.DefaultCallbackHandler;
+import org.eclipse.jetty.ee9.security.DefaultIdentityService;
+import org.eclipse.jetty.ee9.security.IdentityService;
+import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.ArrayUtil;
@@ -55,7 +55,7 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
 {
     private static final Logger LOG = LoggerFactory.getLogger(JAASLoginService.class);
 
-    public static final String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.jaas.JAASRole";
+    public static final String DEFAULT_ROLE_CLASS_NAME = "org.eclipse.jetty.ee9.jaas.JAASRole";
     public static final String[] DEFAULT_ROLE_CLASS_NAMES = {DEFAULT_ROLE_CLASS_NAME};
     public static final ThreadLocal<JAASLoginService> INSTANCE = new ThreadLocal<>();
     

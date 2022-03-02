@@ -77,21 +77,21 @@ public class SessionHandler extends ScopedHandler
     /**
      * Session cookie name.
      * Defaults to <code>JSESSIONID</code>, but can be set with the
-     * <code>org.eclipse.jetty.servlet.SessionCookie</code> context init parameter.
+     * <code>org.eclipse.jetty.ee9.servlet.SessionCookie</code> context init parameter.
      */
-    public static final String __SessionCookieProperty = "org.eclipse.jetty.servlet.SessionCookie";
+    public static final String __SessionCookieProperty = "org.eclipse.jetty.ee9.servlet.SessionCookie";
     public static final String __DefaultSessionCookie = "JSESSIONID";
 
     /**
      * Session id path parameter name.
      * Defaults to <code>jsessionid</code>, but can be set with the
-     * <code>org.eclipse.jetty.servlet.SessionIdPathParameterName</code> context init parameter.
+     * <code>org.eclipse.jetty.ee9.servlet.SessionIdPathParameterName</code> context init parameter.
      * If context init param is "none", or setSessionIdPathParameterName is called with null or "none",
      * no URL rewriting will be done.
      */
-    public static final String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.servlet.SessionIdPathParameterName";
+    public static final String __SessionIdPathParameterNameProperty = "org.eclipse.jetty.ee9.servlet.SessionIdPathParameterName";
     public static final String __DefaultSessionIdPathParameterName = "jsessionid";
-    public static final String __CheckRemoteSessionEncoding = "org.eclipse.jetty.servlet.CheckingRemoteSessionIdEncoding";
+    public static final String __CheckRemoteSessionEncoding = "org.eclipse.jetty.ee9.servlet.CheckingRemoteSessionIdEncoding";
 
     /**
      * Session Domain.
@@ -99,7 +99,7 @@ public class SessionHandler extends ScopedHandler
      * used as the domain for session cookies. If it is not set, then
      * no domain is specified for the session cookie.
      */
-    public static final String __SessionDomainProperty = "org.eclipse.jetty.servlet.SessionDomain";
+    public static final String __SessionDomainProperty = "org.eclipse.jetty.ee9.servlet.SessionDomain";
     public static final String __DefaultSessionDomain = null;
 
     /**
@@ -108,7 +108,7 @@ public class SessionHandler extends ScopedHandler
      * used as the path for the session cookie.  If it is not set, then
      * the context path is used as the path for the cookie.
      */
-    public static final String __SessionPathProperty = "org.eclipse.jetty.servlet.SessionPath";
+    public static final String __SessionPathProperty = "org.eclipse.jetty.ee9.servlet.SessionPath";
 
     /**
      * Session Max Age.
@@ -116,7 +116,7 @@ public class SessionHandler extends ScopedHandler
      * used as the max age for the session cookie.  If it is not set, then
      * a max age of -1 is used.
      */
-    public static final String __MaxAgeProperty = "org.eclipse.jetty.servlet.MaxAge";
+    public static final String __MaxAgeProperty = "org.eclipse.jetty.ee9.servlet.MaxAge";
 
     public static final Set<SessionTrackingMode> DEFAULT_SESSION_TRACKING_MODES =
         Collections.unmodifiableSet(

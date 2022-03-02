@@ -11,17 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.demos;
+package org.eclipse.jetty.ee9.demos;
 
 import java.io.FileNotFoundException;
 import java.net.URL;
 import java.util.Collections;
 
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.HashLoginService;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.ee9.security.ConstraintMapping;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.security.HashLoginService;
+import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Constraint;
 

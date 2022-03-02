@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,14 +20,14 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.annotation.ServletSecurity;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
-import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.security.ConstraintAware;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
+import org.eclipse.jetty.ee9.security.ConstraintAware;
+import org.eclipse.jetty.ee9.security.ConstraintMapping;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.servlet.ServletMapping;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.security.Constraint;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

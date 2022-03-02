@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.tests.webapp.websocket;
+package org.eclipse.jetty.ee9.tests.webapp.websocket;
 
 import java.io.PrintWriter;
 import java.net.URI;
@@ -26,15 +26,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee9.websocket.api.util.WSURI;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.util.WSURI;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 @WebServlet("/")
 public class WebSocketClientServlet extends HttpServlet

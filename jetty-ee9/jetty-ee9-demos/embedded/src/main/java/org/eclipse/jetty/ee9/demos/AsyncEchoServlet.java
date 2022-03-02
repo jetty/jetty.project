@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.demos;
+package org.eclipse.jetty.ee9.demos;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;

@@ -11,18 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import jakarta.annotation.PreDestroy;
-import org.eclipse.jetty.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.plus.annotation.PreDestroyCallback;
-import org.eclipse.jetty.webapp.MetaData;
-import org.eclipse.jetty.webapp.Origin;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
+import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallbackCollection;
+import org.eclipse.jetty.ee9.plus.annotation.PreDestroyCallback;
+import org.eclipse.jetty.ee9.webapp.MetaData;
+import org.eclipse.jetty.ee9.webapp.Origin;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 
 public class PreDestroyAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {

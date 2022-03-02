@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.utils;
+package org.eclipse.jetty.ee9.osgi.boot.utils;
 
 import java.io.IOException;
 import java.net.URL;

@@ -16,12 +16,12 @@ package org.eclipse.jetty.deploy;
 import java.io.File;
 
 import org.eclipse.jetty.deploy.util.FileID;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
 
 public class MockAppProvider extends AbstractLifeCycle implements AppProvider
 {

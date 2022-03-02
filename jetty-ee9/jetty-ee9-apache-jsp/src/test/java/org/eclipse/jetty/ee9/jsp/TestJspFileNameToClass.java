@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jsp;
+package org.eclipse.jetty.ee9.jsp;
 
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

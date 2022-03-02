@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,11 +38,14 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee9.security.ConstraintAware;
+import org.eclipse.jetty.ee9.security.ConstraintMapping;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.security.SecurityHandler;
+import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.security.ConstraintAware;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.SecurityHandler;
 import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HandlerContainer;
@@ -52,9 +55,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.ManagedAttributeListener;
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TopologicalSort;
@@ -73,10 +73,10 @@ import org.slf4j.LoggerFactory;
  * The WebAppContext handler is an extension of ContextHandler that
  * coordinates the construction and configuration of nested handlers:
  * {@link org.eclipse.jetty.security.ConstraintSecurityHandler}, {@link org.eclipse.jetty.server.session.SessionHandler}
- * and {@link org.eclipse.jetty.servlet.ServletHandler}.
+ * and {@link org.eclipse.jetty.ee9.servlet.ServletHandler}.
  * The handlers are configured by pluggable configuration classes, with
- * the default being  {@link org.eclipse.jetty.webapp.WebXmlConfiguration} and
- * {@link org.eclipse.jetty.webapp.JettyWebXmlConfiguration}.
+ * the default being  {@link org.eclipse.jetty.ee9.webapp.WebXmlConfiguration} and
+ * {@link org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration}.
  *
  *
  * <p>
@@ -152,11 +152,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     static final Logger LOG = LoggerFactory.getLogger(WebAppContext.class);
 
     public static final String TEMPDIR = ServletContext.TEMPDIR;
-    public static final String BASETEMPDIR = "org.eclipse.jetty.webapp.basetempdir";
+    public static final String BASETEMPDIR = "org.eclipse.jetty.ee9.webapp.basetempdir";
     public static final String WEB_DEFAULTS_XML = "org/eclipse/jetty/webapp/webdefault.xml";
     public static final String ERROR_PAGE = "org.eclipse.jetty.server.error_page";
-    public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.webapp.systemClasses";
-    public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.webapp.serverClasses";
+    public static final String SERVER_SYS_CLASSES = "org.eclipse.jetty.ee9.webapp.systemClasses";
+    public static final String SERVER_SRV_CLASSES = "org.eclipse.jetty.ee9.webapp.serverClasses";
 
     private static String[] __dftProtectedTargets = {"/WEB-INF", "/META-INF"};
 
@@ -1139,10 +1139,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * In certain circumstances you want may want to deny access of one webapp from another
      * when you may not fully trust the webapp.  Setting this white list will enable a
-     * check when a servlet called {@link org.eclipse.jetty.servlet.ServletContextHandler.Context#getContext(String)}, validating that the uriInPath
+     * check when a servlet called {@link org.eclipse.jetty.ee9.servlet.ServletContextHandler.Context#getContext(String)}, validating that the uriInPath
      * for the given webapp has been declaratively allows access to the context.
      *
-     * @param contextWhiteList the whitelist of contexts for {@link org.eclipse.jetty.servlet.ServletContextHandler.Context#getContext(String)}
+     * @param contextWhiteList the whitelist of contexts for {@link org.eclipse.jetty.ee9.servlet.ServletContextHandler.Context#getContext(String)}
      */
     public void setContextWhiteList(String... contextWhiteList)
     {

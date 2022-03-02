@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.infinispan.EmbeddedQueryManager;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionData;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStore;

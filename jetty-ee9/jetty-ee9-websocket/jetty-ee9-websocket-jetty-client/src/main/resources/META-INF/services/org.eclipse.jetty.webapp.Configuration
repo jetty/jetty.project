@@ -1,1 +1,1 @@
-org.eclipse.jetty.websocket.client.config.JettyWebSocketClientConfiguration
+org.eclipse.jetty.ee9.websocket.client.config.JettyWebSocketClientConfiguration

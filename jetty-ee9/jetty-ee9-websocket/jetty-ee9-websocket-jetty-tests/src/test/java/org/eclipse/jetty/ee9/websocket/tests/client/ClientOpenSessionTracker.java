@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.client;
+package org.eclipse.jetty.ee9.websocket.tests.client;
 
 import java.util.concurrent.CountDownLatch;
 
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketSessionListener;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketSessionListener;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertTrue;

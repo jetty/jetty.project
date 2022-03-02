@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.jasper;
+package org.eclipse.jetty.ee9.osgi.boot.jasper;
 
 import java.io.File;
 import java.net.URL;
@@ -21,9 +21,9 @@ import java.util.Set;
 
 import jakarta.servlet.jsp.JspFactory;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
-import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
+import org.eclipse.jetty.ee9.osgi.boot.JettyBootstrapActivator;
+import org.eclipse.jetty.ee9.osgi.boot.utils.BundleFileLocatorHelper;
+import org.eclipse.jetty.ee9.osgi.boot.utils.TldBundleDiscoverer;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;

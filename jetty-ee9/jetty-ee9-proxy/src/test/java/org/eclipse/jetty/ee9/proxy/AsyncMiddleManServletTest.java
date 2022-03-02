@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.proxy;
+package org.eclipse.jetty.ee9.proxy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -55,6 +55,8 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -65,8 +67,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;

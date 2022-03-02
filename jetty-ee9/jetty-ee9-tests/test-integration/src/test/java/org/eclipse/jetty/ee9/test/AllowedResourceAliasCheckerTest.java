@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test;
+package org.eclipse.jetty.ee9.test;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -23,12 +23,12 @@ import java.nio.file.Path;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.ee9.servlet.DefaultServlet;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;

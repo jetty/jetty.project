@@ -11,22 +11,22 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests;
+package org.eclipse.jetty.ee9.websocket.tests;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.ee9.servlet.FilterHolder;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServerContainer;
+import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.core.server.WebSocketServerComponents;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

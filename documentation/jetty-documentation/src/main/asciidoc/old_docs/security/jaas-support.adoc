@@ -101,7 +101,7 @@ An example:
 +
 [source, xml, subs="{sub-order}"]
 ----
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
 
   <Set name="securityHandler">
     <New class="org.eclipse.jetty.security.ConstraintSecurityHandler">

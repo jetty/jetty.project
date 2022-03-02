@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.client;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
 import java.util.List;
 import java.util.Map;
@@ -26,8 +26,8 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
-import org.eclipse.jetty.websocket.jakarta.tests.LocalServer;
-import org.eclipse.jetty.websocket.jakarta.tests.WSEndpointTracker;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEndpointTracker;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

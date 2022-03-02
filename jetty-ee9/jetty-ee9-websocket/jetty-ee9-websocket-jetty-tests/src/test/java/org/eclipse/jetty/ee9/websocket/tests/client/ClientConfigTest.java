@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.tests.client;
+package org.eclipse.jetty.ee9.websocket.tests.client;
 
 import java.net.URI;
 import java.time.Duration;
@@ -19,23 +19,23 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.api.BatchMode;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.StatusCode;
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee9.websocket.api.exceptions.MessageTooLargeException;
+import org.eclipse.jetty.ee9.websocket.api.exceptions.WebSocketTimeoutException;
+import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee9.websocket.common.WebSocketSession;
+import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee9.websocket.tests.EchoSocket;
+import org.eclipse.jetty.ee9.websocket.tests.EventSocket;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.api.exceptions.MessageTooLargeException;
-import org.eclipse.jetty.websocket.api.exceptions.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.client.WebSocketClient;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCoreSession;
-import org.eclipse.jetty.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.tests.EchoSocket;
-import org.eclipse.jetty.websocket.tests.EventSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;

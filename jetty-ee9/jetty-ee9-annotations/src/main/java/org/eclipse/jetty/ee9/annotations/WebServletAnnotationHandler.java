@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
-import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
-import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
-import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.ClassInfo;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.FieldInfo;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.MethodInfo;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot;
+package org.eclipse.jetty.ee9.osgi.boot;
 
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.JettyServerServiceTracker;
-import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
+import org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory.DefaultJettyAtJettyHomeHelper;
+import org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory.JettyServerServiceTracker;
+import org.eclipse.jetty.ee9.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.server.Server;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;

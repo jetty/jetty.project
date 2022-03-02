@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.client.internal;
+package org.eclipse.jetty.ee9.websocket.jakarta.client.internal;
 
 import java.io.IOException;
 import java.net.URI;
@@ -33,6 +33,11 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.Extension;
 import jakarta.websocket.Session;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.ConfiguredEndpoint;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketExtensionConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandler;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -42,11 +47,6 @@ import org.eclipse.jetty.websocket.core.client.WebSocketCoreClient;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.exception.UpgradeException;
 import org.eclipse.jetty.websocket.core.exception.WebSocketTimeoutException;
-import org.eclipse.jetty.websocket.jakarta.common.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketContainer;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketExtensionConfig;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandler;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

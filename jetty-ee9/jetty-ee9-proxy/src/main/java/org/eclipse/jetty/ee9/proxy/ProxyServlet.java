@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.proxy;
+package org.eclipse.jetty.ee9.proxy;
 
 import java.io.IOException;
 import java.io.InputStream;

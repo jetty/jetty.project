@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.openid;
+package org.eclipse.jetty.ee9.security.openid;
 
-import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.ee9.security.Authenticator;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.Test;
 

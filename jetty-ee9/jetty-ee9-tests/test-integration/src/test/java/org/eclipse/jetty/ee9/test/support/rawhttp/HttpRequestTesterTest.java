@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test.support.rawhttp;
+package org.eclipse.jetty.ee9.test.support.rawhttp;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

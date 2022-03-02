@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quickstart;
+package org.eclipse.jetty.ee9.quickstart;
 
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -19,17 +19,17 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebDescriptor;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebDescriptor;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.eclipse.jetty.xml.XmlParser.Node;
 import org.hamcrest.Matchers;

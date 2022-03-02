@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.common.messages;
+package org.eclipse.jetty.ee9.websocket.jakarta.common.messages;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
@@ -20,12 +20,12 @@ import java.util.List;
 import jakarta.websocket.CloseReason;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.exception.CloseException;
 import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
 import org.eclipse.jetty.websocket.core.internal.messages.StringMessageSink;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.client.internal;
+package org.eclipse.jetty.ee9.websocket.jakarta.client.internal;
 
 import java.util.Collections;
 import java.util.List;
 
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.ClientEndpointConfigWrapper;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.jakarta.common.ClientEndpointConfigWrapper;
 
 public class AnnotatedClientEndpointConfig extends ClientEndpointConfigWrapper
 {

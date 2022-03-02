@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.util.Collections;
 import java.util.Set;
@@ -188,7 +188,7 @@ public class ServletHolderTest
             ServletHandler handler = context.getServletHandler();
             ServletHolder holder = new ServletHolder();
             holder.setName("foo");
-            holder.setClassName("org.eclipse.jetty.servlet.ServletHolderTest$FakeServlet");
+            holder.setClassName("org.eclipse.jetty.ee9.servlet.ServletHolderTest$FakeServlet");
             handler.addServlet(holder);
             handler.start();
             assertTrue(holder.isAvailable());

@@ -52,14 +52,14 @@ Alternatively, you can manually wire in the appropriate ServletContainerInitiali
 You can either follow the instructions on precompilation provided by Apache, or if you are using Maven for your builds, you can use the link:#jetty-jspc-maven-plugin[jetty-jspc-maven] plugin to do it for you.
 
 If you have precompiled your JSPs, and have customized the output package prefix (which is `org.apache.jsp` by default), you should configure your webapp context to tell Jetty about this custom package name.
-You can do this using a servlet context init-param called `org.eclipse.jetty.servlet.jspPackagePrefix`.
+You can do this using a servlet context init-param called `org.eclipse.jetty.ee9.servlet.jspPackagePrefix`.
 
 For example, suppose you have precompiled your JSPs with the custom package prefix of `com.acme`, then you would add the following lines to your `web.xml` file:
 
 [source, xml, subs="{sub-order}"]
 ----
   <context-param>
-    <param-name>org.eclipse.jetty.servlet.jspPackagePrefix</param-name>
+    <param-name>org.eclipse.jetty.ee9.servlet.jspPackagePrefix</param-name>
     <param-value>com.acme</param-value>
   </context-param>
 ----
@@ -206,7 +206,7 @@ If you are using the Jetty distribution, and you want to change the JSP settings
 
 [source, xml, subs="{sub-order}"]
 ----
- <Configure class="org.eclipse.jetty.webapp.WebAppContext">
+ <Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
    <Set name="contextPath">/foo</Set>
    <Set name="war"><Property name="jetty.home" default="."/>/webapps/foobar.war</Set>
    <Set name="defaultsDescriptor">/home/smith/dev/webdefault.xml</Set>

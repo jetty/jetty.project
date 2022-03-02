@@ -60,11 +60,11 @@ By default, `jetty-runner` implements all Configuration Classes so that users ca
 If you wish to only implement certain Configuration Classes, they will need to be defined in the context xml for the webapp/context.
 The default Configuration Classes are:
 
-`org.eclipse.jetty.webapp.WebInfConfiguration`
-`org.eclipse.jetty.webapp.WebXmlConfiguration`
-`org.eclipse.jetty.webapp.MetaInfConfiguration`
-`org.eclipse.jetty.webapp.FragmentConfiguration`
-`org.eclipse.jetty.webapp.JettyWebXmlConfiguration`
+`org.eclipse.jetty.ee9.webapp.WebInfConfiguration`
+`org.eclipse.jetty.ee9.webapp.WebXmlConfiguration`
+`org.eclipse.jetty.ee9.webapp.MetaInfConfiguration`
+`org.eclipse.jetty.ee9.webapp.FragmentConfiguration`
+`org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration`
 `org.eclipse.jetty.plus.webapp.EnvConfiguration`
 `org.eclipse.jetty.plus.webapp.PlusConfiguration`
 `org.eclipse.jetty.annotations.AnnotationConfiguration`

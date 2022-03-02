@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http.client;
+package org.eclipse.jetty.ee9.http.client;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -28,6 +28,8 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.http2.HTTP2Cipher;
@@ -56,8 +58,6 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.unixdomain.server.UnixDomainServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.JavaVersion;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.ee9.websocket.server;
 
 /**
  * Abstract WebSocket creator interface.

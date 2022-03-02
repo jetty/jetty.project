@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import org.eclipse.jetty.security.authentication.SessionAuthentication;
+import org.eclipse.jetty.ee9.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.security.Password;

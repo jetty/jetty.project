@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.openid;
+package org.eclipse.jetty.ee9.security.openid;
 
-import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.WrappedAuthConfiguration;
+import org.eclipse.jetty.ee9.security.Authenticator.AuthConfiguration;
+import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee9.security.WrappedAuthConfiguration;
 
 /**
  * <p>This class is used to wrap the {@link AuthConfiguration} given to the {@link OpenIdAuthenticator}.</p>

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.quotes;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.quotes;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -23,7 +23,7 @@ import jakarta.websocket.OnError;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
-import org.eclipse.jetty.websocket.jakarta.tests.WSEventTracker;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEventTracker;
 
 @ClientEndpoint(decoders = QuotesDecoder.class, subprotocols = "quotes")
 public class QuotesSocket extends WSEventTracker

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.test;
+package org.eclipse.jetty.ee9.test;
 
 import java.io.File;
 import java.net.URI;
@@ -22,6 +22,8 @@ import java.util.stream.Stream;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.ee9.servlet.DefaultServlet;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.Server;
@@ -29,8 +31,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterAll;

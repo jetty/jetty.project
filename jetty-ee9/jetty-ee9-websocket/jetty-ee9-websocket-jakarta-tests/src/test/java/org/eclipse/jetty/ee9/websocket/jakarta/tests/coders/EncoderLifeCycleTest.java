@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.coders;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
 import java.net.URI;
 import java.util.Collections;
@@ -28,14 +28,14 @@ import jakarta.websocket.MessageHandler;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketSession;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.encoders.AvailableEncoders;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.EchoSocket;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketSession;
-import org.eclipse.jetty.websocket.jakarta.common.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.jakarta.tests.EchoSocket;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;

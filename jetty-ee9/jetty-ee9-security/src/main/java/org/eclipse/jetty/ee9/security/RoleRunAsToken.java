@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 /**
  * @version $Rev: 4701 $ $Date: 2009-03-03 13:01:26 +0100 (Tue, 03 Mar 2009) $

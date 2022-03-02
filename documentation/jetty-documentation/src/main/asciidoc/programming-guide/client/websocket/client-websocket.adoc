@@ -35,7 +35,7 @@ The Maven artifact coordinates are the following:
 [[pg-client-websocket-start]]
 ==== Starting WebSocketClient
 
-The main class is `org.eclipse.jetty.websocket.client.WebSocketClient`; you instantiate it, configure it, and then start it like may other Jetty components.
+The main class is `org.eclipse.jetty.ee9.websocket.client.WebSocketClient`; you instantiate it, configure it, and then start it like may other Jetty components.
 This is a minimal example:
 
 [source,java,indent=0]
@@ -119,7 +119,7 @@ In code:
 include::../../{doc_code}/org/eclipse/jetty/docs/programming/client/websocket/WebSocketClientDocs.java[tags=connectHTTP11]
 ----
 
-`WebSocketClient.connect()` links the client-side WebSocket _endpoint_ to a specific server URI, and returns a `CompletableFuture` of an `org.eclipse.jetty.websocket.api.Session`.
+`WebSocketClient.connect()` links the client-side WebSocket _endpoint_ to a specific server URI, and returns a `CompletableFuture` of an `org.eclipse.jetty.ee9.websocket.api.Session`.
 
 The endpoint offers APIs to _receive_ WebSocket data (or errors) from the server, while the session offers APIs to _send_ WebSocket data to the server.
 

@@ -14,5 +14,5 @@
 /**
  * Jetty Ant : Utility Classes
  */
-package org.eclipse.jetty.ant.utils;
+package org.eclipse.jetty.ee9.ant.utils;
 

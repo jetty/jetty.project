@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api.exceptions;
+package org.eclipse.jetty.ee9.websocket.api.exceptions;
 
 /**
  * Exception thrown to indicate a connection I/O timeout.

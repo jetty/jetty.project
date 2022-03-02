@@ -9,7 +9,7 @@
   <!-- =========================================================== -->
   <!-- Add plus Configuring classes to all webapps for this Server -->
   <!-- =========================================================== -->
-  <Call class="org.eclipse.jetty.webapp.Configurations" name="setServerDefault">
+  <Call class="org.eclipse.jetty.ee9.webapp.Configurations" name="setServerDefault">
     <Arg><Ref refid="Server" /></Arg>
     <Call name="add">
       <Arg>

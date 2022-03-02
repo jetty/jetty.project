@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -23,8 +23,8 @@ import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.HandlesTypes;
-import org.eclipse.jetty.annotations.AnnotationConfiguration.DiscoveredServletContainerInitializerHolder;
-import org.eclipse.jetty.servlet.Source;
+import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration.DiscoveredServletContainerInitializerHolder;
+import org.eclipse.jetty.ee9.servlet.Source;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;

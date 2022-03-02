@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security;
+package org.eclipse.jetty.ee9.security;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -22,7 +22,7 @@ import java.util.Set;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;

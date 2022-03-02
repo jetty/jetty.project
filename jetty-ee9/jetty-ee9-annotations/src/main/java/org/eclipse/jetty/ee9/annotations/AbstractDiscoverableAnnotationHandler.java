@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
-import org.eclipse.jetty.webapp.DiscoveredAnnotation;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.AbstractHandler;
+import org.eclipse.jetty.ee9.webapp.DiscoveredAnnotation;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 
 /**
  * DiscoverableAnnotationHandler

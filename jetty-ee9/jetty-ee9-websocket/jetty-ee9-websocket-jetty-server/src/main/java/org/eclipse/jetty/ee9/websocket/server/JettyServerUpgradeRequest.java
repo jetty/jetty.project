@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server;
+package org.eclipse.jetty.ee9.websocket.server;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -23,7 +23,7 @@ import java.util.Map;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
 
 public interface JettyServerUpgradeRequest extends UpgradeRequest
 {

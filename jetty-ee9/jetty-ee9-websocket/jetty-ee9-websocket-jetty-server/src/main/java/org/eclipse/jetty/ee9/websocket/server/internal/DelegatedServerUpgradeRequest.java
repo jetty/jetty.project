@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.server.internal;
+package org.eclipse.jetty.ee9.websocket.server.internal;
 
 import java.net.HttpCookie;
 import java.net.SocketAddress;
@@ -26,10 +26,10 @@ import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.eclipse.jetty.websocket.api.ExtensionConfig;
-import org.eclipse.jetty.websocket.common.JettyExtensionConfig;
+import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
+import org.eclipse.jetty.ee9.websocket.common.JettyExtensionConfig;
+import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
 
 public class DelegatedServerUpgradeRequest implements JettyServerUpgradeRequest
 {

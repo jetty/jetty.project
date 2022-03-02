@@ -14,5 +14,5 @@
 /**
  * Jetty Maven Plugin : Support for Jetty in Maven build lifecycle
  */
-package org.eclipse.jetty.maven.plugin;
+package org.eclipse.jetty.ee9.maven.plugin;
 

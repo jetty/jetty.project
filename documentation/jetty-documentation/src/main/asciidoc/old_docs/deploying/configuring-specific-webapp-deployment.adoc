@@ -43,7 +43,7 @@ For example, here is a descriptor file that deploys the file `/opt/myapp/myapp.w
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
   <Set name="war">/opt/myapp/myapp.war</Set>
 </Configure>
@@ -57,7 +57,7 @@ For example, if the system property is set to `myapp.home=/opt/myapp`, the previ
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
   <Set name="war"><SystemProperty name="myapp.home"/>/myapp.war</Set>
 </Configure>
@@ -85,7 +85,7 @@ This can help make it clear that users should not make changes to the temporary 
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
   <Set name="war"><SystemProperty name="myapp.home"/>/myapp.war</Set>
   <Set name="extractWAR">false</Set>
@@ -101,7 +101,7 @@ However, since the `web.xml` for the web application is processed after the depl
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
   <Set name="war"><SystemProperty name="myapp.home"/>/myapp.war</Set>
   <Get name="ServletContext">
@@ -122,7 +122,7 @@ This feature is useful when adding parameters or additional Servlet mappings wit
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
   <Set name="war"><SystemProperty name="myapp.home"/>/myapp.war</Set>
   <Set name="overrideDescriptor">/opt/myapp/overlay-web.xml</Set>
@@ -137,7 +137,7 @@ If the `web.xml` does not include a reference to this data source, an override d
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
 
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/wiki</Set>
   <Set name="war"><SystemProperty name="myapp.home"/>/myapp.war</Set>
 

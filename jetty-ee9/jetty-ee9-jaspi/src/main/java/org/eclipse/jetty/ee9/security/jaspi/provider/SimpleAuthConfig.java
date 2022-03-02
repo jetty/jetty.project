@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi.provider;
+package org.eclipse.jetty.ee9.security.jaspi.provider;
 
 import java.util.Map;
 import javax.security.auth.Subject;

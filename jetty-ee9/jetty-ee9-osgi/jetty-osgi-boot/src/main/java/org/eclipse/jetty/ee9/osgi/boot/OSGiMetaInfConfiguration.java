@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot;
+package org.eclipse.jetty.ee9.osgi.boot;
 
 import java.io.File;
 import java.net.URI;
@@ -27,15 +27,15 @@ import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.osgi.boot.utils.Util;
-import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
+import org.eclipse.jetty.ee9.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.ee9.osgi.boot.utils.Util;
+import org.eclipse.jetty.ee9.osgi.boot.utils.internal.PackageAdminServiceTracker;
+import org.eclipse.jetty.ee9.webapp.Configuration;
+import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
-import org.eclipse.jetty.webapp.Configuration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.slf4j.Logger;
@@ -54,13 +54,13 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
      * Comma separated list of symbolic names of bundles that contain tlds that should be considered
      * as on the container classpath
      */
-    public static final String SYS_PROP_TLD_BUNDLES = "org.eclipse.jetty.osgi.tldbundles";
+    public static final String SYS_PROP_TLD_BUNDLES = "org.eclipse.jetty.ee9.osgi.tldbundles";
     /**
      * Regex of symbolic names of bundles that should be considered to be on the container classpath
      */
     public static final String CONTAINER_BUNDLE_PATTERN = "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern";
-    public static final String FRAGMENT_AND_REQUIRED_BUNDLES = "org.eclipse.jetty.osgi.fragmentAndRequiredBundles";
-    public static final String FRAGMENT_AND_REQUIRED_RESOURCES = "org.eclipse.jetty.osgi.fragmentAndRequiredResources";
+    public static final String FRAGMENT_AND_REQUIRED_BUNDLES = "org.eclipse.jetty.ee9.osgi.fragmentAndRequiredBundles";
+    public static final String FRAGMENT_AND_REQUIRED_RESOURCES = "org.eclipse.jetty.ee9.osgi.fragmentAndRequiredResources";
 
     @Override
     public Class<? extends Configuration> replaces()
@@ -80,7 +80,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
      * We also allow individual bundles to specify particular bundles that might include TLDs via the Require-Tlds
      * MANIFEST.MF header.
      *
-     * @see org.eclipse.jetty.webapp.WebInfConfiguration#preConfigure(org.eclipse.jetty.webapp.WebAppContext)
+     * @see org.eclipse.jetty.ee9.webapp.WebInfConfiguration#preConfigure(org.eclipse.jetty.ee9.webapp.WebAppContext)
      */
     @Override
     public void preConfigure(final WebAppContext context) throws Exception
@@ -152,7 +152,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
     /**
      * Consider the fragment bundles associated with the bundle of the webapp being deployed.
      *
-     * @see org.eclipse.jetty.webapp.MetaInfConfiguration#findJars(org.eclipse.jetty.webapp.WebAppContext)
+     * @see org.eclipse.jetty.ee9.webapp.MetaInfConfiguration#findJars(org.eclipse.jetty.ee9.webapp.WebAppContext)
      */
     @Override
     protected List<Resource> findJars(WebAppContext context)
@@ -206,7 +206,7 @@ public class OSGiMetaInfConfiguration extends MetaInfConfiguration
      *
      * The resources can be either prepended or appended to the baseResource.
      *
-     * @see org.eclipse.jetty.webapp.WebInfConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)
+     * @see org.eclipse.jetty.ee9.webapp.WebInfConfiguration#configure(org.eclipse.jetty.ee9.webapp.WebAppContext)
      */
     @Override
     public void configure(WebAppContext context) throws Exception

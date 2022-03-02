@@ -14,5 +14,5 @@
 /**
  * Jetty Server : Modular Servlet Integration
  */
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 

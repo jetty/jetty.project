@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import org.eclipse.jetty.util.Loader;
 import org.slf4j.Logger;
@@ -34,7 +34,7 @@ public class JspConfiguration extends AbstractConfiguration
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class, FragmentConfiguration.class);
         addDependents(WebAppConfiguration.class);
         protectAndExpose("org.eclipse.jetty.jsp.");
-        expose("org.eclipse.jetty.apache.");
+        expose("org.eclipse.jetty.ee9.apache.");
         hide("org.eclipse.jdt.");
     }
 

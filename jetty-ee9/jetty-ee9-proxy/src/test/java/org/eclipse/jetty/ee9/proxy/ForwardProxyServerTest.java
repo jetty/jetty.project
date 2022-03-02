@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.proxy;
+package org.eclipse.jetty.ee9.proxy;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +24,8 @@ import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -40,8 +42,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.BufferUtil;

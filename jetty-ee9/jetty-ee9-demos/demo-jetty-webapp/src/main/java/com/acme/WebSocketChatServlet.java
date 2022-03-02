@@ -21,17 +21,17 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeRequest;
-import org.eclipse.jetty.websocket.server.JettyServerUpgradeResponse;
-import org.eclipse.jetty.websocket.server.JettyWebSocketCreator;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketCreator;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
 
 @SuppressWarnings("serial")
 public class WebSocketChatServlet extends JettyWebSocketServlet implements JettyWebSocketCreator

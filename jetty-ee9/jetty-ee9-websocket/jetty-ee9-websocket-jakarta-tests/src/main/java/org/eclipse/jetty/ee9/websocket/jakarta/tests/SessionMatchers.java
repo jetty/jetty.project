@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
 import jakarta.websocket.MessageHandler;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketSession;
-import org.eclipse.jetty.websocket.jakarta.tests.matchers.IsMessageHandlerType;
-import org.eclipse.jetty.websocket.jakarta.tests.matchers.IsMessageHandlerTypeRegistered;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketSession;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.matchers.IsMessageHandlerType;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.matchers.IsMessageHandlerTypeRegistered;
 import org.hamcrest.Matcher;
 
 public final class SessionMatchers

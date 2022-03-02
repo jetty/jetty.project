@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.client;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -20,25 +20,25 @@ import java.util.List;
 import jakarta.websocket.ClientEndpoint;
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.MessageHandler;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.BasicClientEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientFrameHandlerFactory;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.ConfiguredEndpoint;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandler;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketSession;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequest;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequestAdapter;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.MessageType;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.SessionMatchers;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.handlers.BinaryHandlers;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.handlers.LongMessageHandler;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.handlers.TextHandlers;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.jakarta.client.internal.BasicClientEndpointConfig;
-import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
-import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientFrameHandlerFactory;
-import org.eclipse.jetty.websocket.jakarta.common.ConfiguredEndpoint;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandler;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.websocket.jakarta.common.JakartaWebSocketSession;
-import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequest;
-import org.eclipse.jetty.websocket.jakarta.common.UpgradeRequestAdapter;
-import org.eclipse.jetty.websocket.jakarta.tests.MessageType;
-import org.eclipse.jetty.websocket.jakarta.tests.SessionMatchers;
-import org.eclipse.jetty.websocket.jakarta.tests.handlers.BinaryHandlers;
-import org.eclipse.jetty.websocket.jakarta.tests.handlers.LongMessageHandler;
-import org.eclipse.jetty.websocket.jakarta.tests.handlers.TextHandlers;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

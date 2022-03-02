@@ -17,7 +17,7 @@ lib/jetty-util-ajax-${jetty.version}.jar
 etc/jetty-stats.xml
 
 [ini]
-jetty.webapp.addServerClasses+=,-org.eclipse.jetty.servlet.StatisticsServlet
+jetty.webapp.addServerClasses+=,-org.eclipse.jetty.ee9.servlet.StatisticsServlet
 
 [ini-template]
 

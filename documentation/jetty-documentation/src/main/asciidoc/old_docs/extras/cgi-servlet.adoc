@@ -17,7 +17,7 @@
 [[cgi-servlet-metadata]]
 ==== Info
 
-* Classname: `org.eclipse.jetty.servlets.CGI`
+* Classname: `org.eclipse.jetty.ee9.servlets.CGI`
 * Maven Artifact: org.eclipse.jetty:jetty-servlets
 * Javadoc: {JDURL}/org/eclipse/jetty/servlets/CGI.html
 

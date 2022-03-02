@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.httpservice;
+package org.eclipse.jetty.ee9.osgi.httpservice;
 
 import jakarta.servlet.http.HttpServlet;
 

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
@@ -27,7 +27,7 @@ import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

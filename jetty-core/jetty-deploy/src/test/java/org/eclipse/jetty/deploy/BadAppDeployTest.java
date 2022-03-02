@@ -19,6 +19,7 @@ import java.nio.file.Path;
 
 import jakarta.servlet.ServletException;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -29,7 +30,6 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

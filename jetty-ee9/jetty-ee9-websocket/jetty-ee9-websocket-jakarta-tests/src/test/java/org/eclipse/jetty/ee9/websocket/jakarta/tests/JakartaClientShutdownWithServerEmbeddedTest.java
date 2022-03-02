@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
 import java.net.URI;
 import java.util.Collection;
@@ -23,13 +23,13 @@ import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.JakartaWebSocketShutdownContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.websocket.jakarta.client.JakartaWebSocketShutdownContainer;
-import org.eclipse.jetty.websocket.jakarta.client.internal.JakartaWebSocketClientContainer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

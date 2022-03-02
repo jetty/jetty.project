@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin.it;
+package org.eclipse.jetty.ee9.maven.plugin.it;
 
 import java.io.LineNumberReader;
 import java.io.Reader;

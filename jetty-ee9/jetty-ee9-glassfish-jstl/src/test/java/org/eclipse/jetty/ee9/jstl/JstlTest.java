@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jstl;
+package org.eclipse.jetty.ee9.jstl;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,14 +21,14 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import jakarta.servlet.jsp.JspException;
-import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot.internal.serverfactory;
+package org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -30,19 +30,19 @@ import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.bindings.StandardStarter;
 import org.eclipse.jetty.deploy.bindings.StandardStopper;
-import org.eclipse.jetty.osgi.boot.BundleContextProvider;
-import org.eclipse.jetty.osgi.boot.BundleWebAppProvider;
-import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
-import org.eclipse.jetty.osgi.boot.OSGiDeployer;
-import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
-import org.eclipse.jetty.osgi.boot.OSGiUndeployer;
-import org.eclipse.jetty.osgi.boot.ServiceContextProvider;
-import org.eclipse.jetty.osgi.boot.ServiceWebAppProvider;
-import org.eclipse.jetty.osgi.boot.internal.webapp.LibExtClassLoaderHelper;
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.osgi.boot.utils.FakeURLClassLoader;
-import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
-import org.eclipse.jetty.osgi.boot.utils.Util;
+import org.eclipse.jetty.ee9.osgi.boot.BundleContextProvider;
+import org.eclipse.jetty.ee9.osgi.boot.BundleWebAppProvider;
+import org.eclipse.jetty.ee9.osgi.boot.JettyBootstrapActivator;
+import org.eclipse.jetty.ee9.osgi.boot.OSGiDeployer;
+import org.eclipse.jetty.ee9.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.ee9.osgi.boot.OSGiUndeployer;
+import org.eclipse.jetty.ee9.osgi.boot.ServiceContextProvider;
+import org.eclipse.jetty.ee9.osgi.boot.ServiceWebAppProvider;
+import org.eclipse.jetty.ee9.osgi.boot.internal.webapp.LibExtClassLoaderHelper;
+import org.eclipse.jetty.ee9.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.ee9.osgi.boot.utils.FakeURLClassLoader;
+import org.eclipse.jetty.ee9.osgi.boot.utils.TldBundleDiscoverer;
+import org.eclipse.jetty.ee9.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.StringUtil;

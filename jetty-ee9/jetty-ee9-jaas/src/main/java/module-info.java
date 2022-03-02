@@ -11,17 +11,17 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.jaas
+module org.eclipse.jetty.ee9.jaas
 {
     requires org.slf4j;
     requires org.eclipse.jetty.util;
 
-    requires transitive org.eclipse.jetty.security;
+    requires transitive org.eclipse.jetty.ee9.security;
 
     // Only required if using JDBCLoginModule.
     requires static java.sql;
 
-    exports org.eclipse.jetty.jaas;
-    exports org.eclipse.jetty.jaas.callback;
-    exports org.eclipse.jetty.jaas.spi;
+    exports org.eclipse.jetty.ee9.jaas;
+    exports org.eclipse.jetty.ee9.jaas.callback;
+    exports org.eclipse.jetty.ee9.jaas.spi;
 }

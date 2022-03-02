@@ -11,19 +11,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.quickstart;
+package org.eclipse.jetty.ee9.quickstart;
 
 import java.io.File;
 import java.util.Arrays;
 
+import org.eclipse.jetty.ee9.servlet.FilterHolder;
+import org.eclipse.jetty.ee9.servlet.ListenerHolder;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.ListenerHolder;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;

@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static java.util.stream.Collectors.toList;
-import static org.eclipse.jetty.webapp.Configurations.getKnown;
+import static org.eclipse.jetty.ee9.webapp.Configurations.getKnown;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;

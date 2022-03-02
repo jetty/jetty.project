@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.ee9.websocket.common;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,22 +29,22 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.ee9.websocket.api.BatchMode;
+import org.eclipse.jetty.ee9.websocket.api.Frame;
+import org.eclipse.jetty.ee9.websocket.api.Session;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketConnectionListener;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketFrameListener;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketListener;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketPartialListener;
+import org.eclipse.jetty.ee9.websocket.api.WebSocketPingPongListener;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.websocket.api.BatchMode;
-import org.eclipse.jetty.websocket.api.Frame;
-import org.eclipse.jetty.websocket.api.Session;
-import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
-import org.eclipse.jetty.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.websocket.api.WebSocketFrameListener;
-import org.eclipse.jetty.websocket.api.WebSocketListener;
-import org.eclipse.jetty.websocket.api.WebSocketPartialListener;
-import org.eclipse.jetty.websocket.api.WebSocketPingPongListener;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketFrame;
-import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.core.CoreSession;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
@@ -67,13 +67,13 @@ import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
  * Will create a {@link org.eclipse.jetty.websocket.core.FrameHandler} suitable for use with classes/objects that:
  * </p>
  * <ul>
- * <li>Is &#64;{@link org.eclipse.jetty.websocket.api.annotations.WebSocket} annotated</li>
- * <li>Extends {@link org.eclipse.jetty.websocket.api.WebSocketAdapter}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketConnectionListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketPartialListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketPingPongListener}</li>
- * <li>Implements {@link org.eclipse.jetty.websocket.api.WebSocketFrameListener}</li>
+ * <li>Is &#64;{@link org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket} annotated</li>
+ * <li>Extends {@link org.eclipse.jetty.ee9.websocket.api.WebSocketAdapter}</li>
+ * <li>Implements {@link org.eclipse.jetty.ee9.websocket.api.WebSocketListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.ee9.websocket.api.WebSocketConnectionListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.ee9.websocket.api.WebSocketPartialListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.ee9.websocket.api.WebSocketPingPongListener}</li>
+ * <li>Implements {@link org.eclipse.jetty.ee9.websocket.api.WebSocketFrameListener}</li>
  * </ul>
  */
 public class JettyWebSocketFrameHandlerFactory extends ContainerLifeCycle

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jaas;
+package org.eclipse.jetty.ee9.jaas;
 
 import java.io.Serializable;
 import java.security.Principal;

@@ -14,5 +14,5 @@
 /**
  * Jetty Security : Authenticators and Callbacks
  */
-package org.eclipse.jetty.security.authentication;
+package org.eclipse.jetty.ee9.security.authentication;
 

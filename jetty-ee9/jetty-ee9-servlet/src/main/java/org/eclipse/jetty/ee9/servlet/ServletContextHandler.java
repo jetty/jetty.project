@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.servlet;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,10 +49,10 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.security.ConstraintAware;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.ee9.security.ConstraintAware;
+import org.eclipse.jetty.ee9.security.ConstraintMapping;
+import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
@@ -121,7 +121,7 @@ public class ServletContextHandler extends ContextHandler
     public interface ServletContainerInitializerCaller extends LifeCycle {}
 
     protected final DecoratedObjectFactory _objFactory;
-    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
+    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.ee9.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
@@ -1035,7 +1035,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public RequestDispatcher getNamedDispatcher(String name)
         {
-            ContextHandler context = org.eclipse.jetty.servlet.ServletContextHandler.this;
+            ContextHandler context = org.eclipse.jetty.ee9.servlet.ServletContextHandler.this;
             if (_servletHandler == null)
                 return null;
             ServletHolder holder = _servletHandler.getServlet(name);

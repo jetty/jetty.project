@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http.client;
+package org.eclipse.jetty.ee9.http.client;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
@@ -35,8 +35,8 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
-import static org.eclipse.jetty.http.client.Transport.H2C;
-import static org.eclipse.jetty.http.client.Transport.HTTP;
+import static org.eclipse.jetty.ee9.http.client.Transport.H2C;
+import static org.eclipse.jetty.ee9.http.client.Transport.HTTP;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

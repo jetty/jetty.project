@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http.spi;
+package org.eclipse.jetty.ee9.http.spi;
 
 import com.sun.net.httpserver.HttpPrincipal;
 

@@ -14,5 +14,5 @@
 /**
  * Jetty WebSocket API : WebSocket POJO Annotations
  */
-package org.eclipse.jetty.websocket.api.annotations;
+package org.eclipse.jetty.ee9.websocket.api.annotations;
 

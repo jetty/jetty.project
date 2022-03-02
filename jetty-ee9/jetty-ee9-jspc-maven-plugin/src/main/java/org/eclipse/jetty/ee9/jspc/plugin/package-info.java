@@ -14,5 +14,5 @@
 /**
  * Jetty Jspc Maven Plugin : Support for precompiling jsps
  */
-package org.eclipse.jetty.jspc.plugin;
+package org.eclipse.jetty.ee9.jspc.plugin;
 

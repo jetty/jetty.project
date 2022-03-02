@@ -17,7 +17,7 @@
 [[default-servlet-metadata]]
 ==== Info
 
-* Classname: `org.eclipse.jetty.servlet.DefaultServlet`
+* Classname: `org.eclipse.jetty.ee9.servlet.DefaultServlet`
 * Maven Artifact: org.eclipse.jetty:jetty-servlet
 * Javadoc: {JDURL}/org/eclipse/jetty/servlet/DefaultServlet.html
 

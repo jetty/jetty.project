@@ -17,7 +17,7 @@
 [[cross-origin-filter-metadata]]
 ==== Info
 
-* Classname: `org.eclipse.jetty.servlets.CrossOriginFilter`
+* Classname: `org.eclipse.jetty.ee9.servlets.CrossOriginFilter`
 * Maven Artifact: org.eclipse.jetty:jetty-servlets
 * Javadoc: {JDURL}/org/eclipse/jetty/servlets/CrossOriginFilter.html
 
@@ -80,7 +80,7 @@ A typical configuration could be:
 
     <filter>
         <filter-name>cross-origin</filter-name>
-        <filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+        <filter-class>org.eclipse.jetty.ee9.servlets.CrossOriginFilter</filter-class>
     </filter>
     <filter-mapping>
         <filter-name>cross-origin</filter-name>

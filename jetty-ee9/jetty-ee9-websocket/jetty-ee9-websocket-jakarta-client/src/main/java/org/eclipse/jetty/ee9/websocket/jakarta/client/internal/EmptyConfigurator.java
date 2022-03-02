@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.client.internal;
+package org.eclipse.jetty.ee9.websocket.jakarta.client.internal;
 
 import java.util.List;
 import java.util.Map;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi;
+package org.eclipse.jetty.ee9.security.jaspi;
 
 import java.io.IOException;
 import javax.security.auth.Subject;
@@ -26,10 +26,10 @@ import jakarta.security.auth.message.callback.PasswordValidationCallback;
 import jakarta.security.auth.message.callback.PrivateKeyCallback;
 import jakarta.security.auth.message.callback.SecretKeyCallback;
 import jakarta.security.auth.message.callback.TrustStoreCallback;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.authentication.LoginCallback;
-import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
-import org.eclipse.jetty.security.jaspi.callback.CredentialValidationCallback;
+import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee9.security.authentication.LoginCallback;
+import org.eclipse.jetty.ee9.security.authentication.LoginCallbackImpl;
+import org.eclipse.jetty.ee9.security.jaspi.callback.CredentialValidationCallback;
 import org.eclipse.jetty.server.UserIdentity;
 
 /**

@@ -28,7 +28,7 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

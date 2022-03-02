@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
-<Configure class="org.eclipse.jetty.servlet.ServletContextHandler">
+<Configure class="org.eclipse.jetty.ee9.servlet.ServletContextHandler">
   <!-- this configures the servlet session manager -->
   <Set name="SessionHandler">
     <New class="org.eclipse.jetty.server.session.SessionHandler"/>
@@ -13,6 +13,6 @@
   </Call>
   <!-- custom pluggable error handler -->
   <Set name="ErrorHandler">
-    <New class="org.eclipse.jetty.osgi.httpservice.HttpServiceErrorPageErrorHandler"/>
+    <New class="org.eclipse.jetty.ee9.osgi.httpservice.HttpServiceErrorPageErrorHandler"/>
   </Set>
 </Configure>

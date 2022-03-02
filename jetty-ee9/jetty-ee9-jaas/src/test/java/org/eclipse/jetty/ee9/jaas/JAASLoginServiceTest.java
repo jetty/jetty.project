@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jaas;
+package org.eclipse.jetty.ee9.jaas;
 
 import java.security.Principal;
 import java.util.Arrays;
@@ -21,7 +21,7 @@ import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
 import javax.security.auth.login.Configuration;
 
-import org.eclipse.jetty.security.DefaultIdentityService;
+import org.eclipse.jetty.ee9.security.DefaultIdentityService;
 import org.eclipse.jetty.server.Request;
 import org.junit.jupiter.api.Test;
 
@@ -97,7 +97,7 @@ public class JAASLoginServiceTest
         
         //Test with the DefaultCallbackHandler
         JAASLoginService ls = new JAASLoginService("foo");
-        ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
+        ls.setCallbackHandlerClass("org.eclipse.jetty.ee9.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(config);
         Request request = new Request(null, null);

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.osgi.boot;
+package org.eclipse.jetty.ee9.osgi.boot;
 
 import java.util.Dictionary;
 import java.util.HashMap;
@@ -19,8 +19,8 @@ import java.util.Hashtable;
 import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
-import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
-import org.eclipse.jetty.osgi.boot.utils.Util;
+import org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.ee9.osgi.boot.utils.Util;
 import org.eclipse.jetty.util.StringUtil;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;

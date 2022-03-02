@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.api;
+package org.eclipse.jetty.ee9.websocket.api;
 
 /**
  * Interface for Listeners that are interested in knowing about the Session history.

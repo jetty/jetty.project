@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.maven.plugin.utils;
+package org.eclipse.jetty.ee9.maven.plugin.utils;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -34,8 +34,8 @@ import org.apache.maven.project.ProjectBuildingRequest;
 import org.apache.maven.shared.transfer.artifact.DefaultArtifactCoordinate;
 import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolver;
 import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolverException;
-import org.eclipse.jetty.maven.plugin.OverlayManager;
-import org.eclipse.jetty.maven.plugin.WarPluginInfo;
+import org.eclipse.jetty.ee9.maven.plugin.OverlayManager;
+import org.eclipse.jetty.ee9.maven.plugin.WarPluginInfo;
 
 /**
  * MavenProjectHelper

@@ -23,7 +23,7 @@ The JNDI entry must be _defined_ in a xref:og-jndi-xml[Jetty XML file], for exam
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
 
-<Configure id="wac" class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure id="wac" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
   <Set name="contextPath">/mywebapp</Set>
   <Set name="war">/opt/webapps/mywebapp.war</Set>
 #&nbsp;&nbsp;<New class="org.eclipse.jetty.plus.jndi.Resource">

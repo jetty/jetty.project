@@ -11,7 +11,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.ant;
+package org.eclipse.jetty.ee9.ant;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,22 +33,22 @@ import org.apache.tools.ant.AntClassLoader;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.types.FileSet;
-import org.eclipse.jetty.ant.types.Attribute;
-import org.eclipse.jetty.ant.types.Attributes;
-import org.eclipse.jetty.ant.types.FileMatchingConfiguration;
-import org.eclipse.jetty.ant.utils.TaskLog;
-import org.eclipse.jetty.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.servlet.Source;
+import org.eclipse.jetty.ee9.ant.types.Attribute;
+import org.eclipse.jetty.ee9.ant.types.Attributes;
+import org.eclipse.jetty.ee9.ant.types.FileMatchingConfiguration;
+import org.eclipse.jetty.ee9.ant.utils.TaskLog;
+import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee9.servlet.FilterHolder;
+import org.eclipse.jetty.ee9.servlet.FilterMapping;
+import org.eclipse.jetty.ee9.servlet.ServletHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee9.servlet.ServletMapping;
+import org.eclipse.jetty.ee9.servlet.Source;
+import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
-import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

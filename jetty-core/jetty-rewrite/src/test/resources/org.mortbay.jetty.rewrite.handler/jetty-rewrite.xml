@@ -53,7 +53,7 @@
   <!-- =========================================================== -->
   <!--
   <Set name="sessionIdManager">
-    <New class="org.eclipse.jetty.servlet.HashSessionIdManager">
+    <New class="org.eclipse.jetty.ee9.servlet.HashSessionIdManager">
       <Set name="workerName">node1</Set>
     </New>
   </Set>

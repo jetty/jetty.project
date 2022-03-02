@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.annotations.AnnotationParser.AbstractHandler;
-import org.eclipse.jetty.annotations.AnnotationParser.ClassInfo;
-import org.eclipse.jetty.annotations.AnnotationParser.FieldInfo;
-import org.eclipse.jetty.annotations.AnnotationParser.MethodInfo;
-import org.eclipse.jetty.plus.annotation.ContainerInitializer;
-import org.eclipse.jetty.servlet.ServletContainerInitializerHolder;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.AbstractHandler;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.ClassInfo;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.FieldInfo;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.MethodInfo;
+import org.eclipse.jetty.ee9.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
 
 /**
  * ContainerInitializerAnnotationHandler
@@ -53,7 +53,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     /**
      * Handle finding a class that is annotated with the annotation we were constructed with.
      *
-     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.annotations.AnnotationParser.ClassInfo, String)
+     * @see org.eclipse.jetty.ee9.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.ee9.annotations.AnnotationParser.ClassInfo, String)
      */
     @Override
     public void handle(ClassInfo info, String annotationName)
@@ -70,7 +70,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     /**
      * Handle finding a field that is annotated with the annotation we were constructed with.
      *
-     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.annotations.AnnotationParser.FieldInfo, String)
+     * @see org.eclipse.jetty.ee9.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.ee9.annotations.AnnotationParser.FieldInfo, String)
      */
     @Override
     public void handle(FieldInfo info, String annotationName)
@@ -87,7 +87,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     /**
      * Handle finding a method that is annotated with the annotation we were constructed with.
      *
-     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.annotations.AnnotationParser.MethodInfo, String)
+     * @see org.eclipse.jetty.ee9.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.ee9.annotations.AnnotationParser.MethodInfo, String)
      */
     @Override
     public void handle(MethodInfo info, String annotationName)

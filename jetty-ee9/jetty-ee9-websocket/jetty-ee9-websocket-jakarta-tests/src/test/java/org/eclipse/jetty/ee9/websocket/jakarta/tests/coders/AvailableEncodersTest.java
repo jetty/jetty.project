@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.coders;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -24,12 +24,12 @@ import java.util.TimeZone;
 import jakarta.websocket.EncodeException;
 import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.client.internal.BasicClientEndpointConfig;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.encoders.AvailableEncoders;
+import org.eclipse.jetty.ee9.websocket.jakarta.common.encoders.IntegerEncoder;
 import org.eclipse.jetty.toolchain.test.Hex;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;
-import org.eclipse.jetty.websocket.jakarta.client.internal.BasicClientEndpointConfig;
-import org.eclipse.jetty.websocket.jakarta.common.encoders.AvailableEncoders;
-import org.eclipse.jetty.websocket.jakarta.common.encoders.IntegerEncoder;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 

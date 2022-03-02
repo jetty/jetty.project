@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.webapp;
+package org.eclipse.jetty.ee9.webapp;
 
 import java.io.File;
 import java.net.URL;
@@ -28,6 +28,8 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
@@ -37,8 +39,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
-import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -179,14 +179,14 @@ public class WebAppContextTest
         JmxConfiguration jmx = new JmxConfiguration();
         if (jmx.isAvailable()) // depending on JVM runtime, this might not be available when this test is run
         {
-            expectedConfigurations.add("org.eclipse.jetty.webapp.JmxConfiguration");
+            expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.JmxConfiguration");
         }
-        expectedConfigurations.add("org.eclipse.jetty.webapp.WebInfConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.WebXmlConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.MetaInfConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.FragmentConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.WebAppConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.webapp.JettyWebXmlConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebXmlConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.MetaInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.FragmentConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebAppConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration");
 
         assertThat(actualConfigurations, Matchers.contains(expectedConfigurations.toArray()));
     }

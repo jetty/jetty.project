@@ -11,21 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.ee9.servlet.FilterHolder;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.Fuzzer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSServer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.echo.BasicEchoSocket;
+import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;
-import org.eclipse.jetty.websocket.jakarta.tests.Fuzzer;
-import org.eclipse.jetty.websocket.jakarta.tests.WSServer;
-import org.eclipse.jetty.websocket.jakarta.tests.server.sockets.echo.BasicEchoSocket;
-import org.eclipse.jetty.websocket.servlet.WebSocketUpgradeFilter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 

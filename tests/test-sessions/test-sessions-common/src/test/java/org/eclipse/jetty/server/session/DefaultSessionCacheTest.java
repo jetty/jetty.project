@@ -17,9 +17,9 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

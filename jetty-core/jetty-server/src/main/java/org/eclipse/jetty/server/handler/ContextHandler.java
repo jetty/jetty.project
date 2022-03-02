@@ -131,7 +131,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     public static final int EXTENDED_LISTENER_TYPE_INDEX = 0;
 
-    private static final String UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER = "Unimplemented {} - use org.eclipse.jetty.servlet.ServletContextHandler";
+    private static final String UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER = "Unimplemented {} - use org.eclipse.jetty.ee9.servlet.ServletContextHandler";
 
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
 

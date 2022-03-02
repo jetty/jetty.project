@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.cdi.tests;
+package org.eclipse.jetty.ee9.cdi.tests;
 
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;

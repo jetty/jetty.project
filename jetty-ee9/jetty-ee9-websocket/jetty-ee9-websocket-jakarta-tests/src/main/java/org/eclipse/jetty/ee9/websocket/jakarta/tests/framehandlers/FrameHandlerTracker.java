@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests.framehandlers;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests.framehandlers;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;

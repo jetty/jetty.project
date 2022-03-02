@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.security.jaspi;
+package org.eclipse.jetty.ee9.security.jaspi;
 
 import java.security.Principal;
 import java.util.List;
@@ -20,11 +20,11 @@ import javax.security.auth.Subject;
 
 import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.Authenticator.AuthConfiguration;
-import org.eclipse.jetty.security.DefaultAuthenticatorFactory;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.ee9.security.Authenticator;
+import org.eclipse.jetty.ee9.security.Authenticator.AuthConfiguration;
+import org.eclipse.jetty.ee9.security.DefaultAuthenticatorFactory;
+import org.eclipse.jetty.ee9.security.IdentityService;
+import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;

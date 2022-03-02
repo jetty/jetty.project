@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.annotations;
+package org.eclipse.jetty.ee9.annotations;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -38,11 +38,20 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.annotation.HandlesTypes;
-import org.eclipse.jetty.annotations.AnnotationParser.Handler;
-import org.eclipse.jetty.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.servlet.ServletContainerInitializerHolder;
-import org.eclipse.jetty.servlet.Source;
-import org.eclipse.jetty.servlet.Source.Origin;
+import org.eclipse.jetty.ee9.annotations.AnnotationParser.Handler;
+import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
+import org.eclipse.jetty.ee9.servlet.Source;
+import org.eclipse.jetty.ee9.servlet.Source.Origin;
+import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee9.webapp.FragmentConfiguration;
+import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
+import org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration;
+import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee9.webapp.WebDescriptor;
+import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
@@ -51,15 +60,6 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
-import org.eclipse.jetty.webapp.AbstractConfiguration;
-import org.eclipse.jetty.webapp.FragmentConfiguration;
-import org.eclipse.jetty.webapp.FragmentDescriptor;
-import org.eclipse.jetty.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.webapp.WebAppClassLoader;
-import org.eclipse.jetty.webapp.WebAppContext;
-import org.eclipse.jetty.webapp.WebDescriptor;
-import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,8 +75,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public static final String CLASS_INHERITANCE_MAP = "org.eclipse.jetty.classInheritanceMap";
     public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";
     public static final String CONTAINER_INITIALIZER_STARTER = "org.eclipse.jetty.containerInitializerStarter";
-    public static final String MULTI_THREADED = "org.eclipse.jetty.annotations.multiThreaded";
-    public static final String MAX_SCAN_WAIT = "org.eclipse.jetty.annotations.maxWait";
+    public static final String MULTI_THREADED = "org.eclipse.jetty.ee9.annotations.multiThreaded";
+    public static final String MAX_SCAN_WAIT = "org.eclipse.jetty.ee9.annotations.maxWait";
 
     public static final int DEFAULT_MAX_SCAN_WAIT = 60; /* time in sec */
     public static final boolean DEFAULT_MULTI_THREADED = true;

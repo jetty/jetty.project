@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.jaas;
+package org.eclipse.jetty.ee9.jaas;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,8 +26,8 @@ import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.integ.FrameworkRunner;
 import org.apache.directory.server.ldap.LdapServer;
-import org.eclipse.jetty.jaas.spi.LdapLoginModule;
-import org.eclipse.jetty.security.DefaultIdentityService;
+import org.eclipse.jetty.ee9.jaas.spi.LdapLoginModule;
+import org.eclipse.jetty.ee9.security.DefaultIdentityService;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.junit.Test;
@@ -120,7 +120,7 @@ public class JAASLdapLoginServiceTest
     private JAASLoginService jaasLoginService(String name)
     {
         JAASLoginService ls = new JAASLoginService("foo");
-        ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
+        ls.setCallbackHandlerClass("org.eclipse.jetty.ee9.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(new TestConfiguration(true));
         return ls;
@@ -175,7 +175,7 @@ public class JAASLdapLoginServiceTest
     public void testLdapUserIdentity() throws Exception
     {
         JAASLoginService ls = new JAASLoginService("foo");
-        ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
+        ls.setCallbackHandlerClass("org.eclipse.jetty.ee9.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(new TestConfiguration(false));
         Request request = new Request(null, null);
@@ -196,7 +196,7 @@ public class JAASLdapLoginServiceTest
     public void testLdapUserIdentityBindingLogin() throws Exception
     {
         JAASLoginService ls = new JAASLoginService("foo");
-        ls.setCallbackHandlerClass("org.eclipse.jetty.jaas.callback.DefaultCallbackHandler");
+        ls.setCallbackHandlerClass("org.eclipse.jetty.ee9.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(new TestConfiguration(true));
         Request request = new Request(null, null);

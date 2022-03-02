@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.websocket.jakarta.tests;
+package org.eclipse.jetty.ee9.websocket.jakarta.tests;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
@@ -24,28 +24,28 @@ import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.PathParam;
 import jakarta.websocket.server.ServerEndpoint;
+import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee9.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.BooleanClassSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.BooleanTypeSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.ByteClassSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.ByteTypeSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.CharacterClassSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.CharacterTypeSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.DoubleClassSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.DoubleTypeSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.FloatClassSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.FloatTypeSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.IntegerClassSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.IntegerTypeSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.LongClassSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.LongTypeSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.ShortClassSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.ShortTypeSocket;
+import org.eclipse.jetty.ee9.websocket.jakarta.tests.pathparam.StringClassSocket;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.BooleanClassSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.BooleanTypeSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.ByteClassSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.ByteTypeSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.CharacterClassSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.CharacterTypeSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.DoubleClassSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.DoubleTypeSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.FloatClassSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.FloatTypeSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.IntegerClassSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.IntegerTypeSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.LongClassSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.LongTypeSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.ShortClassSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.ShortTypeSocket;
-import org.eclipse.jetty.websocket.jakarta.tests.pathparam.StringClassSocket;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
