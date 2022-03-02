@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- ===================================================================== -->
+  <!-- Configure a factory for FileSessionStores                             -->
+  <!-- ===================================================================== -->
+  <Call name="addBean">
+   <Arg>
+    <New id="sessionDataStoreFactory" class="org.eclipse.jetty.server.session.FileSessionDataStoreFactory">
+       <Set name="deleteUnrestorableFiles" property="jetty.session.file.deleteUnrestorableFiles"/>
+       <Set name="storeDir" property="jetty.session.file.storeDir"/>
+       <Set name="savePeriodSec" property="jetty.session.savePeriod.seconds"/>
+       <Set name="gracePeriodSec" property="jetty.session.gracePeriod.seconds"/>
+    </New>
+   </Arg>
+  </Call>
+</Configure> 

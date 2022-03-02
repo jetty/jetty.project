@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+<Configure id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+  <Call name="addCustomizer">
+    <Arg>
+      <New class="org.eclipse.jetty.server.ForwardedRequestCustomizer">
+        <Set name="forwardedOnly" property="jetty.httpConfig.forwardedOnly"/>
+        <Set name="proxyAsAuthority" property="jetty.httpConfig.forwardedProxyAsAuthority"/>
+        <Set name="forwardedPortAsAuthority" property="jetty.httpConfig.forwardedPortAsAuthority"/>
+        <Set name="forwardedHeader" property="jetty.httpConfig.forwardedHeader"/>
+        <Set name="forwardedHostHeader" property="jetty.httpConfig.forwardedHostHeader"/>
+        <Set name="forwardedServerHeader" property="jetty.httpConfig.forwardedServerHeader"/>
+        <Set name="forwardedProtoHeader" property="jetty.httpConfig.forwardedProtoHeader"/>
+        <Set name="forwardedForHeader" property="jetty.httpConfig.forwardedForHeader"/>
+        <Set name="forwardedPortHeader" property="jetty.httpConfig.forwardedPortHeader"/>
+        <Set name="forwardedHttpsHeader" property="jetty.httpConfig.forwardedHttpsHeader"/>
+        <Set name="forwardedSslSessionIdHeader" property="jetty.httpConfig.forwardedSslSessionIdHeader"/>
+        <Set name="forwardedCipherSuiteHeader" property="jetty.httpConfig.forwardedCipherSuiteHeader"/>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

@@ -49,13 +49,8 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
     private static final Logger LOG = LoggerFactory.getLogger(SecureRequestCustomizer.class);
     public static final String X509_CERT = "org.eclipse.jetty.server.x509_cert";
-<<<<<<< Updated upstream
-
-    private String sslSessionAttribute = "org.eclipse.jetty.ee9.servlet.request.ssl_session";
-=======
     private String _sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session"; // TODO better name?
     private String _sslSessionDataAttribute = _sslSessionAttribute + "_data"; // TODO better name?
->>>>>>> Stashed changes
 
     private boolean _sniRequired;
     private boolean _sniHostCheck;

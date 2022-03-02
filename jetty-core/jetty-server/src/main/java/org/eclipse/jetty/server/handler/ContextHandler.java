@@ -52,32 +52,11 @@ import org.slf4j.LoggerFactory;
 
 public class ContextHandler extends Handler.Wrapper implements Attributes, Graceful
 {
-<<<<<<< Updated upstream
-    public static final int SERVLET_MAJOR_VERSION = 5;
-    public static final int SERVLET_MINOR_VERSION = 0;
-    public static final Class<?>[] SERVLET_LISTENER_TYPES =
-        {
-            ServletContextListener.class,
-            ServletContextAttributeListener.class,
-            ServletRequestListener.class,
-            ServletRequestAttributeListener.class,
-            HttpSessionIdListener.class,
-            HttpSessionListener.class,
-            HttpSessionAttributeListener.class
-        };
-
-    public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
-
-    public static final int EXTENDED_LISTENER_TYPE_INDEX = 0;
-
-    private static final String UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER = "Unimplemented {} - use org.eclipse.jetty.ee9.servlet.ServletContextHandler";
-=======
     // TODO where should the alias checking go?
     // TODO add protected paths to ServletContextHandler?
     // TODO what about ObjectFactory stuff
     // TODO what about a Context logger?
     // TODO init param stuff to ServletContextHandler
->>>>>>> Stashed changes
 
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
     private static final ThreadLocal<Context> __context = new ThreadLocal<>();
