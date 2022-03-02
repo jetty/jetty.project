@@ -25,6 +25,7 @@ import javax.net.ssl.SSLSession;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
@@ -33,7 +34,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.ssl.X509;
@@ -191,7 +191,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     @Override
-    public Request customize(Request request)
+    public Request customize(Request request, HttpFields.Mutable responseHeaders)
     {
         EndPoint endp = request.getConnectionMetaData().getConnection().getEndPoint();
         HttpURI uri = request.getHttpURI();
@@ -219,7 +219,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
 
         if (_stsField != null)
-            request.getHttpChannel().getResponse().getHeaders().add(_stsField); // TODO How to protect from reset?
+            responseHeaders.add(_stsField);
 
         return newSecureRequest(request, uri, sslEngine);
     }
@@ -333,7 +333,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                         X509Certificate[] certs = getCertChain(getHttpChannel().getConnector(), _sslSession);
 
                         byte[] bytes = _sslSession.getId();
-                        String idStr = TypeUtil.toHexString(bytes);
+                        String idStr = StringUtil.toHexString(bytes);
 
                         sslSessionData = new SslSessionData(keySize, certs, idStr);
                         _sslSession.putValue(key, sslSessionData);

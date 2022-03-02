@@ -19,6 +19,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
@@ -137,6 +138,11 @@ public class MockHttpStream implements HttpStream
             if (todo != null)
                 todo.run();
         }
+    }
+
+    @Override
+    public void prepareResponse(HttpFields.Mutable headers)
+    {
     }
 
     @Override

@@ -16,6 +16,7 @@ package org.eclipse.jetty.core.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Callback;
@@ -29,6 +30,8 @@ public interface HttpStream extends Callback
     Content readContent();
 
     void demandContent(); // Calls back on Channel#onDataAvailable
+
+    void prepareResponse(HttpFields.Mutable headers);
 
     // TODO add MetaData.Request request.
     void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content);
@@ -80,6 +83,7 @@ public interface HttpStream extends Callback
             return _wrapped;
         }
 
+        @Override
         public final String getId()
         {
             return _wrapped.getId();
@@ -91,61 +95,79 @@ public interface HttpStream extends Callback
             return _wrapped.getNanoTimeStamp();
         }
 
+        @Override
         public Content readContent()
         {
             return _wrapped.readContent();
         }
 
+        @Override
         public void demandContent()
         {
             _wrapped.demandContent();
         }
 
+        @Override
+        public void prepareResponse(HttpFields.Mutable headers)
+        {
+            _wrapped.prepareResponse(headers);
+        }
+
+        @Override
         public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
         {
             _wrapped.send(response, last, callback, content);
         }
 
+        @Override
         public final boolean isPushSupported()
         {
             return _wrapped.isPushSupported();
         }
 
+        @Override
         public void push(MetaData.Request request)
         {
             _wrapped.push(request);
         }
 
+        @Override
         public final boolean isCommitted()
         {
             return _wrapped.isCommitted();
         }
 
+        @Override
         public final boolean isComplete()
         {
             return _wrapped.isComplete();
         }
 
+        @Override
         public void upgrade(Connection connection)
         {
             _wrapped.upgrade(connection);
         }
 
+        @Override
         public final Throwable consumeAll()
         {
             return _wrapped.consumeAll();
         }
 
+        @Override
         public void succeeded()
         {
             _wrapped.succeeded();
         }
 
+        @Override
         public void failed(Throwable x)
         {
             _wrapped.failed(x);
         }
 
+        @Override
         public InvocationType getInvocationType()
         {
             return _wrapped.getInvocationType();
