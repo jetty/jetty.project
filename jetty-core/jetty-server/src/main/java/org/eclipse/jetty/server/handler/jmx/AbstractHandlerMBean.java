@@ -13,12 +13,9 @@
 
 package org.eclipse.jetty.server.handler.jmx;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.jmx.ObjectMBean;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,18 +44,17 @@ public class AbstractHandlerMBean extends ObjectMBean
                 if (context != null)
                     return context;
             }
-            else if (_managed instanceof AbstractHandler)
+            else if (_managed instanceof Handler.Abstract handler)
             {
-                AbstractHandler handler = (AbstractHandler)_managed;
                 Server server = handler.getServer();
                 if (server != null)
                 {
-                    ContextHandler context =
-                        AbstractHandlerContainer.findContainerOf(server,
-                            ContextHandler.class, handler);
-
-                    if (context != null)
-                        basis = getContextName(context);
+// TODO                   ContextHandler context =
+//                        AbstractHandlerContainer.findContainerOf(server,
+//                            ContextHandler.class, handler);
+//
+//                    if (context != null)
+//                        basis = getContextName(context);
                 }
             }
             if (basis != null)
@@ -79,22 +75,22 @@ public class AbstractHandlerMBean extends ObjectMBean
                 name = "ROOT";
         }
 
-        if (name == null && context.getBaseResource() != null)
-        {
-            try
-            {
-                if (context.getBaseResource().getFile() != null)
-                    name = context.getBaseResource().getFile().getName();
-            }
-            catch (IOException e)
-            {
-                LOG.trace("IGNORED", e);
-                name = context.getBaseResource().getName();
-            }
-        }
+// TODO       if (name == null && context.getBaseResource() != null)
+//        {
+//            try
+//            {
+//                if (context.getBaseResource().getFile() != null)
+//                    name = context.getBaseResource().getFile().getName();
+//            }
+//            catch (IOException e)
+//            {
+//                LOG.trace("IGNORED", e);
+//                name = context.getBaseResource().getName();
+//            }
+//        }
 
-        if (context.getVirtualHosts() != null && context.getVirtualHosts().length > 0)
-            name = '"' + name + "@" + context.getVirtualHosts()[0] + '"';
+// TODO       if (context.getVirtualHosts() != null && context.getVirtualHosts().length > 0)
+//            name = '"' + name + "@" + context.getVirtualHosts()[0] + '"';
 
         return name;
     }

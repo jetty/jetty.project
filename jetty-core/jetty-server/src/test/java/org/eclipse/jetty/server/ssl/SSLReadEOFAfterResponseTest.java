@@ -22,16 +22,19 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import javax.net.ssl.SSLContext;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
@@ -56,33 +59,49 @@ public class SSLReadEOFAfterResponseTest
 
         String content = "the quick brown fox jumped over the lazy dog";
         byte[] bytes = content.getBytes(StandardCharsets.UTF_8);
-        server.setHandler(new AbstractHandler()
+        server.setHandler(new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                // First: read the whole content.
-                InputStream input = request.getInputStream();
+                // First: read the whole content exactly
                 int length = bytes.length;
                 while (length > 0)
                 {
-                    int read = input.read();
-                    if (read < 0)
-                        throw new IllegalStateException();
-                    --length;
+                    Content c = request.readContent();
+                    if (c == null)
+                    {
+                        try (Blocking.Runnable blocker = Blocking.runnable())
+                        {
+                            request.demandContent(blocker);
+                            blocker.block();
+                        }
+                        continue;
+                    }
+                    if (c.hasRemaining())
+                    {
+                        length -= c.remaining();
+                        c.release();
+                    }
+                    if (c == Content.EOF)
+                        callback.failed(new IllegalStateException());
                 }
 
                 // Second: write the response.
                 response.setContentLength(bytes.length);
-                response.getOutputStream().write(bytes);
-                response.flushBuffer();
+                try (Blocking.Callback blocker = Blocking.callback())
+                {
+                    response.write(true, blocker, BufferUtil.toBuffer(bytes));
+                    blocker.block();
+                }
 
                 sleep(idleTimeout / 2);
 
                 // Third, read the EOF.
-                int read = input.read();
-                if (read >= 0)
+                Content content = request.readContent();
+                if (!content.isLast())
                     throw new IllegalStateException();
+                callback.succeeded();
             }
         });
         server.start();

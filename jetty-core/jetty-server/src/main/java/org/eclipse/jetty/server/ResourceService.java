@@ -13,51 +13,21 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.InvalidPathException;
-import java.util.Collection;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.CompressedContentFormat;
-import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.http.QuotedCSV;
-import org.eclipse.jetty.http.QuotedQualityCSV;
-import org.eclipse.jetty.io.WriterOutputStream;
-import org.eclipse.jetty.server.resource.HttpContentRangeWriter;
-import org.eclipse.jetty.server.resource.InputStreamRangeWriter;
-import org.eclipse.jetty.server.resource.RangeWriter;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiPartOutputStream;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.stream;
-import static java.util.Collections.emptyList;
-import static org.eclipse.jetty.http.HttpHeaderValue.IDENTITY;
 
 /**
  * Abstract resource service, used by DefaultServlet and ResourceHandler
@@ -199,8 +169,8 @@ public class ResourceService
         _gzipEquivalentFileExtensions = gzipEquivalentFileExtensions;
     }
 
-    public boolean doGet(HttpServletRequest request, HttpServletResponse response)
-        throws ServletException, IOException
+    /* TODO
+    public boolean doGet(Request request, Response response) throws IOException
     {
         String servletPath = null;
         String pathInfo = null;
@@ -486,8 +456,6 @@ public class ResourceService
         response.flushBuffer();
     }
 
-    /* Check modification date headers.
-     */
     protected boolean passConditionalHeaders(HttpServletRequest request, HttpServletResponse response, HttpContent content)
         throws IOException
     {
@@ -886,6 +854,8 @@ public class ResourceService
                 response.setHeader(_cacheControl.getName(), _cacheControl.getValue());
         }
     }
+
+    */
 
     public interface WelcomeFactory
     {

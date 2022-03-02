@@ -26,14 +26,14 @@ import java.util.concurrent.Executors;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.Assertions;
@@ -49,7 +49,7 @@ import static java.time.Duration.ofSeconds;
 @Disabled
 public class SlowClientsTest
 {
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger LOG = LoggerFactory.getLogger(SlowClientsTest.class);
 
     @Test
     public void testSlowClientsWithSmallThreadPool() throws Exception
@@ -70,16 +70,29 @@ public class SlowClientsTest
             ServerConnector connector = new ServerConnector(server, 1, 1, sslContextFactory);
             connector.setPort(8888);
             server.addConnector(connector);
-            server.setHandler(new AbstractHandler()
+            server.setHandler(new Handler.Processor()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public void process(Request request, Response response, Callback callback)
                 {
-                    baseRequest.setHandled(true);
-                    logger.info("SERVING {}", target);
+                    LOG.info("SERVING {}", request);
                     // Write some big content.
-                    response.getOutputStream().write(new byte[contentLength]);
-                    logger.info("SERVED {}", target);
+                    response.write(true, new Callback()
+                        {
+                            @Override
+                            public void succeeded()
+                            {
+                                callback.succeeded();
+                                LOG.info("SERVED {}", request);
+                            }
+
+                            @Override
+                            public void failed(Throwable x)
+                            {
+                                callback.failed(x);
+                            }
+                        },
+                        BufferUtil.toBuffer(new byte[contentLength]));
                 }
             });
             server.start();
@@ -88,7 +101,7 @@ public class SlowClientsTest
 
             Assertions.assertTimeoutPreemptively(ofSeconds(10), () ->
             {
-                CompletableFuture[] futures = new CompletableFuture[2 * maxThreads];
+                CompletableFuture<?>[] futures = new CompletableFuture[2 * maxThreads];
                 ExecutorService executor = Executors.newFixedThreadPool(futures.length);
                 for (int i = 0; i < futures.length; i++)
                 {
@@ -119,7 +132,7 @@ public class SlowClientsTest
                                 if (read < 0)
                                     break;
                             }
-                            logger.info("FINISHED {}", target);
+                            LOG.info("FINISHED {}", target);
                         }
                         catch (IOException x)
                         {

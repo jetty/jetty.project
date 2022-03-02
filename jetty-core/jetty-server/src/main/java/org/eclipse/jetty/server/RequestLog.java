@@ -15,24 +15,15 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.server.handler.RequestLogHandler;
-
 /**
- * A <code>RequestLog</code> can be attached to a {@link org.eclipse.jetty.server.handler.RequestLogHandler} to enable
- * logging of requests/responses.
- *
- * @see RequestLogHandler#setRequestLog(RequestLog)
+ * TODO
  * @see Server#setRequestLog(RequestLog)
  */
 public interface RequestLog
 {
     /**
      * @param request The request to log.
-     * @param response The response to log.  Note that for some requests
-     * the response instance may not have been fully populated (Eg 400 bad request
-     * responses are sent without a servlet response object).  Thus for basic
-     * log information it is best to consult {@link Response#getCommittedMetaData()}
-     * and {@link Response#getHttpChannel()} directly.
+     * @param response The response to log.
      */
     void log(Request request, Response response);
 

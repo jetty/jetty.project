@@ -16,17 +16,13 @@ package org.eclipse.jetty.server.handler;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.servlet.ServletContextAttributeEvent;
-import jakarta.servlet.ServletContextAttributeListener;
-import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Enable Jetty style JMX MBeans from within a Context
  */
-public class ManagedAttributeListener implements ServletContextListener, ServletContextAttributeListener
+public class ManagedAttributeListener
 {
     private static final Logger LOG = LoggerFactory.getLogger(ManagedAttributeListener.class);
 
@@ -46,6 +42,7 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
             LOG.debug("managedAttributes {}", _managedAttributes);
     }
 
+    /* TODO
     @Override
     public void attributeReplaced(ServletContextAttributeEvent event)
     {
@@ -71,7 +68,7 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
     public void contextInitialized(ServletContextEvent event)
     {
         // Update existing attributes
-        for (String name : _context.getServletContext().getAttributeNamesSet())
+        for (String name : _context.getServletContext().getAttributeNameSet())
         {
             if (_managedAttributes.contains(name))
                 updateBean(name, null, event.getServletContext().getAttribute(name));
@@ -81,7 +78,7 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
     @Override
     public void contextDestroyed(ServletContextEvent event)
     {
-        for (String name : _context.getServletContext().getAttributeNamesSet())
+        for (String name : _context.getServletContext().getAttributeNameSet())
         {
             if (_managedAttributes.contains(name))
                 updateBean(name, event.getServletContext().getAttribute(name), null);
@@ -94,4 +91,6 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
             LOG.debug("update {} {}->{} on {}", name, oldBean, newBean, _context);
         _context.updateBean(oldBean, newBean, false);
     }
+
+     */
 }

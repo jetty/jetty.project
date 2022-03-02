@@ -12,7 +12,7 @@
 //
 
 /**
- * Jetty Server : Server JMX Integration
+ * Jetty Core Server : JMX Integration
  */
 package org.eclipse.jetty.server.jmx;
 

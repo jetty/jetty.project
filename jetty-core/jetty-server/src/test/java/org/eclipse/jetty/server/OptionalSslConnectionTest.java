@@ -20,12 +20,10 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -239,12 +237,12 @@ public class OptionalSslConnectionTest
         }
     }
 
-    private static class EmptyServerHandler extends AbstractHandler
+    private static class EmptyServerHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            jettyRequest.setHandled(true);
+            callback.succeeded();
         }
     }
 }

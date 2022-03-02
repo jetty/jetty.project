@@ -54,18 +54,18 @@ import org.slf4j.LoggerFactory;
  *     try(Blocking.Callback callback = Blocking.callback())
  *     {
  *         someMethod(callback);
- *         onAction.block();
+ *         callback.block();
  *     }
  * </pre>
  *
  * <h2>Shared Callback</h2>
  * <pre>
- *     Blocking.SharedCallback blocker = new Blocking.Shared();
+ *     Blocking.Shared blocker = new Blocking.Shared();
  *     // ...
- *     try(Blocking.Runnable onAction = blocker.callback())
+ *     try(Blocking.Callback callback = blocker.callback())
  *     {
- *         someMethod(onAction);
- *         onAction.block();
+ *         someMethod(callback);
+ *         callback.block();
  *     }
  * </pre>
  */

@@ -14,9 +14,12 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -59,7 +62,7 @@ public interface Attributes
      * @return Set of attribute names
      */
     // TODO: change to getAttributeNames() once jetty-core is cleaned of servlet-api usages
-    Set<String> getAttributeNamesSet();
+    Set<String> getAttributeNameSet();
 
     /**
      * Clear all attribute names
@@ -133,9 +136,9 @@ public interface Attributes
         }
 
         @Override
-        public Set<String> getAttributeNamesSet()
+        public Set<String> getAttributeNameSet()
         {
-            return _attributes.getAttributeNamesSet();
+            return _attributes.getAttributeNameSet();
         }
 
         @Override
@@ -198,7 +201,7 @@ public interface Attributes
         }
 
         @Override
-        public Set<String> getAttributeNamesSet()
+        public Set<String> getAttributeNameSet()
         {
             return _names;
         }
@@ -222,8 +225,13 @@ public interface Attributes
 
         public void addAll(Attributes attributes)
         {
-            for (String name : attributes.getAttributeNamesSet())
+            for (String name : attributes.getAttributeNameSet())
                 setAttribute(name, attributes.getAttribute(name));
+        }
+
+        public Set<Map.Entry<String, Object>> getAttributeEntrySet()
+        {
+            return _map.entrySet();
         }
 
         // TODO: remove? or fix (don't want the wrapped and wrapper to match)
@@ -308,7 +316,7 @@ public interface Attributes
         }
 
         @Override
-        public Set<String> getAttributeNamesSet()
+        public Set<String> getAttributeNameSet()
         {
             return Collections.unmodifiableSet(keySet());
         }
@@ -342,7 +350,7 @@ public interface Attributes
 
         public void addAll(Attributes attributes)
         {
-            for (String name : attributes.getAttributeNamesSet())
+            for (String name : attributes.getAttributeNameSet())
                 setAttribute(name, attributes.getAttribute(name));
         }
 
@@ -376,11 +384,17 @@ public interface Attributes
         };
 
         private final Attributes _persistent;
-        private final java.util.concurrent.ConcurrentMap<String, Object> _map = new ConcurrentHashMap<>();
+        private final Attributes _layer;
 
         public Layer(Attributes persistent)
         {
+            this(persistent, new Attributes.Mapped());
+        }
+
+        public Layer(Attributes persistent, Attributes layer)
+        {
             _persistent = persistent;
+            _layer = layer;
         }
 
         @Override
@@ -389,7 +403,7 @@ public interface Attributes
             Object p = _persistent.getAttribute(name);
             try
             {
-                Object v = _map.put(name, REMOVED);
+                Object v = _layer.setAttribute(name, REMOVED);
                 if (v == REMOVED)
                     return null;
                 if (v != null)
@@ -399,7 +413,7 @@ public interface Attributes
             finally
             {
                 if (p == null)
-                    _map.remove(name);
+                    _layer.removeAttribute(name);
             }
         }
 
@@ -408,29 +422,30 @@ public interface Attributes
         {
             if (attribute == null)
                 return removeAttribute(name);
-            Object v = _map.put(name, attribute);
+            Object v = _layer.setAttribute(name, attribute);
             return v == REMOVED ? null : v;
         }
 
         @Override
         public Object getAttribute(String name)
         {
-            Object v = _map.get(name);
+            Object v = _layer.getAttribute(name);
             if (v != null)
                 return v == REMOVED ? null : v;
             return _persistent.getAttribute(name);
         }
 
         @Override
-        public Set<String> getAttributeNamesSet()
+        public Set<String> getAttributeNameSet()
         {
-            Set<String> names = new HashSet<>(_persistent.getAttributeNamesSet());
-            for (Map.Entry<String, Object> entry : _map.entrySet())
+            Set<String> names = new HashSet<>(_persistent.getAttributeNameSet());
+
+            for (String name : _layer.getAttributeNameSet())
             {
-                if (entry.getValue() == REMOVED)
-                    names.remove(entry.getKey());
+                if (_layer.getAttribute(name) == REMOVED)
+                    names.remove(name);
                 else
-                    names.add(entry.getKey());
+                    names.add(name);
             }
             return Collections.unmodifiableSet(names);
         }
@@ -438,9 +453,9 @@ public interface Attributes
         @Override
         public void clearAttributes()
         {
-            for (String n : _persistent.getAttributeNamesSet())
-                _map.put(n, REMOVED);
-            _map.entrySet().removeIf(e -> e.getValue() != REMOVED);
+            _layer.clearAttributes();
+            for (String name : _persistent.getAttributeNameSet())
+                _layer.setAttribute(name, REMOVED);
         }
 
         // TODO: remove? or fix (don't want the wrapped and wrapper to match)
@@ -448,7 +463,7 @@ public interface Attributes
         public int hashCode()
         {
             int hash = 0;
-            for (String name : getAttributeNamesSet())
+            for (String name : getAttributeNameSet())
                 hash += name.hashCode() ^ getAttribute(name).hashCode();
             return hash;
         }
@@ -460,8 +475,8 @@ public interface Attributes
             if (o instanceof Attributes)
             {
                 Attributes a = (Attributes)o;
-                Set<String> ours = getAttributeNamesSet();
-                Set<String> theirs = getAttributeNamesSet();
+                Set<String> ours = getAttributeNameSet();
+                Set<String> theirs = getAttributeNameSet();
                 if (!ours.equals(theirs))
                     return false;
 

@@ -13,15 +13,9 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
-
-import jakarta.servlet.AsyncEvent;
-import jakarta.servlet.AsyncListener;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Handler to adjust the idle timeout of requests while dispatched.
@@ -36,7 +30,7 @@ import org.eclipse.jetty.server.Request;
  *   &lt;/Set&gt;
  * </pre>
  */
-public class IdleTimeoutHandler extends HandlerWrapper
+public class IdleTimeoutHandler extends Handler.Wrapper
 {
     private long _idleTimeoutMs = 1000;
     private boolean _applyToAsync = false;
@@ -70,47 +64,20 @@ public class IdleTimeoutHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
-        final HttpChannel channel = baseRequest.getHttpChannel();
-        final long idle_timeout = baseRequest.getHttpChannel().getIdleTimeout();
-        channel.setIdleTimeout(_idleTimeoutMs);
+        Request.Processor processor = super.handle(request);
+        if (processor == null)
+            return null;
 
-        try
+        return (rq, rs, cb) ->
         {
-            super.handle(target, baseRequest, request, response);
-        }
-        finally
-        {
-            if (_applyToAsync && request.isAsyncStarted())
+            long idleTimeout = 0; // TODO rq.getHttpChannel().getIdleTimeout();
+            // TODO rq.getHttpChannel().setIdleTimeout(_idleTimeoutMs);
+            processor.process(rq, rs, Callback.from(cb, () ->
             {
-                request.getAsyncContext().addListener(new AsyncListener()
-                {
-                    @Override
-                    public void onTimeout(AsyncEvent event) throws IOException
-                    {
-                    }
-
-                    @Override
-                    public void onStartAsync(AsyncEvent event) throws IOException
-                    {
-                    }
-
-                    @Override
-                    public void onError(AsyncEvent event) throws IOException
-                    {
-                        channel.setIdleTimeout(idle_timeout);
-                    }
-
-                    @Override
-                    public void onComplete(AsyncEvent event) throws IOException
-                    {
-                        channel.setIdleTimeout(idle_timeout);
-                    }
-                });
-            }
-            else
-                channel.setIdleTimeout(idle_timeout);
-        }
+                // TODO rq.getHttpChannel().setIdleTimeout(idleTimeout)
+            }));
+        };
     }
 }

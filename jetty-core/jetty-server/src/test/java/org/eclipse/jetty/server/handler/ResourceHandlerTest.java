@@ -39,6 +39,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_LENGTH;
@@ -58,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * TODO: increase the testing going on here
  */
+@Disabled // TODO
 public class ResourceHandlerTest
 {
     private static String LN = System.getProperty("line.separator");

@@ -19,19 +19,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceContentFactory;
 import org.eclipse.jetty.server.ResourceService;
 import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
-import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -66,10 +62,6 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     {
         this(new ResourceService()
         {
-            @Override
-            protected void notFound(HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-            }
         });
         _resourceService.setGzipEquivalentFileExtensions(new ArrayList<>(Arrays.asList(new String[]{".svgz"})));
     }
@@ -94,10 +86,10 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     @Override
     public void doStart() throws Exception
     {
-        Context scontext = ContextHandler.getCurrentContext();
-        _context = (scontext == null ? null : scontext.getContextHandler());
-        if (_mimeTypes == null)
-            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
+        Context context = ContextHandler.getCurrentContext();
+// TODO        _context = (context == null ? null : context.getContextHandler());
+//        if (_mimeTypes == null)
+//            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
 
         _resourceService.setContentFactory(new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats()));
         _resourceService.setWelcomeFactory(this);
@@ -158,16 +150,16 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
         {
             r = _baseResource.addPath(path);
 
-            if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Rejected alias resource={} alias={}", r, r.getAlias());
-                throw new IllegalStateException("Rejected alias reference: " + path);
-            }
-        }
-        else if (_context != null)
-        {
-            r = _context.getResource(path);
+// TODO           if (r.isAlias() && (_context == null || !_context.checkAlias(path, r)))
+//            {
+//                if (LOG.isDebugEnabled())
+//                    LOG.debug("Rejected alias resource={} alias={}", r, r.getAlias());
+//                throw new IllegalStateException("Rejected alias reference: " + path);
+//            }
+//        }
+//        else if (_context != null)
+//        {
+//            r = _context.getResource(path);
         }
 
         if ((r == null || !r.exists()) && path.endsWith("/jetty-dir.css"))
@@ -221,23 +213,22 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
-        if (baseRequest.isHandled())
-            return;
 
-        if (!HttpMethod.GET.is(request.getMethod()) && !HttpMethod.HEAD.is(request.getMethod()))
-        {
-            // try another handler
-            super.handle(target, baseRequest, request, response);
-            return;
-        }
-
-        if (_resourceService.doGet(request, response))
-            baseRequest.setHandled(true);
-        else
-            // no resource - try other handlers
-            super.handle(target, baseRequest, request, response);
+// TODO       if (!HttpMethod.GET.is(request.getMethod()) && !HttpMethod.HEAD.is(request.getMethod()))
+//        {
+//            // try another handler
+//            super.handle(target, baseRequest, request, response);
+//            return;
+//        }
+//
+//        if (_resourceService.doGet(request, response))
+//            baseRequest.setHandled(true);
+//        else
+//            // no resource - try other handlers
+//            super.handle(target, baseRequest, request, response);
+        return null;
     }
 
     /**

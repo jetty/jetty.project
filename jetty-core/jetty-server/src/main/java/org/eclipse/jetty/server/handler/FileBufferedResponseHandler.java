@@ -14,26 +14,15 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Objects;
 
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpOutput.Interceptor;
-import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.IteratingCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * <p>
- * A Handler that can apply a {@link org.eclipse.jetty.server.HttpOutput.Interceptor}
+ * A Handler that can apply a
  * mechanism to buffer the entire response content until the output is closed.
  * This allows the commit to be delayed until the response is complete and thus
  * headers and response status can be changed while writing the body.
@@ -65,6 +54,8 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
         _tempDir = Objects.requireNonNull(tempDir);
     }
 
+    // TODO
+    /*
     @Override
     protected BufferedInterceptor newBufferedInterceptor(HttpChannel httpChannel, Interceptor interceptor)
     {
@@ -231,4 +222,5 @@ public class FileBufferedResponseHandler extends BufferedResponseHandler
             icb.iterate();
         }
     }
+    */
 }

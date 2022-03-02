@@ -15,7 +15,6 @@
     <module>jetty-alpn</module>
     <module>jetty-bom</module>
     <module>jetty-client</module>
-    <module>jetty-core-server</module>
     <module>jetty-deploy</module>
     <module>jetty-fcgi</module>
     <module>jetty-http</module>
@@ -28,6 +27,7 @@
     <module>jetty-quic</module>
     <module>jetty-rewrite</module>
     <module>jetty-server</module>
+    <module>jetty-session</module>
     <module>jetty-slf4j-impl</module>
     <module>jetty-start</module>
     <module>jetty-unixdomain-server</module>

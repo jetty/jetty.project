@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
@@ -22,17 +21,13 @@ import java.util.Deque;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
 
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
@@ -64,7 +59,7 @@ import org.slf4j.LoggerFactory;
  * a thread is available.
  * <p>This is a simpler alternative to DosFilter</p>
  */
-public class ThreadLimitHandler extends HandlerWrapper
+public class ThreadLimitHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ThreadLimitHandler.class);
 
@@ -160,16 +155,17 @@ public class ThreadLimitHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
         // Allow ThreadLimit to be enabled dynamically without restarting server
         if (!_enabled)
         {
             // if disabled, handle normally
-            super.handle(target, baseRequest, request, response);
+            return super.handle(request);
         }
         else
         {
+            /*
             // Get the remote address of the request
             Remote remote = getRemote(baseRequest);
             if (remote == null)
@@ -232,7 +228,10 @@ public class ThreadLimitHandler extends HandlerWrapper
                         permit.close();
                 }
             }
+
+             */
         }
+        return null;
     }
 
     private Remote getRemote(Request baseRequest)
@@ -278,9 +277,12 @@ public class ThreadLimitHandler extends HandlerWrapper
         // If no remote IP from a header, determine it directly from the channel
         // Do not use the request methods, as they may have been lied to by the 
         // RequestCustomizer!
-        InetSocketAddress inetAddr = baseRequest.getHttpChannel().getRemoteAddress();
-        if (inetAddr != null && inetAddr.getAddress() != null)
-            return inetAddr.getAddress().getHostAddress();
+        if (baseRequest.getConnectionMetaData().getRemoteAddress() instanceof InetSocketAddress inetAddr)
+        {
+            // TODO ????
+            if (inetAddr.getAddress() != null)
+                return inetAddr.getAddress().getHostAddress();
+        }
         return null;
     }
 
@@ -290,7 +292,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         // This is the value from the closest proxy and the only one that
         // can be trusted.
         RFC7239 rfc7239 = new RFC7239();
-        for (HttpField field : request.getHttpFields())
+        for (HttpField field : request.getHeaders())
         {
             if (_forwardedHeader.equalsIgnoreCase(field.getName()))
                 rfc7239.addValue(field.getValue());
@@ -308,7 +310,7 @@ public class ThreadLimitHandler extends HandlerWrapper
         // This is the value from the closest proxy and the only one that
         // can be trusted.
         String forwardedFor = null;
-        for (HttpField field : request.getHttpFields())
+        for (HttpField field : request.getHeaders())
         {
             if (_forwardedHeader.equalsIgnoreCase(field.getName()))
                 forwardedFor = field.getValue();

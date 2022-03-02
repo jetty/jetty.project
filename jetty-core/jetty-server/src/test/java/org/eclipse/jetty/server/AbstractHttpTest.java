@@ -22,14 +22,11 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -99,7 +96,7 @@ public abstract class AbstractHttpTest
         }
     }
 
-    protected class ThrowExceptionOnDemandHandler extends AbstractHandler
+    protected class ThrowExceptionOnDemandHandler extends Handler.Processor
     {
         private final boolean throwException;
         private volatile Throwable failure;
@@ -110,10 +107,11 @@ public abstract class AbstractHttpTest
         }
 
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             if (throwException)
                 throw new TestCommitException();
+            callback.succeeded();
         }
 
         protected void markFailed(Throwable x)

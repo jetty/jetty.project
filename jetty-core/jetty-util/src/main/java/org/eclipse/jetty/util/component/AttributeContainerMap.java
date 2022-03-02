@@ -62,7 +62,7 @@ public class AttributeContainerMap extends ContainerLifeCycle implements Attribu
     }
 
     @Override
-    public Set<String> getAttributeNamesSet()
+    public Set<String> getAttributeNameSet()
     {
         try (AutoLock l = _lock.lock())
         {

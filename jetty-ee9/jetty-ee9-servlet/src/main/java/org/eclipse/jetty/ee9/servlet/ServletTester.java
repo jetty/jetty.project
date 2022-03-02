@@ -146,7 +146,7 @@ public class ServletTester extends ContainerLifeCycle
 
     public Enumeration<String> getAttributeNames()
     {
-        return Collections.enumeration(_context.getAttributeNamesSet());
+        return Collections.enumeration(_context.getAttributeNameSet());
     }
 
     public Attributes getAttributes()

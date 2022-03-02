@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
  *
  * @see <a href="https://tools.ietf.org/html/rfc2046#section-5.1">https://tools.ietf.org/html/rfc2046#section-5.1</a>
  * @see <a href="https://tools.ietf.org/html/rfc2045">https://tools.ietf.org/html/rfc2045</a>
+ *
+ * TODO convert to use a {@link Content.Provider} and to be async
  */
 public class MultiPartParser
 {

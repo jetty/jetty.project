@@ -87,7 +87,7 @@ public class AttributesMap implements Attributes, Dumpable
     }
 
     @Override
-    public Set<String> getAttributeNamesSet()
+    public Set<String> getAttributeNameSet()
     {
         return Collections.unmodifiableSet(keySet());
     }
@@ -103,16 +103,16 @@ public class AttributesMap implements Attributes, Dumpable
         if (attrs instanceof AttributesMap)
             return Collections.enumeration(((AttributesMap)attrs).keySet());
 
-        List<String> names = new ArrayList<>(attrs.getAttributeNamesSet());
+        List<String> names = new ArrayList<>(attrs.getAttributeNameSet());
         return Collections.enumeration(names);
     }
 
-    public static Set<String> getAttributeNamesSetCopy(Attributes attrs)
+    public static Set<String> getAttributeNameSetCopy(Attributes attrs)
     {
         if (attrs instanceof AttributesMap)
             return ((AttributesMap)attrs).keySet();
 
-        List<String> names = new ArrayList<>(attrs.getAttributeNamesSet());
+        List<String> names = new ArrayList<>(attrs.getAttributeNameSet());
         return new HashSet<>(names);
     }
 
@@ -145,7 +145,7 @@ public class AttributesMap implements Attributes, Dumpable
 
     public void addAll(Attributes attributes)
     {
-        for (String name : attributes.getAttributeNamesSet())
+        for (String name : attributes.getAttributeNameSet())
             setAttribute(name, attributes.getAttribute(name));
     }
 

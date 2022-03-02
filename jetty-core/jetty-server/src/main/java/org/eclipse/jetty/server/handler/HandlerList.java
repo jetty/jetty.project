@@ -13,21 +13,14 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.io.IOException;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
 
 /**
  * HandlerList.
- * This extension of {@link HandlerCollection} will call
- * each contained handler in turn until either an exception is thrown, the response
- * is committed or a positive response status is set.
+ * @deprecated
  */
-public class HandlerList extends HandlerCollection
+@Deprecated
+public class HandlerList extends Handler.Collection
 {
     public HandlerList()
     {
@@ -36,22 +29,5 @@ public class HandlerList extends HandlerCollection
     public HandlerList(Handler... handlers)
     {
         super(handlers);
-    }
-
-    @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-        throws IOException, ServletException
-    {
-        Handler[] handlers = getHandlers();
-
-        if (handlers != null && isStarted())
-        {
-            for (int i = 0; i < handlers.length; i++)
-            {
-                handlers[i].handle(target, baseRequest, request, response);
-                if (baseRequest.isHandled())
-                    return;
-            }
-        }
     }
 }
