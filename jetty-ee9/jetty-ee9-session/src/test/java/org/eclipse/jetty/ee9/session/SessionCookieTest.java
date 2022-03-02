@@ -11,15 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.ee9.session;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import jakarta.servlet.SessionCookieConfig;
-import jakarta.servlet.http.HttpServletRequest;
+import org.eclipse.jetty.ee9.session.SessionHandler;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.session.AbstractSessionCache;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.session.NullSessionDataStore;
+import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.SessionData;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -42,12 +48,6 @@ public class SessionCookieTest
         @Override
         public void shutdown()
         {
-        }
-
-        @Override
-        public Session newSession(SessionData data)
-        {
-            return null;
         }
 
         @Override
@@ -75,7 +75,7 @@ public class SessionCookieTest
         }
 
         @Override
-        public Session newSession(HttpServletRequest request, SessionData data)
+        public Session newSession(SessionData data)
         {
             return null;
         }
@@ -107,7 +107,7 @@ public class SessionCookieTest
         }
 
         @Override
-        public String renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
+        public String renewSessionId(String oldClusterId, String oldNodeId, Request request)
         {
             return "";
         }

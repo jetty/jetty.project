@@ -20,8 +20,11 @@ import org.eclipse.jetty.ee9.security.Authenticator.AuthConfiguration;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.ClientCertAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.ConfigurableSpnegoAuthenticator;
+import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.ee9.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.ee9.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.ee9.security.authentication.SslClientCertAuthenticator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Constraint;
@@ -32,18 +35,18 @@ import org.slf4j.LoggerFactory;
 /**
  * The Default Authenticator Factory.
  * Uses the {@link AuthConfiguration#getAuthMethod()} to select an {@link Authenticator} from: <ul>
- * <li>{@link org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator}</li>
- * <li>{@link org.eclipse.jetty.ee9.security.authentication.DigestAuthenticator}</li>
- * <li>{@link org.eclipse.jetty.ee9.security.authentication.FormAuthenticator}</li>
- * <li>{@link org.eclipse.jetty.ee9.security.authentication.ClientCertAuthenticator}</li>
- * <li>{@link org.eclipse.jetty.ee9.security.authentication.SslClientCertAuthenticator}</li>
+ * <li>{@link BasicAuthenticator}</li>
+ * <li>{@link DigestAuthenticator}</li>
+ * <li>{@link FormAuthenticator}</li>
+ * <li>{@link ClientCertAuthenticator}</li>
+ * <li>{@link SslClientCertAuthenticator}</li>
  * </ul>
- * All authenticators derived from {@link org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator} are
- * wrapped with a {@link org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication}
+ * All authenticators derived from {@link LoginAuthenticator} are
+ * wrapped with a {@link DeferredAuthentication}
  * instance, which is used if authentication is not mandatory.
  *
- * The Authentications from the {@link org.eclipse.jetty.ee9.security.authentication.FormAuthenticator} are always wrapped in a
- * {@link org.eclipse.jetty.ee9.security.authentication.SessionAuthentication}
+ * The Authentications from the {@link FormAuthenticator} are always wrapped in a
+ * {@link SessionAuthentication}
  * <p>
  * If a {@link LoginService} has not been set on this factory, then
  * the service is selected by searching the {@link Server#getBeans(Class)} results for

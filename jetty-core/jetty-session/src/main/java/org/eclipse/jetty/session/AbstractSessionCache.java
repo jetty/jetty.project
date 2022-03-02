@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -19,7 +19,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -58,9 +57,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     protected SessionDataStore _sessionDataStore;
 
     /**
-     * The SessionHandler related to this SessionCache
+     * The SessionManager related to this SessionCache
      */
-    protected final SessionHandler _handler;
+    protected final SessionManager _manager;
 
     /**
      * Information about the context to which this SessionCache pertains
@@ -111,15 +110,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     public abstract Session newSession(SessionData data);
 
     /**
-     * Create a new Session for a request.
-     *
-     * @param request the request
-     * @param data the session data
-     * @return the new session
-     */
-    public abstract Session newSession(HttpServletRequest request, SessionData data);
-
-    /**
      * Get the session matching the key from the cache. Does not load
      * the session.
      *
@@ -168,20 +158,20 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     public abstract Session doDelete(String id);
 
     /**
-     * @param handler the {@link SessionHandler} to use
+     * @param handler the {@link SessionManager} to use
      */
-    public AbstractSessionCache(SessionHandler handler)
+    public AbstractSessionCache(SessionManager handler)
     {
-        _handler = handler;
+        _manager = handler;
     }
 
     /**
      * @return the SessionManger
      */
     @Override
-    public SessionHandler getSessionHandler()
+    public SessionManager getSessionManager()
     {
-        return _handler;
+        return _manager;
     }
 
     @Override
@@ -198,7 +188,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         if (_sessionDataStore == null)
             throw new IllegalStateException("No session data store configured");
 
-        if (_handler == null)
+        if (_manager == null)
             throw new IllegalStateException("No session manager");
 
         if (_context == null)
@@ -435,7 +425,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
         try (AutoLock lock = session.lock())
         {
-            if (session.getSessionHandler() == null)
+            if (session.getSessionManager() == null)
                 throw new IllegalStateException("Session " + id + " is not managed");
 
             if (!session.isValid())
@@ -520,7 +510,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
 
         try (AutoLock lock = session.lock())
         {
-            if (session.getSessionHandler() == null)
+            if (session.getSessionManager() == null)
                 throw new IllegalStateException("Session " + id + " is not managed");
 
             if (session.isInvalid())
@@ -823,11 +813,11 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     }
 
     @Override
-    public Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs)
+    public Session newSession(String id, long time, long maxInactiveMs)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Creating new session id={}", id);
-        Session session = newSession(request, _sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
+        Session session = newSession(_sessionDataStore.newSessionData(id, time, time, time, maxInactiveMs));
         session.getSessionData().setLastNode(_context.getWorkerName());
         try
         {

@@ -23,16 +23,17 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee9.handler.Authentication;
+import org.eclipse.jetty.ee9.handler.Authentication.User;
+import org.eclipse.jetty.ee9.handler.Request;
+import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee9.security.ConfigurableSpnegoLoginService;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.SpnegoUserIdentity;
 import org.eclipse.jetty.ee9.security.SpnegoUserPrincipal;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.Authentication.User;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * {@link #getAuthenticationDuration() duration} using the HTTP session; this avoids
  * that the client is asked to authenticate for every request.</p>
  *
- * @see org.eclipse.jetty.security.ConfigurableSpnegoLoginService
+ * @see ConfigurableSpnegoLoginService
  */
 public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
 {

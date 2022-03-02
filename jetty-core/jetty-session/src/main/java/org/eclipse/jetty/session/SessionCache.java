@@ -11,11 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import java.util.Set;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.util.component.LifeCycle;
 
 /**
@@ -59,18 +58,17 @@ public interface SessionCache extends LifeCycle
 
     void shutdown();
 
-    SessionHandler getSessionHandler();
+    SessionManager getSessionManager();
 
     /**
      * Create an entirely new Session.
      *
-     * @param request the request
      * @param id the unique id associated to the session
      * @param time the timestamp of the session creation
      * @param maxInactiveMs the max inactive time in milliseconds
      * @return a new Session
      */
-    Session newSession(HttpServletRequest request, String id, long time, long maxInactiveMs);
+    Session newSession(String id, long time, long maxInactiveMs);
 
     /**
      * Re-materialize a Session that has previously existed.

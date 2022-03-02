@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 /**
  * SessionCacheFactory
  */
 public interface SessionCacheFactory
 {
-    SessionCache getSessionCache(SessionHandler handler);
+    SessionCache getSessionCache(SessionManager manager);
 }

@@ -20,9 +20,9 @@ import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
+import org.eclipse.jetty.ee9.handler.ContextHandler;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
 import org.junit.jupiter.api.Test;
 
@@ -188,7 +188,7 @@ public class ServletHolderTest
             ServletHandler handler = context.getServletHandler();
             ServletHolder holder = new ServletHolder();
             holder.setName("foo");
-            holder.setClassName("org.eclipse.jetty.ee9.servlet.ServletHolderTest$FakeServlet");
+            holder.setClassName("org.eclipse.jetty.servlet.ServletHolderTest$FakeServlet");
             handler.addServlet(holder);
             handler.start();
             assertTrue(holder.isAvailable());

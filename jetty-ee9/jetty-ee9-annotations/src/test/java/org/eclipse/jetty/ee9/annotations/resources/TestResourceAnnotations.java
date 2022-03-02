@@ -23,6 +23,7 @@ import org.eclipse.jetty.ee9.annotations.ResourceAnnotationHandler;
 import org.eclipse.jetty.ee9.annotations.ResourcesAnnotationHandler;
 import org.eclipse.jetty.ee9.plus.annotation.Injection;
 import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.ee9.plus.jndi.EnvEntry;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
@@ -65,8 +66,8 @@ public class TestResourceAnnotations
     public void testResourceAnnotations()
         throws Exception
     {
-        new org.eclipse.jetty.ee9.plus.jndi.EnvEntry(server, "resA", objA, false);
-        new org.eclipse.jetty.ee9.plus.jndi.EnvEntry(server, "resB", objB, false);
+        new EnvEntry(server, "resA", objA, false);
+        new EnvEntry(server, "resB", objB, false);
 
         AnnotationIntrospector parser = new AnnotationIntrospector(wac);
         ResourceAnnotationHandler handler = new ResourceAnnotationHandler(wac);
@@ -79,20 +80,20 @@ public class TestResourceAnnotations
 
         //processing classA should give us these jndi name bindings:
         // java:comp/env/myf
-        // java:comp/env/org.eclipse.jetty.ee9.annotations.resources.ResourceA/g
+        // java:comp/env/org.eclipse.jetty.annotations.resources.ResourceA/g
         // java:comp/env/mye
-        // java:comp/env/org.eclipse.jetty.ee9.annotations.resources.ResourceA/h
+        // java:comp/env/org.eclipse.jetty.annotations.resources.ResourceA/h
         // java:comp/env/resA
-        // java:comp/env/org.eclipse.jetty.ee9.annotations.resources.ResourceB/f
-        // java:comp/env/org.eclipse.jetty.ee9.annotations.resources.ResourceA/n
+        // java:comp/env/org.eclipse.jetty.annotations.resources.ResourceB/f
+        // java:comp/env/org.eclipse.jetty.annotations.resources.ResourceA/n
         //
         assertEquals(objB, env.lookup("myf"));
         assertEquals(objA, env.lookup("mye"));
         assertEquals(objA, env.lookup("resA"));
-        assertEquals(objA, env.lookup("org.eclipse.jetty.ee9.annotations.resources.ResourceA/g"));
-        assertEquals(objA, env.lookup("org.eclipse.jetty.ee9.annotations.resources.ResourceA/h"));
-        assertEquals(objB, env.lookup("org.eclipse.jetty.ee9.annotations.resources.ResourceB/f"));
-        assertEquals(objB, env.lookup("org.eclipse.jetty.ee9.annotations.resources.ResourceA/n"));
+        assertEquals(objA, env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/g"));
+        assertEquals(objA, env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/h"));
+        assertEquals(objB, env.lookup("org.eclipse.jetty.annotations.resources.ResourceB/f"));
+        assertEquals(objB, env.lookup("org.eclipse.jetty.annotations.resources.ResourceA/n"));
 
         //we should have Injections
         assertNotNull(injections);
@@ -150,8 +151,8 @@ public class TestResourceAnnotations
     public void testResourcesAnnotation()
         throws Exception
     {
-        new org.eclipse.jetty.ee9.plus.jndi.EnvEntry(server, "resA", objA, false);
-        new org.eclipse.jetty.ee9.plus.jndi.EnvEntry(server, "resB", objB, false);
+        new EnvEntry(server, "resA", objA, false);
+        new EnvEntry(server, "resB", objB, false);
 
         AnnotationIntrospector introspector = new AnnotationIntrospector(wac);
         ResourcesAnnotationHandler handler = new ResourcesAnnotationHandler(wac);

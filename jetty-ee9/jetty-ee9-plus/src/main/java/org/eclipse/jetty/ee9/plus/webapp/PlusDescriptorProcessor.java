@@ -749,7 +749,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     /**
      * Make injections and any java:comp/env bindings necessary given an env-entry declaration.
      * The handling of env-entries is different to other resource declarations like resource-ref, resource-env-ref etc
-     * because we allow the EnvEntry (@see org.eclipse.jetty.ee9.plus.jndi.EnvEntry) class that is configured externally to the webapp 
+     * because we allow the EnvEntry (@see org.eclipse.jetty.plus.jndi.EnvEntry) class that is configured externally to the webapp 
      * to specify a value that can override a value present in a web.xml descriptor.
      * 
      * @param context the WebAppContext of the env-entry

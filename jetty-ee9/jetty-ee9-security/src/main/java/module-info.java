@@ -11,11 +11,14 @@
 // ========================================================================
 //
 
+import org.eclipse.jetty.ee9.security.Authenticator;
+
 module org.eclipse.jetty.ee9.security
 {
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.server;
+    requires transitive org.eclipse.jetty.ee9.handler;
 
     // Only required if using SPNEGO.
     requires static java.security.jgss;
@@ -25,6 +28,6 @@ module org.eclipse.jetty.ee9.security
     exports org.eclipse.jetty.ee9.security;
     exports org.eclipse.jetty.ee9.security.authentication;
 
-    uses org.eclipse.jetty.ee9.security.Authenticator.Factory;
+    uses Authenticator.Factory;
 }
 

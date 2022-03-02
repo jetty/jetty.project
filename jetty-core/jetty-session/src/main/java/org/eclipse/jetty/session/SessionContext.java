@@ -11,35 +11,36 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import java.util.List;
+import java.util.Objects;
+
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.util.StringUtil;
 
 /**
  * SessionContext
  *
  * Information about the context to which sessions belong: the Context,
- * the SessionHandler of the context, and the unique name of the node.
+ * the SessionManager of the context, and the unique name of the node.
  *
- * A SessionHandler is 1:1 with a SessionContext.
+ * A SessionManager is 1:1 with a SessionContext.
  */
 public class SessionContext
 {
     public static final String NULL_VHOST = "0.0.0.0";
-    private ContextHandler.Context _context;
-    private SessionHandler _sessionHandler;
+    private Context _context;
+    private SessionManager _sessionManager;
     private String _workerName;
     private String _canonicalContextPath;
     private String _vhost;
 
-    public SessionContext(String workerName, ContextHandler.Context context)
+    public SessionContext(SessionManager sessionManager)
     {
-        if (context != null)
-            _sessionHandler = context.getContextHandler().getChildHandlerByClass(SessionHandler.class);
-        _workerName = workerName;
-        _context = context;
+        _sessionManager = Objects.requireNonNull(sessionManager);
+        _workerName = _sessionManager.getSessionIdManager().getWorkerName();
+        _context = sessionManager.getContext();
         _canonicalContextPath = canonicalizeContextPath(_context);
         _vhost = canonicalizeVHost(_context);
     }
@@ -49,9 +50,9 @@ public class SessionContext
         return _workerName;
     }
 
-    public SessionHandler getSessionHandler()
+    public SessionManager getSessionManager()
     {
-        return _sessionHandler;
+        return _sessionManager;
     }
 
     public Context getContext()
@@ -84,7 +85,7 @@ public class SessionContext
     public void run(Runnable r)
     {
         if (_context != null)
-            _context.getContextHandler().handle(r);
+            _context.run(r);
         else
             r.run();
     }
@@ -110,11 +111,11 @@ public class SessionContext
         if (context == null)
             return vhost;
 
-        String[] vhosts = context.getContextHandler().getVirtualHosts();
-        if (vhosts == null || vhosts.length == 0 || vhosts[0] == null)
+        List<String> vhosts = context.getVirtualHosts();
+        if (vhosts == null || vhosts.isEmpty())
             return vhost;
 
-        return vhosts[0];
+        return vhosts.get(0);
     }
 
     /**

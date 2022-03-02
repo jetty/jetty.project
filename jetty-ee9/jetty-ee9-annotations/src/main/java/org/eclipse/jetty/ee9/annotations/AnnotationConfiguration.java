@@ -38,7 +38,6 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.annotation.HandlesTypes;
-import org.eclipse.jetty.ee9.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
 import org.eclipse.jetty.ee9.servlet.Source;
@@ -75,8 +74,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public static final String CLASS_INHERITANCE_MAP = "org.eclipse.jetty.classInheritanceMap";
     public static final String CONTAINER_INITIALIZERS = "org.eclipse.jetty.containerInitializers";
     public static final String CONTAINER_INITIALIZER_STARTER = "org.eclipse.jetty.containerInitializerStarter";
-    public static final String MULTI_THREADED = "org.eclipse.jetty.ee9.annotations.multiThreaded";
-    public static final String MAX_SCAN_WAIT = "org.eclipse.jetty.ee9.annotations.maxWait";
+    public static final String MULTI_THREADED = "org.eclipse.jetty.annotations.multiThreaded";
+    public static final String MAX_SCAN_WAIT = "org.eclipse.jetty.annotations.maxWait";
 
     public static final int DEFAULT_MAX_SCAN_WAIT = 60; /* time in sec */
     public static final boolean DEFAULT_MULTI_THREADED = true;
@@ -145,11 +144,11 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         protected Exception _exception;
         protected final AnnotationParser _parser;
-        protected final Set<? extends Handler> _handlers;
+        protected final Set<? extends AnnotationParser.Handler> _handlers;
         protected final Resource _resource;
         protected TimeStatistic _stat;
 
-        public ParserTask(AnnotationParser parser, Set<? extends Handler> handlers, Resource resource)
+        public ParserTask(AnnotationParser parser, Set<? extends AnnotationParser.Handler> handlers, Resource resource)
         {
             _parser = parser;
             _handlers = handlers;
@@ -1057,7 +1056,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public void parseContainerPath(final WebAppContext context, final AnnotationParser parser) throws Exception
     {
         //always parse for discoverable annotations as well as class hierarchy and servletcontainerinitializer related annotations
-        final Set<Handler> handlers = new HashSet<Handler>();
+        final Set<AnnotationParser.Handler> handlers = new HashSet<AnnotationParser.Handler>();
         handlers.addAll(_discoverableAnnotationHandlers);
         handlers.addAll(_containerInitializerAnnotationHandlers);
         if (_classInheritanceHandler != null)
@@ -1112,7 +1111,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         for (Resource r : jars)
         {
             //for each jar, we decide which set of annotations we need to parse for
-            final Set<Handler> handlers = new HashSet<Handler>();
+            final Set<AnnotationParser.Handler> handlers = new HashSet<AnnotationParser.Handler>();
 
             FragmentDescriptor f = context.getMetaData().getFragmentDescriptorForJar(r);
 
@@ -1157,7 +1156,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public void parseWebInfClasses(final WebAppContext context, final AnnotationParser parser)
         throws Exception
     {
-        Set<Handler> handlers = new HashSet<Handler>();
+        Set<AnnotationParser.Handler> handlers = new HashSet<AnnotationParser.Handler>();
         handlers.addAll(_discoverableAnnotationHandlers);
         if (_classInheritanceHandler != null)
             handlers.add(_classInheritanceHandler);

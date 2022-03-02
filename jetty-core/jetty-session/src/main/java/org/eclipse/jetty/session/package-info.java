@@ -14,5 +14,5 @@
 /**
  * Jetty Server : Session Management Implementations
  */
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 

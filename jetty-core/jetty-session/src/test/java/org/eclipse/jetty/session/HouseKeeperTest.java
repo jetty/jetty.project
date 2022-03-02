@@ -11,12 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import java.util.Collections;
 import java.util.Set;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.Test;
 
@@ -63,9 +64,9 @@ public class HouseKeeperTest
         }
 
         @Override
-        public Set<SessionHandler> getSessionHandlers()
+        public Set<SessionManager> getSessionManagers()
         {
-            return Collections.singleton(new SessionHandler());
+            return Collections.emptySet();
         }
     }
     

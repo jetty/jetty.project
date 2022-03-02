@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -46,7 +45,7 @@ public class DefaultSessionCache extends AbstractSessionCache
     /**
      * @param manager The SessionHandler related to this SessionCache
      */
-    public DefaultSessionCache(SessionHandler manager)
+    public DefaultSessionCache(SessionManager manager)
     {
         this(manager, new ConcurrentHashMap<>());
     }
@@ -55,7 +54,7 @@ public class DefaultSessionCache extends AbstractSessionCache
      * @param manager The SessionHandler related to this SessionCache
      * @param sessions The session map implementation to use
      */
-    public DefaultSessionCache(SessionHandler manager, ConcurrentMap<String, Session> sessions)
+    public DefaultSessionCache(SessionManager manager, ConcurrentMap<String, Session> sessions)
     {
         super(manager);
         _sessions = Objects.requireNonNull(sessions, "Session Map may not be null");
@@ -179,15 +178,9 @@ public class DefaultSessionCache extends AbstractSessionCache
     }
 
     @Override
-    public Session newSession(HttpServletRequest request, SessionData data)
-    {
-        return new Session(getSessionHandler(), request, data);
-    }
-
-    @Override
     public Session newSession(SessionData data)
     {
-        return new Session(getSessionHandler(), data);
+        return new Session(getSessionManager(), data);
     }
 
     @Override

@@ -11,18 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import java.security.SecureRandom;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -191,13 +190,12 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      * Create a new session id if necessary.
      */
     @Override
-    public String newSessionId(HttpServletRequest request, long created)
+    public String newSessionId(Request request, String requestedId, long created)
     {
         if (request == null)
             return newSessionId(created);
 
         // A requested session ID can only be used if it is in use already.
-        String requestedId = request.getRequestedSessionId();
         if (requestedId != null)
         {
             String clusterId = getId(requestedId);
@@ -283,7 +281,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
 
         try
         {
-            for (SessionHandler manager : getSessionHandlers())
+            for (SessionManager manager : getSessionManagers())
             {
                 if (manager.isIdInUse(id))
                 {
@@ -377,7 +375,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      * @return sessionId plus any worker ID.
      */
     @Override
-    public String getExtendedId(String clusterId, HttpServletRequest request)
+    public String getExtendedId(String clusterId, Request request)
     {
         if (!StringUtil.isBlank(_workerName))
         {
@@ -416,9 +414,16 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         if (LOG.isDebugEnabled())
             LOG.debug("Expiring {}", id);
 
-        for (SessionHandler manager : getSessionHandlers())
+        for (SessionManager manager : getSessionManagers())
         {
-            manager.invalidate(id);
+            try
+            {
+                manager.invalidate(id);
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Problem expiring session {} across contexts", id, e);
+            }
         }
     }
 
@@ -427,9 +432,33 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
     {
         //tell all contexts that may have a session object with this id to
         //get rid of them
-        for (SessionHandler manager : getSessionHandlers())
+        for (SessionManager manager : getSessionManagers())
         {
-            manager.invalidate(id);
+            try
+            {
+                manager.invalidate(id);
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Problem invalidating session {} across contexts", id, e);
+            }
+        }
+    }
+    
+    public void scavenge()
+    {
+        //tell all contexts that may have a session object with this id to
+        //get rid of them
+        for (SessionManager manager : getSessionManagers())
+        {
+            try
+            {
+                manager.scavenge();
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Problem scavenging sessions across contexts", e);
+            }
         }
     }
 
@@ -438,43 +467,46 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
      * all SessionManagers.
      */
     @Override
-    public String renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request)
+    public String renewSessionId(String oldClusterId, String oldNodeId, Request request)
     {
         //generate a new id
         String newClusterId = newSessionId(request.hashCode());
 
-        //TODO how to handle request for old id whilst id change is happening?
-
         //tell all contexts to update the id 
-        for (SessionHandler manager : getSessionHandlers())
+        for (SessionManager manager : getSessionManagers())
         {
-            manager.renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
+            try
+            {
+                manager.renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
+            }
+            catch (Exception e)
+            {
+                LOG.warn("Problem renewing session id {} to {}", oldClusterId, newClusterId, e);
+            }
         }
 
         return newClusterId;
     }
 
     /**
-     * Get SessionHandler for every context.
+     * Get SessionManager for every context.
      *
-     * @return all SessionHandlers that are running
+     * @return all SessionManagers that are running
      */
-    @Override
-    public Set<SessionHandler> getSessionHandlers()
+    public Set<SessionManager> getSessionManagers()
     {
-        Set<SessionHandler> handlers = new HashSet<>();
-        Handler[] tmp = _server.getChildHandlersByClass(SessionHandler.class);
-        if (tmp != null)
+        Set<SessionManager> managers = new HashSet<>();
+
+        Collection<SessionManager> tmp = _server.getContainedBeans(SessionManager.class);
+        for (SessionManager sm : tmp)
         {
-            for (Handler h : tmp)
-            {
-                //This method can be called on shutdown when the handlers are STOPPING, so only
-                //check that they are not already stopped
-                if (!h.isStopped() && !h.isFailed())
-                    handlers.add((SessionHandler)h);
-            }
+            //This method can be called on shutdown when the handlers are STOPPING, so only
+            //check that they are not already stopped
+            if (sm.isRunning())
+                managers.add((SessionManager)sm);
         }
-        return handlers;
+
+        return managers;
     }
 
     @Override

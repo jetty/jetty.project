@@ -15,6 +15,7 @@ module org.eclipse.jetty.ee9.servlet
 {
     requires org.slf4j;
 
+    requires transitive org.eclipse.jetty.ee9.handler;
     requires transitive org.eclipse.jetty.ee9.security;
 
     // Only required if using IntrospectorCleaner.
@@ -24,6 +25,7 @@ module org.eclipse.jetty.ee9.servlet
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
     requires static org.eclipse.jetty.util.ajax;
+
 
     exports org.eclipse.jetty.ee9.servlet;
     exports org.eclipse.jetty.ee9.servlet.listener;

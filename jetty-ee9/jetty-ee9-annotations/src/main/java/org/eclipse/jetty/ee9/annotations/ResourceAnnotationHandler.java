@@ -27,6 +27,7 @@ import jakarta.annotation.Resource;
 import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
 import org.eclipse.jetty.ee9.plus.annotation.Injection;
 import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.ee9.webapp.MetaData;
 import org.eclipse.jetty.ee9.webapp.WebAppContext;
 import org.slf4j.Logger;
@@ -87,8 +88,8 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
             try
             {
-                if (!org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil.bindToENC(_context, name, mappedName))
-                    if (!org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName))
+                if (!NamingEntryUtil.bindToENC(_context, name, mappedName))
+                    if (!NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName))
                         throw new IllegalStateException("No resource at " + (mappedName == null ? name : mappedName));
             }
             catch (NamingException e)
@@ -151,11 +152,11 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                 //No injection has been specified, add it
                 try
                 {
-                    boolean bound = org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil.bindToENC(_context, name, mappedName);
+                    boolean bound = NamingEntryUtil.bindToENC(_context, name, mappedName);
                     if (!bound)
-                        bound = org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
+                        bound = NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
                     if (!bound)
-                        bound = org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil.bindToENC(null, name, mappedName);
+                        bound = NamingEntryUtil.bindToENC(null, name, mappedName);
                     if (!bound)
                     {
                         //see if there is an env-entry value been bound
@@ -298,15 +299,15 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
                 {
                     //try binding name to environment
                     //try the webapp's environment first
-                    boolean bound = org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil.bindToENC(_context, name, mappedName);
+                    boolean bound = NamingEntryUtil.bindToENC(_context, name, mappedName);
 
                     //try the server's environment
                     if (!bound)
-                        bound = org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
+                        bound = NamingEntryUtil.bindToENC(_context.getServer(), name, mappedName);
 
                     //try the jvm's environment
                     if (!bound)
-                        bound = org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil.bindToENC(null, name, mappedName);
+                        bound = NamingEntryUtil.bindToENC(null, name, mappedName);
 
                     //TODO if it is an env-entry from web.xml it can be injected, in which case there will be no
                     //NamingEntry, just a value bound in java:comp/env

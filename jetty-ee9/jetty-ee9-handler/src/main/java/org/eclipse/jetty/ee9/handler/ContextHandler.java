@@ -1636,14 +1636,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _contextPathDefault = false;
 
         if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
-        {
-            Arrays.stream(getServer().getChildHandlersByClass(ContextHandlerCollection.class))
-                .forEach(h ->
-                {
-                    if (h instanceof ContextHandlerCollection chc)
-                        chc.mapContexts();
-                });
-        }
+            getServer().getDescendants(ContextHandlerCollection.class).forEach(ContextHandlerCollection::mapContexts);
     }
 
     /**
@@ -2122,16 +2115,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         public ServletContext getContext(String uripath)
         {
             List<ContextHandler> contexts = new ArrayList<>();
-            org.eclipse.jetty.server.Handler[] handlers = getServer().getChildHandlersByClass(ContextHandler.class);
             String matchedPath = null;
 
-            for (org.eclipse.jetty.server.Handler handler : handlers)
+            // TODO this is probably wrong
+            List<org.eclipse.jetty.server.handler.ContextHandler> handlers = getServer().getDescendants(org.eclipse.jetty.server.handler.ContextHandler.class);
+            for (org.eclipse.jetty.server.handler.ContextHandler ch : handlers)
             {
-                if (handler == null)
+                if (ch == null)
                     continue;
-                // TODO review
-                if (!(handler instanceof ContextHandler ch))
-                    continue;
+                // TODO  - can't be both types of ContextHandler
+                // if (!(handler instanceof ContextHandler ch))
+                //    continue;
 
                 String contextPath = ch.getContextPath();
 
@@ -2142,7 +2136,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                     // look first for vhost matching context only
                     if (getVirtualHosts() != null && getVirtualHosts().length > 0)
                     {
-                        if (ch.getVirtualHosts() != null && ch.getVirtualHosts().length > 0)
+                        if (ch.getVirtualHosts() != null && ch.getVirtualHosts().size() > 0)
                         {
                             for (String h1 : getVirtualHosts())
                             {

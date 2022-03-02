@@ -49,18 +49,18 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee9.handler.ContextHandler;
+import org.eclipse.jetty.ee9.handler.Dispatcher;
+import org.eclipse.jetty.ee9.handler.ErrorHandler;
+import org.eclipse.jetty.ee9.handler.Handler;
+import org.eclipse.jetty.ee9.handler.HandlerCollection;
+import org.eclipse.jetty.ee9.handler.HandlerContainer;
+import org.eclipse.jetty.ee9.handler.HandlerWrapper;
+import org.eclipse.jetty.ee9.handler.gzip.GzipHandler;
 import org.eclipse.jetty.ee9.security.ConstraintAware;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
-import org.eclipse.jetty.server.Dispatcher;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HandlerContainer;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
@@ -121,7 +121,7 @@ public class ServletContextHandler extends ContextHandler
     public interface ServletContainerInitializerCaller extends LifeCycle {}
 
     protected final DecoratedObjectFactory _objFactory;
-    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.ee9.security.ConstraintSecurityHandler.class;
+    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
@@ -1035,7 +1035,7 @@ public class ServletContextHandler extends ContextHandler
         @Override
         public RequestDispatcher getNamedDispatcher(String name)
         {
-            ContextHandler context = org.eclipse.jetty.ee9.servlet.ServletContextHandler.this;
+            ContextHandler context = ServletContextHandler.this;
             if (_servletHandler == null)
                 return null;
             ServletHolder holder = _servletHandler.getServlet(name);

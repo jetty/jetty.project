@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 /**
  * DefaultSessionCacheFactory
@@ -21,8 +21,8 @@ package org.eclipse.jetty.server.session;
 public class DefaultSessionCacheFactory extends AbstractSessionCacheFactory
 {
     @Override
-    public SessionCache newSessionCache(SessionHandler handler)
+    public SessionCache newSessionCache(SessionManager manager)
     {
-        return new DefaultSessionCache(handler);
+        return new DefaultSessionCache(manager);
     }
 }

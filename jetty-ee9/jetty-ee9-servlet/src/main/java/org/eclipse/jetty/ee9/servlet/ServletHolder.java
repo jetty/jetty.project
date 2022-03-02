@@ -44,11 +44,11 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.SingleThreadModel;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.handler.ContextHandler;
+import org.eclipse.jetty.ee9.handler.Request;
+import org.eclipse.jetty.ee9.handler.UserIdentity;
 import org.eclipse.jetty.ee9.security.IdentityService;
 import org.eclipse.jetty.ee9.security.RunAsToken;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -84,7 +84,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private boolean _enabled = true;
 
     public static final String APACHE_SENTINEL_CLASS = "org.apache.tomcat.InstanceManager";
-    public static final String JSP_GENERATED_PACKAGE_NAME = "org.eclipse.jetty.ee9.servlet.jspPackagePrefix";
+    public static final String JSP_GENERATED_PACKAGE_NAME = "org.eclipse.jetty.servlet.jspPackagePrefix";
 
     public enum JspContainer
     {

@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 /**
  * SessionDataStoreFactory
  */
 public interface SessionDataStoreFactory
 {
-    SessionDataStore getSessionDataStore(SessionHandler handler) throws Exception;
+    SessionDataStore getSessionDataStore(SessionManager manager) throws Exception;
 }

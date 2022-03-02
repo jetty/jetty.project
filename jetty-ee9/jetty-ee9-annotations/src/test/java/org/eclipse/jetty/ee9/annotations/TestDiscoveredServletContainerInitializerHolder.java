@@ -23,7 +23,6 @@ import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.HandlesTypes;
-import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration.DiscoveredServletContainerInitializerHolder;
 import org.eclipse.jetty.ee9.servlet.Source;
 import org.junit.jupiter.api.Test;
 
@@ -70,8 +69,8 @@ public class TestDiscoveredServletContainerInitializerHolder
         //SCI with @HandlesTypes[Ordinary, Sample]
         SampleServletContainerInitializer sci = new SampleServletContainerInitializer();
         
-        DiscoveredServletContainerInitializerHolder holder = 
-            new DiscoveredServletContainerInitializerHolder(new Source(Source.Origin.ANNOTATION, sci.getClass().getName()),
+        AnnotationConfiguration.DiscoveredServletContainerInitializerHolder holder =
+            new AnnotationConfiguration.DiscoveredServletContainerInitializerHolder(new Source(Source.Origin.ANNOTATION, sci.getClass().getName()),
             sci);
 
         //add the @HandlesTypes to the holder

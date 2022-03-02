@@ -44,19 +44,19 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.handler.ContextHandler;
+import org.eclipse.jetty.ee9.handler.Request;
+import org.eclipse.jetty.ee9.handler.ScopedHandler;
+import org.eclipse.jetty.ee9.handler.ServletPathMapping;
+import org.eclipse.jetty.ee9.handler.ServletRequestHttpWrapper;
+import org.eclipse.jetty.ee9.handler.ServletResponseHttpWrapper;
+import org.eclipse.jetty.ee9.handler.UserIdentity;
 import org.eclipse.jetty.ee9.security.IdentityService;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.ServletPathMapping;
-import org.eclipse.jetty.server.ServletRequestHttpWrapper;
-import org.eclipse.jetty.server.ServletResponseHttpWrapper;
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ScopedHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
@@ -76,7 +76,7 @@ import org.slf4j.LoggerFactory;
  * <P>
  * This handler does not implement the full J2EE features and is intended to
  * be used directly when a full web application is not required.  If a Web application is required,
- * then this handler should be used as part of a <code>org.eclipse.jetty.ee9.webapp.WebAppContext</code>.
+ * then this handler should be used as part of a <code>org.eclipse.jetty.webapp.WebAppContext</code>.
  * <p>
  * Unless run as part of a {@link ServletContextHandler} or derivative, the {@link #initialize()}
  * method must be called manually after start().

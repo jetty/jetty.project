@@ -28,6 +28,8 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.ee9.handler.ContextHandlerCollection;
+import org.eclipse.jetty.ee9.handler.HandlerList;
 import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
@@ -37,8 +39,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -60,8 +60,6 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -179,14 +177,14 @@ public class WebAppContextTest
         JmxConfiguration jmx = new JmxConfiguration();
         if (jmx.isAvailable()) // depending on JVM runtime, this might not be available when this test is run
         {
-            expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.JmxConfiguration");
+            expectedConfigurations.add("org.eclipse.jetty.webapp.JmxConfiguration");
         }
-        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebInfConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebXmlConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.MetaInfConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.FragmentConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.WebAppConfiguration");
-        expectedConfigurations.add("org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.webapp.WebInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.webapp.WebXmlConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.webapp.MetaInfConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.webapp.FragmentConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.webapp.WebAppConfiguration");
+        expectedConfigurations.add("org.eclipse.jetty.webapp.JettyWebXmlConfiguration");
 
         assertThat(actualConfigurations, Matchers.contains(expectedConfigurations.toArray()));
     }

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,8 +65,8 @@ public class NullSessionCacheFactory extends AbstractSessionCacheFactory
     }
 
     @Override
-    public SessionCache newSessionCache(SessionHandler handler)
+    public SessionCache newSessionCache(SessionManager manager)
     {
-        return new NullSessionCache(handler);
+        return new NullSessionCache(manager);
     }
 }

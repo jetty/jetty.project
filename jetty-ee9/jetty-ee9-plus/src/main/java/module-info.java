@@ -11,12 +11,15 @@
 // ========================================================================
 //
 
+import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
+
 module org.eclipse.jetty.ee9.plus
 {
     requires org.eclipse.jetty.jndi;
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.ee9.webapp;
+    requires transitive org.eclipse.jetty.webapp;
 
     // Only required if using DataSourceLoginService.
     requires static java.sql;
@@ -31,6 +34,6 @@ module org.eclipse.jetty.ee9.plus
     exports org.eclipse.jetty.ee9.plus.webapp;
 
     provides org.eclipse.jetty.ee9.webapp.Configuration with
-        org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration,
-        org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
+        EnvConfiguration,
+        PlusConfiguration;
 }

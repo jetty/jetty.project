@@ -13,14 +13,14 @@
 
 import org.eclipse.jetty.ee9.security.openid.OpenIdAuthenticatorFactory;
 
-module org.eclipse.jetty.ee9.security.openid
+module org.eclipse.jetty.security.openid
 {
     requires org.eclipse.jetty.util.ajax;
 
     requires transitive org.eclipse.jetty.client;
-    requires transitive org.eclipse.jetty.ee9.security;
+    requires transitive org.eclipse.jetty.security;
 
     exports org.eclipse.jetty.ee9.security.openid;
 
-    provides org.eclipse.jetty.ee9.security.Authenticator.Factory with OpenIdAuthenticatorFactory;
+    provides Authenticator.Factory with OpenIdAuthenticatorFactory;
 }

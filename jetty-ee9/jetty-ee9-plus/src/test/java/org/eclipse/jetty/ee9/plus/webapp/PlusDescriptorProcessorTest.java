@@ -23,6 +23,7 @@ import org.eclipse.jetty.ee9.plus.annotation.Injection;
 import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.ee9.plus.jndi.EnvEntry;
 import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.ee9.plus.jndi.Resource;
 import org.eclipse.jetty.ee9.webapp.Configuration;
 import org.eclipse.jetty.ee9.webapp.Descriptor;
 import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
@@ -126,7 +127,7 @@ public class PlusDescriptorProcessorTest
         context.setConfigurations(new Configuration[]{new PlusConfiguration(), new EnvConfiguration()});
         context.preConfigure();
         context.setClassLoader(new WebAppClassLoader(Thread.currentThread().getContextClassLoader(), context));
-        context.getServerClassMatcher().exclude("org.eclipse.jetty.ee9.plus.webapp."); //need visbility of the TestInjections class
+        context.getServerClassMatcher().exclude("org.eclipse.jetty.plus.webapp."); //need visbility of the TestInjections class
         ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(context.getClassLoader());
         Context icontext = new InitialContext();
@@ -134,22 +135,22 @@ public class PlusDescriptorProcessorTest
         Context envCtx = compCtx.createSubcontext("env");
 
         @SuppressWarnings("unused")
-        org.eclipse.jetty.ee9.plus.jndi.Resource ds = new org.eclipse.jetty.ee9.plus.jndi.Resource(context, "jdbc/mydatasource", new Object());
+        Resource ds = new Resource(context, "jdbc/mydatasource", new Object());
         
         //An EnvEntry that should override any value supplied in a web.xml file
-        org.eclipse.jetty.ee9.plus.jndi.EnvEntry fooStringEnvEntry = new org.eclipse.jetty.ee9.plus.jndi.EnvEntry("foo", "FOO", true);
+        EnvEntry fooStringEnvEntry = new EnvEntry("foo", "FOO", true);
         doEnvConfiguration(envCtx, fooStringEnvEntry);
         
         //An EnvEntry that should NOT override any value supplied in a web.xml file
-        org.eclipse.jetty.ee9.plus.jndi.EnvEntry bahStringEnvEntry = new org.eclipse.jetty.ee9.plus.jndi.EnvEntry("bah", "BAH", false);
+        EnvEntry bahStringEnvEntry = new EnvEntry("bah", "BAH", false);
         doEnvConfiguration(envCtx, bahStringEnvEntry);
         
         //An EnvEntry that will override an empty value in web.xml
-        org.eclipse.jetty.ee9.plus.jndi.EnvEntry emptyStringEnvEntry = new org.eclipse.jetty.ee9.plus.jndi.EnvEntry("empty", "EMPTY", true);
+        EnvEntry emptyStringEnvEntry = new EnvEntry("empty", "EMPTY", true);
         doEnvConfiguration(envCtx, emptyStringEnvEntry);
         
         //An EnvEntry that will NOT override an empty value in web.xml
-        org.eclipse.jetty.ee9.plus.jndi.EnvEntry vacuumStringEnvEntry = new org.eclipse.jetty.ee9.plus.jndi.EnvEntry("vacuum", "VACUUM", false);
+        EnvEntry vacuumStringEnvEntry = new EnvEntry("vacuum", "VACUUM", false);
         doEnvConfiguration(envCtx, vacuumStringEnvEntry);
 
         URL webXml = Thread.currentThread().getContextClassLoader().getResource("web.xml");

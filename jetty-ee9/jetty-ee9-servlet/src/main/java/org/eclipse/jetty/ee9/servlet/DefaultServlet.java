@@ -24,17 +24,17 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.handler.CachedContentFactory;
+import org.eclipse.jetty.ee9.handler.ContextHandler;
+import org.eclipse.jetty.ee9.handler.ResourceContentFactory;
+import org.eclipse.jetty.ee9.handler.ResourceHandler;
+import org.eclipse.jetty.ee9.handler.ResourceService;
+import org.eclipse.jetty.ee9.handler.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
-import org.eclipse.jetty.server.CachedContentFactory;
-import org.eclipse.jetty.server.ResourceContentFactory;
-import org.eclipse.jetty.server.ResourceService;
-import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory;
  * content, OPTION and TRACE methods for the context.
  * The following initParameters are supported, these can be set either
  * on the servlet itself or as ServletContext initParameters with a prefix
- * of org.eclipse.jetty.ee9.servlet.Default. :
+ * of org.eclipse.jetty.servlet.Default. :
  * <pre>
  *  acceptRanges      If true, range requests and responses are
  *                    supported
@@ -121,7 +121,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DefaultServlet extends HttpServlet implements ResourceFactory, WelcomeFactory
 {
-    public static final String CONTEXT_INIT = "org.eclipse.jetty.ee9.servlet.Default.";
+    public static final String CONTEXT_INIT = "org.eclipse.jetty.servlet.Default.";
 
     private static final Logger LOG = LoggerFactory.getLogger(DefaultServlet.class);
 

@@ -272,7 +272,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             catch (ClassNotFoundException e)
             {
                 LOG.info("NO JSP Support for {}, did not find {}", context.getContextPath(), servletClass);
-                servletClass = "org.eclipse.jetty.ee9.servlet.NoJspServlet";
+                servletClass = "org.eclipse.jetty.servlet.NoJspServlet";
             }
         }
 

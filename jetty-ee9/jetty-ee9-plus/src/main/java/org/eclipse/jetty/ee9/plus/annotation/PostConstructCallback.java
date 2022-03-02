@@ -48,7 +48,7 @@ public class PostConstructCallback extends LifeCycleCallback
      * - no checked exceptions
      * - cannot be static
      *
-     * @see org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallback#validate(java.lang.Class, java.lang.reflect.Method)
+     * @see LifeCycleCallback#validate(java.lang.Class, java.lang.reflect.Method)
      */
     @Override
     public void validate(Class<?> clazz, Method method)

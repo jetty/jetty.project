@@ -11,11 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -238,22 +237,8 @@ public class HouseKeeper extends AbstractLifeCycle
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} scavenging sessions", _sessionIdManager.getWorkerName());
-
-        //find the session managers
-        for (SessionHandler manager : _sessionIdManager.getSessionHandlers())
-        {
-            if (manager != null)
-            {
-                try
-                {
-                    manager.scavenge();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("Unable to scavenge", e);
-                }
-            }
-        }
+        
+        _sessionIdManager.scavenge();
     }
 
     @Override
