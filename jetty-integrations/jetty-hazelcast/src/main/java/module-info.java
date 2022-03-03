@@ -14,7 +14,7 @@
 module org.eclipse.jetty.hazelcast.session
 {
     requires transitive com.hazelcast.core;
-    requires transitive org.eclipse.jetty.server;
+    requires transitive org.eclipse.jetty.session;
     requires transitive org.eclipse.jetty.util;
 
     exports org.eclipse.jetty.hazelcast.session;
