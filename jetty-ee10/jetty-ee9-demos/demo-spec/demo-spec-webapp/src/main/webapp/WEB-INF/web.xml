@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app 
+   xmlns="https://jakarta.ee/xml/ns/jakartaee"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+   metadata-complete="false"
+   version="5.0"> 
+
+  <display-name>Test Annotations WebApp</display-name>
+
+  <default-context-path>/test-spec</default-context-path>
+  <request-character-encoding>utf-8</request-character-encoding>
+  <response-character-encoding>utf-8</response-character-encoding>
+  
+  <listener>
+    <listener-class>org.example.test.TestListener</listener-class>
+  </listener>
+
+  <servlet>
+    <servlet-name>AnnotationTest</servlet-name>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>AnnotationTest</servlet-name>
+    <url-pattern>/test/*</url-pattern>
+  </servlet-mapping>
+  
+  <servlet>
+    <servlet-name>RoleAnnotationTest</servlet-name>
+    <servlet-class>org.example.test.RoleAnnotationTest</servlet-class>
+    <load-on-startup>1</load-on-startup>
+    <security-role-ref>
+      <role-name>manager</role-name>
+      <role-link>server-administrator</role-link>
+    </security-role-ref>
+  </servlet>
+  
+  <servlet-mapping>
+    <servlet-name>RoleAnnotationTest</servlet-name>
+    <url-pattern>/role/*</url-pattern>
+  </servlet-mapping>
+  
+  <servlet>
+    <servlet-name>Multi</servlet-name>
+    <servlet-class>org.example.test.MultiPartTest</servlet-class>
+    <load-on-startup>2</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>Multi</servlet-name>
+    <url-pattern>/multi/*</url-pattern>
+  </servlet-mapping>
+
+  <env-entry>
+    <env-entry-name>org.example.test.AnnotationTest/avgAmount</env-entry-name>
+    <env-entry-type>java.lang.Double</env-entry-type>
+    <env-entry-value>1.25</env-entry-value>
+  </env-entry>
+
+  <env-entry>
+    <env-entry-name>someAmount</env-entry-name>
+    <env-entry-type>java.lang.Double</env-entry-type>
+    <env-entry-value>0.99</env-entry-value>
+  </env-entry>
+
+  <security-constraint>
+    <web-resource-collection>
+      <web-resource-name>Admin Role</web-resource-name>
+      <url-pattern>/role/*</url-pattern>
+    </web-resource-collection>
+    <auth-constraint>
+      <role-name>admin</role-name>
+    </auth-constraint>
+  </security-constraint>
+
+  <security-role>
+    <role-name>admin</role-name>
+  </security-role>
+
+  <security-role>
+    <role-name>server-administrator</role-name>
+  </security-role>
+
+<!--
+  <login-config>
+    <auth-method>BASIC</auth-method>
+    <realm-name>Test Realm</realm-name>
+  </login-config>
+-->
+
+  <login-config>
+    <auth-method>FORM</auth-method>
+    <realm-name>Test Realm</realm-name>
+    <form-login-config>
+      <form-login-page>
+        /login.html
+      </form-login-page>
+      <form-error-page>
+        /authfail.html
+      </form-error-page>
+    </form-login-config>
+  </login-config>
+
+
+</web-app>

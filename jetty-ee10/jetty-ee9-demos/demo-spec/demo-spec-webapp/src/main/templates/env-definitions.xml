@@ -1,0 +1,19 @@
+
+  <New id="maxAmount"  class="org.eclipse.jetty.plus.jndi.EnvEntry">
+    <Arg><Ref refid='wac'/></Arg>
+    <Arg>maxAmount</Arg>
+    <Arg type="java.lang.Double">100</Arg>
+    <Arg type="boolean">true</Arg>
+  </New>
+
+
+  <New id="mydatasource" class="org.eclipse.jetty.plus.jndi.Resource">
+    <Arg><Ref refid='wac'/></Arg>
+    <Arg>jdbc/mydatasource</Arg>
+    <Arg>
+     <New class="org.example.MockDataSource">
+     </New>
+    </Arg>
+   </New>
+
+</Configure>

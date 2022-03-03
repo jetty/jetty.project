@@ -1,0 +1,16 @@
+@startuml
+
+IDLE:
+READY:
+UNREADY:
+
+[*] --> IDLE
+
+IDLE --> UNREADY : isReady
+IDLE -right->READY : isReady
+
+UNREADY -up-> READY : ASYNC onContentProducible
+
+READY -left->IDLE : nextContent
+
+@enduml

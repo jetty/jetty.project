@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee
+         http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+  version="3.1">
+
+  <servlet>
+    <servlet-name>zedName</servlet-name>
+    <jsp-file>/does/not/exist/index.jsp</jsp-file>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>zedName</servlet-name>
+    <url-pattern>/zed</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>precompiledName</servlet-name>
+    <servlet-class>org.eclipse.jetty.webapp.ForcedServletTest$FakePrecompiledJSP</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>precompiledName</servlet-name>
+    <url-pattern>/precompiled/world.jsp</url-pattern>
+  </servlet-mapping>
+
+</web-app>

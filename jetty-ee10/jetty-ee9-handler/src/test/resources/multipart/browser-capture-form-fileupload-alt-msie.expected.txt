@@ -1,0 +1,17 @@
+Request-Header|Accept|text/html, application/xhtml+xml, image/jxr, */*
+Request-Header|Accept-Encoding|gzip, deflate
+Request-Header|Accept-Language|en-US
+Request-Header|Cache-Control|no-cache
+Request-Header|Connection|keep-alive
+Request-Header|Content-Length|22814
+Request-Header|Content-Type|multipart/form-data; boundary=---------------------------7e226692109c
+Request-Header|Host|localhost:9090
+Request-Header|Referer|http://localhost:9090/form-fileupload-multi.html
+Request-Header|User-Agent|Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; Touch; rv:11.0) like Gecko
+Parts-Count|4
+Part-ContainsContents|description|the larger icon
+Part-ContainsContents|alternate|text.raw
+Part-Filename|file|C:\Users\joakim\Pictures\jetty-avatar-256.png
+Part-Sha1sum|file|e75b73644afe9b234d70da9ff225229de68cdff8
+Part-Filename|file-alt|C:\Users\joakim\Pictures\text.raw
+Part-Sha1sum|file-alt|5fb031816a27d80cc88c390819addab0ec3c189b

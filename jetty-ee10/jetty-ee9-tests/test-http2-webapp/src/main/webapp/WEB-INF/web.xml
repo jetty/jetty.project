@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee web-app_5_0.xsd"
+  version="5.0">
+
+  <servlet>
+    <servlet-name>h1</servlet-name>
+    <servlet-class>org.eclipse.jetty.test.webapp.HTTP1Servlet</servlet-class>
+    <async-supported>true</async-supported>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>h1</servlet-name>
+    <url-pattern>/h1</url-pattern>
+  </servlet-mapping>
+
+  <servlet>
+    <servlet-name>h2</servlet-name>
+    <servlet-class>org.eclipse.jetty.test.webapp.HTTP2Servlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>h2</servlet-name>
+    <url-pattern>/h2</url-pattern>
+  </servlet-mapping>
+
+</web-app>
+
+

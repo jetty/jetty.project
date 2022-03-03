@@ -1,0 +1,86 @@
+<html>
+<head>
+    <title>Demo Specification WebApp</title>
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Cache-Control" content="no-cache,no-store">
+    <link rel="stylesheet" type="text/css" href="demo.css"/>
+</head>
+<body>
+    <div class="topnav">
+      <a class="menu" href="http://localhost:8080/">Demo Home</a>
+      <a class="menu" href="https://github.com/eclipse/jetty.project/tree/jetty-11.0.x/demos/demo-spec">Source</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/">Jetty Project Home</a>
+      <a class="menu" href="https://www.eclipse.org/jetty/documentation/current/">Documentation</a>
+      <a class="menu" href="https://webtide.com">Commercial Support</a>
+    </div>
+
+    <div class="content">
+      <center>
+          <span style="color:red; font-style:italic; font-weight:bold">Demo Web Application Only - Do NOT Deploy in Production</span>
+      </center>
+
+     <h1>Servlet 5.0 Demo WebApp</h1>
+     <p>This example tests some aspects of the servlet specification:</p>
+     <ul>
+      <li>context defaults</li>
+      <li>servlet annotations</li>
+      <li>web-fragments</li>
+      <li>servlet container initializers</li>
+      <li>multi-part upload support</li>
+    </ul>
+
+    <h3>Test Defaults, Annotations, Fragments and Initializers</h3>
+    <form action="test" method="post">
+        <button class="test" type="submit">Test</button>
+    </form>
+
+    <h3>Test Dynamically Added JSP File</h3>
+    <p>Click the link to test accessing a programmatically added jsp file:</p>
+    <a href="dynamicjsp/x">Dynamically added jsp </a>
+
+    <h3>Test Static Content from Fragment </h3>
+    <p>Click the link to test accessing static content from a fragment's META-INF/resources:</p>
+    <a href="fragmentA/index.html">Static resource from a fragment </a>
+
+    <h3>Test Servlet from Fragment </h3>
+    <p>Click the link to test accessing a servlet added from a fragment's web-fragment.xml:</p>
+    <a href="fragment">Servlet added by web-fragment.xml</a>
+
+    <h3>Test DeclaresRoles</h3>
+    <p>Login as user <code>admin</code> with password <code>admin</code> when prompted after clicking the button below to test @DeclareRoles annotation:</p>
+    <form action="role" method="post">
+      <button class="test" type="submit">Test Role Annotations</button>
+    </form>
+
+    <h3>Test Servlet Security</h3>
+    <p>Login as user <code>admin</code> with password <code>admin</code> when prompted after clicking the button below to test @ServletSecurity annotation:</p>
+    <form action="sec/foo" method="post">
+      <button class="test" type="submit">Test ServletSecurity Annotation</button>
+    </form>
+
+    <h3>Test Servlet Multipart Mime</h3>
+    Test the annotation:
+    <pre>
+    @MultipartConfig(location="foo/bar", maxFileSize=10240, maxRequestSize=-1, fileSizeThreshold=2048)
+    </pre>
+    <form enctype="multipart/form-data" action="multi" method=POST>
+        File to upload: <input class="test" name="userfile1" type="file">
+        <input class="test" type="submit" value="Test Upload">
+    </form>
+
+    <h3>AsyncListener Resource Injection</h3>
+    <p>Click the following link to test that <code>jakarta.servlet.AsyncListeners</code> are injectable:</p>
+    <form action="asy/xx"  method="post">
+      <button class="test" type="submit">Test AsyncListener</button>
+    </form>
+
+    <h3>Test ClassPath Isolation </h3>
+    <p>Click the link to test classpath isolation of system and server classes:</p>
+    <a href="classloader">ClassPathServlet</a>
+  </div>
+
+  <div class="footer">
+    <center><a href="https://www.eclipse.org/jetty"><img style="border:0" src="small_powered_by.gif"/></a></center>
+  </div>
+</body>
+</html>

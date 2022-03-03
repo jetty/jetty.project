@@ -1,0 +1,60 @@
+<?xml version="1.0"?><!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addBean">
+    <Arg>
+      <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
+        <Set name="Provider" property="jetty.sslContext.provider" />
+        <Set name="KeyStorePath">
+          <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+            <Arg><Property name="jetty.base"/></Arg>
+            <Arg><Property name="jetty.sslContext.keyStorePath" deprecated="jetty.sslContext.keyStoreAbsolutePath,jetty.keystore" default="etc/keystore.p12" /></Arg>
+          </Call>
+        </Set>
+        <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" /></Set>
+        <Set name="KeyStoreType" property="jetty.sslContext.keyStoreType" />
+        <Set name="KeyStoreProvider" property="jetty.sslContext.keyStoreProvider" />
+        <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword" /></Set>
+        <Set name="TrustStorePath">
+          <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
+            <Arg><Property name="jetty.base"/></Arg>
+            <Arg><Property name="jetty.sslContext.trustStorePath" deprecated="jetty.sslContext.trustStoreAbsolutePath,jetty.truststore" /></Arg>
+          </Call>
+        </Set>
+        <Set name="TrustStorePassword" property="jetty.sslContext.trustStorePassword" />
+        <Set name="TrustStoreType" property="jetty.sslContext.trustStoreType" />
+        <Set name="TrustStoreProvider" property="jetty.sslContext.trustStoreProvider" />
+        <Set name="EndpointIdentificationAlgorithm" property="jetty.sslContext.endpointIdentificationAlgorithm" />
+        <Set name="NeedClientAuth" property="jetty.sslContext.needClientAuth" />
+        <Set name="WantClientAuth" property="jetty.sslContext.wantClientAuth" />
+        <Set name="useCipherSuitesOrder" property="jetty.sslContext.useCipherSuitesOrder" />
+        <Set name="sslSessionCacheSize" property="jetty.sslContext.sslSessionCacheSize" />
+        <Set name="sslSessionTimeout" property="jetty.sslContext.sslSessionTimeout" />
+        <Set name="RenegotiationAllowed" property="jetty.sslContext.renegotiationAllowed" />
+        <Set name="RenegotiationLimit" property="jetty.sslContext.renegotiationLimit" />
+        <Set name="SniRequired" property="jetty.sslContext.sniRequired" />
+
+        <!-- Example of how to configure a PKIX Certificate Path revocation Checker
+        <Call id="pkixPreferCrls" class="java.security.cert.PKIXRevocationChecker$Option" name="valueOf"><Arg>PREFER_CRLS</Arg></Call>
+        <Call id="pkixSoftFail" class="java.security.cert.PKIXRevocationChecker$Option" name="valueOf"><Arg>SOFT_FAIL</Arg></Call>
+        <Call id="pkixNoFallback" class="java.security.cert.PKIXRevocationChecker$Option" name="valueOf"><Arg>NO_FALLBACK</Arg></Call>
+        <Call class="java.security.cert.CertPathBuilder" name="getInstance">
+          <Arg>PKIX</Arg>
+          <Call id="pkixRevocationChecker" name="getRevocationChecker">
+            <Call name="setOptions">
+              <Arg>
+                <Call class="java.util.EnumSet" name="of">
+                  <Arg><Ref refid="pkixPreferCrls"/></Arg>
+                  <Arg><Ref refid="pkixSoftFail"/></Arg>
+                  <Arg><Ref refid="pkixNoFallback"/></Arg>
+                </Call>
+              </Arg>
+            </Call>
+          </Call>
+        </Call>
+        <Set name="PkixCertPathChecker"><Ref refid="pkixRevocationChecker"/></Set>
+        -->
+      </New>
+    </Arg>
+  </Call>
+</Configure>

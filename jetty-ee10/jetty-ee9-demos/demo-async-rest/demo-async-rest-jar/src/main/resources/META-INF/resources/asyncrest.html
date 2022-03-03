@@ -1,0 +1,38 @@
+<html>
+ <head>
+  <style type='text/css'>
+    iframe {border: 0px}
+    table, tr, td {border: 0px}
+  </style>
+</head>
+<body>
+<h1>Blocking vs Asynchronous REST</h1>
+<p>
+This demo calls the EBay WS API both synchronously and asynchronously,
+to obtain items matching each of the keywords passed on the query
+string.  The time the request thread is head is displayed for both.
+</p>
+
+<table width='100%'>
+	
+<tr>
+<td>
+  <iframe id="f1" width='100%' height='175px' src="testSerial?items=kayak"></iframe>
+</td>
+<td>
+  <iframe id="f3" width='100%' height='175px' src="testSerial?items=mouse,beer,gnome"></iframe>
+</td>
+</tr>
+ 
+<tr>
+<td>
+  <iframe id="f2" width='100%' height='175px' src="testAsync?items=kayak"/></iframe>
+</td>
+<td>
+  <iframe id="f4" width='100%' height='175px' src="testAsync?items=mouse,beer,gnome"/></iframe>
+</td>
+</tr>
+
+</table>
+</body>
+</html>

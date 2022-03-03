@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <New id="databaseAdaptor" class="org.eclipse.jetty.server.session.DatabaseAdaptor">
+    <Call name="setDriverInfo">
+      <Arg><Property name="jetty.session.jdbc.driverClass"/></Arg>
+      <Arg><Property name="jetty.session.jdbc.driverUrl"/></Arg>
+    </Call>
+    <Set name="blobType" property="jetty.session.jdbc.blobType"/>
+    <Set name="longType" property="jetty.session.jdbc.longType"/>
+    <Set name="stringType" property="jetty.session.jdbc.stringType"/>
+  </New>
+
+</Configure>

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+
+<!-- =============================================================== -->
+<!-- Configure the test-annotations webapp                           -->
+<!-- =============================================================== -->
+
+<Configure id='wac' class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+
+  <!-- Configure the tx mgr (only needed for mvn jetty:run -->
+  <New id="tx" class="org.eclipse.jetty.plus.jndi.Transaction">
+    <Arg>
+      <New class="org.example.MockUserTransaction"/>
+    </Arg>
+  </New>
+
