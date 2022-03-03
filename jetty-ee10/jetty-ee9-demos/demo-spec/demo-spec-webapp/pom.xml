@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
-    <artifactId>jetty-ee9-demos</artifactId>
+    <artifactId>jetty-ee10-demos</artifactId>
     <version>12.0.0-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
-  <name>EE9 :: Jetty Demo :: Servlet Spec :: Webapp</name>
+  <name>EE10 :: Jetty Demo :: Servlet Spec :: Webapp</name>
   <artifactId>demo-spec-webapp</artifactId>
   <packaging>war</packaging>
   <properties>

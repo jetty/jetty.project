@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>jetty-ee9</artifactId>
+    <groupId>org.eclipse.jetty.ee10</groupId>
+    <artifactId>jetty-ee10</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee9-servlet-extras</artifactId>
-  <name>EE9 :: Jetty :: Extra Utility Servlets and Filters</name>
+  <artifactId>jetty-ee10-servlet-extras</artifactId>
+  <name>EE10 :: Jetty :: Extra Utility Servlets and Filters</name>
   <description>Extra Utility Servlets from Jetty</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.servlets</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee9.servlets.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.servlets.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
@@ -35,8 +35,8 @@
       <artifactId>jetty-http</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-webapp</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

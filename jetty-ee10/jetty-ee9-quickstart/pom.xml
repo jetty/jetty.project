@@ -1,13 +1,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>jetty-ee9</artifactId>
+    <groupId>org.eclipse.jetty.ee10</groupId>
+    <artifactId>jetty-ee10</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee9-quickstart</artifactId>
-  <name>EE9 :: Jetty :: Quick Start</name>
+  <artifactId>jetty-ee10-quickstart</artifactId>
+  <name>EE10 :: Jetty :: Quick Start</name>
   <description>Jetty Quick Start</description>
 
   <properties>
@@ -26,7 +26,7 @@
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
             </Require-Capability>
             <Provide-Capability>
-              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration
+              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee10.webapp.Configuration
             </Provide-Capability>
           </instructions>
         </configuration>
@@ -36,16 +36,16 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-webapp</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-plus</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-plus</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-annotations</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

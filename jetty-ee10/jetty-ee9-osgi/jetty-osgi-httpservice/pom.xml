@@ -1,16 +1,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
-    <artifactId>jetty-ee9-osgi-project</artifactId>
+    <artifactId>jetty-ee10-osgi-project</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-httpservice</artifactId>
-  <name>EE9 :: Jetty :: OSGi :: HttpService</name>
+  <name>EE10 :: Jetty :: OSGi :: HttpService</name>
   <description>Jetty OSGi HttpService bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.httpservice</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee9.osgi.httpservice.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.osgi.httpservice.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
@@ -18,8 +18,8 @@
       <artifactId>jetty-util</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.equinox.http</groupId>
@@ -62,7 +62,7 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Bundle-SymbolicName>org.eclipse.jetty.ee9.osgi.httpservice</Bundle-SymbolicName>
+            <Bundle-SymbolicName>org.eclipse.jetty.ee10.osgi.httpservice</Bundle-SymbolicName>
             <Bundle-Name>OSGi HttpService</Bundle-Name>
             <Jetty-ContextFilePath>contexts/httpservice.xml</Jetty-ContextFilePath>
             <Import-Package>

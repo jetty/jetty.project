@@ -1,12 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>jetty-ee9</artifactId>
+    <groupId>org.eclipse.jetty.ee10</groupId>
+    <artifactId>jetty-ee10</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee9-cdi</artifactId>
-  <name>EE9 :: Jetty :: CDI</name>
+  <artifactId>jetty-ee10-cdi</artifactId>
+  <name>EE10 :: Jetty :: CDI</name>
   <packaging>jar</packaging>
   <properties>
     <bundle-symbolic-name>${project.groupId}.cdi</bundle-symbolic-name>
@@ -18,13 +18,13 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-webapp</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-annotations</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -44,7 +44,7 @@
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
             </Require-Capability>
             <Provide-Capability>
-                osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration,
+                osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee10.webapp.Configuration,
                 osgi.serviceloader; osgi.serviceloader=jakarta.servlet.ServletContainerInitializer
             </Provide-Capability>
           </instructions>
@@ -56,7 +56,7 @@
         <version>${maven.surefire.plugin.version}</version>
         <configuration>
           <!--<argLine>
-            @{argLine} ${jetty.surefire.argLine} &#45;&#45;add-opens=org.eclipse.jetty.ee9.cdi/org.eclipse.jetty.ee9.cdi=ALL-UNNAMED
+            @{argLine} ${jetty.surefire.argLine} &#45;&#45;add-opens=org.eclipse.jetty.ee10.cdi/org.eclipse.jetty.ee10.cdi=ALL-UNNAMED
           </argLine>-->
           <additionalClasspathElements />
         </configuration>

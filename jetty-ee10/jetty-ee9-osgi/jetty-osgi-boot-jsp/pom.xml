@@ -1,16 +1,16 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
-    <artifactId>jetty-ee9-osgi-project</artifactId>
+    <artifactId>jetty-ee10-osgi-project</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot-jsp</artifactId>
-  <name>EE9 :: Jetty :: OSGi :: Boot JSP</name>
+  <name>EE10 :: Jetty :: OSGi :: Boot JSP</name>
   <description>Jetty OSGi Boot JSP bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot.jsp</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee9.osgi.boot.jasper.*,org.eclipse.jetty.ee9.osgi.boot.jsp.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.osgi.boot.jasper.*,org.eclipse.jetty.ee10.osgi.boot.jsp.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
@@ -37,8 +37,8 @@
     </dependency>
     <!-- JSP Deps -->
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-apache-jsp</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-apache-jsp</artifactId>
     </dependency>
   </dependencies>
 
@@ -71,8 +71,8 @@
           <instructions>
             <Bundle-Name>Jetty-OSGi-Jasper Integration</Bundle-Name>
             <Bundle-Classpath />
-            <Fragment-Host>org.eclipse.jetty.ee9.osgi.boot</Fragment-Host>
-            <Export-Package>!org.eclipse.jetty.ee9.osgi.boot.*</Export-Package>
+            <Fragment-Host>org.eclipse.jetty.ee10.osgi.boot</Fragment-Host>
+            <Export-Package>!org.eclipse.jetty.ee10.osgi.boot.*</Export-Package>
             <Import-Package>
               ${osgi.slf4j.import.packages},
               org.eclipse.jdt.*;resolution:=optional,

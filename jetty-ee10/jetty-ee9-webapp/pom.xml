@@ -1,18 +1,18 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.ee9</groupId>
-    <artifactId>jetty-ee9</artifactId>
+    <groupId>org.eclipse.jetty.ee10</groupId>
+    <artifactId>jetty-ee10</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>jetty-ee9-webapp</artifactId>
-  <name>EE9 :: Jetty :: Webapp Application Support</name>
+  <artifactId>jetty-ee10-webapp</artifactId>
+  <name>EE10 :: Jetty :: Webapp Application Support</name>
   <description>Jetty web application support</description>
 
   <properties>
     <bundle-symbolic-name>${project.groupId}.webapp</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee9.webapp.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.webapp.*</spotbugs.onlyAnalyze>
   </properties>
 
   <build>
@@ -43,7 +43,7 @@
             <additionalClasspathElement>${basedir}/src/test/resources/module/foo-bar-janb.jar</additionalClasspathElement>
           </additionalClasspathElements>
           <excludes>
-            <exclude>org.eclipse.jetty.ee9.webapp.WebAppClassLoaderUrlStreamTest</exclude>
+            <exclude>org.eclipse.jetty.ee10.webapp.WebAppClassLoaderUrlStreamTest</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -54,10 +54,10 @@
         <configuration>
           <instructions>
             <Require-Capability>
-              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)", osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
+              osgi.extender; filter:="(osgi.extender=osgi.serviceloader.processor)", osgi.serviceloader; filter:="(osgi.serviceloader=org.eclipse.jetty.ee10.webapp.Configuration)";cardinality:=multiple, osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
             </Require-Capability>
             <Provide-Capability>
-              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration
+              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee10.webapp.Configuration
             </Provide-Capability>
           </instructions>
         </configuration>
@@ -67,8 +67,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-servlet</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-servlet</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

@@ -1,26 +1,26 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.osgi</groupId>
-    <artifactId>jetty-ee9-osgi-project</artifactId>
+    <artifactId>jetty-ee10-osgi-project</artifactId>
     <version>12.0.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-osgi-boot</artifactId>
-  <name>EE9 :: Jetty :: OSGi :: Boot</name>
+  <name>EE10 :: Jetty :: OSGi :: Boot</name>
   <description>Jetty OSGi Boot bundle</description>
   <properties>
     <bundle-symbolic-name>${project.groupId}.boot</bundle-symbolic-name>
-    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee9.osgi.boot.*</spotbugs.onlyAnalyze>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.osgi.boot.*</spotbugs.onlyAnalyze>
   </properties>
   <dependencies>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-annotations</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-annotations</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-webapp</artifactId>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-webapp</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -72,8 +72,8 @@
         <extensions>true</extensions>
         <configuration>
           <instructions>
-            <Bundle-SymbolicName>org.eclipse.jetty.ee9.osgi.boot;singleton:=true</Bundle-SymbolicName>
-            <Bundle-Activator>org.eclipse.jetty.ee9.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
+            <Bundle-SymbolicName>org.eclipse.jetty.ee10.osgi.boot;singleton:=true</Bundle-SymbolicName>
+            <Bundle-Activator>org.eclipse.jetty.ee10.osgi.boot.JettyBootstrapActivator</Bundle-Activator>
             <DynamicImport-Package>org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))"</DynamicImport-Package>
             <Import-Package>
               ${osgi.slf4j.import.packages},
@@ -103,7 +103,7 @@
               osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"
             </Require-Capability>
             <Provide-Capability>
-              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee9.webapp.Configuration
+              osgi.serviceloader; osgi.serviceloader=org.eclipse.jetty.ee10.webapp.Configuration
             </Provide-Capability>
             <_nouses>true</_nouses>
           </instructions>
