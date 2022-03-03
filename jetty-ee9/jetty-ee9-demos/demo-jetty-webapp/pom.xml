@@ -61,7 +61,7 @@
           </supportedProjectTypes>
           <instructions>
             <Import-Package>jakarta.servlet.jsp.*;version="[3,4)",org.eclipse.jetty.*;version="[$(version;===;${parsedVersion.osgiVersion}),$(version;==+;${parsedVersion.osgiVersion}))",*</Import-Package>
-            <Export-Package>!com.acme*</Export-Package>
+            <Export-Package>!org.example*</Export-Package>
             <!-- the test webapp is configured via a jetty xml file
             in order to add the security handler. -->
             <Web-ContextPath>/</Web-ContextPath>

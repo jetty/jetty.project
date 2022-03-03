@@ -11,7 +11,7 @@
     <Arg><Ref refid='wac'/></Arg>
     <Arg>jdbc/mydatasource</Arg>
     <Arg>
-     <New class="com.acme.MockDataSource">
+     <New class="org.example.MockDataSource">
      </New>
     </Arg>
    </New>

@@ -46,7 +46,7 @@ public class ServerWithJNDI
         // Register new transaction manager in JNDI
         // At runtime, the webapp accesses this as java:comp/UserTransaction
         new org.eclipse.jetty.ee9.plus.jndi.Transaction(
-            new com.acme.MockUserTransaction());
+            new org.example.MockUserTransaction());
 
         // Define an env entry with Server scope.
         // At runtime, the webapp accesses this as java:comp/env/woggle
@@ -81,7 +81,7 @@ public class ServerWithJNDI
         // At runtime the webapp accesses this as
         // java:comp/env/jdbc/mydatasource
         new org.eclipse.jetty.ee9.plus.jndi.Resource(
-            webapp, "jdbc/mydatasource", new com.acme.MockDataSource());
+            webapp, "jdbc/mydatasource", new org.example.MockDataSource());
         return server;
     }
 

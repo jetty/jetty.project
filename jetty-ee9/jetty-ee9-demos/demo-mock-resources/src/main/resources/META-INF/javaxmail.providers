@@ -1,1 +1,1 @@
- protocol=smtp; type=transport; class=com.acme.MockTransport; vendor=Acme Tests;
+ protocol=smtp; type=transport; class=org.example.MockTransport; vendor=Acme Tests;

@@ -42,7 +42,7 @@
   <!-- Reset servlet class and/or start order -->
   <servlet>
     <servlet-name>Session</servlet-name>
-    <servlet-class>com.acme.SessionDump</servlet-class>
+    <servlet-class>org.example.SessionDump</servlet-class>
     <load-on-startup>5</load-on-startup>
   </servlet>
   
@@ -50,7 +50,7 @@
   <!--
   <filter>
     <filter-name>TestFilter</filter-name>
-    <filter-class>com.acme.TestFilter</filter-class>
+    <filter-class>org.example.TestFilter</filter-class>
     <async-supported>true</async-supported>
     <init-param>
       <param-name>remote</param-name>

@@ -15,7 +15,7 @@
   
   <!-- Declare TestListener, which declares TestFilter -->
   <listener>
-    <listener-class>com.acme.TestListener</listener-class>
+    <listener-class>org.example.TestListener</listener-class>
   </listener>
 
   <filter>
@@ -48,7 +48,7 @@
 
   <servlet>
     <servlet-name>Login</servlet-name>
-    <servlet-class>com.acme.LoginServlet</servlet-class>
+    <servlet-class>org.example.LoginServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
 
@@ -60,7 +60,7 @@
 
   <servlet>
     <servlet-name>Hello</servlet-name>
-    <servlet-class>com.acme.HelloWorld</servlet-class>
+    <servlet-class>org.example.HelloWorld</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
 
@@ -71,7 +71,7 @@
   
   <servlet>
     <servlet-name>Dump</servlet-name>
-    <servlet-class>com.acme.Dump</servlet-class>
+    <servlet-class>org.example.Dump</servlet-class>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>
     <run-as><role-name>admin</role-name></run-as>
@@ -89,7 +89,7 @@
 
   <servlet>
     <servlet-name>Session</servlet-name>
-    <servlet-class>com.acme.SessionDump</servlet-class>
+    <servlet-class>org.example.SessionDump</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
   
@@ -100,7 +100,7 @@
   
   <servlet>
     <servlet-name>Cookie</servlet-name>
-    <servlet-class>com.acme.CookieDump</servlet-class>
+    <servlet-class>org.example.CookieDump</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
   
@@ -111,7 +111,7 @@
   
   <servlet>
     <servlet-name>Dispatch</servlet-name>
-    <servlet-class>com.acme.DispatchServlet</servlet-class>
+    <servlet-class>org.example.DispatchServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>
   </servlet>
@@ -135,7 +135,7 @@
   
   <servlet>
     <servlet-name>Chat</servlet-name>
-    <servlet-class>com.acme.ChatServlet</servlet-class>
+    <servlet-class>org.example.ChatServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
     <async-supported>true</async-supported>
   </servlet>
@@ -147,7 +147,7 @@
   
   <servlet>
     <servlet-name>WSChat</servlet-name>
-    <servlet-class>com.acme.WebSocketChatServlet</servlet-class>
+    <servlet-class>org.example.WebSocketChatServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
 
@@ -159,7 +159,7 @@
   
   <servlet>
     <servlet-name>Rewrite</servlet-name>
-    <servlet-class>com.acme.RewriteServlet</servlet-class>
+    <servlet-class>org.example.RewriteServlet</servlet-class>
   </servlet>
   
   <servlet-mapping>
@@ -171,7 +171,7 @@
   
   <servlet>
     <servlet-name>SecureMode</servlet-name>
-    <servlet-class>com.acme.SecureModeServlet</servlet-class>
+    <servlet-class>org.example.SecureModeServlet</servlet-class>
     <load-on-startup>1</load-on-startup>
   </servlet>
 
@@ -183,7 +183,7 @@
 
   <servlet>
     <servlet-name>TestServlet</servlet-name>
-    <servlet-class>com.acme.TestServlet</servlet-class>
+    <servlet-class>org.example.TestServlet</servlet-class>
     <load-on-startup>10</load-on-startup>
   </servlet>
 

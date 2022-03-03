@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty;
 
-import com.acme.DispatchServlet;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.example.DispatchServlet;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,18 +61,18 @@ public class DispatchServletTest
      *
      * <blockquote>
      * <p>
-     * The dispatcher servlet (com.acme.DispatchServlet) is prone to a Denial of
+     * The dispatcher servlet (org.example.DispatchServlet) is prone to a Denial of
      * Service vulnerability.
      * </p>
      * <p>
      * This example servlet is meant to be used as a resources dispatcher,
      * however a malicious aggressor may abuse this functionality in order to
      * cause a recursive inclusion. In details, it is possible to abuse the
-     * method com.acme.DispatchServlet.doGet(DispatchServlet.java:203) forcing
+     * method org.example.DispatchServlet.doGet(DispatchServlet.java:203) forcing
      * the application to recursively include the "Dispatch" servlet.
      * </p>
      * <p>
-     * Dispatch com.acme.DispatchServlet 1 Dispatch /dispatch/* As a result, it
+     * Dispatch org.example.DispatchServlet 1 Dispatch /dispatch/* As a result, it
      * is possible to trigger a "java.lang.StackOverflowError" and consequently
      * an internal server error (500).
      * </p>

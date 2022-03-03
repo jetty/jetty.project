@@ -27,7 +27,7 @@
                 <Bundle-SymbolicName>org.eclipse.jetty.demos.demo-mock-resources</Bundle-SymbolicName>
                 <Bundle-Description>Mock resources used for testing</Bundle-Description>
                 <Export-Package>
-                  com.acme;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
+                  org.example;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"
                 </Export-Package>
                 <Import-Package>
                   javax.sql, jakarta.transaction;version="2.0.0"

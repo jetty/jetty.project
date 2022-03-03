@@ -22,7 +22,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <!-- otherwise javadoc jars for these demos will not be created due to top level pom exclusions on "com.acme" -->
+          <!-- otherwise javadoc jars for these demos will not be created due to top level pom exclusions on "org.example" -->
           <excludePackageNames>bogus.*</excludePackageNames>
         </configuration>
       </plugin>
@@ -39,6 +39,7 @@
     <module>demo-jsp-webapp</module>
     <module>demo-mock-resources</module>
     <module>demo-spec</module>
+    <module>demo-template</module>
     <module>embedded</module>
   </modules>
 </project>

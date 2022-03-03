@@ -16,7 +16,7 @@
 
   <servlet>
     <servlet-name>AnnotationTest</servlet-name>
-    <servlet-class>com.acme.test.AnnotationTest</servlet-class>
+    <servlet-class>org.example.test.AnnotationTest</servlet-class>
     <init-param>
       <param-name>extra1</param-name>
       <param-value>123</param-value>
@@ -29,7 +29,7 @@
 
   <servlet>
     <servlet-name>Fragment</servlet-name>
-    <servlet-class>com.acme.fragment.FragmentServlet</servlet-class>
+    <servlet-class>org.example.fragment.FragmentServlet</servlet-class>
   </servlet>
 
   <servlet-mapping>

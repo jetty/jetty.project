@@ -1,1 +1,1 @@
-com.acme.initializer.FooInitializer
+org.example.initializer.FooInitializer

@@ -24,7 +24,7 @@
             <Bundle-Description>A bundle containing a ServletContainerInitializer for testing</Bundle-Description>
             <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=jakarta.servlet.ServletContainerInitializer</Provide-Capability>
-            <Export-Package>com.acme.initializer;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+            <Export-Package>org.example.initializer;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
             <_nouses>true</_nouses>
           </instructions>
         </configuration>
