@@ -15,7 +15,7 @@ package org.eclipse.jetty.session.infinispan;
 
 import java.util.Set;
 
-import org.eclipse.jetty.server.session.SessionContext;
+import org.eclipse.jetty.session.SessionContext;
 
 public interface QueryManager
 {

@@ -14,7 +14,7 @@
 module org.eclipse.jetty.nosql
 {
     requires transitive mongo.java.driver;
-    requires transitive org.eclipse.jetty.server;
+    requires transitive org.eclipse.jetty.session;
 
     exports org.eclipse.jetty.nosql;
     exports org.eclipse.jetty.nosql.mongodb;

@@ -28,9 +28,9 @@ import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.session.CachingSessionDataStore;
-import org.eclipse.jetty.server.session.NullSessionCache;
-import org.eclipse.jetty.server.session.NullSessionDataStore;
+import org.eclipse.jetty.session.CachingSessionDataStore;
+import org.eclipse.jetty.session.NullSessionCache;
+import org.eclipse.jetty.session.NullSessionDataStore;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
