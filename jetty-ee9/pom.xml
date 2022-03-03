@@ -76,6 +76,11 @@
       <!-- Jetty EE 9 Dependencies -->
       <dependency>
         <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-handler</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jetty.ee9</groupId>
         <artifactId>jetty-ee9-annotations</artifactId>
         <version>${project.version}</version>
       </dependency>
