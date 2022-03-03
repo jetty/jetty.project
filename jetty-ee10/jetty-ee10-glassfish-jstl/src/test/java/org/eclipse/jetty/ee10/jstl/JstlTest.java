@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.jstl;
+package org.eclipse.jetty.ee10.jstl;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,8 +21,8 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import jakarta.servlet.jsp.JspException;
-import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.FS;

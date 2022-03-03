@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee9.apache.jsp
+module org.eclipse.jetty.ee10.apache.jsp
 {
     requires java.xml;
     requires jetty.servlet.api;
@@ -19,12 +19,12 @@ module org.eclipse.jetty.ee9.apache.jsp
     requires org.mortbay.apache.jasper;
     requires org.slf4j;
 
-    exports org.eclipse.jetty.ee9.apache.jsp;
-    exports org.eclipse.jetty.ee9.jsp;
+    exports org.eclipse.jetty.ee10.apache.jsp;
+    exports org.eclipse.jetty.ee10.jsp;
 
     provides org.apache.juli.logging.Log with
-        org.eclipse.jetty.ee9.apache.jsp.JuliLog;
+        org.eclipse.jetty.ee10.apache.jsp.JuliLog;
 
     provides jakarta.servlet.ServletContainerInitializer with
-        org.eclipse.jetty.ee9.apache.jsp.JettyJasperInitializer;
+        org.eclipse.jetty.ee10.apache.jsp.JettyJasperInitializer;
 }

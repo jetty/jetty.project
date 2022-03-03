@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.test;
+package org.eclipse.jetty.ee10.test;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,11 +32,11 @@ import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
-import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
-import org.eclipse.jetty.ee9.webapp.Configuration;
-import org.eclipse.jetty.ee9.webapp.Configurations;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
-import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee10.webapp.Configuration;
+import org.eclipse.jetty.ee10.webapp.Configurations;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -111,9 +111,9 @@ public class DeploymentErrorTest
 
         // Setup Configurations
         Configurations.setServerDefault(server)
-            .add("org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration",
-                "org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration",
-                "org.eclipse.jetty.ee9.annotations.AnnotationConfiguration",
+            .add("org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration",
+                "org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration",
+                "org.eclipse.jetty.ee10.annotations.AnnotationConfiguration",
                 TrackedConfiguration.class.getName()
             );
 

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests.quotes;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests.quotes;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,8 +31,8 @@ import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerEndpoint;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEventTracker;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSEventTracker;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;

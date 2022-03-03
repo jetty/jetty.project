@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.maven.plugin;
+package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import org.eclipse.jetty.ee9.webapp.Configuration;
-import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.Configuration;
+import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

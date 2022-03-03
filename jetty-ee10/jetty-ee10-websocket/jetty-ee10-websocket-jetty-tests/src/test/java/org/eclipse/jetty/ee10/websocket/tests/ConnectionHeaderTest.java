@@ -11,17 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.tests;
+package org.eclipse.jetty.ee10.websocket.tests;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.HttpRequest;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.client.JettyUpgradeListener;
-import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
-import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.client.JettyUpgradeListener;
+import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Server;

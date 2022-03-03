@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
 public enum MessageType
 {

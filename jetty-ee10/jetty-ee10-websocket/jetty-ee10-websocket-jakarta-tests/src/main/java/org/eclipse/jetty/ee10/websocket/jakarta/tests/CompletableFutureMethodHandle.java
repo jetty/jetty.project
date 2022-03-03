@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 
-import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketFrameHandlerFactory;
 import org.eclipse.jetty.websocket.core.internal.util.InvokerUtils;
 import org.eclipse.jetty.websocket.core.internal.util.ReflectUtils;
 

@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.handler.jmx;
+package org.eclipse.jetty.ee10.handler.jmx;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.ee9.handler.ContextHandler;
+import org.eclipse.jetty.ee10.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;

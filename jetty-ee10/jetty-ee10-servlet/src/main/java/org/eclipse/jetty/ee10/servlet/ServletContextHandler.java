@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,18 +49,18 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.Dispatcher;
-import org.eclipse.jetty.ee9.handler.ErrorHandler;
-import org.eclipse.jetty.ee9.handler.Handler;
-import org.eclipse.jetty.ee9.handler.HandlerCollection;
-import org.eclipse.jetty.ee9.handler.HandlerContainer;
-import org.eclipse.jetty.ee9.handler.HandlerWrapper;
-import org.eclipse.jetty.ee9.handler.gzip.GzipHandler;
-import org.eclipse.jetty.ee9.security.ConstraintAware;
-import org.eclipse.jetty.ee9.security.ConstraintMapping;
-import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.security.SecurityHandler;
+import org.eclipse.jetty.ee10.handler.ContextHandler;
+import org.eclipse.jetty.ee10.handler.Dispatcher;
+import org.eclipse.jetty.ee10.handler.ErrorHandler;
+import org.eclipse.jetty.ee10.handler.Handler;
+import org.eclipse.jetty.ee10.handler.HandlerCollection;
+import org.eclipse.jetty.ee10.handler.HandlerContainer;
+import org.eclipse.jetty.ee10.handler.HandlerWrapper;
+import org.eclipse.jetty.ee10.handler.gzip.GzipHandler;
+import org.eclipse.jetty.ee10.security.ConstraintAware;
+import org.eclipse.jetty.ee10.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.security.SecurityHandler;
 import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.annotations;
+package org.eclipse.jetty.ee10.annotations;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -38,19 +38,19 @@ import java.util.stream.Stream;
 
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.annotation.HandlesTypes;
-import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
-import org.eclipse.jetty.ee9.servlet.Source;
-import org.eclipse.jetty.ee9.servlet.Source.Origin;
-import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
-import org.eclipse.jetty.ee9.webapp.FragmentConfiguration;
-import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
-import org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
-import org.eclipse.jetty.ee9.webapp.WebDescriptor;
-import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee10.servlet.ServletContainerInitializerHolder;
+import org.eclipse.jetty.ee10.servlet.Source;
+import org.eclipse.jetty.ee10.servlet.Source.Origin;
+import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee10.webapp.FragmentConfiguration;
+import org.eclipse.jetty.ee10.webapp.FragmentDescriptor;
+import org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration;
+import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee10.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebDescriptor;
+import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.util.JavaVersion;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;

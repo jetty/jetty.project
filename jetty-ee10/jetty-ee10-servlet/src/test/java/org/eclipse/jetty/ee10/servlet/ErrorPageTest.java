@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -37,11 +37,11 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.Dispatcher;
-import org.eclipse.jetty.ee9.handler.HandlerWrapper;
-import org.eclipse.jetty.ee9.handler.HttpChannel;
-import org.eclipse.jetty.ee9.handler.HttpChannelState;
-import org.eclipse.jetty.ee9.handler.Request;
+import org.eclipse.jetty.ee10.handler.Dispatcher;
+import org.eclipse.jetty.ee10.handler.HandlerWrapper;
+import org.eclipse.jetty.ee10.handler.HttpChannel;
+import org.eclipse.jetty.ee10.handler.HttpChannelState;
+import org.eclipse.jetty.ee10.handler.Request;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;

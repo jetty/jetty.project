@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.plus.annotation;
+package org.eclipse.jetty.ee10.plus.annotation;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

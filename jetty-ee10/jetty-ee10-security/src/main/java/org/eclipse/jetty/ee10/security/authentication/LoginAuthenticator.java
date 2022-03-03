@@ -11,18 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security.authentication;
+package org.eclipse.jetty.ee10.security.authentication;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.ee9.handler.Response;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
-import org.eclipse.jetty.ee9.security.Authenticator;
-import org.eclipse.jetty.ee9.security.IdentityService;
-import org.eclipse.jetty.ee9.security.LoginService;
+import org.eclipse.jetty.ee10.handler.Request;
+import org.eclipse.jetty.ee10.handler.Response;
+import org.eclipse.jetty.ee10.handler.UserIdentity;
+import org.eclipse.jetty.ee10.security.Authenticator;
+import org.eclipse.jetty.ee10.security.IdentityService;
+import org.eclipse.jetty.ee10.security.LoginService;
 import org.eclipse.jetty.session.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

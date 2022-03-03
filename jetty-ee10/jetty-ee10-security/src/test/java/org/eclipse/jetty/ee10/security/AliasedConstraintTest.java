@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security;
+package org.eclipse.jetty.ee10.security;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,10 +19,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.DefaultHandler;
-import org.eclipse.jetty.ee9.handler.HandlerList;
-import org.eclipse.jetty.ee9.handler.ResourceHandler;
+import org.eclipse.jetty.ee10.handler.ContextHandler;
+import org.eclipse.jetty.ee10.handler.DefaultHandler;
+import org.eclipse.jetty.ee10.handler.HandlerList;
+import org.eclipse.jetty.ee10.handler.ResourceHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;

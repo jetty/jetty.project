@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.tests.proxy;
+package org.eclipse.jetty.ee10.websocket.tests.proxy;
 
 import java.io.IOException;
 import java.net.URI;
@@ -20,18 +20,18 @@ import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.websocket.api.Frame;
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.api.StatusCode;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketFrame;
-import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.ee9.websocket.api.exceptions.WebSocketException;
-import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
-import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee9.websocket.tests.EchoSocket;
-import org.eclipse.jetty.ee9.websocket.tests.EventSocket;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.websocket.api.Frame;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.StatusCode;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketFrame;
+import org.eclipse.jetty.ee10.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee10.websocket.api.exceptions.WebSocketException;
+import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.websocket.tests.EchoSocket;
+import org.eclipse.jetty.ee10.websocket.tests.EventSocket;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Server;

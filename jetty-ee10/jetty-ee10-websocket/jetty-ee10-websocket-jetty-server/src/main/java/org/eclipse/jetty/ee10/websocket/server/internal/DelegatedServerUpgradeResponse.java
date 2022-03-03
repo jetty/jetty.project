@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.server.internal;
+package org.eclipse.jetty.ee10.websocket.server.internal;
 
 import java.io.IOException;
 import java.util.List;
@@ -19,9 +19,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
-import org.eclipse.jetty.ee9.websocket.common.JettyExtensionConfig;
-import org.eclipse.jetty.ee9.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
+import org.eclipse.jetty.ee10.websocket.common.JettyExtensionConfig;
+import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 public class DelegatedServerUpgradeResponse implements JettyServerUpgradeResponse

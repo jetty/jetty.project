@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.server.browser;
+package org.eclipse.jetty.ee10.websocket.server.browser;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,13 +23,13 @@ import java.util.Calendar;
 import java.util.Locale;
 import java.util.Random;
 
-import org.eclipse.jetty.ee9.websocket.api.RemoteEndpoint;
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee10.websocket.api.RemoteEndpoint;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.ee10.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.common;
+package org.eclipse.jetty.ee10.websocket.common;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

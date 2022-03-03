@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.jaas;
+package org.eclipse.jetty.ee10.jaas;
 
 public class JAASRole extends JAASPrincipal
 {

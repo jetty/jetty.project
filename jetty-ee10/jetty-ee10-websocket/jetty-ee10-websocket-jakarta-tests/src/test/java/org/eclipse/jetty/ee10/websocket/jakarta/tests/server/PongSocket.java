@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
 import java.nio.charset.StandardCharsets;
 

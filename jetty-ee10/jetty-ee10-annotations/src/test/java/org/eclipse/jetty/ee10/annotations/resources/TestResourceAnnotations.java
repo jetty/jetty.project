@@ -11,20 +11,20 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.annotations.resources;
+package org.eclipse.jetty.ee10.annotations.resources;
 
 import java.lang.reflect.Field;
 import java.util.Set;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
-import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector;
-import org.eclipse.jetty.ee9.annotations.ResourceAnnotationHandler;
-import org.eclipse.jetty.ee9.annotations.ResourcesAnnotationHandler;
-import org.eclipse.jetty.ee9.plus.annotation.Injection;
-import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.ee9.plus.jndi.EnvEntry;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector;
+import org.eclipse.jetty.ee10.annotations.ResourceAnnotationHandler;
+import org.eclipse.jetty.ee10.annotations.ResourcesAnnotationHandler;
+import org.eclipse.jetty.ee10.plus.annotation.Injection;
+import org.eclipse.jetty.ee10.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.ee10.plus.jndi.EnvEntry;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

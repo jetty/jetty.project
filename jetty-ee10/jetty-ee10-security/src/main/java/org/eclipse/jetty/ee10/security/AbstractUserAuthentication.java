@@ -11,17 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security;
+package org.eclipse.jetty.ee10.security;
 
 import java.io.Serializable;
 import java.util.Set;
 
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.ee9.handler.Authentication;
-import org.eclipse.jetty.ee9.handler.Authentication.User;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
-import org.eclipse.jetty.ee9.handler.UserIdentity.Scope;
-import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.ee10.handler.Authentication;
+import org.eclipse.jetty.ee10.handler.Authentication.User;
+import org.eclipse.jetty.ee10.handler.UserIdentity;
+import org.eclipse.jetty.ee10.handler.UserIdentity.Scope;
+import org.eclipse.jetty.ee10.security.authentication.LoginAuthenticator;
 
 /**
  * AbstractUserAuthentication

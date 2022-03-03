@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.demos;
+package org.eclipse.jetty.ee10.demos;
 
 import java.io.IOException;
 import java.io.PrintWriter;

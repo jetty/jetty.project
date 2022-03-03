@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.jsp;
+package org.eclipse.jetty.ee10.jsp;
 
 import java.io.IOException;
 import java.nio.file.Files;

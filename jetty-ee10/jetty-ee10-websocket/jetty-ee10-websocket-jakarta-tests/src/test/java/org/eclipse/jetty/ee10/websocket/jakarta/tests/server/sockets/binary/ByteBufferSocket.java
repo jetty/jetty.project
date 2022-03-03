@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.binary;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests.server.sockets.binary;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

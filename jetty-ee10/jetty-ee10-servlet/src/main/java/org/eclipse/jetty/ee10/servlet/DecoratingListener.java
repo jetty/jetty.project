@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;

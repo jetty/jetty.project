@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
+package org.eclipse.jetty.ee10.websocket.jakarta.server.internal;
 
 import java.net.URI;
 import java.security.Principal;
 
-import org.eclipse.jetty.ee9.websocket.jakarta.common.UpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.UpgradeRequest;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeRequest;
 
 public class JakartaServerUpgradeRequest implements UpgradeRequest

@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.tests.examples;
+package org.eclipse.jetty.ee10.websocket.tests.examples;
 
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 
 @SuppressWarnings("serial")
 public class MyAuthedServlet extends JettyWebSocketServlet

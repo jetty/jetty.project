@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.handler;
+package org.eclipse.jetty.ee10.handler;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -114,7 +114,7 @@ import org.slf4j.LoggerFactory;
  * by {@link Request#setContext(ContextHandler.Context, String)}.</li>
  *
  * <li>the HTTP session methods will all return null sessions until such time as a request has been passed to a
- * org.eclipse.jetty.server.ee9.SessionHandler which checks for session cookies and enables the ability to create new sessions.</li>
+ * org.eclipse.jetty.server.ee10.SessionHandler which checks for session cookies and enables the ability to create new sessions.</li>
  *
  * <li>The {@link Request#getServletPath()} method will return "" until the request has been passed to a <code>org.eclipse.jetty.servlet.ServletHandler</code>
  * and the pathInfo matched against the servlet URL patterns and {@link Request#setServletPathMapping(ServletPathMapping)} called as a result.</li>

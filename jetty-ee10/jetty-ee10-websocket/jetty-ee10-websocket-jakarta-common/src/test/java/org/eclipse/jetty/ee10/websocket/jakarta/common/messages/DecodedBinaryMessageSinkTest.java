@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.common.messages;
+package org.eclipse.jetty.ee10.websocket.jakarta.common.messages;
 
 import java.lang.invoke.MethodHandle;
 import java.nio.ByteBuffer;
@@ -26,8 +26,8 @@ import java.util.function.Consumer;
 import jakarta.websocket.DecodeException;
 import jakarta.websocket.Decoder;
 import jakarta.websocket.EndpointConfig;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.AbstractSessionTest;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.AbstractSessionTest;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;

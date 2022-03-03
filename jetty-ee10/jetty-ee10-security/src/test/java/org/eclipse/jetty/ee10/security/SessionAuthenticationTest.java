@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security;
+package org.eclipse.jetty.ee10.security;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
-import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
-import org.eclipse.jetty.ee9.security.authentication.SessionAuthentication;
+import org.eclipse.jetty.ee10.handler.ContextHandler;
+import org.eclipse.jetty.ee10.handler.UserIdentity;
+import org.eclipse.jetty.ee10.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.Test;
 

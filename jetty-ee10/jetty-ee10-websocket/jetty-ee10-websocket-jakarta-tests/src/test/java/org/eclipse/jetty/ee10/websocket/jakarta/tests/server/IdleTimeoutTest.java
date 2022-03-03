@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import com.acme.websocket.IdleTimeoutContextListener;
 import com.acme.websocket.IdleTimeoutOnOpenEndpoint;
 import com.acme.websocket.IdleTimeoutOnOpenSocket;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.Fuzzer;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSServer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.Fuzzer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSServer;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.websocket.core.CloseStatus;

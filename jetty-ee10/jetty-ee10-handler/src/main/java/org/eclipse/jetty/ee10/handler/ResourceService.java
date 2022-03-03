@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.handler;
+package org.eclipse.jetty.ee10.handler;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -33,9 +33,9 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.resource.HttpContentRangeWriter;
-import org.eclipse.jetty.ee9.handler.resource.InputStreamRangeWriter;
-import org.eclipse.jetty.ee9.handler.resource.RangeWriter;
+import org.eclipse.jetty.ee10.handler.resource.HttpContentRangeWriter;
+import org.eclipse.jetty.ee10.handler.resource.InputStreamRangeWriter;
+import org.eclipse.jetty.ee10.handler.resource.RangeWriter;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;

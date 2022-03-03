@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security.jaspi;
+package org.eclipse.jetty.ee10.security.jaspi;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -25,11 +25,11 @@ import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.security.AbstractLoginService;
-import org.eclipse.jetty.ee9.security.ConstraintMapping;
-import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.security.RolePrincipal;
-import org.eclipse.jetty.ee9.security.UserPrincipal;
+import org.eclipse.jetty.ee10.security.AbstractLoginService;
+import org.eclipse.jetty.ee10.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.security.RolePrincipal;
+import org.eclipse.jetty.ee10.security.UserPrincipal;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;

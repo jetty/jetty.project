@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.demos;
+package org.eclipse.jetty.ee10.demos;
 
-import org.eclipse.jetty.ee9.proxy.ConnectHandler;
-import org.eclipse.jetty.ee9.proxy.ProxyServlet;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.proxy.ConnectHandler;
+import org.eclipse.jetty.ee10.proxy.ProxyServlet;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 

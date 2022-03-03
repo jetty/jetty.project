@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
+package org.eclipse.jetty.ee10.websocket.jakarta.server.internal;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;

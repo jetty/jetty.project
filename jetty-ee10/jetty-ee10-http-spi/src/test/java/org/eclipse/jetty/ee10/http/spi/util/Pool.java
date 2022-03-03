@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.spi.util;
+package org.eclipse.jetty.ee10.http.spi.util;
 
 /**
  * This class holds the default pool constants

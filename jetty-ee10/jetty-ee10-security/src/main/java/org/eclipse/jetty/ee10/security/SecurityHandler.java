@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security;
+package org.eclipse.jetty.ee10.security;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -27,15 +27,15 @@ import java.util.Set;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.Authentication;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.ContextHandler.Context;
-import org.eclipse.jetty.ee9.handler.Handler;
-import org.eclipse.jetty.ee9.handler.HandlerWrapper;
-import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.ee9.handler.Response;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
-import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.ee10.handler.Authentication;
+import org.eclipse.jetty.ee10.handler.ContextHandler;
+import org.eclipse.jetty.ee10.handler.ContextHandler.Context;
+import org.eclipse.jetty.ee10.handler.Handler;
+import org.eclipse.jetty.ee10.handler.HandlerWrapper;
+import org.eclipse.jetty.ee10.handler.Request;
+import org.eclipse.jetty.ee10.handler.Response;
+import org.eclipse.jetty.ee10.handler.UserIdentity;
+import org.eclipse.jetty.ee10.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.slf4j.Logger;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,12 +24,12 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.CachedContentFactory;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.ResourceContentFactory;
-import org.eclipse.jetty.ee9.handler.ResourceHandler;
-import org.eclipse.jetty.ee9.handler.ResourceService;
-import org.eclipse.jetty.ee9.handler.ResourceService.WelcomeFactory;
+import org.eclipse.jetty.ee10.handler.CachedContentFactory;
+import org.eclipse.jetty.ee10.handler.ContextHandler;
+import org.eclipse.jetty.ee10.handler.ResourceContentFactory;
+import org.eclipse.jetty.ee10.handler.ResourceHandler;
+import org.eclipse.jetty.ee10.handler.ResourceService;
+import org.eclipse.jetty.ee10.handler.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpHeader;

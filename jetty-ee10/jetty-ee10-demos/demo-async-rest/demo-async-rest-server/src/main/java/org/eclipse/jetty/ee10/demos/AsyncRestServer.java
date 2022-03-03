@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.demos;
+package org.eclipse.jetty.ee10.demos;
 
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 
 public class AsyncRestServer

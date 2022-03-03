@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.jstl;
+package org.eclipse.jetty.ee10.jstl;
 
 import java.io.File;
 import java.net.URI;
 
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 
 /**
  * Attempt at collecting up all of the JSP specific configuration bits and pieces into a single place

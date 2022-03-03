@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.jaas.spi;
+package org.eclipse.jetty.ee10.jaas.spi;
 
 import java.io.IOException;
 import java.util.List;
@@ -27,9 +27,9 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
-import org.eclipse.jetty.ee9.jaas.JAASRole;
-import org.eclipse.jetty.ee9.jaas.callback.ObjectCallback;
-import org.eclipse.jetty.ee9.security.UserPrincipal;
+import org.eclipse.jetty.ee10.jaas.JAASRole;
+import org.eclipse.jetty.ee10.jaas.callback.ObjectCallback;
+import org.eclipse.jetty.ee10.security.UserPrincipal;
 
 /**
  * AbstractLoginModule

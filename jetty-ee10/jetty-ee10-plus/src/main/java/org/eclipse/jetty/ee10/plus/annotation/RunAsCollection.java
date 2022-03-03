@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.plus.annotation;
+package org.eclipse.jetty.ee10.plus.annotation;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.util.EventListener;
 
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
+import org.eclipse.jetty.ee10.handler.ContextHandler;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**

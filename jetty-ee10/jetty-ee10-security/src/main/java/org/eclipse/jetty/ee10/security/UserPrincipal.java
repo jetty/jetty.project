@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security;
+package org.eclipse.jetty.ee10.security;
 
 import java.io.Serializable;
 import java.security.Principal;

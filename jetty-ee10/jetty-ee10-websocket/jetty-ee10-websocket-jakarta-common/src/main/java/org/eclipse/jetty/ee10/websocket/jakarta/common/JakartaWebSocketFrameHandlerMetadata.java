@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.common;
+package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
 import java.lang.invoke.MethodHandle;
 
 import jakarta.websocket.Encoder;
 import jakarta.websocket.EndpointConfig;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.encoders.AvailableEncoders;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.encoders.AvailableEncoders;
 import org.eclipse.jetty.http.pathmap.UriTemplatePathSpec;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.InvalidWebSocketException;

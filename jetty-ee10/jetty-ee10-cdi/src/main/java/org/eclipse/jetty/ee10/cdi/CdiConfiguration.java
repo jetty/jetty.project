@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.cdi;
+package org.eclipse.jetty.ee10.cdi;
 
-import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 
 /**
  * <p>CDI Configuration</p>
@@ -27,7 +27,7 @@ public class CdiConfiguration extends AbstractConfiguration
 {
     public CdiConfiguration()
     {
-        protectAndExpose("org.eclipse.jetty.ee9.cdi.CdiServletContainerInitializer");
+        protectAndExpose("org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer");
         addDependents(AnnotationConfiguration.class, PlusConfiguration.class);
     }
 }

@@ -658,7 +658,7 @@ public class Dump extends HttpServlet
                 else
                     pout.write("<td>" + "<pre>" + toString(request.getAttribute(name)) + "</pre>" + "</td>");
             }
-            request.setAttribute("org.eclipse.jetty.ee9.servlet.MultiPartFilter.files", null);
+            request.setAttribute("org.eclipse.jetty.ee10.servlet.MultiPartFilter.files", null);
 
             pout.write("</tr><tr>\n");
             pout.write("<th align=\"left\" colspan=\"2\"><big><br/>Servlet InitParameters:</big></th>");

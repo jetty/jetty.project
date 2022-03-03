@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.webapp;
+package org.eclipse.jetty.ee10.webapp;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,19 +29,19 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.SessionTrackingMode;
-import org.eclipse.jetty.ee9.security.ConstraintAware;
-import org.eclipse.jetty.ee9.security.ConstraintMapping;
-import org.eclipse.jetty.ee9.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.ee9.servlet.FilterHolder;
-import org.eclipse.jetty.ee9.servlet.FilterMapping;
-import org.eclipse.jetty.ee9.servlet.ListenerHolder;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler.JspConfig;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler.JspPropertyGroup;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler.TagLib;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
-import org.eclipse.jetty.ee9.servlet.ServletMapping;
-import org.eclipse.jetty.ee9.servlet.Source;
+import org.eclipse.jetty.ee10.security.ConstraintAware;
+import org.eclipse.jetty.ee10.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.FilterMapping;
+import org.eclipse.jetty.ee10.servlet.ListenerHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler.JspConfig;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler.JspPropertyGroup;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler.TagLib;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletMapping;
+import org.eclipse.jetty.ee10.servlet.Source;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.ArrayUtil;

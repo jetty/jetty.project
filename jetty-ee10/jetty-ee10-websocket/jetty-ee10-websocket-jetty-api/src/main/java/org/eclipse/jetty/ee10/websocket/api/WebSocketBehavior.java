@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.api;
+package org.eclipse.jetty.ee10.websocket.api;
 
 /**
  * Behavior for how the WebSocket should operate.

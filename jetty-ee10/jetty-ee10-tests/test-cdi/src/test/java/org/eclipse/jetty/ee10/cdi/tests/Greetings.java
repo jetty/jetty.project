@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.cdi.tests;
+package org.eclipse.jetty.ee10.cdi.tests;
 
 public interface Greetings
 {

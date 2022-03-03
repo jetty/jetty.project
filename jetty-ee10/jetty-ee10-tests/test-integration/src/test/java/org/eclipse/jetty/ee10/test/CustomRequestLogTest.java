@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.test;
+package org.eclipse.jetty.ee10.test;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -32,14 +32,14 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.security.ConstraintMapping;
-import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.security.HashLoginService;
-import org.eclipse.jetty.ee9.security.SecurityHandler;
-import org.eclipse.jetty.ee9.security.UserStore;
-import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.security.HashLoginService;
+import org.eclipse.jetty.ee10.security.SecurityHandler;
+import org.eclipse.jetty.ee10.security.UserStore;
+import org.eclipse.jetty.ee10.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;

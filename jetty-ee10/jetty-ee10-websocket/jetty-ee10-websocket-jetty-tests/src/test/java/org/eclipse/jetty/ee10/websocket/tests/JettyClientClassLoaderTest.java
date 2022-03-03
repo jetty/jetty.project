@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.tests;
+package org.eclipse.jetty.ee10.websocket.tests;
 
 import java.net.URI;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -26,17 +26,17 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
-import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
-import org.eclipse.jetty.ee9.websocket.client.config.JettyWebSocketClientConfiguration;
-import org.eclipse.jetty.ee9.websocket.common.WebSocketSession;
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServlet;
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServletFactory;
-import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketConfiguration;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.ee10.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee10.websocket.client.config.JettyWebSocketClientConfiguration;
+import org.eclipse.jetty.ee10.websocket.common.WebSocketSession;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
+import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketConfiguration;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;

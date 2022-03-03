@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.annotations;
+package org.eclipse.jetty.ee10.annotations;
 
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.annotation.MultipartConfig;
-import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
-import org.eclipse.jetty.ee9.webapp.Descriptor;
-import org.eclipse.jetty.ee9.webapp.MetaData;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.webapp.Descriptor;
+import org.eclipse.jetty.ee10.webapp.MetaData;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 
 /**
  * MultiPartConfigAnnotationHandler

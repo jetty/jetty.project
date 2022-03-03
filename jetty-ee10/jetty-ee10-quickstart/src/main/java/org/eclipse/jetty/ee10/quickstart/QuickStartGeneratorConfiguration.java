@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.quickstart;
+package org.eclipse.jetty.ee10.quickstart;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -30,29 +30,29 @@ import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.descriptor.JspPropertyGroupDescriptor;
 import jakarta.servlet.descriptor.TaglibDescriptor;
-import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallback;
-import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.ee9.security.ConstraintAware;
-import org.eclipse.jetty.ee9.security.ConstraintMapping;
-import org.eclipse.jetty.ee9.security.SecurityHandler;
-import org.eclipse.jetty.ee9.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.ee9.servlet.FilterHolder;
-import org.eclipse.jetty.ee9.servlet.FilterMapping;
-import org.eclipse.jetty.ee9.servlet.ListenerHolder;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler.JspConfig;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler.ServletContainerInitializerStarter;
-import org.eclipse.jetty.ee9.servlet.ServletHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
-import org.eclipse.jetty.ee9.servlet.ServletMapping;
-import org.eclipse.jetty.ee9.servlet.Source;
-import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
-import org.eclipse.jetty.ee9.webapp.MetaData;
-import org.eclipse.jetty.ee9.webapp.MetaData.OriginInfo;
-import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
-import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallback;
+import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallbackCollection;
+import org.eclipse.jetty.ee10.security.ConstraintAware;
+import org.eclipse.jetty.ee10.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.security.SecurityHandler;
+import org.eclipse.jetty.ee10.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.FilterMapping;
+import org.eclipse.jetty.ee10.servlet.ListenerHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler.JspConfig;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletContainerInitializerStarter;
+import org.eclipse.jetty.ee10.servlet.ServletHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletMapping;
+import org.eclipse.jetty.ee10.servlet.Source;
+import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee10.webapp.MetaData;
+import org.eclipse.jetty.ee10.webapp.MetaData.OriginInfo;
+import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebInfConfiguration;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
@@ -69,7 +69,7 @@ import org.slf4j.LoggerFactory;
  * from web.xml, web-fragment.xmls annotations etc.
  * <p>
  * If generating quickstart for a different java platform than the current running
- * platform, then the org.eclipse.jetty.ee9.annotations.javaTargetPlatform attribute
+ * platform, then the org.eclipse.jetty.ee10.annotations.javaTargetPlatform attribute
  * should be set on the Context with the platform number of the target JVM (eg 8).
  */
 public class QuickStartGeneratorConfiguration extends AbstractConfiguration

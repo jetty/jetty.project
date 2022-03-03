@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.common;
+package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.plus.webapp;
+package org.eclipse.jetty.ee10.plus.webapp;
 
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
@@ -19,18 +19,18 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.Name;
 
-import org.eclipse.jetty.ee9.plus.annotation.Injection;
-import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.ee9.plus.jndi.EnvEntry;
-import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
-import org.eclipse.jetty.ee9.plus.jndi.Resource;
-import org.eclipse.jetty.ee9.webapp.Configuration;
-import org.eclipse.jetty.ee9.webapp.Descriptor;
-import org.eclipse.jetty.ee9.webapp.FragmentDescriptor;
-import org.eclipse.jetty.ee9.webapp.Origin;
-import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
-import org.eclipse.jetty.ee9.webapp.WebDescriptor;
+import org.eclipse.jetty.ee10.plus.annotation.Injection;
+import org.eclipse.jetty.ee10.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.ee10.plus.jndi.EnvEntry;
+import org.eclipse.jetty.ee10.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.ee10.plus.jndi.Resource;
+import org.eclipse.jetty.ee10.webapp.Configuration;
+import org.eclipse.jetty.ee10.webapp.Descriptor;
+import org.eclipse.jetty.ee10.webapp.FragmentDescriptor;
+import org.eclipse.jetty.ee10.webapp.Origin;
+import org.eclipse.jetty.ee10.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.util.IntrospectionUtil;
 import org.junit.jupiter.api.AfterEach;

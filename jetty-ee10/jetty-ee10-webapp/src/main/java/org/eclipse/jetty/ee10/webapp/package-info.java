@@ -14,5 +14,5 @@
 /**
  * Jetty Util : Modular Web Application Support
  */
-package org.eclipse.jetty.ee9.webapp;
+package org.eclipse.jetty.ee10.webapp;
 

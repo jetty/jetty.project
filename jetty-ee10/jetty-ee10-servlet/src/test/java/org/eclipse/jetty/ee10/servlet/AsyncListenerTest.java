@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -25,8 +25,8 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.ErrorHandler;
-import org.eclipse.jetty.ee9.handler.QuietServletException;
+import org.eclipse.jetty.ee10.handler.ErrorHandler;
+import org.eclipse.jetty.ee10.handler.QuietServletException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.QuietException;

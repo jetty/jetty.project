@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.common;
+package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
@@ -30,12 +30,12 @@ import jakarta.websocket.EndpointConfig;
 import jakarta.websocket.MessageHandler;
 import jakarta.websocket.PongMessage;
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.AvailableDecoders;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.messages.DecodedBinaryMessageSink;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.messages.DecodedBinaryStreamMessageSink;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.messages.DecodedTextMessageSink;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.messages.DecodedTextStreamMessageSink;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.AvailableDecoders;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.messages.DecodedBinaryMessageSink;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.messages.DecodedBinaryStreamMessageSink;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.messages.DecodedTextMessageSink;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.messages.DecodedTextStreamMessageSink;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.AutoLock;

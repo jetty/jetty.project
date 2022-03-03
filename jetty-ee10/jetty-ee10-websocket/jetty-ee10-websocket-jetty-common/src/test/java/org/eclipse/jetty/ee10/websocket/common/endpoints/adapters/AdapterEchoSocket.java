@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.common.endpoints.adapters;
+package org.eclipse.jetty.ee10.websocket.common.endpoints.adapters;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.ee9.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketAdapter;
 
 /**
  * Example EchoSocket using Adapter.

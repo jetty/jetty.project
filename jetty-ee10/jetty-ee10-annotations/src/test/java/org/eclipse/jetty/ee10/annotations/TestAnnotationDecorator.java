@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.annotations;
+package org.eclipse.jetty.ee10.annotations;
 
-import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
-import org.eclipse.jetty.ee9.servlet.Source;
-import org.eclipse.jetty.ee9.webapp.MetaData;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
-import org.eclipse.jetty.ee9.webapp.WebDescriptor;
+import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallbackCollection;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.Source;
+import org.eclipse.jetty.ee10.webapp.MetaData;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebDescriptor;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.xml.XmlParser;

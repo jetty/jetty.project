@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.util.EnumSet;
@@ -27,8 +27,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.DefaultHandler;
-import org.eclipse.jetty.ee9.handler.HandlerList;
+import org.eclipse.jetty.ee10.handler.DefaultHandler;
+import org.eclipse.jetty.ee10.handler.HandlerList;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;

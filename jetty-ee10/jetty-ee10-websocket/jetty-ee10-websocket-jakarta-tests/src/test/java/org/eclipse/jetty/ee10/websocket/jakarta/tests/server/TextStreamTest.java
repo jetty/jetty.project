@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests.server;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests.server;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -37,11 +37,11 @@ import jakarta.websocket.WebSocketContainer;
 import jakarta.websocket.server.ServerContainer;
 import jakarta.websocket.server.ServerEndpoint;
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.JakartaWebSocketSession;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.DataUtils;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.Fuzzer;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.WSEndpointTracker;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.JakartaWebSocketSession;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.DataUtils;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.Fuzzer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.WSEndpointTracker;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;

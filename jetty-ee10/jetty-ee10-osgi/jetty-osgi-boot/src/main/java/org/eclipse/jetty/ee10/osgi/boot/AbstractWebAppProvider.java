@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.osgi.boot;
+package org.eclipse.jetty.ee10.osgi.boot;
 
 import java.io.File;
 import java.net.URI;
@@ -23,11 +23,11 @@ import java.util.HashMap;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.DeploymentManager;
-import org.eclipse.jetty.ee9.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
-import org.eclipse.jetty.ee9.osgi.boot.internal.webapp.OSGiWebappClassLoader;
-import org.eclipse.jetty.ee9.osgi.boot.utils.BundleFileLocatorHelperFactory;
-import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.ee10.osgi.boot.internal.webapp.OSGiWebappClassLoader;
+import org.eclipse.jetty.ee10.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.ee10.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.resource.JarResource;

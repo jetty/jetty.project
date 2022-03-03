@@ -11,26 +11,26 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee9.websocket.jetty.server
+module org.eclipse.jetty.ee10.websocket.jetty.server
 {
     requires jetty.servlet.api;
     requires org.eclipse.jetty.websocket.core.server;
-    requires org.eclipse.jetty.ee9.websocket.jetty.common;
-    requires org.eclipse.jetty.ee9.websocket.servlet;
+    requires org.eclipse.jetty.ee10.websocket.jetty.common;
+    requires org.eclipse.jetty.ee10.websocket.servlet;
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.ee9.webapp;
-    requires transitive org.eclipse.jetty.ee9.websocket.jetty.api;
+    requires transitive org.eclipse.jetty.ee10.webapp;
+    requires transitive org.eclipse.jetty.ee10.websocket.jetty.api;
 
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 
-    exports org.eclipse.jetty.ee9.websocket.server;
-    exports org.eclipse.jetty.ee9.websocket.server.config;
+    exports org.eclipse.jetty.ee10.websocket.server;
+    exports org.eclipse.jetty.ee10.websocket.server.config;
 
     provides jakarta.servlet.ServletContainerInitializer with
-        org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
+        org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 
-    provides org.eclipse.jetty.ee9.webapp.Configuration with
-        org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketConfiguration;
+    provides org.eclipse.jetty.ee10.webapp.Configuration with
+        org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketConfiguration;
 }

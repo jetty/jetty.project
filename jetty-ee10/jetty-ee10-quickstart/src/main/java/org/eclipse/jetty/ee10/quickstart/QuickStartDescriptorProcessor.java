@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.quickstart;
+package org.eclipse.jetty.ee10.quickstart;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -19,16 +19,16 @@ import java.util.HashSet;
 import java.util.List;
 
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee9.annotations.ServletContainerInitializersStarter;
-import org.eclipse.jetty.ee9.plus.annotation.ContainerInitializer;
-import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
-import org.eclipse.jetty.ee9.servlet.ServletMapping;
-import org.eclipse.jetty.ee9.webapp.DefaultsDescriptor;
-import org.eclipse.jetty.ee9.webapp.Descriptor;
-import org.eclipse.jetty.ee9.webapp.IterativeDescriptorProcessor;
-import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee10.annotations.ServletContainerInitializersStarter;
+import org.eclipse.jetty.ee10.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.ee10.servlet.ServletContainerInitializerHolder;
+import org.eclipse.jetty.ee10.servlet.ServletMapping;
+import org.eclipse.jetty.ee10.webapp.DefaultsDescriptor;
+import org.eclipse.jetty.ee10.webapp.Descriptor;
+import org.eclipse.jetty.ee10.webapp.IterativeDescriptorProcessor;
+import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.jaas;
+package org.eclipse.jetty.ee10.jaas;
 
 import java.security.Principal;
 import javax.security.auth.Subject;

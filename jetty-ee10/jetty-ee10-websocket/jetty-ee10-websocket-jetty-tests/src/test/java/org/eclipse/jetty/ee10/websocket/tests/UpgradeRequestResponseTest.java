@@ -11,19 +11,19 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.tests;
+package org.eclipse.jetty.ee10.websocket.tests;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.ee9.websocket.api.UpgradeResponse;
-import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
-import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Server;

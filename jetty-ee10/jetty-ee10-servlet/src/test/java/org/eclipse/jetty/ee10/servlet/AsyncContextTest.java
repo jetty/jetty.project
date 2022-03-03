@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -27,11 +27,11 @@ import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.ee9.handler.DefaultHandler;
-import org.eclipse.jetty.ee9.handler.HandlerList;
-import org.eclipse.jetty.ee9.handler.HttpChannel;
-import org.eclipse.jetty.ee9.handler.QuietServletException;
-import org.eclipse.jetty.ee9.handler.Request;
+import org.eclipse.jetty.ee10.handler.DefaultHandler;
+import org.eclipse.jetty.ee10.handler.HandlerList;
+import org.eclipse.jetty.ee10.handler.HttpChannel;
+import org.eclipse.jetty.ee10.handler.QuietServletException;
+import org.eclipse.jetty.ee10.handler.Request;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.HttpConnectionFactory;

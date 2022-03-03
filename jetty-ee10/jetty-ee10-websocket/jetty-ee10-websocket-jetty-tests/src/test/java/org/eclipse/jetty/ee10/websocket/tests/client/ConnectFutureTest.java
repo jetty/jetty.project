@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.tests.client;
+package org.eclipse.jetty.ee10.websocket.tests.client;
 
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
@@ -24,20 +24,20 @@ import java.util.function.Consumer;
 
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.api.StatusCode;
-import org.eclipse.jetty.ee9.websocket.api.WebSocketSessionListener;
-import org.eclipse.jetty.ee9.websocket.api.exceptions.UpgradeException;
-import org.eclipse.jetty.ee9.websocket.api.exceptions.WebSocketException;
-import org.eclipse.jetty.ee9.websocket.api.util.WSURI;
-import org.eclipse.jetty.ee9.websocket.client.ClientUpgradeRequest;
-import org.eclipse.jetty.ee9.websocket.client.JettyUpgradeListener;
-import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
-import org.eclipse.jetty.ee9.websocket.server.JettyWebSocketServerContainer;
-import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
-import org.eclipse.jetty.ee9.websocket.tests.CloseTrackingEndpoint;
-import org.eclipse.jetty.ee9.websocket.tests.EchoSocket;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.StatusCode;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketSessionListener;
+import org.eclipse.jetty.ee10.websocket.api.exceptions.UpgradeException;
+import org.eclipse.jetty.ee10.websocket.api.exceptions.WebSocketException;
+import org.eclipse.jetty.ee10.websocket.api.util.WSURI;
+import org.eclipse.jetty.ee10.websocket.client.ClientUpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.client.JettyUpgradeListener;
+import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
+import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.websocket.tests.CloseTrackingEndpoint;
+import org.eclipse.jetty.ee10.websocket.tests.EchoSocket;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.hamcrest.Matchers;

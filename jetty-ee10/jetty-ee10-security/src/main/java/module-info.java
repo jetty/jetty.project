@@ -11,22 +11,22 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee9.security.Authenticator;
+import org.eclipse.jetty.ee10.security.Authenticator;
 
-module org.eclipse.jetty.ee9.security
+module org.eclipse.jetty.ee10.security
 {
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.server;
-    requires transitive org.eclipse.jetty.ee9.handler;
+    requires transitive org.eclipse.jetty.ee10.handler;
 
     // Only required if using SPNEGO.
     requires static java.security.jgss;
     // Only required if using JDBCLoginService.
     requires static java.sql;
 
-    exports org.eclipse.jetty.ee9.security;
-    exports org.eclipse.jetty.ee9.security.authentication;
+    exports org.eclipse.jetty.ee10.security;
+    exports org.eclipse.jetty.ee10.security.authentication;
 
     uses Authenticator.Factory;
 }

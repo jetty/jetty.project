@@ -11,18 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.annotations;
+package org.eclipse.jetty.ee10.annotations;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import jakarta.annotation.PostConstruct;
-import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.ee9.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.ee9.plus.annotation.PostConstructCallback;
-import org.eclipse.jetty.ee9.webapp.MetaData;
-import org.eclipse.jetty.ee9.webapp.Origin;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
+import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallbackCollection;
+import org.eclipse.jetty.ee10.plus.annotation.PostConstructCallback;
+import org.eclipse.jetty.ee10.webapp.MetaData;
+import org.eclipse.jetty.ee10.webapp.Origin;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 
 public class PostConstructAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {

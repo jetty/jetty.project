@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.plus.webapp;
+package org.eclipse.jetty.ee10.plus.webapp;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -24,16 +24,16 @@ import javax.naming.Name;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.ee9.plus.jndi.EnvEntry;
-import org.eclipse.jetty.ee9.plus.jndi.NamingDump;
-import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
-import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
-import org.eclipse.jetty.ee9.webapp.FragmentConfiguration;
-import org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration;
-import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
-import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee10.plus.jndi.EnvEntry;
+import org.eclipse.jetty.ee10.plus.jndi.NamingDump;
+import org.eclipse.jetty.ee10.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee10.webapp.FragmentConfiguration;
+import org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration;
+import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee10.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.jndi.ContextFactory;
 import org.eclipse.jetty.jndi.NamingContext;
 import org.eclipse.jetty.jndi.NamingUtil;

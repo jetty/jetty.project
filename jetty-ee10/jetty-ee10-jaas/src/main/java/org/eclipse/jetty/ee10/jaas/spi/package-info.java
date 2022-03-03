@@ -14,5 +14,5 @@
 /**
  * Jetty Jaas : Various Jaas Implementations for Jetty
  */
-package org.eclipse.jetty.ee9.jaas.spi;
+package org.eclipse.jetty.ee10.jaas.spi;
 

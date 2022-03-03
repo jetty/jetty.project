@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee9.websocket.jetty.common
+module org.eclipse.jetty.ee10.websocket.jetty.common
 {
     requires org.eclipse.jetty.util;
     requires org.slf4j;
 
     requires transitive org.eclipse.jetty.websocket.core.common;
-    requires transitive org.eclipse.jetty.ee9.websocket.jetty.api;
+    requires transitive org.eclipse.jetty.ee10.websocket.jetty.api;
 
-    exports org.eclipse.jetty.ee9.websocket.common;
+    exports org.eclipse.jetty.ee10.websocket.common;
 
-    provides org.eclipse.jetty.ee9.websocket.api.ExtensionConfig.Parser with
-        org.eclipse.jetty.ee9.websocket.common.ExtensionConfigParser;
+    provides org.eclipse.jetty.ee10.websocket.api.ExtensionConfig.Parser with
+        org.eclipse.jetty.ee10.websocket.common.ExtensionConfigParser;
 }

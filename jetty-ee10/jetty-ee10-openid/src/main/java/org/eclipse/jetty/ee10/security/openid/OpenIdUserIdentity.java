@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security.openid;
+package org.eclipse.jetty.ee10.security.openid;
 
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee10.handler.UserIdentity;
 
 public class OpenIdUserIdentity implements UserIdentity
 {

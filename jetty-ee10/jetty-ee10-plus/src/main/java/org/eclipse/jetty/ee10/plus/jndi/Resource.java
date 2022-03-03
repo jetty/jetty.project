@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.plus.jndi;
+package org.eclipse.jetty.ee10.plus.jndi;
 
 import javax.naming.NamingException;
 

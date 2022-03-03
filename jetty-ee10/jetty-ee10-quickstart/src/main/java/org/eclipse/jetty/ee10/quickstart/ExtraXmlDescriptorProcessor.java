@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.quickstart;
+package org.eclipse.jetty.ee10.quickstart;
 
-import org.eclipse.jetty.ee9.webapp.Descriptor;
-import org.eclipse.jetty.ee9.webapp.IterativeDescriptorProcessor;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.Descriptor;
+import org.eclipse.jetty.ee10.webapp.IterativeDescriptorProcessor;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.xml.XmlParser;
 import org.slf4j.Logger;

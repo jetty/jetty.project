@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.spi.util;
+package org.eclipse.jetty.ee10.http.spi.util;
 
 /**
  * This is a sample task. Test cases uses this for testing purpose

@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.common;
+package org.eclipse.jetty.ee10.websocket.common;
 
-import org.eclipse.jetty.ee9.websocket.api.exceptions.InvalidWebSocketException;
+import org.eclipse.jetty.ee10.websocket.api.exceptions.InvalidWebSocketException;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.exception.DuplicateAnnotationException;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
@@ -330,7 +330,7 @@ public class LocalEndpointMetadataTest
     }
 
     /**
-     * Test Case for socket using {@link org.eclipse.jetty.ee9.websocket.api.WebSocketListener}
+     * Test Case for socket using {@link org.eclipse.jetty.ee10.websocket.api.WebSocketListener}
      */
     @Test
     public void testListenerBasicSocket()
@@ -355,7 +355,7 @@ public class LocalEndpointMetadataTest
     }
 
     /**
-     * Test Case for socket using {@link org.eclipse.jetty.ee9.websocket.api.WebSocketFrameListener}
+     * Test Case for socket using {@link org.eclipse.jetty.ee10.websocket.api.WebSocketFrameListener}
      */
     @Test
     public void testListenerFrameSocket() throws Exception

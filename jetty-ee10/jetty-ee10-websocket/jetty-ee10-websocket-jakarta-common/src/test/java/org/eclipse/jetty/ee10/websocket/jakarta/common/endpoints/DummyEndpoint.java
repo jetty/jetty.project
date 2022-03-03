@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.common.endpoints;
+package org.eclipse.jetty.ee10.websocket.jakarta.common.endpoints;
 
 import jakarta.websocket.Endpoint;
 import jakarta.websocket.EndpointConfig;

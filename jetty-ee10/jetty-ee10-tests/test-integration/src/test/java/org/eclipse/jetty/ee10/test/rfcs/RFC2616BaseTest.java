@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.test.rfcs;
+package org.eclipse.jetty.ee10.test.rfcs;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,10 +22,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
-import org.eclipse.jetty.ee9.test.support.StringUtil;
-import org.eclipse.jetty.ee9.test.support.XmlBasedJettyServer;
-import org.eclipse.jetty.ee9.test.support.rawhttp.HttpSocket;
-import org.eclipse.jetty.ee9.test.support.rawhttp.HttpTesting;
+import org.eclipse.jetty.ee10.test.support.StringUtil;
+import org.eclipse.jetty.ee10.test.support.XmlBasedJettyServer;
+import org.eclipse.jetty.ee10.test.support.rawhttp.HttpSocket;
+import org.eclipse.jetty.ee10.test.support.rawhttp.HttpTesting;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;

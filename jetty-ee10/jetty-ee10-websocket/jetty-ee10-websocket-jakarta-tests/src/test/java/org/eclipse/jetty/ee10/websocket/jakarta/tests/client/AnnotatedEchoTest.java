@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests.client;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests.client;
 
 import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
@@ -24,7 +24,7 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.CoreServer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

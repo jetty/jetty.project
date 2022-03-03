@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

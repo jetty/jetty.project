@@ -14,5 +14,5 @@
 /**
  * Jetty Proxy : Async Proxy Support
  */
-package org.eclipse.jetty.ee9.proxy;
+package org.eclipse.jetty.ee10.proxy;
 

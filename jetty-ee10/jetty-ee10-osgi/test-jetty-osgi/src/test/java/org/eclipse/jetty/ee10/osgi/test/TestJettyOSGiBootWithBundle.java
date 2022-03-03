@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.osgi.test;
+package org.eclipse.jetty.ee10.osgi.test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -22,7 +22,7 @@ import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
-import org.eclipse.jetty.ee9.osgi.boot.OSGiServerConstants;
+import org.eclipse.jetty.ee10.osgi.boot.OSGiServerConstants;
 import org.eclipse.jetty.http.HttpStatus;
 import org.junit.Test;
 import org.junit.runner.RunWith;

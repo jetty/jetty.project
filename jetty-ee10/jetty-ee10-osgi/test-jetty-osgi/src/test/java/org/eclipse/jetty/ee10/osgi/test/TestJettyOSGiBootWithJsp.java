@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.osgi.test;
+package org.eclipse.jetty.ee10.osgi.test;
 
 import java.util.ArrayList;
 import javax.inject.Inject;

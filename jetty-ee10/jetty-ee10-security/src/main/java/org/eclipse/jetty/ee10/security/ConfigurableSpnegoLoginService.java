@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security;
+package org.eclipse.jetty.ee10.security;
 
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -28,8 +28,8 @@ import javax.security.auth.login.LoginContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
-import org.eclipse.jetty.ee9.security.authentication.AuthorizationService;
+import org.eclipse.jetty.ee10.handler.UserIdentity;
+import org.eclipse.jetty.ee10.security.authentication.AuthorizationService;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;

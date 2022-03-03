@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.maven.plugin;
+package org.eclipse.jetty.ee10.maven.plugin;
 
 import java.io.File;
 import java.util.ArrayList;

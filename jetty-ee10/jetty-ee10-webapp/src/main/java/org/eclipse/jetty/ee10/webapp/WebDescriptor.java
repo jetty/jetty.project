@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.webapp;
+package org.eclipse.jetty.ee10.webapp;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -104,7 +104,7 @@ public class WebDescriptor extends Descriptor
                 final URL javaee6 = Loader.getResource("jakarta/servlet/resources/javaee_6.xsd");
                 final URL javaee7 = Loader.getResource("jakarta/servlet/resources/javaee_7.xsd");
                 final URL javaee8 = Loader.getResource("jakarta/servlet/resources/javaee_8.xsd");
-                final URL jakartaee9 = Loader.getResource("jakarta/servlet/resources/jakartaee_9.xsd");
+                final URL jakartaee10 = Loader.getResource("jakarta/servlet/resources/jakartaee_9.xsd");
 
                 final URL webapp24xsd = Loader.getResource("jakarta/servlet/resources/web-app_2_4.xsd");
                 final URL webapp25xsd = Loader.getResource("jakarta/servlet/resources/web-app_2_5.xsd");
@@ -190,7 +190,7 @@ public class WebDescriptor extends Descriptor
                 redirectEntity("http://java.sun.com/xml/ns/javaee/javaee_6.xsd", javaee6);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/javaee_7.xsd", javaee7);
                 redirectEntity("http://xmlns.jcp.org/xml/ns/javaee/javaee_8.xsd", javaee8);
-                redirectEntity("https://jakarta.ee/xml/ns/jakartaee/javaee_9.xsd", jakartaee9);
+                redirectEntity("https://jakarta.ee/xml/ns/jakartaee/javaee_9.xsd", jakartaee10);
 
                 redirectEntity("web-common_3_0.xsd", webcommon30xsd);
                 redirectEntity("http://java.sun.com/xml/ns/javaee/web-common_3_0.xsd", webcommon30xsd);

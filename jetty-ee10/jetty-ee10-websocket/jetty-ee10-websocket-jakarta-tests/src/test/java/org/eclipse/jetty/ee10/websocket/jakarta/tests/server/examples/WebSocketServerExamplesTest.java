@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.examples;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests.server.examples;
 
 import java.net.URI;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -27,14 +27,14 @@ import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
-import org.eclipse.jetty.ee9.security.ConstraintMapping;
-import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.security.HashLoginService;
-import org.eclipse.jetty.ee9.security.SecurityHandler;
-import org.eclipse.jetty.ee9.security.UserStore;
-import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.security.HashLoginService;
+import org.eclipse.jetty.ee10.security.SecurityHandler;
+import org.eclipse.jetty.ee10.security.UserStore;
+import org.eclipse.jetty.ee10.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.security.Constraint;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.handler.gzip;
+package org.eclipse.jetty.ee10.handler.gzip;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -27,9 +27,9 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.HandlerWrapper;
-import org.eclipse.jetty.ee9.handler.HttpOutput;
-import org.eclipse.jetty.ee9.handler.Request;
+import org.eclipse.jetty.ee10.handler.HandlerWrapper;
+import org.eclipse.jetty.ee10.handler.HttpOutput;
+import org.eclipse.jetty.ee10.handler.Request;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;

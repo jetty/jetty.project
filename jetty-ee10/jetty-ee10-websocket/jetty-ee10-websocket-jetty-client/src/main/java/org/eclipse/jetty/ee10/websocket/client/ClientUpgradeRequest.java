@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.client;
+package org.eclipse.jetty.ee10.websocket.client;
 
 import java.net.HttpCookie;
 import java.net.URI;
@@ -24,9 +24,9 @@ import java.util.Objects;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
-import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.ee9.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
+import org.eclipse.jetty.ee10.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 

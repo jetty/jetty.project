@@ -14,5 +14,5 @@
 /**
  * Jetty Jaspi : Callbacks
  */
-package org.eclipse.jetty.ee9.security.jaspi.callback;
+package org.eclipse.jetty.ee10.security.jaspi.callback;
 

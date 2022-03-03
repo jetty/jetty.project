@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.server;
+package org.eclipse.jetty.ee10.websocket.server;
 
 import java.io.IOException;
 import java.util.List;
 
-import org.eclipse.jetty.ee9.websocket.api.ExtensionConfig;
-import org.eclipse.jetty.ee9.websocket.api.UpgradeRequest;
-import org.eclipse.jetty.ee9.websocket.api.UpgradeResponse;
+import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
+import org.eclipse.jetty.ee10.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.api.UpgradeResponse;
 
 public interface JettyServerUpgradeResponse extends UpgradeResponse
 {

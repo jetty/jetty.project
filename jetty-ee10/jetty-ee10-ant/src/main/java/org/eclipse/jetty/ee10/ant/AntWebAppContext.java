@@ -11,7 +11,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.ee9.ant;
+package org.eclipse.jetty.ee10.ant;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,20 +33,20 @@ import org.apache.tools.ant.AntClassLoader;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.types.FileSet;
-import org.eclipse.jetty.ee9.ant.types.Attribute;
-import org.eclipse.jetty.ee9.ant.types.Attributes;
-import org.eclipse.jetty.ee9.ant.types.FileMatchingConfiguration;
-import org.eclipse.jetty.ee9.ant.utils.TaskLog;
-import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.ee9.servlet.FilterHolder;
-import org.eclipse.jetty.ee9.servlet.FilterMapping;
-import org.eclipse.jetty.ee9.servlet.ServletHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
-import org.eclipse.jetty.ee9.servlet.ServletMapping;
-import org.eclipse.jetty.ee9.servlet.Source;
-import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.ant.types.Attribute;
+import org.eclipse.jetty.ee10.ant.types.Attributes;
+import org.eclipse.jetty.ee10.ant.types.FileMatchingConfiguration;
+import org.eclipse.jetty.ee10.ant.utils.TaskLog;
+import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.FilterMapping;
+import org.eclipse.jetty.ee10.servlet.ServletHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletMapping;
+import org.eclipse.jetty.ee10.servlet.Source;
+import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee10.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;

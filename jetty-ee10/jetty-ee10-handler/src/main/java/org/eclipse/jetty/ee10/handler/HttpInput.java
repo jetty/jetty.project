@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.handler;
+package org.eclipse.jetty.ee10.handler;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.LongAdder;
 
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
-import org.eclipse.jetty.ee9.handler.gzip.GzipHttpInputInterceptor;
+import org.eclipse.jetty.ee10.handler.gzip.GzipHttpInputInterceptor;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.common;
+package org.eclipse.jetty.ee10.websocket.common;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -20,9 +20,9 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.api.StatusCode;
-import org.eclipse.jetty.ee9.websocket.api.WebSocketSessionListener;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.StatusCode;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketSessionListener;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;

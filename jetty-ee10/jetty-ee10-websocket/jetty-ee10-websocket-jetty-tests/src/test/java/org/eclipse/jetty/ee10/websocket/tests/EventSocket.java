@@ -11,20 +11,20 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.tests;
+package org.eclipse.jetty.ee10.websocket.tests;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.api.StatusCode;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketClose;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketConnect;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketError;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.StatusCode;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketConnect;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketError;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.ee10.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

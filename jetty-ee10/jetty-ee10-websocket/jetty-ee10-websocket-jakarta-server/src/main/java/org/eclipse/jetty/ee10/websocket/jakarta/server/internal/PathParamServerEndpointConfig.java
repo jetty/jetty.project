@@ -11,14 +11,14 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.server.internal;
+package org.eclipse.jetty.ee10.websocket.jakarta.server.internal;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import jakarta.websocket.server.ServerEndpointConfig;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.PathParamProvider;
-import org.eclipse.jetty.ee9.websocket.jakarta.common.ServerEndpointConfigWrapper;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.PathParamProvider;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.ServerEndpointConfigWrapper;
 import org.eclipse.jetty.util.URIUtil;
 
 /**

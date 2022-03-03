@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.client;
+package org.eclipse.jetty.ee10.websocket.client;
 
 import java.io.IOException;
 import java.net.CookieStore;
@@ -31,15 +31,15 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponse;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.api.WebSocketBehavior;
-import org.eclipse.jetty.ee9.websocket.api.WebSocketContainer;
-import org.eclipse.jetty.ee9.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.ee9.websocket.api.WebSocketSessionListener;
-import org.eclipse.jetty.ee9.websocket.client.impl.JettyClientUpgradeRequest;
-import org.eclipse.jetty.ee9.websocket.common.JettyWebSocketFrameHandler;
-import org.eclipse.jetty.ee9.websocket.common.JettyWebSocketFrameHandlerFactory;
-import org.eclipse.jetty.ee9.websocket.common.SessionTracker;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketBehavior;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketContainer;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketSessionListener;
+import org.eclipse.jetty.ee10.websocket.client.impl.JettyClientUpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.common.JettyWebSocketFrameHandler;
+import org.eclipse.jetty.ee10.websocket.common.JettyWebSocketFrameHandlerFactory;
+import org.eclipse.jetty.ee10.websocket.common.SessionTracker;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -389,7 +389,7 @@ public class WebSocketClient extends ContainerLifeCycle implements WebSocketPoli
     }
 
     /**
-     * The timeout to allow all remaining open Sessions to be closed gracefully using  the close code {@link org.eclipse.jetty.ee9.websocket.api.StatusCode#SHUTDOWN}.
+     * The timeout to allow all remaining open Sessions to be closed gracefully using  the close code {@link org.eclipse.jetty.ee10.websocket.api.StatusCode#SHUTDOWN}.
      * @param stopTimeout the time in ms to wait for the graceful close, use a value less than or equal to 0 to not gracefully close.
      */
     public void setStopTimeout(long stopTimeout)

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.handler.gzip;
+package org.eclipse.jetty.ee10.handler.gzip;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
@@ -19,9 +19,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.ee9.handler.HttpChannel;
-import org.eclipse.jetty.ee9.handler.HttpOutput;
-import org.eclipse.jetty.ee9.handler.Response;
+import org.eclipse.jetty.ee10.handler.HttpChannel;
+import org.eclipse.jetty.ee10.handler.HttpOutput;
+import org.eclipse.jetty.ee10.handler.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;

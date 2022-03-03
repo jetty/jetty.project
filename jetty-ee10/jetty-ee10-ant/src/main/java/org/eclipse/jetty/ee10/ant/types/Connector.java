@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.ant.types;
+package org.eclipse.jetty.ee10.ant.types;
 
 /**
  * Connector

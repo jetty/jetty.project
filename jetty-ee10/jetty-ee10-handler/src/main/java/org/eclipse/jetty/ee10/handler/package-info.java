@@ -14,5 +14,5 @@
 /**
  * Jetty Server : Core Handler API
  */
-package org.eclipse.jetty.ee9.handler;
+package org.eclipse.jetty.ee10.handler;
 

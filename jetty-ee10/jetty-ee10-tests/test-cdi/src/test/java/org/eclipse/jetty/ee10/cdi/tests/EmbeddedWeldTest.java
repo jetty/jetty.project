@@ -11,20 +11,20 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.cdi.tests;
+package org.eclipse.jetty.ee10.cdi.tests;
 
 import java.io.File;
 import java.util.EnumSet;
 
 import jakarta.servlet.DispatcherType;
-import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee9.cdi.CdiConfiguration;
-import org.eclipse.jetty.ee9.cdi.CdiDecoratingListener;
-import org.eclipse.jetty.ee9.cdi.CdiServletContainerInitializer;
-import org.eclipse.jetty.ee9.cdi.CdiSpiDecorator;
-import org.eclipse.jetty.ee9.servlet.ListenerHolder;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee10.cdi.CdiConfiguration;
+import org.eclipse.jetty.ee10.cdi.CdiDecoratingListener;
+import org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer;
+import org.eclipse.jetty.ee10.cdi.CdiSpiDecorator;
+import org.eclipse.jetty.ee10.servlet.ListenerHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
@@ -85,7 +85,7 @@ public class EmbeddedWeldTest
 
             case "DecoratingListener+Listener":
                 // Expect:INFO: WELD-ENV-001212: Jetty CdiDecoratingListener support detected, CDI injection will be available in Listeners, Servlets and Filters.
-                context.addEventListener(new org.eclipse.jetty.ee9.webapp.DecoratingListener(context));
+                context.addEventListener(new org.eclipse.jetty.ee10.webapp.DecoratingListener(context));
                 context.getServletHandler().addListener(new ListenerHolder(org.jboss.weld.environment.servlet.Listener.class));
                 break;
 
@@ -189,8 +189,8 @@ public class EmbeddedWeldTest
         webapp.setResourceBase("src/test/weldtest");
         server.setHandler(webapp);
 
-        webapp.setInitParameter(org.eclipse.jetty.ee9.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.ee9.cdi.CdiDecoratingListener.MODE);
-        webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.eclipse.jetty.ee9.cdi.CdiServletContainerInitializer()));
+        webapp.setInitParameter(org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer.CDI_INTEGRATION_ATTRIBUTE, org.eclipse.jetty.ee10.cdi.CdiDecoratingListener.MODE);
+        webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.eclipse.jetty.ee10.cdi.CdiServletContainerInitializer()));
         webapp.addBean(new ServletContextHandler.Initializer(webapp, new org.jboss.weld.environment.servlet.EnhancedListener()));
 
         String pkg = EmbeddedWeldTest.class.getPackage().getName();

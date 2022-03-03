@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security.jaspi.modules;
+package org.eclipse.jetty.ee10.security.jaspi.modules;
 
 import java.io.IOException;
 import java.util.Map;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.apache.jsp;
+package org.eclipse.jetty.ee10.apache.jsp;
 
 import java.net.URL;
 import java.util.Collection;

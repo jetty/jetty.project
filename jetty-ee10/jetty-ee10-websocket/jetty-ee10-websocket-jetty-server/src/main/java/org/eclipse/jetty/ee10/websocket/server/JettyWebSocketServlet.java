@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.server;
+package org.eclipse.jetty.ee10.websocket.server;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -23,10 +23,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeRequest;
-import org.eclipse.jetty.ee9.websocket.server.internal.DelegatedServerUpgradeResponse;
-import org.eclipse.jetty.ee9.websocket.server.internal.JettyServerFrameHandlerFactory;
-import org.eclipse.jetty.ee9.websocket.servlet.WebSocketUpgradeFilter;
+import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
+import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeResponse;
+import org.eclipse.jetty.ee10.websocket.server.internal.JettyServerFrameHandlerFactory;
+import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;

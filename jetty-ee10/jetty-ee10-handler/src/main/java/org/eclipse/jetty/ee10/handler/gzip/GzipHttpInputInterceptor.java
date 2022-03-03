@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.handler.gzip;
+package org.eclipse.jetty.ee10.handler.gzip;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.ee9.handler.HttpInput;
-import org.eclipse.jetty.ee9.handler.HttpInput.Content;
+import org.eclipse.jetty.ee10.handler.HttpInput;
+import org.eclipse.jetty.ee10.handler.HttpInput.Content;
 import org.eclipse.jetty.http.GZIPContentDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.component.Destroyable;

@@ -23,8 +23,8 @@ import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.HandlerWrapper;
-import org.eclipse.jetty.ee9.handler.Request;
+import org.eclipse.jetty.ee10.handler.HandlerWrapper;
+import org.eclipse.jetty.ee10.handler.Request;
 
 class SuspendHandler extends HandlerWrapper implements AsyncListener
 {

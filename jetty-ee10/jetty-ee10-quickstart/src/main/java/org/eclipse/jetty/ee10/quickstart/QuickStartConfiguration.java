@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.quickstart;
+package org.eclipse.jetty.ee10.quickstart;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,16 +19,16 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee9.annotations.AnnotationDecorator;
-import org.eclipse.jetty.ee9.annotations.ServletContainerInitializersStarter;
-import org.eclipse.jetty.ee9.webapp.AbstractConfiguration;
-import org.eclipse.jetty.ee9.webapp.Configuration;
-import org.eclipse.jetty.ee9.webapp.StandardDescriptorProcessor;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
-import org.eclipse.jetty.ee9.webapp.WebDescriptor;
-import org.eclipse.jetty.ee9.webapp.WebInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.ee10.annotations.AnnotationDecorator;
+import org.eclipse.jetty.ee10.annotations.ServletContainerInitializersStarter;
+import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
+import org.eclipse.jetty.ee10.webapp.Configuration;
+import org.eclipse.jetty.ee10.webapp.StandardDescriptorProcessor;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebDescriptor;
+import org.eclipse.jetty.ee10.webapp.WebInfConfiguration;
+import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -51,10 +51,10 @@ public class QuickStartConfiguration extends AbstractConfiguration
 
     static
     {
-        __replacedConfigurations.add(org.eclipse.jetty.ee9.webapp.WebXmlConfiguration.class);
-        __replacedConfigurations.add(org.eclipse.jetty.ee9.webapp.MetaInfConfiguration.class);
-        __replacedConfigurations.add(org.eclipse.jetty.ee9.webapp.FragmentConfiguration.class);
-        __replacedConfigurations.add(org.eclipse.jetty.ee9.annotations.AnnotationConfiguration.class);
+        __replacedConfigurations.add(org.eclipse.jetty.ee10.webapp.WebXmlConfiguration.class);
+        __replacedConfigurations.add(org.eclipse.jetty.ee10.webapp.MetaInfConfiguration.class);
+        __replacedConfigurations.add(org.eclipse.jetty.ee10.webapp.FragmentConfiguration.class);
+        __replacedConfigurations.add(org.eclipse.jetty.ee10.annotations.AnnotationConfiguration.class);
     }
 
     /** Configure the server for the quickstart mode.

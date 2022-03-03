@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.handler.resource;
+package org.eclipse.jetty.ee10.handler.resource;
 
 import java.io.Closeable;
 import java.io.IOException;

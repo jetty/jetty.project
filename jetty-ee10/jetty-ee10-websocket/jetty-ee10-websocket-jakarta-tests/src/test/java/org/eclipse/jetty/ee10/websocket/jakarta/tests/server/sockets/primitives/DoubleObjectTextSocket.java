@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests.server.sockets.primitives;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests.server.sockets.primitives;
 
 import java.io.IOException;
 import java.util.Locale;

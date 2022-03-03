@@ -14,5 +14,5 @@
 /**
  * Jetty Jaas : Support for Jaas
  */
-package org.eclipse.jetty.ee9.jaas;
+package org.eclipse.jetty.ee10.jaas;
 

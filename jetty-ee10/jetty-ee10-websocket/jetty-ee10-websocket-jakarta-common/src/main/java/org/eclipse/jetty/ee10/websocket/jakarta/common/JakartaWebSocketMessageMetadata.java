@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.common;
+package org.eclipse.jetty.ee10.websocket.jakarta.common;
 
 import java.lang.invoke.MethodHandle;
 import java.util.List;
 
-import org.eclipse.jetty.ee9.websocket.jakarta.common.decoders.RegisteredDecoder;
+import org.eclipse.jetty.ee10.websocket.jakarta.common.decoders.RegisteredDecoder;
 import org.eclipse.jetty.websocket.core.internal.messages.MessageSink;
 
 public class JakartaWebSocketMessageMetadata

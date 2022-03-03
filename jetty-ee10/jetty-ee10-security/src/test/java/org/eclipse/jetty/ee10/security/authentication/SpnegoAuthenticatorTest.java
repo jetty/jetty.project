@@ -11,18 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security.authentication;
+package org.eclipse.jetty.ee10.security.authentication;
 
 import java.io.IOException;
 
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.Authentication;
-import org.eclipse.jetty.ee9.handler.HttpChannel;
-import org.eclipse.jetty.ee9.handler.HttpChannelState;
-import org.eclipse.jetty.ee9.handler.HttpInput;
-import org.eclipse.jetty.ee9.handler.HttpOutput;
-import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.ee9.handler.Response;
+import org.eclipse.jetty.ee10.handler.Authentication;
+import org.eclipse.jetty.ee10.handler.HttpChannel;
+import org.eclipse.jetty.ee10.handler.HttpChannelState;
+import org.eclipse.jetty.ee10.handler.HttpInput;
+import org.eclipse.jetty.ee10.handler.HttpOutput;
+import org.eclipse.jetty.ee10.handler.Request;
+import org.eclipse.jetty.ee10.handler.Response;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;

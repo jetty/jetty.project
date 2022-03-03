@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.webapp;
+package org.eclipse.jetty.ee10.webapp;
 
 import java.io.File;
 import java.io.IOException;
@@ -38,18 +38,18 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee9.handler.AbstractHandler;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.ErrorHandler;
-import org.eclipse.jetty.ee9.handler.HandlerContainer;
-import org.eclipse.jetty.ee9.handler.ManagedAttributeListener;
-import org.eclipse.jetty.ee9.security.ConstraintAware;
-import org.eclipse.jetty.ee9.security.ConstraintMapping;
-import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.security.SecurityHandler;
-import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHandler;
+import org.eclipse.jetty.ee10.handler.AbstractHandler;
+import org.eclipse.jetty.ee10.handler.ContextHandler;
+import org.eclipse.jetty.ee10.handler.ErrorHandler;
+import org.eclipse.jetty.ee10.handler.HandlerContainer;
+import org.eclipse.jetty.ee10.handler.ManagedAttributeListener;
+import org.eclipse.jetty.ee10.security.ConstraintAware;
+import org.eclipse.jetty.ee10.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.security.SecurityHandler;
+import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;

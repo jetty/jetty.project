@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.annotations;
+package org.eclipse.jetty.ee10.annotations;
 
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServlet;

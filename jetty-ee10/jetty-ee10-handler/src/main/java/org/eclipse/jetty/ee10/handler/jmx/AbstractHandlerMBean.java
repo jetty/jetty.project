@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.handler.jmx;
+package org.eclipse.jetty.ee10.handler.jmx;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.ee9.handler.AbstractHandler;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
+import org.eclipse.jetty.ee10.handler.AbstractHandler;
+import org.eclipse.jetty.ee10.handler.ContextHandler;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;

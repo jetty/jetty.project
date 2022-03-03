@@ -14,5 +14,5 @@
 /**
  * Jetty GZIP Handler
  */
-package org.eclipse.jetty.ee9.handler.gzip;
+package org.eclipse.jetty.ee10.handler.gzip;
 

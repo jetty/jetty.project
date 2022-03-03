@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee9.cdi
+module org.eclipse.jetty.ee10.cdi
 {
-    requires org.eclipse.jetty.ee9.annotations;
+    requires org.eclipse.jetty.ee10.annotations;
 
-    requires transitive org.eclipse.jetty.ee9.webapp;
+    requires transitive org.eclipse.jetty.ee10.webapp;
 
-    exports org.eclipse.jetty.ee9.cdi;
+    exports org.eclipse.jetty.ee10.cdi;
 } 

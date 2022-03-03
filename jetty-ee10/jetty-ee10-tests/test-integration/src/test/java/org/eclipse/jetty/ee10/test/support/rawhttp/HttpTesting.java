@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.test.support.rawhttp;
+package org.eclipse.jetty.ee10.test.support.rawhttp;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;

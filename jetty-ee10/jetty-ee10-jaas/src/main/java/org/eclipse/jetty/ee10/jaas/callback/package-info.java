@@ -14,5 +14,5 @@
 /**
  * Jetty Jaas : Jaas Callbacks
  */
-package org.eclipse.jetty.ee9.jaas.callback;
+package org.eclipse.jetty.ee10.jaas.callback;
 

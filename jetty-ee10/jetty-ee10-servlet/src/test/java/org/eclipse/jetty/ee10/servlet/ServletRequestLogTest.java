@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -30,14 +30,14 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.ContextHandlerCollection;
-import org.eclipse.jetty.ee9.handler.DefaultHandler;
-import org.eclipse.jetty.ee9.handler.ErrorHandler;
-import org.eclipse.jetty.ee9.handler.Handler;
-import org.eclipse.jetty.ee9.handler.HandlerList;
-import org.eclipse.jetty.ee9.handler.HttpChannel;
-import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.ee9.handler.Response;
+import org.eclipse.jetty.ee10.handler.ContextHandlerCollection;
+import org.eclipse.jetty.ee10.handler.DefaultHandler;
+import org.eclipse.jetty.ee10.handler.ErrorHandler;
+import org.eclipse.jetty.ee10.handler.Handler;
+import org.eclipse.jetty.ee10.handler.HandlerList;
+import org.eclipse.jetty.ee10.handler.HttpChannel;
+import org.eclipse.jetty.ee10.handler.Request;
+import org.eclipse.jetty.ee10.handler.Response;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;

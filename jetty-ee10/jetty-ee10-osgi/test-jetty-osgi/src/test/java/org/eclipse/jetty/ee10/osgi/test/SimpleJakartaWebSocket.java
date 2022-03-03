@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.osgi.test;
+package org.eclipse.jetty.ee10.osgi.test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;

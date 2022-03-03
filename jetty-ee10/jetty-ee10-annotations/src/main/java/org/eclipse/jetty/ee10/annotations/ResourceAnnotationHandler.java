@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.annotations;
+package org.eclipse.jetty.ee10.annotations;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -24,12 +24,12 @@ import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 
 import jakarta.annotation.Resource;
-import org.eclipse.jetty.ee9.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
-import org.eclipse.jetty.ee9.plus.annotation.Injection;
-import org.eclipse.jetty.ee9.plus.annotation.InjectionCollection;
-import org.eclipse.jetty.ee9.plus.jndi.NamingEntryUtil;
-import org.eclipse.jetty.ee9.webapp.MetaData;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.annotations.AnnotationIntrospector.AbstractIntrospectableAnnotationHandler;
+import org.eclipse.jetty.ee10.plus.annotation.Injection;
+import org.eclipse.jetty.ee10.plus.annotation.InjectionCollection;
+import org.eclipse.jetty.ee10.plus.jndi.NamingEntryUtil;
+import org.eclipse.jetty.ee10.webapp.MetaData;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

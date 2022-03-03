@@ -11,19 +11,19 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee9.security.jaspi
+module org.eclipse.jetty.ee10.security.jaspi
 {
     requires jetty.servlet.api;
     requires org.slf4j;
 
     requires transitive jakarta.security.auth.message;
-    requires transitive org.eclipse.jetty.ee9.security;
+    requires transitive org.eclipse.jetty.ee10.security;
 
-    exports org.eclipse.jetty.ee9.security.jaspi;
-    exports org.eclipse.jetty.ee9.security.jaspi.callback;
-    exports org.eclipse.jetty.ee9.security.jaspi.modules;
-    exports org.eclipse.jetty.ee9.security.jaspi.provider;
+    exports org.eclipse.jetty.ee10.security.jaspi;
+    exports org.eclipse.jetty.ee10.security.jaspi.callback;
+    exports org.eclipse.jetty.ee10.security.jaspi.modules;
+    exports org.eclipse.jetty.ee10.security.jaspi.provider;
 
-    provides org.eclipse.jetty.ee9.security.Authenticator.Factory with
-        org.eclipse.jetty.ee9.security.jaspi.JaspiAuthenticatorFactory;
+    provides org.eclipse.jetty.ee10.security.Authenticator.Factory with
+        org.eclipse.jetty.ee10.security.jaspi.JaspiAuthenticatorFactory;
 }

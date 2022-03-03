@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.test.websocket;
+package org.eclipse.jetty.ee10.test.websocket;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
@@ -20,8 +20,8 @@ import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.RemoteEndpoint;
 import jakarta.websocket.Session;
 import jakarta.websocket.WebSocketContainer;
-import org.eclipse.jetty.ee9.test.support.XmlBasedJettyServer;
-import org.eclipse.jetty.ee9.websocket.api.util.WSURI;
+import org.eclipse.jetty.ee10.test.support.XmlBasedJettyServer;
+import org.eclipse.jetty.ee10.websocket.api.util.WSURI;
 import org.eclipse.jetty.http.HttpScheme;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

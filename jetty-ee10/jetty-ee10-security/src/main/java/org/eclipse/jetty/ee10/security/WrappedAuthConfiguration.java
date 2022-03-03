@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security;
+package org.eclipse.jetty.ee10.security;
 
 import java.util.Set;
 
-import org.eclipse.jetty.ee9.security.Authenticator.AuthConfiguration;
+import org.eclipse.jetty.ee10.security.Authenticator.AuthConfiguration;
 
 /**
  * A wrapper for {@link AuthConfiguration}. This allows you create a new AuthConfiguration which can

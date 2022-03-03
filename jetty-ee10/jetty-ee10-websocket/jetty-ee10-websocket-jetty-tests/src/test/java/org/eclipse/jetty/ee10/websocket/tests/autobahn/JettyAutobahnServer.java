@@ -11,10 +11,10 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.tests.autobahn;
+package org.eclipse.jetty.ee10.websocket.tests.autobahn;
 
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 

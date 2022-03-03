@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests.quotes;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests.quotes;
 
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -19,8 +19,8 @@ import java.util.concurrent.TimeUnit;
 
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.server.ServerEndpoint;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.Fuzzer;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.LocalServer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.Fuzzer;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.LocalServer;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Frame;
 import org.eclipse.jetty.websocket.core.OpCode;

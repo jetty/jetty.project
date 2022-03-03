@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.osgi.test;
+package org.eclipse.jetty.ee10.osgi.test;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -108,7 +108,7 @@ public class TestJettyOSGiClasspathResources
         if (Boolean.getBoolean(TestOSGiUtil.BUNDLE_DEBUG))
             TestOSGiUtil.diagnoseBundles(bundleContext);
 
-        Bundle webappBundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee9.osgi.webapp.resources");
+        Bundle webappBundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee10.osgi.webapp.resources");
 
         //Make a new bundle based on the test-jetty-osgi-webapp-resources war bundle, but
         //change the Bundle-Classpath so that WEB-INF/classes IS on the bundle classpath
@@ -116,12 +116,12 @@ public class TestJettyOSGiClasspathResources
         TinyBundle tiny = TinyBundles.bundle();
         tiny.read(new FileInputStream(warFile));
         tiny.set(Constants.BUNDLE_CLASSPATH, "., WEB-INF/classes/");
-        tiny.set(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.ee9.osgi.webapp.resources.alt");
+        tiny.set(Constants.BUNDLE_SYMBOLICNAME, "org.eclipse.jetty.ee10.osgi.webapp.resources.alt");
         InputStream is = tiny.build(TinyBundles.withBnd());
         bundleContext.installBundle("dummyAltLocation", is);
 
         webappBundle.stop();
-        Bundle bundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee9.osgi.webapp.resources.alt");
+        Bundle bundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee10.osgi.webapp.resources.alt");
         bundle.start();
         
         HttpClient client = new HttpClient();

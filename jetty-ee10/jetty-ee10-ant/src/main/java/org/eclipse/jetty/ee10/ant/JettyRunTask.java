@@ -11,7 +11,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.ee9.ant;
+package org.eclipse.jetty.ee10.ant;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -21,14 +21,14 @@ import java.util.List;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Task;
 import org.apache.tools.ant.taskdefs.Property;
-import org.eclipse.jetty.ee9.ant.types.Connector;
-import org.eclipse.jetty.ee9.ant.types.Connectors;
-import org.eclipse.jetty.ee9.ant.types.ContextHandlers;
-import org.eclipse.jetty.ee9.ant.types.LoginServices;
-import org.eclipse.jetty.ee9.ant.types.SystemProperties;
-import org.eclipse.jetty.ee9.ant.utils.TaskLog;
-import org.eclipse.jetty.ee9.security.LoginService;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.ant.types.Connector;
+import org.eclipse.jetty.ee10.ant.types.Connectors;
+import org.eclipse.jetty.ee10.ant.types.ContextHandlers;
+import org.eclipse.jetty.ee10.ant.types.LoginServices;
+import org.eclipse.jetty.ee10.ant.types.SystemProperties;
+import org.eclipse.jetty.ee10.ant.utils.TaskLog;
+import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.RequestLog;
 
 /**

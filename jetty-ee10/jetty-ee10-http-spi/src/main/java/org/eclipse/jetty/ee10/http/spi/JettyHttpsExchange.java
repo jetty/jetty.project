@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.http.spi;
+package org.eclipse.jetty.ee10.http.spi;
 
 import java.io.IOException;
 import java.io.InputStream;

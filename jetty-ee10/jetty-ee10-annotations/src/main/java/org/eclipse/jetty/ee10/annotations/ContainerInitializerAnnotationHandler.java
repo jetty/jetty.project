@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.annotations;
+package org.eclipse.jetty.ee10.annotations;
 
 import java.util.Objects;
 
-import org.eclipse.jetty.ee9.plus.annotation.ContainerInitializer;
-import org.eclipse.jetty.ee9.servlet.ServletContainerInitializerHolder;
+import org.eclipse.jetty.ee10.plus.annotation.ContainerInitializer;
+import org.eclipse.jetty.ee10.servlet.ServletContainerInitializerHolder;
 
 /**
  * ContainerInitializerAnnotationHandler

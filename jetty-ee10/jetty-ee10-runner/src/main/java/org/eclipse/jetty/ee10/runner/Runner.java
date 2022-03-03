@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.runner;
+package org.eclipse.jetty.ee10.runner;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -28,15 +28,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-import org.eclipse.jetty.ee9.security.ConstraintMapping;
-import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee9.security.HashLoginService;
-import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
-import org.eclipse.jetty.ee9.servlet.StatisticsServlet;
-import org.eclipse.jetty.ee9.webapp.MetaInfConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.security.HashLoginService;
+import org.eclipse.jetty.ee10.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.StatisticsServlet;
+import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
@@ -74,16 +74,16 @@ public class Runner
 
     public static final String[] PLUS_CONFIGURATION_CLASSES =
         {
-            org.eclipse.jetty.ee9.webapp.WebInfConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee9.webapp.WebXmlConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee9.webapp.MetaInfConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee9.webapp.FragmentConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee9.annotations.AnnotationConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee9.webapp.JettyWebXmlConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee9.webapp.WebAppConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee9.webapp.JspConfiguration.class.getCanonicalName()
+            org.eclipse.jetty.ee10.webapp.WebInfConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.ee10.webapp.WebXmlConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.ee10.webapp.MetaInfConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.ee10.webapp.FragmentConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.ee10.annotations.AnnotationConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.ee10.webapp.WebAppConfiguration.class.getCanonicalName(),
+            org.eclipse.jetty.ee10.webapp.JspConfiguration.class.getCanonicalName()
         };
     public static final String CONTAINER_INCLUDE_JAR_PATTERN = ".*/jetty-runner-[^/]*\\.jar$";
     public static final String DEFAULT_CONTEXT_PATH = "/";

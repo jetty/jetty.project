@@ -11,13 +11,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.ee9.ant;
+package org.eclipse.jetty.ee10.ant;
 
 import java.io.File;
 import java.util.List;
 
-import org.eclipse.jetty.ee9.webapp.Configuration;
-import org.eclipse.jetty.ee9.webapp.WebXmlConfiguration;
+import org.eclipse.jetty.ee10.webapp.Configuration;
+import org.eclipse.jetty.ee10.webapp.WebXmlConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

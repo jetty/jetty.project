@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.function.Function;
 
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.framehandlers.FrameEcho;
-import org.eclipse.jetty.ee9.websocket.jakarta.tests.framehandlers.WholeMessageEcho;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.framehandlers.FrameEcho;
+import org.eclipse.jetty.ee10.websocket.jakarta.tests.framehandlers.WholeMessageEcho;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.DefaultHandler;

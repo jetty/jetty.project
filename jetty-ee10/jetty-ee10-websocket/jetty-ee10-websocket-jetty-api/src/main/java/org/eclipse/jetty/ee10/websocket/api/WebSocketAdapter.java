@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.api;
+package org.eclipse.jetty.ee10.websocket.api;
 
 /**
  * Default implementation of the {@link WebSocketListener}.

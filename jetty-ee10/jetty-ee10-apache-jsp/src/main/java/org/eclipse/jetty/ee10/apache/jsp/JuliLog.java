@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.apache.jsp;
+package org.eclipse.jetty.ee10.apache.jsp;
 
 import org.slf4j.LoggerFactory;
 

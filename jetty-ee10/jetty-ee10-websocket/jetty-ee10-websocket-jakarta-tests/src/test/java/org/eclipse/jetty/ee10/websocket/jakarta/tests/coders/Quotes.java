@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.jakarta.tests.coders;
+package org.eclipse.jetty.ee10.websocket.jakarta.tests.coders;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security;
+package org.eclipse.jetty.ee10.security;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -21,11 +21,11 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.AbstractHandler;
-import org.eclipse.jetty.ee9.handler.Authentication;
-import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
-import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.ee10.handler.AbstractHandler;
+import org.eclipse.jetty.ee10.handler.Authentication;
+import org.eclipse.jetty.ee10.handler.Request;
+import org.eclipse.jetty.ee10.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.ee10.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;

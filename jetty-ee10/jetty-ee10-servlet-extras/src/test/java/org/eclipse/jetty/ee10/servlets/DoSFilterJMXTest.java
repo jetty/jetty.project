@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlets;
+package org.eclipse.jetty.ee10.servlets;
 
 import java.lang.management.ManagementFactory;
 import java.util.EnumSet;
@@ -21,8 +21,8 @@ import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import jakarta.servlet.DispatcherType;
-import org.eclipse.jetty.ee9.servlet.FilterHolder;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.FilterHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security.authentication;
+package org.eclipse.jetty.ee10.security.authentication;
 
 import java.security.Principal;
 import java.security.cert.X509Certificate;
@@ -22,12 +22,12 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.Authentication;
-import org.eclipse.jetty.ee9.handler.Authentication.User;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
-import org.eclipse.jetty.ee9.security.Authenticator;
-import org.eclipse.jetty.ee9.security.ServerAuthException;
-import org.eclipse.jetty.ee9.security.UserAuthentication;
+import org.eclipse.jetty.ee10.handler.Authentication;
+import org.eclipse.jetty.ee10.handler.Authentication.User;
+import org.eclipse.jetty.ee10.handler.UserIdentity;
+import org.eclipse.jetty.ee10.security.Authenticator;
+import org.eclipse.jetty.ee10.security.ServerAuthException;
+import org.eclipse.jetty.ee10.security.UserAuthentication;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 

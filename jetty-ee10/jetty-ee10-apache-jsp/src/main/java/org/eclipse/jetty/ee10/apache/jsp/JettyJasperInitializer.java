@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.apache.jsp;
+package org.eclipse.jetty.ee10.apache.jsp;
 
 import java.io.IOException;
 import java.net.URL;

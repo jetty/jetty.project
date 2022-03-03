@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.tests.client;
+package org.eclipse.jetty.ee10.websocket.tests.client;
 
 import java.util.concurrent.CountDownLatch;
 
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.api.WebSocketSessionListener;
-import org.eclipse.jetty.ee9.websocket.client.WebSocketClient;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketSessionListener;
+import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
 import org.eclipse.jetty.io.Connection;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

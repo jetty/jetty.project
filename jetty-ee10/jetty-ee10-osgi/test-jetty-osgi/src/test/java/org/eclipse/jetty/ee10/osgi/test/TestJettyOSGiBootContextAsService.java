@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.osgi.test;
+package org.eclipse.jetty.ee10.osgi.test;
 
 import java.util.ArrayList;
 import javax.inject.Inject;
@@ -106,7 +106,7 @@ public class TestJettyOSGiBootContextAsService
         // Context is destroyed for it.
         // TODO: think of a better way to communicate this to the test, other
         // than checking stderr output
-        Bundle testWebBundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee9.osgi.testcontext");
+        Bundle testWebBundle = TestOSGiUtil.getBundle(bundleContext, "org.eclipse.jetty.ee10.osgi.testcontext");
         assertNotNull("Could not find the org.eclipse.jetty.test-jetty-osgi-context.jar bundle", testWebBundle);
         assertEquals("The bundle org.eclipse.jetty.testcontext is not correctly resolved", Bundle.ACTIVE, testWebBundle.getState());
         testWebBundle.stop();

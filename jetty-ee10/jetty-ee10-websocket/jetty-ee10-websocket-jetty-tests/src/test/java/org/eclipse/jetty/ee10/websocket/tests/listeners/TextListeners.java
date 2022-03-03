@@ -11,17 +11,17 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.tests.listeners;
+package org.eclipse.jetty.ee10.websocket.tests.listeners;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.util.stream.Stream;
 
-import org.eclipse.jetty.ee9.websocket.api.Session;
-import org.eclipse.jetty.ee9.websocket.api.WebSocketListener;
-import org.eclipse.jetty.ee9.websocket.api.WebSocketPartialListener;
-import org.eclipse.jetty.ee9.websocket.api.annotations.OnWebSocketMessage;
-import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee10.websocket.api.Session;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketListener;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketPartialListener;
+import org.eclipse.jetty.ee10.websocket.api.annotations.OnWebSocketMessage;
+import org.eclipse.jetty.ee10.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.params.provider.Arguments;
 

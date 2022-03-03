@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,10 +40,10 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.AllowedResourceAliasChecker;
-import org.eclipse.jetty.ee9.handler.ResourceContentFactory;
-import org.eclipse.jetty.ee9.handler.ResourceService;
-import org.eclipse.jetty.ee9.handler.SymlinkAllowedResourceAliasChecker;
+import org.eclipse.jetty.ee10.handler.AllowedResourceAliasChecker;
+import org.eclipse.jetty.ee10.handler.ResourceContentFactory;
+import org.eclipse.jetty.ee10.handler.ResourceService;
+import org.eclipse.jetty.ee10.handler.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;

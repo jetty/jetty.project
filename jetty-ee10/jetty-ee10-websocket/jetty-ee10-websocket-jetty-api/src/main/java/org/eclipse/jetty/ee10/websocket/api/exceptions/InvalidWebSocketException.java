@@ -11,11 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.websocket.api.exceptions;
+package org.eclipse.jetty.ee10.websocket.api.exceptions;
 
-import org.eclipse.jetty.ee9.websocket.api.WebSocketAdapter;
-import org.eclipse.jetty.ee9.websocket.api.WebSocketListener;
-import org.eclipse.jetty.ee9.websocket.api.annotations.WebSocket;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketAdapter;
+import org.eclipse.jetty.ee10.websocket.api.WebSocketListener;
+import org.eclipse.jetty.ee10.websocket.api.annotations.WebSocket;
 
 /**
  * Indicating that the provided Class is not a valid WebSocket as defined by the API.

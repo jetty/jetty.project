@@ -14,5 +14,5 @@
 /**
  * Jetty Server : Handler JMX Integration
  */
-package org.eclipse.jetty.ee9.handler.jmx;
+package org.eclipse.jetty.ee10.handler.jmx;
 

@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.demos;
+package org.eclipse.jetty.ee10.demos;
 
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.ee9.plus.webapp.PlusConfiguration;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.PathResource;
 
@@ -45,7 +45,7 @@ public class ServerWithJNDI
 
         // Register new transaction manager in JNDI
         // At runtime, the webapp accesses this as java:comp/UserTransaction
-        new org.eclipse.jetty.ee9.plus.jndi.Transaction(
+        new org.eclipse.jetty.ee10.plus.jndi.Transaction(
             new org.example.MockUserTransaction());
 
         // Define an env entry with Server scope.
@@ -56,7 +56,7 @@ public class ServerWithJNDI
         // <env-entry-type>java.lang.Integer</env-entry-type>
         // <env-entry-value>4000</env-entry-value>
         // </env-entry>
-        new org.eclipse.jetty.ee9.plus.jndi.EnvEntry(server, "woggle", 4000, false);
+        new org.eclipse.jetty.ee10.plus.jndi.EnvEntry(server, "woggle", 4000, false);
 
         // Define an env entry with webapp scope.
         // At runtime, the webapp accesses this as java:comp/env/wiggle
@@ -69,7 +69,7 @@ public class ServerWithJNDI
         // Note that the last arg of "true" means that this definition for
         // "wiggle" would override an entry of the
         // same name in web.xml
-        new org.eclipse.jetty.ee9.plus.jndi.EnvEntry(webapp, "wiggle", 100d, true);
+        new org.eclipse.jetty.ee10.plus.jndi.EnvEntry(webapp, "wiggle", 100d, true);
 
         // Register a mock DataSource scoped to the webapp
         // This must be linked to the webapp via an entry in web.xml:
@@ -80,7 +80,7 @@ public class ServerWithJNDI
         // </resource-ref>
         // At runtime the webapp accesses this as
         // java:comp/env/jdbc/mydatasource
-        new org.eclipse.jetty.ee9.plus.jndi.Resource(
+        new org.eclipse.jetty.ee10.plus.jndi.Resource(
             webapp, "jdbc/mydatasource", new org.example.MockDataSource());
         return server;
     }

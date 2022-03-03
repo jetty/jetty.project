@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.handler;
+package org.eclipse.jetty.ee10.handler;
 
 import java.io.File;
 import java.io.IOException;
@@ -106,7 +106,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject("EE9 Context")
 public class Ee9ContextHandler
     extends org.eclipse.jetty.server.handler.ContextHandler // This is-a core context handler
-    implements org.eclipse.jetty.ee9.handler.Handler // this can also handle ee9 request by delegating to nested ScopedHandler
+    implements org.eclipse.jetty.ee10.handler.Handler // this can also handle ee10 request by delegating to nested ScopedHandler
 {
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;

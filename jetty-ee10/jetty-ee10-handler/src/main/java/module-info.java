@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee9.handler
+module org.eclipse.jetty.ee10.handler
 {
     requires transitive jetty.servlet.api;
     requires transitive org.eclipse.jetty.http;
@@ -22,8 +22,8 @@ module org.eclipse.jetty.ee9.handler
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
 
-    exports org.eclipse.jetty.ee9.handler;
-    exports org.eclipse.jetty.ee9.handler.gzip;
-    exports org.eclipse.jetty.ee9.handler.jmx to
+    exports org.eclipse.jetty.ee10.handler;
+    exports org.eclipse.jetty.ee10.handler.gzip;
+    exports org.eclipse.jetty.ee10.handler.jmx to
         org.eclipse.jetty.jmx;
 }

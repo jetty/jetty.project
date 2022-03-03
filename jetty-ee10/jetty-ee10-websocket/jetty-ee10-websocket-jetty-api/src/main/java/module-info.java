@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.ee9.websocket.jetty.api
+module org.eclipse.jetty.ee10.websocket.jetty.api
 {
-    exports org.eclipse.jetty.ee9.websocket.api;
-    exports org.eclipse.jetty.ee9.websocket.api.annotations;
-    exports org.eclipse.jetty.ee9.websocket.api.exceptions;
-    exports org.eclipse.jetty.ee9.websocket.api.util;
+    exports org.eclipse.jetty.ee10.websocket.api;
+    exports org.eclipse.jetty.ee10.websocket.api.annotations;
+    exports org.eclipse.jetty.ee10.websocket.api.exceptions;
+    exports org.eclipse.jetty.ee10.websocket.api.util;
 
-    uses org.eclipse.jetty.ee9.websocket.api.ExtensionConfig.Parser;
+    uses org.eclipse.jetty.ee10.websocket.api.ExtensionConfig.Parser;
 }

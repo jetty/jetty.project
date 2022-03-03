@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.security.openid;
+package org.eclipse.jetty.ee10.security.openid;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -27,18 +27,18 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.eclipse.jetty.ee9.handler.Authentication;
-import org.eclipse.jetty.ee9.handler.Authentication.User;
-import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.ee9.handler.Response;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
-import org.eclipse.jetty.ee9.security.Authenticator;
-import org.eclipse.jetty.ee9.security.LoginService;
-import org.eclipse.jetty.ee9.security.ServerAuthException;
-import org.eclipse.jetty.ee9.security.UserAuthentication;
-import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
-import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
-import org.eclipse.jetty.ee9.security.authentication.SessionAuthentication;
+import org.eclipse.jetty.ee10.handler.Authentication;
+import org.eclipse.jetty.ee10.handler.Authentication.User;
+import org.eclipse.jetty.ee10.handler.Request;
+import org.eclipse.jetty.ee10.handler.Response;
+import org.eclipse.jetty.ee10.handler.UserIdentity;
+import org.eclipse.jetty.ee10.security.Authenticator;
+import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.security.ServerAuthException;
+import org.eclipse.jetty.ee10.security.UserAuthentication;
+import org.eclipse.jetty.ee10.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.ee10.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.ee10.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.MultiMap;
