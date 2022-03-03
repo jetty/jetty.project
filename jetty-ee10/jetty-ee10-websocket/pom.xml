@@ -8,7 +8,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-ee10-websocket</artifactId>
-  <name>EE 9 APIs :: Parent</name>
+  <name>EE10 APIs :: Parent</name>
   <packaging>pom</packaging>
 
   <properties>
