@@ -65,6 +65,7 @@
     <module>jetty-ee10-security</module>
     <module>jetty-ee10-servlet</module>
     <module>jetty-ee10-servlet-extras</module>
+    <module>jetty-ee10-session</module>
     <module>jetty-ee10-webapp</module>
     <module>jetty-ee10-websocket</module>
     <module>jetty-ee10-tests</module>
