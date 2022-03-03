@@ -1,0 +1,50 @@
+--xDeLGHDDsXrlJSXfqDmg5IRop7auqTTBXuI
+Content-Disposition: form-data; name="reporter"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+
+<user@company.com>
+--xDeLGHDDsXrlJSXfqDmg5IRop7auqTTBXuI
+Content-Disposition: form-data; name="timestamp"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+
+2018-03-21T19:00:18+00:00
+--xDeLGHDDsXrlJSXfqDmg5IRop7auqTTBXuI
+Content-Disposition: form-data; name="comments"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+
+this also couldn't be parsed
+--xDeLGHDDsXrlJSXfqDmg5IRop7auqTTBXuI
+Content-Disposition: form-data; name="attachment"
+Content-Type: application/octet-stream
+Content-Transfer-Encoding: binary
+
+--GiQ7DQPSJdaP5c43_Zd1P6xVJTQVLzZ8T9ovx
+Content-Disposition: form-data; name="fruit"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+
+cherry
+--GiQ7DQPSJdaP5c43_Zd1P6xVJTQVLzZ8T9ovx
+Content-Disposition: form-data; name="color"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+
+red
+--GiQ7DQPSJdaP5c43_Zd1P6xVJTQVLzZ8T9ovx
+Content-Disposition: form-data; name="cost"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+
+$1.20 USG
+--GiQ7DQPSJdaP5c43_Zd1P6xVJTQVLzZ8T9ovx
+Content-Disposition: form-data; name="comments"
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+
+--gq4lBOlNh8FRiH6MLw4GaWE40UC-GeDRTy8bF
+--GiQ7DQPSJdaP5c43_Zd1P6xVJTQVLzZ8T9ovx--
+
+--xDeLGHDDsXrlJSXfqDmg5IRop7auqTTBXuI--

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+  <Set name="contextPath">/rfc2616-webapp</Set>
+  <Set name="war"><Property name="test.webapps" default="." />/test-webapp-rfc2616.war</Set>
+  <Call name="insertHandler">
+    <Arg>
+      <New class="org.eclipse.jetty.server.handler.gzip.GzipHandler">
+        <Set name="minGzipSize">1024</Set>
+      </New>
+    </Arg>
+  </Call>
+  <Get name="systemClassMatcher">
+    <Call name="add"><Arg>org.slf4j.</Arg></Call>
+    <Call name="add"><Arg>org.eclipse.jetty.logging.</Arg></Call>
+  </Get>
+  <Get name="serverClassMatcher">
+    <Call name="add"><Arg>-org.slf4j.</Arg></Call>
+    <Call name="add"><Arg>-org.eclipse.jetty.logging.</Arg></Call>
+  </Get>
+</Configure>

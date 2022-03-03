@@ -1,0 +1,10 @@
+Request-Header|Accept-Encoding|gzip,deflate
+Request-Header|Connection|keep-alive
+Request-Header|Content-Length|406
+Request-Header|Content-Type|multipart/form-data; boundary=u7tfLQaHJEHHUJjnVDbFdc_Oqz4jmkA25mgWd
+Request-Header|Host|localhost:9090
+Request-Header|User-Agent|Apache-HttpClient/4.5.5 (Java/1.8.0_162)
+Request-Header|X-BrowserId|apache-httpcomp
+Parts-Count|2
+Part-ContainsContents|japanese|オープンソース
+Part-ContainsContents|hello|日食桟橋

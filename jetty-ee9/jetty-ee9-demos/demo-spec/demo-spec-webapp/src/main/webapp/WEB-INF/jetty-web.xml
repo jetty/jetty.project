@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+  <Get name="servletContext">
+    <Call name="log">
+      <Arg>The test-spec webapp is deployed. DO NOT USE IN PRODUCTION!</Arg>
+      <Arg></Arg>
+    </Call>
+  </Get>
+  <Call class="org.slf4j.LoggerFactory" name="getLogger">
+    <Arg>org.eclipse.jetty</Arg>
+    <Call name="info">
+      <Arg>WEB-INF/lib/jetty-util.jar logging used!</Arg>
+    </Call>
+  </Call>
+</Configure>

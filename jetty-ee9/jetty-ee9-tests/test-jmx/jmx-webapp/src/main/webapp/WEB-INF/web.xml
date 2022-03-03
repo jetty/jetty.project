@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app 
+   xmlns="http://xmlns.jcp.org/xml/ns/javaee" 
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+   metadata-complete="true"
+   version="3.1"> 
+
+  <display-name>Test JMX WebApp</display-name>
+  
+  <context-param>
+    <param-name>org.eclipse.jetty.server.context.ManagedAttributes</param-name>
+    <param-value>
+        org.eclipse.jetty.test.jmx.common,
+        org.eclipse.jetty.test.jmx.ping,
+        org.eclipse.jetty.test.jmx.echo,
+        Ping
+     </param-value>
+  </context-param>
+  
+  <servlet>
+    <servlet-name>Ping</servlet-name>
+    <servlet-class>org.eclipse.jetty.test.jmx.PingServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>Ping</servlet-name>
+    <url-pattern>/ping</url-pattern>
+  </servlet-mapping>
+
+</web-app>
+
+

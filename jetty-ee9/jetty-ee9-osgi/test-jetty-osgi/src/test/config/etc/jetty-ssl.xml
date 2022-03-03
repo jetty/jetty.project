@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- ============================================================= -->
+<!-- Base SSL configuration                                        -->
+<!-- This configuration needs to be used together with 1 or more   -->
+<!-- of jetty-https.xml and/or jetty-http2.xml                     -->
+<!-- ============================================================= -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <!-- =========================================================== -->
+  <!-- Add an SSL Connector with no protocol factories              -->
+  <!-- =========================================================== -->
+  <Call  name="addConnector">
+    <Arg>
+      <New id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
+        <Arg name="server"><Ref refid="Server" /></Arg>
+          <Arg name="factories">
+            <Array type="org.eclipse.jetty.server.ConnectionFactory">
+            </Array>
+          </Arg>
+          <Set name="host" property="jetty.ssl.host"/>
+          <Set name="port"><Property name="jetty.ssl.port" default="443"/></Set>
+          <Set name="idleTimeout"><Property name="jetty.ssl.idleTimeout" default="30000"/></Set>
+        </New>
+    </Arg>
+  </Call>
+
+  <!-- ============================================================= -->
+  <!-- Create a TLS (SSL) Context Factory  for later reuse           -->
+  <!-- ============================================================= -->
+  <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory$Server">
+    <Set name="Provider"><SystemProperty name="jetty.sslContext.provider"/></Set>
+    <Set name="KeyStorePath"><Property name="jetty.base"/>/<Property name="jetty.sslContext.keyStorePath" default="etc/keystore.p12"/></Set>
+    <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
+    <Set name="TrustStorePath"><Property name="jetty.base"/>/<Property name="jetty.sslContext.trustStorePath" default="etc/keystore.p12"/></Set>
+    <Set name="TrustStorePassword"><Property name="jetty.sslContext.trustStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
+    <Set name="NeedClientAuth" property="jetty.sslContext.needClientAuth"/>
+    <Set name="WantClientAuth" property="jetty.sslContext.wantClientAuth"/>
+  </New>
+
+  <!-- =========================================================== -->
+  <!-- Create a TLS specific HttpConfiguration based on the        -->
+  <!-- common HttpConfiguration defined in jetty.xml               -->
+  <!-- Add a SecureRequestCustomizer to extract certificate and    -->
+  <!-- session information                                         -->
+  <!-- =========================================================== -->
+  <New id="sslHttpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
+    <Arg><Ref refid="httpConfig"/></Arg>
+    <Call name="addCustomizer">
+      <Arg><New class="org.eclipse.jetty.server.SecureRequestCustomizer"/></Arg>
+    </Call>
+  </New>
+
+</Configure>

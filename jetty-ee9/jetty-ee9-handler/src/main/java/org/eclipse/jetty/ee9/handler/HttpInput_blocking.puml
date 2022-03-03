@@ -1,0 +1,68 @@
+@startuml
+title "HttpInput"
+
+participant AsyncContentDelivery as "[async\ncontent\ndelivery]"
+participant HttpChannel as "Http\nChannel\n"
+participant HttpChannelState as "Http\nChannel\nState"
+participant AsyncContentProducer as "Async\nContent\nProducer"
+participant Semaphore as "\nSemaphore\n"
+participant BlockingContentProducer as "Blocking\nContent\nProducer"
+participant HttpInput as "Http\nInput\n"
+participant Application as "\nApplication\n"
+
+autoactivate on
+
+== Blocking Read ==
+
+Application->HttpInput: read
+activate Application
+    HttpInput->BlockingContentProducer: nextContent
+        loop
+            BlockingContentProducer->AsyncContentProducer: nextContent
+                AsyncContentProducer->AsyncContentProducer: nextTransformedContent
+                    AsyncContentProducer->HttpChannel: produceContent
+                    return
+                return
+                alt content is not null
+                    AsyncContentProducer->HttpChannelState: onReadIdle
+                    return
+                end
+            return content or null
+            alt content is null
+                BlockingContentProducer->HttpChannelState: onReadUnready
+                return
+                BlockingContentProducer->HttpChannel: needContent
+                return
+                alt needContent returns false
+                    BlockingContentProducer->Semaphore: acquire
+                    return
+                else needContent returns true
+                    note over BlockingContentProducer
+                        continue loop
+                    end note
+                end
+            else content is not null
+                return non-null content
+            end
+        end
+    ' return from BlockingContentProducer: nextContent
+    HttpInput->HttpInput: copy content\ninto byte[]
+    return
+    alt content is empty
+        HttpInput->BlockingContentProducer: reclaim
+            BlockingContentProducer->AsyncContentProducer: reclaim
+            return
+        return
+    end
+return
+deactivate Application
+
+alt if content arrives
+    AsyncContentDelivery->HttpInput: onContentProducible
+        HttpInput->BlockingContentProducer: onContentProducible
+            BlockingContentProducer->Semaphore: release
+            return
+        return false
+    return false
+end
+@enduml
