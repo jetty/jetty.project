@@ -23,7 +23,6 @@ import java.net.URLClassLoader;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
@@ -33,7 +32,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -63,12 +61,12 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.ClassLoaderDump;
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
@@ -77,7 +75,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -105,8 +102,11 @@ import org.slf4j.LoggerFactory;
  * this alias checker is not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  * </p>
  */
-@ManagedObject("URI Context")
-public class ContextHandler extends ScopedHandler implements Attributes, Graceful
+// TODO make this work
+@ManagedObject("EE9 Context")
+public class Ee9ContextHandler
+    extends org.eclipse.jetty.server.handler.ContextHandler // This is-a core context handler
+    implements org.eclipse.jetty.ee9.handler.Handler // this can also handle ee9 request by delegating to nested ScopedHandler
 {
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
@@ -129,7 +129,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
 
-    private static final ThreadLocal<Context> __context = new ThreadLocal<>();
+    private static final ThreadLocal<SContext> __context = new ThreadLocal<>();
 
     private static String __serverInfo = "jetty/" + Server.getVersion();
 
@@ -140,31 +140,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public static final int DEFAULT_MAX_FORM_KEYS = 1000;
     public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
 
-    /**
-     * Get the current ServletContext implementation.
-     *
-     * @return ServletContext implementation
-     */
-    public static Context getCurrentContext()
-    {
-        return __context.get();
-    }
-
-    public static ContextHandler getContextHandler(ServletContext context)
-    {
-        if (context instanceof ContextHandler.Context)
-            return ((ContextHandler.Context)context).getContextHandler();
-        Context c = getCurrentContext();
-        if (c != null)
-            return c.getContextHandler();
-        return null;
-    }
-
+    // TODO move to core
     public static String getServerInfo()
     {
         return __serverInfo;
     }
 
+    // TODO move to core
     public static void setServerInfo(String serverInfo)
     {
         __serverInfo = serverInfo;
@@ -187,32 +169,25 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         PREFIX
     }
 
+    private final HandlerConvertor _handlerConvertor;
+
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
-    protected Context _scontext;
-    protected final Attributes.Mapped _persistentAttributes;
+    protected SContext _scontext;
     private final Map<String, String> _initParams;
     private ClassLoader _classLoader;
     private boolean _contextPathDefault = true;
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
-    private String _contextPath = "/";
     private String _contextPathEncoded = "/";
     private String _displayName;
-    private long _stopTimeout;
-    private Resource _baseResource;
-    private MimeTypes _mimeTypes;
+    private MimeTypes _mimeTypes; // TODO move to core?
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
-    private ErrorHandler _errorHandler;
-    private String[] _vhosts; // Host name portion, matching _vconnectors array
-    private boolean[] _vhostswildcard;
-    private String[] _vconnectors; // connector portion, matching _vhosts array
     private Logger _logger;
     private boolean _allowNullPathInfo;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
     private boolean _compactPath = false;
-    private boolean _usingSecurityManager = System.getSecurityManager() != null;
 
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
@@ -220,7 +195,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private final List<ServletContextAttributeListener> _servletContextAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestListener> _servletRequestListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
-    private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final Set<EventListener> _durableListeners = new HashSet<>();
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
@@ -236,53 +210,55 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private final AtomicReference<Availability> _availability = new AtomicReference<>(Availability.STOPPED);
 
-    public ContextHandler()
+    public Ee9ContextHandler()
     {
-        this(null, null, null);
+        this(null);
     }
 
-    protected ContextHandler(Context context)
+    public Ee9ContextHandler(String contextPath)
     {
-        this(context, null, null);
+        this(null, contextPath);
     }
 
-    public ContextHandler(String contextPath)
+    protected Ee9ContextHandler(org.eclipse.jetty.server.Handler.Container parent, String contextPath)
     {
-        this(null, null, contextPath);
-    }
+        _scontext = new SContext(getContext());
+        if (parent != null)
+            parent.addHandler(this);
 
-    public ContextHandler(HandlerContainer parent, String contextPath)
-    {
-        this(null, parent, contextPath);
-    }
-
-    protected ContextHandler(Context context, HandlerContainer parent, String contextPath)
-    {
-        _scontext = context == null ? new Context() : context;
-        _persistentAttributes = new Attributes.Mapped();
         _initParams = new HashMap<>();
         if (File.separatorChar == '/')
             addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
 
         if (contextPath != null)
             setContextPath(contextPath);
-        if (parent instanceof HandlerWrapper)
-            ((HandlerWrapper)parent).setHandler(this);
-        else if (parent instanceof HandlerCollection)
-            ((HandlerCollection)parent).addHandler(this);
+
+        _handlerConvertor = new HandlerConvertor();
+        super.setHandler(_handlerConvertor);
+    }
+
+    @Override
+    public void setHandler(org.eclipse.jetty.server.Handler handler)
+    {
+        throw new UnsupportedOperationException("cannot set handler");
+    }
+
+    @Override
+    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    {
+        _handlerConvertor.handle(target, baseRequest, request, response);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
+        // TODO super dump plus init params at least
+        super.dump(out, indent);
         dumpObjects(out, indent,
-            new ClassLoaderDump(getClassLoader()),
-            new DumpableCollection("handler attributes " + this, _persistentAttributes.getAttributeEntrySet()),
-            new DumpableCollection("context attributes " + this, _scontext._attributes.getAttributeEntrySet()),
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
-    public Context getServletContext()
+    public SContext getServletContext()
     {
         return _scontext;
     }
@@ -308,220 +284,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void setServer(Server server)
     {
         super.setServer(server);
-        if (_errorHandler != null)
-            _errorHandler.setServer(server);
-    }
-
-    public boolean isUsingSecurityManager()
-    {
-        return _usingSecurityManager;
-    }
-
-    public void setUsingSecurityManager(boolean usingSecurityManager)
-    {
-        if (usingSecurityManager && System.getSecurityManager() == null)
-            throw new IllegalStateException("No security manager");
-        _usingSecurityManager = usingSecurityManager;
-    }
-
-    /**
-     * Set the virtual hosts for the context. Only requests that have a matching host header or fully qualified URL will be passed to that context with a
-     * virtual host name. A context with no virtual host names or a null virtual host name is available to all requests that are not served by a context with a
-     * matching virtual host name.
-     *
-     * @param vhosts Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
-     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
-     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
-     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
-     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
-     */
-    public void setVirtualHosts(String[] vhosts)
-    {
-
-        if (vhosts == null)
-        {
-            _vhosts = vhosts;
-        }
-        else
-        {
-
-            boolean hostMatch = false;
-            boolean connectorHostMatch = false;
-            _vhosts = new String[vhosts.length];
-            _vconnectors = new String[vhosts.length];
-            _vhostswildcard = new boolean[vhosts.length];
-            ArrayList<Integer> connectorOnlyIndexes = null;
-            for (int i = 0; i < vhosts.length; i++)
-            {
-                boolean connectorMatch = false;
-                _vhosts[i] = vhosts[i];
-                if (vhosts[i] == null)
-                    continue;
-                int connectorIndex = _vhosts[i].indexOf('@');
-                if (connectorIndex >= 0)
-                {
-                    connectorMatch = true;
-                    _vconnectors[i] = _vhosts[i].substring(connectorIndex + 1);
-                    _vhosts[i] = _vhosts[i].substring(0, connectorIndex);
-                    if (connectorIndex == 0)
-                    {
-                        if (connectorOnlyIndexes == null)
-                            connectorOnlyIndexes = new ArrayList<>();
-                        connectorOnlyIndexes.add(i);
-                    }
-                }
-
-                if (_vhosts[i].startsWith("*."))
-                {
-                    _vhosts[i] = _vhosts[i].substring(1);
-                    _vhostswildcard[i] = true;
-                }
-                if (_vhosts[i].isEmpty())
-                    _vhosts[i] = null;
-                else
-                {
-                    hostMatch = true;
-                    connectorHostMatch = connectorHostMatch || connectorMatch;
-                }
-                _vhosts[i] = normalizeHostname(_vhosts[i]);
-            }
-
-            if (connectorOnlyIndexes != null && hostMatch && !connectorHostMatch)
-            {
-                LOG.warn(
-                    "ContextHandler {} has a connector only entry e.g. \"@connector\" and one or more host only entries. \n" +
-                        "The host entries will be ignored to match legacy behavior.  To clear this warning remove the host entries or update to us at least one host@connector syntax entry that will match a host for an specific connector",
-                    Arrays.asList(vhosts));
-                String[] filteredHosts = new String[connectorOnlyIndexes.size()];
-                for (int i = 0; i < connectorOnlyIndexes.size(); i++)
-                {
-                    filteredHosts[i] = vhosts[connectorOnlyIndexes.get(i)];
-                }
-                setVirtualHosts(filteredHosts);
-            }
-        }
-    }
-
-    /**
-     * Either set virtual hosts or add to an existing set of virtual hosts.
-     *
-     * @param virtualHosts Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
-     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
-     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
-     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
-     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
-     */
-    public void addVirtualHosts(String[] virtualHosts)
-    {
-        if (virtualHosts == null || virtualHosts.length == 0) // since this is add, we don't null the old ones
-            return;
-
-        if (_vhosts == null)
-        {
-            setVirtualHosts(virtualHosts);
-        }
-        else
-        {
-            Set<String> currentVirtualHosts = new HashSet<>(Arrays.asList(getVirtualHosts()));
-            for (String vh : virtualHosts)
-            {
-                currentVirtualHosts.add(normalizeHostname(vh));
-            }
-            setVirtualHosts(currentVirtualHosts.toArray(new String[0]));
-        }
-    }
-
-    /**
-     * Removes an array of virtual host entries, if this removes all entries the _vhosts will be set to null
-     *
-     * @param virtualHosts Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
-     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
-     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
-     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
-     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
-     */
-    public void removeVirtualHosts(String[] virtualHosts)
-    {
-        if (virtualHosts == null || virtualHosts.length == 0 || _vhosts == null || _vhosts.length == 0)
-            return; // do nothing
-
-        Set<String> existingVirtualHosts = new HashSet<>(Arrays.asList(getVirtualHosts()));
-        for (String vh : virtualHosts)
-        {
-            existingVirtualHosts.remove(normalizeHostname(vh));
-        }
-        if (existingVirtualHosts.isEmpty())
-            setVirtualHosts(null); // if we ended up removing them all, just null out _vhosts
-        else
-            setVirtualHosts(existingVirtualHosts.toArray(new String[0]));
-    }
-
-    /**
-     * Get the virtual hosts for the context. Only requests that have a matching host header or fully qualified URL will be passed to that context with a
-     * virtual host name. A context with no virtual host names or a null virtual host name is available to all requests that are not served by a context with a
-     * matching virtual host name.
-     *
-     * @return Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
-     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
-     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
-     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
-     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
-     */
-    @ManagedAttribute(value = "Virtual hosts accepted by the context", readonly = true)
-    public String[] getVirtualHosts()
-    {
-        if (_vhosts == null)
-            return null;
-
-        String[] vhosts = new String[_vhosts.length];
-        for (int i = 0; i < _vhosts.length; i++)
-        {
-            StringBuilder sb = new StringBuilder();
-            if (_vhostswildcard[i])
-                sb.append("*");
-            if (_vhosts[i] != null)
-                sb.append(_vhosts[i]);
-            if (_vconnectors[i] != null)
-                sb.append("@").append(_vconnectors[i]);
-            vhosts[i] = sb.toString();
-        }
-        return vhosts;
-    }
-
-    @Override
-    public Object getAttribute(String name)
-    {
-        return _persistentAttributes.getAttribute(name);
-    }
-
-    @Override
-    public Set<String> getAttributeNameSet()
-    {
-        return _persistentAttributes.getAttributeNameSet();
-    }
-
-    /**
-     * @return Returns the attributes.
-     */
-    public Attributes getAttributes()
-    {
-        return _persistentAttributes;
-    }
-
-    /**
-     * @return Returns the classLoader.
-     */
-    public ClassLoader getClassLoader()
-    {
-        return _classLoader;
+        // TODO set on scoped handlers?
     }
 
     /**
@@ -562,19 +325,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /**
-     * @return Returns the contextPath.
-     */
-    @ManagedAttribute("True if URLs are compacted to replace the multiple '/'s with a single '/'")
-    public String getContextPath()
-    {
-        return _contextPath;
-    }
-
-    /**
      * @return Returns the encoded contextPath.
      */
     public String getContextPathEncoded()
     {
+        // TODO how is this set?
         return _contextPathEncoded;
     }
 
@@ -620,15 +375,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return _initParams;
     }
 
-    /*
-     * @see jakarta.servlet.ServletContext#getServletContextName()
-     */
-    @ManagedAttribute(value = "Display name of the Context", readonly = true)
-    public String getDisplayName()
-    {
-        return _displayName;
-    }
-
     /**
      * Add a context event listeners.
      *
@@ -645,12 +391,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         if (super.addEventListener(listener))
         {
-            if (listener instanceof ContextScopeListener)
-            {
-                _contextListeners.add((ContextScopeListener)listener);
-                if (__context.get() != null)
-                    ((ContextScopeListener)listener).enterScope(__context.get(), null, "Listener registered");
-            }
+            // TODO do we need a context scope listener that takes SContext?
 
             if (listener instanceof ServletContextListener)
             {
@@ -691,9 +432,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         if (super.removeEventListener(listener))
         {
-            if (listener instanceof ContextScopeListener)
-                _contextListeners.remove(listener);
-
             if (listener instanceof ServletContextListener)
             {
                 _servletContextListeners.remove(listener);
@@ -737,101 +475,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return getEventListeners().contains(listener);
     }
 
-    /**
-     * @return true if this context is shutting down
-     */
-    @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
-    public boolean isShutdown()
-    {
-        return _availability.get() == Availability.SHUTDOWN;
-    }
-
-    /**
-     * Set shutdown status. This field allows for graceful shutdown of a context. A started context may be put into non accepting state so that existing
-     * requests can complete, but no new requests are accepted.
-     */
-    @Override
-    public CompletableFuture<Void> shutdown()
-    {
-        while (true)
-        {
-            Availability availability = _availability.get();
-            switch (availability)
-            {
-                case STOPPED:
-                    return CompletableFuture.failedFuture(new IllegalStateException(getState()));
-                case STARTING:
-                case AVAILABLE:
-                case UNAVAILABLE:
-                    if (!_availability.compareAndSet(availability, Availability.SHUTDOWN))
-                        continue;
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        return CompletableFuture.completedFuture(null);
-    }
-
-    /**
-     * @return false if this context is unavailable (sends 503)
-     */
-    public boolean isAvailable()
-    {
-        return _availability.get() == Availability.AVAILABLE;
-    }
-
-    /**
-     * Set Available status.
-     *
-     * @param available true to set as enabled
-     */
-    public void setAvailable(boolean available)
-    {
-        // Only supported state transitions are:
-        //   UNAVAILABLE --true---> AVAILABLE
-        //   STARTING -----false--> UNAVAILABLE
-        //   AVAILABLE ----false--> UNAVAILABLE
-        if (available)
-        {
-            while (true)
-            {
-                Availability availability = _availability.get();
-                switch (availability)
-                {
-                    case AVAILABLE:
-                        break;
-                    case UNAVAILABLE:
-                        if (!_availability.compareAndSet(availability, Availability.AVAILABLE))
-                            continue;
-                        break;
-                    default:
-                        throw new IllegalStateException(availability.toString());
-                }
-                break;
-            }
-        }
-        else
-        {
-            while (true)
-            {
-                Availability availability = _availability.get();
-                switch (availability)
-                {
-                    case STARTING:
-                    case AVAILABLE:
-                        if (!_availability.compareAndSet(availability, Availability.UNAVAILABLE))
-                            continue;
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            }
-        }
-    }
-
     public Logger getLogger()
     {
         return _logger;
@@ -845,7 +488,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     protected void doStart() throws Exception
     {
-        if (_contextPath == null)
+        if (getContextPath() == null)
             throw new IllegalStateException("Null contextPath");
 
         if (getBaseResource() != null && getBaseResource().isAlias())
@@ -859,9 +502,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         ClassLoader oldClassloader = null;
         Thread currentThread = null;
-        Context oldContext = null;
+        SContext oldContext = null;
 
-        _persistentAttributes.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
+        // TODO Better way to do this?
+        super.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
 
         if (_mimeTypes == null)
             _mimeTypes = new MimeTypes();
@@ -2090,29 +1734,29 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      * derived {@link ContextHandler} implementations.
      * </p>
      */
-    public class Context extends StaticContext
+    public class SContext implements ServletContext
     {
-        private final Attributes.Layer _layer;
+        private final Context _context;
         protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
 
-        protected Context()
+        protected SContext(Context context)
         {
-            _layer = new Attributes.Layer(_persistentAttributes, super._attributes);
+            _context = context;
         }
 
-        public ContextHandler getContextHandler()
+        public Ee9ContextHandler getContextHandler()
         {
-            return ContextHandler.this;
+            return Ee9ContextHandler.this;
         }
 
         public Attributes getAttributes()
         {
-            return _layer;
+            return _context;
         }
 
         @Override
-        public ServletContext getContext(String uripath)
+        public SContext getContext(String uripath)
         {
             List<ContextHandler> contexts = new ArrayList<>();
             String matchedPath = null;
@@ -3084,25 +2728,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
     }
 
-    /**
-     * Listener for all threads entering context scope, including async IO callbacks
-     */
-    public static interface ContextScopeListener extends EventListener
-    {
-        /**
-         * @param context The context being entered
-         * @param request A request that is applicable to the scope, or null
-         * @param reason An object that indicates the reason the scope is being entered.
-         */
-        void enterScope(Context context, Request request, Object reason);
-
-        /**
-         * @param context The context being exited
-         * @param request A request that is applicable to the scope, or null
-         */
-        void exitScope(Context context, Request request);
-    }
-
     private static class Caller extends SecurityManager
     {
         public ClassLoader getCallerClassLoader(int depth)
@@ -3113,6 +2738,31 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (classContext.length <= depth)
                 return null;
             return classContext[depth].getClassLoader();
+        }
+    }
+
+    private class HandlerConvertor extends ScopedHandler implements org.eclipse.jetty.server.Handler, org.eclipse.jetty.server.Request.Processor
+    {
+        @Override
+        public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+        {
+            // An EE9 context always accepts
+            return this;
+        }
+
+        @Override
+        public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
+        {
+            // TODO This will receive the servlet scope wrapped request/response.
+            //      extract those and call EE9 handle
+            Request baseRequest = request.somehowConvert();
+            this.handle(null, baseRequest, baseRequest, response);
+        }
+
+        @Override
+        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            Ee9ContextHandler.this.doHandle(target, baseRequest, request, response);
         }
     }
 }
