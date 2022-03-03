@@ -23,7 +23,7 @@ import org.eclipse.jetty.ee9.handler.UserIdentity;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.IdentityService;
 import org.eclipse.jetty.ee9.security.LoginService;
-import org.eclipse.jetty.server.session.Session;
+import org.eclipse.jetty.session.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

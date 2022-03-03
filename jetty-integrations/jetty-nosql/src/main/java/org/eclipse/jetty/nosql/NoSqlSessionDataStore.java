@@ -16,8 +16,8 @@ package org.eclipse.jetty.nosql;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.jetty.server.session.AbstractSessionDataStore;
-import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.AbstractSessionDataStore;
+import org.eclipse.jetty.session.SessionData;
 
 /**
  * NoSqlSessionDataStore

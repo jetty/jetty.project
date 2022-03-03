@@ -11,11 +11,10 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.nosql
-{
-    requires transitive mongo.java.driver;
-    requires transitive org.eclipse.jetty.session;
+package org.eclipse.jetty.session;
 
-    exports org.eclipse.jetty.nosql;
-    exports org.eclipse.jetty.nosql.mongodb;
+import org.eclipse.jetty.server.Handler;
+
+public class SessionHandler extends Handler.Wrapper
+{
 }

@@ -31,9 +31,9 @@ import com.mongodb.MongoException;
 import com.mongodb.WriteConcern;
 import com.mongodb.WriteResult;
 import org.eclipse.jetty.nosql.NoSqlSessionDataStore;
-import org.eclipse.jetty.server.session.SessionContext;
-import org.eclipse.jetty.server.session.SessionData;
-import org.eclipse.jetty.server.session.UnreadableSessionDataException;
+import org.eclipse.jetty.session.SessionContext;
+import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -445,7 +445,7 @@ public class MongoSessionDataStore extends NoSqlSessionDataStore
     }
 
     /**
-     * @see org.eclipse.jetty.server.session.SessionDataStore#initialize(org.eclipse.jetty.server.session.SessionContext)
+     * @see org.eclipse.jetty.session.SessionDataStore#initialize(org.eclipse.jetty.session.SessionContext)
      */
     public void initialize(SessionContext context) throws Exception
     {

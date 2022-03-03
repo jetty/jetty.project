@@ -61,7 +61,7 @@ import org.eclipse.jetty.ee9.security.ConstraintAware;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.StringUtil;

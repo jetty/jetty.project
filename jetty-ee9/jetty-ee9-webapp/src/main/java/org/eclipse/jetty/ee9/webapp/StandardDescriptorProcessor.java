@@ -43,7 +43,7 @@ import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.ee9.servlet.ServletMapping;
 import org.eclipse.jetty.ee9.servlet.Source;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.security.Constraint;

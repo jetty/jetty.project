@@ -17,6 +17,7 @@ module org.eclipse.jetty.websocket.core.server
 
     requires transitive org.eclipse.jetty.server;
     requires transitive org.eclipse.jetty.websocket.core.common;
+    requires transitive org.eclipse.jetty.ee9.handler;
 
     exports org.eclipse.jetty.websocket.core.server;
 }

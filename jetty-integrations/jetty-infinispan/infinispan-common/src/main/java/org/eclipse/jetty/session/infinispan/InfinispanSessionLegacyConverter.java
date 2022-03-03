@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.server.session.SessionData;
+import org.eclipse.jetty.session.SessionData;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;

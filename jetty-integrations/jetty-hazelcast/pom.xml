@@ -22,7 +22,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
+      <artifactId>jetty-session</artifactId>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>

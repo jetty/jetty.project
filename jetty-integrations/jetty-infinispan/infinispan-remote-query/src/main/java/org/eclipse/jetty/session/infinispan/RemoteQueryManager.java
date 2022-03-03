@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import org.eclipse.jetty.server.session.SessionContext;
+import org.eclipse.jetty.session.SessionContext;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.Search;
 import org.infinispan.query.dsl.Query;

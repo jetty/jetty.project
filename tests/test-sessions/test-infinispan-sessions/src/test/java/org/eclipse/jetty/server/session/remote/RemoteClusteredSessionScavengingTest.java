@@ -13,9 +13,9 @@
 
 package org.eclipse.jetty.server.session.remote;
 
-import org.eclipse.jetty.server.session.AbstractClusteredSessionScavengingTest;
-import org.eclipse.jetty.server.session.LoggingUtil;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.AbstractClusteredSessionScavengingTest;
+import org.eclipse.jetty.session.LoggingUtil;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

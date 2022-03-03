@@ -17,8 +17,8 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.server.session.SessionDataMap;
-import org.eclipse.jetty.server.session.SessionDataMapFactory;
+import org.eclipse.jetty.session.SessionDataMap;
+import org.eclipse.jetty.session.SessionDataMapFactory;
 
 /**
  * MemcachedSessionDataMapFactory

@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.hazelcast.session;
 
-import org.eclipse.jetty.server.session.AbstractClusteredOrphanedSessionTest;
-import org.eclipse.jetty.server.session.SessionDataStoreFactory;
+import org.eclipse.jetty.session.AbstractClusteredOrphanedSessionTest;
+import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 

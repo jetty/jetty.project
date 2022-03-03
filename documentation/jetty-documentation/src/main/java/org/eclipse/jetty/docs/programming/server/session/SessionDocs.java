@@ -22,19 +22,19 @@ import org.eclipse.jetty.memcached.session.MemcachedSessionDataMapFactory;
 import org.eclipse.jetty.nosql.mongodb.MongoSessionDataStoreFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.session.CachingSessionDataStoreFactory;
-import org.eclipse.jetty.server.session.DatabaseAdaptor;
-import org.eclipse.jetty.server.session.DefaultSessionCache;
-import org.eclipse.jetty.server.session.DefaultSessionCacheFactory;
-import org.eclipse.jetty.server.session.DefaultSessionIdManager;
-import org.eclipse.jetty.server.session.FileSessionDataStore;
-import org.eclipse.jetty.server.session.FileSessionDataStoreFactory;
-import org.eclipse.jetty.server.session.HouseKeeper;
-import org.eclipse.jetty.server.session.NullSessionCache;
-import org.eclipse.jetty.server.session.NullSessionCacheFactory;
-import org.eclipse.jetty.server.session.NullSessionDataStore;
-import org.eclipse.jetty.server.session.SessionCache;
-import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.session.CachingSessionDataStoreFactory;
+import org.eclipse.jetty.session.DatabaseAdaptor;
+import org.eclipse.jetty.session.DefaultSessionCache;
+import org.eclipse.jetty.session.DefaultSessionCacheFactory;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.session.FileSessionDataStore;
+import org.eclipse.jetty.session.FileSessionDataStoreFactory;
+import org.eclipse.jetty.session.HouseKeeper;
+import org.eclipse.jetty.session.NullSessionCache;
+import org.eclipse.jetty.session.NullSessionCacheFactory;
+import org.eclipse.jetty.session.NullSessionDataStore;
+import org.eclipse.jetty.session.SessionCache;
+import org.eclipse.jetty.session.SessionHandler;
 
 @SuppressWarnings("unused")
 public class SessionDocs
