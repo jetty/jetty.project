@@ -12,7 +12,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.jspc.plugin</bundle-symbolic-name>
     <jacoco.skip>true</jacoco.skip>
-    <skipTests>true</skipTests>
+    <maven.test.skip>true</maven.test.skip>
   </properties>
   <build>
     <plugins>
