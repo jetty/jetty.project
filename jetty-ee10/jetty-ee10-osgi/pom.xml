@@ -6,7 +6,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty.osgi</groupId>
+  <groupId>org.eclipse.jetty.ee10.osgi</groupId>
   <artifactId>jetty-ee10-osgi-project</artifactId>
   <name>EE10 :: Jetty :: OSGi</name>
   <packaging>pom</packaging>
@@ -19,17 +19,17 @@
   </properties>
 
   <modules>
-    <module>jetty-osgi-boot</module>
-    <module>jetty-osgi-boot-jsp</module>
-    <module>jetty-osgi-boot-warurl</module>
-    <module>jetty-osgi-httpservice</module>
-    <module>test-jetty-osgi-webapp</module>
-    <module>test-jetty-osgi-webapp-resources</module>
-    <module>test-jetty-osgi-context</module>
-    <module>test-jetty-osgi-fragment</module>
-    <module>test-jetty-osgi-server</module>
-    <module>jetty-osgi-alpn</module>
-    <module>test-jetty-osgi</module>
+    <module>jetty-ee10-osgi-boot</module>
+    <module>jetty-ee10-osgi-boot-jsp</module>
+    <module>jetty-ee10-osgi-boot-warurl</module>
+    <module>jetty-ee10-osgi-httpservice</module>
+    <module>test-jetty-ee10-osgi-webapp</module>
+    <module>test-jetty-ee10-osgi-webapp-resources</module>
+    <module>test-jetty-ee10-osgi-context</module>
+    <module>test-jetty-ee10-osgi-fragment</module>
+    <module>test-jetty-ee10-osgi-server</module>
+    <module>jetty-ee10-osgi-alpn</module>
+    <module>test-jetty-ee10-osgi</module>
   </modules>
 
   <build>
