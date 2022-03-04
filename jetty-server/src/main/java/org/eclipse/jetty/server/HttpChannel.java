@@ -133,7 +133,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
         return HostPort.normalizeHost(addr);
     }
 
-    private HttpInput newHttpInput(HttpChannelState state)
+    protected HttpInput newHttpInput(HttpChannelState state)
     {
         return new HttpInput(state);
     }

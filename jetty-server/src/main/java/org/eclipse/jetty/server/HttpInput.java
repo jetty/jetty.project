@@ -142,6 +142,16 @@ public class HttpInput extends ServletInputStream implements Runnable
         return _contentConsumed.sum();
     }
 
+    protected void addContentConsumed(long amount)
+    {
+        _contentConsumed.add(amount);
+    }
+
+    protected ContentProducer getContentProducer()
+    {
+        return _contentProducer;
+    }
+
     public long getContentReceived()
     {
         try (AutoLock lock = _contentProducer.lock())
@@ -165,6 +175,11 @@ public class HttpInput extends ServletInputStream implements Runnable
 
             return false;
         }
+    }
+
+    protected void setConsumeAll()
+    {
+        _consumedEof = true;
     }
 
     public boolean isError()
@@ -292,7 +307,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    private void scheduleReadListenerNotification()
+    protected void scheduleReadListenerNotification()
     {
         HttpChannel channel = _channelState.getHttpChannel();
         channel.execute(channel);
