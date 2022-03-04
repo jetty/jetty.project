@@ -44,7 +44,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-mock-resources</artifactId>
       <scope>test</scope>
     </dependency>
@@ -54,19 +54,19 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-jndi-webapp</artifactId>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-spec-webapp</artifactId>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-jetty-webapp</artifactId>
       <type>war</type>
       <scope>test</scope>
@@ -148,7 +148,7 @@
             <configuration>
               <artifactItems>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.demos</groupId>
+                  <groupId>org.eclipse.jetty.ee10.demos</groupId>
                   <artifactId>demo-jndi-webapp</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
@@ -158,7 +158,7 @@
                   <destFileName>test-jndi.war</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.demos</groupId>
+                  <groupId>org.eclipse.jetty.ee10.demos</groupId>
                   <artifactId>demo-spec-webapp</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>
@@ -168,7 +168,7 @@
                   <destFileName>test-spec.war</destFileName>
                 </artifactItem>
                 <artifactItem>
-                  <groupId>org.eclipse.jetty.demos</groupId>
+                  <groupId>org.eclipse.jetty.ee10.demos</groupId>
                   <artifactId>demo-jetty-webapp</artifactId>
                   <version>${project.version}</version>
                   <type>war</type>

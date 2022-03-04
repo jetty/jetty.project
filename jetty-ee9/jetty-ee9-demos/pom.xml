@@ -7,7 +7,7 @@
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty.demos</groupId>
+  <groupId>org.eclipse.jetty.ee9.demos</groupId>
   <artifactId>jetty-ee9-demos</artifactId>
   <name>EE9 :: Jetty Demos :: Parent</name>
   <packaging>pom</packaging>

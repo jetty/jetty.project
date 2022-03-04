@@ -382,28 +382,28 @@
 
     <!-- Eclipse OSGi Deps -->
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>webbundle</classifier>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>demo-spec-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>demo-container-initializer</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
@@ -428,7 +428,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>demo-mock-resources</artifactId>
       <version>${project.version}</version>
     </dependency>

@@ -157,7 +157,7 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee9.demos</groupId>
       <artifactId>demo-simple-webapp</artifactId>
       <type>war</type>
       <scope>test</scope>
