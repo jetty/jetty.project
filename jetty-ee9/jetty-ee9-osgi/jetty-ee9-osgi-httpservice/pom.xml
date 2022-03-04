@@ -1,0 +1,81 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.ee9.osgi</groupId>
+    <artifactId>jetty-ee9-osgi-project</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>jetty-ee9-osgi-httpservice</artifactId>
+  <name>EE9 :: Jetty :: OSGi :: HttpService</name>
+  <description>Jetty OSGi HttpService bundle</description>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.httpservice</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee9.osgi.httpservice.*</spotbugs.onlyAnalyze>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-util</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.equinox.http</groupId>
+      <artifactId>servlet</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.platform</groupId>
+      <artifactId>org.eclipse.osgi</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>process-resources</phase>
+            <configuration>
+              <target>
+                <copy todir="target/classes/contexts">
+                  <fileset dir="contexts" />
+                </copy>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <instructions>
+            <Bundle-SymbolicName>org.eclipse.jetty.ee9.osgi.httpservice</Bundle-SymbolicName>
+            <Bundle-Name>OSGi HttpService</Bundle-Name>
+            <Jetty-ContextFilePath>contexts/httpservice.xml</Jetty-ContextFilePath>
+            <Import-Package>
+                org.eclipse.jetty.server.handler;version="[10,11.0)",
+                org.eclipse.jetty.util.component;version="[10,11.0)", 
+                org.eclipse.jetty.server.session;version="[10,11.0)",
+                org.eclipse.jetty.servlet;version="[10,11.0)",
+                org.eclipse.equinox.http.servlet, *
+            </Import-Package>
+            <_nouses>true</_nouses>
+          </instructions>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
