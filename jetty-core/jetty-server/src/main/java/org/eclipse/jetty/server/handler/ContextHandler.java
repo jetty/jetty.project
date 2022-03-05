@@ -73,7 +73,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     // TODO should persistent attributes be an Attributes.Layer over server attributes?
     private final Attributes _persistentAttributes = new Mapped();
-    private final ScopedContext _context = new ScopedContext();
+    private final ScopedContext _context;
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 
@@ -86,19 +86,27 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     public ContextHandler()
     {
-        this("/");
+        this(null);
     }
 
     public ContextHandler(String contextPath)
     {
-        setContextPath(contextPath);
+        this(null, contextPath);
     }
 
     @Deprecated
     public ContextHandler(Handler.Container parent, String contextPath)
     {
-        setContextPath(contextPath);
-        parent.addHandler(this);
+        _context = newContext();
+        if (contextPath != null)
+            setContextPath(contextPath);
+        if (parent != null)
+            parent.addHandler(this);
+    }
+
+    protected ScopedContext newContext()
+    {
+        return new ScopedContext();
     }
 
     @Override
