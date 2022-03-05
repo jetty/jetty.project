@@ -15,6 +15,7 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -22,6 +23,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -38,6 +41,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -74,6 +78,7 @@ public class HttpChannel extends Attributes.Lazy
         }
     };
     private static final MetaData.Request ERROR_REQUEST = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
+    private static final HttpField EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
     private final AutoLock _lock = new AutoLock();
     private final Runnable _handle = new RunHandle();
     private final Server _server;
@@ -513,6 +518,12 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
+        public List<HttpCookie> getCookies()
+        {
+            return null;
+        }
+
+        @Override
         public boolean isSecure()
         {
             return HttpScheme.HTTPS.is(getHttpURI().getScheme());
@@ -883,6 +894,22 @@ public class HttpChannel extends Attributes.Lazy
 
             // Do the write
             stream.send(responseMetaData, last, this, content);
+        }
+
+        @Override
+        // TODO this should be a static method???
+        public void addCookie(HttpCookie cookie)
+        {
+            if (StringUtil.isBlank(cookie.getName()))
+                throw new IllegalArgumentException("Cookie.name cannot be blank/null");
+
+            // add the set cookie
+            // TODO this is getting the wrong context!!!!
+            getHeaders().add(new HttpCookie.SetCookieHttpField(HttpCookie.checkSameSite(cookie, getRequest().getContext()),
+                getHttpConfiguration().getResponseCookieCompliance()));
+
+            // Expire responses with set-cookie headers so they do not get cached.
+            getHeaders().put(EXPIRES_01JAN1970);
         }
 
         @Override
