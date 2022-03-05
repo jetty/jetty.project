@@ -27,6 +27,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -621,125 +625,86 @@ public class StatisticsHandlerTest
 //        assertThat(_statsHandler.getDispatchedTimeTotal(), greaterThanOrEqualTo(dispatchTime * 3 / 4));
 //    }
 //
-//    @Test
-//    public void testSuspendComplete() throws Exception
-//    {
-//        final long dispatchTime = 10;
-//        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-//        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
-//        final CountDownLatch latch = new CountDownLatch(1);
-//
-//        _statsHandler.setHandler(new AbstractHandler()
-//        {
-//            @Override
-//            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
-//            {
-//                request.setHandled(true);
-//                try
-//                {
-//                    barrier[0].await();
-//
-//                    Thread.sleep(dispatchTime);
-//
-//                    if (asyncHolder.get() == null)
-//                    {
-//                        AsyncContext async = request.startAsync();
-//                        asyncHolder.set(async);
-//                    }
-//                }
-//                catch (Exception x)
-//                {
-//                    throw new ServletException(x);
-//                }
-//                finally
-//                {
-//                    try
-//                    {
-//                        barrier[1].await();
-//                    }
-//                    catch (Exception ignored)
-//                    {
-//                    }
-//                }
-//            }
-//        });
-//        _server.start();
-//
-//        String request = "GET / HTTP/1.1\r\n" +
-//            "Host: localhost\r\n" +
-//            "\r\n";
-//        _connector.executeRequest(request);
-//
-//        barrier[0].await();
-//
-//        assertEquals(1, _statistics.getConnections());
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(1, _statsHandler.getRequestsActive());
+    @Test
+    public void testHandlingProcessingTime() throws Exception
+    {
+        final long handleTime = 10;
+        final long processTime = 35;
+        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+
+        _statsHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                barrier[0].await();
+                Thread.sleep(handleTime);
+                return (rq, rs, callback) -> {
+                    try
+                    {
+                        barrier[1].await();
+                        Thread.sleep(processTime);
+                        callback.succeeded();
+                    }
+                    finally
+                    {
+                        try
+                        {
+                            barrier[2].await();
+                        }
+                        catch (Throwable x)
+                        {
+                            callback.failed(x);
+                        }
+                    }
+                };
+            }
+        });
+        _server.start();
+
+        String request = "GET / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n";
+        _connector.executeRequest(request);
+
+        barrier[0].await();
+
+        assertEquals(1, _statistics.getConnections());
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
 //        assertEquals(1, _statsHandler.getDispatched());
 //        assertEquals(1, _statsHandler.getDispatchedActive());
-//
-//        barrier[1].await();
-//        assertTrue(_latchHandler.await());
-//        assertNotNull(asyncHolder.get());
-//
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(1, _statsHandler.getRequestsActive());
+
+        barrier[1].await();
+        barrier[2].await();
+        assertTrue(_latchHandler.await());
+
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
 //        assertEquals(1, _statsHandler.getDispatched());
 //        assertEquals(0, _statsHandler.getDispatchedActive());
-//
-//        asyncHolder.get().addListener(new AsyncListener()
-//        {
-//            @Override
-//            public void onTimeout(AsyncEvent event)
-//            {
-//            }
-//
-//            @Override
-//            public void onStartAsync(AsyncEvent event)
-//            {
-//            }
-//
-//            @Override
-//            public void onError(AsyncEvent event)
-//            {
-//            }
-//
-//            @Override
-//            public void onComplete(AsyncEvent event)
-//            {
-//                try
-//                {
-//                    latch.countDown();
-//                }
-//                catch (Exception ignored)
-//                {
-//                }
-//            }
-//        });
-//        long requestTime = 20;
-//        Thread.sleep(requestTime);
-//        asyncHolder.get().complete();
-//        latch.await();
-//
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(0, _statsHandler.getRequestsActive());
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(0, _statsHandler.getDispatchedActive());
-//
 //        assertEquals(1, _statsHandler.getAsyncRequests());
 //        assertEquals(0, _statsHandler.getAsyncDispatches());
 //        assertEquals(0, _statsHandler.getExpires());
-//        assertEquals(1, _statsHandler.getResponses2xx());
-//
-//        assertTrue(_statsHandler.getRequestTimeTotal() >= (dispatchTime + requestTime) * 3 / 4);
-//        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
-//        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 0.01);
-//
-//        assertTrue(_statsHandler.getDispatchedTimeTotal() >= dispatchTime * 3 / 4);
-//        assertTrue(_statsHandler.getDispatchedTimeTotal() < _statsHandler.getRequestTimeTotal());
-//        assertEquals(_statsHandler.getDispatchedTimeTotal(), _statsHandler.getDispatchedTimeMax());
-//        assertEquals(_statsHandler.getDispatchedTimeTotal(), _statsHandler.getDispatchedTimeMean(), 0.01);
-//    }
+        assertEquals(1, _statsHandler.getResponses2xx());
+
+        assertTrue(_statsHandler.getRequestTimeTotal() >= (processTime + handleTime) * 3 / 4);
+        assertThat(_statsHandler.getRequestTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(processTime + handleTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(processTime + handleTime) * 5)));
+        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
+        assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 1.0);
+
+        assertThat(_statsHandler.getHandlingTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(handleTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(handleTime) * 5)));
+        assertTrue(_statsHandler.getHandlingTimeTotal() < _statsHandler.getRequestTimeTotal());
+        assertEquals(_statsHandler.getHandlingTimeTotal(), _statsHandler.getHandlingTimeMax());
+        assertEquals(_statsHandler.getHandlingTimeTotal(), _statsHandler.getHandlingTimeMean(), 1.0);
+
+        assertThat(_statsHandler.getProcessingTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(processTime) * 5)));
+        assertTrue(_statsHandler.getProcessingTimeTotal() < _statsHandler.getRequestTimeTotal());
+        assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMax());
+        assertEquals(_statsHandler.getProcessingTimeTotal(), _statsHandler.getProcessingTimeMean(), 1.0);
+
+        assertThat(_statsHandler.getRequestTimeTotal(), greaterThan(_statsHandler.getHandlingTimeTotal() + _statsHandler.getProcessingTimeTotal()));
+    }
 //
 //    @Test
 //    public void testAsyncRequestWithShutdown() throws Exception

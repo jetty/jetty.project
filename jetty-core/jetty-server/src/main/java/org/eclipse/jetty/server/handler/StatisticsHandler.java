@@ -33,11 +33,11 @@ public class StatisticsHandler extends Handler.Wrapper
     private final ConcurrentHashMap<String, Object> _connectionStats = new ConcurrentHashMap<>();
 
     private final CounterStatistic _requestStats = new CounterStatistic();
-    private final SampleStatistic _requestTimeStats = new SampleStatistic();
-    private final SampleStatistic _handleTimeStats = new SampleStatistic();
-
     private final CounterStatistic _handleStats = new CounterStatistic();
     private final CounterStatistic _processStats = new CounterStatistic();
+    private final SampleStatistic _requestTimeStats = new SampleStatistic();
+    private final SampleStatistic _handleTimeStats = new SampleStatistic();
+    private final SampleStatistic _processTimeStats = new SampleStatistic();
 
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
@@ -48,6 +48,7 @@ public class StatisticsHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
+        long begin = System.nanoTime();
         Object connectionStats = _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {
             request.getHttpChannel().addConnectionCloseListener(x ->
@@ -61,6 +62,7 @@ public class StatisticsHandler extends Handler.Wrapper
         final LongAdder bytesRead = new LongAdder();
         final LongAdder bytesWritten = new LongAdder();
 
+        StatisticsRequest statisticsRequest = new StatisticsRequest(request, bytesRead, bytesWritten);
         _handleStats.increment();
         _requestStats.increment();
         request.getHttpChannel().addStreamWrapper(s -> new HttpStream.Wrapper(s)
@@ -101,7 +103,8 @@ public class StatisticsHandler extends Handler.Wrapper
             {
                 _processStats.decrement();
                 _requestStats.decrement();
-                _requestTimeStats.record(System.currentTimeMillis() - getNanoTimeStamp());
+                _processTimeStats.record(System.nanoTime() - statisticsRequest._processNanoTimeStamp);
+                _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
                 super.succeeded();
             }
 
@@ -110,13 +113,15 @@ public class StatisticsHandler extends Handler.Wrapper
             {
                 _processStats.decrement();
                 _requestStats.decrement();
+                _processTimeStats.record(System.nanoTime() - statisticsRequest._processNanoTimeStamp);
                 _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
                 super.failed(x);
             }
         });
 
-        StatisticsRequest statisticsRequest = new StatisticsRequest(request, bytesRead, bytesWritten);
-        return statisticsRequest.wrapProcessor(super.handle(statisticsRequest));
+        Request.WrapperProcessor wrapperProcessor = statisticsRequest.wrapProcessor(super.handle(statisticsRequest));
+        _handleTimeStats.record(System.nanoTime() - begin);
+        return wrapperProcessor;
     }
 
     private class StatisticsRequest extends Request.WrapperProcessor implements Callback
@@ -124,7 +129,7 @@ public class StatisticsHandler extends Handler.Wrapper
         private final LongAdder _bytesRead;
         private final LongAdder _bytesWritten;
         private Callback _callback;
-        private long _streamNanoTimeStamp;
+        private long _processNanoTimeStamp;
 
         private StatisticsRequest(Request request, LongAdder bytesRead, LongAdder bytesWritten)
         {
@@ -151,40 +156,20 @@ public class StatisticsHandler extends Handler.Wrapper
         {
             _callback = callback;
             _processStats.increment();
+            _processNanoTimeStamp = System.nanoTime();
             super.process(this, response, this);
         }
 
         @Override
         public void succeeded()
         {
-            try
-            {
-                _streamNanoTimeStamp = getHttpChannel().getHttpStream().getNanoTimeStamp();
-                _callback.succeeded();
-            }
-            finally
-            {
-                complete();
-            }
+            _callback.succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            try
-            {
-                _streamNanoTimeStamp = getHttpChannel().getHttpStream().getNanoTimeStamp();
-                _callback.failed(x);
-            }
-            finally
-            {
-                complete();
-            }
-        }
-
-        private void complete()
-        {
-            _handleTimeStats.record(System.nanoTime() - _streamNanoTimeStamp);
+            _callback.failed(x);
         }
     }
 
@@ -258,5 +243,77 @@ public class StatisticsHandler extends Handler.Wrapper
     public int getProcessingsMax()
     {
         return (int) _processStats.getMax();
+    }
+
+    @ManagedAttribute("total time spend in all request execution (in ns)")
+    public long getRequestTimeTotal()
+    {
+        return _requestTimeStats.getTotal();
+    }
+
+    @ManagedAttribute("maximum time spend executing requests (in ns)")
+    public long getRequestTimeMax()
+    {
+        return _requestTimeStats.getMax();
+    }
+
+    @ManagedAttribute("mean time spent executing requests (in ns)")
+    public double getRequestTimeMean()
+    {
+        return _requestTimeStats.getMean();
+    }
+
+    @ManagedAttribute("standard deviation for request execution (in ns)")
+    public double getRequestTimeStdDev()
+    {
+        return _requestTimeStats.getStdDev();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public long getHandlingTimeTotal()
+    {
+        return _handleTimeStats.getTotal();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public long getHandlingTimeMax()
+    {
+        return _handleTimeStats.getMax();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public double getHandlingTimeMean()
+    {
+        return _handleTimeStats.getMean();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public double getHandlingTimeStdDev()
+    {
+        return _handleTimeStats.getStdDev();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public long getProcessingTimeTotal()
+    {
+        return _processTimeStats.getTotal();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public long getProcessingTimeMax()
+    {
+        return _processTimeStats.getMax();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public double getProcessingTimeMean()
+    {
+        return _processTimeStats.getMean();
+    }
+
+    @ManagedAttribute("(in ns)")
+    public double getProcessingTimeStdDev()
+    {
+        return _processTimeStats.getStdDev();
     }
 }
