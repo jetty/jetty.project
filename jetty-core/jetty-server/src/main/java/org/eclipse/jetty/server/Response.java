@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -56,6 +57,8 @@ public interface Response
     boolean isCommitted();
 
     void reset();
+
+    void addCookie(HttpCookie cookie);
 
     // TODO: inline and remove
     default void addHeader(String name, String value)
@@ -223,6 +226,12 @@ public interface Response
         public void reset()
         {
             getWrapped().reset();
+        }
+
+        @Override
+        public void addCookie(HttpCookie cookie)
+        {
+            getWrapped().addCookie(cookie);
         }
     }
 }
