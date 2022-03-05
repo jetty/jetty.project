@@ -1506,7 +1506,7 @@ public class Request implements HttpServletRequest
         {
             if (sessionManager == s.getSessionManager())
             {
-                session = s.getWrapper();
+                session = s.getAPISession();
                 if (s.isValid())
                     return session;
             }
@@ -1524,7 +1524,7 @@ public class Request implements HttpServletRequest
     public HttpSession getSession(boolean create)
     {
         if (_session != null && _session.isValid())
-            return _session.getWrapper();
+            return _session.getAPISession();
         _session = null;
 
         if (!create)
@@ -1544,7 +1544,7 @@ public class Request implements HttpServletRequest
         if (cookie != null)
             _channel.getResponse().replaceCookie(cookie);
 
-        return _session.getWrapper();
+        return _session.getAPISession();
     }
 
     /**

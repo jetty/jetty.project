@@ -75,10 +75,13 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     private final SampleStatistic _sessionTimeStats = new SampleStatistic();
     private final CounterStatistic _sessionsCreatedStats = new CounterStatistic();
     
+    protected abstract void configureCookies(); 
+    
     public AbstractSessionHandler()
     {
     }
-        
+    
+    @Override
     public void doStart() throws Exception
     {
         //check if session management is set up, if not set up defaults
@@ -143,6 +146,8 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
 
         _sessionContext = new SessionContext(this);
         _sessionCache.initialize(_sessionContext);
+        
+        configureCookies();
     }
     
     @Override
@@ -158,6 +163,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         _loader = null;
     }
     
+    @Override
     public void setRefreshCookieAge(int ageInSeconds)
     {
         _refreshCookieAge = ageInSeconds;
@@ -166,6 +172,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     /**
      * @param usingCookies 
      */
+    @Override
     public void setUsingCookies(boolean usingCookies)
     {
         _usingCookies = usingCookies;
@@ -175,6 +182,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @return True if absolute URLs are check for remoteness before being session encoded.
      */
     @ManagedAttribute("check remote session id encoding")
+    @Override
     public boolean isCheckingRemoteSessionIdEncoding()
     {
         return _checkingRemoteSessionIdEncoding;
@@ -183,18 +191,21 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     /**
      * @param remote True if absolute URLs are check for remoteness before being session encoded.
      */
+    @Override
     public void setCheckingRemoteSessionIdEncoding(boolean remote)
     {
         _checkingRemoteSessionIdEncoding = remote;
     }
     
     @ManagedAttribute("domain of the session cookie, or null for the default")
+    @Override
     public String getSessionDomain()
     {
         return _sessionDomain;
     }
     
     @ManagedAttribute("path of the session cookie, or null for default")
+    @Override
     public String getSessionPath()
     {
         return _sessionPath;
@@ -205,6 +216,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @see #setSessionIdPathParameterName(String)
      */
     @ManagedAttribute("name of use for URL session tracking")
+    @Override
     public String getSessionIdPathParameterName()
     {
         return _sessionIdPathParameterName;
@@ -215,12 +227,14 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * ";" + sessionIdParameterName + "=", for easier lookup in URL strings.
      * @see #getSessionIdPathParameterName()
      */
+    @Override
     public String getSessionIdPathParameterNamePrefix()
     {
         return _sessionIdPathParameterNamePrefix;
     }
 
     @ManagedAttribute("if greater the zero, the time in seconds a session cookie will last for")
+    @Override
     public int getMaxCookieAge()
     {
         return _maxCookieAge;
@@ -231,12 +245,14 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @see org.eclipse.jetty.http.HttpCookie#isHttpOnly()
      */
     @ManagedAttribute("true if cookies use the http only flag")
+    @Override
     public boolean getHttpOnly()
     {
         return _httpOnly;
     }
 
     @ManagedAttribute("time before a session cookie is re-set (in s)")
+    @Override
     public int getRefreshCookieAge()
     {
         return _refreshCookieAge;
@@ -248,12 +264,14 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * ONLY marked as secure if _secureRequestOnly == true and it is an HTTPS request.
      */
     @ManagedAttribute("if true, secure cookie flag is set on session cookies")
+    @Override
     public boolean getSecureCookies()
     {
         return _secureCookies;
     }
 
     @ManagedAttribute("the set session cookie")
+    @Override
     public String getSessionCookie()
     {
         return _sessionCookie;
@@ -262,6 +280,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     /**
      * @return true if session cookie is to be marked as secure only on HTTPS requests
      */
+    @Override
     public boolean isSecureRequestOnly()
     {
         return _secureRequestOnly;
@@ -273,6 +292,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      *
      * @param secureRequestOnly true to set Session Cookie Config as secure
      */
+    @Override
     public void setSecureRequestOnly(boolean secureRequestOnly)
     {
         _secureRequestOnly = secureRequestOnly;
@@ -284,20 +304,10 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @param httpOnly True if cookies should be HttpOnly.
      * @see HttpCookie
      */
+    @Override
     public void setHttpOnly(boolean httpOnly)
     {
         _httpOnly = httpOnly;
-    }
-    
-    /**
-     * @return The sameSite setting for session cookies or null for no setting
-     * @see HttpCookie#getSameSite()
-     */
-    
-    @ManagedAttribute("SameSite setting for session cookies")
-    public HttpCookie.SameSite getSameSite()
-    {
-        return HttpCookie.getSameSiteFromComment(_sessionComment);
     }
     
     /**
@@ -306,6 +316,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      *
      * @param sameSite The sameSite setting for Session cookies (or null for no sameSite setting)
      */
+    @Override
     public void setSameSite(HttpCookie.SameSite sameSite)
     {
         // Encode in comment whilst not supported by SessionConfig, so that it can be set/saved in
@@ -314,6 +325,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         _sessionComment = HttpCookie.getCommentWithAttributes(_sessionComment, false, sameSite);
     }
 
+    @Override
     public void setSessionCookie(String cookieName)
     {
         _sessionCookie = cookieName;
@@ -326,6 +338,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @see #getSessionIdPathParameterName()
      * @see #getSessionIdPathParameterNamePrefix()
      */
+    @Override
     public void setSessionIdPathParameterName(String param)
     {
         _sessionIdPathParameterName = (param == null || "none".equals(param)) ? null : param;
@@ -339,6 +352,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @param extendedId The session id, possibly imcluding worker name suffix.
      * @return the Session matching the id or null if none exists
      */
+    @Override
     public Session getSession(String extendedId)
     {
         String id = getSessionIdManager().getId(extendedId);
@@ -392,6 +406,12 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         }
     }
     
+    /**
+     * Create a new Session, using the requested session id if possible.
+     * @param request the inbound request
+     * @param requestedSessionId the session id used by the request
+     */
+    @Override
     public Session newSession(Request request, String requestedSessionId)
     {   
         long created = System.currentTimeMillis();
@@ -399,9 +419,9 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         Session session = _sessionCache.newSession(id, created, (_dftMaxIdleSecs > 0 ? _dftMaxIdleSecs * 1000L : -1));
         session.setExtendedId(_sessionIdManager.getExtendedId(id, request));
         session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());
-        Session.Wrapper apiSession = newSessionAPIWrapper(session);
+        Session.APISession apiSession = newSessionAPIWrapper(session);
         assert apiSession.getSession() == session;
-        assert session.getWrapper() == apiSession;
+        assert session.getAPISession() == apiSession;
         try
         {
             _sessionCache.add(id, session);
@@ -439,6 +459,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @param session the session
      * @param now the time at which to check for expiry
      */
+    @Override
     public void sessionExpired(Session session, long now)
     {
         if (session == null)
@@ -475,6 +496,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      *
      * @param id the session id to invalidate
      */
+    @Override
     public void invalidate(String id) throws Exception
     {
 
@@ -522,6 +544,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * Called periodically by the HouseKeeper to handle the list of
      * sessions that have expired since the last call to scavenge.
      */
+    @Override
     public void scavenge()
     {
         //don't attempt to scavenge if we are shutting down
@@ -568,6 +591,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @return <code>true</code> if this manager knows about this id
      * @throws Exception if any error occurred
      */
+    @Override
     public boolean isIdInUse(String id) throws Exception
     {
         //Ask the session store
@@ -577,6 +601,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     /**
      * @return whether the session management is handled via URLs.
      */
+    @Override
     public boolean isUsingURLs()
     {
         return _usingURLs;
@@ -585,6 +610,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     /**
      * @return true if using session cookies is allowed, false otherwise
      */
+    @Override
     public boolean isUsingCookies()
     {
         return _usingCookies;
@@ -595,6 +621,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      *
      * @param session the session object
      */
+    @Override
     public void complete(Session session)
     {
         if (LOG.isDebugEnabled())
@@ -618,6 +645,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * so that any subsequent requests to other servers
      * will see the modifications.
      */
+    @Override
     public void commit(Session session)
     {
         if (session == null)
@@ -644,6 +672,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * the session or to refresh a session cookie that may expire.
      * @see #complete(HttpSession)
      */
+    @Override
     public HttpCookie access(Session session, boolean secure)
     {
         long now = System.currentTimeMillis();
@@ -673,6 +702,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @param newId the new session id
      * @param newExtendedId the new session id including worker suffix
      */
+    @Override
     public void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId)
     {
         Session session = null;
@@ -707,8 +737,18 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
                 }
             }
         }
-    }   
-
+    }
+    
+    /**
+     * Calculate what the session timer setting should be based on:
+     * the time remaining before the session expires
+     * and any idle eviction time configured.
+     * The timer value will be the lesser of the above.
+     *
+     * @param now the time at which to calculate remaining expiry
+     * @return the time remaining before expiry or inactivity timeout
+     */
+    @Override
     public long calculateInactivityTimeout(String id, long timeRemaining, long maxInactiveMs)
     {
         long time = 0;
@@ -765,14 +805,22 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         return time;
     }
     
+    /**
+     * Make a new timer for the session.
+     * @param session the session to time
+     */
+    @Override
     public SessionInactivityTimer newSessionInactivityTimer(Session session)
     {
         return new SessionInactivityTimer(this, session, _scheduler);
     }
     
     /**
-     * @param cache the session store to use
+     * Set up the SessionCache.
+     * 
+     * @param cache the SessionCache to use
      */
+    @Override
     public void setSessionCache(SessionCache cache)
     {
         updateBean(_sessionCache, cache);
@@ -782,20 +830,25 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     /**
      * @return the session cache
      */
+    @Override
     public SessionCache getSessionCache()
     {
         return _sessionCache;
     }
 
     /**
+     * Set up the SessionIdManager.
+     * 
      * @param sessionIdManager The sessionIdManager used for cross context session management.
      */
+    @Override
     public void setSessionIdManager(SessionIdManager sessionIdManager)
     {
         updateBean(_sessionIdManager, sessionIdManager);
         _sessionIdManager = sessionIdManager;
     }
     
+    @Override
     public SessionIdManager getSessionIdManager()
     {
         return _sessionIdManager;
@@ -811,6 +864,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @see #setMaxInactiveInterval(int)
      */
     @ManagedAttribute("default maximum time a session may be idle for (in s)")
+    @Override
     public int getMaxInactiveInterval()
     {
         return _dftMaxIdleSecs;
@@ -822,6 +876,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @param seconds the max inactivity period, in seconds.
      * @see #getMaxInactiveInterval()
      */
+    @Override
     public void setMaxInactiveInterval(int seconds)
     {
         _dftMaxIdleSecs = seconds;
@@ -839,7 +894,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      *
      * @throws Exception if unable to shutdown sesssions
      */
-    protected void shutdownSessions() throws Exception
+    private void shutdownSessions() throws Exception
     {
         _sessionCache.shutdown();
     }
@@ -848,6 +903,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @return total amount of time all sessions remained valid
      */
     @ManagedAttribute("total time sessions have remained valid")
+    @Override
     public long getSessionTimeTotal()
     {
         return _sessionTimeStats.getTotal();
@@ -857,6 +913,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @return mean amount of time session remained valid
      */
     @ManagedAttribute("mean time sessions remain valid (in s)")
+    @Override
     public double getSessionTimeMean()
     {
         return _sessionTimeStats.getMean();
@@ -866,12 +923,14 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @return standard deviation of amount of time session remained valid
      */
     @ManagedAttribute("standard deviation a session remained valid (in s)")
+    @Override
     public double getSessionTimeStdDev()
     {
         return _sessionTimeStats.getStdDev();
     }
     
     @ManagedAttribute("number of sessions created by this context")
+    @Override
     public int getSessionsCreated()
     {
         return (int)_sessionsCreatedStats.getCurrent();
@@ -883,6 +942,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      *
      * @param session the session whose time to record
      */
+    @Override
     public void recordSessionTime(Session session)
     {
         _sessionTimeStats.record(Math.round((System.currentTimeMillis() - session.getSessionData().getCreated()) / 1000.0));
