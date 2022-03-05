@@ -39,7 +39,6 @@ import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionBindingListener;
-import jakarta.servlet.http.HttpSessionContext;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
@@ -331,40 +330,6 @@ public class SessionHandler extends AbstractSessionHandler
         public boolean isNew()
         {
             return _session.isNew();
-        }
-
-        @Override
-        public HttpSessionContext getSessionContext()
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public Object getValue(String name)
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public String[] getValueNames()
-        {
-            // TODO Auto-generated method stub
-            return null;
-        }
-
-        @Override
-        public void putValue(String name, Object value)
-        {
-            // TODO Auto-generated method stub
-            
-        }
-
-        @Override
-        public void removeValue(String name)
-        {
-            // TODO Auto-generated method stub   
         }
     }
 
