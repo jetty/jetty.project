@@ -314,11 +314,12 @@ public interface Request extends Attributes, Content.Provider
      */
     static String toRedirectURI(Request request, String location)
     {
-        // TODO: lookup HttpConfiguration.isRelativeRedirectAllowed
-        if (!URIUtil.hasScheme(location))
+        // TODO write some tests for this
+        if (!URIUtil.hasScheme(location) && !request.getHttpChannel().getHttpConfiguration().isRelativeRedirectAllowed())
         {
             StringBuilder url = new StringBuilder(128);
-            URIUtil.appendSchemeHostPort(url, request.getScheme(), request.getServerName(), request.getServerPort());
+            HttpURI uri = request.getHttpURI();
+            URIUtil.appendSchemeHostPort(url, uri.getScheme(), Request.getServerName(request), Request.getServerPort(request));
 
             if (location.startsWith("/"))
             {
@@ -328,7 +329,7 @@ public interface Request extends Attributes, Content.Provider
             else
             {
                 // relative to request
-                String path = request.getRequestURI();
+                String path = uri.getPath();
                 String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
                 location = URIUtil.canonicalURI(URIUtil.addEncodedPaths(parent, location));
                 if (location != null && !location.startsWith("/"))
