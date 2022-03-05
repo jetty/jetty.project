@@ -37,6 +37,9 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import jakarta.servlet.SessionCookieConfig;
+import jakarta.servlet.http.Cookie;
+
 /**
  * AbstractSessionHandler
  * Class to implement most non-servlet-spec specific session behaviour.
@@ -161,6 +164,66 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         _scheduler = null;
         super.doStop();
         _loader = null;
+    }
+    
+    /**
+     * A session cookie is marked as secure IFF any of the following conditions are true:
+     * <ol>
+     * <li>SessionCookieConfig.setSecure == true</li>
+     * <li>SessionCookieConfig.setSecure == false &amp;&amp; _secureRequestOnly==true &amp;&amp; request is HTTPS</li>
+     * </ol>
+     * According to SessionCookieConfig javadoc, case 1 can be used when:
+     * "... even though the request that initiated the session came over HTTP,
+     * is to support a topology where the web container is front-ended by an
+     * SSL offloading load balancer. In this case, the traffic between the client
+     * and the load balancer will be over HTTPS, whereas the traffic between the
+     * load balancer and the web container will be over HTTP."
+     * <p>
+     * For case 2, you can use _secureRequestOnly to determine if you want the
+     * Servlet Spec 3.0  default behavior when SessionCookieConfig.setSecure==false,
+     * which is:
+     * <cite>
+     * "they shall be marked as secure only if the request that initiated the
+     * corresponding session was also secure"
+     * </cite>
+     * <p>
+     * The default for _secureRequestOnly is true, which gives the above behavior. If
+     * you set it to false, then a session cookie is NEVER marked as secure, even if
+     * the initiating request was secure.
+     *
+     * @param session the session to which the cookie should refer.
+     * @param contextPath the context to which the cookie should be linked.
+     * The client will only send the cookie value when requesting resources under this path.
+     * @param requestIsSecure whether the client is accessing the server over a secure protocol (i.e. HTTPS).
+     * @return if this <code>SessionManager</code> uses cookies, then this method will return a new
+     * {@link Cookie cookie object} that should be set on the client in order to link future HTTP requests
+     * with the <code>session</code>. If cookies are not in use, this method returns <code>null</code>.
+     */
+    @Override
+    public HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure)
+    {
+        if (isUsingCookies())
+        {
+            String sessionPath = (_sessionPath == null) ? contextPath : _sessionPath;
+            sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
+            String id = session.getExtendedId();
+            HttpCookie cookie = null;
+
+            cookie = new HttpCookie(
+                (_sessionCookie == null ? __DefaultSessionCookie : _sessionCookie),
+                id,
+                _sessionDomain,
+                sessionPath,
+                _maxCookieAge,
+                _httpOnly,
+                _secureCookies || (isSecureRequestOnly() && requestIsSecure),
+                HttpCookie.getCommentWithoutAttributes(_sessionComment),
+                0,
+                HttpCookie.getSameSiteFromComment(_sessionComment));
+
+            return cookie;
+        }
+        return null;
     }
     
     @Override

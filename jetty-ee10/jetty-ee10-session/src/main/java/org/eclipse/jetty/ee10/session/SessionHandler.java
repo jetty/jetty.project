@@ -96,13 +96,6 @@ public class SessionHandler extends AbstractSessionHandler
                 HttpSessionListener.class
             };
     
-    public static String getSessionCookieName(SessionCookieConfig config)
-    {
-        if (config == null || config.getName() == null)
-            return __DefaultSessionCookie;
-        return config.getName();
-    }
-    
     private final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<HttpSessionListener> _sessionListeners = new CopyOnWriteArrayList<>();
     private final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
@@ -551,78 +544,10 @@ public class SessionHandler extends AbstractSessionHandler
             listener.sessionWillPassivate(event);
         }
     }
-
-    
-    /**
-     * A session cookie is marked as secure IFF any of the following conditions are true:
-     * <ol>
-     * <li>SessionCookieConfig.setSecure == true</li>
-     * <li>SessionCookieConfig.setSecure == false &amp;&amp; _secureRequestOnly==true &amp;&amp; request is HTTPS</li>
-     * </ol>
-     * According to SessionCookieConfig javadoc, case 1 can be used when:
-     * "... even though the request that initiated the session came over HTTP,
-     * is to support a topology where the web container is front-ended by an
-     * SSL offloading load balancer. In this case, the traffic between the client
-     * and the load balancer will be over HTTPS, whereas the traffic between the
-     * load balancer and the web container will be over HTTP."
-     * <p>
-     * For case 2, you can use _secureRequestOnly to determine if you want the
-     * Servlet Spec 3.0  default behavior when SessionCookieConfig.setSecure==false,
-     * which is:
-     * <cite>
-     * "they shall be marked as secure only if the request that initiated the
-     * corresponding session was also secure"
-     * </cite>
-     * <p>
-     * The default for _secureRequestOnly is true, which gives the above behavior. If
-     * you set it to false, then a session cookie is NEVER marked as secure, even if
-     * the initiating request was secure.
-     *
-     * @param session the session to which the cookie should refer.
-     * @param contextPath the context to which the cookie should be linked.
-     * The client will only send the cookie value when requesting resources under this path.
-     * @param requestIsSecure whether the client is accessing the server over a secure protocol (i.e. HTTPS).
-     * @return if this <code>SessionManager</code> uses cookies, then this method will return a new
-     * {@link Cookie cookie object} that should be set on the client in order to link future HTTP requests
-     * with the <code>session</code>. If cookies are not in use, this method returns <code>null</code>.
-     */
-    @Override
-    public HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure)
-    {
-        if (isUsingCookies())
-        {
-            SessionCookieConfig cookieConfig = getSessionCookieConfig();
-            String sessionPath = (cookieConfig.getPath() == null) ? contextPath : cookieConfig.getPath();
-            sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
-            String id = session.getExtendedId();
-            HttpCookie cookie = null;
-
-            cookie = new HttpCookie(
-                getSessionCookieName(_cookieConfig),
-                id,
-                cookieConfig.getDomain(),
-                sessionPath,
-                cookieConfig.getMaxAge(),
-                cookieConfig.isHttpOnly(),
-                cookieConfig.isSecure() || (isSecureRequestOnly() && requestIsSecure),
-                HttpCookie.getCommentWithoutAttributes(cookieConfig.getComment()),
-                0,
-                HttpCookie.getSameSiteFromComment(cookieConfig.getComment()));
-
-            return cookie;
-        }
-        return null;
-    }
     
     public SessionCookieConfig getSessionCookieConfig()
     {
         return _cookieConfig;
-    }
-    
-    @Override
-    public int getCookieMaxAge()
-    { 
-        return _cookieConfig.getMaxAge();
     }
     
     public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
