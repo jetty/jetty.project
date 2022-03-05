@@ -24,6 +24,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
@@ -34,6 +35,12 @@ public class StatisticsHandler extends Handler.Wrapper
     private final CounterStatistic _requestStats = new CounterStatistic();
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
+
+    private final LongAdder _responses1xx = new LongAdder();
+    private final LongAdder _responses2xx = new LongAdder();
+    private final LongAdder _responses3xx = new LongAdder();
+    private final LongAdder _responses4xx = new LongAdder();
+    private final LongAdder _responses5xx = new LongAdder();
 
     @Override
     public Request.Processor handle(Request request) throws Exception
@@ -59,7 +66,14 @@ public class StatisticsHandler extends Handler.Wrapper
             {
                 if (response != null)
                 {
-                    // TODO status stats collected here.
+                    switch (response.getStatus() / 100) {
+                        case 1 -> _responses1xx.increment();
+                        case 2 -> _responses2xx.increment();
+                        case 3 -> _responses3xx.increment();
+                        case 4 -> _responses4xx.increment();
+                        case 5 -> _responses5xx.increment();
+                        default -> {}
+                    }
                 }
 
                 for (ByteBuffer b : content)
@@ -163,4 +177,53 @@ public class StatisticsHandler extends Handler.Wrapper
             _handleTimeStats.record(System.nanoTime() - getHttpChannel().getHttpStream().getNanoTimeStamp());
         }
     }
+
+    @ManagedAttribute("number of requests")
+    public int getRequests()
+    {
+        return (int)_requestStats.getTotal();
+    }
+
+    @ManagedAttribute("number of requests currently active")
+    public int getRequestsActive()
+    {
+        return (int)_requestStats.getCurrent();
+    }
+
+    @ManagedAttribute("maximum number of active requests")
+    public int getRequestsActiveMax()
+    {
+        return (int)_requestStats.getMax();
+    }
+
+    @ManagedAttribute("number of requests with 1xx response status")
+    public int getResponses1xx()
+    {
+        return _responses1xx.intValue();
+    }
+
+    @ManagedAttribute("number of requests with 2xx response status")
+    public int getResponses2xx()
+    {
+        return _responses2xx.intValue();
+    }
+
+    @ManagedAttribute("number of requests with 3xx response status")
+    public int getResponses3xx()
+    {
+        return _responses3xx.intValue();
+    }
+
+    @ManagedAttribute("number of requests with 4xx response status")
+    public int getResponses4xx()
+    {
+        return _responses4xx.intValue();
+    }
+
+    @ManagedAttribute("number of requests with 5xx response status")
+    public int getResponses5xx()
+    {
+        return _responses5xx.intValue();
+    }
+
 }
