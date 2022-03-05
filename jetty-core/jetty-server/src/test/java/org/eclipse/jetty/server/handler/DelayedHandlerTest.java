@@ -211,7 +211,6 @@ public class DelayedHandlerTest
     @Test
     public void testQualityOfService() throws Exception
     {
-        // TODO this test is flakey
         final int QOS = 3;
         final int EXTRA = 2;
 
@@ -220,6 +219,7 @@ public class DelayedHandlerTest
 
         AtomicInteger processing = new AtomicInteger();
         Semaphore semaphore = new Semaphore(0);
+        CountDownLatch complete = new CountDownLatch(QOS + EXTRA);
         delayedHandler.setHandler(new HelloHandler()
         {
             @Override
@@ -227,7 +227,7 @@ public class DelayedHandlerTest
             {
                 processing.incrementAndGet();
                 semaphore.acquire();
-                super.process(request, response, callback);
+                super.process(request, response, Callback.from(callback, complete::countDown));
             }
 
             @Override
@@ -261,6 +261,8 @@ public class DelayedHandlerTest
             waitFor(processing, QOS + Math.min(EXTRA, count));
             assertThat(processing.get(), is(QOS + Math.min(EXTRA, count)));
         }
+
+        assertTrue(complete.await(5, TimeUnit.SECONDS));
 
         for (Socket value : socket)
         {

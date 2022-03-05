@@ -19,6 +19,7 @@ import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
@@ -61,17 +62,9 @@ import org.eclipse.jetty.util.UrlEncoded;
  *             Throwable failure = error.getCause();
  *
  *             // Handle errors.
- *
-<<<<<<< Updated upstream
- * <li>The {@link Request#getServletPath()} method will return "" until the request has been passed to a <code>org.eclipse.jetty.ee9.servlet.ServletHandler</code>
- * and the pathInfo matched against the servlet URL patterns and {@link Request#setServletPathMapping(ServletPathMapping)} called as a result.</li>
- * </ul>
-=======
  *             // Mark the processing as complete, either generating a custom
  *             // response and succeeding the callback, or failing the callback.
  *             callback.failed(failure);
->>>>>>> Stashed changes
- *
  *             return;
  *         }
  *
@@ -457,6 +450,30 @@ public interface Request extends Attributes, Content.Provider
         {
             return (Request)super.getWrapped();
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T extends Request.Wrapper> T as(Request request, Class<T> type)
+    {
+        while (request instanceof Request.Wrapper wrapper)
+        {
+            if (type.isInstance(wrapper))
+                return (T)wrapper;
+            request = wrapper.getWrapped();
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T extends Request.Wrapper, R> R get(Request request, Class<T> type, Function<T, R> getter)
+    {
+        while (request instanceof Request.Wrapper wrapper)
+        {
+            if (type.isInstance(wrapper))
+                return getter.apply((T)wrapper);
+            request = wrapper.getWrapped();
+        }
+        return null;
     }
 
     /**
