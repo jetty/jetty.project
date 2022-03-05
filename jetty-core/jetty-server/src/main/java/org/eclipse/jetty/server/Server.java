@@ -57,12 +57,14 @@ import org.slf4j.LoggerFactory;
 public class Server extends Handler.Wrapper implements Attributes
 {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
+    private static String __serverInfo = "jetty/" + Server.getVersion();
 
     private final AttributeContainerMap _attributes = new AttributeContainerMap();
     private final ThreadPool _threadPool;
     private final List<Connector> _connectors = new CopyOnWriteArrayList<>();
     private final Context _serverContext = new ServerContext();
     private final AutoLock _dateLock = new AutoLock();
+    private String _serverInfo = __serverInfo;
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart;
     private boolean _dumpBeforeStop;
@@ -115,6 +117,16 @@ public class Server extends Handler.Wrapper implements Attributes
         _threadPool = pool != null ? pool : new QueuedThreadPool();
         addBean(_threadPool);
         setServer(this);
+    }
+
+    public String getServerInfo()
+    {
+        return _serverInfo;
+    }
+
+    public void setServerInfo(String serverInfo)
+    {
+        _serverInfo = serverInfo;
     }
 
     public Context getContext()

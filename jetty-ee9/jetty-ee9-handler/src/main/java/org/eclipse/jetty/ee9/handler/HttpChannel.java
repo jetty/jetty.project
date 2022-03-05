@@ -54,6 +54,7 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -79,6 +80,7 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
     public static Listener NOOP_LISTENER = new Listener() {};
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
+    private final org.eclipse.jetty.server.Context _context;
     private final AtomicLong _requests = new AtomicLong();
     private final Connector _connector;
     private final Executor _executor;
@@ -540,11 +542,10 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
                             // by then.
                             ensureConsumeAllOrNotPersistent();
 
-                            ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
-                            ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
+                            org.eclipse.jetty.server.Request.Processor errorProcessor = _context.getErrorProcessor();
 
                             // If we can't have a body, then create a minimal error response.
-                            if (HttpStatus.hasNoBody(_response.getStatus()) || errorHandler == null || !errorHandler.errorPageForMethod(_request.getMethod()))
+                            if (HttpStatus.hasNoBody(_response.getStatus()) || errorProcessor == null || !errorPageForMethod(_request.getMethod()))
                             {
                                 sendResponseAndComplete();
                                 break;
@@ -592,21 +593,13 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case READ_CALLBACK:
                     {
-                        ContextHandler handler = _state.getContextHandler();
-                        if (handler != null)
-                            handler.handle(_request, _request.getHttpInput());
-                        else
-                            _request.getHttpInput().run();
+                        _context.run(_request.getHttpInput());
                         break;
                     }
 
                     case WRITE_CALLBACK:
                     {
-                        ContextHandler handler = _state.getContextHandler();
-                        if (handler != null)
-                            handler.handle(_request, _response.getHttpOutput());
-                        else
-                            _response.getHttpOutput().run();
+                        _context.run(_baseRequest, _response.getHttpOutput());
                         break;
                     }
 

@@ -131,26 +131,12 @@ public class Ee9ContextHandler
 
     private static final ThreadLocal<SContext> __context = new ThreadLocal<>();
 
-    private static String __serverInfo = "jetty/" + Server.getVersion();
-
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
 
     public static final String MAX_FORM_KEYS_KEY = "org.eclipse.jetty.server.Request.maxFormKeys";
     public static final String MAX_FORM_CONTENT_SIZE_KEY = "org.eclipse.jetty.server.Request.maxFormContentSize";
     public static final int DEFAULT_MAX_FORM_KEYS = 1000;
     public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
-
-    // TODO move to core
-    public static String getServerInfo()
-    {
-        return __serverInfo;
-    }
-
-    // TODO move to core
-    public static void setServerInfo(String serverInfo)
-    {
-        __serverInfo = serverInfo;
-    }
 
     public enum ContextStatus
     {
@@ -179,7 +165,6 @@ public class Ee9ContextHandler
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
-    private String _displayName;
     private MimeTypes _mimeTypes; // TODO move to core?
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
@@ -198,17 +183,6 @@ public class Ee9ContextHandler
     private final Set<EventListener> _durableListeners = new HashSet<>();
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
-
-    public enum Availability
-    {
-        STOPPED,        // stopped and can't be made unavailable nor shutdown
-        STARTING,       // starting inside of doStart. It may go to any of the next states.
-        AVAILABLE,      // running normally
-        UNAVAILABLE,    // Either a startup error or explicit call to setAvailable(false)
-        SHUTDOWN,       // graceful shutdown
-    }
-
-    private final AtomicReference<Availability> _availability = new AtomicReference<>(Availability.STOPPED);
 
     public Ee9ContextHandler()
     {
