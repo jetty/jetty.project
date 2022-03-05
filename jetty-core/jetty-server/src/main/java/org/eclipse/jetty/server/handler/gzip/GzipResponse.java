@@ -22,6 +22,7 @@ import java.util.zip.Deflater;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -55,9 +56,9 @@ public class GzipResponse extends Response.Wrapper
     private DeflaterPool.Entry _deflaterEntry;
     private ByteBuffer _buffer;
 
-    public GzipResponse(Response response, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
+    public GzipResponse(Request request, Response response, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
     {
-        super(response);
+        super(request, response);
         _factory = factory;
         _vary = vary;
         _bufferSize = bufferSize;

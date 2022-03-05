@@ -164,7 +164,7 @@ public class BufferedResponseHandler extends HandlerWrapper
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                BufferedResponse bufferedResponse = new BufferedResponse(response, callback);
+                BufferedResponse bufferedResponse = new BufferedResponse(request, response, callback);
                 processor.process(request, bufferedResponse, bufferedResponse);
             }
         };
@@ -175,9 +175,9 @@ public class BufferedResponseHandler extends HandlerWrapper
         private final Callback _callback;
         private ByteBufferAccumulator _accumulator;
 
-        BufferedResponse(Response response, Callback callback)
+        BufferedResponse(Request request, Response response, Callback callback)
         {
-            super(response);
+            super(request, response);
             _callback = callback;
         }
 

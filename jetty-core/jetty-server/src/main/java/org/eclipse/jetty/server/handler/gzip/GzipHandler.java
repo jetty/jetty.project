@@ -66,10 +66,10 @@ public class GzipHandler extends Handler.Wrapper
         }
 
         @Override
-        public void process(Request ignored, Response response, Callback callback) throws Exception
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
             // TODO
-            super.process(this, new GzipResponse(response, null, null, getHttpChannel().getHttpConfiguration().getOutputBufferSize(), false), callback);
+            super.process(this, new GzipResponse(request, response, null, null, getHttpChannel().getHttpConfiguration().getOutputBufferSize(), false), callback);
         }
     }
 

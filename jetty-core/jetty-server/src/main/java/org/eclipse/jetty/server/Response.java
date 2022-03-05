@@ -37,6 +37,8 @@ public interface Response
 {
     Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
 
+    Request getRequest();
+
     int getStatus();
 
     void setStatus(int code);
@@ -168,11 +170,19 @@ public interface Response
 
     class Wrapper implements Response
     {
+        private final Request _request;
         private final Response _wrapped;
 
-        public Wrapper(Response wrapped)
+        public Wrapper(Request request, Response wrapped)
         {
+            _request = request;
             _wrapped = wrapped;
+        }
+
+        @Override
+        public Request getRequest()
+        {
+            return _request;
         }
 
         public Response getWrapped()

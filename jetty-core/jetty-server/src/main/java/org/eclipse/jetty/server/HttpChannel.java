@@ -796,6 +796,12 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
+        public Request getRequest()
+        {
+            return _request;
+        }
+
+        @Override
         public int getStatus()
         {
             return _status;
@@ -1019,7 +1025,7 @@ public class HttpChannel extends Attributes.Lazy
 
         public ErrorResponse(ChannelRequest request, HttpStream stream)
         {
-            super(request._response);
+            super(request, request._response);
             _request = request;
             _stream = stream;
         }
