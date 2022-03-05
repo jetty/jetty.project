@@ -16,9 +16,11 @@ package org.eclipse.jetty.server;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
@@ -133,6 +135,9 @@ public interface Request extends Attributes, Content.Provider
      */
     HttpURI getHttpURI();
 
+    /**
+     * @return the {@code Context} associated with this {@code Request}
+     */
     Context getContext();
 
     /**
@@ -144,6 +149,11 @@ public interface Request extends Attributes, Content.Provider
      * @return the HTTP headers of this request
      */
     HttpFields getHeaders();
+
+    /**
+     * @return the cookies in this {@code Request}
+     */
+    List<HttpCookie> getCookies();
 
     default long getTimeStamp()
     {
@@ -398,6 +408,12 @@ public interface Request extends Attributes, Content.Provider
         public HttpFields getHeaders()
         {
             return getWrapped().getHeaders();
+        }
+
+        @Override
+        public List<HttpCookie> getCookies()
+        {
+            return getWrapped().getCookies();
         }
 
         @Override
