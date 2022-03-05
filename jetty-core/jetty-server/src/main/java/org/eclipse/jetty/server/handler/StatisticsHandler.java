@@ -51,6 +51,7 @@ public class StatisticsHandler extends Handler.Wrapper
         long begin = System.nanoTime();
         Object connectionStats = _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {
+            // TODO test this with localconnector endpoint that has multiple requests per connection.
             request.getHttpChannel().addConnectionCloseListener(x ->
             {
                 // complete connections stats
@@ -59,12 +60,14 @@ public class StatisticsHandler extends Handler.Wrapper
             return "SomeConnectionStatsObject";
         });
 
-        final LongAdder bytesRead = new LongAdder();
+        final LongAdder bytesRead = new LongAdder(); // TODO move inside StatisticsRequest???
         final LongAdder bytesWritten = new LongAdder();
 
         StatisticsRequest statisticsRequest = new StatisticsRequest(request, bytesRead, bytesWritten);
         _handleStats.increment();
         _requestStats.increment();
+
+        // TODO don't need to do this until we see a Processor
         request.getHttpChannel().addStreamWrapper(s -> new HttpStream.Wrapper(s)
         {
             @Override
@@ -101,34 +104,34 @@ public class StatisticsHandler extends Handler.Wrapper
             @Override
             public void succeeded()
             {
+                super.succeeded();
                 _processStats.decrement();
                 _requestStats.decrement();
                 _processTimeStats.record(System.nanoTime() - statisticsRequest._processNanoTimeStamp);
                 _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
-                super.succeeded();
             }
 
             @Override
             public void failed(Throwable x)
             {
+                super.failed(x);
                 _processStats.decrement();
                 _requestStats.decrement();
                 _processTimeStats.record(System.nanoTime() - statisticsRequest._processNanoTimeStamp);
                 _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
-                super.failed(x);
             }
         });
 
+        // TODO test if the nested handler returns null
         Request.WrapperProcessor wrapperProcessor = statisticsRequest.wrapProcessor(super.handle(statisticsRequest));
         _handleTimeStats.record(System.nanoTime() - begin);
         return wrapperProcessor;
     }
 
-    private class StatisticsRequest extends Request.WrapperProcessor implements Callback
+    private class StatisticsRequest extends Request.WrapperProcessor
     {
         private final LongAdder _bytesRead;
         private final LongAdder _bytesWritten;
-        private Callback _callback;
         private long _processNanoTimeStamp;
 
         private StatisticsRequest(Request request, LongAdder bytesRead, LongAdder bytesWritten)
@@ -145,6 +148,7 @@ public class StatisticsHandler extends Handler.Wrapper
             // return hidden attributes for requestLog
             return switch (name)
             {
+                // TODO class.getName + extra
                 case "o.e.j.s.h.StatsHandler.bytesRead" -> _bytesRead;
                 case "o.e.j.s.h.StatsHandler.bytesWritten" -> _bytesWritten;
                 default -> super.getAttribute(name);
@@ -154,22 +158,9 @@ public class StatisticsHandler extends Handler.Wrapper
         @Override
         public void process(Request ignored, Response response, Callback callback) throws Exception
         {
-            _callback = callback;
             _processStats.increment();
             _processNanoTimeStamp = System.nanoTime();
-            super.process(this, response, this);
-        }
-
-        @Override
-        public void succeeded()
-        {
-            _callback.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            _callback.failed(x);
+            super.process(this, response, callback);
         }
     }
 

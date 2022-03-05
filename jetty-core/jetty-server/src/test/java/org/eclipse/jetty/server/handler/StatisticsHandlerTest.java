@@ -20,6 +20,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,7 +74,7 @@ public class StatisticsHandlerTest
     {
         final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
 
-        _statsHandler.setHandler(new Handler.Processor()
+        _statsHandler.setHandler(new Handler.Processor(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -162,7 +163,7 @@ public class StatisticsHandlerTest
     {
         final CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3)};
         _latchHandler.reset(2);
-        _statsHandler.setHandler(new Handler.Processor()
+        _statsHandler.setHandler(new Handler.Processor(Invocable.InvocationType.BLOCKING) // TODO factor out common test handler
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
@@ -362,6 +363,12 @@ public class StatisticsHandlerTest
                     callback.succeeded();
                     barrier[2].await();
                 };
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.BLOCKING; // TODO make that a ctor param?
             }
         });
         _server.start();
@@ -657,6 +664,11 @@ public class StatisticsHandlerTest
                     }
                 };
             }
+
+            @Override
+            public InvocationType getInvocationType() {
+                return InvocationType.BLOCKING; // TODO constructor arg?
+            }
         });
         _server.start();
 
@@ -686,7 +698,6 @@ public class StatisticsHandlerTest
 //        assertEquals(0, _statsHandler.getExpires());
         assertEquals(1, _statsHandler.getResponses2xx());
 
-        assertTrue(_statsHandler.getRequestTimeTotal() >= (processTime + handleTime) * 3 / 4);
         assertThat(_statsHandler.getRequestTimeTotal(), allOf(greaterThan(TimeUnit.MILLISECONDS.toNanos(processTime + handleTime) * 3 / 4), lessThan(TimeUnit.MILLISECONDS.toNanos(processTime + handleTime) * 5)));
         assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMax());
         assertEquals(_statsHandler.getRequestTimeTotal(), _statsHandler.getRequestTimeMean(), 1.0);
