@@ -158,58 +158,60 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getResponses2xx());
     }
 
-// TODO
-//    @Test
-//    public void testTwoRequests() throws Exception
-//    {
-//        final CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3)};
-//        _latchHandler.reset(2);
-//        _statsHandler.setHandler(new AbstractHandler()
-//        {
-//            @Override
-//            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException
-//            {
-//                request.setHandled(true);
-//                try
-//                {
-//                    barrier[0].await();
-//                    barrier[1].await();
-//                }
-//                catch (Exception x)
-//                {
-//                    Thread.currentThread().interrupt();
-//                    throw new IOException(x);
-//                }
-//            }
-//        });
-//        _server.start();
-//
-//        String request = "GET / HTTP/1.1\r\n" +
-//            "Host: localhost\r\n" +
-//            "\r\n";
-//
-//        _connector.executeRequest(request);
-//        _connector.executeRequest(request);
-//
-//        barrier[0].await();
-//
-//        assertEquals(2, _statistics.getConnections());
-//
-//        assertEquals(2, _statsHandler.getRequests());
-//        assertEquals(2, _statsHandler.getRequestsActive());
-//        assertEquals(2, _statsHandler.getRequestsActiveMax());
-//
+    @Test
+    public void testTwoRequests() throws Exception
+    {
+        final CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3)};
+        _latchHandler.reset(2);
+        _statsHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public Request.Processor handle(Request request)
+            {
+                return (rq, rs, callback) -> {
+                    try
+                    {
+                        barrier[0].await();
+                        barrier[1].await();
+                        callback.succeeded();
+                    }
+                    catch (Throwable x)
+                    {
+                        Thread.currentThread().interrupt();
+                        callback.failed(x);
+                        throw new IOException(x);
+                    }
+                };
+            }
+        });
+        _server.start();
+
+        String request = "GET / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n";
+
+        _connector.executeRequest(request);
+        _connector.executeRequest(request);
+
+        barrier[0].await();
+
+        assertEquals(2, _statistics.getConnections());
+
+        assertEquals(2, _statsHandler.getRequests());
+        assertEquals(2, _statsHandler.getRequestsActive());
+        assertEquals(2, _statsHandler.getRequestsActiveMax());
+
 //        assertEquals(2, _statsHandler.getDispatched());
 //        assertEquals(2, _statsHandler.getDispatchedActive());
 //        assertEquals(2, _statsHandler.getDispatchedActiveMax());
-//
-//        barrier[1].await();
-//        assertTrue(_latchHandler.await());
-//
-//        assertEquals(2, _statsHandler.getRequests());
-//        assertEquals(0, _statsHandler.getRequestsActive());
-//        assertEquals(2, _statsHandler.getRequestsActiveMax());
-//
+
+        barrier[1].await();
+        assertTrue(_latchHandler.await());
+
+        assertEquals(2, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(2, _statsHandler.getRequestsActiveMax());
+
 //        assertEquals(2, _statsHandler.getDispatched());
 //        assertEquals(0, _statsHandler.getDispatchedActive());
 //        assertEquals(2, _statsHandler.getDispatchedActiveMax());
@@ -217,9 +219,10 @@ public class StatisticsHandlerTest
 //        assertEquals(0, _statsHandler.getAsyncRequests());
 //        assertEquals(0, _statsHandler.getAsyncDispatches());
 //        assertEquals(0, _statsHandler.getExpires());
-//        assertEquals(2, _statsHandler.getResponses2xx());
-//    }
-//
+        assertEquals(2, _statsHandler.getResponses2xx());
+    }
+
+// TODO
 //    @Test
 //    public void testSuspendResume() throws Exception
 //    {
