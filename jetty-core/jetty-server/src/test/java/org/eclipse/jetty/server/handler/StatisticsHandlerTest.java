@@ -17,7 +17,9 @@ import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -71,25 +73,23 @@ public class StatisticsHandlerTest
     {
         final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
 
-        _statsHandler.setHandler(new Handler.Abstract()
+        _statsHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                return (rq, rs, callback) -> {
-                    try
-                    {
-                        barrier[0].await();
-                        callback.succeeded();
-                        barrier[1].await();
-                    }
-                    catch (Throwable x)
-                    {
-                        Thread.currentThread().interrupt();
-                        callback.failed(x);
-                        throw new IOException(x);
-                    }
-                };
+                try
+                {
+                    barrier[0].await();
+                    callback.succeeded();
+                    barrier[1].await();
+                }
+                catch (Throwable x)
+                {
+                    Thread.currentThread().interrupt();
+                    callback.failed(x);
+                    throw new IOException(x);
+                }
             }
         });
         _server.start();
@@ -162,25 +162,23 @@ public class StatisticsHandlerTest
     {
         final CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3)};
         _latchHandler.reset(2);
-        _statsHandler.setHandler(new Handler.Abstract()
+        _statsHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public Request.Processor handle(Request request)
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                return (rq, rs, callback) -> {
-                    try
-                    {
-                        barrier[0].await();
-                        callback.succeeded();
-                        barrier[1].await();
-                    }
-                    catch (Throwable x)
-                    {
-                        Thread.currentThread().interrupt();
-                        callback.failed(x);
-                        throw new IOException(x);
-                    }
-                };
+                try
+                {
+                    barrier[0].await();
+                    callback.succeeded();
+                    barrier[1].await();
+                }
+                catch (Throwable x)
+                {
+                    Thread.currentThread().interrupt();
+                    callback.failed(x);
+                    throw new IOException(x);
+                }
             }
         });
         _server.start();
