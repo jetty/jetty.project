@@ -63,7 +63,7 @@ public class StatisticsHandlerTest
     }
 
     @Test
-    public void testRequest() throws Exception
+    public void testTwoRequestsSerially() throws Exception
     {
         final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
 
@@ -76,8 +76,8 @@ public class StatisticsHandlerTest
                     try
                     {
                         barrier[0].await();
-                        barrier[1].await();
                         callback.succeeded();
+                        barrier[1].await();
                     }
                     catch (Throwable x)
                     {
@@ -93,31 +93,29 @@ public class StatisticsHandlerTest
         String request = "GET / HTTP/1.1\r\n" +
             "Host: localhost\r\n" +
             "\r\n";
+
+        // 1st request
         _connector.executeRequest(request);
 
         barrier[0].await();
-
         assertEquals(1, _statistics.getConnections());
-
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(1, _statsHandler.getDispatchedActive());
-//        assertEquals(1, _statsHandler.getDispatchedActiveMax());
+        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getProcessings());
+        assertEquals(1, _statsHandler.getProcessingsActive());
+        assertEquals(1, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
         assertTrue(_latchHandler.await());
-
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-//
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(0, _statsHandler.getDispatchedActive());
-//        assertEquals(1, _statsHandler.getDispatchedActiveMax());
-//
+        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getProcessings());
+        assertEquals(0, _statsHandler.getProcessingsActive());
+        assertEquals(1, _statsHandler.getProcessingsMax());
 //        assertEquals(0, _statsHandler.getAsyncRequests());
 //        assertEquals(0, _statsHandler.getAsyncDispatches());
 //        assertEquals(0, _statsHandler.getExpires());
@@ -127,31 +125,28 @@ public class StatisticsHandlerTest
         barrier[0].reset();
         barrier[1].reset();
 
+        // 2nd request
         _connector.executeRequest(request);
 
         barrier[0].await();
-
         assertEquals(2, _statistics.getConnections());
-
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(1, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-//
-//        assertEquals(2, _statsHandler.getDispatched());
-//        assertEquals(1, _statsHandler.getDispatchedActive());
-//        assertEquals(1, _statsHandler.getDispatchedActiveMax());
+        assertEquals(2, _statsHandler.getHandlings());
+        assertEquals(2, _statsHandler.getProcessings());
+        assertEquals(1, _statsHandler.getProcessingsActive());
+        assertEquals(1, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
         assertTrue(_latchHandler.await());
-
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
-//
-//        assertEquals(2, _statsHandler.getDispatched());
-//        assertEquals(0, _statsHandler.getDispatchedActive());
-//        assertEquals(1, _statsHandler.getDispatchedActiveMax());
-//
+        assertEquals(2, _statsHandler.getHandlings());
+        assertEquals(2, _statsHandler.getProcessings());
+        assertEquals(0, _statsHandler.getProcessingsActive());
+        assertEquals(1, _statsHandler.getProcessingsMax());
 //        assertEquals(0, _statsHandler.getAsyncRequests());
 //        assertEquals(0, _statsHandler.getAsyncDispatches());
 //        assertEquals(0, _statsHandler.getExpires());
@@ -159,7 +154,7 @@ public class StatisticsHandlerTest
     }
 
     @Test
-    public void testTwoRequests() throws Exception
+    public void testTwoRequestsInParallel() throws Exception
     {
         final CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3)};
         _latchHandler.reset(2);
@@ -172,8 +167,8 @@ public class StatisticsHandlerTest
                     try
                     {
                         barrier[0].await();
-                        barrier[1].await();
                         callback.succeeded();
+                        barrier[1].await();
                     }
                     catch (Throwable x)
                     {
@@ -194,28 +189,24 @@ public class StatisticsHandlerTest
         _connector.executeRequest(request);
 
         barrier[0].await();
-
         assertEquals(2, _statistics.getConnections());
-
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(2, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
-
-//        assertEquals(2, _statsHandler.getDispatched());
-//        assertEquals(2, _statsHandler.getDispatchedActive());
-//        assertEquals(2, _statsHandler.getDispatchedActiveMax());
+        assertEquals(2, _statsHandler.getHandlings());
+        assertEquals(2, _statsHandler.getProcessings());
+        assertEquals(2, _statsHandler.getProcessingsActive());
+        assertEquals(2, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
         assertTrue(_latchHandler.await());
-
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
-
-//        assertEquals(2, _statsHandler.getDispatched());
-//        assertEquals(0, _statsHandler.getDispatchedActive());
-//        assertEquals(2, _statsHandler.getDispatchedActiveMax());
-//
+        assertEquals(2, _statsHandler.getHandlings());
+        assertEquals(2, _statsHandler.getProcessings());
+        assertEquals(0, _statsHandler.getProcessingsActive());
+        assertEquals(2, _statsHandler.getProcessingsMax());
 //        assertEquals(0, _statsHandler.getAsyncRequests());
 //        assertEquals(0, _statsHandler.getAsyncDispatches());
 //        assertEquals(0, _statsHandler.getExpires());
@@ -354,9 +345,9 @@ public class StatisticsHandlerTest
 //    }
 //
     @Test
-    public void asyncDispatchTest() throws Exception
+    public void testHandlingsIncrementThenProcessingsIncrement() throws Exception
     {
-        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new Handler.Abstract()
         {
             @Override
@@ -378,13 +369,6 @@ public class StatisticsHandlerTest
             "\r\n";
         _connector.executeRequest(request);
 
-        assertEquals(0, _statistics.getConnections());
-        assertEquals(0, _statsHandler.getRequests());
-        assertEquals(0, _statsHandler.getRequestsActive());
-        assertEquals(0, _statsHandler.getHandlings());
-        assertEquals(0, _statsHandler.getProcessings());
-        assertEquals(0, _statsHandler.getProcessingsActive());
-        assertEquals(0, _statsHandler.getProcessingsMax());
         barrier[0].await();
 
         assertEquals(1, _statistics.getConnections());
