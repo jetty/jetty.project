@@ -98,6 +98,41 @@ public interface Response
         getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
     }
 
+    static void sendRedirect(Request request, Response response, Callback callback, String location)
+    {
+        sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, location, false);
+    }
+
+    static void sendRedirect(Request request, Response response, Callback callback, int code, String location, boolean consumeAll)
+    {
+        if (!HttpStatus.isRedirection(code))
+            throw new IllegalArgumentException("Not a 3xx redirect code");
+
+        if (location == null)
+            throw new IllegalArgumentException("No location");
+
+        if (response.isCommitted())
+            throw new IllegalStateException("Committed");
+
+        // TODO: can we remove this?
+        if (consumeAll)
+        {
+            while (true)
+            {
+                Content content = response.getRequest().readContent();
+                if (content == null)
+                    break; // TODO really? shouldn't we just asynchronously wait?
+                content.release();
+                if (content.isLast())
+                    break;
+            }
+        }
+
+        response.setHeader(HttpHeader.LOCATION, Request.toRedirectURI(request, location));
+        response.setStatus(code);
+        response.write(true, callback);
+    }
+
     static void writeError(Request request, Response response, Callback callback, Throwable cause)
     {
         if (cause == null)
@@ -112,7 +147,7 @@ public interface Response
         writeError(request, response, callback, status, message, cause);
     }
 
-    static void writeError(Response response, Request request, int status, Callback callback)
+    static void writeError(Request request, Response response, Callback callback, int status)
     {
         writeError(request, response, callback, status, null, null);
     }

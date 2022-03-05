@@ -342,6 +342,7 @@ public interface Request extends Attributes, Content.Provider
 
             location = url.toString();
         }
+        // TODO do we need to do request relative without scheme?
 
         return location;
     }

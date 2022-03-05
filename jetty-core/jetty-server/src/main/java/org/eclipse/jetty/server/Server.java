@@ -156,7 +156,7 @@ public class Server extends Handler.Wrapper implements Attributes
             processing = true;
             request.enableProcessing();
             if (processor == null)
-                Response.writeError(response, request, HttpStatus.NOT_FOUND_404, callback);
+                Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
             else
                 processor.process(customized, response, callback);
         }

@@ -41,7 +41,7 @@ public class MovedContextHandler extends ContextHandler
     {
         _redirector = new Redirector();
         setHandler(_redirector);
-        setAllowNullPathInfo(true);
+        setAllowNullPathInContext(true);
     }
 
     public MovedContextHandler(Handler.Collection parent, String contextPath, String newContextURL)

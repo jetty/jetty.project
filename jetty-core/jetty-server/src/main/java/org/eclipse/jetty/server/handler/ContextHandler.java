@@ -82,7 +82,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     private Path _resourceBase;
     private ClassLoader _classLoader;
     private Request.Processor _errorProcessor;
-    private boolean _allowNullPathInfo;
+    private boolean _allowNullPathInContext;
 
     public ContextHandler()
     {
@@ -128,17 +128,17 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * @return the allowNullPathInfo true if /context is not redirected to /context/
      */
     @ManagedAttribute("Checks if the /context is not redirected to /context/")
-    public boolean getAllowNullPathInfo()
+    public boolean getAllowNullPathInContext()
     {
-        return _allowNullPathInfo;
+        return _allowNullPathInContext;
     }
 
     /**
-     * @param allowNullPathInfo true if /context is not redirected to /context/
+     * @param allowNullPathInContext true if /context is not redirected to /context/
      */
-    public void setAllowNullPathInfo(boolean allowNullPathInfo)
+    public void setAllowNullPathInContext(boolean allowNullPathInContext)
     {
-        _allowNullPathInfo = allowNullPathInfo;
+        _allowNullPathInContext = allowNullPathInContext;
     }
 
     /**
@@ -546,20 +546,26 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (pathInContext == null)
             return null;
 
-        if (pathInContext.isEmpty() && !getAllowNullPathInfo())
+        if (pathInContext.isEmpty() && !getAllowNullPathInContext())
             return this::processMovedPermanently;
 
         // TODO check availability and maybe return a 503
+        if (!isAvailable() && isStarted())
+            return this::processUnavailable;
 
-        ContextRequest scoped = wrap(request, pathInContext);
+        ContextRequest contextRequest = wrap(request, pathInContext);
         // wrap might fail (eg ServletContextHandler could not match a servlet)
-        if (scoped == null)
+        if (contextRequest == null)
             return null;
 
-        return scoped.wrapProcessor(_context.get(scoped, scoped));
+        Request.Processor processor = processByContextHandler(contextRequest);
+        if (processor != null)
+            return processor;
+
+        return contextRequest.wrapProcessor(_context.get(contextRequest, contextRequest));
     }
 
-    void processMovedPermanently(Request request, Response response, Callback callback)
+    protected void processMovedPermanently(Request request, Response response, Callback callback)
     {
         String location = _contextPath + "/";
         if (request.getHttpURI().getParam() != null)
@@ -570,6 +576,28 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         response.setStatus(HttpStatus.MOVED_PERMANENTLY_301);
         response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
         callback.succeeded();
+    }
+
+    protected void processUnavailable(Request request, Response response, Callback callback)
+    {
+        Response.writeError(request, response, callback, HttpStatus.SERVICE_UNAVAILABLE_503, null);
+    }
+
+    protected Request.Processor processByContextHandler(ContextRequest contextRequest)
+    {
+        if (!_allowNullPathInContext && StringUtil.isEmpty(contextRequest.getPathInContext()))
+        {
+            return (request, response, callback) ->
+            {
+                // context request must end with /
+                String queryString = request.getHttpURI().getQuery();
+                Response.sendRedirect(request, response, callback,
+                    HttpStatus.MOVED_TEMPORARILY_302,
+                    request.getHttpURI().getPath() + (queryString == null ? "/" : ("/?" + queryString)),
+                    true);
+            };
+        }
+        return null;
     }
 
     /**

@@ -110,7 +110,7 @@ public class ErrorProcessorTest
                     throw new TestException(message);
                 }
 
-                Response.writeError(response, request, 404, callback);
+                Response.writeError(request, response, callback, 404);
             }
         });
         server.start();
@@ -654,7 +654,7 @@ public class ErrorProcessorTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                Response.writeError(response, request, 444, callback);
+                Response.writeError(request, response, callback, 444);
             }
         });
 

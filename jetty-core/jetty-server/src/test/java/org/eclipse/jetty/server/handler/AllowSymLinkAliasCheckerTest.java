@@ -175,7 +175,7 @@ public class AllowSymLinkAliasCheckerTest
 
         ContextHandler fileResourceContext = new ContextHandler();
         fileResourceContext.setContextPath("/");
-        fileResourceContext.setAllowNullPathInfo(true);
+        fileResourceContext.setAllowNullPathInContext(true);
         fileResourceContext.setHandler(fileResourceHandler);
         /* TODO
         fileResourceContext.setBaseResource(new PathResource(rootPath));

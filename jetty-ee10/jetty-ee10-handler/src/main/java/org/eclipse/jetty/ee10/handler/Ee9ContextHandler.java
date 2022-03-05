@@ -267,17 +267,17 @@ public class Ee9ContextHandler
      * @return the allowNullPathInfo true if /context is not redirected to /context/
      */
     @ManagedAttribute("Checks if the /context is not redirected to /context/")
-    public boolean getAllowNullPathInfo()
+    public boolean getAllowNullPathInContext()
     {
         return _allowNullPathInfo;
     }
 
     /**
-     * @param allowNullPathInfo true if /context is not redirected to /context/
+     * @param allowNullPathInContext true if /context is not redirected to /context/
      */
-    public void setAllowNullPathInfo(boolean allowNullPathInfo)
+    public void setAllowNullPathInContext(boolean allowNullPathInContext)
     {
-        _allowNullPathInfo = allowNullPathInfo;
+        _allowNullPathInfo = allowNullPathInContext;
     }
 
     @Override
