@@ -73,7 +73,7 @@ public interface SessionManager extends LifeCycle
     
     Session newSession(Request request, String requestedSessionId);
     
-    Session.Wrapper newSessionAPIWrapper(Session session);
+    Session.APISession newSessionAPIWrapper(Session session);
     
     void sessionExpired(Session session, long now);
     
@@ -91,9 +91,13 @@ public interface SessionManager extends LifeCycle
 
     boolean isUsingCookies();
     
+    public boolean isUsingURLs();
+    
     void setUsingCookies(boolean usingCookies);
     
     int getCookieMaxAge();
+    
+    void setRefreshCookieAge(int ageInSeconds);
     
     HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure);
     
@@ -108,6 +112,28 @@ public interface SessionManager extends LifeCycle
     void setSecureRequestOnly(boolean secureRequestOnly);
     
     boolean isSecureRequestOnly();
+    
+    String getSessionDomain();
+    
+    String getSessionPath();
+    
+    void setSessionCookie(String cookieName);
+    
+    String getSessionIdPathParameterName();
+    
+    void setSessionIdPathParameterName(String param);
+    
+    String getSessionIdPathParameterNamePrefix();
+    
+    int getMaxCookieAge();
+    
+    int getRefreshCookieAge();
+    
+    boolean getSecureCookies();
+    
+    String getSessionCookie();
+    
+    void setSameSite(HttpCookie.SameSite sameSite); //TODO needed?
     
     void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId) throws Exception;
     

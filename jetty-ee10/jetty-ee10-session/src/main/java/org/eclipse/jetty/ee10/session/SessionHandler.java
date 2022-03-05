@@ -224,12 +224,12 @@ public class SessionHandler extends AbstractSessionHandler
         }
     }
     
-    public static class ServletAPISession implements HttpSession, Session.Wrapper
+    public static class ServletAPISession implements HttpSession, Session.APISession
     {
         public static ServletAPISession wrapSession(Session session)
         {
             ServletAPISession apiSession = new ServletAPISession(session);
-            session.setWrapper(apiSession);
+            session.setAPISessin(apiSession);
             return apiSession;
         }
         
@@ -417,11 +417,13 @@ public class SessionHandler extends AbstractSessionHandler
         }
         return false;
     }
-
-    public void doStart() throws Exception
+    
+    /**
+     * Set up cookie configuration based on init params, if
+     * the SessionCookieConfig has not been set.
+     */
+    protected void configureCookies()
     {
-        super.doStart();
-
         // Look for a session cookie name
         if (_context != null)
         {
@@ -454,8 +456,8 @@ public class SessionHandler extends AbstractSessionHandler
                 _checkingRemoteSessionIdEncoding = Boolean.parseBoolean(tmp);
         }
     }
-    
-    public Session.Wrapper newSessionAPIWrapper(Session session)
+
+    public Session.APISession newSessionAPIWrapper(Session session)
     {
         return ServletAPISession.wrapSession(session);
     }
@@ -465,7 +467,7 @@ public class SessionHandler extends AbstractSessionHandler
     {
         if (!_sessionAttributeListeners.isEmpty())
         {
-            HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getWrapper(), name, old == null ? value : old);
+            HttpSessionBindingEvent event = new HttpSessionBindingEvent(session.getAPISession(), name, old == null ? value : old);
 
             for (HttpSessionAttributeListener l : _sessionAttributeListeners)
             {
@@ -493,7 +495,7 @@ public class SessionHandler extends AbstractSessionHandler
 
         if (_sessionListeners != null)
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getWrapper());
+            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
             for (HttpSessionListener  l : _sessionListeners)
             {
                 l.sessionCreated(event);
@@ -523,7 +525,7 @@ public class SessionHandler extends AbstractSessionHandler
                 @Override
                 public void run()
                 {
-                    HttpSessionEvent event = new HttpSessionEvent(session.getWrapper());
+                    HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
                     for (int i = _sessionListeners.size() - 1; i >= 0; i--)
                     {
                         _sessionListeners.get(i).sessionDestroyed(event);
@@ -540,7 +542,7 @@ public class SessionHandler extends AbstractSessionHandler
         //inform the listeners
         if (!_sessionIdListeners.isEmpty())
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getWrapper());
+            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
             for (HttpSessionIdListener l : _sessionIdListeners)
             {
                 l.sessionIdChanged(event, oldId);
@@ -552,14 +554,14 @@ public class SessionHandler extends AbstractSessionHandler
     public void callUnboundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
-            ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getWrapper(), name));
+            ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getAPISession(), name));
     }
     
     @Override
     public void callBoundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
-            ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getWrapper(), name)); 
+            ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getAPISession(), name)); 
     }
     
     @Override
@@ -567,7 +569,7 @@ public class SessionHandler extends AbstractSessionHandler
     {
         if (value instanceof HttpSessionActivationListener)
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getWrapper());
+            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
             HttpSessionActivationListener listener = (HttpSessionActivationListener)value;
             listener.sessionDidActivate(event);
         }
@@ -579,7 +581,7 @@ public class SessionHandler extends AbstractSessionHandler
     {
         if (value instanceof HttpSessionActivationListener)
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getWrapper());
+            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
             HttpSessionActivationListener listener = (HttpSessionActivationListener)value;
             listener.sessionWillPassivate(event);
         }
@@ -834,10 +836,12 @@ public class SessionHandler extends AbstractSessionHandler
         ServletScopedRequest.MutableHttpServletRequest servletRequest =
             request.get(ServletScopedRequest.class, ServletScopedRequest::getMutableHttpServletRequest);
         
+        //TODO if not the correct type of request, pass it on to our wrapped handlers?
         if (servletRequest == null)
             return false;
         
        //TODO need a response that I can set a cookie on, and work out if it is secure or not
+        
 
         // TODO servletRequest can be mutable, so we can add session stuff to it
         servletRequest.setSessionManager(this);
@@ -856,7 +860,7 @@ public class SessionHandler extends AbstractSessionHandler
 
 
         request.getChannel().onStreamEvent(s ->
-        new Stream.Wrapper(s)
+        new Stream.APISession(s)
         {
             @Override
             public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)

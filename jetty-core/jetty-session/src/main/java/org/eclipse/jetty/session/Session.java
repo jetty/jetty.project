@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 public class Session
 {
-    public interface Wrapper
+    public interface APISession
     {
         Session getSession();
     }
@@ -68,7 +68,7 @@ public class Session
         SET, CHANGING
     }
     
-    private Object _wrapper;
+    private Object _apiSession;
 
     protected final SessionData _sessionData; // the actual data associated with
     // a session
@@ -113,20 +113,20 @@ public class Session
 
     public static Session getSession(Object session)
     {
-        if (session instanceof Wrapper wrapper)
+        if (session instanceof APISession wrapper)
             return wrapper.getSession();
         return null;
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T getWrapper()
+    public <T> T getAPISession()
     {
-        return (T)_wrapper;
+        return (T)_apiSession;
     }
     
-    public void setWrapper(Object o)
+    public void setAPISessin(Object o)
     {
-        _wrapper = o;
+        _apiSession = o;
     }
     
     /**
