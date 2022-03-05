@@ -36,6 +36,9 @@ public class StatisticsHandler extends Handler.Wrapper
     private final SampleStatistic _requestTimeStats = new SampleStatistic();
     private final SampleStatistic _handleTimeStats = new SampleStatistic();
 
+    private final CounterStatistic _handleStats = new CounterStatistic();
+    private final CounterStatistic _processStats = new CounterStatistic();
+
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
     private final LongAdder _responses3xx = new LongAdder();
@@ -58,6 +61,7 @@ public class StatisticsHandler extends Handler.Wrapper
         final LongAdder bytesRead = new LongAdder();
         final LongAdder bytesWritten = new LongAdder();
 
+        _handleStats.increment();
         _requestStats.increment();
         request.getHttpChannel().addStreamWrapper(s -> new HttpStream.Wrapper(s)
         {
@@ -95,6 +99,7 @@ public class StatisticsHandler extends Handler.Wrapper
             @Override
             public void succeeded()
             {
+                _processStats.decrement();
                 _requestStats.decrement();
                 _requestTimeStats.record(System.currentTimeMillis() - getNanoTimeStamp());
                 super.succeeded();
@@ -103,6 +108,7 @@ public class StatisticsHandler extends Handler.Wrapper
             @Override
             public void failed(Throwable x)
             {
+                _processStats.decrement();
                 _requestStats.decrement();
                 _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
                 super.failed(x);
@@ -118,6 +124,7 @@ public class StatisticsHandler extends Handler.Wrapper
         private final LongAdder _bytesRead;
         private final LongAdder _bytesWritten;
         private Callback _callback;
+        private long _streamNanoTimeStamp;
 
         private StatisticsRequest(Request request, LongAdder bytesRead, LongAdder bytesWritten)
         {
@@ -143,6 +150,7 @@ public class StatisticsHandler extends Handler.Wrapper
         public void process(Request ignored, Response response, Callback callback) throws Exception
         {
             _callback = callback;
+            _processStats.increment();
             super.process(this, response, this);
         }
 
@@ -151,6 +159,7 @@ public class StatisticsHandler extends Handler.Wrapper
         {
             try
             {
+                _streamNanoTimeStamp = getHttpChannel().getHttpStream().getNanoTimeStamp();
                 _callback.succeeded();
             }
             finally
@@ -164,6 +173,7 @@ public class StatisticsHandler extends Handler.Wrapper
         {
             try
             {
+                _streamNanoTimeStamp = getHttpChannel().getHttpStream().getNanoTimeStamp();
                 _callback.failed(x);
             }
             finally
@@ -174,7 +184,7 @@ public class StatisticsHandler extends Handler.Wrapper
 
         private void complete()
         {
-            _handleTimeStats.record(System.nanoTime() - getHttpChannel().getHttpStream().getNanoTimeStamp());
+            _handleTimeStats.record(System.nanoTime() - _streamNanoTimeStamp);
         }
     }
 
@@ -226,4 +236,27 @@ public class StatisticsHandler extends Handler.Wrapper
         return _responses5xx.intValue();
     }
 
+    @ManagedAttribute("")
+    public int getHandlings()
+    {
+        return (int) _handleStats.getCurrent();
+    }
+
+    @ManagedAttribute("")
+    public int getProcessings()
+    {
+        return (int) _processStats.getTotal();
+    }
+
+    @ManagedAttribute("")
+    public int getProcessingsActive()
+    {
+        return (int) _processStats.getCurrent();
+    }
+
+    @ManagedAttribute("")
+    public int getProcessingsMax()
+    {
+        return (int) _processStats.getMax();
+    }
 }

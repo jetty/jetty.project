@@ -353,64 +353,66 @@ public class StatisticsHandlerTest
 //        assertTrue(_statsHandler.getDispatchedTimeMax() + dispatchTime <= _statsHandler.getDispatchedTimeTotal());
 //    }
 //
-//    @Test
-//    public void asyncDispatchTest() throws Exception
-//    {
-//        final AtomicReference<AsyncContext> asyncHolder = new AtomicReference<>();
-//        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
-//        _statsHandler.setHandler(new AbstractHandler()
-//        {
-//            @Override
-//            public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws ServletException
-//            {
-//                request.setHandled(true);
-//                try
-//                {
-//                    if (asyncHolder.get() == null)
-//                    {
-//                        barrier[0].await();
-//                        barrier[1].await();
-//                        AsyncContext asyncContext = request.startAsync();
-//                        asyncHolder.set(asyncContext);
-//                        asyncContext.dispatch();
-//                    }
-//                    else
-//                    {
-//                        barrier[2].await();
-//                        barrier[3].await();
-//                    }
-//                }
-//                catch (Exception x)
-//                {
-//                    throw new ServletException(x);
-//                }
-//            }
-//        });
-//        _server.start();
-//
-//        String request = "GET / HTTP/1.1\r\n" +
-//            "Host: localhost\r\n" +
-//            "\r\n";
-//        _connector.executeRequest(request);
-//
-//        // Before we have started async we have one active request.
-//        barrier[0].await();
-//        assertEquals(1, _statistics.getConnections());
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(1, _statsHandler.getRequestsActive());
-//        assertEquals(1, _statsHandler.getDispatched());
-//        assertEquals(1, _statsHandler.getDispatchedActive());
-//        barrier[1].await();
-//
-//        // After we are async the same request should still be active even though we have async dispatched.
-//        barrier[2].await();
-//        assertEquals(1, _statistics.getConnections());
-//        assertEquals(1, _statsHandler.getRequests());
-//        assertEquals(1, _statsHandler.getRequestsActive());
-//        assertEquals(2, _statsHandler.getDispatched());
-//        assertEquals(1, _statsHandler.getDispatchedActive());
-//        barrier[3].await();
-//    }
+    @Test
+    public void asyncDispatchTest() throws Exception
+    {
+        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        _statsHandler.setHandler(new Handler.Abstract()
+        {
+            @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                barrier[0].await();
+                return (rq, rs, callback) ->
+                {
+                    barrier[1].await();
+                    callback.succeeded();
+                    barrier[2].await();
+                };
+            }
+        });
+        _server.start();
+
+        String request = "GET / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n";
+        _connector.executeRequest(request);
+
+        assertEquals(0, _statistics.getConnections());
+        assertEquals(0, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(0, _statsHandler.getHandlings());
+        assertEquals(0, _statsHandler.getProcessings());
+        assertEquals(0, _statsHandler.getProcessingsActive());
+        assertEquals(0, _statsHandler.getProcessingsMax());
+        barrier[0].await();
+
+        assertEquals(1, _statistics.getConnections());
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(0, _statsHandler.getProcessings());
+        assertEquals(0, _statsHandler.getProcessingsActive());
+        assertEquals(0, _statsHandler.getProcessingsMax());
+        barrier[1].await();
+
+        assertEquals(1, _statistics.getConnections());
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(1, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getProcessings());
+        assertEquals(1, _statsHandler.getProcessingsActive());
+        assertEquals(1, _statsHandler.getProcessingsMax());
+        barrier[2].await();
+
+        assertEquals(1, _statistics.getConnections());
+        assertEquals(1, _statsHandler.getRequests());
+        assertEquals(0, _statsHandler.getRequestsActive());
+        assertEquals(1, _statsHandler.getHandlings());
+        assertEquals(1, _statsHandler.getProcessings());
+        assertEquals(0, _statsHandler.getProcessingsActive());
+        assertEquals(1, _statsHandler.getProcessingsMax());
+    }
 //
 //    @Test
 //    public void waitForSuspendedRequestTest() throws Exception
