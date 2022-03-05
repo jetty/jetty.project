@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;

@@ -11,30 +11,21 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * WebAppObjectInSessionTest
+ * ClusteredOrphanedSessionTest
  */
 @Testcontainers(disabledWithoutDocker = true)
-public class WebAppObjectInSessionTest extends AbstractWebAppObjectInSessionTest
+public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
 {
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
-        Resource.setDefaultUseCaches(false);
         return JdbcTestHelper.newSessionDataStoreFactory();
-    }
-
-    @Test
-    public void testWebappObjectInSession() throws Exception
-    {
-        super.testWebappObjectInSession();
     }
 
     @AfterEach

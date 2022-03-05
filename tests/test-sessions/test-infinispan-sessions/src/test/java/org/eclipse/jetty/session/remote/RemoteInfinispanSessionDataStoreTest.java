@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session.remote;
+package org.eclipse.jetty.session.remote;
 
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.session.AbstractSessionDataStoreFactory;

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session.remote;
+package org.eclipse.jetty.session.remote;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;

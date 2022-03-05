@@ -11,16 +11,16 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import org.junit.jupiter.api.AfterEach;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * ClusteredOrphanedSessionTest
+ * ClusteredSessionScavengingTest
  */
 @Testcontainers(disabledWithoutDocker = true)
-public class ClusteredOrphanedSessionTest extends AbstractClusteredOrphanedSessionTest
+public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()

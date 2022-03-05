@@ -11,9 +11,9 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session.remote;
+package org.eclipse.jetty.session.remote;
 
-import org.eclipse.jetty.session.AbstractClusteredInvalidationSessionTest;
+import org.eclipse.jetty.session.AbstractClusteredSessionScavengingTest;
 import org.eclipse.jetty.session.LoggingUtil;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
@@ -22,10 +22,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * InvalidationSessionTest
+ * ClusteredSessionScavengingTest
  */
 @Testcontainers(disabledWithoutDocker = true)
-public class RemoteClusteredInvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
+public class RemoteClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
     static
     {

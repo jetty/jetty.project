@@ -11,44 +11,59 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
-import org.eclipse.jetty.session.infinispan.EmbeddedQueryManager;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
-import org.eclipse.jetty.session.infinispan.QueryManager;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * HotInitInfinispanSessionDataStoreTest
+ * ClusteredSessionScavengingTest
  */
 @ExtendWith(WorkDirExtension.class)
-public class InfinispanFileSessionDataStoreTest extends InfinispanSessionDataStoreTest
+public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
-    public WorkDir workDir;
-
-    public InfinispanFileSessionDataStoreTest() throws Exception
+    static
     {
-        super();
+        LoggingUtil.init();
     }
-    
+
+    public WorkDir workDir;
+    public InfinispanTestSupport testSupport;
+
     @BeforeEach
     public void setup() throws Exception
     {
-        _testSupport = new InfinispanTestSupport();
-        _testSupport.setUseFileStore(true);
-        _testSupport.setup(workDir.getEmptyPathDir());
+        testSupport = new InfinispanTestSupport();
+        testSupport.setUseFileStore(true);
+        testSupport.setup(workDir.getEmptyPathDir());
     }
-    
+
+    @AfterEach
+    public void teardown() throws Exception
+    {
+        if (testSupport != null)
+            testSupport.teardown();
+    }
+
+    @Override
+    @Test
+    public void testClusteredScavenge()
+        throws Exception
+    {
+        super.testClusteredScavenge();
+    }
+
+    @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         InfinispanSessionDataStoreFactory factory = new InfinispanSessionDataStoreFactory();
         factory.setSerialization(true);
-        factory.setCache(_testSupport.getCache());
-        QueryManager qm = new EmbeddedQueryManager(_testSupport.getCache());
-        factory.setQueryManager(qm);
+        factory.setCache(testSupport.getCache());
         return factory;
     }
 }

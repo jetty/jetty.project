@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

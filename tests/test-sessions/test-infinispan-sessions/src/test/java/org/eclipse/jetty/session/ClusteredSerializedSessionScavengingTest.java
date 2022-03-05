@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import org.eclipse.jetty.session.infinispan.InfinispanSessionDataStoreFactory;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -22,24 +22,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * ClusteredSessionScavengingTest
+ * ClusteredSerializedSessionScavengingTest
  */
 @ExtendWith(WorkDirExtension.class)
-public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
+public class ClusteredSerializedSessionScavengingTest extends AbstractClusteredSessionScavengingTest
 {
-    static
-    {
-        LoggingUtil.init();
-    }
-
     public WorkDir workDir;
-    public InfinispanTestSupport testSupport;
+    public static InfinispanTestSupport testSupport;
 
     @BeforeEach
     public void setup() throws Exception
     {
         testSupport = new InfinispanTestSupport();
         testSupport.setUseFileStore(true);
+        testSupport.setSerializeSessionData(true);
         testSupport.setup(workDir.getEmptyPathDir());
     }
 
@@ -58,6 +54,9 @@ public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScav
         super.testClusteredScavenge();
     }
 
+    /**
+     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
+     */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {

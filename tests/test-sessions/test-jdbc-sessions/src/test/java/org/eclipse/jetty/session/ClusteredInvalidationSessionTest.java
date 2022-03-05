@@ -11,26 +11,26 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.session;
 
 import org.junit.jupiter.api.AfterEach;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
- * ClusteredSessionScavengingTest
+ * ClusteredInvalidationSessionTest
  */
 @Testcontainers(disabledWithoutDocker = true)
-public class ClusteredSessionScavengingTest extends AbstractClusteredSessionScavengingTest
+public class ClusteredInvalidationSessionTest extends AbstractClusteredInvalidationSessionTest
 {
-    @Override
-    public SessionDataStoreFactory createSessionDataStoreFactory()
-    {
-        return JdbcTestHelper.newSessionDataStoreFactory();
-    }
-
     @AfterEach
     public void tearDown() throws Exception
     {
         JdbcTestHelper.shutdown(null);
+    }
+
+    @Override
+    public SessionDataStoreFactory createSessionDataStoreFactory()
+    {
+        return JdbcTestHelper.newSessionDataStoreFactory();
     }
 }
