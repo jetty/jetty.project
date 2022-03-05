@@ -31,6 +31,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 
 /**
@@ -301,6 +302,47 @@ public interface Request extends Attributes, Content.Provider
         if (StringUtil.isNotBlank(query))
             UrlEncoded.decodeUtf8To(query, params);
         return params;
+    }
+
+    /**
+     * Common point to generate a proper "Location" header for redirects.
+     *
+     * @param request the request the redirect should be based on (needed when relative locations are provided, so that
+     * server name, scheme, port can be built out properly)
+     * @param location the location URL to redirect to (can be a relative path)
+     * @return the full redirect "Location" URL (including scheme, host, port, path, etc...)
+     */
+    static String toRedirectURI(Request request, String location)
+    {
+        // TODO: lookup HttpConfiguration.isRelativeRedirectAllowed
+        if (!URIUtil.hasScheme(location))
+        {
+            StringBuilder url = new StringBuilder(128);
+            URIUtil.appendSchemeHostPort(url, request.getScheme(), request.getServerName(), request.getServerPort());
+
+            if (location.startsWith("/"))
+            {
+                // absolute in context
+                location = URIUtil.canonicalURI(location);
+            }
+            else
+            {
+                // relative to request
+                String path = request.getRequestURI();
+                String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
+                location = URIUtil.canonicalURI(URIUtil.addEncodedPaths(parent, location));
+                if (location != null && !location.startsWith("/"))
+                    url.append('/');
+            }
+
+            if (location == null)
+                throw new IllegalStateException("redirect path cannot be above root");
+            url.append(location);
+
+            location = url.toString();
+        }
+
+        return location;
     }
 
     /**
