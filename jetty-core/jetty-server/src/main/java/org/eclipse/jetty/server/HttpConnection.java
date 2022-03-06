@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -71,6 +72,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     public static final HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
     public static final HttpField CONNECTION_KEEPALIVE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
 
+    private final AtomicLong _idGenerator = new AtomicLong();
     private final HttpConfiguration _configuration;
     private final Connector _connector;
     private final HttpChannel _channel;
@@ -205,7 +207,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     public String getId()
     {
         // TODO
-        return null;
+        return getClass().getSimpleName() + "#" + _idGenerator.getAndIncrement();
     }
 
     @Override
@@ -1293,7 +1295,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         public String getId()
         {
             // TODO
-            return null;
+            return getClass().getSimpleName() + "#" + _idGenerator.getAndIncrement();
         }
 
         @Override

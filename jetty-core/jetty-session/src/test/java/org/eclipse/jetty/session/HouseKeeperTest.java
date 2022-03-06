@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.jupiter.api.Test;
 

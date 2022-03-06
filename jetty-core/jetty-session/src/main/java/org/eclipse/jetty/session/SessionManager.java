@@ -95,8 +95,6 @@ public interface SessionManager extends LifeCycle
     
     void setUsingCookies(boolean usingCookies);
     
-    int getCookieMaxAge();
-    
     void setRefreshCookieAge(int ageInSeconds);
     
     HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure);
