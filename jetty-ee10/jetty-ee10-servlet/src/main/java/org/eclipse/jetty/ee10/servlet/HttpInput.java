@@ -56,9 +56,9 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     public void init()
     {
-        _channelState = _servletChannel.getState();
-        _asyncContentProducer = new AsyncContentProducer(_servletChannel);
-        _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);
+        _channelState = _servletChannel.getState(); // TODO can we change lifecycle so this is known in constructor and can be final
+        _asyncContentProducer = new AsyncContentProducer(_servletChannel); // TODO avoid object creation or recycle
+        _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);  // TODO avoid object creation or recycle
         _contentProducer = _blockingContentProducer;
     }
 

@@ -391,7 +391,7 @@ public class ServletContextHandler extends TempContextHandler
         if (dispatch == DispatcherType.REQUEST && isProtectedTarget(request.getPathInContext()))
             return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpServletResponse.SC_NOT_FOUND, null);
 
-        return null;
+        return super.processByContextHandler(request);
     }
 
     // TODO: do we really need this?? / ask greg what this is all about?

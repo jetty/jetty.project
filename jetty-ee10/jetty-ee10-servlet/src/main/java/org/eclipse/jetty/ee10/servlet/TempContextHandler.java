@@ -858,6 +858,7 @@ abstract class TempContextHandler extends ContextHandler implements Graceful
                 }
             }
         }
+        super.exitScope(request);
     }
 
     /**
@@ -1345,7 +1346,7 @@ abstract class TempContextHandler extends ContextHandler implements Graceful
     /**
      * Listener for all threads entering context scope, including async IO callbacks
      */
-    public static interface ContextScopeListener extends EventListener
+    public interface ContextScopeListener extends EventListener
     {
         /**
          * @param context The context being entered
