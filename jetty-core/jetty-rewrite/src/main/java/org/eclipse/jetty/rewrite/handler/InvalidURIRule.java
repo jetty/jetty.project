@@ -20,22 +20,25 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.annotation.Name;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Sends the response code whenever the rule finds a match.
+ * <p>Rule that protects against invalid unicode characters in URLs,
+ * returning a configurable status code with body message.</p>
+ * <p>The logic is as follows:</p>
+ * <ul>
+ * <li>if a decoded URI character is an iso control character, apply the rule</li>
+ * <li>if no {@link Character.UnicodeBlock} is found for a decoded URI character, apply the rule</li>
+ * <li>if a decoded URI character is in UnicodeBlock.SPECIALS, apply the rule</li>
+ * </ul>
  */
-public class ResponsePatternRule extends PatternRule
+public class InvalidURIRule extends Rule
 {
-    private int _code;
-    private String _message;
+    private static final Logger LOG = LoggerFactory.getLogger(InvalidURIRule.class);
 
-    public ResponsePatternRule(@Name("pattern") String pattern, @Name("code") int code, @Name("message") String message)
-    {
-        super(pattern);
-        _code = code;
-        _message = message;
-    }
+    private int _code = HttpStatus.BAD_REQUEST_400;
+    private String _message = "Illegal URI";
 
     @Override
     public boolean isTerminating()
@@ -72,11 +75,24 @@ public class ResponsePatternRule extends PatternRule
     }
 
     @Override
-    public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
+    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
     {
-        if (getCode() < HttpStatus.CONTINUE_100)
-            return null;
+        String path = input.getPathInContext();
 
+        int i = 0;
+        while (i < path.length())
+        {
+            int codepoint = path.codePointAt(i);
+            if (!isValidChar(codepoint))
+                return apply(input);
+            i += Character.charCount(codepoint);
+        }
+
+        return null;
+    }
+
+    private Request.WrapperProcessor apply(Request.WrapperProcessor input)
+    {
         return new Request.WrapperProcessor(input)
         {
             @Override
@@ -96,9 +112,18 @@ public class ResponsePatternRule extends PatternRule
         };
     }
 
+    protected boolean isValidChar(int codepoint)
+    {
+        Character.UnicodeBlock block = Character.UnicodeBlock.of(codepoint);
+
+        LOG.debug("{} {} {} {}", Character.charCount(codepoint), codepoint, block, Character.isISOControl(codepoint));
+
+        return (!Character.isISOControl(codepoint)) && block != null && !Character.UnicodeBlock.SPECIALS.equals(block);
+    }
+
     @Override
     public String toString()
     {
-        return "%s[response:%d>%s]".formatted(super.toString(), getCode(), getMessage());
+        return super.toString() + "[" + _code + ":" + _message + "]";
     }
 }

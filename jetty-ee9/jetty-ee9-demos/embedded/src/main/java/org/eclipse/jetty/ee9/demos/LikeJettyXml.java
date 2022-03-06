@@ -32,8 +32,8 @@ import org.eclipse.jetty.ee9.webapp.Configurations;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.jmx.MBeanContainer;
+import org.eclipse.jetty.rewrite.handler.InvalidURIRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
-import org.eclipse.jetty.rewrite.handler.ValidUrlRule;
 import org.eclipse.jetty.server.AsyncRequestLogWriter;
 import org.eclipse.jetty.server.CustomRequestLog;
 import org.eclipse.jetty.server.DebugListener;
@@ -170,7 +170,7 @@ public class LikeJettyXml
         RewriteHandler rewrite = new RewriteHandler();
         rewrite.setHandler(server.getHandler());
         server.setHandler(rewrite);
-        rewrite.addRule(new ValidUrlRule());
+        rewrite.addRule(new InvalidURIRule());
 
         // === jetty-requestlog.xml ===
         Path logsDir = runtimeDir.resolve("logs");

@@ -13,98 +13,73 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.io.IOException;
-import java.util.Iterator;
+import java.util.List;
 
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class HeaderPatternRuleTest extends AbstractRuleTestCase
+public class HeaderPatternRuleTest extends AbstractRuleTest
 {
-    private HeaderPatternRule _rule;
-
-    @BeforeEach
-    public void init() throws Exception
+    private void start(HeaderPatternRule rule) throws Exception
     {
-        start(false);
-        _rule = new HeaderPatternRule();
-        _rule.setPattern("*");
-    }
-
-    @Test
-    public void testHeaderWithTextValues() throws IOException
-    {
-        // different keys
-        String[][] headers = {
-            {"hnum#1", "test1"},
-            {"hnum#2", "2test2"},
-            {"hnum#3", "test3"}
-        };
-        assertHeaders(headers);
-    }
-
-    @Test
-    public void testHeaderWithNumberValues() throws IOException
-    {
-        String[][] headers = {
-            {"hello", "1"},
-            {"hello", "-1"},
-            {"hello", "100"},
-            {"hello", "100"},
-            {"hello", "100"},
-            {"hello", "100"},
-            {"hello", "100"},
-
-            {"hello1", "200"}
-        };
-        assertHeaders(headers);
-    }
-
-    @Test
-    public void testHeaderOverwriteValues() throws IOException
-    {
-        String[][] headers = {
-            {"size", "100"},
-            {"size", "200"},
-            {"size", "300"},
-            {"size", "400"},
-            {"size", "500"},
-            {"title", "abc"},
-            {"title", "bac"},
-            {"title", "cba"},
-            {"title1", "abba"},
-            {"title1", "abba1"},
-            {"title1", "abba"},
-            {"title1", "abba1"}
-        };
-        assertHeaders(headers);
-
-        Iterator<String> e = _response.getHeaders("size").iterator();
-        int count = 0;
-        while (e.hasNext())
+        _rewriteHandler.addRule(rule);
+        start(new Handler.Processor()
         {
-            e.next();
-            count++;
-        }
-
-        assertEquals(1, count);
-        assertEquals("500", _response.getHeader("size"));
-        assertEquals("cba", _response.getHeader("title"));
-        assertEquals("abba1", _response.getHeader("title1"));
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
     }
 
-    private void assertHeaders(String[][] headers) throws IOException
+    @Test
+    public void testHeaderWithTextValue() throws Exception
     {
-        for (String[] header : headers)
+        String name = "X-Response";
+        String value = "TEXT";
+        HeaderPatternRule rule = new HeaderPatternRule("/", name, value);
+        start(rule);
+
+        String request = """
+            GET / HTTP/1.1
+            Host: localhost
+                        
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(200, response.getStatus());
+        assertEquals(value, response.get(name));
+    }
+
+    @Test
+    public void testHeaderWithNumberValues() throws Exception
+    {
+        String name = "X-Response";
+        List<String> values = List.of("1", "-1", "100");
+
+        for (String value : values)
         {
-            _rule.setName(header[0]);
-            _rule.setValue(header[1]);
+            HeaderPatternRule rule = new HeaderPatternRule("/", name, value);
+            start(rule);
 
-            _rule.apply(null, _request, _response);
+            String request = """
+                GET / HTTP/1.1
+                Host: localhost
+                            
+                """;
 
-            assertEquals(header[1], _response.getHeader(header[0]));
+            HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+            assertEquals(200, response.getStatus());
+            assertEquals(value, response.get(name));
+
+            stop();
         }
     }
 }
