@@ -331,7 +331,7 @@ public class Blocking
             }
         };
 
-        public Callback callback() throws Exception
+        public Callback callback() throws IOException
         {
             _lock.lock();
             try
