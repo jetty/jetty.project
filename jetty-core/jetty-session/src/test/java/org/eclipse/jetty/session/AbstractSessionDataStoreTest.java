@@ -26,9 +26,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.session.Session.APISession;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -118,7 +116,7 @@ public abstract class AbstractSessionDataStoreTest
         //use the classloader with the special class in it
         contextHandler.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
 
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
@@ -187,7 +185,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler contextHandler = new ContextHandler("/test");
         contextHandler.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -229,7 +227,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler contextHandler = new ContextHandler("/test");
         contextHandler.setClassLoader(_contextClassLoader);
 
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -309,7 +307,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -344,7 +342,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -380,7 +378,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -403,7 +401,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -442,7 +440,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -471,7 +469,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -509,7 +507,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -540,7 +538,7 @@ public abstract class AbstractSessionDataStoreTest
         //create the SessionDataStore
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -563,7 +561,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();       
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();       
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -600,7 +598,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -636,7 +634,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -661,7 +659,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -699,7 +697,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -726,7 +724,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -828,7 +826,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -856,7 +854,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
@@ -885,7 +883,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -904,7 +902,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -934,7 +932,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec
@@ -976,7 +974,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec
@@ -1007,7 +1005,7 @@ public abstract class AbstractSessionDataStoreTest
         ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
         
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec

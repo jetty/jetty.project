@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * TestFileSessions
  */
 @ExtendWith(WorkDirExtension.class)
-public class TestFileSessions extends AbstractTestBase
+public class TestFileSessions
 {
     public WorkDir workDir;
     FileTestHelper _helper;
@@ -54,7 +54,6 @@ public class TestFileSessions extends AbstractTestBase
         _helper = new FileTestHelper(workDir.getEmptyPathDir());
     }
 
-    @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
     {
         return _helper.newSessionDataStoreFactory();
@@ -68,7 +67,7 @@ public class TestFileSessions extends AbstractTestBase
     public void testLoadForeignContext() throws Exception
     {
         //create the SessionDataStore
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
@@ -90,7 +89,7 @@ public class TestFileSessions extends AbstractTestBase
     public void testFilenamesWithContext() throws Exception
     {
         //create the SessionDataStore
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
         FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionHandler);
@@ -169,7 +168,7 @@ public class TestFileSessions extends AbstractTestBase
     {
         //create the SessionDataStore
         //TODO how to set context path of "/"
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
         FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionHandler);
@@ -177,7 +176,7 @@ public class TestFileSessions extends AbstractTestBase
         store.initialize(sessionContext);
 
         String s = store.getIdWithContext("1234");
-        assertEquals("_0.0.0.0_1234", s);
+        assertEquals("__0.0.0.0_1234", s);
 
         s = store.getIdFromFilename("0__0.0.0.0_1234");
         assertEquals("1234", s);
@@ -201,6 +200,9 @@ public class TestFileSessions extends AbstractTestBase
         s = store.getIdWithContextFromFilename("100__0.0.0.0_1234");
         assertEquals("_0.0.0.0_1234", s);
 
+        System.err.println(store._contextString);
+        System.err.println("XXXX");
+        System.err.println(store.getContextFromFilename("100__0.0.0.0_1234"));
         assertTrue(store.isOurContextSessionFilename("100__0.0.0.0_1234"));
         assertFalse(store.isOurContextSessionFilename("100__other_0.0.0.0_1234"));
     }
@@ -213,7 +215,7 @@ public class TestFileSessions extends AbstractTestBase
     {
         int gracePeriodSec = 10;
         //create the SessionDataStore
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(gracePeriodSec);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -285,9 +287,10 @@ public class TestFileSessions extends AbstractTestBase
         throws Exception
     {
         //create the SessionDataStore
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
         SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/"), "0.0.0.0");
         store.initialize(sessionContext);
 
@@ -351,7 +354,7 @@ public class TestFileSessions extends AbstractTestBase
         throws Exception
     {
         //create the SessionDataStore
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);
@@ -389,7 +392,7 @@ public class TestFileSessions extends AbstractTestBase
         throws Exception
     {
         //create the SessionDataStore
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(100);
         SessionDataStore store = factory.getSessionDataStore(sessionHandler);

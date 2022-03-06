@@ -15,12 +15,10 @@ package org.eclipse.jetty.session;
 
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,7 +44,7 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
     public void checkSessionBeforeShutdown(String id,
                                            SessionDataStore store,
                                            SessionCache cache,
-                                           TestSessionHandler sessionHandler) throws Exception
+                                           TestableSessionHandler sessionHandler) throws Exception
     {
         assertFalse(cache.contains(id)); //NullSessionCache never caches
         assertTrue(store.exists(id));
@@ -59,7 +57,7 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
     public void checkSessionAfterShutdown(String id,
                                           SessionDataStore store,
                                           SessionCache cache,
-                                          TestSessionHandler sessionHandler) throws Exception
+                                          TestableSessionHandler sessionHandler) throws Exception
     {
         assertFalse(cache.contains(id)); //NullSessionCache never caches
         assertTrue(store.exists(id)); //NullSessionCache doesn't do anything on shutdown
@@ -77,11 +75,11 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         ContextHandler context = new ContextHandler("/test");
         context.setServer(server);
 
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         NullSessionCacheFactory cacheFactory = new NullSessionCacheFactory();
         NullSessionCache cache = (NullSessionCache)cacheFactory.getSessionCache(sessionHandler);
 
-        TestSessionDataStore store = new TestSessionDataStore();
+        TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
         context.start();
@@ -119,11 +117,11 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         ContextHandler context = new ContextHandler("/test");
         context.setServer(server);
 
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         SessionCache cache = (SessionCache)cacheFactory.getSessionCache(sessionHandler);
 
-        TestSessionDataStore store = new TestSessionDataStore();
+        TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
         context.start();
@@ -151,11 +149,11 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         ContextHandler context = new ContextHandler("/test");
         context.setServer(server);
 
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         SessionCache cache = (SessionCache)cacheFactory.getSessionCache(sessionHandler);
 
-        TestSessionDataStore store = new TestSessionDataStore();
+        TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
         context.start();
@@ -182,11 +180,11 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         ContextHandler context = new ContextHandler("/test");
         context.setServer(server);
 
-        TestSessionHandler sessionHandler = new TestSessionHandler();
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, true, false, false, false);
         SessionCache cache = cacheFactory.getSessionCache(sessionHandler);
 
-        TestSessionDataStore store = new TestSessionDataStore();
+        TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
         context.start();
