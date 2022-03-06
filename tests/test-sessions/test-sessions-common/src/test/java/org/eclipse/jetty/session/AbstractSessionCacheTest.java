@@ -17,10 +17,6 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpSessionActivationListener;
-import jakarta.servlet.http.HttpSessionEvent;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -102,24 +98,6 @@ public abstract class AbstractSessionCacheTest
         @Override
         public void doCleanOrphans(long timeLimit)
         {
-        }
-    }
-
-    public static class TestSessionActivationListener implements HttpSessionActivationListener
-    {
-        public int passivateCalls = 0;
-        public int activateCalls = 0;
-
-        @Override
-        public void sessionWillPassivate(HttpSessionEvent se)
-        {
-            ++passivateCalls;
-        }
-
-        @Override
-        public void sessionDidActivate(HttpSessionEvent se)
-        {
-            ++activateCalls;
         }
     }
 
