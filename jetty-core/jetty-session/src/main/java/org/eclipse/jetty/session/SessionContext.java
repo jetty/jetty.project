@@ -30,11 +30,15 @@ import org.eclipse.jetty.util.StringUtil;
 public class SessionContext
 {
     public static final String NULL_VHOST = "0.0.0.0";
-    private Context _context;
-    private SessionManager _sessionManager;
-    private String _workerName;
-    private String _canonicalContextPath;
-    private String _vhost;
+    protected Context _context;
+    protected SessionManager _sessionManager;
+    protected String _workerName;
+    protected String _canonicalContextPath;
+    protected String _vhost;
+    
+    protected SessionContext()
+    {
+    }
 
     public SessionContext(SessionManager sessionManager)
     {
