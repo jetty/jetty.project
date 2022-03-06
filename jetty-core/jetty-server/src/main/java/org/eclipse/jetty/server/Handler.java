@@ -212,7 +212,18 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     {
         private static final Logger LOG = LoggerFactory.getLogger(Abstract.class);
 
+        private final InvocationType _invocationType;
         private Server _server;
+
+        public Abstract()
+        {
+            this(InvocationType.BLOCKING);
+        }
+
+        public Abstract(InvocationType type)
+        {
+            _invocationType = type;
+        }
 
         @Override
         public Server getServer()
@@ -228,6 +239,12 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             if (isStarted())
                 throw new IllegalStateException(getState());
             _server = server;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return _invocationType;
         }
 
         @Override
@@ -512,28 +529,20 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
      */
     abstract class Processor extends Abstract implements Request.Processor
     {
-        private final InvocationType _type;
-
         public Processor()
         {
-            this(InvocationType.NON_BLOCKING);
+            super();
         }
 
         public Processor(InvocationType type)
         {
-            _type = type;
+            super(type);
         }
 
         @Override
         public Request.Processor handle(Request request) throws Exception
         {
             return this;
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return _type;
         }
     }
 }

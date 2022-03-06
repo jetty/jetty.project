@@ -72,27 +72,8 @@ public class StatisticsHandlerTest
     @Test
     public void testTwoRequestsSerially() throws Exception
     {
-        final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
-
-        _statsHandler.setHandler(new Handler.Processor(Invocable.InvocationType.BLOCKING)
-        {
-            @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
-            {
-                try
-                {
-                    barrier[0].await();
-                    callback.succeeded();
-                    barrier[1].await();
-                }
-                catch (Throwable x)
-                {
-                    Thread.currentThread().interrupt();
-                    callback.failed(x);
-                    throw new IOException(x);
-                }
-            }
-        });
+        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
+        _statsHandler.setHandler(new DoubleBarrierHandlerProcessor(barrier));
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
@@ -161,27 +142,9 @@ public class StatisticsHandlerTest
     @Test
     public void testTwoRequestsInParallel() throws Exception
     {
-        final CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3)};
+        CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3)};
         _latchHandler.reset(2);
-        _statsHandler.setHandler(new Handler.Processor(Invocable.InvocationType.BLOCKING) // TODO factor out common test handler
-        {
-            @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
-            {
-                try
-                {
-                    barrier[0].await();
-                    callback.succeeded();
-                    barrier[1].await();
-                }
-                catch (Throwable x)
-                {
-                    Thread.currentThread().interrupt();
-                    callback.failed(x);
-                    throw new IOException(x);
-                }
-            }
-        });
+        _statsHandler.setHandler(new DoubleBarrierHandlerProcessor(barrier));
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
@@ -351,7 +314,7 @@ public class StatisticsHandlerTest
     public void testHandlingsIncrementThenProcessingsIncrement() throws Exception
     {
         CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
-        _statsHandler.setHandler(new Handler.Abstract()
+        _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public Request.Processor handle(Request request) throws Exception
@@ -363,12 +326,6 @@ public class StatisticsHandlerTest
                     callback.succeeded();
                     barrier[2].await();
                 };
-            }
-
-            @Override
-            public InvocationType getInvocationType()
-            {
-                return InvocationType.BLOCKING; // TODO make that a ctor param?
             }
         });
         _server.start();
@@ -637,7 +594,7 @@ public class StatisticsHandlerTest
         final long processTime = 35;
         final CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
 
-        _statsHandler.setHandler(new Handler.Abstract()
+        _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public Request.Processor handle(Request request) throws Exception
@@ -663,11 +620,6 @@ public class StatisticsHandlerTest
                         }
                     }
                 };
-            }
-
-            @Override
-            public InvocationType getInvocationType() {
-                return InvocationType.BLOCKING; // TODO constructor arg?
             }
         });
         _server.start();
@@ -800,6 +752,36 @@ public class StatisticsHandlerTest
         private boolean await() throws InterruptedException
         {
             return _latch.await(10000, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    private static class DoubleBarrierHandlerProcessor extends Handler.Processor
+    {
+        private final CyclicBarrier[] _barriers;
+
+        public DoubleBarrierHandlerProcessor(CyclicBarrier[] barriers)
+        {
+            super(Invocable.InvocationType.BLOCKING);
+            if (barriers.length != 2)
+                throw new IllegalArgumentException();
+            _barriers = barriers;
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
+            try
+            {
+                _barriers[0].await();
+                callback.succeeded();
+                _barriers[1].await();
+            }
+            catch (Throwable x)
+            {
+                Thread.currentThread().interrupt();
+                callback.failed(x);
+                throw new IOException(x);
+            }
         }
     }
 }
