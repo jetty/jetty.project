@@ -37,9 +37,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import jakarta.servlet.SessionCookieConfig;
-import jakarta.servlet.http.Cookie;
-
 /**
  * AbstractSessionHandler
  * Class to implement most non-servlet-spec specific session behaviour.
@@ -745,7 +742,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
             // Do we need to refresh the cookie?
             if (isUsingCookies() &&
                 (session.isIdChanged() ||
-                    (getCookieMaxAge() > 0 && getRefreshCookieAge() > 0 &&
+                    (getMaxCookieAge() > 0 && getRefreshCookieAge() > 0 &&
                         ((now - session.getCookieSetTime()) / 1000 > getRefreshCookieAge()))))
             {
                 HttpCookie cookie = getSessionCookie(session, _context == null ? "/" : (_context.getContextPath()), secure);

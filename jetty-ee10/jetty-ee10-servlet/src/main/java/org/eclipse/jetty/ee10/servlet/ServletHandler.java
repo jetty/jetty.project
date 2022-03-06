@@ -419,6 +419,7 @@ public class ServletHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
+        // TODO avoid lambda creation
         return (req, resp, cb) ->
         {
             // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.

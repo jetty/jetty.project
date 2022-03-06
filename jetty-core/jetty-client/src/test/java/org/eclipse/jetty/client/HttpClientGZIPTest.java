@@ -25,8 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 
 import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
@@ -56,7 +54,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setHeader("Content-Encoding", "gzip");
                 GZIPOutputStream gzipOutput = new GZIPOutputStream(response.getOutputStream());
@@ -82,7 +80,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setHeader("Content-Encoding", "gzip");
 
@@ -118,7 +116,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setHeader("Content-Encoding", "gzip");
 
@@ -169,7 +167,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setHeader("Content-Encoding", "gzip");
 
@@ -208,7 +206,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setHeader("Content-Encoding", "gzip");
                 // Not gzipped, will cause the client to blow up.
@@ -237,7 +235,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setContentType("text/plain;charset=" + StandardCharsets.US_ASCII.name());
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
@@ -279,7 +277,7 @@ public class HttpClientGZIPTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setContentType("text/plain;charset=" + StandardCharsets.US_ASCII.name());
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");

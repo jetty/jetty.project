@@ -26,10 +26,7 @@ import java.util.function.LongConsumer;
 import java.util.zip.GZIPOutputStream;
 
 import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.http.HttpChannelOverHTTP;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
@@ -53,7 +50,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 ServletOutputStream output = response.getOutputStream();
                 output.write(65);
@@ -115,7 +112,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         startServer(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 ServletOutputStream output = response.getOutputStream();
                 output.write(new byte[1024]);
@@ -209,7 +206,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.getOutputStream().write(new byte[1024]);
             }
@@ -235,7 +232,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setHeader("Content-Encoding", "gzip");
                 GZIPOutputStream gzip = new GZIPOutputStream(response.getOutputStream());
@@ -268,7 +265,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setHeader("Content-Encoding", "gzip");
                 try (GZIPOutputStream gzip = new GZIPOutputStream(response.getOutputStream()))
@@ -333,7 +330,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 AsyncContext asyncContext = request.startAsync();
                 asyncContext.setTimeout(0);

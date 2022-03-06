@@ -13,14 +13,11 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.http.HttpHeader;
@@ -32,6 +29,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ProxyConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -89,7 +87,7 @@ public class HttpClientProxyProtocolTest
         startServer(new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, Response response) throws Exception
             {
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
                 response.getOutputStream().print(request.getRemotePort());
@@ -127,7 +125,7 @@ public class HttpClientProxyProtocolTest
         startServer(new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, Response response) throws Exception
             {
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
                 response.getOutputStream().print(request.getRemotePort());
@@ -168,9 +166,9 @@ public class HttpClientProxyProtocolTest
         startServer(new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, Response response) throws Exception
             {
-                EndPoint endPoint = jettyRequest.getHttpChannel().getEndPoint();
+                EndPoint endPoint = request.getHttpChannel().getEndPoint();
                 assertTrue(endPoint instanceof ProxyConnectionFactory.ProxyEndPoint);
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
                 if (target.equals("/tls_version"))
@@ -222,7 +220,7 @@ public class HttpClientProxyProtocolTest
         startServer(new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, Response response) throws Exception
             {
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
                 response.getOutputStream().print(request.getRemotePort());

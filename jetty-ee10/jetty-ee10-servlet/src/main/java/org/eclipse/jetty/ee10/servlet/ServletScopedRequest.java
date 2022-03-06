@@ -179,6 +179,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
 
     // TODO: should be on Request instead?
     private long _timeStamp = 0;
+    
     public long getTimeStamp()
     {
         return 0;

@@ -293,7 +293,6 @@ public class Dispatcher implements RequestDispatcher
             return _uri == null ? null : _uri.getPath();
         }
 
-
         @Override
         public Object getAttribute(String name)
         {

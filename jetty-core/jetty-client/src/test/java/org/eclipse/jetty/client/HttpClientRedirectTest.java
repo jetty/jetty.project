@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
@@ -28,8 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -271,7 +268,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setStatus(303);
                 response.setHeader("Location", "ssh://localhost:" + connector.getLocalPort() + "/path");
@@ -442,7 +439,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 if (target.startsWith("/redirect"))
                 {
@@ -477,7 +474,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setStatus(HttpStatus.SEE_OTHER_303);
                 response.setHeader(HttpHeader.LOCATION.asString(), request.getRequestURI());
@@ -499,7 +496,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 try
                 {
@@ -534,7 +531,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 if ("/one".equals(target))
                 {
@@ -597,7 +594,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 try
                 {
@@ -688,7 +685,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
     private static class RedirectHandler extends EmptyServerHandler
     {
         @Override
-        protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
         {
             try
             {

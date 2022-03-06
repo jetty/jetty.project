@@ -37,7 +37,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
@@ -115,13 +114,13 @@ public class ServletChannel implements Runnable
     {
         _servletContextContext = request.getContext().getServletContext();
         _request = request;
-        _executor = r -> request.getContext().execute(r);
+        _executor = request.getContext();
         _state = new ServletRequestState(this);
         _endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
         _connector = request.getConnectionMetaData().getConnector();
 
         // TODO: can we do this?
-        _configuration = ((HttpConnection)request.getConnectionMetaData().getConnection()).getHttpConfiguration();
+        _configuration = request.getHttpChannel().getHttpConfiguration();
 
         request.getHttpInput().init();
 

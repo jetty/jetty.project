@@ -26,7 +26,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -111,16 +111,17 @@ public abstract class AbstractSessionDataStoreTest
     @Test
     public void testStoreSession() throws Exception
     {
-        //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        //create the SessionDataStore        
+        ContextHandler contextHandler = new ContextHandler("/test");
         //use the classloader with the special class in it
-        context.setClassLoader(_contextClassLoader);
+        contextHandler.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
 
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         store.start();
@@ -181,13 +182,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testUpdateSession() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
-        context.setClassLoader(_contextClassLoader);
+        ContextHandler contextHandler = new ContextHandler("/test");
+        contextHandler.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         store.start();
@@ -221,16 +223,15 @@ public abstract class AbstractSessionDataStoreTest
     @Test
     public void testStoreObjectAttributes() throws Exception
     {
-        //create the SessionDataStore 
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
-        //use the classloader with the special class in it
-        context.setClassLoader(_contextClassLoader);
+        //create the SessionDataStore
+        ContextHandler contextHandler = new ContextHandler("/test");
+        contextHandler.setClassLoader(_contextClassLoader);
 
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         store.start();
@@ -303,13 +304,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testLoadSessionExists() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         //persist a session that is not expired
@@ -337,13 +339,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testLoadSessionExpired() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         //persist a session that is expired
@@ -372,13 +375,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testLoadSessionDoesNotExist() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
         store.start();
 
@@ -394,13 +398,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testLoadSessionFails() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         //persist a session that is damaged and cannot be read
@@ -432,13 +437,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testEmptyLoadSession() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
         store.start();
         
@@ -460,13 +466,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testModifyEmptyLoadSession() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
         store.start();
         
@@ -497,13 +504,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testDeleteSessionExists() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         //persist a session that is not expired
@@ -528,13 +536,13 @@ public abstract class AbstractSessionDataStoreTest
     public void testDeleteSessionDoesNotExist() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        store.initialize(new SessionContext("foo", context.getServletContext()));
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        store.initialize(new SessionContext(sessionHandler));
         store.start();
 
         //delete the non-existent session via the store
@@ -550,13 +558,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testGetExpiredPersistedAndExpired() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();       
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         //persist a session that is expired
@@ -586,13 +595,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testGetExpiredPersistedNotExpired() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         long now = System.currentTimeMillis();
@@ -621,13 +631,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testGetExpiredNotPersisted() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
         store.start();
 
@@ -645,13 +656,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testGetExpiredPersistedAndExpiredOnly() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         //persist a session that is expired
@@ -682,13 +694,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testGetExpiredDifferentNode() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         //persist a session that is expired for a different node
@@ -708,13 +721,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testCleanOrphans() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         long now = System.currentTimeMillis();
@@ -809,13 +823,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testExistsNotExpired() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         long now = System.currentTimeMillis();
@@ -836,13 +851,15 @@ public abstract class AbstractSessionDataStoreTest
     public void testExistsIsExpired() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
+        context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         context.setClassLoader(_contextClassLoader);
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         //persist a session that is expired
@@ -863,13 +880,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testExistsNotExists() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         store.start();
@@ -881,13 +899,14 @@ public abstract class AbstractSessionDataStoreTest
     public void testExistsDifferentContext() throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
 
         //persist a session for a different context
@@ -910,14 +929,15 @@ public abstract class AbstractSessionDataStoreTest
         throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
         store.start();
 
@@ -951,14 +971,15 @@ public abstract class AbstractSessionDataStoreTest
         throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
         store.start();
 
@@ -981,14 +1002,15 @@ public abstract class AbstractSessionDataStoreTest
         throws Exception
     {
         //create the SessionDataStore
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-        context.setContextPath("/test");
+        ContextHandler context = new ContextHandler("/test");
         context.setClassLoader(_contextClassLoader);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         ((AbstractSessionDataStoreFactory)factory).setSavePeriodSec(20); //only save every 20sec
-        SessionDataStore store = factory.getSessionDataStore(context.getSessionHandler());
-        SessionContext sessionContext = new SessionContext("foo", context.getServletContext());
+        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionContext sessionContext = new SessionContext(sessionHandler);
         store.initialize(sessionContext);
         store.start();
 

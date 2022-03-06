@@ -24,8 +24,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpStatus;
@@ -39,7 +37,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 public class HttpCookieTest extends AbstractHttpClientServerTest
 {
@@ -54,7 +51,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.addCookie(new Cookie(name, value));
             }
@@ -84,7 +81,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 Cookie[] cookies = request.getCookies();
                 assertNotNull(cookies);
@@ -113,7 +110,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.addHeader("Set-Cookie", "");
             }
@@ -147,7 +144,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         startServer(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 Cookie[] cookies = request.getCookies();
                 assertNotNull(cookies);
@@ -181,9 +178,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                int r = request.getIntHeader(headerName);
+                int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue);
@@ -237,9 +234,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                int r = request.getIntHeader(headerName);
+                int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo/bar".equals(target) && r == 0)
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue);
@@ -298,9 +295,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                int r = request.getIntHeader(headerName);
+                int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue);
@@ -359,9 +356,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                int r = request.getIntHeader(headerName);
+                int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo/bar".equals(target) && r == 0)
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue);
@@ -421,9 +418,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                int r = request.getIntHeader(headerName);
+                int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue1);
@@ -484,9 +481,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                int r = request.getIntHeader(headerName);
+                int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue1);
@@ -554,9 +551,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                int r = request.getIntHeader(headerName);
+                int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo".equals(target) && r == 0)
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue1);
@@ -626,9 +623,9 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                int r = request.getIntHeader(headerName);
+                int r = (int)request.getHeaders().getLongField(headerName);
                 if ("/foo/bar".equals(target) && r == 0)
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue);
