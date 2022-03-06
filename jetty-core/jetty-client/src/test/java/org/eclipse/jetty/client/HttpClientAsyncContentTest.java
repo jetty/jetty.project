@@ -208,7 +208,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                response.getOutputStream().write(new byte[1024]);
+                response.write(true, callback, ByteBuffer.wrap(new byte[1024]));
             }
         });
 
@@ -234,7 +234,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                response.setHeader("Content-Encoding", "gzip");
+                response.getHeaders().put("Content-Encoding", "gzip");
                 GZIPOutputStream gzip = new GZIPOutputStream(response.getOutputStream());
                 gzip.write(new byte[1024]);
                 gzip.finish();
@@ -267,7 +267,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                response.setHeader("Content-Encoding", "gzip");
+                response.getHeaders().put("Content-Encoding", "gzip");
                 try (GZIPOutputStream gzip = new GZIPOutputStream(response.getOutputStream()))
                 {
                     gzip.write(new byte[1024]);
@@ -336,7 +336,7 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
                 asyncContext.setTimeout(0);
                 asyncContextRef.set(asyncContext);
 
-                response.setHeader("Content-Encoding", "gzip");
+                response.getHeaders().put("Content-Encoding", "gzip");
                 ServletOutputStream output = response.getOutputStream();
                 output.write(gzip1);
                 output.flush();

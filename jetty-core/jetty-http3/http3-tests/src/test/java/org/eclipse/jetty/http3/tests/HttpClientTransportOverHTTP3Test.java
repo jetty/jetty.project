@@ -93,7 +93,7 @@ public class HttpClientTransportOverHTTP3Test extends AbstractClientServerTest
             public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 jettyRequest.setHandled(true);
-                response.getOutputStream().write(new byte[10 * 1024]);
+                response.write(true, callback, ByteBuffer.wrap(new byte[10 * 1024]));
             }
         });
 

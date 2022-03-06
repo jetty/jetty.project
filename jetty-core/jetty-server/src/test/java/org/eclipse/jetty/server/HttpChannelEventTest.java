@@ -113,7 +113,7 @@ public class HttpChannelEventTest
             @Override
             protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                response.getOutputStream().write(data);
+                response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
 

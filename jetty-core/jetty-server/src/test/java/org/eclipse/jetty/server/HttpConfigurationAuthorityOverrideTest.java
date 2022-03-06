@@ -713,13 +713,13 @@ public class HttpConfigurationAuthorityOverrideTest
         @Override
         public void process(Request request, Response response, Callback callback)
         {
-            response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
-            response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
+            response.getHeaders().put("X-Error-Status", Integer.toString(response.getStatus()));
+            response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
             response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
             String scheme = request.getHttpURI().getScheme();
             if (scheme == null)
                 scheme = request.getConnectionMetaData().isSecure() ? "https" : "http";
-            response.setHeader(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
+            response.getHeaders().put(HttpHeader.LOCATION, HttpURI.from(scheme, request.getConnectionMetaData().getServerAuthority(), "/error").toString());
             response.write(true, callback);
         }
     }

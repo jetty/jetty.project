@@ -66,8 +66,8 @@ public class LargeHeaderTest
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
-                response.setHeader("LongStr", largeHeaderValue);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
+                response.getHeaders().put("LongStr", largeHeaderValue);
                 PrintWriter writer = response.getWriter();
                 writer.write("<html><h1>FOO</h1></html>");
                 writer.flush();

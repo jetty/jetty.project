@@ -1229,7 +1229,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             _endp = request.getConnectionMetaData().getConnection().getEndPoint();
-            response.setHeader("test", "value");
+            response.getHeaders().put("test", "value");
             response.setStatus(200);
             response.setContentType("text/plain");
             try (Blocking.Callback blocker = Blocking.callback())

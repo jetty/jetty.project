@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client.util;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -87,12 +86,11 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         final String content = FormRequestContent.convert(fields);
         final String contentType = "text/plain;charset=UTF-8";
 
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 assertEquals("POST", request.getMethod());
                 assertEquals(contentType, request.getContentType());
                 assertEquals(content, IO.toString(request.getInputStream()));
@@ -115,12 +113,11 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
     {
         final String content = "data";
 
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 assertEquals("GET", request.getMethod());
                 assertNotNull(request.getContentType());
                 assertEquals(content, IO.toString(request.getInputStream()));

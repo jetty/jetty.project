@@ -192,7 +192,7 @@ public class ConnectionPoolTest
                 }
 
                 if (Boolean.parseBoolean(request.getHeaders().get("X-Close")))
-                    response.setHeader("Connection", "close");
+                    response.getHeaders().put("Connection", "close");
             }
         });
 

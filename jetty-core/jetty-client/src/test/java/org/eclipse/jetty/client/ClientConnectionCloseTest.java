@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -29,8 +28,13 @@ import org.eclipse.jetty.client.util.StringRequestContent;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
@@ -46,23 +50,15 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     public void testClientConnectionCloseServerConnectionCloseClientClosesAfterExchange(Scenario scenario) throws Exception
     {
         byte[] data = new byte[128 * 1024];
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor(InvocationType.BLOCKING)
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-
-                ServletInputStream input = request.getInputStream();
-                while (true)
-                {
-                    int read = input.read();
-                    if (read < 0)
-                        break;
-                }
+                Content.consumeAll(request);
 
                 response.setContentLength(data.length);
-                response.getOutputStream().write(data);
+                response.write(true, callback, ByteBuffer.wrap(data));
 
                 try
                 {
@@ -147,12 +143,11 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     public void testClientConnectionCloseServerPartialResponseClientIdleTimeout(Scenario scenario) throws Exception
     {
         long idleTimeout = 1000;
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
 
                 ServletInputStream input = request.getInputStream();
                 while (true)
@@ -211,12 +206,11 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testClientConnectionCloseServerNoConnectionCloseClientCloses(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setContentLength(0);
                 response.flushBuffer();
 

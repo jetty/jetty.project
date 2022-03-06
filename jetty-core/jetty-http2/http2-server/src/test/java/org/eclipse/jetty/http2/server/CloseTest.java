@@ -139,7 +139,7 @@ public class CloseTest extends AbstractServerTest
         generator.control(lease, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
-        generator.control(lease, new GoAwayFrame(1, ErrorCode.NO_ERROR.code, "OK".getBytes("UTF-8")));
+        generator.control(lease, new GoAwayFrame(1, ErrorCode.NO_ERROR.code, "OK".getBytes(StandardCharset.UTF_8)));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {

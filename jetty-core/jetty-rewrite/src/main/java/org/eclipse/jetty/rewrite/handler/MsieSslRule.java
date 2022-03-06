@@ -65,7 +65,7 @@ public class MsieSslRule extends Rule
 
                     if (ieVersion <= IEv5)
                     {
-                        response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+                        response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                         return target;
                     }
 
@@ -77,7 +77,7 @@ public class MsieSslRule extends Rule
                             int end = userAgent.indexOf(')', windows + 8);
                             if (end < 0 || __IE6_BadOS.get(userAgent, windows + 8, end - windows - 8) != null)
                             {
-                                response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+                                response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                                 return target;
                             }
                         }

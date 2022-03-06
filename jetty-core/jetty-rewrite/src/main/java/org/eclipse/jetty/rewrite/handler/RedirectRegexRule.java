@@ -83,7 +83,7 @@ public class RedirectRegexRule extends RegexRule
         }
 
         target = response.encodeRedirectURL(target);
-        response.setHeader("Location", RedirectUtil.toRedirectURL(request, target));
+        response.getHeaders().put("Location", RedirectUtil.toRedirectURL(request, target));
         response.setStatus(_statusCode);
         response.getOutputStream().flush(); // no output / content
         response.getOutputStream().close();

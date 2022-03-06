@@ -385,7 +385,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 {
                     // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
                     // Invalid header name, the connection must be closed.
-                    response.setHeader("Euro_(\u20AC)", "42");
+                    response.getHeaders().put("Euro_(\u20AC)", "42");
                 }
             });
 

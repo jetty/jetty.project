@@ -82,7 +82,7 @@ public class AsyncServletTest extends AbstractTest
                 }
                 else
                 {
-                    response.getOutputStream().write(content);
+                    response.write(true, callback, ByteBuffer.wrap(content));
                 }
             }
         });

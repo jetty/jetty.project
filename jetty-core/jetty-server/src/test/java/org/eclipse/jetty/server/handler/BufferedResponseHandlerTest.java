@@ -256,7 +256,7 @@ public class BufferedResponseHandlerTest
             for (int i = 0; i < _writes; i++)
             {
                 response.addHeader("Write", Integer.toString(i));
-                response.getOutputStream().write(_content);
+                response.write(true, callback, ByteBuffer.wrap(_content));
                 if (_flush)
                     response.getOutputStream().flush();
             }

@@ -88,7 +88,7 @@ public class HttpServerTestFixture
                 response.setStatus(200);
             else
                 response.setStatus(500);
-            response.setHeader("Allow", "GET");
+            response.getHeaders().put("Allow", "GET");
             callback.succeeded();
         }
     }

@@ -130,7 +130,7 @@ public class ServerConnectionCloseTest
                     serverResponse += content;
                 }
 
-                output.write(serverResponse.getBytes("UTF-8"));
+                output.write(serverResponse.getBytes(StandardCharset.UTF_8));
                 output.flush();
                 if (shutdownOutput)
                     socket.shutdownOutput();

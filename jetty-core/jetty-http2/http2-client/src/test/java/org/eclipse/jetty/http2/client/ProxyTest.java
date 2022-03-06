@@ -176,7 +176,7 @@ public class ProxyTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.getOutputStream().write(content);
+                response.write(true, callback, ByteBuffer.wrap(content));
                 serverLatch.countDown();
             }
         });

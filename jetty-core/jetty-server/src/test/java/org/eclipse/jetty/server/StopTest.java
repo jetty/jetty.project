@@ -532,7 +532,7 @@ public class StopTest
         {
             /* TODO
             response.setContentLength(2);
-            response.getOutputStream().write("a".getBytes());
+            response.write(true, callback, ByteBuffer.wrap("a".getBytes()));
             try
             {
                 latchA.countDown();
@@ -543,7 +543,7 @@ public class StopTest
                 throw new RuntimeException(e);
             }
             response.flushBuffer();
-            response.getOutputStream().write("b".getBytes());
+            response.write(true, callback, ByteBuffer.wrap("b".getBytes()));
              */
         }
     }

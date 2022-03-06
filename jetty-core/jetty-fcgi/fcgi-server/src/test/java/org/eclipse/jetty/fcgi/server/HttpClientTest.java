@@ -78,7 +78,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.getOutputStream().write(data);
+                response.write(true, callback, ByteBuffer.wrap(data));
                 baseRequest.setHandled(true);
             }
         });
@@ -110,7 +110,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 // content mode for response content parsing,
                 // otherwise the RAW content mode is used.
                 response.setContentLength(data.length);
-                response.getOutputStream().write(data);
+                response.write(true, callback, ByteBuffer.wrap(data));
                 baseRequest.setHandled(true);
             }
         });
@@ -388,7 +388,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
-                response.setHeader("Content-Encoding", "gzip");
+                response.getHeaders().put("Content-Encoding", "gzip");
                 GZIPOutputStream gzipOutput = new GZIPOutputStream(response.getOutputStream());
                 gzipOutput.write(data);
                 gzipOutput.finish();
@@ -474,7 +474,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
-                response.getOutputStream().write(new byte[length]);
+                response.write(true, callback, ByteBuffer.wrap(new byte[length]));
             }
         });
 
@@ -581,8 +581,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
-                response.setHeader("Connection", "close");
-                response.getOutputStream().write(data);
+                response.getHeaders().put("Connection", "close");
+                response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
 

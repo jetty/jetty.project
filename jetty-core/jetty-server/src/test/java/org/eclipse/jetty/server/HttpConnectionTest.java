@@ -1133,8 +1133,8 @@ public class HttpConnectionTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
-                response.setHeader("LongStr", longstr);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
+                response.getHeaders().put("LongStr", longstr);
                 response.write(false,
                     Callback.from(callback::succeeded, t ->
                     {
@@ -1182,8 +1182,8 @@ public class HttpConnectionTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                response.setHeader(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
-                response.setHeader("LongStr", longstr);
+                response.getHeaders().put(HttpHeader.CONTENT_TYPE.toString(), MimeTypes.Type.TEXT_HTML.toString());
+                response.getHeaders().put("LongStr", longstr);
 
                 response.write(false,
                     Callback.from(callback::succeeded, t ->

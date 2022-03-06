@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class SSLCloseTest
@@ -89,7 +88,7 @@ public class SSLCloseTest
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             response.setStatus(200);
-            response.setHeader("test", "value");
+            response.getHeaders().put("test", "value");
 
             String data = "Now is the time for all good men to come to the aid of the party.\n";
             data += "How now brown cow.\n";

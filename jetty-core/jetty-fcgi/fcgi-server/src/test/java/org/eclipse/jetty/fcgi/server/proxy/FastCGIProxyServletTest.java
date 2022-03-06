@@ -159,7 +159,7 @@ public class FastCGIProxyServletTest
             {
                 assertTrue(request.getRequestURI().endsWith(path));
                 response.setContentLength(data.length);
-                response.getOutputStream().write(data);
+                response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
 
@@ -249,7 +249,7 @@ public class FastCGIProxyServletTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.getOutputStream().write(content);
+                response.write(true, callback, ByteBuffer.wrap(content));
             }
         });
 

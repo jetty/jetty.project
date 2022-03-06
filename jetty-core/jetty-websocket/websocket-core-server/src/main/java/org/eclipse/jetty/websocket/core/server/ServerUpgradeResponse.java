@@ -73,7 +73,7 @@ public class ServerUpgradeResponse
             return;
         }
 
-        response.setHeader(name, value);
+        response.getHeaders().put(name, value);
     }
 
     public void setHeader(String name, List<String> values)
@@ -102,7 +102,7 @@ public class ServerUpgradeResponse
             return;
         }
 
-        response.setHeader(name, null);
+        response.getHeaders().put(name, null);
         if (values != null)
             values.forEach(value -> response.addHeader(name, value));
     }

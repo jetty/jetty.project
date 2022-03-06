@@ -90,7 +90,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                 if (authorization == null)
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
+                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
                 }
                 else
                 {
@@ -174,7 +174,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                     if (authorization == null)
                     {
                         response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                        response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + realm + "\"");
+                        response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
                     }
                     else
                     {
@@ -264,7 +264,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                 if (authorization == null)
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + proxyRealm + "\"");
+                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + proxyRealm + "\"");
                 }
                 else
                 {
@@ -272,7 +272,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                     if (authorization == null)
                     {
                         response.setStatus(HttpStatus.UNAUTHORIZED_401);
-                        response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Basic realm=\"" + serverRealm + "\"");
+                        response.getHeaders().put(HttpHeader.WWW_AUTHENTICATE, "Basic realm=\"" + serverRealm + "\"");
                     }
                     else
                     {
@@ -337,7 +337,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                 if (authorization == null)
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
-                    response.setHeader(HttpHeader.PROXY_AUTHENTICATE.asString(), "Basic realm=\"" + proxyRealm + "\"");
+                    response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + proxyRealm + "\"");
                 }
                 else
                 {
@@ -345,7 +345,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                     if (authorization == null)
                     {
                         response.setStatus(HttpStatus.UNAUTHORIZED_401);
-                        response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Basic realm=\"" + serverRealm + "\"");
+                        response.getHeaders().put(HttpHeader.WWW_AUTHENTICATE, "Basic realm=\"" + serverRealm + "\"");
                     }
                     else
                     {

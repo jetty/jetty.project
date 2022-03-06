@@ -381,9 +381,9 @@ public class ContextHandlerCollectionTest
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             if (response.containsHeader("Wrapped"))
-                response.setHeader("Wrapped", "ASYNC");
+                response.getHeaders().put("Wrapped", "ASYNC");
             else
-                response.setHeader("Wrapped", "TRUE");
+                response.getHeaders().put("Wrapped", "TRUE");
             super.handle(target, baseRequest, request, response);
         }
     }

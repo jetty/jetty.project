@@ -128,7 +128,7 @@ public interface Response
             }
         }
 
-        response.setHeader(HttpHeader.LOCATION, Request.toRedirectURI(request, location));
+        response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(request, location));
         response.setStatus(code);
         response.write(true, callback);
     }
