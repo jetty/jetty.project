@@ -155,7 +155,6 @@ public class ServletScopedResponse extends ContextResponse
         return _contentLength;
     }
 
-
     public void closeOutput() throws IOException
     {
         if (_outputType == OutputType.WRITER)
