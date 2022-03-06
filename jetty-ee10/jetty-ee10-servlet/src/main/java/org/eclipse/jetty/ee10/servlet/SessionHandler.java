@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
