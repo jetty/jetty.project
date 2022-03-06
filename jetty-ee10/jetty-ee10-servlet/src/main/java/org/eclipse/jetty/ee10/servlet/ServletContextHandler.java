@@ -257,7 +257,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
 
-
     protected final DecoratedObjectFactory _objFactory;
 //    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
@@ -1204,7 +1203,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         _aliasChecks.forEach(this::removeBean);
         _aliasChecks.clear();
     }
-
 
     /**
      * Listener for all threads entering context scope, including async IO callbacks
