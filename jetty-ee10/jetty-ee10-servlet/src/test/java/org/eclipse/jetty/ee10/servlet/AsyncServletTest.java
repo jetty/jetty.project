@@ -38,14 +38,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.ee10.handler.DebugListener;
-import org.eclipse.jetty.ee10.handler.HttpChannel;
-import org.eclipse.jetty.ee10.handler.QuietServletException;
-import org.eclipse.jetty.ee10.handler.Request;
-import org.eclipse.jetty.ee10.handler.Response;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
@@ -1036,9 +1034,9 @@ public class AsyncServletTest
         @Override
         public void log(Request request, Response response)
         {
-            int status = response.getCommittedMetaData().getStatus();
-            long written = response.getHttpChannel().getBytesWritten();
-            _log.add(status + " " + written + " " + request.getRequestURI());
+            int status = response.getStatus();
+            long written = response.getRequest().getHttpChannel().getBytesWritten();
+            _log.add(status + " " + written + " " + request.getHttpURI());
         }
     }
 }

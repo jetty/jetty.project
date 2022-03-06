@@ -28,12 +28,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.ee10.handler.DefaultHandler;
-import org.eclipse.jetty.ee10.handler.HandlerList;
-import org.eclipse.jetty.ee10.handler.HttpChannel;
-import org.eclipse.jetty.ee10.handler.QuietServletException;
-import org.eclipse.jetty.ee10.handler.Request;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -93,7 +91,7 @@ public class AsyncContextTest
         errorHandler.addErrorPage(500, "/error/500");
         errorHandler.addErrorPage(IOException.class.getName(), "/error/IOE");
 
-        _server.setHandler(new HandlerList(_contextHandler, new DefaultHandler()));
+        _server.setHandler(new Handler.Collection(_contextHandler, new DefaultHandler()));
         _server.start();
     }
 
@@ -431,8 +429,7 @@ public class AsyncContextTest
         @Override
         protected void doGet(HttpServletRequest req, final HttpServletResponse response) throws ServletException, IOException
         {
-            Request request = (Request)req;
-            if (request.getDispatcherType() == DispatcherType.ASYNC)
+            if (req.getDispatcherType() == DispatcherType.ASYNC)
             {
                 response.getOutputStream().print("Dispatched back to AsyncDispatchingServlet");
             }
@@ -440,14 +437,14 @@ public class AsyncContextTest
             {
                 boolean wrapped = false;
                 final AsyncContext asyncContext;
-                if (request.getParameter("dispatchRequestResponse") != null)
+                if (req.getParameter("dispatchRequestResponse") != null)
                 {
                     wrapped = true;
-                    asyncContext = request.startAsync(request, new Wrapper(response));
+                    asyncContext = req.startAsync(req, new Wrapper(response));
                 }
                 else
                 {
-                    asyncContext = request.startAsync();
+                    asyncContext = req.startAsync();
                 }
 
                 new Thread(new DispatchingRunnable(asyncContext, wrapped)).start();
@@ -673,9 +670,9 @@ public class AsyncContextTest
         }
     }
 
-    private class AsyncRunnable implements Runnable
+    private static class AsyncRunnable implements Runnable
     {
-        private AsyncContext _context;
+        private final AsyncContext _context;
 
         public AsyncRunnable(AsyncContext context)
         {

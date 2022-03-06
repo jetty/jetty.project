@@ -26,7 +26,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
 import org.eclipse.jetty.client.util.FormRequestContent;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -120,7 +119,7 @@ public class FormTest
 
         byte[] key = "foo=".getBytes(StandardCharsets.US_ASCII);
         int length = (maxFormContentSize == null || maxFormContentSize < 0)
-            ? ContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE
+            ? ServletContextHandler.DEFAULT_MAX_FORM_CONTENT_SIZE
             : maxFormContentSize;
         // Avoid empty value.
         length = length + 1;
@@ -175,7 +174,7 @@ public class FormTest
         });
 
         int keys = (maxFormKeys == null || maxFormKeys < 0)
-            ? ContextHandler.DEFAULT_MAX_FORM_KEYS
+            ? ServletContextHandler.DEFAULT_MAX_FORM_KEYS
             : maxFormKeys;
         // Have at least one key.
         keys = keys + 1;

@@ -20,9 +20,9 @@ import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
 import org.junit.jupiter.api.Test;
 

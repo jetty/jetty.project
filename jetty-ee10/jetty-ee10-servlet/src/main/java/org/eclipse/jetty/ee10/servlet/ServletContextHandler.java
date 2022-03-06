@@ -1216,13 +1216,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
          * @param request A request that is applicable to the scope, or null
          * @param reason An object that indicates the reason the scope is being entered.
          */
-        void enterScope(ContextHandler.ScopedContext context, Request request, Object reason);
+        void enterScope(ServletContextHandler.Context context, ServletScopedRequest request);
 
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        void exitScope(ContextHandler.ScopedContext context, Request request);
+        void exitScope(ServletContextHandler.Context context, ServletScopedRequest request);
     }
 
     public ServletContext getServletContext()
@@ -1287,7 +1287,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 ScopedContext currentContext = ContextHandler.getCurrentContext();
                 _contextListeners.add((ServletContextScopeListener)listener);
                 if (currentContext != null)
-                    ((ServletContextScopeListener)listener).enterScope(currentContext, null, "Listener registered");
+                    ((ServletContextScopeListener)listener).enterScope(getContext(), null);
             }
 
             if (listener instanceof ServletContextListener)
@@ -1588,13 +1588,14 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     {
         super.enterScope(request);
 
+        ServletScopedRequest scopedRequest = Request.as(request, ServletScopedRequest.class);
         if (!_contextListeners.isEmpty())
         {
             for (ServletContextScopeListener listener : _contextListeners)
             {
                 try
                 {
-                    listener.enterScope(getContext(), request, null);
+                    listener.enterScope(getContext(), scopedRequest);
                 }
                 catch (Throwable e)
                 {
@@ -1603,7 +1604,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             }
         }
 
-        ServletScopedRequest scopedRequest = Request.as(request, ServletScopedRequest.class);
         if (scopedRequest != null)
         {
             boolean newContext = scopedRequest.takeNewContext();
@@ -1630,7 +1630,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             {
                 try
                 {
-                    _contextListeners.get(i).exitScope(getContext(), request);
+                    _contextListeners.get(i).exitScope(getContext(), scopedRequest);
                 }
                 catch (Throwable e)
                 {

@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.management.relation.RoleInfo;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -59,24 +60,19 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee10.handler.AbstractHandler;
 import org.eclipse.jetty.ee10.handler.AbstractHandlerContainer;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
-import org.eclipse.jetty.ee10.handler.ContextHandlerCollection;
-import org.eclipse.jetty.ee10.handler.HandlerList;
-import org.eclipse.jetty.ee10.handler.HandlerWrapper;
-import org.eclipse.jetty.ee10.handler.Request;
-import org.eclipse.jetty.ee10.handler.ResourceHandler;
-import org.eclipse.jetty.ee10.handler.Response;
-import org.eclipse.jetty.ee10.handler.UserIdentity;
 import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.security.RoleInfo;
-import org.eclipse.jetty.ee10.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -95,6 +91,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -252,9 +249,9 @@ public class ServletContextHandlerTest
     public static class MySCIStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
     {
         ServletContainerInitializer _sci;
-        ContextHandler.Context _ctx;
+        ServletContextHandler.Context _ctx;
 
-        MySCIStarter(ContextHandler.Context ctx, ServletContainerInitializer sci)
+        MySCIStarter(ServletContextHandler.Context ctx, ServletContainerInitializer sci)
         {
             _ctx = ctx;
             _sci = sci;
@@ -266,7 +263,7 @@ public class ServletContextHandlerTest
             super.doStart();
             //call the SCI
             _ctx.setExtendedListenerTypes(true);
-            _sci.onStartup(Collections.emptySet(), _ctx);
+            _sci.onStartup(Collections.emptySet(), _ctx.getServletContext());
         }
     }
 
@@ -765,7 +762,7 @@ public class ServletContextHandlerTest
         Integer timeout = Integer.valueOf(100);
         ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
         root.getSessionHandler().setMaxInactiveInterval((int)TimeUnit.MINUTES.toSeconds(startMin));
-        root.addBean(new MySCIStarter(root.getServletContext(), new MySCI(true, timeout.intValue())), true);
+        root.addBean(new MySCIStarter(root.getContext(), new MySCI(true, timeout.intValue())), true);
         _server.start();
 
         //test starting value of setSessionTimeout
@@ -837,7 +834,7 @@ public class ServletContextHandlerTest
         _server.setHandler(contexts);
 
         ServletContextHandler root = new ServletContextHandler(contexts, "/");
-        root.addBean(new MySCIStarter(root.getServletContext(), new MySCI()), true);
+        root.addBean(new MySCIStarter(root.getContext(), new MySCI()), true);
         _server.start();
         assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.startup"));
         assertTrue((Boolean)root.getServletContext().getAttribute("MySCI.defaultSessionTrackingModes"));
@@ -1118,7 +1115,7 @@ public class ServletContextHandlerTest
             }
         }
 
-        root.addBean(new MySCIStarter(root.getServletContext(), new FilterCreatingSCI()), true);
+        root.addBean(new MySCIStarter(root.getContext(), new FilterCreatingSCI()), true);
         _server.start();
     }
 
@@ -1139,7 +1136,7 @@ public class ServletContextHandlerTest
             }
         }
 
-        root.addBean(new MySCIStarter(root.getServletContext(), new ListenerCreatingSCI()), true);
+        root.addBean(new MySCIStarter(root.getContext(), new ListenerCreatingSCI()), true);
         _server.start();
         assertTrue((Boolean)root.getServletContext().getAttribute("CreatingSCL.filter"));
         assertTrue((Boolean)root.getServletContext().getAttribute("CreatingSCL.servlet"));
@@ -1334,7 +1331,7 @@ public class ServletContextHandlerTest
             }
         }
 
-        root.addBean(new MySCIStarter(root.getServletContext(), new ServletAddingSCI()), true);
+        root.addBean(new MySCIStarter(root.getContext(), new ServletAddingSCI()), true);
         _server.start();
 
         StringBuilder request = new StringBuilder();
@@ -1379,7 +1376,7 @@ public class ServletContextHandlerTest
         assertThrows(IllegalArgumentException.class, () ->  root.getServletContext().addJspFile(null, "/path/to/some.jsp"));
         assertThrows(IllegalArgumentException.class, () ->  root.getServletContext().addJspFile("", "/path/to/some.jsp"));
 
-        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        root.addBean(new MySCIStarter(root.getContext(), new JSPAddingSCI()), true);
         _server.start();
         ServletHandler.MappedServlet mappedServlet = root.getServletHandler().getMappedServlet("/somejsp/xxx");
         assertNotNull(mappedServlet.getServletHolder());
@@ -1419,7 +1416,7 @@ public class ServletContextHandlerTest
             }
         }
 
-        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        root.addBean(new MySCIStarter(root.getContext(), new JSPAddingSCI()), true);
         _server.start();
     }
 
@@ -1455,7 +1452,7 @@ public class ServletContextHandlerTest
             }
         }
 
-        root.addBean(new MySCIStarter(root.getServletContext(), new JSPAddingSCI()), true);
+        root.addBean(new MySCIStarter(root.getContext(), new JSPAddingSCI()), true);
         _server.start();
         ServletHandler.MappedServlet mappedServlet = root.getServletHandler().getMappedServlet("/bar/xxx");
         assertNotNull(mappedServlet.getServletHolder());
@@ -1691,7 +1688,7 @@ public class ServletContextHandlerTest
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
 
-        HandlerWrapper extra = new HandlerWrapper();
+        Handler.Wrapper extra = new Handler.Wrapper();
 
         context.getSessionHandler().insertHandler(extra);
 
@@ -1753,10 +1750,10 @@ public class ServletContextHandlerTest
         SecurityHandler securityHandler = context.getSecurityHandler();
 
         //check the handler linking order
-        HandlerWrapper h = (HandlerWrapper)context.getHandler();
+        Handler.Wrapper h = (Handler.Wrapper)context.getHandler();
         assertSame(h, sessionHandler);
 
-        h = (HandlerWrapper)h.getHandler();
+        h = (Handler.Wrapper)h.getHandler();
         assertSame(h, securityHandler);
 
         //replace the security handler
@@ -1793,10 +1790,10 @@ public class ServletContextHandlerTest
         context.setSecurityHandler(myHandler);
         assertSame(myHandler, context.getSecurityHandler());
 
-        h = (HandlerWrapper)context.getHandler();
+        h = (Handler.Wrapper)context.getHandler();
         assertSame(h, sessionHandler);
 
-        h = (HandlerWrapper)h.getHandler();
+        h = (Handler.Wrapper)h.getHandler();
         assertSame(h, myHandler);
     }
 
@@ -1877,7 +1874,7 @@ public class ServletContextHandlerTest
     @Test
     public void testFallThrough() throws Exception
     {
-        HandlerList list = new HandlerList();
+        Handler.Collection list = new Handler.Collection();
         _server.setHandler(list);
 
         ServletContextHandler root = new ServletContextHandler(list, "/", ServletContextHandler.SESSIONS);
@@ -1886,12 +1883,12 @@ public class ServletContextHandlerTest
         servlet.setEnsureDefaultServlet(false);
         servlet.addServletWithMapping(HelloServlet.class, "/hello/*");
 
-        list.addHandler(new AbstractHandler()
+        list.addHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                response.sendError(404, "Fell Through");
+                Response.writeError(request, response, callback, 404, "Fell Through");
             }
         });
 

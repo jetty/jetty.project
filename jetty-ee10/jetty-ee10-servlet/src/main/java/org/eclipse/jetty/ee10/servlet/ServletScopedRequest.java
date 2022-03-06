@@ -237,7 +237,12 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         return nc;
     }
 
-    ServletChannel getServletRequestState()
+    ServletRequestState getServletRequestState()
+    {
+        return _servletChannel.getState();
+    }
+
+    ServletChannel getServletChannel()
     {
         return _servletChannel;
     }

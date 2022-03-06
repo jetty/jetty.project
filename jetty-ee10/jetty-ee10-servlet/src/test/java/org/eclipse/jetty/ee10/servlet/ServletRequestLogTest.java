@@ -30,19 +30,18 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.handler.ContextHandlerCollection;
 import org.eclipse.jetty.ee10.handler.DefaultHandler;
-import org.eclipse.jetty.ee10.handler.ErrorHandler;
-import org.eclipse.jetty.ee10.handler.Handler;
 import org.eclipse.jetty.ee10.handler.HandlerList;
-import org.eclipse.jetty.ee10.handler.HttpChannel;
-import org.eclipse.jetty.ee10.handler.Request;
-import org.eclipse.jetty.ee10.handler.Response;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,8 +71,8 @@ public class ServletRequestLogTest
         @Override
         public void log(Request request, Response response)
         {
-            int status = response.getCommittedMetaData().getStatus();
-            captured.add(String.format("%s %s %s %03d", request.getMethod(), request.getRequestURI(), request.getProtocol(), status));
+            int status = response.getStatus();
+            captured.add(String.format("%s %s %s %03d", request.getMethod(), request.getHttpURI(), request.getConnectionMetaData().getProtocol(), status));
         }
     }
 
@@ -295,7 +294,7 @@ public class ServletRequestLogTest
 
         // First the behavior as defined in etc/jetty.xml
         // id="Handlers"
-        HandlerList handlers = new HandlerList();
+        Handler.Collection handlers = new HandlerList();
         // id="Contexts"
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         // id="DefaultHandler"
@@ -379,7 +378,7 @@ public class ServletRequestLogTest
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         DefaultHandler defaultHandler = new DefaultHandler();
-        server.setHandler(new HandlerList(contexts, defaultHandler));
+        server.setHandler(new Handler.Collection(contexts, defaultHandler));
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -452,7 +451,7 @@ public class ServletRequestLogTest
         server.setConnectors(new Connector[]{connector});
 
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(new HandlerList(contexts, new DefaultHandler()));
+        server.setHandler(new Handler.Collection(contexts, new DefaultHandler()));
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
         // the id="RequestLog"
@@ -534,7 +533,7 @@ public class ServletRequestLogTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         // id="DefaultHandler"
         DefaultHandler defaultHandler = new DefaultHandler();
-        server.setHandler(new HandlerList(contexts, defaultHandler));
+        server.setHandler(new Handler.Collection(contexts, defaultHandler));
 
         // Next the proposed behavioral change to etc/jetty-requestlog.xml
         // the id="RequestLog"

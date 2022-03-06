@@ -13,8 +13,11 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import javax.management.relation.RoleInfo;
+
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 
 public class SecurityHandler extends Handler.Wrapper
 {
@@ -35,5 +38,25 @@ public class SecurityHandler extends Handler.Wrapper
          */
 
         return super.handle(request);
+    }
+
+    protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)
+    {
+        return null;
+    }
+
+    protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response, RoleInfo constraintInfo)
+    {
+        return false;
+    }
+
+    protected boolean isAuthMandatory(Request baseRequest, Response baseResponse, Object constraintInfo)
+    {
+        return false;
+    }
+
+    protected boolean checkWebResourcePermissions(String pathInContext, Request request, Response response, Object constraintInfo, UserIdentity userIdentity)
+    {
+        return false;
     }
 }
