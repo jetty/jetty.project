@@ -19,15 +19,13 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletContext;
@@ -42,39 +40,16 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler.ServletContextContext;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Syntax;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionHandler;
-import org.eclipse.jetty.session.DefaultSessionCache;
-import org.eclipse.jetty.session.DefaultSessionIdManager;
-import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.Session;
-import org.eclipse.jetty.session.SessionCache;
-import org.eclipse.jetty.session.SessionCacheFactory;
-import org.eclipse.jetty.session.SessionContext;
-import org.eclipse.jetty.session.SessionDataStore;
-import org.eclipse.jetty.session.SessionDataStoreFactory;
-import org.eclipse.jetty.session.SessionIdManager;
-import org.eclipse.jetty.session.SessionInactivityTimer;
-import org.eclipse.jetty.session.SessionManager;
-import org.eclipse.jetty.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.statistic.CounterStatistic;
-import org.eclipse.jetty.util.statistic.SampleStatistic;
-import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,6 +92,8 @@ public class SessionHandler extends AbstractSessionHandler
      */
     public final class CookieConfig implements SessionCookieConfig
     {
+        private Map<String, String> _attributes = new HashMap<>();
+
         @Override
         public String getComment()
         {
@@ -133,6 +110,24 @@ public class SessionHandler extends AbstractSessionHandler
         public int getMaxAge()
         {
             return _maxCookieAge;
+        }
+
+        @Override
+        public void setAttribute(String name, String value)
+        {
+            _attributes.put(name, value);
+        }
+
+        @Override
+        public String getAttribute(String name)
+        {
+            return _attributes.get(name);
+        }
+
+        @Override
+        public Map<String, String> getAttributes()
+        {
+            return Collections.unmodifiableMap(_attributes);
         }
 
         @Override
@@ -590,7 +585,6 @@ public class SessionHandler extends AbstractSessionHandler
     /**
      * Look for a requested session ID in cookies and URI parameters
      *
-     * @param baseRequest the request to check
      * @param request the request to check
      */
     protected void resolveRequestedSessionId(ServletScopedRequest.MutableHttpServletRequest request)
