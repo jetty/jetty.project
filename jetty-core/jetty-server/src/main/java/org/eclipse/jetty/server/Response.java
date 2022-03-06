@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -98,6 +99,18 @@ public interface Response
     default void setContentLength(long length)
     {
         getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
+    }
+
+    /*
+     * Blocking write utility
+     */
+    static void write(boolean last, Response response, ByteBuffer... content) throws Exception
+    {
+        try (Blocking.Callback callback = Blocking.callback())
+        {
+            response.write(last, callback, content);
+            callback.block();
+        }
     }
 
     static void sendRedirect(Request request, Response response, Callback callback, String location)
