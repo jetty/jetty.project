@@ -53,35 +53,35 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     public void checkSessionBeforeShutdown(String id,
                                            SessionDataStore store,
                                            SessionCache cache,
-                                           TestSessionActivationListener activationListener,
-                                           TestHttpSessionListener sessionListener) throws Exception
+                                           TestSessionHandler sessionHandler) throws Exception
     {
         assertTrue(store.exists(id));
         assertTrue(cache.contains(id));
-        assertFalse(sessionListener.destroyedSessions.contains(id));
-        assertEquals(1, activationListener.passivateCalls);
-        assertEquals(1, activationListener.activateCalls);
+        assertFalse(sessionHandler._sessionDestroyedListenersCalled.contains(id));
+        assertTrue(sessionHandler._sessionPassivationListenersCalled.contains(id));
+        assertTrue(sessionHandler._sessionActivationListenersCalled.contains(id));
     }
     
     @Override
     public void checkSessionAfterShutdown(String id,
                                           SessionDataStore store,
                                           SessionCache cache,
-                                          TestSessionActivationListener activationListener,
-                                          TestHttpSessionListener sessionListener) throws Exception
+                                          TestSessionHandler sessionHandler) throws Exception
     {
         if (cache.isInvalidateOnShutdown())
         {
             assertFalse(store.exists(id));
             assertFalse(cache.contains(id));
-            assertTrue(sessionListener.destroyedSessions.contains(id));
+            assertTrue(sessionHandler._sessionDestroyedListenersCalled.contains(id));
         }
         else
         {
             assertTrue(store.exists(id));
             assertFalse(cache.contains(id));
-            assertEquals(2, activationListener.passivateCalls);
-            assertEquals(1, activationListener.activateCalls); //no re-activate on shutdown
+            long activateCount = sessionHandler._sessionPassivationListenersCalled.stream().filter(s -> s.equals(id)).count();
+            long passivateCount = sessionHandler._sessionActivationListenersCalled.stream().filter(s -> s.equals(id)).count();
+            assertEquals(2, passivateCount);
+            assertEquals(1, activateCount); //no re-activate on shutdown
         }
     }
 
