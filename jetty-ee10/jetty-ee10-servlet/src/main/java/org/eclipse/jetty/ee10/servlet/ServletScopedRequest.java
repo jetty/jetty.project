@@ -64,6 +64,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ContextResponse;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.MultiMap;
@@ -113,6 +114,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
     final String _pathInContext;
     boolean _newContext;
     private UserIdentity.Scope _scope;
+    private SessionManager _sessionManager;
 
     final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
 
@@ -193,6 +195,11 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
     public void setTimeStamp(long timeStamp)
     {
         _timeStamp = timeStamp;
+    }
+    
+    public void setSessionManager(SessionManager sessionManager)
+    {
+        _sessionManager = sessionManager;
     }
 
     @Override
