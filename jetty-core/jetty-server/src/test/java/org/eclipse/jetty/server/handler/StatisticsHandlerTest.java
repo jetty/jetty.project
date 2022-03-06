@@ -14,11 +14,14 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -67,6 +70,136 @@ public class StatisticsHandlerTest
     {
         _server.stop();
         _server.join();
+    }
+
+    @Test
+    public void testDataReadRate() throws Exception
+    {
+        AtomicLong readRate = new AtomicLong(-1L);
+
+        _statsHandler.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                while (true)
+                {
+                    Content content = request.readContent();
+                    if (content == null)
+                    {
+                        request.demandContent(() -> process(request, response, callback));
+                        return;
+                    }
+                    content.release();
+                    if (content.isLast())
+                    {
+                        Long rr = (Long) request.getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
+                        readRate.set(rr);
+                        //System.err.println("over; read rate=" + rr + " b/s");
+                        callback.succeeded();
+                        return;
+                    }
+                }
+            }
+        });
+        _server.start();
+
+        String request = "POST / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "Content-Length: 1000\r\n" +
+            "\r\n";
+
+        LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
+
+        // send 1 byte per ms -> should avg to ~1000 bytes/s
+        for (int i = 0; i < 1000; i++)
+        {
+            Thread.sleep(1);
+            endPoint.addInput(ByteBuffer.allocate(1));
+        }
+
+        _latchHandler.await();
+        assertThat(readRate.get(), allOf(greaterThan(600L), lessThan(1100L)));
+    }
+
+    @Test
+    public void testDataWriteRate() throws Exception
+    {
+        AtomicLong writeRate = new AtomicLong(-1L);
+        CountDownLatch latch = new CountDownLatch(1);
+
+        _statsHandler.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                write(response, 0, new Callback()
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        Long wr = (Long) request.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
+                        //System.err.println("over; write rate=" + wr + " b/s");
+                        writeRate.set(wr);
+
+                        callback.succeeded();
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        callback.failed(x);
+                        latch.countDown();
+                    }
+                });
+            }
+
+            private void write(Response response, int counter, Callback finalCallback)
+            {
+                try
+                {
+                    Thread.sleep(1);
+                }
+                catch (InterruptedException e)
+                {
+                    // ignore
+                }
+
+                if (counter < 1000)
+                {
+                    Callback cb = new Callback()
+                    {
+                        @Override
+                        public void succeeded()
+                        {
+                            write(response, counter + 1, finalCallback);
+                        }
+
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            finalCallback.failed(x);
+                        }
+                    };
+                    response.write(false, cb, ByteBuffer.allocate(1));
+                }
+                else
+                {
+                    response.write(true, finalCallback, ByteBuffer.allocate(1));
+                }
+            }
+        });
+        _server.start();
+
+        String request = "GET / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n";
+
+        _connector.executeRequest(request);
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertThat(writeRate.get(), allOf(greaterThan(600L), lessThan(1100L)));
     }
 
     @Test

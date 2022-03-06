@@ -97,7 +97,8 @@ public class StatisticsHandler extends Handler.Wrapper
             public Content readContent()
             {
                 Content content =  super.readContent();
-                statisticsRequest._bytesRead.add(content.remaining());
+                if (content != null)
+                    statisticsRequest._bytesRead.add(content.remaining());
                 return content;
             }
 
@@ -107,7 +108,7 @@ public class StatisticsHandler extends Handler.Wrapper
                 super.succeeded();
                 _processStats.decrement();
                 _requestStats.decrement();
-                _processTimeStats.record(System.nanoTime() - statisticsRequest._processNanoTimeStamp);
+                _processTimeStats.record(System.nanoTime() - statisticsRequest._processStartTimeStamp);
                 _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
             }
 
@@ -117,7 +118,7 @@ public class StatisticsHandler extends Handler.Wrapper
                 super.failed(x);
                 _processStats.decrement();
                 _requestStats.decrement();
-                _processTimeStats.record(System.nanoTime() - statisticsRequest._processNanoTimeStamp);
+                _processTimeStats.record(System.nanoTime() - statisticsRequest._processStartTimeStamp);
                 _requestTimeStats.record(System.nanoTime() - getNanoTimeStamp());
             }
         });
@@ -131,7 +132,7 @@ public class StatisticsHandler extends Handler.Wrapper
     {
         private final LongAdder _bytesRead = new LongAdder();
         private final LongAdder _bytesWritten = new LongAdder();
-        private long _processNanoTimeStamp;
+        private long _processStartTimeStamp;
 
         private StatisticsRequest(Request request)
         {
@@ -148,15 +149,28 @@ public class StatisticsHandler extends Handler.Wrapper
                 // TODO class.getName + extra
                 case "o.e.j.s.h.StatsHandler.bytesRead" -> _bytesRead;
                 case "o.e.j.s.h.StatsHandler.bytesWritten" -> _bytesWritten;
+                case "o.e.j.s.h.StatsHandler.spentTime" -> spentTimeNs();
+                case "o.e.j.s.h.StatsHandler.dataReadRate" -> dataRatePerSecond(_bytesRead.longValue());
+                case "o.e.j.s.h.StatsHandler.dataWriteRate" -> dataRatePerSecond(_bytesWritten.longValue());
                 default -> super.getAttribute(name);
             };
+        }
+
+        private long dataRatePerSecond(long dataCount)
+        {
+            return (long)(dataCount / (spentTimeNs() / 1_000_000_000F));
+        }
+
+        private long spentTimeNs()
+        {
+            return System.nanoTime() - _processStartTimeStamp;
         }
 
         @Override
         public void process(Request ignored, Response response, Callback callback) throws Exception
         {
             _processStats.increment();
-            _processNanoTimeStamp = System.nanoTime();
+            _processStartTimeStamp = System.nanoTime();
             super.process(this, response, callback);
         }
     }
