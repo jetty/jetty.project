@@ -93,7 +93,7 @@ public class StatisticsHandlerTest
                     content.release();
                     if (content.isLast())
                     {
-                        Long rr = (Long) request.getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
+                        Long rr = (Long)request.getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
                         readRate.set(rr);
                         //System.err.println("over; read rate=" + rr + " b/s");
                         callback.succeeded();
@@ -138,7 +138,7 @@ public class StatisticsHandlerTest
                     @Override
                     public void succeeded()
                     {
-                        Long wr = (Long) request.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
+                        Long wr = (Long)request.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
                         //System.err.println("over; write rate=" + wr + " b/s");
                         writeRate.set(wr);
 

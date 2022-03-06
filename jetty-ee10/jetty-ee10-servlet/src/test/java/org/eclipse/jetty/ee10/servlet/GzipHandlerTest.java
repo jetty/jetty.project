@@ -39,12 +39,11 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.handler.HttpOutput;
-import org.eclipse.jetty.ee10.handler.gzip.GzipHandler;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
@@ -457,7 +456,7 @@ public class GzipHandlerTest
     public void testAsyncEmptyResponse() throws Exception
     {
         int writes = 0;
-        _server.getChildHandlerByClass(GzipHandler.class).setMinGzipSize(0);
+        _server.getDescendant(GzipHandler.class).setMinGzipSize(0);
 
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();

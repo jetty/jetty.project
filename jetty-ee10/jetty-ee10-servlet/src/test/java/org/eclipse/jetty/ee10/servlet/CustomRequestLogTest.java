@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -57,7 +58,7 @@ public class CustomRequestLogTest
     {
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
         context.setContextPath("/context");
-        context.setResourceBase(_tmpDir);
+        context.setResourceBase(Paths.get(_tmpDir));
         context.addServlet(TestServlet.class, "/servlet/*");
 
         TestRequestLogWriter writer = new TestRequestLogWriter();

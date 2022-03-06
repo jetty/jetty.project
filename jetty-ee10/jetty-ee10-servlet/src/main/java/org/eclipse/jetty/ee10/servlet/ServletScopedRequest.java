@@ -64,6 +64,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ContextResponse;
+import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -114,7 +115,6 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
     final String _pathInContext;
     boolean _newContext;
     private UserIdentity.Scope _scope;
-    private SessionManager _sessionManager;
 
     final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
 
@@ -196,11 +196,6 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
     {
         _timeStamp = timeStamp;
     }
-    
-    public void setSessionManager(SessionManager sessionManager)
-    {
-        _sessionManager = sessionManager;
-    }
 
     @Override
     public Object getAttribute(String name)
@@ -237,7 +232,12 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         return nc;
     }
 
-    ServletChannel getServletRequestState()
+    ServletRequestState getServletRequestState()
+    {
+        return _servletChannel.getState();
+    }
+
+    ServletChannel getServletChannel()
     {
         return _servletChannel;
     }
@@ -327,6 +327,42 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         private MultiMap<String> _contentParameters;
         private MultiMap<String> _parameters;
         private MultiMap<String> _queryParameters;
+        private SessionManager _sessionManager;
+        private Session _session;
+        private String _requestedSessionId;
+        private boolean _requestedSessionIdFromCookie;
+        
+        public static Session getSession(HttpSession httpSession)
+        {
+            if (httpSession instanceof Session.APISession apiSession)
+                return apiSession.getSession();
+            return null;
+        }
+
+        public void setSession(Session session)
+        {
+            _session = session;
+        }
+
+        public SessionManager getSessionManager()
+        {
+            return _sessionManager;
+        }
+
+        public void setSessionManager(SessionManager sessionManager)
+        {
+            _sessionManager = sessionManager;
+        }
+
+        public void setRequestedSessionId(String requestedSessionId)
+        {
+            _requestedSessionId = requestedSessionId;
+        }
+
+        public void setRequestedSessionIdFromCookie(boolean requestedSessionIdFromCookie)
+        {
+            _requestedSessionIdFromCookie = requestedSessionIdFromCookie;
+        }
 
         public ServletScopedRequest getRequest()
         {
@@ -521,8 +557,10 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public HttpSession getSession()
         {
-            // TODO
-            return null;
+            if (_session == null)
+                return null;
+            
+            return _session.getAPISession();
         }
 
         @Override

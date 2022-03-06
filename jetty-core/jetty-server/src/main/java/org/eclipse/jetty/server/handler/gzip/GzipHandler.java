@@ -25,6 +25,23 @@ public class GzipHandler extends Handler.Wrapper
 {
     private static final HttpField ACCEPT_GZIP = new HttpField(HttpHeader.ACCEPT, "gzip");
     private static final HttpField CONTENT_ENCODING_GZIP = new HttpField(HttpHeader.CONTENT_ENCODING, "gzip");
+    public static int BREAK_EVEN_GZIP_SIZE;
+
+    public void addIncludedMimeTypes(String s)
+    {
+        // TODO
+    }
+
+    public void addIncludedPaths(String s)
+    {
+        // TODO
+    }
+
+    public String[] getIncludedPaths()
+    {
+        // TODO
+        return new String[0];
+    }
 
     @Override
     public Request.Processor handle(Request request) throws Exception
@@ -38,6 +55,21 @@ public class GzipHandler extends Handler.Wrapper
 
         GzipRequest gzipRequest = new GzipRequest(request);
         return gzipRequest.wrapProcessor(super.handle(gzipRequest));
+    }
+
+    public void setExcludedMimeTypes(String s)
+    {
+        // TODO
+    }
+
+    public void setInflateBufferSize(int i)
+    {
+        // TODO
+    }
+
+    public void setMinGzipSize(int i)
+    {
+        // TODO
     }
 
     private static class GzipRequest extends Request.WrapperProcessor

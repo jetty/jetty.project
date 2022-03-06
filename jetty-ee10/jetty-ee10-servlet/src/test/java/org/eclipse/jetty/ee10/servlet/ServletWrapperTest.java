@@ -28,8 +28,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.handler.DefaultHandler;
-import org.eclipse.jetty.ee10.handler.HandlerList;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -66,7 +66,7 @@ public class ServletWrapperTest
         FilterHolder filterHolder = context.addFilter(WrapFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         filterHolder.setAsyncSupported(true);
 
-        server.setHandler(new HandlerList(context, new DefaultHandler()));
+        server.setHandler(new Handler.Collection(context, new DefaultHandler()));
         server.start();
     }
 

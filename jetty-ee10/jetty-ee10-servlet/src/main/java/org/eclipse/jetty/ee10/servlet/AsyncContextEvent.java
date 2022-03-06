@@ -60,6 +60,11 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         return _baseURI;
     }
 
+    public ServletRequestState getServletRequestState()
+    {
+        return _state;
+    }
+
     public ServletContext getSuspendedContext()
     {
         return _servletContext;

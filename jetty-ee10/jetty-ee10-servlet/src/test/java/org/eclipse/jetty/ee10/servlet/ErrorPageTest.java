@@ -37,16 +37,14 @@ import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.handler.Dispatcher;
-import org.eclipse.jetty.ee10.handler.HandlerWrapper;
-import org.eclipse.jetty.ee10.handler.HttpChannel;
-import org.eclipse.jetty.ee10.handler.HttpChannelState;
-import org.eclipse.jetty.ee10.handler.Request;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -101,15 +99,15 @@ public class ErrorPageTest
         _context.addServlet(ErrorAndStatusServlet.class, "/error-and-status/*");
         _context.addServlet(ErrorContentTypeCharsetWriterInitializedServlet.class, "/error-mime-charset-writer/*");
 
-        HandlerWrapper noopHandler = new HandlerWrapper()
+        Handler.Wrapper noopHandler = new Handler.Wrapper()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public Request.Processor handle(Request request) throws Exception
             {
-                if (target.startsWith("/noop"))
-                    return;
+                if (request.getPathInContext().startsWith("/noop"))
+                    return null;
                 else
-                    super.handle(target, baseRequest, request, response);
+                    return super.handle(request);
             }
         };
         _context.insertHandler(noopHandler);
@@ -575,7 +573,7 @@ public class ErrorPageTest
                         hold.countDown();
 
                         // Wait until request async waiting
-                        while (Request.getBaseRequest(request).getHttpChannelState().getState() == HttpChannelState.State.HANDLING)
+                        while (ServletScopedRequest.getBaseRequest(request).getServletRequestState().getState() == ServletRequestState.State.HANDLING)
                         {
                             try
                             {

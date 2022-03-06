@@ -735,6 +735,9 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     @Override
     public HttpCookie access(Session session, boolean secure)
     {
+        if (session == null)
+            return null;
+        
         long now = System.currentTimeMillis();
 
         if (session.access(now))
