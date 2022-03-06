@@ -48,8 +48,8 @@ public class StatisticsHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        long begin = System.nanoTime();
-        Object connectionStats = _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
+        long beginTimeStamp = System.nanoTime();
+        _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {
             // TODO test this with localconnector endpoint that has multiple requests per connection.
             request.getHttpChannel().addConnectionCloseListener(x ->
@@ -60,10 +60,7 @@ public class StatisticsHandler extends Handler.Wrapper
             return "SomeConnectionStatsObject";
         });
 
-        final LongAdder bytesRead = new LongAdder(); // TODO move inside StatisticsRequest???
-        final LongAdder bytesWritten = new LongAdder();
-
-        StatisticsRequest statisticsRequest = new StatisticsRequest(request, bytesRead, bytesWritten);
+        StatisticsRequest statisticsRequest = new StatisticsRequest(request);
         _handleStats.increment();
         _requestStats.increment();
 
@@ -75,19 +72,22 @@ public class StatisticsHandler extends Handler.Wrapper
             {
                 if (response != null)
                 {
-                    switch (response.getStatus() / 100) {
+                    switch (response.getStatus() / 100)
+                    {
                         case 1 -> _responses1xx.increment();
                         case 2 -> _responses2xx.increment();
                         case 3 -> _responses3xx.increment();
                         case 4 -> _responses4xx.increment();
                         case 5 -> _responses5xx.increment();
-                        default -> {}
+                        default ->
+                        {
+                        }
                     }
                 }
 
                 for (ByteBuffer b : content)
                 {
-                    bytesWritten.add(b.remaining());
+                    statisticsRequest._bytesWritten.add(b.remaining());
                 }
 
                 super.send(response, last, callback, content);
@@ -97,7 +97,7 @@ public class StatisticsHandler extends Handler.Wrapper
             public Content readContent()
             {
                 Content content =  super.readContent();
-                bytesRead.add(content.remaining());
+                statisticsRequest._bytesRead.add(content.remaining());
                 return content;
             }
 
@@ -122,23 +122,20 @@ public class StatisticsHandler extends Handler.Wrapper
             }
         });
 
-        // TODO test if the nested handler returns null
-        Request.WrapperProcessor wrapperProcessor = statisticsRequest.wrapProcessor(super.handle(statisticsRequest));
-        _handleTimeStats.record(System.nanoTime() - begin);
-        return wrapperProcessor;
+        Request.Processor processor = super.handle(statisticsRequest);
+        _handleTimeStats.record(System.nanoTime() - beginTimeStamp);
+        return processor == null ? null : statisticsRequest.wrapProcessor(processor);
     }
 
     private class StatisticsRequest extends Request.WrapperProcessor
     {
-        private final LongAdder _bytesRead;
-        private final LongAdder _bytesWritten;
+        private final LongAdder _bytesRead = new LongAdder();
+        private final LongAdder _bytesWritten = new LongAdder();
         private long _processNanoTimeStamp;
 
-        private StatisticsRequest(Request request, LongAdder bytesRead, LongAdder bytesWritten)
+        private StatisticsRequest(Request request)
         {
             super(request);
-            _bytesRead = bytesRead;
-            _bytesWritten = bytesWritten;
         }
 
         // TODO make this wrapper optional. Only needed if requestLog asks for these attributes.
@@ -215,25 +212,25 @@ public class StatisticsHandler extends Handler.Wrapper
     @ManagedAttribute("")
     public int getHandlings()
     {
-        return (int) _handleStats.getCurrent();
+        return (int)_handleStats.getCurrent();
     }
 
     @ManagedAttribute("")
     public int getProcessings()
     {
-        return (int) _processStats.getTotal();
+        return (int)_processStats.getTotal();
     }
 
     @ManagedAttribute("")
     public int getProcessingsActive()
     {
-        return (int) _processStats.getCurrent();
+        return (int)_processStats.getCurrent();
     }
 
     @ManagedAttribute("")
     public int getProcessingsMax()
     {
-        return (int) _processStats.getMax();
+        return (int)_processStats.getMax();
     }
 
     @ManagedAttribute("total time spend in all request execution (in ns)")

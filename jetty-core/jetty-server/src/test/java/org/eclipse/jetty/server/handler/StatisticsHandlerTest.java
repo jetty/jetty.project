@@ -13,6 +13,11 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
@@ -24,11 +29,6 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -586,7 +586,7 @@ public class StatisticsHandlerTest
 //
 //        assertThat(_statsHandler.getDispatchedTimeTotal(), greaterThanOrEqualTo(dispatchTime * 3 / 4));
 //    }
-//
+
     @Test
     public void testHandlingProcessingTime() throws Exception
     {
@@ -601,7 +601,8 @@ public class StatisticsHandlerTest
             {
                 barrier[0].await();
                 Thread.sleep(handleTime);
-                return (rq, rs, callback) -> {
+                return (rq, rs, callback) ->
+                {
                     try
                     {
                         barrier[1].await();
