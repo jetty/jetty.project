@@ -32,6 +32,8 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextResponse;
+import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
@@ -379,7 +381,7 @@ public class ServletScopedResponse extends ContextResponse
         @Override
         public String encodeURL(String url)
         {
-            SessionHandler sessionManager = _servletChannel.getContextHandler().getSessionHandler();
+            SessionManager sessionManager = _servletChannel.getContextHandler().getSessionHandler();
             if (sessionManager == null)
                 return url;
 
@@ -433,14 +435,16 @@ public class ServletScopedResponse extends ContextResponse
             HttpSession session = httpServletRequest.getSession(false);
 
             // no session
-            if (session == null)
+            if (session == null || !(session instanceof Session.APISession))
                 return url;
 
             // invalid session
-            if (!sessionManager.isValid(session))
+            Session.APISession apiSession = (Session.APISession)session;
+
+            if (!apiSession.getSession().isValid())
                 return url;
 
-            String id = sessionManager.getExtendedId(session);
+            String id = apiSession.getSession().getExtendedId();
 
             if (uri == null)
                 uri = HttpURI.from(url);

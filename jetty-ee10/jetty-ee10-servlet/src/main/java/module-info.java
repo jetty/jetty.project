@@ -17,6 +17,7 @@ module org.eclipse.jetty.ee10.servlet
 
     requires transitive jetty.servlet.api;
     requires transitive org.eclipse.jetty.server;
+    requires transitive org.eclipse.jetty.session;
 
     // Only required if using IntrospectorCleaner.
     requires static java.desktop;

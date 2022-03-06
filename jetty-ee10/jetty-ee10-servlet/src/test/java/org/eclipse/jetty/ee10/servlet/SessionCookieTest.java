@@ -11,13 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.session;
+package org.eclipse.jetty.ee10.servlet;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import jakarta.servlet.SessionCookieConfig;
-import org.eclipse.jetty.ee10.session.SessionHandler;
+import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
