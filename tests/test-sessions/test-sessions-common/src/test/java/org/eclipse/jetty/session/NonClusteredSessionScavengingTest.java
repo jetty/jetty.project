@@ -26,6 +26,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
+import org.eclipse.jetty.session.Session.APISession;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,8 +45,18 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class NonClusteredSessionScavengingTest extends AbstractTestBase
 {
-
     public SessionDataStore _dataStore;
+    
+    protected class MySessionHandler extends TestSessionHandler
+    {
+        /**
+         * @param size the size of the expiry candidates to check
+         */
+        public void assertCandidatesForExpiry(int size)
+        {
+            assertEquals(size, _candidateSessionIdsForExpiry.size());
+        }
+    }
 
     public void pause(int scavenge) throws InterruptedException
     {
@@ -96,7 +107,7 @@ public class NonClusteredSessionScavengingTest extends AbstractTestBase
                 latch.await(5, TimeUnit.SECONDS);
 
                 //test session was created
-                SessionHandler m1 = context1.getSessionHandler();
+                SessionManager m1 = context1.getSessionHandler();
                 assertEquals(1, m1.getSessionsCreated());
 
                 // Wait a while to ensure that the session should have expired, if the
