@@ -69,12 +69,22 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
         _context.run(this, this);
     }
 
+    public Callback getCallback()
+    {
+        return _callback;
+    }
+
+    protected ContextResponse newContextResponse(Request request, Response response)
+    {
+        return new ContextResponse(_context, request, response);
+    }
+
     @Override
     public void run()
     {
         try
         {
-            super.process(this, new ContextResponse(_context, this, _response), _callback);
+            super.process(this, newContextResponse(this, _response), _callback);
         }
         catch (Throwable t)
         {

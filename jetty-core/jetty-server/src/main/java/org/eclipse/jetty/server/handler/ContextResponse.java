@@ -19,7 +19,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 
-class ContextResponse extends Response.Wrapper
+public class ContextResponse extends Response.Wrapper
 {
     private final ContextHandler.ScopedContext _context;
 

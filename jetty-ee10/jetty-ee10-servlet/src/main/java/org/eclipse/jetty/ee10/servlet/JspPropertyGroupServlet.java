@@ -21,8 +21,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
-import org.eclipse.jetty.ee10.handler.Dispatcher;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -126,7 +125,7 @@ public class JspPropertyGroupServlet extends GenericServlet
         else
         {
 
-            Resource resource = _contextHandler.getResource(pathInContext);
+            Resource resource = null; // TODO: _contextHandler.getResource(pathInContext);
             if (resource != null && resource.isDirectory())
                 _dftServlet.getServlet().service(req, res);
             else

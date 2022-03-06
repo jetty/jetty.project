@@ -15,8 +15,11 @@ package org.eclipse.jetty.ee10.servlet;
 
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -98,7 +101,7 @@ public class ServletTester extends ContainerLifeCycle
         return _connector;
     }
 
-    public void setVirtualHosts(String[] vhosts)
+    public void setVirtualHosts(List<String> vhosts)
     {
         _context.setVirtualHosts(vhosts);
     }
@@ -145,12 +148,12 @@ public class ServletTester extends ContainerLifeCycle
 
     public Enumeration<String> getAttributeNames()
     {
-        return _context.getAttributeNames();
+        return Collections.enumeration(_context.getAttributeNameSet());
     }
 
     public Attributes getAttributes()
     {
-        return _context.getAttributes();
+        return _context;
     }
 
     public String getContextPath()
@@ -198,17 +201,12 @@ public class ServletTester extends ContainerLifeCycle
         return _context.getBaseResource();
     }
 
-    public void setBaseResource(Resource resource)
-    {
-        _context.setBaseResource(resource);
-    }
-
-    public String getResourceBase()
+    public Path getResourceBase()
     {
         return _context.getResourceBase();
     }
 
-    public void setResourceBase(String resourceBase)
+    public void setResourceBase(Path resourceBase)
     {
         _context.setResourceBase(resourceBase);
     }

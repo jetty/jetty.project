@@ -34,13 +34,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
-import org.eclipse.jetty.ee10.handler.StatisticsHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.io.ConnectionStatistics;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.slf4j.Logger;
@@ -74,10 +74,10 @@ public class StatisticsServlet extends HttpServlet
     public void init() throws ServletException
     {
         ServletContext context = getServletContext();
-        ContextHandler.Context scontext = (ContextHandler.Context)context;
+        ContextHandler.ScopedContext scontext = (ContextHandler.ScopedContext)context;
         Server server = scontext.getContextHandler().getServer();
 
-        _statsHandler = server.getChildHandlerByClass(StatisticsHandler.class);
+        _statsHandler = server.getDescendant(StatisticsHandler.class);
 
         if (_statsHandler == null)
         {
@@ -121,7 +121,7 @@ public class StatisticsServlet extends HttpServlet
         if (Boolean.parseBoolean(request.getParameter("statsReset")))
         {
             response.setStatus(HttpServletResponse.SC_OK);
-            _statsHandler.statsReset();
+            // TODO: _statsHandler.statsReset();
             return;
         }
 
@@ -256,6 +256,8 @@ public class StatisticsServlet extends HttpServlet
     {
         Map<String, Object> top = new HashMap<>();
 
+        /*
+        TODO: update to use new StatisticsHandler.
         // requests
         Map<String, Number> requests = new HashMap<>();
         requests.put("statsOnMs", _statsHandler.getStatsOnMs());
@@ -296,6 +298,7 @@ public class StatisticsServlet extends HttpServlet
         responses.put("responses5xx", _statsHandler.getResponses5xx());
         responses.put("responsesBytesTotal", _statsHandler.getResponsesBytesTotal());
         top.put("responses", responses);
+         */
 
         // connections
         List<Object> connections = new ArrayList<>();

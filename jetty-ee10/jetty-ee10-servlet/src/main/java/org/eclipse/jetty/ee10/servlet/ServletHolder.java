@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -31,6 +31,7 @@ import java.util.Stack;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.GenericServlet;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.Servlet;
@@ -39,16 +40,12 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletSecurityElement;
-import jakarta.servlet.SingleThreadModel;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
-import org.eclipse.jetty.ee10.handler.Request;
-import org.eclipse.jetty.ee10.handler.UserIdentity;
-import org.eclipse.jetty.ee10.security.IdentityService;
-import org.eclipse.jetty.ee10.security.RunAsToken;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -68,7 +65,7 @@ import org.slf4j.LoggerFactory;
  * requested.
  */
 @ManagedObject("Servlet Holder")
-public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable<ServletHolder>
+public class ServletHolder extends Holder<Servlet> implements Comparable<ServletHolder>
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletHolder.class);
     private int _initOrder = -1;
@@ -170,8 +167,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     public void setServlet(Servlet servlet)
     {
-        if (servlet == null || servlet instanceof SingleThreadModel)
-            throw new IllegalArgumentException(SingleThreadModel.class.getName() + " has been deprecated since Servlet API 2.4");
         setInstance(servlet);
     }
 
@@ -504,12 +499,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /**
      * Check to ensure class of servlet is acceptable.
      *
-     * @throws UnavailableException if Servlet class is not of type {@link jakarta.servlet.Servlet}
+     * @throws UnavailableException if Servlet class is not of type {@link Servlet}
      */
     public void checkServletType()
         throws UnavailableException
     {
-        if (getHeldClass() == null || !jakarta.servlet.Servlet.class.isAssignableFrom(getHeldClass()))
+        if (getHeldClass() == null || !Servlet.class.isAssignableFrom(getHeldClass()))
         {
             throw new UnavailableException("Servlet " + getHeldClass() + " is not a jakarta.servlet.Servlet");
         }
@@ -592,11 +587,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             servlet = getInstance();
             if (servlet == null)
                 servlet = newInstance();
-            if (servlet instanceof SingleThreadModel)
-            {
-                predestroyServlet(servlet);
-                servlet = new SingleThreadedWrapper();
-            }
 
             if (_config == null)
                 _config = new Config();
@@ -604,12 +594,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             //check run-as rolename and convert to token from IdentityService
             if (_runAsRole != null)
             {
-                IdentityService identityService = getServletHandler().getIdentityService();
-                if (identityService != null)
-                {
-                    RunAsToken runAsToken = identityService.newRunAsToken(_runAsRole);
-                    servlet = new RunAs(servlet, identityService, runAsToken);
-                }
+                // TODO
+                throw new IllegalStateException("Unimplemented");
             }
 
             if (!isAsyncSupported())
@@ -652,20 +638,29 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
+    private ContextHandler getContextHandler(ServletContext servletContext)
+    {
+        if (servletContext instanceof ContextHandler.ScopedContext)
+            return ((ContextHandler.ScopedContext)servletContext).getContextHandler();
+        return null;
+    }
+
     /**
      * @throws Exception if unable to init the JSP Servlet
      */
     protected void initJspServlet() throws Exception
     {
-        ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
+        ContextHandler ch = getContextHandler(getServletHandler().getServletContext());
+        if (ch == null)
+            throw new IllegalStateException();
+        String classpath = ""; //ch.getClassPath(); todo: fix this
 
         /* Set the webapp's classpath for Jasper */
-        ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());
+        ch.setAttribute("org.apache.catalina.jsp_classpath", classpath);
 
         /* Set up other classpath attribute */
         if ("?".equals(getInitParameter("classpath")))
         {
-            String classpath = ch.getClassPath();
             if (LOG.isDebugEnabled())
                 LOG.debug("classpath={}", classpath);
             if (classpath != null)
@@ -686,24 +681,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             throw new IllegalStateException("Could not create JSP scratch directory");
     }
 
-    @Override
-    public ContextHandler getContextHandler()
-    {
-        return ContextHandler.getContextHandler(_config.getServletContext());
-    }
-
-    @Override
-    public String getContextPath()
-    {
-        return _config.getServletContext().getContextPath();
-    }
-
-    @Override
-    public Map<String, String> getRoleRefMap()
-    {
-        return _roleMap;
-    }
-
     @ManagedAttribute(value = "role to run servlet as", readonly = true)
     public String getRunAsRole()
     {
@@ -718,14 +695,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /**
      * Prepare to service a request.
      *
-     * @param baseRequest the base request
      * @param request the request
      * @param response the response
      * @throws ServletException if unable to prepare the servlet
      * @throws UnavailableException if not available
      */
-    protected void prepare(Request baseRequest, ServletRequest request, ServletResponse response)
-        throws ServletException, UnavailableException
+    protected void prepare(ServletRequest request, ServletResponse response) throws ServletException, UnavailableException
     {
         // Ensure the servlet is initialized prior to any filters being invoked
         getServlet();
@@ -735,26 +710,20 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             MultipartConfigElement mpce = ((Registration)_registration).getMultipartConfig();
             if (mpce != null)
-                baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+                request.setAttribute(ServletScopedRequest.__MULTIPART_CONFIG_ELEMENT, mpce);
         }
     }
 
     /**
      * Service a request with this servlet.
      *
-     * @param baseRequest the base request
      * @param request the request
      * @param response the response
      * @throws ServletException if unable to process the servlet
      * @throws UnavailableException if servlet is unavailable
      * @throws IOException if unable to process the request or response
      */
-    public void handle(Request baseRequest,
-                       ServletRequest request,
-                       ServletResponse response)
-        throws ServletException,
-        UnavailableException,
-        IOException
+    public void handle(ServletRequest request, ServletResponse response) throws ServletException, UnavailableException, IOException
     {
         try
         {
@@ -1248,9 +1217,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     {
                         _servlet = getWrapped();
                     }
-                    Request baseRequest = Request.getBaseRequest(req);
-                    ServletHolder.this.prepare(baseRequest, req, res);
-                    ServletHolder.this.handle(baseRequest, req, res);
+                    ServletHolder.this.prepare(req, res);
+                    ServletHolder.this.handle(req, res);
                 }
                 else
                 {
@@ -1279,12 +1247,12 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
          * Optionally wrap the Servlet.
          *
          * @param servlet the servlet being passed in.
-         * @return the servlet (extend from {@link ServletHolder.Wrapper} if you do wrap the Servlet)
+         * @return the servlet (extend from {@link Wrapper} if you do wrap the Servlet)
          */
         Servlet wrapServlet(Servlet servlet);
     }
 
-    public static class Wrapper implements Servlet, Wrapped<Servlet>
+    public static class Wrapper implements Servlet, BaseHolder.Wrapped<Servlet>
     {
         private final Servlet _wrappedServlet;
 
@@ -1336,61 +1304,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         }
     }
 
-    private static class RunAs extends Wrapper
-    {
-        final IdentityService _identityService;
-        final RunAsToken _runAsToken;
-
-        public RunAs(Servlet servlet, IdentityService identityService, RunAsToken runAsToken)
-        {
-            super(servlet);
-            _identityService = identityService;
-            _runAsToken = runAsToken;
-        }
-
-        @Override
-        public void init(ServletConfig config) throws ServletException
-        {
-            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
-            try
-            {
-                getWrapped().init(config);
-            }
-            finally
-            {
-                _identityService.unsetRunAs(oldRunAs);
-            }
-        }
-
-        @Override
-        public void service(ServletRequest req, ServletResponse res) throws ServletException, IOException
-        {
-            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
-            try
-            {
-                getWrapped().service(req, res);
-            }
-            finally
-            {
-                _identityService.unsetRunAs(oldRunAs);
-            }
-        }
-
-        @Override
-        public void destroy()
-        {
-            Object oldRunAs = _identityService.setRunAs(_identityService.getSystemUserIdentity(), _runAsToken);
-            try
-            {
-                getWrapped().destroy();
-            }
-            finally
-            {
-                _identityService.unsetRunAs(oldRunAs);
-            }
-        }
-    }
-
     private static class NotAsync extends Wrapper
     {
         public NotAsync(Servlet servlet)
@@ -1403,16 +1316,20 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             if (req.isAsyncSupported())
             {
-                Request baseRequest = Request.getBaseRequest(req);
-                try
+                getWrapped().service(new ServletRequestWrapper(req)
                 {
-                    baseRequest.setAsyncSupported(false, this.toString());
-                    getWrapped().service(req, res);
-                }
-                finally
-                {
-                    baseRequest.setAsyncSupported(true, null);
-                }
+                    @Override
+                    public boolean isAsyncSupported()
+                    {
+                        return false;
+                    }
+
+                    @Override
+                    public AsyncContext startAsync() throws IllegalStateException
+                    {
+                        throw new IllegalStateException("Async Not Supported");
+                    }
+                }, res);
             }
             else
             {

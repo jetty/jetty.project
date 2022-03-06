@@ -26,11 +26,8 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
-import org.eclipse.jetty.ee10.handler.Dispatcher;
-import org.eclipse.jetty.ee10.handler.Handler;
-import org.eclipse.jetty.ee10.handler.HandlerWrapper;
-import org.eclipse.jetty.ee10.handler.Request;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -75,12 +72,12 @@ public class Invoker extends HttpServlet
     public void init()
     {
         ServletContext config = getServletContext();
-        _contextHandler = ((ContextHandler.Context)config).getContextHandler();
+        _contextHandler = ((ContextHandler.ScopedContext)config).getContextHandler();
 
         Handler handler = _contextHandler.getHandler();
-        while (handler != null && !(handler instanceof ServletHandler) && (handler instanceof HandlerWrapper))
+        while (handler != null && !(handler instanceof ServletHandler) && (handler instanceof Handler.Wrapper))
         {
-            handler = ((HandlerWrapper)handler).getHandler();
+            handler = ((Handler.Wrapper)handler).getHandler();
         }
         _servletHandler = (ServletHandler)handler;
         Enumeration<String> e = getInitParameterNames();
@@ -223,11 +220,8 @@ public class Invoker extends HttpServlet
 
         if (holder != null)
         {
-            final Request baseRequest = Request.getBaseRequest(request);
-            holder.prepare(baseRequest, request, response);
-            holder.handle(baseRequest,
-                new InvokedRequest(request, included, servlet, servletPath, pathInfo),
-                response);
+            holder.prepare(request, response);
+            holder.handle(new InvokedRequest(request, included, servlet, servletPath, pathInfo), response);
         }
         else
         {

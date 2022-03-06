@@ -21,9 +21,6 @@ import java.util.Map;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
-import org.eclipse.jetty.ee10.handler.Dispatcher;
-import org.eclipse.jetty.ee10.handler.ErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -248,7 +245,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
     protected void doStart() throws Exception
     {
         super.doStart();
-        _servletContext = ContextHandler.getCurrentContext();
+        _servletContext = ServletContextHandler.getCurrentServletContext();
     }
 
     private static class ErrorCodeRange

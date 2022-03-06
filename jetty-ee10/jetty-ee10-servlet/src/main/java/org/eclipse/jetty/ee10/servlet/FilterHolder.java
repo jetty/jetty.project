@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -21,6 +21,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 
+import jakarta.servlet.AsyncContext;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -29,8 +30,8 @@ import jakarta.servlet.FilterRegistration;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
-import org.eclipse.jetty.ee10.handler.Request;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -92,7 +93,7 @@ public class FilterHolder extends Holder<Filter>
     {
         super.doStart();
 
-        if (!jakarta.servlet.Filter.class.isAssignableFrom(getHeldClass()))
+        if (!Filter.class.isAssignableFrom(getHeldClass()))
         {
             String msg = getHeldClass() + " is not a jakarta.servlet.Filter";
             doStop();
@@ -126,7 +127,7 @@ public class FilterHolder extends Holder<Filter>
                     throw ex;
                 }
             }
-            _filter = wrap(_filter, FilterHolder.WrapFunction.class, FilterHolder.WrapFunction::wrapFilter);
+            _filter = wrap(_filter, WrapFunction.class, WrapFunction::wrapFilter);
             _config = new Config();
             if (LOG.isDebugEnabled())
                 LOG.debug("Filter.init {}", _filter);
@@ -202,17 +203,20 @@ public class FilterHolder extends Holder<Filter>
             getFilter().doFilter(request, response, chain);
         else
         {
-            Request baseRequest = Request.getBaseRequest(request);
-            Objects.requireNonNull(baseRequest);
-            try
+            getFilter().doFilter(new ServletRequestWrapper(request)
             {
-                baseRequest.setAsyncSupported(false, this);
-                getFilter().doFilter(request, response, chain);
-            }
-            finally
-            {
-                baseRequest.setAsyncSupported(true, null);
-            }
+                @Override
+                public boolean isAsyncSupported()
+                {
+                    return false;
+                }
+
+                @Override
+                public AsyncContext startAsync() throws IllegalStateException
+                {
+                    throw new IllegalStateException("Async Not Supported");
+                }
+            }, response, chain);
         }
     }
 
@@ -327,12 +331,12 @@ public class FilterHolder extends Holder<Filter>
          * Optionally wrap the Filter.
          *
          * @param filter the Filter being passed in.
-         * @return the Filter (extend from {@link FilterHolder.Wrapper} if you do wrap the Filter)
+         * @return the Filter (extend from {@link Wrapper} if you do wrap the Filter)
          */
         Filter wrapFilter(Filter filter);
     }
 
-    public static class Wrapper implements Filter, Wrapped<Filter>
+    public static class Wrapper implements Filter, BaseHolder.Wrapped<Filter>
     {
         private final Filter _filter;
 

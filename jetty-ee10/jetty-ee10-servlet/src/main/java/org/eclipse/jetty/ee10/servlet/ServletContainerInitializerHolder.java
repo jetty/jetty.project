@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -115,14 +115,18 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         //load all classnames
         classes.addAll(resolveStartupClasses());
 
-        ContextHandler.Context ctx = null;
+        ServletContextHandler.Context ctx = null;
         if (getServletHandler() != null)
         {
-            ctx = getServletHandler().getServletContextHandler().getServletContext();    
+            ctx = getServletHandler().getServletContextHandler().getContext();
         }
-        
-        if (ctx == null && ContextHandler.getCurrentContext() != null)
-            ctx = ContextHandler.getCurrentContext();
+
+        if (ctx == null)
+        {
+            ContextHandler.ScopedContext currentContext = ContextHandler.getCurrentContext();
+            if (currentContext instanceof ServletContextHandler.Context)
+                ctx = (ServletContextHandler.Context)currentContext;
+        }
         if (ctx == null)
             throw new IllegalStateException("No Context");
         
@@ -141,11 +145,11 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
             if (LOG.isDebugEnabled())
             {
                 long start = System.nanoTime();
-                initializer.onStartup(classes, ctx);
+                initializer.onStartup(classes, ctx.getServletContext());
                 LOG.debug("ServletContainerInitializer {} called in {}ms", getClassName(), TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
             }
             else
-                initializer.onStartup(classes, ctx);
+                initializer.onStartup(classes, ctx.getServletContext());
         }
         finally
         {
@@ -223,7 +227,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
          * Optionally wrap the ServletContainerInitializer.
          *
          * @param sci the ServletContainerInitializer being passed in.
-         * @return the sci(extend from {@link ServletContainerInitializerHolder.Wrapper} if you do wrap the ServletContainerInitializer)
+         * @return the sci(extend from {@link Wrapper} if you do wrap the ServletContainerInitializer)
          */
         ServletContainerInitializer wrapServletContainerInitializer(ServletContainerInitializer sci);
     }

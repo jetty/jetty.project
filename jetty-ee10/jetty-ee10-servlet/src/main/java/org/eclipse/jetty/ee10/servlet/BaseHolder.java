@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -18,8 +18,7 @@ import java.util.function.BiFunction;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
-import org.eclipse.jetty.ee10.handler.ContextHandler.Context;
+import org.eclipse.jetty.server.handler.ContextHandler.ScopedContext;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -167,7 +166,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         if (_servletHandler != null)
         {
             ServletContext context = _servletHandler.getServletContext();
-            if ((context instanceof ContextHandler.Context) && ((ContextHandler.Context)context).getContextHandler().isStarted())
+            if ((context instanceof ScopedContext) && ((ScopedContext)context).getContextHandler().isStarted())
                 throw new IllegalStateException("Started");
         }
     }
@@ -218,15 +217,23 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         if (scontext != null)
             return scontext;
 
-        //try the ContextHandler next
-        Context ctx = ContextHandler.getCurrentContext();
-        if (ctx != null)
-        {
-            ContextHandler contextHandler = ctx.getContextHandler();
-            if (contextHandler != null)
-                return contextHandler.getServletContext();
-        }
-        return null;
+        //try the ServletContextHandler next
+        return ServletContextHandler.getCurrentServletContext();
+    }
+
+    public ServletContextHandler getServletContextHandler()
+    {
+        ServletContext scontext = null;
+
+        //try the ServletHandler first
+        if (getServletHandler() != null)
+            scontext = getServletHandler().getServletContext();
+
+        if (scontext instanceof ServletContextHandler.Context)
+            return ((ServletContextHandler.Context)scontext).getServletContextHandler();
+
+        //try the ServletContextHandler next
+        return ServletContextHandler.getCurrentServletContextHandler();
     }
 
     /**
@@ -252,13 +259,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
     protected <W> T wrap(final T component, final Class<W> wrapperFunctionType, final BiFunction<W, T, T> function)
     {
         T ret = component;
-        ServletContextHandler contextHandler = getServletHandler().getServletContextHandler();
-        if (contextHandler == null)
-        {
-            ContextHandler.Context context = ContextHandler.getCurrentContext();
-            contextHandler = (ServletContextHandler)(context == null ? null : context.getContextHandler());
-        }
-
+        ServletContextHandler contextHandler = getServletContextHandler();
         if (contextHandler != null)
         {
             for (W wrapperFunction : contextHandler.getBeans(wrapperFunctionType))

@@ -1,6 +1,6 @@
 //
 // ========================================================================
-// Copyright (c) 1995-2022 Mort Bay Consulting Pty Ltd and others.
+// Copyright (c) 1995-2021 Mort Bay Consulting Pty Ltd and others.
 //
 // This program and the accompanying materials are made available under the
 // terms of the Eclipse Public License v. 2.0 which is available at
@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.servlet;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.EventListener;
@@ -44,22 +43,17 @@ import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
-import org.eclipse.jetty.ee10.handler.Request;
-import org.eclipse.jetty.ee10.handler.ScopedHandler;
-import org.eclipse.jetty.ee10.handler.ServletPathMapping;
-import org.eclipse.jetty.ee10.handler.ServletRequestHttpWrapper;
-import org.eclipse.jetty.ee10.handler.ServletResponseHttpWrapper;
-import org.eclipse.jetty.ee10.handler.UserIdentity;
-import org.eclipse.jetty.ee10.security.IdentityService;
-import org.eclipse.jetty.ee10.security.SecurityHandler;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -82,7 +76,7 @@ import org.slf4j.LoggerFactory;
  * method must be called manually after start().
  */
 @ManagedObject("Servlet Handler")
-public class ServletHandler extends ScopedHandler
+public class ServletHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletHandler.class);
 
@@ -97,7 +91,6 @@ public class ServletHandler extends ScopedHandler
     private int _maxFilterChainsCacheSize = 1024;
     private boolean _startWithUnavailable = false;
     private boolean _ensureDefaultServlet = true;
-    private IdentityService _identityService;
     private boolean _allowDuplicateMappings = false;
 
     private final List<ServletHolder> _servlets = new ArrayList<>();
@@ -129,7 +122,7 @@ public class ServletHandler extends ScopedHandler
         return _lock.lock();
     }
 
-    private <T> void updateAndSet(Collection<T> target, Collection<T> values)
+    private <T> void updateAndSet(java.util.Collection<T> target, java.util.Collection<T> values)
     {
         updateBeans(target, values);
         target.clear();
@@ -159,15 +152,16 @@ public class ServletHandler extends ScopedHandler
     {
         try (AutoLock ignored = lock())
         {
-            ContextHandler.Context context = ContextHandler.getCurrentContext();
-            _servletContext = context == null ? new ContextHandler.StaticContext() : context;
-            _contextHandler = (ServletContextHandler)(context == null ? null : context.getContextHandler());
+            ContextHandler.ScopedContext context = ContextHandler.getCurrentContext();
+            if (!(context instanceof ServletContextHandler.Context))
+                throw new IllegalStateException("Cannot use ServletHandler without ServletContextHandler");
+            _servletContext = ((ServletContextHandler.Context)context).getServletContext();
+            _contextHandler = context.getContextHandler();
 
             if (_contextHandler != null)
             {
-                SecurityHandler securityHandler = _contextHandler.getChildHandlerByClass(SecurityHandler.class);
-                if (securityHandler != null)
-                    _identityService = securityHandler.getIdentityService();
+                SecurityHandler securityHandler = _contextHandler.getDescendant(SecurityHandler.class);
+                // TODO: Security.
             }
 
             _durable.clear();
@@ -300,9 +294,6 @@ public class ServletHandler extends ScopedHandler
             updateAndSet(_filterMappings, _filterMappings.stream().filter(m -> _filterNameMap.containsKey(m.getFilterName())).collect(Collectors.toList()));
             updateMappings();
 
-            if (_contextHandler != null)
-                _contextHandler.contextDestroyed();
-
             //Retain only Listeners added via jetty apis (is Source.EMBEDDED)
             List<ListenerHolder> listenerHolders = new ArrayList<>();
             for (int i = _listeners.size(); i-- > 0; )
@@ -334,11 +325,6 @@ public class ServletHandler extends ScopedHandler
             _servletPathMap = null;
             _initialized = false;
         }
-    }
-
-    protected IdentityService getIdentityService()
-    {
-        return _identityService;
     }
 
     @ManagedAttribute(value = "filters", readonly = true)
@@ -431,88 +417,14 @@ public class ServletHandler extends ScopedHandler
     }
 
     @Override
-    public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
-        // Get the base requests
-        final ServletPathMapping old_servlet_path_mapping = baseRequest.getServletPathMapping();
-
-        ServletHolder servletHolder = null;
-        UserIdentity.Scope oldScope = null;
-
-        MappedServlet mappedServlet = getMappedServlet(target);
-        if (mappedServlet != null)
+        return (req, resp, cb) ->
         {
-            servletHolder = mappedServlet.getServletHolder();
-            ServletPathMapping servletPathMapping = mappedServlet.getServletPathMapping(target);
-            if (servletPathMapping != null)
-            {
-                // Setting the servletPathMapping also provides the servletPath and pathInfo
-                baseRequest.setServletPathMapping(servletPathMapping);
-            }
-        }
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("servlet {}|{}|{}|{} -> {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), baseRequest.getHttpServletMapping(), servletHolder);
-
-        try
-        {
-            // Do the filter/handling thang
-            oldScope = baseRequest.getUserIdentityScope();
-            baseRequest.setUserIdentityScope(servletHolder);
-
-            nextScope(target, baseRequest, request, response);
-        }
-        finally
-        {
-            if (oldScope != null)
-                baseRequest.setUserIdentityScope(oldScope);
-
-            baseRequest.setServletPathMapping(old_servlet_path_mapping);
-        }
-    }
-
-    @Override
-    public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-        throws IOException, ServletException
-    {
-        ServletHolder servletHolder = (ServletHolder)baseRequest.getUserIdentityScope();
-        FilterChain chain = null;
-
-        // find the servlet
-        if (servletHolder != null && _filterMappings.size() > 0)
-            chain = getFilterChain(baseRequest, target.startsWith("/") ? target : null, servletHolder);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("chain={}", chain);
-
-        try
-        {
-            if (servletHolder == null)
-                notFound(baseRequest, request, response);
-            else
-            {
-                // unwrap any tunnelling of base Servlet request/responses
-                ServletRequest req = request;
-                if (req instanceof ServletRequestHttpWrapper)
-                    req = ((ServletRequestHttpWrapper)req).getRequest();
-                ServletResponse res = response;
-                if (res instanceof ServletResponseHttpWrapper)
-                    res = ((ServletResponseHttpWrapper)res).getResponse();
-
-                // Do the filter/handling thang
-                servletHolder.prepare(baseRequest, req, res);
-
-                if (chain != null)
-                    chain.doFilter(req, res);
-                else
-                    servletHolder.handle(baseRequest, req, res);
-            }
-        }
-        finally
-        {
-            if (servletHolder != null)
-                baseRequest.setHandled(true);
-        }
+            // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
+            ServletScopedRequest servletRequest = Request.as(request, ServletScopedRequest.class);
+            servletRequest.getServletRequestState().handle();
+        };
     }
 
     /**
@@ -537,11 +449,12 @@ public class ServletHandler extends ScopedHandler
         return _servletNameMap.get(target);
     }
 
-    protected FilterChain getFilterChain(Request baseRequest, String pathInContext, ServletHolder servletHolder)
+    protected FilterChain getFilterChain(HttpServletRequest request, String pathInContext, ServletHolder servletHolder)
     {
+        DispatcherType dispatcherType = request.getDispatcherType();
         Objects.requireNonNull(servletHolder);
         String key = pathInContext == null ? servletHolder.getName() : pathInContext;
-        int dispatch = FilterMapping.dispatch(baseRequest.getDispatcherType());
+        int dispatch = FilterMapping.dispatch(dispatcherType);
 
         if (_filterChainsCached)
         {
@@ -588,12 +501,12 @@ public class ServletHandler extends ScopedHandler
             if (_maxFilterChainsCacheSize > 0 && cache.size() >= _maxFilterChainsCacheSize)
             {
                 // flush the cache
-                LOG.debug("{} flushed filter chain cache for {}", this, baseRequest.getDispatcherType());
+                LOG.debug("{} flushed filter chain cache for {}", this, dispatcherType);
                 cache.clear();
             }
             chain = chain == null ? new ChainEnd(servletHolder) : chain;
             // flush the cache
-            LOG.debug("{} cached filter chain for {}: {}", this, baseRequest.getDispatcherType(), chain);
+            LOG.debug("{} cached filter chain for {}: {}", this, dispatcherType, chain);
             cache.put(key, chain);
         }
         return chain;
@@ -699,11 +612,7 @@ public class ServletHandler extends ScopedHandler
         
         //Start the listeners so we can call them
         _listeners.forEach(c);
-        
-        //call listeners contextInitialized
-        if (_contextHandler != null)
-            _contextHandler.contextInitialized();
-        
+
         //Only set initialized true AFTER the listeners have been called
         _initialized = true;
             
@@ -724,7 +633,7 @@ public class ServletHandler extends ScopedHandler
         return _initialized;
     }
 
-    protected void initializeHolders(Collection<? extends BaseHolder<?>> holders)
+    protected void initializeHolders(java.util.Collection<? extends BaseHolder<?>> holders)
     {
         for (BaseHolder<?> holder : holders)
         {
@@ -886,11 +795,7 @@ public class ServletHandler extends ScopedHandler
 
     public Set<String> setServletSecurity(ServletRegistration.Dynamic registration, ServletSecurityElement servletSecurityElement)
     {
-        if (_contextHandler != null)
-        {
-            return _contextHandler.setServletSecurity(registration, servletSecurityElement);
-        }
-        return Collections.emptySet();
+        throw new UnsupportedOperationException("Unimplemented");
     }
 
     public FilterHolder newFilterHolder(Source source)
@@ -1380,8 +1285,6 @@ public class ServletHandler extends ScopedHandler
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Not Found {}", request.getRequestURI());
-        if (getHandler() != null)
-            nextHandle(baseRequest.getPathInContext(), baseRequest, request, response);
     }
 
     protected boolean containsFilterHolder(FilterHolder holder)
@@ -1557,13 +1460,26 @@ public class ServletHandler extends ScopedHandler
             return null;
         }
 
+        public void handle(ServletHandler servletHandler, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            String pathInContext = URIUtil.addPaths(request.getContextPath(), request.getServletPath());
+            FilterChain filterChain = servletHandler.getFilterChain(request, pathInContext, _servletHolder);
+            if (LOG.isDebugEnabled())
+                LOG.debug("chain={}", filterChain);
+
+            _servletHolder.prepare(request, response);
+            if (filterChain != null)
+                filterChain.doFilter(request, response);
+            else
+                _servletHolder.handle(request, response);
+        }
+
         @Override
         public String toString()
         {
             return String.format("MappedServlet%x{%s->%s}",
                 hashCode(), _pathSpec == null ? null : _pathSpec.getDeclaration(), _servletHolder);
         }
-
     }
 
     @SuppressWarnings("serial")
@@ -1619,9 +1535,7 @@ public class ServletHandler extends ScopedHandler
         @Override
         public void doFilter(ServletRequest request, ServletResponse response) throws IOException, ServletException
         {
-            Request baseRequest = Request.getBaseRequest(request);
-            Objects.requireNonNull(baseRequest);
-            _servletHolder.handle(baseRequest, request, response);
+            _servletHolder.handle(request, response);
         }
 
         @Override
