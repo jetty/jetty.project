@@ -16,8 +16,7 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 import java.util.regex.Matcher;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -26,29 +25,20 @@ import org.eclipse.jetty.util.annotation.Name;
  */
 public class TerminatingRegexRule extends RegexRule
 {
-    public TerminatingRegexRule()
-    {
-        this(null);
-    }
-
     public TerminatingRegexRule(@Name("regex") String regex)
     {
         super(regex);
-        super.setTerminating(true);
     }
 
     @Override
-    public void setTerminating(boolean terminating)
+    public boolean isTerminating()
     {
-        if (!terminating)
-        {
-            throw new RuntimeException("Not allowed to disable terminating on a " + TerminatingRegexRule.class.getName());
-        }
+        return true;
     }
 
     @Override
-    public String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher) throws IOException
+    public Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException
     {
-        return target;
+        return input;
     }
 }

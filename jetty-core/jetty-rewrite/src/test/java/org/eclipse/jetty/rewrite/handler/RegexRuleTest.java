@@ -13,103 +13,121 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import java.io.IOException;
 import java.util.regex.Matcher;
+import java.util.stream.Stream;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class RegexRuleTest
+public class RegexRuleTest extends AbstractRuleTest
 {
-    private RegexRule _rule;
-
-    @BeforeEach
-    public void init()
+    public static Stream<Arguments> matches()
     {
-        _rule = new TestRegexRule();
-    }
-
-    @AfterEach
-    public void destroy()
-    {
-        _rule = null;
-    }
-
-    @Test
-    public void testTrueMatch() throws IOException
-    {
-        String[][] matchCases = {
+        return Stream.of(
             // regex: *.jsp
-            {"/.*.jsp", "/hello.jsp"},
-            {"/.*.jsp", "/abc/hello.jsp"},
+            Arguments.of("/.*.jsp", "/hello.jsp"),
+            Arguments.of("/.*.jsp", "/abc/hello.jsp"),
 
             // regex: /abc or /def
-            {"/abc|/def", "/abc"},
-            {"/abc|/def", "/def"},
+            Arguments.of("/abc|/def", "/abc"),
+            Arguments.of("/abc|/def", "/def"),
 
             // regex: *.do or *.jsp
-            {".*\\.do|.*\\.jsp", "/hello.do"},
-            {".*\\.do|.*\\.jsp", "/hello.jsp"},
-            {".*\\.do|.*\\.jsp", "/abc/hello.do"},
-            {".*\\.do|.*\\.jsp", "/abc/hello.jsp"},
+            Arguments.of(".*\\.do|.*\\.jsp", "/hello.do"),
+            Arguments.of(".*\\.do|.*\\.jsp", "/hello.jsp"),
+            Arguments.of(".*\\.do|.*\\.jsp", "/abc/hello.do"),
+            Arguments.of(".*\\.do|.*\\.jsp", "/abc/hello.jsp"),
 
-            {"/abc/.*.htm|/def/.*.htm", "/abc/hello.htm"},
-            {"/abc/.*.htm|/def/.*.htm", "/abc/def/hello.htm"},
+            Arguments.of("/abc/.*.htm|/def/.*.htm", "/abc/hello.htm"),
+            Arguments.of("/abc/.*.htm|/def/.*.htm", "/abc/def/hello.htm"),
 
             // regex: /abc/*.jsp
-            {"/abc/.*.jsp", "/abc/hello.jsp"},
-            {"/abc/.*.jsp", "/abc/def/hello.jsp"}
-        };
-
-        for (String[] matchCase : matchCases)
-        {
-            assertMatch(true, matchCase);
-        }
-    }
-
-    @Test
-    public void testFalseMatch() throws IOException
-    {
-        String[][] matchCases = {
-            {"/abc/.*.jsp", "/hello.jsp"}
-        };
-
-        for (String[] matchCase : matchCases)
-        {
-            assertMatch(false, matchCase);
-        }
-    }
-
-    private void assertMatch(boolean flag, String[] matchCase) throws IOException
-    {
-        _rule.setRegex(matchCase[0]);
-        final String uri = matchCase[1];
-        String result = _rule.matchAndApply(uri,
-            new Request(null, null)
-            {
-                @Override
-                public String getRequestURI()
-                {
-                    return uri;
-                }
-            }, null
+            Arguments.of("/abc/.*.jsp", "/abc/hello.jsp"),
+            Arguments.of("/abc/.*.jsp", "/abc/def/hello.jsp")
         );
-
-        assertEquals(flag, result != null, "regex: " + matchCase[0] + " uri: " + matchCase[1]);
     }
 
-    private class TestRegexRule extends RegexRule
+    public static Stream<Arguments> noMatches()
     {
-        @Override
-        public String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher) throws IOException
+        return Stream.of(
+            Arguments.of("/abc/.*.jsp", "/hello.jsp")
+        );
+    }
+
+    private void start(RegexRule rule) throws Exception
+    {
+        _rewriteHandler.addRule(rule);
+        start(new Handler.Processor()
         {
-            return target;
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
+    }
+
+    @ParameterizedTest
+    @MethodSource("matches")
+    public void testTrueMatch(String pattern, String uri) throws Exception
+    {
+        TestRegexRule rule = new TestRegexRule(pattern);
+        start(rule);
+
+        String request = """
+            GET $U HTTP/1.1
+            Host: localhost
+                        
+            """.replace("$U", uri);
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertTrue(rule._applied);
+    }
+
+    @ParameterizedTest
+    @MethodSource("noMatches")
+    public void testFalseMatch(String pattern, String uri) throws Exception
+    {
+        TestRegexRule rule = new TestRegexRule(pattern);
+        start(rule);
+
+        String request = """
+            GET $U HTTP/1.1
+            Host: localhost
+                        
+            """.replace("$U", uri);
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus());
+        assertFalse(rule._applied);
+    }
+
+    private static class TestRegexRule extends RegexRule
+    {
+        private boolean _applied;
+
+        public TestRegexRule(String pattern)
+        {
+            super(pattern);
+        }
+
+        @Override
+        public Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher)
+        {
+            _applied = true;
+            return input;
         }
     }
 }

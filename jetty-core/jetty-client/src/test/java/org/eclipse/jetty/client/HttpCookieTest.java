@@ -53,7 +53,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                response.addCookie(new Cookie(name, value));
+                org.eclipse.jetty.server.Response.addCookie(response, new Cookie(name, value));
             }
         });
 
@@ -184,7 +184,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 if ("/foo".equals(target) && r == 0)
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue);
-                    response.addCookie(cookie);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
                 {
@@ -240,7 +240,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 if ("/foo/bar".equals(target) && r == 0)
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue);
-                    response.addCookie(cookie);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
                 {
@@ -302,7 +302,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue);
                     cookie.setPath("/foo/bar");
-                    response.addCookie(cookie);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
                 {
@@ -363,7 +363,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue);
                     cookie.setPath("/foo");
-                    response.addCookie(cookie);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
                 {
@@ -425,10 +425,10 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue1);
                     cookie.setPath("/foo");
-                    response.addCookie(cookie);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
                     cookie = new Cookie(cookieName, cookieValue2);
                     cookie.setPath("/foo");
-                    response.addCookie(cookie);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
                 {
@@ -488,10 +488,10 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue1);
                     cookie.setPath("/foo");
-                    response.addCookie(cookie);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
                     cookie = new Cookie(cookieName, cookieValue2);
                     cookie.setPath("/bar");
-                    response.addCookie(cookie);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
                 {
@@ -558,10 +558,10 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue1);
                     cookie.setPath("/foo");
-                    response.addCookie(cookie);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
                     cookie = new Cookie(cookieName, cookieValue2);
                     cookie.setPath("/foo/bar");
-                    response.addCookie(cookie);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
                 {
@@ -630,7 +630,7 @@ public class HttpCookieTest extends AbstractHttpClientServerTest
                 {
                     Cookie cookie = new Cookie(cookieName, cookieValue);
                     cookie.setPath("/foo/");
-                    response.addCookie(cookie);
+                    org.eclipse.jetty.server.Response.addCookie(response, cookie);
                 }
                 else
                 {

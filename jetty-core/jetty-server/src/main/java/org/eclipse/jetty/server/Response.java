@@ -15,9 +15,12 @@ package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ListIterator;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.CookieCompliance;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -25,7 +28,9 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,8 +64,6 @@ public interface Response
     boolean isCommitted();
 
     void reset();
-
-    void addCookie(HttpCookie cookie);
 
     // TODO: inline and remove
     default void addHeader(String name, String value)
@@ -98,6 +101,18 @@ public interface Response
         getHeaders().putLongField(HttpHeader.CONTENT_LENGTH, length);
     }
 
+    /*
+     * Blocking write utility
+     */
+    static void write(boolean last, Response response, ByteBuffer... content) throws Exception
+    {
+        try (Blocking.Callback callback = Blocking.callback())
+        {
+            response.write(last, callback, content);
+            callback.block();
+        }
+    }
+
     static void sendRedirect(Request request, Response response, Callback callback, String location)
     {
         sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, location, false);
@@ -131,6 +146,69 @@ public interface Response
         response.getHeaders().put(HttpHeader.LOCATION, Request.toRedirectURI(request, location));
         response.setStatus(code);
         response.write(true, callback);
+    }
+
+    static void addCookie(Response response, HttpCookie cookie)
+    {
+        if (StringUtil.isBlank(cookie.getName()))
+            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
+
+        Request request = response.getRequest();
+        response.getHeaders().add(new HttpCookie.SetCookieHttpField(HttpCookie.checkSameSite(cookie, request.getContext()),
+            request.getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()));
+
+        // Expire responses with set-cookie headers so they do not get cached.
+        response.getHeaders().put(HttpFields.EXPIRES_01JAN1970);
+    }
+
+    static void replaceCookie(Response response, HttpCookie cookie)
+    {
+        if (StringUtil.isBlank(cookie.getName()))
+            throw new IllegalArgumentException("Cookie.name cannot be blank/null");
+
+        Request request = response.getRequest();
+        HttpChannel httpChannel = request.getHttpChannel();
+        HttpConfiguration httpConfiguration = httpChannel.getHttpConfiguration();
+
+        for (ListIterator<HttpField> i = response.getHeaders().listIterator(); i.hasNext(); )
+        {
+            HttpField field = i.next();
+
+            if (field.getHeader() == HttpHeader.SET_COOKIE)
+            {
+                CookieCompliance compliance = httpConfiguration.getResponseCookieCompliance();
+                HttpCookie oldCookie;
+                if (field instanceof HttpCookie.SetCookieHttpField)
+                    oldCookie = ((HttpCookie.SetCookieHttpField)field).getHttpCookie();
+                else
+                    oldCookie = new HttpCookie(field.getValue());
+
+                if (!cookie.getName().equals(oldCookie.getName()))
+                    continue;
+
+                if (cookie.getDomain() == null)
+                {
+                    if (oldCookie.getDomain() != null)
+                        continue;
+                }
+                else if (!cookie.getDomain().equalsIgnoreCase(oldCookie.getDomain()))
+                    continue;
+
+                if (cookie.getPath() == null)
+                {
+                    if (oldCookie.getPath() != null)
+                        continue;
+                }
+                else if (!cookie.getPath().equals(oldCookie.getPath()))
+                    continue;
+
+                i.set(new HttpCookie.SetCookieHttpField(HttpCookie.checkSameSite(cookie, request.getContext()), compliance));
+                return;
+            }
+        }
+
+        // Not replaced, so add normally
+        addCookie(response, cookie);
     }
 
     static void writeError(Request request, Response response, Callback callback, Throwable cause)
@@ -271,12 +349,6 @@ public interface Response
         public void reset()
         {
             getWrapped().reset();
-        }
-
-        @Override
-        public void addCookie(HttpCookie cookie)
-        {
-            getWrapped().addCookie(cookie);
         }
     }
 }

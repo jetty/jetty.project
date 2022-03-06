@@ -41,7 +41,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -911,22 +910,6 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        // TODO this should be a static method???
-        public void addCookie(HttpCookie cookie)
-        {
-            if (StringUtil.isBlank(cookie.getName()))
-                throw new IllegalArgumentException("Cookie.name cannot be blank/null");
-
-            // add the set cookie
-            // TODO this is getting the wrong context!!!!
-            getHeaders().add(new HttpCookie.SetCookieHttpField(HttpCookie.checkSameSite(cookie, getRequest().getContext()),
-                getHttpConfiguration().getResponseCookieCompliance()));
-
-            // Expire responses with set-cookie headers so they do not get cached.
-            getHeaders().put(EXPIRES_01JAN1970);
-        }
-
-        @Override
         public void succeeded()
         {
             // Called when an individual write succeeds
@@ -939,7 +922,7 @@ public class HttpChannel extends Attributes.Lazy
             if (LOG.isDebugEnabled())
                 LOG.debug("write succeeded {}", callback);
             if (callback != null)
-                callback.succeeded();
+                _serializedInvoker.run(callback::succeeded);
         }
 
         @Override

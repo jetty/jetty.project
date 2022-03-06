@@ -14,11 +14,14 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
@@ -70,10 +73,140 @@ public class StatisticsHandlerTest
     }
 
     @Test
+    public void testDataReadRate() throws Exception
+    {
+        AtomicLong readRate = new AtomicLong(-1L);
+
+        _statsHandler.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                while (true)
+                {
+                    Content content = request.readContent();
+                    if (content == null)
+                    {
+                        request.demandContent(() -> process(request, response, callback));
+                        return;
+                    }
+                    content.release();
+                    if (content.isLast())
+                    {
+                        Long rr = (Long) request.getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
+                        readRate.set(rr);
+                        //System.err.println("over; read rate=" + rr + " b/s");
+                        callback.succeeded();
+                        return;
+                    }
+                }
+            }
+        });
+        _server.start();
+
+        String request = "POST / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "Content-Length: 1000\r\n" +
+            "\r\n";
+
+        LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
+
+        // send 1 byte per ms -> should avg to ~1000 bytes/s
+        for (int i = 0; i < 1000; i++)
+        {
+            Thread.sleep(1);
+            endPoint.addInput(ByteBuffer.allocate(1));
+        }
+
+        _latchHandler.await();
+        assertThat(readRate.get(), allOf(greaterThan(600L), lessThan(1100L)));
+    }
+
+    @Test
+    public void testDataWriteRate() throws Exception
+    {
+        AtomicLong writeRate = new AtomicLong(-1L);
+        CountDownLatch latch = new CountDownLatch(1);
+
+        _statsHandler.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                write(response, 0, new Callback()
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        Long wr = (Long) request.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
+                        //System.err.println("over; write rate=" + wr + " b/s");
+                        writeRate.set(wr);
+
+                        callback.succeeded();
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        callback.failed(x);
+                        latch.countDown();
+                    }
+                });
+            }
+
+            private void write(Response response, int counter, Callback finalCallback)
+            {
+                try
+                {
+                    Thread.sleep(1);
+                }
+                catch (InterruptedException e)
+                {
+                    // ignore
+                }
+
+                if (counter < 1000)
+                {
+                    Callback cb = new Callback()
+                    {
+                        @Override
+                        public void succeeded()
+                        {
+                            write(response, counter + 1, finalCallback);
+                        }
+
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            finalCallback.failed(x);
+                        }
+                    };
+                    response.write(false, cb, ByteBuffer.allocate(1));
+                }
+                else
+                {
+                    response.write(true, finalCallback, ByteBuffer.allocate(1));
+                }
+            }
+        });
+        _server.start();
+
+        String request = "GET / HTTP/1.1\r\n" +
+            "Host: localhost\r\n" +
+            "\r\n";
+
+        _connector.executeRequest(request);
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        assertThat(writeRate.get(), allOf(greaterThan(600L), lessThan(1100L)));
+    }
+
+    @Test
     public void testTwoRequestsSerially() throws Exception
     {
-        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
-        _statsHandler.setHandler(new DoubleBarrierHandlerProcessor(barrier));
+        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        _statsHandler.setHandler(new TripleBarrierHandlerProcessor(barrier));
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
@@ -94,6 +227,7 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
+        barrier[2].await();
         assertTrue(_latchHandler.await());
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
@@ -110,6 +244,7 @@ public class StatisticsHandlerTest
         _latchHandler.reset();
         barrier[0].reset();
         barrier[1].reset();
+        barrier[2].reset();
 
         // 2nd request
         _connector.executeRequest(request);
@@ -125,6 +260,7 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
+        barrier[2].await();
         assertTrue(_latchHandler.await());
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
@@ -142,9 +278,9 @@ public class StatisticsHandlerTest
     @Test
     public void testTwoRequestsInParallel() throws Exception
     {
-        CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3)};
+        CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3), new CyclicBarrier(3)};
         _latchHandler.reset(2);
-        _statsHandler.setHandler(new DoubleBarrierHandlerProcessor(barrier));
+        _statsHandler.setHandler(new TripleBarrierHandlerProcessor(barrier));
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
@@ -165,6 +301,7 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
+        barrier[2].await();
         assertTrue(_latchHandler.await());
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
@@ -756,14 +893,19 @@ public class StatisticsHandlerTest
         }
     }
 
-    private static class DoubleBarrierHandlerProcessor extends Handler.Processor
+    /**
+     * when the first barrier is reached, process() has been entered;
+     * when the second barrier is reached, the callback is succeeded;
+     * when the third barrier is reached, process() is returning
+     */
+    private static class TripleBarrierHandlerProcessor extends Handler.Processor
     {
         private final CyclicBarrier[] _barriers;
 
-        public DoubleBarrierHandlerProcessor(CyclicBarrier[] barriers)
+        public TripleBarrierHandlerProcessor(CyclicBarrier[] barriers)
         {
             super(Invocable.InvocationType.BLOCKING);
-            if (barriers.length != 2)
+            if (barriers.length != 3)
                 throw new IllegalArgumentException();
             _barriers = barriers;
         }
@@ -774,8 +916,9 @@ public class StatisticsHandlerTest
             try
             {
                 _barriers[0].await();
-                callback.succeeded();
                 _barriers[1].await();
+                callback.succeeded();
+                _barriers[2].await();
             }
             catch (Throwable x)
             {

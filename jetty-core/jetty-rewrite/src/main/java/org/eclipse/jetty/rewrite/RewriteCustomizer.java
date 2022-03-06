@@ -15,21 +15,22 @@ package org.eclipse.jetty.rewrite;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.rewrite.handler.RuleContainer;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConfiguration.Customizer;
 import org.eclipse.jetty.server.Request;
 
 public class RewriteCustomizer extends RuleContainer implements Customizer
 {
     @Override
-    public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
+    public Request customize(Request request, HttpFields.Mutable responseHeaders)
     {
         try
         {
-            matchAndApply(request.getPathInfo(), request, request.getResponse());
+            // TODO: rule are able to complete the request/response, but customizers cannot.
+            Request.WrapperProcessor input = new Request.WrapperProcessor(request);
+            return matchAndApply(input);
         }
         catch (IOException e)
         {
