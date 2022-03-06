@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -293,6 +294,11 @@ public interface Request extends Attributes, Content.Provider
             return scheme.getDefaultPort();
 
         return -1;
+    }
+
+    static InputStream asInputStream(Request request)
+    {
+        return Content.asInputStream(request);
     }
 
     // TODO: use Fields rather than MultiMap!

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -799,5 +800,106 @@ public interface Content
 
             return null;
         }
+    }
+
+    // TODO test and document
+    static InputStream asInputStream(Provider provider)
+    {
+        return new InputStream()
+        {
+            private final Blocking.Shared _blocking = new Blocking.Shared();
+            private final byte[] _oneByte = new byte[1];
+            private Content _content;
+
+            void blockForContent() throws IOException
+            {
+                while (true)
+                {
+                    if (_content != null)
+                    {
+                        if (_content instanceof Error error)
+                            throw IO.rethrow(error.getCause());
+                        if (_content.hasRemaining() || _content.isLast())
+                            return;
+                        _content.release();
+                    }
+
+                    _content = provider.readContent();
+
+                    if (_content == null)
+                    {
+                        try (Blocking.Runnable blocking = _blocking.runnable())
+                        {
+                            provider.demandContent(blocking);
+                            blocking.block();
+                        }
+                        catch (IOException e)
+                        {
+                            throw e;
+                        }
+                        catch (Exception e)
+                        {
+                            throw new IOException(e);
+                        }
+                    }
+                }
+            }
+
+            @Override
+            public int read() throws IOException
+            {
+                blockForContent();
+                if (_content.isLast() && _content.isEmpty())
+                    return -1;
+                _content.fill(_oneByte, 0, 1);
+                if (_content.isEmpty())
+                {
+                    _content.release();
+                    _content = null;
+                }
+                return _oneByte[0];
+            }
+
+            @Override
+            public int read(byte[] b) throws IOException
+            {
+                return read(b, 0, b.length);
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) throws IOException
+            {
+                blockForContent();
+                if (_content.isLast() && _content.isEmpty())
+                    return -1;
+                int l = _content.fill(b, off, len);
+                if (_content.isEmpty())
+                {
+                    _content.release();
+                    _content = null;
+                }
+                return l;
+            }
+
+            @Override
+            public int available() throws IOException
+            {
+                if (_content != null)
+                {
+                    if (_content.isLast() && _content.isEmpty())
+                        return -1;
+                    return _content.remaining();
+                }
+                return 0;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                if (_content != null && _content.hasRemaining())
+                    _content.release();
+                _content = Content.EOF;
+            }
+        };
     }
 }

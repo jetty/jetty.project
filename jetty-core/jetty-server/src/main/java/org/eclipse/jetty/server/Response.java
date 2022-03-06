@@ -354,6 +354,7 @@ public interface Response
         }
     }
 
+    // TODO test and document
     static OutputStream asOutputStream(Response response)
     {
         return new OutputStream()
