@@ -521,6 +521,15 @@ public interface Request extends Attributes, Content.Provider
         return null;
     }
 
+    static Request getOriginalRequest(Request request)
+    {
+        while (request instanceof Request.Wrapper wrapped)
+        {
+            request = wrapped.getWrapped();
+        }
+        return request;
+    }
+
     /**
      * <p>A {@code Request.Wrapper} that is a {@code Request.Processor}.</p>
      * <p>This class wraps both a {@code Request} and a {@code Processor}

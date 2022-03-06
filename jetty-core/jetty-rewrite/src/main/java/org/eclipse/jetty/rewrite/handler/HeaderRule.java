@@ -15,29 +15,24 @@ package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.server.Request;
 
 /**
- * Abstract rule that matches against request headers.
+ * <p>Abstract rule that matches against request headers.</p>
  */
-
 public abstract class HeaderRule extends Rule
 {
-    private String _header;
+    private String _headerName;
     private String _headerValue;
 
-    public String getHeader()
+    public String getHeaderName()
     {
-        return _header;
+        return _headerName;
     }
 
-    /**
-     * @param header the header name to check for
-     */
-    public void setHeader(String header)
+    public void setHeaderName(String header)
     {
-        _header = header;
+        _headerName = header;
     }
 
     public String getHeaderValue()
@@ -46,8 +41,8 @@ public abstract class HeaderRule extends Rule
     }
 
     /**
-     * @param headerValue the header value to match against. If null, then the
-     * presence of the header is enough to match
+     * @param headerValue the header value to match against.
+     * If {@code null}, then the presence of the header is enough to match
      */
     public void setHeaderValue(String headerValue)
     {
@@ -55,34 +50,30 @@ public abstract class HeaderRule extends Rule
     }
 
     @Override
-    public String matchAndApply(String target, HttpServletRequest request,
-                                HttpServletResponse response) throws IOException
+    public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
     {
-        String requestHeaderValue = request.getHeader(_header);
-
-        if (requestHeaderValue != null)
-            if (_headerValue == null || _headerValue.equals(requestHeaderValue))
-                apply(target, requestHeaderValue, request, response);
-
+        String value = input.getHeaders().get(getHeaderName());
+        if (value == null)
+            return null;
+        String headerValue = getHeaderValue();
+        if (headerValue == null || headerValue.equals(value))
+            return apply(input, value);
         return null;
     }
 
     /**
-     * Apply the rule to the request
+     * <p>Invoked after the header matched the {@code Request} headers to apply the rule's logic.</p>
      *
-     * @param target field to attempt match
-     * @param value header value found
-     * @param request request object
-     * @param response response object
-     * @return The target (possible updated)
-     * @throws IOException exceptions dealing with operating on request or response
-     * objects
+     * @param input the input {@code Request} and {@code Processor}
+     * @param value the header value
+     * @return the possibly wrapped {@code Request} and {@code Processor}
+     * @throws IOException if applying the rule failed
      */
-    protected abstract String apply(String target, String value, HttpServletRequest request, HttpServletResponse response) throws IOException;
+    protected abstract Request.WrapperProcessor apply(Request.WrapperProcessor input, String value) throws IOException;
 
     @Override
     public String toString()
     {
-        return super.toString() + "[" + _header + ":" + _headerValue + "]";
+        return "%s[header:%s=%s]".formatted(super.toString(), getHeaderName(), getHeaderValue());
     }
 }

@@ -13,76 +13,117 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpURI;
-import org.junit.jupiter.api.BeforeEach;
+import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTestCase
+public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTest
 {
-    private ForwardedSchemeHeaderRule _rule;
-
-    @BeforeEach
-    public void init() throws Exception
+    public void start(ForwardedSchemeHeaderRule rule) throws Exception
     {
-        start(false);
-        _rule = new ForwardedSchemeHeaderRule();
-        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).scheme((String)null));
+        _rewriteHandler.addRule(rule);
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                response.setHeader("request-scheme", request.getHttpURI().getScheme());
+                callback.succeeded();
+            }
+        });
     }
 
     @Test
     public void testDefaultScheme() throws Exception
     {
-        setRequestHeader("X-Forwarded-Scheme", "https");
-        _rule.setHeader("X-Forwarded-Scheme");
-        _rule.setHeaderValue("https");
-        _rule.matchAndApply("/", _request, _response);
-        assertEquals("https", _request.getScheme());
+        ForwardedSchemeHeaderRule rule = new ForwardedSchemeHeaderRule();
+        rule.setHeaderName("X-Forwarded-Scheme");
+        rule.setHeaderValue("https");
+        start(rule);
+
+        String request = """
+            GET / HTTP/1.1
+            Host: local
+            X-Forwarded-Scheme: https
+            
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(200, response.getStatus());
+        assertEquals("https", response.get("request-scheme"));
     }
 
     @Test
     public void testScheme() throws Exception
     {
-        setRequestHeader("X-Forwarded-Scheme", "https");
-        _rule.setHeader("X-Forwarded-Scheme");
-        _rule.setHeaderValue("https");
-        _rule.setScheme("https");
-        _rule.matchAndApply("/", _request, _response);
-        assertEquals("https", _request.getScheme());
+        ForwardedSchemeHeaderRule rule = new ForwardedSchemeHeaderRule();
+        rule.setHeaderName("X-Forwarded-Scheme");
+        rule.setHeaderValue("https");
+        rule.setScheme("wss");
+        start(rule);
 
-        _rule.setScheme("http");
-        _rule.matchAndApply("/", _request, _response);
-        assertEquals("http", _request.getScheme());
+        String request = """
+            GET / HTTP/1.1
+            Host: local
+            X-Forwarded-Scheme: https
+            
+            """;
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(200, response.getStatus());
+        assertEquals("wss", response.get("request-scheme"));
     }
 
     @Test
     public void testHeaderValue() throws Exception
     {
-        setRequestHeader("Front-End-Https", "on");
-        _rule.setHeader("Front-End-Https");
-        _rule.setHeaderValue("on");
-        _rule.setScheme("https");
-        _rule.matchAndApply("/", _request, _response);
-        assertEquals("https", _request.getScheme());
+        ForwardedSchemeHeaderRule rule = new ForwardedSchemeHeaderRule();
+        rule.setHeaderName("Front-End-Https");
+        rule.setHeaderValue("on");
+        rule.setScheme("http");
+        start(rule);
 
-        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).scheme("other"));
-        // header value doesn't match rule's value
-        setRequestHeader("Front-End-Https", "off");
-        _rule.matchAndApply("/", _request, _response);
-        assertEquals("other", _request.getScheme());
+        String request = """
+            GET / HTTP/1.1
+            Host: local
+            Front-End-Https: on
+            
+            """;
 
-        _request.setHttpURI(HttpURI.build(_request.getRequestURI()).scheme((String)null));
-        // header value can be any value
-        setRequestHeader("Front-End-Https", "any");
-        _rule.setHeaderValue(null);
-        _rule.matchAndApply("/", _request, _response);
-        assertEquals("https", _request.getScheme());
-    }
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(200, response.getStatus());
+        assertEquals("http", response.get("request-scheme"));
 
-    private void setRequestHeader(String header, String headerValue)
-    {
-        _request.setHttpFields(HttpFields.build(_request.getHttpFields()).put(header, headerValue));
+        // Value does not match, scheme is retained.
+        rule.setScheme("other");
+        request = """
+            GET other://local/ HTTP/1.1
+            Host: local
+            Front-End-Https: off
+            
+            """;
+
+        response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(200, response.getStatus());
+        assertEquals("other", response.get("request-scheme"));
+
+        rule.setScheme("ws");
+        // Null value should match.
+        rule.setHeaderValue(null);
+        request = """
+            GET / HTTP/1.1
+            Host: local
+            Front-End-Https: any
+            
+            """;
+
+        response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(200, response.getStatus());
+        assertEquals("ws", response.get("request-scheme"));
     }
 }

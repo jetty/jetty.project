@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
 
 /**
- * Set the scheme for the request
+ * <p>Sets the request URI scheme, by default {@code https}.</p>
  */
 public class ForwardedSchemeHeaderRule extends HeaderRule
 {
@@ -30,19 +28,22 @@ public class ForwardedSchemeHeaderRule extends HeaderRule
         return _scheme;
     }
 
-    /**
-     * @param scheme the scheme to set on the request. Defaults to "https"
-     */
     public void setScheme(String scheme)
     {
         _scheme = scheme;
     }
 
     @Override
-    protected String apply(String target, String value, HttpServletRequest request, HttpServletResponse response)
+    protected Request.WrapperProcessor apply(Request.WrapperProcessor input, String value)
     {
-        Request baseRequest = Request.getBaseRequest(request);
-        baseRequest.setHttpURI(HttpURI.build(baseRequest.getHttpURI()).scheme(_scheme));
-        return target;
+        HttpURI newURI = HttpURI.build(input.getHttpURI()).scheme(getScheme());
+        return new Request.WrapperProcessor(input)
+        {
+            @Override
+            public HttpURI getHttpURI()
+            {
+                return newURI;
+            }
+        };
     }
 }

@@ -16,37 +16,27 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 import java.util.regex.Matcher;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
- * Rewrite the URI by matching with a regular expression.
- * The replacement string may use $n" to replace the nth capture group.
- * If the replacement string contains ? character, then it is split into a path
- * and query string component.  The replacement query string may also contain $Q, which
- * is replaced with the original query string.
- * The returned target contains only the path.
+ * <p>A rule to rewrite the path and query that match a regular expression pattern with a fixed string.</p>
+ * <p>The replacement string may use {@code $n} to replace the nth capture group.</p>
+ * <p>If the replacement string contains the {@code ?} character,
+ * then it is split into a path and query string component.</p>
+ * <p>The replacement query string may also contain {@code $Q},
+ * which is replaced with the original query string.</p>
  */
-public class RewriteRegexRule extends RegexRule implements Rule.ApplyURI
+public class RewriteRegexRule extends RegexRule
 {
-    private String _replacement;
+    private String _path;
     private String _query;
     private boolean _queryGroup;
-
-    public RewriteRegexRule()
-    {
-        this(null, null);
-    }
 
     public RewriteRegexRule(@Name("regex") String regex, @Name("replacement") String replacement)
     {
         super(regex);
-        setHandling(false);
-        setTerminating(false);
         setReplacement(replacement);
     }
 
@@ -59,71 +49,61 @@ public class RewriteRegexRule extends RegexRule implements Rule.ApplyURI
     {
         if (replacement == null)
         {
-            _replacement = null;
+            _path = null;
             _query = null;
             _queryGroup = false;
         }
         else
         {
             String[] split = replacement.split("\\?", 2);
-            _replacement = split[0];
+            _path = split[0];
             _query = split.length == 2 ? split[1] : null;
             _queryGroup = _query != null && _query.contains("$Q");
         }
     }
 
     @Override
-    public String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher) throws IOException
+    public Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException
     {
-        target = _replacement;
+        String path = _path;
         String query = _query;
-        for (int g = 1; g <= matcher.groupCount(); g++)
+        for (int g = 1; g <= matcher.groupCount(); ++g)
         {
             String group = matcher.group(g);
             if (group == null)
                 group = "";
             else
                 group = Matcher.quoteReplacement(group);
-            target = target.replaceAll("\\$" + g, group);
+            path = path.replaceAll("\\$" + g, group);
             if (query != null)
                 query = query.replaceAll("\\$" + g, group);
         }
 
+        HttpURI httpURI = input.getHttpURI();
+
         if (query != null)
         {
             if (_queryGroup)
-                query = query.replace("$Q", request.getQueryString() == null ? "" : request.getQueryString());
-            request.setAttribute("org.eclipse.jetty.rewrite.handler.RewriteRegexRule.Q", query);
+            {
+                String origQuery = httpURI.getQuery();
+                query = query.replace("$Q", origQuery == null ? "" : origQuery);
+            }
         }
 
-        return target;
+        HttpURI newURI = HttpURI.build(httpURI, path, httpURI.getParam(), query);
+        return new Request.WrapperProcessor(input)
+        {
+            @Override
+            public HttpURI getHttpURI()
+            {
+                return newURI;
+            }
+        };
     }
 
-    @Override
-    public void applyURI(Request request, String oldURI, String newURI) throws IOException
-    {
-        HttpURI baseURI = request.getHttpURI();
-        if (_query == null)
-        {
-            request.setHttpURI(HttpURI.build(baseURI, newURI, baseURI.getParam(), baseURI.getQuery()));
-        }
-        else
-        {
-            // TODO why isn't _query used?
-            String query = (String)request.getAttribute("org.eclipse.jetty.rewrite.handler.RewriteRegexRule.Q");
-            if (!_queryGroup)
-                query = URIUtil.addQueries(baseURI.getQuery(), query);
-
-            request.setHttpURI(HttpURI.build(baseURI, newURI, baseURI.getParam(), query));
-        }
-    }
-
-    /**
-     * Returns the replacement string.
-     */
     @Override
     public String toString()
     {
-        return super.toString() + "[" + _replacement + "]";
+        return "%s[rewrite:%s%s]".formatted(super.toString(), _path, _query == null ? "" : "?" + _query);
     }
 }
