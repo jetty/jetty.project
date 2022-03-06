@@ -73,7 +73,7 @@ public class HttpClientIdleTimeoutTest
                 if (cookies == null || cookies.length == 0)
                 {
                     // Send a cookie in the first response.
-                    response.addCookie(new Cookie("name", "value"));
+                    Response.addCookie(response, new Cookie("name", "value"));
                 }
                 else
                 {

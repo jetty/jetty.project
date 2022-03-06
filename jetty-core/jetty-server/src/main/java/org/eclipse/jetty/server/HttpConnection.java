@@ -41,7 +41,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -69,8 +68,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
-    public static final HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-    public static final HttpField CONNECTION_KEEPALIVE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
 
     private final AtomicLong _idGenerator = new AtomicLong();
     private final HttpConfiguration _configuration;
@@ -1350,7 +1347,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         public void prepareResponse(HttpFields.Mutable headers)
         {
             if (_connectionKeepAlive && _version == HttpVersion.HTTP_1_0 && !headers.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
-                headers.add(CONNECTION_KEEPALIVE);
+                headers.add(HttpFields.CONNECTION_KEEPALIVE);
         }
 
         @Override

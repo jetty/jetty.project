@@ -39,6 +39,10 @@ import java.util.stream.Stream;
  */
 public interface HttpFields extends Iterable<HttpField>
 {
+    HttpField EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
+    HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+    HttpField CONNECTION_KEEPALIVE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+
     HttpFields EMPTY = build().asImmutable();
 
     static Mutable build()

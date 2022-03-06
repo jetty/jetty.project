@@ -50,11 +50,9 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.AbstractConnector;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
@@ -691,14 +689,14 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
                 _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
                 {
                     if (fields == null || fields.isEmpty())
-                        return HttpConnection.CONNECTION_CLOSE;
+                        return HttpFields.CONNECTION_CLOSE;
 
                     if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
                     {
                         if (fields.size() == 1)
                         {
                             HttpField f = fields.get(0);
-                            if (HttpConnection.CONNECTION_CLOSE.equals(f))
+                            if (HttpFields.CONNECTION_CLOSE.equals(f))
                                 return f;
                         }
 

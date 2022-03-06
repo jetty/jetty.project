@@ -92,7 +92,7 @@ public class CookiePatternRule extends PatternRule
             @Override
             public void process(Request ignored, Response response, Callback callback) throws Exception
             {
-                response.addCookie(new HttpCookie(_name, _value));
+                Response.addCookie(response, new HttpCookie(_name, _value));
                 super.process(this, response, callback);
             }
         };

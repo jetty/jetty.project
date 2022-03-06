@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.LongAdder;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.ee10.handler.gzip.GzipHttpInputInterceptor;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Destroyable;
@@ -370,7 +370,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 if (LOG.isDebugEnabled())
                     LOG.debug("running error={} {}", error, this);
                 // TODO is this necessary to add here?
-                _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
+                _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpFields.CONNECTION_CLOSE);
                 _readListener.onError(error);
             }
             else if (content.isEof())
