@@ -380,6 +380,7 @@ public interface Content
         }
     }
 
+    // TODO test this
     static void consumeAll(Provider provider, Callback callback)
     {
         new Invocable.Task()
@@ -393,7 +394,7 @@ public interface Content
                     if (content == null)
                     {
                         provider.demandContent(this);
-                        continue;
+                        return;
                     }
 
                     if (content instanceof Error error)
