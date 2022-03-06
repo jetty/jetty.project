@@ -205,8 +205,8 @@ public class StatisticsHandlerTest
     @Test
     public void testTwoRequestsSerially() throws Exception
     {
-        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2)};
-        _statsHandler.setHandler(new DoubleBarrierHandlerProcessor(barrier));
+        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        _statsHandler.setHandler(new TripleBarrierHandlerProcessor(barrier));
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
@@ -227,6 +227,7 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
+        barrier[2].await();
         assertTrue(_latchHandler.await());
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
@@ -243,6 +244,7 @@ public class StatisticsHandlerTest
         _latchHandler.reset();
         barrier[0].reset();
         barrier[1].reset();
+        barrier[2].reset();
 
         // 2nd request
         _connector.executeRequest(request);
@@ -258,6 +260,7 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
+        barrier[2].await();
         assertTrue(_latchHandler.await());
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
@@ -275,9 +278,9 @@ public class StatisticsHandlerTest
     @Test
     public void testTwoRequestsInParallel() throws Exception
     {
-        CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3)};
+        CyclicBarrier[] barrier = {new CyclicBarrier(3), new CyclicBarrier(3), new CyclicBarrier(3)};
         _latchHandler.reset(2);
-        _statsHandler.setHandler(new DoubleBarrierHandlerProcessor(barrier));
+        _statsHandler.setHandler(new TripleBarrierHandlerProcessor(barrier));
         _server.start();
 
         String request = "GET / HTTP/1.1\r\n" +
@@ -298,6 +301,7 @@ public class StatisticsHandlerTest
         assertEquals(2, _statsHandler.getProcessingsMax());
 
         barrier[1].await();
+        barrier[2].await();
         assertTrue(_latchHandler.await());
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
@@ -889,14 +893,19 @@ public class StatisticsHandlerTest
         }
     }
 
-    private static class DoubleBarrierHandlerProcessor extends Handler.Processor
+    /**
+     * when the first barrier is reached, process() has been entered;
+     * when the second barrier is reached, the callback is succeeded;
+     * when the third barrier is reached, process() is returning
+     */
+    private static class TripleBarrierHandlerProcessor extends Handler.Processor
     {
         private final CyclicBarrier[] _barriers;
 
-        public DoubleBarrierHandlerProcessor(CyclicBarrier[] barriers)
+        public TripleBarrierHandlerProcessor(CyclicBarrier[] barriers)
         {
             super(Invocable.InvocationType.BLOCKING);
-            if (barriers.length != 2)
+            if (barriers.length != 3)
                 throw new IllegalArgumentException();
             _barriers = barriers;
         }
@@ -907,8 +916,9 @@ public class StatisticsHandlerTest
             try
             {
                 _barriers[0].await();
-                callback.succeeded();
                 _barriers[1].await();
+                callback.succeeded();
+                _barriers[2].await();
             }
             catch (Throwable x)
             {
