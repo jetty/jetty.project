@@ -86,7 +86,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                String authorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (authorization == null)
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
@@ -170,7 +170,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                 baseRequest.setHandled(true);
                 if (target.startsWith("/proxy"))
                 {
-                    String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                    String authorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION.asString());
                     if (authorization == null)
                     {
                         response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
@@ -260,7 +260,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                String authorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (authorization == null)
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
@@ -268,7 +268,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                 }
                 else
                 {
-                    authorization = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+                    authorization = request.getHeaders().get(HttpHeader.AUTHORIZATION.asString());
                     if (authorization == null)
                     {
                         response.setStatus(HttpStatus.UNAUTHORIZED_401);
@@ -333,7 +333,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                String authorization = request.getHeader(HttpHeader.PROXY_AUTHORIZATION.asString());
+                String authorization = request.getHeaders().get(HttpHeader.PROXY_AUTHORIZATION.asString());
                 if (authorization == null)
                 {
                     response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
@@ -341,7 +341,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                 }
                 else
                 {
-                    authorization = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+                    authorization = request.getHeaders().get(HttpHeader.AUTHORIZATION.asString());
                     if (authorization == null)
                     {
                         response.setStatus(HttpStatus.UNAUTHORIZED_401);

@@ -1573,7 +1573,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setContentType("text/plain");
                 response.getOutputStream().print(request.getServerName());
@@ -1654,7 +1654,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
-                assertThat(request.getHeader("Host"), Matchers.notNullValue());
+                assertThat(request.getHeaders().get("Host"), Matchers.notNullValue());
             }
         });
 
@@ -1928,7 +1928,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(String target, org.eclipse.jetty.server.Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 assertEquals(bindAddress, request.getRemoteAddr());
             }

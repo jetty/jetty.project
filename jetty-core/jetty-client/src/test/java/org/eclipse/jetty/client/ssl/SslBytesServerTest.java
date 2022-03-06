@@ -205,7 +205,7 @@ public class SslBytesServerTest extends SslBytesTest
                 try
                 {
                     request.setHandled(true);
-                    String contentLength = request.getHeader("Content-Length");
+                    String contentLength = request.getHeaders().get("Content-Length");
                     if (contentLength != null)
                     {
                         int length = Integer.parseInt(contentLength);
