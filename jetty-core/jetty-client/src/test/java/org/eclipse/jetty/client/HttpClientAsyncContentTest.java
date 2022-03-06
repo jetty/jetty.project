@@ -33,7 +33,9 @@ import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.http.HttpReceiverOverHTTP;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -52,10 +54,14 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
             @Override
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
-                ServletOutputStream output = response.getOutputStream();
-                output.write(65);
-                output.flush();
-                output.write(66);
+                try (Blocking.Callback blocker = _blocking.callback())
+                {
+                    response.write(false, blocker, "A");
+                }
+                try (Blocking.Callback blocker = _blocking.callback())
+                {
+                    response.write(false, blocker, "A");
+                }
             }
         });
 
@@ -203,10 +209,10 @@ public class HttpClientAsyncContentTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAsyncContentAbort(Scenario scenario) throws Exception
     {
-        start(scenario, new EmptyServerHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, callback, ByteBuffer.wrap(new byte[1024]));
             }

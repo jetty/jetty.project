@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+// TODO
 public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 {
     @Test

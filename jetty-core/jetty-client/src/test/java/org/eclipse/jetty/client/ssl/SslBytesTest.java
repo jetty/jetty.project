@@ -331,7 +331,7 @@ public abstract class SslBytesTest
                 }
             });
             assertTrue(startLatch.await(5, TimeUnit.SECONDS));
-            return new SslBytesServerTest.SimpleProxy.AutomaticFlow(stopLatch, clientToServer, serverToClient);
+            return new SslBytesTest.SimpleProxy.AutomaticFlow(stopLatch, clientToServer, serverToClient);
         }
 
         public boolean awaitClient(int time, TimeUnit unit) throws InterruptedException

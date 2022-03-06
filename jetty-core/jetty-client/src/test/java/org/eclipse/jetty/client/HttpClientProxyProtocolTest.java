@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -84,13 +85,13 @@ public class HttpClientProxyProtocolTest
     @Test
     public void testClientProxyProtocolV1() throws Exception
     {
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(Request request, Response response) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
-                response.getOutputStream().print(request.getRemotePort());
+                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();
@@ -122,13 +123,13 @@ public class HttpClientProxyProtocolTest
     @Test
     public void testClientProxyProtocolV2() throws Exception
     {
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(Request request, Response response) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
-                response.getOutputStream().print(request.getRemotePort());
+                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();
@@ -163,21 +164,21 @@ public class HttpClientProxyProtocolTest
         int typeTLS = 0x20;
         String tlsVersion = "TLSv1.3";
         byte[] tlsVersionBytes = tlsVersion.getBytes(StandardCharsets.US_ASCII);
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(Request request, Response response) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 EndPoint endPoint = request.getHttpChannel().getEndPoint();
                 assertTrue(endPoint instanceof ProxyConnectionFactory.ProxyEndPoint);
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
-                if (target.equals("/tls_version"))
+                if (request.getPathInContext().equals("/tls_version"))
                 {
                     assertNotNull(proxyEndPoint.getTLV(typeTLS));
                     assertEquals(tlsVersion, proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));
                 }
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
-                response.getOutputStream().print(request.getRemotePort());
+                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();
@@ -217,13 +218,13 @@ public class HttpClientProxyProtocolTest
     @Test
     public void testProxyProtocolWrappingHTTPProxy() throws Exception
     {
-        startServer(new EmptyServerHandler()
+        startServer(new Handler.Processor()
         {
             @Override
-            protected void service(Request request, Response response) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN.asString());
-                response.getOutputStream().print(request.getRemotePort());
+                response.write(true, callback, String.valueOf(Request.getRemotePort(request)));
             }
         });
         startClient();
