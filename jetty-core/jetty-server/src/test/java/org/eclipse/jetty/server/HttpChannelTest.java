@@ -139,6 +139,74 @@ public class HttpChannelTest
     }
 
     @Test
+    public void testRecursiveGET() throws Exception
+    {
+        _server.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback) throws Exception
+            {
+                response.setStatus(200);
+                response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
+                AtomicInteger count = new AtomicInteger(10000);
+                Callback writer = new Callback()
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        if (count.decrementAndGet() == 0)
+                            response.write(true, callback, "X");
+                        else
+                            response.write(false, this, "X");
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        callback.failed(x);
+                    }
+                };
+                writer.succeeded();
+            }
+        });
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
+        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        CountDownLatch complete = new CountDownLatch(1);
+        MockHttpStream stream = new MockHttpStream(channel)
+        {
+            @Override
+            public void succeeded()
+            {
+                super.succeeded();
+                complete.countDown();
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                super.failed(x);
+                complete.countDown();
+            }
+        };
+
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+
+        Runnable task = channel.onRequest(request);
+        task.run();
+
+        assertTrue(complete.await(5, TimeUnit.SECONDS));
+        assertThat(stream.isComplete(), is(true));
+        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getResponse(), notNullValue());
+        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseContent().remaining(), equalTo(10000));
+    }
+
+    @Test
     public void testBlockingPOST() throws Exception
     {
         DumpHandler echoHandler = new DumpHandler();

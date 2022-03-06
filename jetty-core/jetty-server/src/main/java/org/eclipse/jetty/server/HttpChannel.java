@@ -931,7 +931,7 @@ public class HttpChannel extends Attributes.Lazy
             if (LOG.isDebugEnabled())
                 LOG.debug("write succeeded {}", callback);
             if (callback != null)
-                callback.succeeded();
+                _serializedInvoker.run(callback::succeeded);
         }
 
         @Override
