@@ -167,16 +167,16 @@ public class TestFileSessions
     public void testFilenamesWithDefaultContext() throws Exception
     {
         //create the SessionDataStore
-        //TODO how to set context path of "/"
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
         FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionHandler);
-        SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/"), "0.0.0.0");
+        //The root context path is translated into "" by Context.getContextPath
+        SessionContext sessionContext = new TestSessionContext("foo", "", "0.0.0.0");
         store.initialize(sessionContext);
 
         String s = store.getIdWithContext("1234");
-        assertEquals("__0.0.0.0_1234", s);
+        assertEquals("_0.0.0.0_1234", s);
 
         s = store.getIdFromFilename("0__0.0.0.0_1234");
         assertEquals("1234", s);
@@ -200,9 +200,6 @@ public class TestFileSessions
         s = store.getIdWithContextFromFilename("100__0.0.0.0_1234");
         assertEquals("_0.0.0.0_1234", s);
 
-        System.err.println(store._contextString);
-        System.err.println("XXXX");
-        System.err.println(store.getContextFromFilename("100__0.0.0.0_1234"));
         assertTrue(store.isOurContextSessionFilename("100__0.0.0.0_1234"));
         assertFalse(store.isOurContextSessionFilename("100__other_0.0.0.0_1234"));
     }
