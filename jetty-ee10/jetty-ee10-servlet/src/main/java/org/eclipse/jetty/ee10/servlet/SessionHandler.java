@@ -46,6 +46,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionHandler;
 import org.eclipse.jetty.session.Session;
@@ -755,7 +756,7 @@ public class SessionHandler extends AbstractSessionHandler
 
         // Handle changed ID or max-age refresh, but only if this is not a redispatched request
         if (cookie != null)
-            mutableServletRequest.replaceCookie(cookie);
+            Response.replaceCookie(servletScopedResponse, cookie);
 
         request.getHttpChannel().addStreamWrapper(s ->
         new HttpStream.Wrapper(s)

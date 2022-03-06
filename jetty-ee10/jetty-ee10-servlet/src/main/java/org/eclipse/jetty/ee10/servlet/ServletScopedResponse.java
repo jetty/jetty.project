@@ -322,7 +322,6 @@ public class ServletScopedResponse extends ContextResponse
             _response = response;
         }
 
-        @SuppressWarnings({"removal"})
         @Override
         public void addCookie(Cookie cookie)
         {
@@ -351,43 +350,7 @@ public class ServletScopedResponse extends ContextResponse
 
         public void addCookie(HttpCookie cookie)
         {
-            if (StringUtil.isBlank(cookie.getName()))
-                throw new IllegalArgumentException("Cookie.name cannot be blank/null");
-
-            // add the set cookie
-            _response.getHeaders().add(new HttpCookie.SetCookieHttpField(checkSameSite(cookie), _servletChannel.getHttpConfiguration().getResponseCookieCompliance()));
-
-            // Expire responses with set-cookie headers so they do not get cached.
-            _response.getHeaders().put(__EXPIRES_01JAN1970);
-        }
-
-        /**
-         * Check that samesite is set on the cookie. If not, use a
-         * context default value, if one has been set.
-         *
-         * @param cookie the cookie to check
-         * @return either the original cookie, or a new one that has the samesit default set
-         */
-        private HttpCookie checkSameSite(HttpCookie cookie)
-        {
-            if (cookie == null || cookie.getSameSite() != null)
-                return cookie;
-
-            //sameSite is not set, use the default configured for the context, if one exists
-            HttpCookie.SameSite contextDefault = HttpCookie.getSameSiteDefault(_servletChannel.getContext());
-            if (contextDefault == null)
-                return cookie; //no default set
-
-            return new HttpCookie(cookie.getName(),
-                cookie.getValue(),
-                cookie.getDomain(),
-                cookie.getPath(),
-                cookie.getMaxAge(),
-                cookie.isHttpOnly(),
-                cookie.isSecure(),
-                cookie.getComment(),
-                cookie.getVersion(),
-                contextDefault);
+            Response.addCookie(ServletScopedResponse.this, cookie);
         }
 
         @Override
