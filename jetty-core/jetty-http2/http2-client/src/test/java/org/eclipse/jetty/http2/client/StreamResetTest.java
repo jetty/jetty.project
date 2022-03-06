@@ -300,7 +300,7 @@ public class StreamResetTest extends AbstractTest
                     for (int i = 0; i < 100; i++)
                     {
                         Thread.sleep(100);
-                        response.getOutputStream().write(data);
+                        response.write(true, callback, ByteBuffer.wrap(data));
                         response.flushBuffer();
                     }
                 }
@@ -628,7 +628,7 @@ public class StreamResetTest extends AbstractTest
                     {
                         // Make sure we are in async wait before writing.
                         Thread.sleep(1000);
-                        response.getOutputStream().write(new byte[10 * windowSize]);
+                        response.write(true, callback, ByteBuffer.wrap(new byte[10 * windowSize]));
                         asyncContext.complete();
                     }
                     catch (IOException x)

@@ -442,9 +442,9 @@ public class ErrorProcessorTest
     {
         server.setErrorProcessor((request, response, callback) ->
         {
-            response.setHeader(HttpHeader.LOCATION, "/error");
-            response.setHeader("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
-            response.setHeader("X-Error-Status", Integer.toString(response.getStatus()));
+            response.getHeaders().put(HttpHeader.LOCATION, "/error");
+            response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
+            response.getHeaders().put("X-Error-Status", Integer.toString(response.getStatus()));
             response.setStatus(302);
             callback.succeeded();
         });

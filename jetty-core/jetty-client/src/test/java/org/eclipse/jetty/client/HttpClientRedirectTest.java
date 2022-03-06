@@ -271,7 +271,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setStatus(303);
-                response.setHeader("Location", "ssh://localhost:" + connector.getLocalPort() + "/path");
+                response.getHeaders().put("Location", "ssh://localhost:" + connector.getLocalPort() + "/path");
             }
         });
 
@@ -444,15 +444,15 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 if (target.startsWith("/redirect"))
                 {
                     response.setStatus(HttpStatus.SEE_OTHER_303);
-                    response.setHeader(HttpHeader.LOCATION.asString(), scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/ok");
+                    response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://localhost:" + connector.getLocalPort() + "/ok");
                     // Say that we send gzipped content, but actually don't.
-                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
-                    response.getOutputStream().write("redirect".getBytes(StandardCharsets.UTF_8));
+                    response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
+                    response.write(true, callback, ByteBuffer.wrap("redirect".getBytes(StandardCharsets.UTF_8)));
                 }
                 else
                 {
                     response.setStatus(HttpStatus.OK_200);
-                    response.getOutputStream().write(bytes);
+                    response.write(true, callback, ByteBuffer.wrap(bytes));
                 }
             }
         });
@@ -477,7 +477,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             protected void service(Request request, org.eclipse.jetty.server.Response response) throws Exception
             {
                 response.setStatus(HttpStatus.SEE_OTHER_303);
-                response.setHeader(HttpHeader.LOCATION.asString(), request.getRequestURI());
+                response.getHeaders().put(HttpHeader.LOCATION, request.getRequestURI());
             }
         });
 
@@ -502,7 +502,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 {
                     Thread.sleep(200);
                     response.setStatus(HttpStatus.SEE_OTHER_303);
-                    response.setHeader(HttpHeader.LOCATION.asString(), "/" + counter.getAndIncrement());
+                    response.getHeaders().put(HttpHeader.LOCATION, "/" + counter.getAndIncrement());
                 }
                 catch (InterruptedException x)
                 {
@@ -536,7 +536,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 if ("/one".equals(target))
                 {
                     response.setStatus(HttpStatus.SEE_OTHER_303);
-                    response.setHeader(HttpHeader.LOCATION.asString(), scenario.getScheme() + "://127.0.0.1:" + connector.getLocalPort() + "/two");
+                    response.getHeaders().put(HttpHeader.LOCATION, scenario.getScheme() + "://127.0.0.1:" + connector.getLocalPort() + "/two");
                 }
                 else if ("/two".equals(target))
                 {
@@ -603,13 +603,13 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                     {
                         Thread.sleep(timeout);
                         response.setStatus(HttpStatus.SEE_OTHER_303);
-                        response.setHeader(HttpHeader.LOCATION.asString(), serverURI + "/two");
+                        response.getHeaders().put(HttpHeader.LOCATION, serverURI + "/two");
                     }
                     else if ("/two".equals(target))
                     {
                         Thread.sleep(timeout);
                         response.setStatus(HttpStatus.SEE_OTHER_303);
-                        response.setHeader(HttpHeader.LOCATION.asString(), serverURI + "/three");
+                        response.getHeaders().put(HttpHeader.LOCATION, serverURI + "/three");
                     }
                     else if ("/three".equals(target))
                     {
@@ -703,10 +703,10 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
                 if (Boolean.parseBoolean(request.getParameter("decode")))
                     location = URLDecoder.decode(location, "UTF-8");
 
-                response.setHeader("Location", location);
+                response.getHeaders().put("Location", location);
 
                 if (Boolean.parseBoolean(request.getParameter("close")))
-                    response.setHeader("Connection", "close");
+                    response.getHeaders().put("Connection", "close");
             }
             catch (NumberFormatException x)
             {

@@ -13,13 +13,10 @@
 
 package org.eclipse.jetty.http2.client.http;
 
-import java.io.IOException;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Result;
@@ -36,7 +33,6 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
@@ -103,19 +99,18 @@ public class PushedResourcesTest extends AbstractTest
 
         String path1 = "/secondary1";
         String path2 = "/secondary2";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 if (target.equals(path1))
                 {
-                    response.getOutputStream().write(pushBytes1);
+                    response.write(true, callback, ByteBuffer.wrap(pushBytes1));
                 }
                 else if (target.equals(path2))
                 {
-                    response.getOutputStream().write(pushBytes2);
+                    response.write(true, callback, ByteBuffer.wrap(pushBytes2));
                 }
                 else
                 {
@@ -125,7 +120,7 @@ public class PushedResourcesTest extends AbstractTest
                     baseRequest.newPushBuilder()
                         .path(path2)
                         .push();
-                    response.getOutputStream().write(bytes);
+                    response.write(true, callback, ByteBuffer.wrap(bytes));
                 }
             }
         });
@@ -170,16 +165,15 @@ public class PushedResourcesTest extends AbstractTest
 
         String oldPath = "/old";
         String newPath = "/new";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 if (target.equals(oldPath))
                     response.sendRedirect(newPath);
                 else if (target.equals(newPath))
-                    response.getOutputStream().write(pushBytes);
+                    response.write(true, callback, ByteBuffer.wrap(pushBytes));
                 else
                     baseRequest.newPushBuilder().path(oldPath).push();
             }

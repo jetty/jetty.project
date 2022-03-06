@@ -110,22 +110,11 @@
       <artifactId>jetty-jmx</artifactId>
       <optional>true</optional>
     </dependency>
-
-<!--    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jakarta-servlet-api</artifactId>
-      <scope>test</scope>
-    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
       <scope>test</scope>
     </dependency>
-    <!--<dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-security</artifactId>
-      <scope>test</scope>
-    </dependency>-->
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>

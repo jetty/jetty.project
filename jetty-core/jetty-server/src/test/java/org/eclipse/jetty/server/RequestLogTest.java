@@ -328,7 +328,7 @@ public class RequestLogTest
                 public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
                 {
                     response.setStatus(202);
-                    response.setHeader("X-Name", "actual");
+                    response.getHeaders().put("X-Name", "actual");
                     response.setCharacterEncoding("UTF-8");
                     response.setContentType("text/plain");
                     response.getWriter().printf("Got %s to %s%n", request.getMethod(), request.getHttpURI());
@@ -336,7 +336,7 @@ public class RequestLogTest
                     assertTrue(response.isCommitted(), "Response should be committed");
                     baseRequest.setHandled(true);
                     response.setStatus(204);
-                    response.setHeader("X-Name", "post-commit");
+                    response.getHeaders().put("X-Name", "post-commit");
                 }
             };
 

@@ -552,7 +552,7 @@ public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
                 // Always reply with a 401 to see if the client
                 // can handle an infinite authentication loop.
                 response.setStatus(HttpStatus.UNAUTHORIZED_401);
-                response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), authType);
+                response.getHeaders().put(HttpHeader.WWW_AUTHENTICATE, authType);
             }
         });
 

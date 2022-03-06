@@ -23,13 +23,16 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MathUtils;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.thread.AutoLock;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * The Content abstract is based on what is already used in several places.
@@ -365,6 +368,54 @@ public interface Content
         {
             throw IO.rethrow(e.getCause());
         }
+    }
+
+    static void consumeAll(Provider provider) throws Exception
+    {
+        try (Blocking.Callback callback = Blocking.callback())
+        {
+            consumeAll(provider, callback);
+            callback.block();
+        }
+    }
+
+    static void consumeAll(Provider provider, Callback callback)
+    {
+        new Invocable.Task()
+        {
+            @Override
+            public void run()
+            {
+                while (true)
+                {
+                    Content content = provider.readContent();
+                    if (content == null)
+                    {
+                        provider.demandContent(this);
+                        continue;
+                    }
+
+                    if (content instanceof Error error)
+                    {
+                        callback.failed(error.getCause());
+                        return;
+                    }
+
+                    content.release();
+                    if (content.isLast())
+                    {
+                        callback.succeeded();
+                        return;
+                    }
+                }
+            }
+
+            @Override
+            public InvocationType getInvocationType()
+            {
+                return InvocationType.NON_BLOCKING; // TODO should be easier to make a non blocking runnable
+            }
+        }.run();
     }
 
     abstract class Processor implements Provider

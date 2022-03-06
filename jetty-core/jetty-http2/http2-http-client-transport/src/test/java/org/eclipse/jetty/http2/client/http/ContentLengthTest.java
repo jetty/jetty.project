@@ -55,7 +55,7 @@ public class ContentLengthTest extends AbstractTest
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.getOutputStream().write(data);
+                response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
 
@@ -83,7 +83,7 @@ public class ContentLengthTest extends AbstractTest
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.setContentLength(data.length);
-                response.getOutputStream().write(data);
+                response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
 

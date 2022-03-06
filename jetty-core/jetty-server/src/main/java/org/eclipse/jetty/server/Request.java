@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * <p>The representation of an HTTP request, for any protocol version (HTTP/1.1, HTTP/2, HTTP/3).</p>
@@ -135,7 +136,7 @@ public interface Request extends Attributes, Content.Provider
     Context getContext();
 
     /**
-     * @return The part of the path of the URI after any context path prefix has been removed.
+     * @return The part of the decoded path of the URI after any context path prefix has been removed.
      */
     String getPathInContext();
 
@@ -352,7 +353,7 @@ public interface Request extends Attributes, Content.Provider
      * <p>The processing typically involves reading the request content (if any) and producing a response.</p>
      */
     @FunctionalInterface
-    interface Processor
+    interface Processor extends Invocable
     {
         /**
          * <p>Invoked to process the given HTTP request and response.</p>

@@ -99,7 +99,7 @@ public class MsieRule extends Rule
                         reqFields.remove(HttpHeader.KEEP_ALIVE);
                         reqFields.ensureField(CONNECTION_CLOSE);
                         resFields.ensureField(CONNECTION_CLOSE);
-                        response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+                        response.getHeaders().put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
                     }
                 }
                 baseRequest.setHttpFields(reqFields);

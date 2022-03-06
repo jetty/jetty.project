@@ -188,7 +188,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.getOutputStream().write(data);
+                response.write(true, callback, ByteBuffer.wrap(data));
                 baseRequest.setHandled(true);
             }
         });
@@ -359,7 +359,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 {
                     response.setCharacterEncoding("UTF-8");
                     response.setContentType("text/plain");
-                    response.getOutputStream().write(content);
+                    response.write(true, callback, ByteBuffer.wrap(content));
                 }
             }
         });
@@ -713,7 +713,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
                 baseRequest.setHandled(true);
-                response.setHeader(headerName, "X");
+                response.getHeaders().put(headerName, "X");
             }
         });
 
@@ -771,7 +771,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
-                response.getOutputStream().write(new byte[length]);
+                response.write(true, callback, ByteBuffer.wrap(new byte[length]));
             }
         });
 
@@ -1118,7 +1118,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
-                response.getOutputStream().write(content);
+                response.write(true, callback, ByteBuffer.wrap(content));
             }
         });
 
@@ -1185,7 +1185,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 byte[] content = "TEST".getBytes(StandardCharsets.UTF_8);
                 response.setContentLength(content.length);
                 response.flushBuffer();
-                response.getOutputStream().write(content);
+                response.write(true, callback, ByteBuffer.wrap(content));
             }
         });
 
@@ -1346,8 +1346,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 baseRequest.setHandled(true);
                 // Send Connection: close to avoid that the server chunks the content with HTTP 1.1.
                 if (version.compareTo(HttpVersion.HTTP_1_0) > 0)
-                    response.setHeader("Connection", "close");
-                response.getOutputStream().write(data);
+                    response.getHeaders().put("Connection", "close");
+                response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
 

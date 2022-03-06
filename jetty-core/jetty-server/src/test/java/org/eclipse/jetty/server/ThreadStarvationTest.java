@@ -259,7 +259,7 @@ public class ThreadStarvationTest
                         r++;
                 }
 
-                response.getOutputStream().write(("Read Input " + r + "\r\n").getBytes());
+                response.write(true, callback, ByteBuffer.wrap(("Read Input " + r + "\r\n").getBytes()));
             }
             else
             {

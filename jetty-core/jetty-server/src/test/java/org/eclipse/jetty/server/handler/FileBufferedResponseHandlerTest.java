@@ -96,12 +96,11 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testPathNotIncluded() throws Exception
     {
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
                 writer.println("a string larger than the buffer size");
@@ -125,12 +124,11 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testIncludedByPath() throws Exception
     {
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
                 writer.println("a string larger than the buffer size");
@@ -161,12 +159,11 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testExcludedByPath() throws Exception
     {
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
                 writer.println("a string larger than the buffer size");
@@ -191,12 +188,11 @@ public class FileBufferedResponseHandlerTest
     public void testExcludedByMime() throws Exception
     {
         String excludedMimeType = "text/excluded";
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setContentType(excludedMimeType);
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
@@ -221,12 +217,11 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testFlushed() throws Exception
     {
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setBufferSize(1024);
                 PrintWriter writer = response.getWriter();
                 writer.println("a string smaller than the buffer size");
@@ -260,12 +255,11 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testClosed() throws Exception
     {
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setBufferSize(10);
                 PrintWriter writer = response.getWriter();
                 writer.println("a string larger than the buffer size");
@@ -299,12 +293,11 @@ public class FileBufferedResponseHandlerTest
     {
         int bufferSize = 4096;
         String largeContent = generateContent(bufferSize - 64);
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setBufferSize(bufferSize);
                 PrintWriter writer = response.getWriter();
                 writer.println(largeContent);
@@ -329,12 +322,11 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testFlushEmpty() throws Exception
     {
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setBufferSize(1024);
                 PrintWriter writer = response.getWriter();
                 writer.flush();
@@ -364,12 +356,11 @@ public class FileBufferedResponseHandlerTest
     @Test
     public void testReset() throws Exception
     {
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setBufferSize(8);
                 PrintWriter writer = response.getWriter();
                 writer.println("THIS WILL BE RESET");
@@ -414,12 +405,11 @@ public class FileBufferedResponseHandlerTest
         long fileSize = Integer.MAX_VALUE + 1234L;
         byte[] bytes = randomBytes(1024 * 1024);
 
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 ServletOutputStream outputStream = response.getOutputStream();
 
                 long written = 0;
@@ -431,8 +421,8 @@ public class FileBufferedResponseHandlerTest
                 }
                 outputStream.flush();
 
-                response.setHeader("NumFiles", Integer.toString(getNumFiles()));
-                response.setHeader("FileSize", Long.toString(getFileSize()));
+                response.getHeaders().put("NumFiles", Integer.toString(getNumFiles()));
+                response.getHeaders().put("FileSize", Long.toString(getFileSize()));
             }
         });
 
@@ -517,12 +507,11 @@ public class FileBufferedResponseHandlerTest
 
         _server.setHandler(new HandlerCollection(failingInterceptorHandler, _server.getHandler()));
         CompletableFuture<Throwable> errorFuture = new CompletableFuture<>();
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 byte[] chunk1 = "this content will ".getBytes();
                 byte[] chunk2 = "be buffered in a file".getBytes();
                 response.setContentLength(chunk1.length + chunk2.length);
@@ -577,12 +566,11 @@ public class FileBufferedResponseHandlerTest
         _bufferedHandler.setTempDir(tempDir.toPath());
 
         CompletableFuture<Throwable> errorFuture = new CompletableFuture<>();
-        _bufferedHandler.setHandler(new AbstractHandler()
+        _bufferedHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 ServletOutputStream outputStream = response.getOutputStream();
                 byte[] content = "this content will be buffered in a file".getBytes();
 

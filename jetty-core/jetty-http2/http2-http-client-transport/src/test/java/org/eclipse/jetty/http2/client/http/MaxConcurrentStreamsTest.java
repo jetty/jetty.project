@@ -345,7 +345,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
             @Override
             protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.getOutputStream().write(data);
+                response.write(true, callback, ByteBuffer.wrap(data));
             }
         });
 

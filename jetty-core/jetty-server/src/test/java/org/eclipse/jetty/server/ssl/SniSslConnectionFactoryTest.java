@@ -138,8 +138,8 @@ public class SniSslConnectionFactoryTest
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
-                response.setHeader("X-URL", request.getPathInContext());
-                response.setHeader("X-HOST", Request.getServerName(request));
+                response.getHeaders().put("X-URL", request.getPathInContext());
+                response.getHeaders().put("X-HOST", Request.getServerName(request));
                 callback.succeeded();
             }
         });

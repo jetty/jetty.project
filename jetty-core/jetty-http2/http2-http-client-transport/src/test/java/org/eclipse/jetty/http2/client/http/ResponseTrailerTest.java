@@ -68,7 +68,7 @@ public class ResponseTrailerTest extends AbstractTest
                 // Send empty response trailers.
                 response.setTrailerFields(HashMap::new);
                 if (data != null)
-                    response.getOutputStream().write(data.getBytes(StandardCharsets.US_ASCII));
+                    response.write(true, callback, ByteBuffer.wrap(data.getBytes(StandardCharsets.US_ASCII)));
             }
         });
 

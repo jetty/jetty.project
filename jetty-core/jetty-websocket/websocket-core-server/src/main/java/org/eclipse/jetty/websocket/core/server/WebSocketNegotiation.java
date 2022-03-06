@@ -155,7 +155,7 @@ public abstract class WebSocketNegotiation
     public void setSubprotocol(String protocol)
     {
         this.protocol = protocol;
-        response.setHeader(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL.asString(), protocol);
+        response.getHeaders().put(HttpHeader.SEC_WEBSOCKET_SUBPROTOCOL, protocol);
     }
 
     public List<String> getOfferedSubprotocols()

@@ -61,7 +61,7 @@ public class HTTP2CServer extends Server
             if (code != null)
                 response.setStatus(Integer.parseInt(code));
 
-            response.setHeader("Custom", "Value");
+            response.getHeaders().put("Custom", "Value");
             response.setContentType("text/plain");
             String content = "Hello from Jetty using " + request.getProtocol() + "\n";
             content += "uri=" + request.getRequestURI() + "\n";

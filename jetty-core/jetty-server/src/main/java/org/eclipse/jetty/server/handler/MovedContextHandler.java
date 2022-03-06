@@ -117,9 +117,9 @@ public class MovedContextHandler extends ContextHandler
                 location.append(q);
             }
 
-            response.setHeader(HttpHeader.LOCATION.asString(), location.toString());
+            response.getHeaders().put(HttpHeader.LOCATION, location.toString());
             if (_expires != null)
-                response.setHeader(HttpHeader.EXPIRES.asString(), _expires);
+                response.getHeaders().put(HttpHeader.EXPIRES, _expires);
             response.setStatus(_permanent ? HttpStatus.MOVED_PERMANENTLY_301 : HttpStatus.FOUND_302);
             callback.succeeded();
         }

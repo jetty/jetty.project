@@ -660,7 +660,7 @@ public class PushCacheFilterTest extends AbstractTest
                 else
                 {
                     response.setStatus(HttpStatus.TEMPORARY_REDIRECT_307);
-                    response.setHeader(HttpHeader.LOCATION.asString(), primaryResource);
+                    response.getHeaders().put(HttpHeader.LOCATION, primaryResource);
                 }
             }
         });

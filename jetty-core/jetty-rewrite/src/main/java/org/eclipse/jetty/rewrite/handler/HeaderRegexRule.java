@@ -81,7 +81,7 @@ public class HeaderRegexRule extends RegexRule
         if (_add)
             response.addHeader(_name, _value);
         else
-            response.setHeader(_name, _value);
+            response.getHeaders().put(_name, _value);
         return target;
     }
 

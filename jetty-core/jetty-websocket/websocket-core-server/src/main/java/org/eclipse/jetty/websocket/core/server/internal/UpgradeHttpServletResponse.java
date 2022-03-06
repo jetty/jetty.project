@@ -299,7 +299,7 @@ public class UpgradeHttpServletResponse implements HttpServletResponse
     {
         if (_response == null)
             throw new UnsupportedOperationException(UNSUPPORTED_AFTER_WEBSOCKET_UPGRADE);
-        _response.setHeader(name, value);
+        _response.getHeaders().put(name, value);
     }
 
     @Override

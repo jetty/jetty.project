@@ -200,7 +200,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                 {
                     int contentLength = request.getIntHeader("X-Download");
                     if (contentLength > 0)
-                        response.getOutputStream().write(new byte[contentLength]);
+                        response.write(true, callback, ByteBuffer.wrap(new byte[contentLength]));
                     break;
                 }
                 case "POST":
@@ -208,7 +208,7 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                     int contentLength = request.getContentLength();
                     ByteArrayOutputStream2 bout = new ByteArrayOutputStream2(contentLength > 0 ? contentLength : 16 * 1024);
                     IO.copy(request.getInputStream(), bout);
-                    response.getOutputStream().write(bout.getBuf(), 0, bout.getCount());
+                    response.write(true, callback, ByteBuffer.wrap(bout.getBuf(), 0, bout.getCount()));
                     break;
                 }
             }

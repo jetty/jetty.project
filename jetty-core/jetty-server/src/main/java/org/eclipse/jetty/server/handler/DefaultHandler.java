@@ -101,7 +101,7 @@ public class DefaultHandler extends Handler.Processor
                 response.setContentType("image/x-icon");
                 response.setContentLength(_favicon.remaining());
                 response.getHeaders().add(_faviconModified);
-                response.setHeader(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
+                response.getHeaders().put(HttpHeader.CACHE_CONTROL.toString(), "max-age=360000,public");
                 content = _favicon.slice();
             }
             response.write(true, callback, content);

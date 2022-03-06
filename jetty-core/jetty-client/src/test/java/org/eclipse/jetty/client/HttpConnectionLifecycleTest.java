@@ -326,7 +326,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             @Override
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             {
-                response.setHeader("Connection", "close");
+                response.getHeaders().put("Connection", "close");
                 baseRequest.setHandled(true);
             }
         });
@@ -373,7 +373,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
                 @Override
                 public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
                 {
-                    response.setHeader("Connection", "close");
+                    response.getHeaders().put("Connection", "close");
                     baseRequest.setHandled(true);
                     // Don't read request content; this causes the server parser to be closed
                 }

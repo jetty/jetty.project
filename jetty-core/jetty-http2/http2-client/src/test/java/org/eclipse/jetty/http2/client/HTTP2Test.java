@@ -253,7 +253,7 @@ public class HTTP2Test extends AbstractTest
                 int download = request.getIntHeader(downloadBytes);
                 byte[] content = new byte[download];
                 new Random().nextBytes(content);
-                response.getOutputStream().write(content);
+                response.write(true, callback, ByteBuffer.wrap(content));
             }
         });
 
@@ -819,7 +819,7 @@ public class HTTP2Test extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response)
             {
-                response.setHeader(":custom", "special");
+                response.getHeaders().put(":custom", "special");
             }
         });
 
@@ -852,7 +852,7 @@ public class HTTP2Test extends AbstractTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.setHeader(":custom", "special");
+                response.getHeaders().put(":custom", "special");
                 try
                 {
                     response.flushBuffer();

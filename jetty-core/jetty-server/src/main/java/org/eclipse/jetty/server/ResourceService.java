@@ -257,13 +257,13 @@ public class ResourceService
                     if (LOG.isDebugEnabled())
                         LOG.debug("precompressed={}", precompressedContent);
                     content = precompressedContent;
-                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), precompressedContentEncoding.getEncoding());
+                    response.getHeaders().put(HttpHeader.CONTENT_ENCODING, precompressedContentEncoding.getEncoding());
                 }
             }
 
             // TODO this should be done by HttpContent#getContentEncoding
             if (isGzippedContent(pathInContext))
-                response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+                response.getHeaders().put(HttpHeader.CONTENT_ENCODING, "gzip");
 
             // Send the data
             releaseContent = sendData(request, response, included, content, reqRanges);
@@ -452,7 +452,7 @@ public class ResourceService
     {
         response.setStatus(status);
         if (_etags && etag != null)
-            response.setHeader(HttpHeader.ETAG.asString(), etag.get());
+            response.getHeaders().put(HttpHeader.ETAG, etag.get());
         response.flushBuffer();
     }
 
@@ -612,7 +612,7 @@ public class ResourceService
         data = dir.getBytes(StandardCharsets.UTF_8);
         response.setContentType("text/html;charset=utf-8");
         response.setContentLength(data.length);
-        response.getOutputStream().write(data);
+        response.write(true, callback, ByteBuffer.wrap(data));
     }
 
     protected boolean sendData(HttpServletRequest request,
@@ -720,7 +720,7 @@ public class ResourceService
             if (ranges == null || ranges.size() == 0)
             {
                 putHeaders(response, content, Response.USE_KNOWN_CONTENT_LENGTH);
-                response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
+                response.getHeaders().put(HttpHeader.CONTENT_RANGE,
                     InclusiveByteRange.to416HeaderRangeString(content_length));
                 sendStatus(response, HttpServletResponse.SC_REQUESTED_RANGE_NOT_SATISFIABLE, null);
                 return true;
@@ -736,7 +736,7 @@ public class ResourceService
                 response.setStatus(HttpServletResponse.SC_PARTIAL_CONTENT);
                 if (!response.containsHeader(HttpHeader.DATE.asString()))
                     response.addDateHeader(HttpHeader.DATE.asString(), System.currentTimeMillis());
-                response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
+                response.getHeaders().put(HttpHeader.CONTENT_RANGE,
                     singleSatisfiableRange.toHeaderRangeString(content_length));
                 writeContent(content, out, singleSatisfiableRange.getFirst(), singleLength);
                 return true;
@@ -848,10 +848,10 @@ public class ResourceService
         {
             Response.putHeaders(response, content, contentLength, _etags);
             if (_acceptRanges && !response.containsHeader(HttpHeader.ACCEPT_RANGES.asString()))
-                response.setHeader(ACCEPT_RANGES.getName(), ACCEPT_RANGES.getValue());
+                response.getHeaders().put(ACCEPT_RANGES.getName(), ACCEPT_RANGES.getValue());
 
             if (_cacheControl != null && !response.containsHeader(HttpHeader.CACHE_CONTROL.asString()))
-                response.setHeader(_cacheControl.getName(), _cacheControl.getValue());
+                response.getHeaders().put(_cacheControl.getName(), _cacheControl.getValue());
         }
     }
 
