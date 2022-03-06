@@ -47,7 +47,11 @@ public class NullSessionCache extends AbstractSessionCache
     @Override
     public Session newSession(SessionData data)
     {
-        return new Session(getSessionManager(), data);
+        Session session = new Session(getSessionManager(), data);
+        Session.APISession apiSession = getSessionManager().newSessionAPIWrapper(session);
+        assert apiSession.getSession() == session;
+        assert session.getAPISession() == apiSession;
+        return session;
     }
 
     @Override

@@ -103,6 +103,11 @@ public class ServletScopedResponse extends ContextResponse
     {
         return _httpServletResponse;
     }
+    
+    public MutableHttpServletResponse getMutableHttpServletResponse()
+    {
+        return _httpServletResponse;
+    }
 
     public void completeOutput(Callback callback)
     {
