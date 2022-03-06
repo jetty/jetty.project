@@ -18,9 +18,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.http.HttpConnectionOverHTTP;
 import org.eclipse.jetty.client.util.AsyncRequestContent;
@@ -32,7 +29,7 @@ import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -99,13 +96,11 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testClientConnectionCloseServerDoesNotRespondClientIdleTimeout(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                request.startAsync();
                 // Do not respond.
             }
         });
@@ -143,22 +138,18 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     public void testClientConnectionCloseServerPartialResponseClientIdleTimeout(Scenario scenario) throws Exception
     {
         long idleTimeout = 1000;
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Processor(InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
+                Content.consumeAll(request);
 
-                ServletInputStream input = request.getInputStream();
-                while (true)
+                try (Blocking.Callback block = Blocking.callback())
                 {
-                    int read = input.read();
-                    if (read < 0)
-                        break;
+                    response.write(false, block, "Hello");
+                    block.block();
                 }
-
-                response.getOutputStream().print("Hello");
-                response.flushBuffer();
 
                 try
                 {
@@ -168,6 +159,8 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
                 {
                     throw new InterruptedIOException();
                 }
+
+                callback.succeeded();
             }
         });
 
