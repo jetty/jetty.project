@@ -199,13 +199,17 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testClientConnectionCloseServerNoConnectionCloseClientCloses(Scenario scenario) throws Exception
     {
-        start(scenario, new Handler.Processor()
+        start(scenario, new Handler.Processor(InvocationType.BLOCKING)
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setContentLength(0);
-                response.flushBuffer();
+                try (Blocking.Callback block = Blocking.callback())
+                {
+                    response.write(false, block);
+                    block.block();
+                }
 
                 try
                 {
@@ -216,6 +220,7 @@ public class ClientConnectionCloseTest extends AbstractHttpClientServerTest
                 {
                     throw new InterruptedIOException();
                 }
+                callback.succeeded();
             }
         });
 
