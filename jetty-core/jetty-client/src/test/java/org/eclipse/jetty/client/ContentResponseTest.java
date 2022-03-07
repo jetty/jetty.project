@@ -42,7 +42,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 response.write(true, callback, ByteBuffer.wrap(content));
             }
@@ -68,7 +68,7 @@ public class ContentResponseTest extends AbstractHttpClientServerTest
         start(scenario, new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(HttpHeader.CONTENT_TYPE, mediaType);
                 response.write(true, callback, ByteBuffer.wrap(content.getBytes(StandardCharsets.UTF_8)));

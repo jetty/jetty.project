@@ -20,6 +20,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpParser;
@@ -353,6 +354,21 @@ public class LocalConnector extends AbstractConnector
          */
         public ByteBuffer waitForResponse(boolean head, long time, TimeUnit unit) throws Exception
         {
+            return waitForResponse(head, time, unit, i -> {});
+        }
+
+        /**
+         * Wait for a response using a parser to detect the end of message
+         *
+         * @param head whether the request is a HEAD request
+         * @param time the maximum time to wait
+         * @param unit the time unit of the {@code timeout} argument
+         * @param statusConsumer a consumer to be called with the response's status code
+         * @return Buffer containing full response or null for EOF;
+         * @throws Exception if the response cannot be parsed
+         */
+        public ByteBuffer waitForResponse(boolean head, long time, TimeUnit unit, Consumer<Integer> statusConsumer) throws Exception
+        {
             HttpParser.ResponseHandler handler = new HttpParser.ResponseHandler()
             {
                 @Override
@@ -392,6 +408,7 @@ public class LocalConnector extends AbstractConnector
                 @Override
                 public void startResponse(HttpVersion version, int status, String reason)
                 {
+                    statusConsumer.accept(status);
                 }
             };
 

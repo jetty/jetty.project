@@ -36,7 +36,7 @@ public class HttpClientCorrelationDataTest extends AbstractHttpClientServerTest
         start(scenario, new EmptyServerHandler()
         {
             @Override
-            protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
+            protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
                 assertEquals(correlationData, request.getHeaders().get(correlationName));
             }
