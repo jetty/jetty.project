@@ -114,10 +114,10 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel)
         {
             @Override
-            public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
             {
                 sendCB.set(callback);
-                super.send(response, last, NOOP, content);
+                super.send(request, response, last, NOOP, content);
             }
         };
 
@@ -329,10 +329,10 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
             {
                 sendCB.set(callback);
-                super.send(response, last, NOOP, content);
+                super.send(request, response, last, NOOP, content);
             }
         };
 
@@ -832,10 +832,10 @@ public class HttpChannelTest
             }
 
             @Override
-            public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
             {
                 sendCB.set(callback);
-                super.send(response, last, NOOP, content);
+                super.send(request, response, last, NOOP, content);
             }
         };
 
@@ -872,14 +872,14 @@ public class HttpChannelTest
                 }
 
                 @Override
-                public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+                public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
                 {
                     history.add(String.format("send %d l=%b %d %s",
                         response == null ? 0 : response.getStatus(),
                         last,
                         content.length,
                         content.length == 0 ? null : BufferUtil.toDetailString(content[0])));
-                    super.send(response, last, callback, content);
+                    super.send(request, response, last, callback, content);
                 }
 
                 @Override
@@ -1196,10 +1196,10 @@ public class HttpChannelTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
             {
                 committing.countDown();
-                super.send(response, last, callback, content);
+                super.send(request, response, last, callback, content);
             }
         };
 
