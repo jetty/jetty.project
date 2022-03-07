@@ -154,7 +154,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
     {
-        HttpParser parser = new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(), compliance);
+        HttpParser parser = new HttpParser(_requestHandler, getHttpConfiguration().getRequestHeaderSize(), compliance);
         parser.setHeaderCacheSize(getHttpConfiguration().getHeaderCacheSize());
         parser.setHeaderCacheCaseSensitive(getHttpConfiguration().isHeaderCacheCaseSensitive());
         return parser;
@@ -1346,7 +1346,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (_expect100Continue)
             {
                 _expect100Continue = false;
-                send(HttpGenerator.CONTINUE_100_INFO, false, Callback.NOOP);
+                send(_request, HttpGenerator.CONTINUE_100_INFO, false, Callback.NOOP);
             }
 
             tryFillInterested(_demandContentCallback);
@@ -1360,7 +1360,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+        public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
         {
             if (response == null)
             {
