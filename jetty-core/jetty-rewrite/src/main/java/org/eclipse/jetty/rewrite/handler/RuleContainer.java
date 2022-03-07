@@ -138,47 +138,6 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
         }
 
         return match ? input : null;
-
-        // TODO: check the logic below
-/*
-            String applied = rule.matchAndApply(input);
-            if (applied != null)
-            {
-                if (_rewriteRequestURI)
-                {
-                    String encoded = URIUtil.encodePath(applied);
-                    if (rule instanceof Rule.ApplyURI)
-                        ((Rule.ApplyURI)rule).applyURI(baseRequest, baseRequest.getRequestURI(), encoded);
-                    else
-                    {
-                        HttpURI baseUri = baseRequest.getHttpURI();
-                        baseRequest.setHttpURI(HttpURI.build(baseUri, encoded)
-                            .param(baseUri.getParam())
-                            .query(baseUri.getQuery()));
-                    }
-                }
-
-                if (_rewritePathInfo)
-                    baseRequest.setContext(baseRequest.getContext(), applied);
-
-                target = applied;
-
-                if (rule.isHandling())
-                {
-                    LOG.debug("handling {}", rule);
-                    baseRequest.setHandled(true);
-                }
-
-                if (rule.isCompleting())
-                {
-                    LOG.debug("terminating {}", rule);
-                    break;
-                }
-            }
-        }
-
-        return target;
- */
     }
 
     @Override
