@@ -24,6 +24,7 @@ import org.eclipse.jetty.session.Session.APISession;
  */
 public class TestableSessionHandler extends AbstractSessionHandler
 {
+    boolean _idInUse;
     java.util.Collection<String> _sessionIdListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionCreatedListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionDestroyedListenersCalled = new ArrayList<>();
@@ -32,11 +33,31 @@ public class TestableSessionHandler extends AbstractSessionHandler
     java.util.Collection<String> _sessionBoundListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionActivationListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionPassivationListenersCalled = new ArrayList<>();
-
+    
     @Override
     public APISession newSessionAPIWrapper(Session session)
     {
-        return null;
+        return new APISession()
+        {
+
+            @Override
+            public Session getSession()
+            {
+                return session;
+            }
+
+        };
+    }
+    
+    public void setIdInUse(boolean idInUse)
+    {
+        _idInUse = idInUse;
+    }
+
+    @Override
+    public boolean isIdInUse(String id) throws Exception
+    {
+        return _idInUse;
     }
 
     @Override

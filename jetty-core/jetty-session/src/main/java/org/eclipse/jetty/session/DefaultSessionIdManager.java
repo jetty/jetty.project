@@ -502,7 +502,7 @@ public class DefaultSessionIdManager extends ContainerLifeCycle implements Sessi
         {
             //This method can be called on shutdown when the handlers are STOPPING, so only
             //check that they are not already stopped
-            if (sm.isRunning())
+            if (!sm.isStopped() && !sm.isFailed())
                 managers.add((SessionManager)sm);
         }
 
