@@ -435,7 +435,6 @@ public interface Content
         }
     }
 
-    // TODO thought bubble. Review, delete and/of find a proper home.
     class ContentPublisher implements Flow.Publisher<Content>
     {
         private final Provider _provider;
@@ -515,7 +514,6 @@ public interface Content
         }
     }
 
-    // TODO thought bubble. Review, delete and/of find a proper home.
     class FieldPublisher implements Flow.Publisher<Fields.Field>
     {
         private final Provider _provider;
@@ -705,17 +703,25 @@ public interface Content
         }
     }
 
-    // TODO thought bubble. Review, delete and/of find a proper home.
     class FieldsFuture extends CompletableFuture<Fields> implements Runnable
     {
         private final Provider _provider;
         private final Fields _fields = new Fields();
         private final Utf8StringBuilder _builder = new Utf8StringBuilder(); // TODO only UTF8???
+        private final int _maxFields;
+        private final int _maxSize;
         private String _name;
 
         public FieldsFuture(Provider provider)
         {
+            this(provider, -1, -1);
+        }
+
+        public FieldsFuture(Provider provider, int maxFields, int maxSize)
+        {
             _provider = provider;
+            _maxFields = maxFields;
+            _maxSize = maxSize; // TODO implement
             run();
         }
 
@@ -741,6 +747,11 @@ public interface Content
                 Fields.Field field = parse(content.getByteBuffer(), content.isLast());
                 while (field != null)
                 {
+                    if (_maxFields >= 0 && _fields.getSize() >= _maxFields)
+                    {
+                        completeExceptionally(new IllegalStateException("Too many fields"));
+                        return;
+                    }
                     _fields.put(field);
                     field = parse(content.getByteBuffer(), content.isLast());
                 }
