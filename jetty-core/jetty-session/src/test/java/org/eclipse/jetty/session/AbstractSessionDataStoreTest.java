@@ -405,9 +405,9 @@ public abstract class AbstractSessionDataStoreTest
     @Test
     public void testLoadSessionFails() throws Exception
     {   
-       setUp();
+        setUp();
         _server.start();
-        
+
         SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
 
         //persist a session that is damaged and cannot be read
