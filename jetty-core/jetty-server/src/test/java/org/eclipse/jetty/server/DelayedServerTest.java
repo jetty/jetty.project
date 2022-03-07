@@ -79,7 +79,8 @@ public class DelayedServerTest extends HttpServerTestBase
             {
                 try
                 {
-                    Thread.sleep(10);
+                    Thread.sleep(2);
+                    Thread.yield();
                 }
                 catch (InterruptedException ignored)
                 {

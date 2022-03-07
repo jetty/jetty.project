@@ -493,12 +493,12 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 "Connection: close\r\n" +
                 "\r\n").getBytes());
             os.flush();
-            Thread.sleep(1000);
+            Thread.sleep(100);
             os.write(("5").getBytes());
-            Thread.sleep(1000);
+            Thread.sleep(100);
             os.write(("\r\n").getBytes());
             os.flush();
-            Thread.sleep(1000);
+            Thread.sleep(100);
             os.write(("ABCDE\r\n" +
                 "0;\r\n\r\n").getBytes());
             os.flush();
@@ -623,7 +623,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 // Check the response
                 assertEquals(RESPONSE2, response, "response for " + i + " " + message);
 
-                Thread.sleep(10);
+                Thread.sleep(2);
             }
         }
     }
@@ -655,7 +655,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 // Check the response
                 assertEquals(RESPONSE2, response, "response for " + i + " " + message);
 
-                Thread.sleep(10);
+                Thread.sleep(2);
             }
         }
     }
@@ -697,7 +697,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testBlockingWhileReadingRequestContent() throws Exception
     {
-        // TODO this test takes too long
         startServer(new DataHandler());
 
         long start = System.currentTimeMillis();
@@ -715,17 +714,17 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "\r\n"
             ).getBytes());
             os.flush();
-            Thread.sleep(200);
+            Thread.sleep(100);
             os.write((
                 "\r\n23456890"
             ).getBytes());
             os.flush();
-            Thread.sleep(1000);
+            Thread.sleep(100);
             os.write((
                 "abcdefghij"
             ).getBytes());
             os.flush();
-            Thread.sleep(1000);
+            Thread.sleep(100);
             os.write((
                 "0987654321\r\n"
             ).getBytes());
@@ -745,7 +744,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     if ((total / 10240) > sleeps)
                     {
                         sleeps++;
-                        Thread.sleep(100);
+                        Thread.sleep(10);
                     }
                 }
             }
@@ -774,21 +773,21 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     "\r\n"
             ).getBytes());
             os.flush();
-            Thread.sleep(50);
+            Thread.sleep(10);
             os.write((
                 "a\r\n" +
                     "123456890\r\n"
             ).getBytes());
             os.flush();
 
-            Thread.sleep(50);
+            Thread.sleep(10);
             os.write((
                 "4\r\n" +
                     "abcd\r\n"
             ).getBytes());
             os.flush();
 
-            Thread.sleep(50);
+            Thread.sleep(10);
             os.write((
                 "X\r\n" +
                     "abcd\r\n"
@@ -796,7 +795,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.flush();
 
             HttpTester.Response response = HttpTester.parseResponse(HttpTester.from(is));
-
+            assertNotNull(response);
             assertThat(response.getStatus(), is(400));
             assertThat(response.getContent(), containsString("Early EOF"));
         }
