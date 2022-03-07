@@ -13,21 +13,15 @@
 
 package org.eclipse.jetty.client;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.util.FormRequestContent;
@@ -40,17 +34,20 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.io.NetworkTrafficSocketChannelEndPoint;
+import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NetworkTrafficServerConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -132,14 +129,7 @@ public class NetworkTrafficListenerTest
     @Test
     public void testTrafficWithNoResponseContentOnNonPersistentConnection() throws Exception
     {
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse)
-            {
-                request.setHandled(true);
-            }
-        });
+        start(new EmptyServerHandler());
 
         AtomicReference<String> serverIncoming = new AtomicReference<>("");
         CountDownLatch serverIncomingLatch = new CountDownLatch(1);
@@ -150,14 +140,14 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, UTF_8));
                 serverIncomingLatch.countDown();
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
                 serverOutgoingLatch.countDown();
             }
         });
@@ -171,14 +161,14 @@ public class NetworkTrafficListenerTest
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
                 clientOutgoingLatch.countDown();
             }
 
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, UTF_8));
                 clientIncomingLatch.countDown();
             }
         });
@@ -200,14 +190,12 @@ public class NetworkTrafficListenerTest
     public void testTrafficWithResponseContentOnPersistentConnection() throws Exception
     {
         String responseContent = "response_content" + END_OF_CONTENT;
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                request.setHandled(true);
-                ServletOutputStream output = servletResponse.getOutputStream();
-                output.write(responseContent.getBytes(StandardCharsets.UTF_8));
+                response.write(true, callback, UTF_8.encode(responseContent));
             }
         });
 
@@ -220,14 +208,14 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, UTF_8));
                 serverIncomingLatch.countDown();
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
                 serverOutgoingLatch.countDown();
             }
         });
@@ -241,14 +229,14 @@ public class NetworkTrafficListenerTest
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
                 clientOutgoingLatch.countDown();
             }
 
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, UTF_8));
                 clientIncomingLatch.countDown();
             }
         });
@@ -271,17 +259,13 @@ public class NetworkTrafficListenerTest
         String responseContent = "response_content";
         String responseChunk1 = responseContent.substring(0, responseContent.length() / 2);
         String responseChunk2 = responseContent.substring(responseContent.length() / 2);
-        start(new AbstractHandler()
+        start(new EmptyServerHandler()
         {
             @Override
-            public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException
+            protected void service(Request request, Response response) throws Throwable
             {
-                request.setHandled(true);
-                ServletOutputStream output = servletResponse.getOutputStream();
-                output.write(responseChunk1.getBytes(StandardCharsets.UTF_8));
-                output.flush();
-                output.write(responseChunk2.getBytes(StandardCharsets.UTF_8));
-                output.flush();
+                Response.write(response, false, UTF_8.encode(responseChunk1));
+                Response.write(response, false, UTF_8.encode(responseChunk2));
             }
         });
 
@@ -294,14 +278,14 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, UTF_8));
                 serverIncomingLatch.countDown();
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
                 if (serverOutgoing.get().endsWith("\r\n0\r\n\r\n"))
                     serverOutgoingLatch.countDown();
             }
@@ -316,14 +300,14 @@ public class NetworkTrafficListenerTest
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
                 clientOutgoingLatch.countDown();
             }
 
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, UTF_8));
                 if (clientIncoming.get().endsWith("\r\n0\r\n\r\n"))
                     clientIncomingLatch.countDown();
             }
@@ -344,13 +328,12 @@ public class NetworkTrafficListenerTest
     public void testTrafficWithRequestContentWithResponseRedirectOnPersistentConnection() throws Exception
     {
         String location = "/redirect";
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                request.setHandled(true);
-                servletResponse.sendRedirect(location);
+                Response.sendRedirect(request, response, callback, location);
             }
         });
 
@@ -363,14 +346,14 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, UTF_8));
                 serverIncomingLatch.countDown();
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
                 serverOutgoingLatch.countDown();
             }
         });
@@ -384,14 +367,14 @@ public class NetworkTrafficListenerTest
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
                 clientOutgoingLatch.countDown();
             }
 
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, UTF_8));
                 clientIncomingLatch.countDown();
             }
         });
@@ -416,23 +399,15 @@ public class NetworkTrafficListenerTest
     @Test
     public void testTrafficWithBigRequestContentOnPersistentConnection() throws Exception
     {
-        start(new AbstractHandler()
+        start(new EmptyServerHandler()
         {
             @Override
-            public void handle(String uri, Request request, HttpServletRequest servletRequest, HttpServletResponse servletResponse) throws IOException
+            protected void service(Request request, Response response) throws Throwable
             {
                 // Read and discard the request body to make the test more
                 // reliable, otherwise there is a race between request body
                 // upload and response download
-                InputStream input = servletRequest.getInputStream();
-                byte[] buffer = new byte[4096];
-                while (true)
-                {
-                    int read = input.read(buffer);
-                    if (read < 0)
-                        break;
-                }
-                request.setHandled(true);
+                Content.consumeAll(request);
             }
         });
 
@@ -444,13 +419,13 @@ public class NetworkTrafficListenerTest
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                serverIncoming.set(serverIncoming.get() + BufferUtil.toString(bytes, UTF_8));
             }
 
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                serverOutgoing.set(serverOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
                 serverOutgoingLatch.countDown();
             }
         });
@@ -463,13 +438,13 @@ public class NetworkTrafficListenerTest
             @Override
             public void outgoing(Socket socket, ByteBuffer bytes)
             {
-                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                clientOutgoing.set(clientOutgoing.get() + BufferUtil.toString(bytes, UTF_8));
             }
 
             @Override
             public void incoming(Socket socket, ByteBuffer bytes)
             {
-                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, StandardCharsets.UTF_8));
+                clientIncoming.set(clientIncoming.get() + BufferUtil.toString(bytes, UTF_8));
                 clientIncomingLatch.countDown();
             }
         });
