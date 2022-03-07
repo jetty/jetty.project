@@ -22,17 +22,12 @@ import org.eclipse.jetty.util.annotation.Name;
 
 /**
  * <p>A rule to rewrite the path and query that match a regular expression pattern with a fixed string.</p>
- * <p>The replacement string may use {@code $n} to replace the nth capture group.</p>
- * <p>If the replacement string contains the {@code ?} character,
- * then it is split into a path and query string component.</p>
- * <p>The replacement query string may also contain {@code $Q},
- * which is replaced with the original query string.</p>
+ * <p>The replacement String follows standard {@link Matcher#replaceAll(String)} behavior, including named groups</p>
+ * <p></p>
  */
 public class RewriteRegexRule extends RegexRule
 {
-    private String _path;
-    private String _query;
-    private boolean _queryGroup;
+    private String replacement;
 
     public RewriteRegexRule(@Name("regex") String regex, @Name("replacement") String replacement)
     {
@@ -47,50 +42,16 @@ public class RewriteRegexRule extends RegexRule
      */
     public void setReplacement(String replacement)
     {
-        if (replacement == null)
-        {
-            _path = null;
-            _query = null;
-            _queryGroup = false;
-        }
-        else
-        {
-            String[] split = replacement.split("\\?", 2);
-            _path = split[0];
-            _query = split.length == 2 ? split[1] : null;
-            _queryGroup = _query != null && _query.contains("$Q");
-        }
+        this.replacement = replacement;
     }
 
     @Override
     public Request.WrapperProcessor apply(Request.WrapperProcessor input, Matcher matcher) throws IOException
     {
-        String path = _path;
-        String query = _query;
-        for (int g = 1; g <= matcher.groupCount(); ++g)
-        {
-            String group = matcher.group(g);
-            if (group == null)
-                group = "";
-            else
-                group = Matcher.quoteReplacement(group);
-            path = path.replaceAll("\\$" + g, group);
-            if (query != null)
-                query = query.replaceAll("\\$" + g, group);
-        }
-
         HttpURI httpURI = input.getHttpURI();
+        String replacedPath = matcher.replaceAll(replacement);
 
-        if (query != null)
-        {
-            if (_queryGroup)
-            {
-                String origQuery = httpURI.getQuery();
-                query = query.replace("$Q", origQuery == null ? "" : origQuery);
-            }
-        }
-
-        HttpURI newURI = HttpURI.build(httpURI, path, httpURI.getParam(), query);
+        HttpURI newURI = HttpURI.build(httpURI, replacedPath);
         return new Request.WrapperProcessor(input)
         {
             @Override
@@ -104,6 +65,6 @@ public class RewriteRegexRule extends RegexRule
     @Override
     public String toString()
     {
-        return "%s[rewrite:%s%s]".formatted(super.toString(), _path, _query == null ? "" : "?" + _query);
+        return "%s[rewrite:%s]".formatted(super.toString(), replacement);
     }
 }

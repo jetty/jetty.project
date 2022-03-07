@@ -148,6 +148,8 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         _sessionCache.initialize(_sessionContext);
         
         configureCookies();
+        
+        super.doStart();
     }
     
     @Override
@@ -479,9 +481,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         Session session = _sessionCache.newSession(id, created, (_dftMaxIdleSecs > 0 ? _dftMaxIdleSecs * 1000L : -1));
         session.setExtendedId(_sessionIdManager.getExtendedId(id, request));
         session.getSessionData().setLastNode(_sessionIdManager.getWorkerName());
-        Session.APISession apiSession = newSessionAPIWrapper(session);
-        assert apiSession.getSession() == session;
-        assert session.getAPISession() == apiSession;
         try
         {
             _sessionCache.add(id, session);

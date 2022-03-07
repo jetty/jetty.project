@@ -45,12 +45,13 @@ public class RewriteHandlerTest extends AbstractRuleTest
                 response.setStatus(HttpStatus.OK_200);
                 response.setHeader("X-Path", request.getHttpURI().getPath());
                 response.setHeader("X-Original-Path", (String)request.getAttribute(_rewriteHandler.getOriginalPathAttribute()));
+                callback.succeeded();
             }
         });
     }
 
     @Test
-    public void test() throws Exception
+    public void testXXXtoBar() throws Exception
     {
         String request = """
             GET /xxx/bar HTTP/1.1
@@ -60,28 +61,36 @@ public class RewriteHandlerTest extends AbstractRuleTest
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("/bar/zzz", response.get("X-Path"));
+        assertEquals("/bar/zzz", response.get("X-Path"), "X-Path response value");
+    }
 
-        request = """
+    @Test
+    public void testFooNoChange() throws Exception
+    {
+        String request = """
             GET /foo/bar HTTP/1.1
             Host: localhost
                         
             """;
 
-        response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("/foo/bar", response.get("X-Path"));
+        assertEquals("/foo/bar", response.get("X-Path"), "X-Path response value");
+    }
 
-        request = """
+    @Test
+    public void testAAAtoDDD() throws Exception
+    {
+        String request = """
             GET /aaa/bar HTTP/1.1
             Host: localhost
                         
             """;
 
-        response = HttpTester.parseResponse(_connector.getResponse(request));
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("/bbb/bar", response.get("X-Path"));
-        assertEquals("/aaa/bar", response.get("X-Original-Path"));
+        assertEquals("/ddd", response.get("X-Path"), "X-Path response value");
+        assertEquals("/aaa/bar", response.get("X-Original-Path"), "X-Original-Path response value");
     }
 
     @Test
@@ -95,7 +104,7 @@ public class RewriteHandlerTest extends AbstractRuleTest
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("/ddd/x y", response.get("X-Path"));
+        assertEquals("/ddd", response.get("X-Path"));
         assertEquals("/ccc/x%20y", response.get("X-Original-Path"));
     }
 

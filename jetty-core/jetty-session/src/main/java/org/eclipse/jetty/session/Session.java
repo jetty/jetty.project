@@ -109,6 +109,7 @@ public class Session
             _sessionData.setDirty(true);
         }
         _sessionInactivityTimer = handler.newSessionInactivityTimer(this);
+        _apiSession = _manager.newSessionAPIWrapper(this);
     }
 
     public static Session getSession(Object session)
@@ -124,7 +125,7 @@ public class Session
         return (T)_apiSession;
     }
     
-    public void setAPISessin(Object o)
+    public void setAPISession(Object o)
     {
         _apiSession = o;
     }

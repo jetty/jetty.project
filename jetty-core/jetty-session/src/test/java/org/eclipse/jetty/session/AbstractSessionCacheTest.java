@@ -20,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -108,12 +107,12 @@ public abstract class AbstractSessionCacheTest
                                                                        boolean flushOnResponseCommit);
 
     public abstract void checkSessionBeforeShutdown(String id,
-                                                    SessionDataStore store, 
+                                                    TestableSessionDataStore store, 
                                                     SessionCache cache,
                                                     TestableSessionHandler sessionHandler) throws Exception;
     
     public abstract void checkSessionAfterShutdown(String id,
-                                                   SessionDataStore store,
+                                                   TestableSessionDataStore store,
                                                    SessionCache cache,
                                                    TestableSessionHandler sessionHandler) throws Exception;
 
@@ -128,14 +127,11 @@ public abstract class AbstractSessionCacheTest
     public void testUnreadableSession() throws Exception
     {
         Server server = new Server();
-        //TODO
-        //server.setSessionIdManager(new DefaultSessionIdManager(server));
-
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-        server.setHandler(context);
+        DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
+        server.addBean(idManager, false);
 
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         SessionCache cache = cacheFactory.getSessionCache(sessionHandler);
 
@@ -143,7 +139,9 @@ public abstract class AbstractSessionCacheTest
         UnreadableSessionDataStore store = new UnreadableSessionDataStore(1, new SessionData("1234", "/test", "0.0.0.0", System.currentTimeMillis(), 0, 0, -1));
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
+        server.setHandler(sessionHandler);
         server.start();
+
 
         try (StacklessLogging stackless = new StacklessLogging(AbstractSessionCacheTest.class.getPackage()))
         {
@@ -168,12 +166,8 @@ public abstract class AbstractSessionCacheTest
         throws Exception
     {
         Server server = new Server();
-
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
-        
+        sessionHandler.setServer(server);
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionHandler);
@@ -181,8 +175,9 @@ public abstract class AbstractSessionCacheTest
         TestableSessionDataStore store = new TestableSessionDataStore(true); //fake passivation
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
+        server.setHandler(sessionHandler);
+        server.start();
 
-        context.start();
 
         long now = System.currentTimeMillis();
         //fake persisted data
@@ -202,17 +197,17 @@ public abstract class AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         SessionCache cache = cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        sessionHandler.setSessionCache(cache);
+        server.setHandler(sessionHandler);
+        server.start();
 
         //put session data into the store
         long now = System.currentTimeMillis();
@@ -238,10 +233,8 @@ public abstract class AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         
         //flushOnResponseCommit is true
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, true);
@@ -250,31 +243,29 @@ public abstract class AbstractSessionCacheTest
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
         
         //Mimic various states of a session when a response is about
         //to be committed:
         
         //call commit: session has not changed, should not be written
         store._numSaves.set(0); //clear save counter
-        Session session = createUnExpiredSession(cache, store, "1234");
+        Session session = createUnExpiredSession(cache, store, "1234", 100); //simulate previously saved);
         cache.add("1234", session);
-        session.getSessionData().setLastSaved(100); //simulate previously saved
         commitAndCheckSaveState(cache, store, session, false, true, false, true, 0, 0);
-        
+
         //call commit: session has changed, should be written
         store._numSaves.set(0); //clear save counter
-        session = createUnExpiredSession(cache, store, "456");
+        session = createUnExpiredSession(cache, store, "456", 100); //simulate previously saved
         cache.add("456", session);
-        session.getSessionData().setLastSaved(100); //simulate previously saved
         session.setAttribute("foo", "bar");
         commitAndCheckSaveState(cache, store, session, true, true, false, false, 0, 1);
         
         //call commit: only the metadata has changed will not be written
         store._numSaves.set(0); //clear save counter
-        session = createUnExpiredSession(cache, store, "678");
+        session = createUnExpiredSession(cache, store, "678", 100); //simulate previously saved
         cache.add("678", session);
-        session.getSessionData().setLastSaved(100); //simulate previously saved
         session.getSessionData().calcAndSetExpiry(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
         commitAndCheckSaveState(cache, store, session, false, true, false, true, 0, 0);
 
@@ -286,25 +277,22 @@ public abstract class AbstractSessionCacheTest
 
         //call commit: session has not changed, should not be written anyway
         store._numSaves.set(0); //clear save counter
-        session = createUnExpiredSession(cache, store, "890");
+        session = createUnExpiredSession(cache, store, "890", 100); //simulate previously saved
         cache.add("890", session);
-        session.getSessionData().setLastSaved(100); //simulate previously saved
         commitAndCheckSaveState(cache, store, session, false, true, false, true, 0, 0);
         
         //call commit: session has changed so session must be written
         store._numSaves.set(0); //clear save counter
-        session = createUnExpiredSession(cache, store, "012");
+        session = createUnExpiredSession(cache, store, "012", 100); //simulate previously saved
         cache.add("012", session);
-        session.getSessionData().setLastSaved(100); //simulate previously saved
         session.setAttribute("foo", "bar");
         commitAndCheckSaveState(cache, store, session, true, true, false, false, 0, 1);
 
         //call commit: only the metadata has changed will not be written
         store._numSaves.set(0); //clear save counter
-        session = createUnExpiredSession(cache, store, "234");
+        session = createUnExpiredSession(cache, store, "234", 100); //simulate previously saved
         session.getSessionData().setMetaDataDirty(true);
         cache.add("234", session);
-        session.getSessionData().setLastSaved(100); //simulate previously saved
         session.getSessionData().calcAndSetExpiry(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
         commitAndCheckSaveState(cache, store, session, false, true, false, true, 0, 0);
     }
@@ -319,11 +307,8 @@ public abstract class AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
-        
+        sessionHandler.setServer(server);
         //flushOnResponseCommit is true
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, true);
         SessionCache cache = cacheFactory.getSessionCache(sessionHandler);
@@ -331,13 +316,14 @@ public abstract class AbstractSessionCacheTest
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
         
         //Mimic various states of a session when a response is about
         //to be committed:
         
         //call commit: session has not changed, should not be written
-        Session session = createUnExpiredSession(cache, store, "1234");
+        Session session = createUnExpiredSession(cache, store, "1234", 100);
         cache.add("1234", session);
         commitAndCheckSaveState(cache, store, session, false, true, false, true, 0, 0);        
         //call release: session has not changed, but metadata has, should be written
@@ -348,10 +334,9 @@ public abstract class AbstractSessionCacheTest
 
         //call commit: session has changed, should be written
         store._numSaves.set(0); //clear save counter
-        session = createUnExpiredSession(cache, store, "456");
+        session = createUnExpiredSession(cache, store, "456", 100);
         cache.add("456", session);
         session.setAttribute("foo", "bar");
-        session.getSessionData().setLastSaved(100); //simulate not "new" session, ie has been previously saved
         commitAndCheckSaveState(cache, store, session, true, true, false, false, 0, 1);
         //call release: session not dirty but release changes metadata, so it will be saved
         cache.release("456", session);
@@ -361,9 +346,8 @@ public abstract class AbstractSessionCacheTest
 
         //call commit: only the metadata has changed will not be written
         store._numSaves.set(0); //clear save counter
-        session = createUnExpiredSession(cache, store, "678");
+        session = createUnExpiredSession(cache, store, "678", 100);
         session.getSessionData().calcAndSetExpiry(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
-        session.getSessionData().setLastSaved(100); //simulate session not being "new", ie never previously saved
         cache.add("678", session);
         commitAndCheckSaveState(cache, store, session, false, true, false, true, 0, 0);
         //call release: the metadata is dirty session should be written
@@ -377,9 +361,8 @@ public abstract class AbstractSessionCacheTest
 
         //call commit: session has not changed, should not be written anyway
         store._numSaves.set(0); //clear save counter
-        session = createUnExpiredSession(cache, store, "890");
+        session = createUnExpiredSession(cache, store, "890", 100);
         cache.add("890", session);
-        session.getSessionData().setLastSaved(100); //simulate last save long time ago
         session.getSessionData().setMetaDataDirty(false);
         commitAndCheckSaveState(cache, store, session, false, false, false, false, 0, 0);
         //call release: not dirty but release sets metadata true, plus save period exceeded so write
@@ -390,9 +373,8 @@ public abstract class AbstractSessionCacheTest
         
         //call commit: session has changed so session must be written
         store._numSaves.set(0); //clear save counter
-        session = createUnExpiredSession(cache, store, "012");
+        session = createUnExpiredSession(cache, store, "012", 100);
         cache.add("012", session);
-        session.getSessionData().setLastSaved(100); //simulate previously saved session
         session.setAttribute("foo", "bar");
         session.getSessionData().setMetaDataDirty(false);
         commitAndCheckSaveState(cache, store, session, true, false, false, false, 0, 1);
@@ -404,7 +386,7 @@ public abstract class AbstractSessionCacheTest
 
         //call commit: only the metadata has changed will not be written
         store._numSaves.set(0); //clear save counter
-        session = createUnExpiredSession(cache, store, "234");
+        session = createUnExpiredSession(cache, store, "234", 100);
         session.getSessionData().calcAndSetExpiry(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
         session.getSessionData().setLastSaved(System.currentTimeMillis()); //simulate session last saved recently
         commitAndCheckSaveState(cache, store, session, false, true, false, true, 0, 0);
@@ -424,17 +406,16 @@ public abstract class AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         SessionCache cache = (SessionCache)cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
 
         //test one that doesn't exist at all
         assertFalse(cache.exists("1234"));
@@ -459,19 +440,17 @@ public abstract class AbstractSessionCacheTest
         throws Exception
     {
         Server server = new Server();
-
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
         
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
-
+        sessionHandler.setServer(server);
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, true, false, false, false);
         SessionCache cache = cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
 
         //test remove non-existent session
         Session session = cache.delete("1234");
@@ -503,18 +482,16 @@ public abstract class AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
-        
+        sessionHandler.setServer(server);
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         SessionCache cache = cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
 
         //test no candidates, no data in store
         Set<String> result = cache.checkExpiration(Collections.emptySet());
@@ -552,17 +529,16 @@ public abstract class AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, true, false, false, false);
         SessionCache cache = cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
 
         long now = System.currentTimeMillis();
         cache.newSession("1234", now, TimeUnit.MINUTES.toMillis(10));
@@ -575,17 +551,16 @@ public abstract class AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         SessionCache cache = cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
 
         long now = System.currentTimeMillis();
         cache.newSession("1234", now, TimeUnit.MINUTES.toMillis(10));
@@ -602,36 +577,29 @@ public abstract class AbstractSessionCacheTest
         throws Exception
     {
         Server server = new Server();
-
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-        server.setHandler(context);
         
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
-
+        sessionHandler.setServer(server);
         AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         SessionCache cache = cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore(true); //fake passivation
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        //TODO
-        //TestHttpSessionListener sessionListener = new TestHttpSessionListener();
-        //sessionHandler.addEventListener(sessionListener);
-
+        server.setHandler(sessionHandler);
         server.start();
 
         //put a session in the cache and store
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         Session session = cache.newSession(data);
-       // TestSessionActivationListener activationListener = new TestSessionActivationListener();
         cache.add("1234", session);
-        //session.setAttribute("aaa", activationListener);
+        session.setAttribute("aaa", "111"); //add an attribute to be called with passivate/activate
         cache.release("1234", session);
         checkSessionBeforeShutdown("1234", store, cache, sessionHandler);
 
-        server.stop(); //calls shutdown
+        server.stop(); //TODO calls shutdown
+        sessionHandler.stop(); //TODO now calls stop
 
         checkSessionAfterShutdown("1234", store, cache, sessionHandler);
     }
@@ -645,12 +613,13 @@ public abstract class AbstractSessionCacheTest
         throws Exception
     {
         Server server = new Server();
-
-        ContextHandler context = new ContextHandler("/test");
-        server.setHandler(context);
+        DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
+        server.addBean(idManager, true);
 
         //flushOnResponseCommit is true
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
+        sessionHandler.setSessionIdManager(idManager);
         AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, true);
         cacheFactory.setInvalidateOnShutdown(true);
         SessionCache cache = cacheFactory.getSessionCache(sessionHandler);
@@ -658,7 +627,7 @@ public abstract class AbstractSessionCacheTest
         TestableSessionDataStore store = new TestableSessionDataStore(true); //fake a passivating store
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-
+        server.setHandler(sessionHandler);
         server.start();
 
         //Make a session in the store and cache and check that it is invalidated on shutdown
@@ -666,12 +635,12 @@ public abstract class AbstractSessionCacheTest
         SessionData data = store.newSessionData("8888", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         Session session = cache.newSession(data);
         cache.add("8888", session);
-
+        session.setAttribute("aaa", "111");
         cache.release("8888", session);
         checkSessionBeforeShutdown("8888", store, cache, sessionHandler);
 
         server.stop();
-
+        
         checkSessionAfterShutdown("8888", store, cache, sessionHandler);
     }
 
@@ -690,11 +659,12 @@ public abstract class AbstractSessionCacheTest
         assertEquals(expectedAfterNumSaves, store._numSaves.get());
     }
 
-    public Session createUnExpiredSession(SessionCache cache, SessionDataStore store, String id)
+    public Session createUnExpiredSession(SessionCache cache, SessionDataStore store, String id, int lastSave)
     {
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData(id, now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
+        data.setLastSaved(lastSave);
         return cache.newSession(data);
     }
 }

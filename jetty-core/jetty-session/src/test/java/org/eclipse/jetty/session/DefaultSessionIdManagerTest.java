@@ -42,74 +42,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class DefaultSessionIdManagerTest
 {
-    private class TestSessionHandler extends AbstractSessionHandler
-    {
-        private boolean _isIdInUse;
-
-        public TestSessionHandler(boolean isIdInUse)
-        {
-            _isIdInUse = isIdInUse;    
-        }
-        
-        @Override
-        public boolean isIdInUse(String id) throws Exception
-        {
-            return _isIdInUse;
-        }
-
-        @Override
-        public APISession newSessionAPIWrapper(Session session)
-        {
-            return null;
-        }
-
-        @Override
-        public void callSessionIdListeners(Session session, String oldId)
-        {
-        }
-
-        @Override
-        public void callSessionCreatedListeners(Session session)
-        {  
-        }
-
-        @Override
-        public void callSessionDestroyedListeners(Session session)
-        {
-        }
-
-        @Override
-        public void callSessionAttributeListeners(Session session, String name, Object old, Object value)
-        {
-        }
-
-        @Override
-        public void callUnboundBindingListener(Session session, String name, Object value)
-        { 
-        }
-
-        @Override
-        public void callBoundBindingListener(Session session, String name, Object value)
-        {
-        }
-
-        @Override
-        public void callSessionActivationListener(Session session, String name, Object value)
-        {
-
-        }
-
-        @Override
-        public void callSessionPassivationListener(Session session, String name, Object value)
-        {
-        }
-
-        @Override
-        protected void configureCookies()
-        {
-        }
-    }
-
     private class TestRequest implements Request
     {
         @Override
@@ -260,6 +192,8 @@ public class DefaultSessionIdManagerTest
         //is no request
         Server server = new Server();
         DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
+        server.addBean(sessionIdManager, true);
+        server.start();
         String id = sessionIdManager.newSessionId(null, "1234", System.currentTimeMillis());
         //check we got an id
         assertNotNull(id);
@@ -272,12 +206,23 @@ public class DefaultSessionIdManagerTest
     {
         Server server = new Server();
         DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
+        server.addBean(sessionIdManager, true);
+
         
         //test something that is not in use
-        server.addBean(new TestSessionHandler(false));
+        TestableSessionHandler tsh1 = new TestableSessionHandler();
+        tsh1.setIdInUse(false);
+        tsh1.setServer(server);
+        server.addBean(tsh1);
+        server.start();
         assertFalse(sessionIdManager.isIdInUse("1234"));
         //test something that _is_ in use
-        server.addBean(new TestSessionHandler(true));
+        server.stop();
+        TestableSessionHandler tsh2 = new TestableSessionHandler();
+        tsh2.setIdInUse(true);
+        tsh2.setServer(server);
+        server.addBean(tsh2);
+        server.start();
         assertTrue(sessionIdManager.isIdInUse("1234"));
     }
     
@@ -288,6 +233,8 @@ public class DefaultSessionIdManagerTest
         //it is not _already_ in use.
         Server server = new Server();
         DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
+        server.addBean(sessionIdManager, true);
+        server.start();
 
         String id = sessionIdManager.newSessionId(new TestRequest(), "1234", System.currentTimeMillis());
         assertNotNull(id);
@@ -301,7 +248,10 @@ public class DefaultSessionIdManagerTest
         //it _is_ in use.
         Server server = new Server();
         DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
-        server.addBean(new TestSessionHandler(true));
+        TestableSessionHandler tsh = new TestableSessionHandler();
+        tsh.setIdInUse(true);
+        server.setHandler(tsh);
+        server.start();
         
         String id = sessionIdManager.newSessionId(new TestRequest(), "1234", System.currentTimeMillis());
         assertNotNull(id);

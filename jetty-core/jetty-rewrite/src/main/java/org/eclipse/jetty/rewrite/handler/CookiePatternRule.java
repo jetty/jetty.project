@@ -79,12 +79,16 @@ public class CookiePatternRule extends PatternRule
     @Override
     public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
     {
+        // TODO: fix once Request.getCookies() is implemented (currently always returns null)
         // Check that cookie is not already set
         List<HttpCookie> cookies = input.getCookies();
-        for (HttpCookie cookie : cookies)
+        if (cookies != null)
         {
-            if (_name.equals(cookie.getName()) && _value.equals(cookie.getValue()))
-                return null;
+            for (HttpCookie cookie : cookies)
+            {
+                if (_name.equals(cookie.getName()) && _value.equals(cookie.getValue()))
+                    return null;
+            }
         }
 
         return new Request.WrapperProcessor(input)

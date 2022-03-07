@@ -67,12 +67,13 @@ public class RewritePatternRuleTest extends AbstractRuleTest
         String request = """
             GET $U HTTP/1.1
             Host: localhost
+            Connection: close
                         
             """.replace("$U", uri);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals(replacement, response.get("X-URI"));
+        assertEquals(replacement, response.get("X-URI"), "X-URI response header value");
     }
 
     @Test
@@ -111,6 +112,6 @@ public class RewritePatternRuleTest extends AbstractRuleTest
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals(replacementPath + "?" + replacementQuery + "&" + query, response.get("X-URI"));
+        assertEquals(replacementPath + "?" + query + "&" + replacementQuery, response.get("X-URI"));
     }
 }
