@@ -113,7 +113,6 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
     ServletScopedResponse _response;
     final HttpInput _httpInput;
     final String _pathInContext;
-    boolean _newContext;
     private UserIdentity.Scope _scope;
 
     final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
@@ -223,13 +222,6 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
     public ContextHandler.ScopedContext getErrorContext()
     {
         return _servletChannel.getContext();
-    }
-
-    public boolean takeNewContext()
-    {
-        boolean nc = _newContext;
-        _newContext = false;
-        return nc;
     }
 
     ServletRequestState getServletRequestState()

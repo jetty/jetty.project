@@ -628,6 +628,8 @@ public class ServletChannel implements Runnable
     {
         try
         {
+            _servletContextContext.getContext().getServletContextHandler().requestInitialized(_request, _request.getHttpServletRequest());
+
             // TODO: ASYNC dispatch.
             // _request.setDispatcherType(type);
             _combinedListener.onBeforeDispatch(_request);
@@ -642,6 +644,8 @@ public class ServletChannel implements Runnable
         {
             _combinedListener.onAfterDispatch(_request);
             // _request.setDispatcherType(null);
+
+            _servletContextContext.getContext().getServletContextHandler().requestDestroyed(_request, _request.getHttpServletRequest());
         }
     }
 

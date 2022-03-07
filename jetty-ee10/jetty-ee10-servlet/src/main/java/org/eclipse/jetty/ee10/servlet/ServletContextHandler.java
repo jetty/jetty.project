@@ -22,10 +22,8 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
@@ -36,10 +34,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -79,7 +75,6 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
@@ -138,18 +133,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     public static final String UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER = "Unimplemented {} - use org.eclipse.jetty.servlet.ServletContextHandler";
 
-    private static String __serverInfo = "jetty/" + Server.getVersion();
-
-    public static String getServerInfo()
-    {
-        return __serverInfo;
-    }
-
-    public static void setServerInfo(String serverInfo)
-    {
-        __serverInfo = serverInfo;
-    }
-
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
 
     public static final String MAX_FORM_KEYS_KEY = "org.eclipse.jetty.server.Request.maxFormKeys";
@@ -178,17 +161,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         EXACT,
         PREFIX
     }
-
-    public enum Availability
-    {
-        STOPPED,        // stopped and can't be made unavailable nor shutdown
-        STARTING,       // starting inside of doStart. It may go to any of the next states.
-        AVAILABLE,      // running normally
-        UNAVAILABLE,    // Either a startup error or explicit call to setAvailable(false)
-        SHUTDOWN,       // graceful shutdown
-    }
-
-    protected final AtomicReference<Availability> _availability = new AtomicReference<>(Availability.STOPPED);
 
     public static ServletContextHandler getServletContextHandler(ServletContext servletContext, String purpose)
     {
@@ -235,9 +207,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
     private String _contextPathEncoded = "/";
-    private String _displayName;
-    private long _stopTimeout;
-    protected MimeTypes _mimeTypes;
+    protected MimeTypes _mimeTypes; // TODO move to core context?
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private Logger _logger;
@@ -422,15 +392,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         return _initParams;
     }
 
-    /*
-     * @see jakarta.servlet.ServletContext#getServletContextName()
-     */
-    @ManagedAttribute(value = "Display name of the Context", readonly = true)
-    public String getDisplayName()
-    {
-        return _displayName;
-    }
-
     @Override
     public boolean removeEventListener(EventListener listener)
     {
@@ -480,101 +441,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             return _durableListeners.contains(listener);
         // If we are not yet started then all set listeners are durable
         return getEventListeners().contains(listener);
-    }
-
-    /**
-     * @return true if this context is shutting down
-     */
-    @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
-    public boolean isShutdown()
-    {
-        return _availability.get() == Availability.SHUTDOWN;
-    }
-
-    /**
-     * Set shutdown status. This field allows for graceful shutdown of a context. A started context may be put into non accepting state so that existing
-     * requests can complete, but no new requests are accepted.
-     */
-    @Override
-    public CompletableFuture<Void> shutdown()
-    {
-        while (true)
-        {
-            Availability availability = _availability.get();
-            switch (availability)
-            {
-                case STOPPED:
-                    return CompletableFuture.failedFuture(new IllegalStateException(getState()));
-                case STARTING:
-                case AVAILABLE:
-                case UNAVAILABLE:
-                    if (!_availability.compareAndSet(availability, Availability.SHUTDOWN))
-                        continue;
-                    break;
-                default:
-                    break;
-            }
-            break;
-        }
-        return CompletableFuture.completedFuture(null);
-    }
-
-    /**
-     * @return false if this context is unavailable (sends 503)
-     */
-    public boolean isAvailable()
-    {
-        return _availability.get() == Availability.AVAILABLE;
-    }
-
-    /**
-     * Set Available status.
-     *
-     * @param available true to set as enabled
-     */
-    public void setAvailable(boolean available)
-    {
-        // Only supported state transitions are:
-        //   UNAVAILABLE --true---> AVAILABLE
-        //   STARTING -----false--> UNAVAILABLE
-        //   AVAILABLE ----false--> UNAVAILABLE
-        if (available)
-        {
-            while (true)
-            {
-                Availability availability = _availability.get();
-                switch (availability)
-                {
-                    case AVAILABLE:
-                        break;
-                    case UNAVAILABLE:
-                        if (!_availability.compareAndSet(availability, Availability.AVAILABLE))
-                            continue;
-                        break;
-                    default:
-                        throw new IllegalStateException(availability.toString());
-                }
-                break;
-            }
-        }
-        else
-        {
-            while (true)
-            {
-                Availability availability = _availability.get();
-                switch (availability)
-                {
-                    case STARTING:
-                    case AVAILABLE:
-                        if (!_availability.compareAndSet(availability, Availability.UNAVAILABLE))
-                            continue;
-                        break;
-                    default:
-                        break;
-                }
-                break;
-            }
-        }
     }
 
     public Logger getLogger()
@@ -885,14 +751,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 }
             }
         }
-    }
-
-    /**
-     * @param servletContextName The servletContextName to set.
-     */
-    public void setDisplayName(String servletContextName)
-    {
-        _displayName = servletContextName;
     }
 
     /**
@@ -1212,7 +1070,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         /**
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
-         * @param reason An object that indicates the reason the scope is being entered.
          */
         void enterScope(ServletContextHandler.Context context, ServletScopedRequest request);
 
@@ -1415,8 +1272,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
                 baseResource, baseResource.getAlias(), this);
 
-        _availability.set(Availability.STARTING);
-
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
@@ -1446,12 +1301,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             contextInitialized();
 
-            _availability.compareAndSet(Availability.STARTING, Availability.AVAILABLE);
             LOG.info("Started {}", this);
         }
         finally
         {
-            _availability.compareAndSet(Availability.STARTING, Availability.UNAVAILABLE);
             exitScope(null);
             // reset the classloader
             if (_classLoader != null && currentThread != null)
@@ -1464,8 +1317,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     {
         // Should we attempt a graceful shutdown?
         MultiException mex = null;
-
-        _availability.set(Availability.STOPPED);
 
         ClassLoader oldClassloader = null;
         ClassLoader oldWebapploader = null;
@@ -1578,9 +1429,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         return super.processByContextHandler(request);
     }
 
-    // TODO: do we really need this?? / ask greg what this is all about?
-    private final Deque<Boolean> _newContext = new ArrayDeque<>();
-
     @Override
     protected void enterScope(Request request)
     {
@@ -1601,27 +1449,12 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 }
             }
         }
-
-        if (scopedRequest != null)
-        {
-            boolean newContext = scopedRequest.takeNewContext();
-            _newContext.push(newContext);
-            if (newContext)
-                requestInitialized(request, scopedRequest.getHttpServletRequest());
-        }
     }
 
     @Override
     protected void exitScope(Request request)
     {
         ServletScopedRequest scopedRequest = Request.as(request, ServletScopedRequest.class);
-        if (scopedRequest != null && !_newContext.isEmpty())
-        {
-            boolean newContext = _newContext.pop();
-            if (newContext)
-                requestDestroyed(request, scopedRequest.getHttpServletRequest());
-        }
-
         if (!_contextListeners.isEmpty())
         {
             for (int i = _contextListeners.size(); i-- > 0; )

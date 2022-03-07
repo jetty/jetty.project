@@ -163,6 +163,7 @@ public class HttpURITest
         uri = HttpURI.from("GET", "*");
         assertThat(uri.getHost(), nullValue());
         assertThat(uri.getPath(), is("*"));
+        assertThat(uri.toString(), is("*"));
 
         uri = HttpURI.from("GET", "/foo/bar");
         assertThat(uri.getHost(), nullValue());

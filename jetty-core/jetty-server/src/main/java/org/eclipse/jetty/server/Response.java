@@ -44,6 +44,7 @@ public interface Response
 {
     Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
 
+    // This is needed so that response methods can access the wrapped Request#getContext method
     Request getRequest();
 
     int getStatus();
