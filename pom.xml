@@ -130,7 +130,7 @@
     <versions.plugin.version>2.9.0</versions.plugin.version>
 
     <!-- testing -->
-    <awaitility.version>4.1.1</awaitility.version>
+    <awaitility.version>4.2.0</awaitility.version>
     <it.debug>false</it.debug>
     <jetty.test.version>5.9</jetty.test.version>
     <jetty.testtracker.log>false</jetty.testtracker.log>
