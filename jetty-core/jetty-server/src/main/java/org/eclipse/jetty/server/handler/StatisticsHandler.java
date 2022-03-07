@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.MetaData;
@@ -317,5 +318,77 @@ public class StatisticsHandler extends Handler.Wrapper
     public double getProcessingTimeStdDev()
     {
         return _processTimeStats.getStdDev();
+    }
+
+    public static class MinimumDataRateHandler extends StatisticsHandler
+    {
+        private final long _minimumReadRate;
+        private final long _minimumWriteRate;
+
+        public MinimumDataRateHandler(long minimumReadRate, long minimumWriteRate)
+        {
+            _minimumReadRate = minimumReadRate;
+            _minimumWriteRate = minimumWriteRate;
+        }
+
+        private class MinimumDataRateRequest extends Request.WrapperProcessor
+        {
+            private StatisticsRequest _statisticsRequest;
+            private Content.Error _errorContent;
+
+            private MinimumDataRateRequest(Request request)
+            {
+                super(request);
+            }
+
+            @Override
+            public void demandContent(Runnable onContentAvailable)
+            {
+                if (_minimumReadRate > 0)
+                {
+                    Long rr = (Long) _statisticsRequest.getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
+                    if (rr < _minimumReadRate)
+                    {
+                        _errorContent = new Content.Error(new TimeoutException("read rate is too low: " + rr));
+                        onContentAvailable.run();
+                        return;
+                    }
+                }
+                if (_minimumWriteRate > 0)
+                {
+                    Long wr = (Long) _statisticsRequest.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
+                    if (wr < _minimumWriteRate)
+                    {
+                        _errorContent = new Content.Error(new TimeoutException("write rate is too low: " + wr));
+                        onContentAvailable.run();
+                        return;
+                    }
+                }
+                super.demandContent(onContentAvailable);
+            }
+
+            @Override
+            public Content readContent()
+            {
+                return _errorContent != null ? _errorContent : super.readContent();
+            }
+
+            @Override
+            public WrapperProcessor wrapProcessor(Processor processor)
+            {
+                _statisticsRequest = (StatisticsRequest) processor;
+                return super.wrapProcessor(processor);
+            }
+        }
+
+        @Override
+        public Request.Processor handle(Request request) throws Exception
+        {
+            MinimumDataRateRequest minimumDataRateRequest = new MinimumDataRateRequest(request);
+            Request.Processor processor = super.handle(minimumDataRateRequest);
+            if (processor == null)
+                return null;
+            return minimumDataRateRequest.wrapProcessor(processor);
+        }
     }
 }
