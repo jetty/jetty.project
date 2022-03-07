@@ -537,7 +537,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public String getServletPath()
         {
-            return ServletScopedRequest.this._mappedServlet.getServletPathMapping(getRequest().getPathInContext()).getServletPath();
+            return ServletScopedRequest.this._mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
         }
 
         @Override

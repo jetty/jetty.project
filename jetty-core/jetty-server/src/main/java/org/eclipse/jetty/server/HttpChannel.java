@@ -223,7 +223,7 @@ public class HttpChannel extends Attributes.Lazy
         }
     }
 
-    protected Response getResponse()
+    public Response getResponse()
     {
         try (AutoLock ignored = _lock.lock())
         {
@@ -254,6 +254,7 @@ public class HttpChannel extends Attributes.Lazy
 
     public Runnable onError(Throwable x)
     {
+        // TODO: consumeAll() to open flow control windows for protocols that have it?
         if (LOG.isDebugEnabled())
             LOG.debug("onError {}", this, x);
         try (AutoLock ignored = _lock.lock())
@@ -694,8 +695,10 @@ public class HttpChannel extends Attributes.Lazy
                     stream.failed(unconsumed);
                 else if (_response._committedContentLength >= 0L && _response._committedContentLength != written)
                     stream.failed(new IOException("content-length %d != %d written".formatted(_response._committedContentLength, written)));
+                else if (commit)
+                    stream.send(_metaData, responseMetaData, true, stream);
                 else
-                    stream.send(responseMetaData, true, stream);
+                    stream.succeeded();
             }
 
             @Override
@@ -735,6 +738,11 @@ public class HttpChannel extends Attributes.Lazy
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("failed {}", stream, x);
+
+                // consume any input
+                Throwable unconsumed = stream.consumeAll();
+                if (unconsumed != null)
+                    x.addSuppressed(unconsumed);
 
                 if (committed)
                     stream.failed(x);
@@ -906,7 +914,7 @@ public class HttpChannel extends Attributes.Lazy
             }
 
             // Do the write
-            stream.send(responseMetaData, last, this, content);
+            stream.send(_request._metaData, responseMetaData, last, this, content);
         }
 
         @Override
@@ -1040,7 +1048,7 @@ public class HttpChannel extends Attributes.Lazy
             MetaData.Response responseMetaData = commit ? _request._response.prepareResponse(_stream, last) : null;
 
             // Do the write
-            _stream.send(responseMetaData, last, callback, content);
+            _stream.send(_request._metaData, responseMetaData, last, callback, content);
         }
     }
 }

@@ -137,7 +137,7 @@ public class AsyncContextTest
 
         assertThat(responseBody, containsString("ERROR: /error"));
         assertThat(responseBody, containsString("PathInfo= /IOE"));
-        assertThat(responseBody, containsString("EXCEPTION: org.eclipse.jetty.server.QuietServletException: java.io.IOException: Test"));
+        assertThat(responseBody, containsString("EXCEPTION: org.eclipse.jetty.ee10.servlet.QuietServletException: java.io.IOException: Test"));
     }
 
     @Test
@@ -156,7 +156,7 @@ public class AsyncContextTest
 
         assertThat(responseBody, containsString("ERROR: /error"));
         assertThat(responseBody, containsString("PathInfo= /IOE"));
-        assertThat(responseBody, containsString("EXCEPTION: org.eclipse.jetty.server.QuietServletException: java.io.IOException: Test"));
+        assertThat(responseBody, containsString("EXCEPTION: org.eclipse.jetty.ee10.servlet.QuietServletException: java.io.IOException: Test"));
     }
 
     @Test
@@ -174,7 +174,7 @@ public class AsyncContextTest
         String responseBody = response.getContent();
         assertThat(responseBody, containsString("ERROR: /error"));
         assertThat(responseBody, containsString("PathInfo= /IOE"));
-        assertThat(responseBody, containsString("EXCEPTION: org.eclipse.jetty.server.QuietServletException: java.io.IOException: Test"));
+        assertThat(responseBody, containsString("EXCEPTION: org.eclipse.jetty.ee10.servlet.QuietServletException: java.io.IOException: Test"));
     }
 
     @Test

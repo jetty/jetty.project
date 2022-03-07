@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.ee10.servlet.ServletRequestState.Action;
 import org.eclipse.jetty.http.BadMessageException;
@@ -41,6 +40,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.slf4j.Logger;
@@ -468,9 +468,14 @@ public class ServletChannel implements Runnable
                             }
                             else
                             {
-                                Callback completeCallback = Callback.from(() -> _state.completed(null), _state::completed);
-                                _state.completing();
-                                dispatch(DispatcherType.ERROR, () -> errorProcessor.process(_request, getResponse(), completeCallback));
+                                // TODO: do this non-blocking.
+                                // Callback completeCallback = Callback.from(() -> _state.completed(null), _state::completed);
+                                // _state.completing();
+                                try (Blocking.Callback blocker = Blocking.callback())
+                                {
+                                    dispatch(DispatcherType.ERROR, () -> errorProcessor.process(_request, getResponse(), blocker));
+                                    blocker.block();
+                                }
                             }
                         }
                         catch (Throwable x)

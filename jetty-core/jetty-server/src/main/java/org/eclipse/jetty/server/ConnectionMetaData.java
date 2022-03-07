@@ -28,8 +28,11 @@ public interface ConnectionMetaData extends Attributes
 
     String getProtocol();
 
+    // TODO should this be only here or only on HttpChannel, should not be on both.
     Connection getConnection();
 
+    // TODO should this be only here or only on HttpChannel, should not be on both.
+    //      Currently mostly used to get stuff like ByteBufferPool and Scheduler - maybe provide those directly?
     Connector getConnector();
 
     boolean isPersistent();
@@ -82,17 +85,13 @@ public interface ConnectionMetaData extends Attributes
             return _wrapped.getProtocol();
         }
 
-        // TODO we should not need this
         @Override
-        @Deprecated
         public Connection getConnection()
         {
             return _wrapped.getConnection();
         }
 
-        // TODO we should not need this. Currently used only for X509 cert access
         @Override
-        @Deprecated
         public Connector getConnector()
         {
             return _wrapped.getConnector();

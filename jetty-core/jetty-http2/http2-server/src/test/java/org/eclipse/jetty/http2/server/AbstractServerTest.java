@@ -19,9 +19,6 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 
-import jakarta.servlet.http.HttpServlet;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -33,6 +30,7 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -47,11 +45,10 @@ public class AbstractServerTest
     protected Server server;
     protected String path;
 
-    protected void startServer(HttpServlet servlet) throws Exception
+    protected void startServer(Handler handler) throws Exception
     {
         prepareServer(new HTTP2ServerConnectionFactory(new HttpConfiguration()));
-        ServletContextHandler context = new ServletContextHandler(server, "/");
-        context.addServlet(new ServletHolder(servlet), path);
+        server.setHandler(handler);
         server.start();
     }
 

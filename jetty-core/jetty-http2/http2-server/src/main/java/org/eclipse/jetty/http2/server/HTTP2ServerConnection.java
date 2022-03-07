@@ -13,14 +13,15 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.io.Closeable;
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -28,9 +29,9 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Request;
-import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
@@ -40,20 +41,24 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
-import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 
-public class HTTP2ServerConnection extends HTTP2Connection
+public class HTTP2ServerConnection extends HTTP2Connection implements ConnectionMetaData
 {
     /**
      * @param protocol An HTTP2 protocol variant
@@ -138,8 +143,11 @@ public class HTTP2ServerConnection extends HTTP2Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
-        HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
-        Runnable task = channel.onRequest(frame);
+
+        HttpChannel httpChannel = new HttpChannel(connector.getServer(), this, httpConfig);
+        HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(httpChannel, stream);
+        httpChannel.setStream(httpStream);
+        Runnable task = httpStream.onRequest(frame);
         if (task != null)
             offerTask(task, false);
     }
@@ -148,6 +156,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
+
         HTTP2Channel.Server channel = (HTTP2Channel.Server)stream.getAttachment();
         if (channel != null)
         {
@@ -229,14 +238,18 @@ public class HTTP2ServerConnection extends HTTP2Connection
 
     public void push(Connector connector, IStream stream, MetaData.Request request)
     {
+/*
+        // TODO: see onNewStream()
         if (LOG.isDebugEnabled())
             LOG.debug("Processing push {} on {}", request, stream);
         HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
         Runnable task = channel.onPushRequest(request);
         if (task != null)
             offerTask(task, true);
+*/
     }
 
+/*
     private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)
     {
         HttpChannelOverHTTP2 channel = pollHttpChannel();
@@ -289,6 +302,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
             return null;
         }
     }
+*/
 
     public boolean upgrade(Request request, HttpFields.Mutable responseFields)
     {
@@ -331,6 +345,7 @@ public class HTTP2ServerConnection extends HTTP2Connection
         return true;
     }
 
+/*
     protected class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2 implements Closeable
     {
         public ServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
@@ -376,5 +391,98 @@ public class HTTP2ServerConnection extends HTTP2Connection
             // avoid stalling the session flow control.
             consumeInput();
         }
+    }
+*/
+
+    @Override
+    public String getId()
+    {
+        return null;
+    }
+
+    @Override
+    public HttpVersion getVersion()
+    {
+        return null;
+    }
+
+    @Override
+    public String getProtocol()
+    {
+        return null;
+    }
+
+    @Override
+    public Connection getConnection()
+    {
+        return null;
+    }
+
+    @Override
+    public Connector getConnector()
+    {
+        return null;
+    }
+
+    @Override
+    public boolean isPersistent()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isSecure()
+    {
+        return false;
+    }
+
+    @Override
+    public SocketAddress getRemoteAddress()
+    {
+        return null;
+    }
+
+    @Override
+    public SocketAddress getLocalAddress()
+    {
+        return null;
+    }
+
+    @Override
+    public HostPort getServerAuthority()
+    {
+        return null;
+    }
+
+    private final Attributes attributes = new Mapped();
+
+    @Override
+    public Object removeAttribute(String name)
+    {
+        return attributes.removeAttribute(name);
+    }
+
+    @Override
+    public Object setAttribute(String name, Object attribute)
+    {
+        return attributes.setAttribute(name, attribute);
+    }
+
+    @Override
+    public Object getAttribute(String name)
+    {
+        return attributes.getAttribute(name);
+    }
+
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        return attributes.getAttributeNameSet();
+    }
+
+    @Override
+    public void clearAttributes()
+    {
+        attributes.clearAttributes();
     }
 }

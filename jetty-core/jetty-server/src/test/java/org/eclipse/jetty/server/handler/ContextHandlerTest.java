@@ -248,10 +248,10 @@ public class ContextHandlerTest
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override
-            public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
             {
                 sendCB.set(callback);
-                super.send(response, last, Callback.NOOP, content);
+                super.send(request, response, last, Callback.NOOP, content);
             }
         };
 

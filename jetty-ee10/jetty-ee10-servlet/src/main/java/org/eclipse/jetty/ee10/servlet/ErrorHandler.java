@@ -103,13 +103,17 @@ public class ErrorHandler implements Request.Processor
             try
             {
                 errorDispatcher.error(servletScopedRequest.getHttpServletRequest(), servletScopedRequest.getHttpServletResponse());
+                callback.succeeded();
                 return;
             }
             catch (ServletException e)
             {
                 LOG.debug("Unable to call error dispatcher", e);
                 if (response.isCommitted())
+                {
+                    callback.failed(e);
                     return;
+                }
             }
         }
 
@@ -117,6 +121,7 @@ public class ErrorHandler implements Request.Processor
         if (message == null)
             message = HttpStatus.getMessage(response.getStatus());
         generateAcceptableResponse(servletScopedRequest, servletScopedRequest.getHttpServletRequest(), servletScopedRequest.getHttpServletResponse(), response.getStatus(), message);
+        callback.succeeded();
     }
 
     /**

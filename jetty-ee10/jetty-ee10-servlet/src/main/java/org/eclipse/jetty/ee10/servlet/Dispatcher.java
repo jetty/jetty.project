@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.DispatcherType;
@@ -35,7 +36,6 @@ import org.eclipse.jetty.ee10.servlet.util.ServletOutputStreamWrapper;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +97,22 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
+        ServletScopedRequest baseRequest = Objects.requireNonNull(ServletScopedRequest.getBaseRequest(request));
+        baseRequest.getResponse().resetForForward();
         _mappedServlet.handle(_servletHandler, new ForwardRequest(httpRequest), httpResponse);
+
+        // If we are not async and not closed already, then close via the possibly wrapped response.
+        if (!baseRequest.getState().isAsync() && !baseRequest.getHttpOutput().isClosed())
+        {
+            try
+            {
+                response.getOutputStream().close();
+            }
+            catch (IllegalStateException e)
+            {
+                response.getWriter().close();
+            }
+        }
     }
 
     @Override
@@ -272,59 +287,38 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
-        public String getPathInfo()
-        {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getPathInfo();
-        }
-
-        @Override
-        public String getServletPath()
-        {
-            return _mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
-        }
-
-        @Override
-        public String getQueryString()
-        {
-            if (_uri != null)
-            {
-                String targetQuery = _uri.getQuery();
-                if (!StringUtil.isEmpty(targetQuery))
-                    return targetQuery;
-            }
-            return _httpServletRequest.getQueryString();
-        }
-
-        @Override
-        public String getRequestURI()
-        {
-            return _uri == null ? null : _uri.getPath();
-        }
-
-        @Override
         public Object getAttribute(String name)
         {
-            String pathInContext = URIUtil.addPaths(getServletPath(), getPathInfo());
             switch (name)
             {
                 case RequestDispatcher.INCLUDE_MAPPING:
-                    return _mappedServlet.getServletPathMapping(pathInContext);
+                    return _mappedServlet.getServletPathMapping(_pathInContext);
                 case RequestDispatcher.INCLUDE_SERVLET_PATH:
-                    return _mappedServlet.getServletPathMapping(pathInContext).getServletPath();
+                    return _mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
                 case RequestDispatcher.INCLUDE_PATH_INFO:
-                    return _mappedServlet.getServletPathMapping(pathInContext).getPathInfo();
-
+                    return _mappedServlet.getServletPathMapping(_pathInContext).getPathInfo();
+                case RequestDispatcher.INCLUDE_REQUEST_URI:
+                    return (_uri == null) ? null : _uri.getPath();
+                case RequestDispatcher.INCLUDE_CONTEXT_PATH:
+                    return _httpServletRequest.getContextPath();
+                case RequestDispatcher.INCLUDE_QUERY_STRING:
+                    return (_uri == null) ? null : _uri.getQuery();
                 default:
-                    // TODO etc.
+                    return super.getAttribute(name);
             }
-            return super.getAttribute(name);
         }
 
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            // TODO get the enumeration, add to a new set, add in extra INCLUDE params and return enumeration
-            return super.getAttributeNames();
+            ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
+            names.add(RequestDispatcher.INCLUDE_MAPPING);
+            names.add(RequestDispatcher.INCLUDE_SERVLET_PATH);
+            names.add(RequestDispatcher.INCLUDE_PATH_INFO);
+            names.add(RequestDispatcher.INCLUDE_REQUEST_URI);
+            names.add(RequestDispatcher.INCLUDE_CONTEXT_PATH);
+            names.add(RequestDispatcher.INCLUDE_QUERY_STRING);
+            return Collections.enumeration(names);
         }
     }
 

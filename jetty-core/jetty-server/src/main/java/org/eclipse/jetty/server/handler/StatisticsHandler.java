@@ -69,7 +69,7 @@ public class StatisticsHandler extends Handler.Wrapper
         request.getHttpChannel().addStreamWrapper(s -> new HttpStream.Wrapper(s)
         {
             @Override
-            public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
             {
                 if (response != null)
                 {
@@ -91,7 +91,7 @@ public class StatisticsHandler extends Handler.Wrapper
                     statisticsRequest._bytesWritten.add(b.remaining());
                 }
 
-                super.send(response, last, callback, content);
+                super.send(request, response, last, callback, content);
             }
 
             @Override

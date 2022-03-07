@@ -169,10 +169,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         throw new IllegalStateException("No Jetty ServletContextHandler, " + purpose + " unavailable");
     }
 
-    public static ServletContextHandler getServletContextHandler(ServletContext context)
+    public static ServletContextHandler getServletContextHandler(ServletContext servletContext)
     {
-        if (context instanceof Context)
-            return ((Context)context).getServletContextHandler();
+        if (servletContext instanceof ServletContextContext)
+            return ((ServletContextContext)servletContext).getContext().getServletContextHandler();
         return null;
     }
 
