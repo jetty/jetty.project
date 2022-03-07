@@ -83,6 +83,14 @@ public class Dispatcher implements RequestDispatcher
         _mappedServlet = _servletHandler.getMappedServlet(name);
     }
 
+    public void error(ServletRequest request, ServletResponse response) throws ServletException, IOException
+    {
+        HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
+        HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
+
+        _mappedServlet.handle(_servletHandler, new ErrorRequest(httpRequest), httpResponse);
+    }
+
     @Override
     public void forward(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
@@ -499,6 +507,74 @@ public class Dispatcher implements RequestDispatcher
             names.add(RequestDispatcher.FORWARD_CONTEXT_PATH);
             names.add(RequestDispatcher.FORWARD_MAPPING);
             names.add(RequestDispatcher.FORWARD_QUERY_STRING);
+            return Collections.enumeration(names);
+        }
+    }
+
+    // TODO
+    private class ErrorRequest extends ParameterRequestWrapper
+    {
+        private final HttpServletRequest _httpServletRequest;
+
+        public ErrorRequest(HttpServletRequest httpRequest)
+        {
+            super(httpRequest);
+            _httpServletRequest = httpRequest;
+        }
+
+        @Override
+        public DispatcherType getDispatcherType()
+        {
+            return DispatcherType.ERROR;
+        }
+
+        @Override
+        public String getPathInfo()
+        {
+            return _mappedServlet.getServletPathMapping(_pathInContext).getPathInfo();
+        }
+
+        @Override
+        public String getServletPath()
+        {
+            return _mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
+        }
+
+        @Override
+        public String getQueryString()
+        {
+            // TODO
+            if (_uri != null)
+            {
+                String targetQuery = _uri.getQuery();
+                if (!StringUtil.isEmpty(targetQuery))
+                    return targetQuery;
+            }
+            return _httpServletRequest.getQueryString();
+        }
+
+        @Override
+        public String getRequestURI()
+        {
+            return _uri == null ? null : _uri.getPath();
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            switch (name)
+            {
+                // TODO
+                default:
+                    return super.getAttribute(name);
+            }
+        }
+
+        @Override
+        public Enumeration<String> getAttributeNames()
+        {
+            ArrayList<String> names = new ArrayList<>(Collections.list(super.getAttributeNames()));
+            // TODO
             return Collections.enumeration(names);
         }
     }

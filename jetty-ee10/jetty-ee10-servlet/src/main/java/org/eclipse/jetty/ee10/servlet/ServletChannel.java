@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.slf4j.Logger;
@@ -457,24 +458,20 @@ public class ServletChannel implements Runnable
                             // by then.
                             ensureConsumeAllOrNotPersistent();
 
-                            /*
-                            // TODO: We might want our own error handler for servlet instead of using the server one.
                             ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
-                            ErrorHandler errorHandler = (ErrorHandler)ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
+                            Request.Processor errorProcessor = ErrorHandler.getErrorProcessor(getServer(), context == null ? null : context.getContextHandler());
 
-                            // If we can't have a body, then create a minimal error response.
-                            if (HttpStatus.hasNoBody(_response.getStatus()) || errorHandler == null || !errorHandler.errorPageForMethod(_request.getMethod()))
+                            // If we can't have a body or have no processor, then create a minimal error response.
+                            if (HttpStatus.hasNoBody(getResponse().getStatus()) || errorProcessor == null)
                             {
                                 sendResponseAndComplete();
-                                break;
                             }
-
-                            dispatch(DispatcherType.ERROR, () ->
+                            else
                             {
-                                errorHandler.handle(null, _request, _request, _response);
-                                _request.setHandled(true);
-                            });
-                             */
+                                Callback completeCallback = Callback.from(() -> _state.completed(null), _state::completed);
+                                _state.completing();
+                                dispatch(DispatcherType.ERROR, () -> errorProcessor.process(_request, getResponse(), completeCallback));
+                            }
                         }
                         catch (Throwable x)
                         {
@@ -486,9 +483,8 @@ public class ServletChannel implements Runnable
                             {
                                 try
                                 {
-                                    _callback.failed(x);
-                                    // _response.resetContent();
-                                    // sendResponseAndComplete(); todo is there state change we need to do here?
+                                    getResponse().resetContent();
+                                    sendResponseAndComplete();
                                 }
                                 catch (Throwable t)
                                 {
@@ -624,14 +620,11 @@ public class ServletChannel implements Runnable
         return false;
     }
 
-    private void dispatch(DispatcherType type, Dispatchable dispatchable) throws IOException, ServletException
+    private void dispatch(DispatcherType type, Dispatchable dispatchable) throws Exception
     {
         try
         {
             _servletContextContext.getContext().getServletContextHandler().requestInitialized(_request, _request.getHttpServletRequest());
-
-            // TODO: ASYNC dispatch.
-            // _request.setDispatcherType(type);
             _combinedListener.onBeforeDispatch(_request);
             dispatchable.dispatch();
         }
@@ -643,8 +636,6 @@ public class ServletChannel implements Runnable
         finally
         {
             _combinedListener.onAfterDispatch(_request);
-            // _request.setDispatcherType(null);
-
             _servletContextContext.getContext().getServletContextHandler().requestDestroyed(_request, _request.getHttpServletRequest());
         }
     }
@@ -718,6 +709,19 @@ public class ServletChannel implements Runnable
             failure = failure.getCause();
         }
         return null;
+    }
+
+    public void sendResponseAndComplete()
+    {
+        try
+        {
+            _state.completing();
+            getResponse().write(true, Callback.from(() -> _state.completed(null), _state::completed));
+        }
+        catch (Throwable x)
+        {
+            abort(x);
+        }
     }
 
     public boolean isExpecting100Continue()
@@ -826,7 +830,7 @@ public class ServletChannel implements Runnable
 
     interface Dispatchable
     {
-        void dispatch() throws IOException, ServletException;
+        void dispatch() throws Exception;
     }
 
     /**

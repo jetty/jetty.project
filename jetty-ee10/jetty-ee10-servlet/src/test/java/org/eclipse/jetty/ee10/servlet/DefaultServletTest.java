@@ -1911,7 +1911,7 @@ public class DefaultServletTest
         rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip, compress, br;q=0.9\r\n\r\n");
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response, containsHeaderValue(HttpHeader.CONTsetBaseResourceENT_LENGTH, "9"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
         assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));

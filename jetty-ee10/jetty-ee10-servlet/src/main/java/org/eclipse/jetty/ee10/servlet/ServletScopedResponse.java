@@ -18,6 +18,7 @@ import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.Locale;
 
 import jakarta.servlet.ServletContext;
@@ -33,11 +34,14 @@ import org.eclipse.jetty.ee10.servlet.writer.Utf8HttpWriter;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
@@ -183,6 +187,109 @@ public class ServletScopedResponse extends ContextResponse
             _httpOutput.close();
     }
 
+    @Override
+    public void reset()
+    {
+        super.reset();
+
+        _httpOutput.resetBuffer();
+        _outputType = OutputType.NONE;
+        _contentLength = -1;
+        _contentType = null;
+        _mimeType = null;
+        _characterEncoding = null;
+        _encodingFrom = EncodingFrom.NOT_SET;
+
+        // Clear all response headers
+        HttpFields.Mutable headers = getHeaders();
+        headers.clear();
+
+        // recreate necessary connection related fields
+        for (String value : getRequest().getHeaders().getCSV(HttpHeader.CONNECTION, false))
+        {
+            HttpHeaderValue cb = HttpHeaderValue.CACHE.get(value);
+            if (cb != null)
+            {
+                switch (cb)
+                {
+                    case CLOSE:
+                        headers.put(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.toString());
+                        break;
+                    case KEEP_ALIVE:
+                        if (HttpVersion.HTTP_1_0.is(_request.getConnectionMetaData().getProtocol()))
+                            headers.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.toString());
+                        break;
+                    case TE:
+                        headers.put(HttpHeader.CONNECTION, HttpHeaderValue.TE.toString());
+                        break;
+                    default:
+                }
+            }
+        }
+
+        // recreate session cookies
+        HttpSession session = _request.getHttpServletRequest().getSession(false);
+        if (session != null && session.isNew())
+        {
+            SessionHandler sh = _servletChannel.getContextHandler().getSessionHandler();
+            if (sh != null)
+            {
+                // TODO: use Jan's new static method.
+                if (session instanceof SessionHandler.ServletAPISession apiSession)
+                {
+                    HttpCookie c = sh.getSessionCookie(apiSession.getSession(), _request.getContext().getContextPath(), _request.isSecure());
+                    if (c != null)
+                        Response.addCookie(_response, c);
+                }
+                else
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        }
+    }
+
+    public void resetContent()
+    {
+        _httpOutput.resetBuffer();
+        _outputType = OutputType.NONE;
+        _contentLength = -1;
+        _contentType = null;
+        _mimeType = null;
+        _characterEncoding = null;
+        _encodingFrom = EncodingFrom.NOT_SET;
+
+        // remove the content related response headers and keep all others
+        for (Iterator<HttpField> i = getHeaders().iterator(); i.hasNext(); )
+        {
+            HttpField field = i.next();
+            if (field.getHeader() == null)
+                continue;
+
+            switch (field.getHeader())
+            {
+                case CONTENT_TYPE:
+                case CONTENT_LENGTH:
+                case CONTENT_ENCODING:
+                case CONTENT_LANGUAGE:
+                case CONTENT_RANGE:
+                case CONTENT_MD5:
+                case CONTENT_LOCATION:
+                case TRANSFER_ENCODING:
+                case CACHE_CONTROL:
+                case LAST_MODIFIED:
+                case EXPIRES:
+                case ETAG:
+                case DATE:
+                case VARY:
+                    i.remove();
+                    continue;
+                default:
+            }
+        }
+    }
+
+
     public String getCharacterEncoding(boolean setContentType)
     {
         // First try explicit char encoding.
@@ -277,6 +384,16 @@ public class ServletScopedResponse extends ContextResponse
     public boolean isWriting()
     {
         return _outputType == OutputType.WRITER;
+    }
+
+    public boolean isStreaming()
+    {
+        return _outputType == OutputType.STREAM;
+    }
+
+    public boolean isWritingOrStreaming()
+    {
+        return isWriting() || isStreaming();
     }
 
     private enum EncodingFrom

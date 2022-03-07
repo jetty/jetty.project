@@ -75,9 +75,9 @@ public class SessionHandler extends AbstractSessionHandler
                 HttpSessionListener.class
             };
     
-    private final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<>();
-    private final List<HttpSessionListener> _sessionListeners = new CopyOnWriteArrayList<>();
-    private final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
+    final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<>();
+    final List<HttpSessionListener> _sessionListeners = new CopyOnWriteArrayList<>();
+    final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
 
     private Set<SessionTrackingMode> _sessionTrackingModes;
     private SessionCookieConfig _cookieConfig = new CookieConfig();
