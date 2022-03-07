@@ -140,6 +140,7 @@ public class FileTestHelper
                 SessionData.serializeAttributes(tmp, oos);
             }
         }
+        assertTrue(Files.exists(path));
     }
 
     public boolean checkSessionPersisted(SessionData data)
