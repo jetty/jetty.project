@@ -143,6 +143,9 @@ public class Blocking
     public interface Callback extends org.eclipse.jetty.util.Callback, AutoCloseable, Invocable
     {
         void block() throws IOException;
+
+        @Override
+        void close();
     }
 
     public static Callback callback()

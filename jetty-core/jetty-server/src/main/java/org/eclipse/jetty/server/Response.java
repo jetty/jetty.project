@@ -107,7 +107,7 @@ public interface Response
     /*
      * Blocking write utility
      */
-    static void write(boolean last, Response response, ByteBuffer... content) throws Exception
+    static void write(Response response, boolean last, ByteBuffer... content) throws IOException
     {
         try (Blocking.Callback callback = Blocking.callback())
         {
