@@ -736,6 +736,11 @@ public class HttpChannel extends Attributes.Lazy
                 if (LOG.isDebugEnabled())
                     LOG.debug("failed {}", stream, x);
 
+                // consume any input
+                Throwable unconsumed = stream.consumeAll();
+                if (unconsumed != null)
+                    x.addSuppressed(unconsumed);
+
                 if (committed)
                     stream.failed(x);
                 else

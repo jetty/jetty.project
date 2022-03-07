@@ -500,7 +500,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         // Defensive check to avoid an infinite select/wakeup/fillAndParseForContent/wait loop
         // in case the parser was mistakenly closed and the connection was not aborted.
         if (_parser.isTerminated())
-            throw new IllegalStateException("Parser is terminated: " + _parser);
+        {
+            _requestHandler.messageComplete();
+            return;
+        }
 
         // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this method
         // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown().
@@ -982,7 +985,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public boolean content(ByteBuffer buffer)
         {
-            if (_stream.get()._content != null || _retainableByteBuffer == null)
+            Http1Stream stream = _stream.get();
+            if (stream == null || stream._content != null || _retainableByteBuffer == null)
                 throw new IllegalStateException();
 
             _retainableByteBuffer.retain();
@@ -990,7 +994,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (LOG.isDebugEnabled())
                 LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
 
-            _stream.get()._content = new Content.Abstract(false, false)
+            stream._content = new Content.Abstract(false, false)
             {
                 final RetainableByteBuffer _retainable = _retainableByteBuffer;
                 @Override
@@ -1305,7 +1309,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         public Content readContent()
         {
             if (_content == null)
-                parseAndFillForContent();
+            {
+                if (_parser.isTerminated())
+                    _content = Content.EOF;
+                else
+                    parseAndFillForContent();
+            }
 
             Content content = _content;
             _content = Content.next(content);
