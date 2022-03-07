@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.client;
 
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
@@ -697,7 +699,9 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
             {
                 response.setStatus(200);
                 // Echo content back
-                IO.copy(request.getInputStream(), response.getOutputStream());
+                InputStream inputStream = Request.asInputStream(request);
+                OutputStream outputStream = org.eclipse.jetty.server.Response.asOutputStream(response);
+                IO.copy(inputStream, outputStream);
             }
         }
     }

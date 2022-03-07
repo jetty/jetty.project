@@ -13,19 +13,26 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +41,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -41,9 +49,10 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ContentProcessorTest
+public class ContentTest
 {
     TestProvider _provider;
     TestProcessor _processor;
@@ -62,7 +71,110 @@ public class ContentProcessorTest
     }
 
     @Test
-    public void testNoContent()
+    public void testSimple()
+    {
+        assertNull(_provider.readContent());
+        _provider.add("hello", false);
+        Content content = _provider.readContent();
+        assertNotNull(content);
+        assertThat(BufferUtil.toString(content.getByteBuffer()), equalTo("hello"));
+        content.release();
+    }
+
+    @Test
+    public void testConsumeAll() throws Exception
+    {
+        FutureCallback callback = new FutureCallback();
+        Content.consumeAll(_provider, callback);
+        Runnable todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add("hello", false);
+        todo.run();
+        assertFalse(callback.isDone());
+
+        todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add(" cruel", false);
+        _provider.add(" world", true);
+        todo.run();
+
+        todo = _provider.takeDemand();
+        assertNull(todo);
+        assertTrue(callback.isDone());
+        callback.get();
+    }
+
+    @Test
+    public void testConsumeAllFailed() throws Exception
+    {
+        FutureCallback callback = new FutureCallback();
+        Content.consumeAll(_provider, callback);
+        Runnable todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add("hello", false);
+        todo.run();
+        assertFalse(callback.isDone());
+
+        todo = _provider.takeDemand();
+        assertNotNull(todo);
+
+        Throwable cause = new Throwable("test cause");
+        _provider.add(new Content.Error(cause));
+        todo.run();
+
+        todo = _provider.takeDemand();
+        assertNull(todo);
+        assertTrue(callback.isDone());
+        assertThrows(ExecutionException.class, callback::get);
+    }
+
+    @Test
+    public void testInputStream() throws Exception
+    {
+        InputStream in = Content.asInputStream(_provider);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        AtomicReference<Throwable> throwable = new AtomicReference<>();
+        CountDownLatch complete = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                IO.copy(in, out);
+            }
+            catch (Throwable t)
+            {
+                throwable.set(t);
+            }
+            finally
+            {
+                complete.countDown();
+            }
+        }).start();
+
+        long wait = System.currentTimeMillis() + 1000;
+        Runnable todo = _provider.takeDemand();
+        while (todo == null && System.currentTimeMillis() < wait)
+            todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add("hello", false);
+        todo.run();
+
+        wait = System.currentTimeMillis() + 1000;
+        todo = _provider.takeDemand();
+        while (todo == null && System.currentTimeMillis() < wait)
+            todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add(" cruel", false);
+        _provider.add(" world", true);
+        todo.run();
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
+
+        assertNull(throwable.get());
+        assertThat(out.toString(StandardCharsets.UTF_8), equalTo("hello cruel world"));
+    }
+
+    @Test
+    public void testProcessorNoContent()
     {
         assertThat(_processor.readContent(), nullValue());
         assertThat(_provider.takeDemand(), nullValue());
@@ -91,7 +203,7 @@ public class ContentProcessorTest
     }
 
     @Test
-    public void testContentAvailableEOF()
+    public void testProcessorContentAvailableEOF()
     {
         _provider.add("one", false);
         _provider.add("two", false);
@@ -121,7 +233,7 @@ public class ContentProcessorTest
     }
 
     @Test
-    public void testContentAvailableLast()
+    public void testProcessorContentAvailableLast()
     {
         _provider.add("one", false);
         _provider.add("two", false);
@@ -157,7 +269,7 @@ public class ContentProcessorTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void testAvailableNoRecursion(Consumer consumer)
+    public void testProcessorAvailableNoRecursion(Consumer consumer)
     {
         consumer.setProcessor(_processor);
         _provider.add("one", false);
@@ -173,7 +285,7 @@ public class ContentProcessorTest
 
     @ParameterizedTest
     @MethodSource("consumers")
-    public void testDemandedNoRecursion(Consumer consumer)
+    public void testProcessorDemandedNoRecursion(Consumer consumer)
     {
         consumer.setProcessor(_processor);
         _processor.demandContent(consumer);
@@ -195,7 +307,7 @@ public class ContentProcessorTest
     }
 
     @Test
-    public void testProducerThrowsInRead()
+    public void testProcessorProducerThrowsInRead()
     {
         _provider.add("one", false);
         _provider.add("THROW", false);
@@ -224,7 +336,7 @@ public class ContentProcessorTest
     }
 
     @Test
-    public void testProducerThrowsInDemand()
+    public void testProcessorProducerThrowsInDemand()
     {
         _provider.add("one", false);
         _provider.add("THROW", false);
@@ -259,7 +371,7 @@ public class ContentProcessorTest
     }
 
     @Test
-    public void testProducerThrowsInAvailable()
+    public void testProcessorProducerThrowsInAvailable()
     {
         _provider.add("one", false);
 
@@ -304,7 +416,7 @@ public class ContentProcessorTest
     }
 
     @Test
-    public void testAvailableThrows()
+    public void testProcessorAvailableThrows()
     {
         AtomicReference<Throwable> error = new AtomicReference<>();
         Deque<String> output = new ConcurrentLinkedDeque<>();
@@ -371,7 +483,7 @@ public class ContentProcessorTest
     }
 
     @Test
-    public void testExampleAvailable()
+    public void testProcessorExampleAvailable()
     {
         _provider.add("one", false);
         _provider.add("TWO", false);
@@ -391,7 +503,7 @@ public class ContentProcessorTest
     }
 
     @Test
-    public void testExampleDemandedBefore()
+    public void testProcessorExampleDemandedBefore()
     {
         Deque<String> input = new ArrayDeque<>(List.of("one", "TWO", "three four", "NOOP", "five NOOP six"));
 
@@ -430,7 +542,7 @@ public class ContentProcessorTest
     }
 
     @Test
-    public void testExampleDemandedAfter()
+    public void testProcessorExampleDemandedAfter()
     {
         Deque<String> input = new ArrayDeque<>(List.of("one", "TWO", "three four", "NOOP", "five NOOP six"));
 

@@ -342,6 +342,31 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
                 invocationType = Invocable.combine(invocationType, child.getInvocationType());
             return invocationType;
         }
+
+        @SuppressWarnings("unchecked")
+        public static <T extends Handler.Container> T findContainerOf(Handler.Container root, Class<T> type, Handler handler)
+        {
+            if (root == null || handler == null)
+                return null;
+
+            List<Handler.Container> branches = (List<Handler.Container>)root.getDescendants(type);
+            if (branches != null)
+            {
+                for (Handler.Container container : branches)
+                {
+                    List<Handler> candidates = (List<Handler>)container.getDescendants(handler.getClass());
+                    if (candidates != null)
+                    {
+                        for (Handler c : candidates)
+                        {
+                            if (c == handler)
+                                return (T)container;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
     }
 
     /**

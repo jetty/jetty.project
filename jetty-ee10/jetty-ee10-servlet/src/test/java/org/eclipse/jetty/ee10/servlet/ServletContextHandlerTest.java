@@ -60,8 +60,6 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee10.handler.AbstractHandlerContainer;
-import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -999,14 +997,14 @@ public class ServletContextHandlerTest
 
         SessionHandler session = root.getSessionHandler();
         ServletHandler servlet = root.getServletHandler();
-        SecurityHandler security = new ConstraintSecurityHandler();
+        SecurityHandler security = new SecurityHandler.ConstraintSecurityHandler();
         root.setSecurityHandler(security);
 
         _server.start();
 
-        assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, session));
-        assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, security));
-        assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, servlet));
+        assertEquals(root, Handler.AbstractContainer.findContainerOf(_server, ContextHandler.class, session));
+        assertEquals(root, Handler.AbstractContainer.findContainerOf(_server, ContextHandler.class, security));
+        assertEquals(root, Handler.AbstractContainer.findContainerOf(_server, ContextHandler.class, servlet));
     }
 
     @Test

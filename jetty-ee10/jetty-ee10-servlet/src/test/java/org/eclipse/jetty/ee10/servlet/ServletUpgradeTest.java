@@ -27,10 +27,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.WebConnection;
-import org.eclipse.jetty.ee10.handler.DefaultHandler;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,7 +62,7 @@ public class ServletUpgradeTest
         contextHandler.addServlet(new ServletHolder(new TestServlet()), "/TestServlet");
 
         Handler.Collection handlers = new Handler.Collection();
-        handlers.setHandlers(new Handler[]{contextHandler, new DefaultHandler()});
+        handlers.setHandlers(contextHandler, new DefaultHandler());
         server.setHandler(handlers);
 
         server.start();

@@ -14,23 +14,21 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -233,23 +231,14 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAbortOnCommitWithContent(Scenario scenario) throws Exception
     {
-        AtomicReference<IOException> failure = new AtomicReference<>();
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            protected void service(org.eclipse.jetty.server.Request request, Response response) throws IOException
             {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    if (request.getDispatcherType() != DispatcherType.ERROR)
-                        IO.copy(request.getInputStream(), response.getOutputStream());
-                }
-                catch (IOException x)
-                {
-                    failure.set(x);
-                    throw x;
-                }
+                InputStream inputStream = org.eclipse.jetty.server.Request.asInputStream(request);
+                OutputStream outputStream = Response.asOutputStream(response);
+                IO.copy(inputStream, outputStream);
             }
         });
 
@@ -298,8 +287,9 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 {
                     try
                     {
-                        if (request.getDispatcherType() != DispatcherType.ERROR)
-                            IO.copy(request.getInputStream(), response.getOutputStream());
+                        InputStream inputStream = org.eclipse.jetty.server.Request.asInputStream(request);
+                        OutputStream outputStream = Response.asOutputStream(response);
+                        IO.copy(inputStream, outputStream);
                     }
                     finally
                     {
@@ -347,21 +337,12 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     public void testInterrupt(Scenario scenario) throws Exception
     {
         long delay = 1000;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
             {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    if (request.getDispatcherType() != DispatcherType.ERROR)
-                        TimeUnit.MILLISECONDS.sleep(2 * delay);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new ServletException(x);
-                }
+                TimeUnit.MILLISECONDS.sleep(2 * delay);
             }
         });
 
@@ -391,21 +372,12 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     public void testAbortLongPoll(Scenario scenario) throws Exception
     {
         final long delay = 1000;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
             {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    if (request.getDispatcherType() != DispatcherType.ERROR)
-                        TimeUnit.MILLISECONDS.sleep(2 * delay);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new ServletException(x);
-                }
+                TimeUnit.MILLISECONDS.sleep(2 * delay);
             }
         });
 
@@ -453,21 +425,12 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     public void testAbortLongPollAsync(Scenario scenario) throws Exception
     {
         final long delay = 1000;
-        start(scenario, new AbstractHandler()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws ServletException
+            protected void service(org.eclipse.jetty.server.Request request, Response response) throws Throwable
             {
-                try
-                {
-                    baseRequest.setHandled(true);
-                    if (request.getDispatcherType() != DispatcherType.ERROR)
-                        TimeUnit.MILLISECONDS.sleep(2 * delay);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new ServletException(x);
-                }
+                TimeUnit.MILLISECONDS.sleep(2 * delay);
             }
         });
 
@@ -494,14 +457,15 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAbortConversation(Scenario scenario) throws Exception
     {
-        start(scenario, new AbstractHandler()
+        start(scenario, new Handler.Processor()
         {
             @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
-                if (!"/done".equals(request.getRequestURI()))
-                    response.sendRedirect("/done");
+                if ("/done".equals(request.getPathInContext()))
+                    callback.succeeded();
+                else
+                    Response.sendRedirect(request, response, callback, "/done");
             }
         });
 

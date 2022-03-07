@@ -30,8 +30,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.handler.DefaultHandler;
-import org.eclipse.jetty.ee10.handler.HandlerList;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -249,7 +249,7 @@ public class ServletRequestLogTest
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             // collect error details
-            String reason = (response instanceof Response) ? ((Response)response).getReason() : null;
+            String reason = HttpStatus.getMessage(response.getStatus());
             int status = response.getStatus();
 
             // intentionally set response status to OK (this is a test to see what is actually logged)
@@ -294,13 +294,13 @@ public class ServletRequestLogTest
 
         // First the behavior as defined in etc/jetty.xml
         // id="Handlers"
-        Handler.Collection handlers = new HandlerList();
+        Handler.Collection handlers = new Handler.Collection();
         // id="Contexts"
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         // id="DefaultHandler"
         DefaultHandler defaultHandler = new DefaultHandler();
 
-        handlers.setHandlers(new Handler[]{contexts, defaultHandler});
+        handlers.setHandlers(contexts, defaultHandler);
         server.setHandler(handlers);
 
         // Next the behavior as defined by etc/jetty-requestlog.xml
@@ -324,7 +324,7 @@ public class ServletRequestLogTest
 
             Assertions.assertTimeoutPreemptively(ofSeconds(4), () ->
             {
-                connector.addBean(new HttpChannel.Listener()
+                app.addEventListener(new ServletChannel.Listener()
                 {
                     @Override
                     public void onComplete(Request request)
@@ -401,7 +401,7 @@ public class ServletRequestLogTest
 
             Assertions.assertTimeoutPreemptively(ofSeconds(4), () ->
             {
-                connector.addBean(new HttpChannel.Listener()
+                app.addEventListener(new ServletChannel.Listener()
                 {
                     @Override
                     public void onComplete(Request request)
@@ -472,7 +472,7 @@ public class ServletRequestLogTest
         // Add error page mapping
         ErrorPageErrorHandler errorMapper = new ErrorPageErrorHandler();
         errorMapper.addErrorPage(500, "/errorpage");
-        app.setErrorHandler(errorMapper);
+        app.setErrorProcessor(errorMapper);
 
         try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
@@ -480,7 +480,7 @@ public class ServletRequestLogTest
 
             Assertions.assertTimeoutPreemptively(ofSeconds(4), () ->
             {
-                connector.addBean(new HttpChannel.Listener()
+                app.addEventListener(new ServletChannel.Listener()
                 {
                     @Override
                     public void onComplete(Request request)
@@ -554,7 +554,7 @@ public class ServletRequestLogTest
         // Add error page mapping
         ErrorPageErrorHandler errorMapper = new ErrorPageErrorHandler();
         errorMapper.addErrorPage(500, "/errorpage");
-        app.setErrorHandler(errorMapper);
+        app.setErrorProcessor(errorMapper);
 
         try
         {
@@ -562,7 +562,7 @@ public class ServletRequestLogTest
 
             Assertions.assertTimeoutPreemptively(ofSeconds(4), () ->
             {
-                connector.addBean(new HttpChannel.Listener()
+                app.addEventListener(new ServletChannel.Listener()
                 {
                     @Override
                     public void onComplete(Request request)

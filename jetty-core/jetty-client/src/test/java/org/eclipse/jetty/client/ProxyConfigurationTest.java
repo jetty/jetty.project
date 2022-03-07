@@ -23,14 +23,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ProxyConfigurationTest
 {
     @Test
-    public void testProxyMatchesWithoutIncludesWithoutExcludes() throws Exception
+    public void testProxyMatchesWithoutIncludesWithoutExcludes()
     {
         HttpProxy proxy = new HttpProxy("host", 0);
         assertTrue(proxy.matches(new Origin("http", "any", 0)));
     }
 
     @Test
-    public void testProxyMatchesWithOnlyExcludes() throws Exception
+    public void testProxyMatchesWithOnlyExcludes()
     {
         HttpProxy proxy = new HttpProxy("host", 0);
         proxy.getExcludedAddresses().add("1.2.3.4:5");
@@ -41,7 +41,7 @@ public class ProxyConfigurationTest
     }
 
     @Test
-    public void testProxyMatchesWithOnlyIncludes() throws Exception
+    public void testProxyMatchesWithOnlyIncludes()
     {
         HttpProxy proxy = new HttpProxy("host", 0);
         proxy.getIncludedAddresses().add("1.2.3.4:5");
@@ -52,7 +52,7 @@ public class ProxyConfigurationTest
     }
 
     @Test
-    public void testProxyMatchesWithIncludesAndExcludes() throws Exception
+    public void testProxyMatchesWithIncludesAndExcludes()
     {
         HttpProxy proxy = new HttpProxy("host", 0);
         proxy.getIncludedAddresses().add("1.2.3.4");
@@ -64,7 +64,7 @@ public class ProxyConfigurationTest
     }
 
     @Test
-    public void testProxyMatchesWithIncludesAndExcludesIPv6() throws Exception
+    public void testProxyMatchesWithIncludesAndExcludesIPv6()
     {
         Assumptions.assumeTrue(Net.isIpv6InterfaceAvailable());
         HttpProxy proxy = new HttpProxy("host", 0);

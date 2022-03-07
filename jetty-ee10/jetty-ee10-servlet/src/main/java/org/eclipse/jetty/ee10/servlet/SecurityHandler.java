@@ -59,4 +59,8 @@ public class SecurityHandler extends Handler.Wrapper
     {
         return false;
     }
+
+    public static class ConstraintSecurityHandler extends SecurityHandler
+    {
+    }
 }

@@ -25,8 +25,6 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.handler.ErrorHandler;
-import org.eclipse.jetty.ee10.handler.QuietServletException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.QuietException;
@@ -168,7 +166,7 @@ public class AsyncListenerTest
                 super.writeErrorPageMessage(request, writer, code, message, uri);
             }
         };
-        server.setErrorHandler(errorHandler);
+        server.setErrorProcessor(errorHandler);
 
         String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
@@ -322,8 +320,7 @@ public class AsyncListenerTest
                 super.writeErrorPageMessage(request, writer, code, message, uri);
             }
         };
-        errorHandler.setServer(server);
-        server.setErrorHandler(errorHandler);
+        server.setErrorProcessor(errorHandler);
 
         String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +

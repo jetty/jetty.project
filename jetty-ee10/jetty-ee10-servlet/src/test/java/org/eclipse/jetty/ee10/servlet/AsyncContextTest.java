@@ -27,7 +27,6 @@ import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.ee10.handler.DefaultHandler;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -35,6 +34,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,7 +87,7 @@ public class AsyncContextTest
         _contextHandler.addServlet(new ServletHolder(new ErrorServlet()), "/error/*");
 
         ErrorPageErrorHandler errorHandler = new ErrorPageErrorHandler();
-        _contextHandler.setErrorHandler(errorHandler);
+        _contextHandler.setErrorProcessor(errorHandler);
         errorHandler.addErrorPage(500, "/error/500");
         errorHandler.addErrorPage(IOException.class.getName(), "/error/IOE");
 

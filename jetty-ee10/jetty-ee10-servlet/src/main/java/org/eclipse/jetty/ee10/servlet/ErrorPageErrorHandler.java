@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -40,7 +39,6 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 
     private final Map<String, String> _errorPages = new HashMap<>(); // code or exception to URL
     private final List<ErrorCodeRange> _errorPageList = new ArrayList<>(); // list of ErrorCode by range
-    protected ServletContext _servletContext;
     private boolean _unwrapServletException = false;
 
     /**
@@ -239,13 +237,6 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
     public void addErrorPage(int from, int to, String uri)
     {
         _errorPageList.add(new ErrorCodeRange(from, to, uri));
-    }
-
-    @Override
-    protected void doStart() throws Exception
-    {
-        super.doStart();
-        _servletContext = ServletContextHandler.getCurrentServletContext();
     }
 
     private static class ErrorCodeRange
