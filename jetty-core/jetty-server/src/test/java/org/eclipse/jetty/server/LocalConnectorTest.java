@@ -91,7 +91,7 @@ public class LocalConnectorTest
     {
         String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
     }
 
     @Test
@@ -99,7 +99,7 @@ public class LocalConnectorTest
     {
         String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
     }
 
     @Test
@@ -112,7 +112,7 @@ public class LocalConnectorTest
                 \r
                 """);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
     }
 
     @Test
@@ -125,7 +125,7 @@ public class LocalConnectorTest
                 \r
                 """);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, not(containsString("path=/R1")));
+        assertThat(response, not(containsString("pathInContext=/R1")));
     }
 
     @Test
@@ -138,7 +138,7 @@ public class LocalConnectorTest
                 \r
                 """);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
     }
 
     @Test
@@ -152,7 +152,7 @@ public class LocalConnectorTest
                 \r
                 """);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
     }
 
     @Test
@@ -166,7 +166,7 @@ public class LocalConnectorTest
                 \r
                 """);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, not(containsString("path=/R1")));
+        assertThat(response, not(containsString("pathInContext=/R1")));
     }
 
     @Test
@@ -179,7 +179,7 @@ public class LocalConnectorTest
                 \r
                 """);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
         assertThat(response, containsString("\r\n0\r\n"));
     }
 
@@ -202,13 +202,13 @@ public class LocalConnectorTest
         );
         String response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
         response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R2"));
+        assertThat(response, containsString("pathInContext=/R2"));
         response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R3"));
+        assertThat(response, containsString("pathInContext=/R3"));
     }
 
     @Test
@@ -224,7 +224,7 @@ public class LocalConnectorTest
 
         String response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
 
         endp.addInput(
             """
@@ -235,7 +235,7 @@ public class LocalConnectorTest
 
         response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R2"));
+        assertThat(response, containsString("pathInContext=/R2"));
 
         endp.addInput(
             """
@@ -247,7 +247,7 @@ public class LocalConnectorTest
 
         response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R3"));
+        assertThat(response, containsString("pathInContext=/R3"));
     }
 
     @Test
@@ -270,10 +270,10 @@ public class LocalConnectorTest
         );
         String response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
         response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R2"));
+        assertThat(response, containsString("pathInContext=/R2"));
         response = endp.getResponse();
         assertThat(response, nullValue());
     }
@@ -294,7 +294,7 @@ public class LocalConnectorTest
                 """);
         String response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
         assertThat(response, containsString("0123456789"));
     }
 
@@ -315,7 +315,7 @@ public class LocalConnectorTest
         endp.addInput("01234567890\r\n");
         response = endp.getResponse();
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
         assertThat(response, containsString("0123456789"));
     }
 
@@ -324,14 +324,14 @@ public class LocalConnectorTest
     {
         String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
 
         _server.stop();
         _server.start();
 
         response = _connector.getResponse("GET /R2 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R2"));
+        assertThat(response, containsString("pathInContext=/R2"));
     }
 
     @Test
@@ -350,12 +350,12 @@ public class LocalConnectorTest
         String response = endp.getResponse() + endp.getResponse();
 
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
 
         response = response.substring(response.indexOf("</html>") + 8);
 
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R2"));
+        assertThat(response, containsString("pathInContext=/R2"));
     }
 
     @Test
@@ -373,11 +373,11 @@ public class LocalConnectorTest
 
         String response = BufferUtil.toString(endp.waitForResponse(false, 10, TimeUnit.SECONDS), StandardCharsets.ISO_8859_1);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
 
         response = BufferUtil.toString(endp.waitForResponse(false, 10, TimeUnit.SECONDS), StandardCharsets.ISO_8859_1);
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R2"));
+        assertThat(response, containsString("pathInContext=/R2"));
     }
 
     @Test
@@ -417,7 +417,7 @@ public class LocalConnectorTest
         for (int i = 1; i <= 6; i++)
         {
             assertThat(r, containsString("HTTP/1.1 200 OK"));
-            assertThat(r, containsString("path=/R" + i));
+            assertThat(r, containsString("pathInContext=/R" + i));
             r = r.substring(r.indexOf("</html>") + 8);
         }
     }
@@ -427,10 +427,10 @@ public class LocalConnectorTest
     {
         String response = _connector.getResponse("GET /R1 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R1"));
+        assertThat(response, containsString("pathInContext=/R1"));
 
         response = _connector.getResponse("GET /R2 HTTP/1.0\r\n\r\n");
         assertThat(response, containsString("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("path=/R2"));
+        assertThat(response, containsString("pathInContext=/R2"));
     }
 }

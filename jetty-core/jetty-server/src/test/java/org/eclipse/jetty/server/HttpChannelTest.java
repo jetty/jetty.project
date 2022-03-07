@@ -237,7 +237,7 @@ public class HttpChannelTest
 
         String content = stream.getResponseContentAsString();
         assertThat(content, containsString("<h1>Dump Handler</h1>"));
-        assertThat(content, containsString("path=/"));
+        assertThat(content, containsString("pathInContext=/"));
         assertThat(content, containsString("<pre>0123456789</pre>"));
     }
 

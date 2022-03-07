@@ -239,7 +239,7 @@ public class DetectorConnectionTest
         String response = getResponse(request);
 
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
-        assertThat(response, Matchers.containsString("path=/path"));
+        assertThat(response, Matchers.containsString("pathInContext=/path"));
         assertThat(response, Matchers.containsString("servername=server"));
         assertThat(response, Matchers.containsString("serverport=80"));
         assertThat(response, Matchers.containsString("localname=5.6.7.8"));
@@ -346,7 +346,7 @@ public class DetectorConnectionTest
 
         // SSL matched, so the upgrade was made to proxy which itself upgraded to HTTP
         assertThat(response, Matchers.containsString("HTTP/1.1 200"));
-        assertThat(response, Matchers.containsString("path=/path"));
+        assertThat(response, Matchers.containsString("pathInContext=/path"));
         assertThat(response, Matchers.containsString("local=5.6.7.8:222"));
         assertThat(response, Matchers.containsString("remote=1.2.3.4:111"));
     }
