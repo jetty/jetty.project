@@ -19,6 +19,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,12 +43,12 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
 
     @Override
     public void checkSessionBeforeShutdown(String id,
-                                           SessionDataStore store,
+                                           TestableSessionDataStore store,
                                            SessionCache cache,
                                            TestableSessionHandler sessionHandler) throws Exception
     {
         assertFalse(cache.contains(id)); //NullSessionCache never caches
-        assertTrue(store.exists(id));
+        assertTrue(store._map.containsKey(id));
         assertFalse(sessionHandler._sessionDestroyedListenersCalled.contains(id));
         assertTrue(sessionHandler._sessionPassivationListenersCalled.contains(id));
         assertFalse(sessionHandler._sessionActivationListenersCalled.contains(id)); //NullSessionCache always evicts on release, so never reactivates
@@ -55,14 +56,14 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
 
     @Override
     public void checkSessionAfterShutdown(String id,
-                                          SessionDataStore store,
+                                          TestableSessionDataStore store,
                                           SessionCache cache,
                                           TestableSessionHandler sessionHandler) throws Exception
     {
-        assertFalse(cache.contains(id)); //NullSessionCache never caches
-        assertTrue(store.exists(id)); //NullSessionCache doesn't do anything on shutdown
-        assertFalse(sessionHandler._sessionDestroyedListenersCalled.contains(id)); //NullSessionCache does nothing on shutdown
-        assertTrue(sessionHandler._sessionPassivationListenersCalled.contains(id));
+        assertFalse(cache.contains(id)); //NullSessionCache never caches anyway
+        assertTrue(store._map.containsKey(id)); //NullSessionCache doesn't do anything on shutdown, so session should still exit
+        assertFalse(sessionHandler._sessionDestroyedListenersCalled.contains(id)); //Session should still exit
+        assertEquals(1L, sessionHandler._sessionPassivationListenersCalled.stream().filter(s -> s.equals(id)).count());
         assertFalse(sessionHandler._sessionActivationListenersCalled.contains(id)); //NullSessionCache always evicts on release, so never reactivates
     }
     
@@ -72,17 +73,16 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         //Test the NullSessionCache never contains the session
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         NullSessionCacheFactory cacheFactory = new NullSessionCacheFactory();
         NullSessionCache cache = (NullSessionCache)cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
 
         //make a session
         long now = System.currentTimeMillis();
@@ -114,18 +114,17 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         SessionCache cache = (SessionCache)cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
-
+        server.setHandler(sessionHandler);
+        server.start();
+        
         //test one that doesn't exist
         assertFalse(cache.contains("1234"));
 
@@ -146,17 +145,17 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         SessionCache cache = (SessionCache)cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
+
 
         //test one that doesn't exist anywhere at all
         assertFalse(cache.exists("1234"));
@@ -177,17 +176,16 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, true, false, false, false);
         SessionCache cache = cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
 
         //test remove non-existent session
         Session session = cache.delete("1234");

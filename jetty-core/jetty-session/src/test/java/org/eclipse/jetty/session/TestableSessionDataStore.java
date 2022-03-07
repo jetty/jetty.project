@@ -43,6 +43,12 @@ public class TestableSessionDataStore extends AbstractSessionDataStore
     }
 
     @Override
+    public void initialize(SessionContext context) throws Exception
+    {
+        super.initialize(context);
+    }
+    
+    @Override
     public boolean isPassivating()
     {
         return _passivating;
