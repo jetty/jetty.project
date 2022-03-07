@@ -16,7 +16,6 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.Name;
@@ -58,11 +57,9 @@ public class RewritePatternRule extends PatternRule
     @Override
     public Request.WrapperProcessor apply(Request.WrapperProcessor input) throws IOException
     {
-        String path = input.getPathInContext();
-        String newPath = URIUtil.addPaths(_path, ServletPathSpec.pathInfo(getPattern(), path));
         HttpURI httpURI = input.getHttpURI();
         String newQuery = URIUtil.addQueries(httpURI.getQuery(), _query);
-        HttpURI newURI = HttpURI.build(httpURI, newPath, httpURI.getParam(), newQuery);
+        HttpURI newURI = HttpURI.build(httpURI, _path, httpURI.getParam(), newQuery);
         return new Request.WrapperProcessor(input)
         {
             @Override

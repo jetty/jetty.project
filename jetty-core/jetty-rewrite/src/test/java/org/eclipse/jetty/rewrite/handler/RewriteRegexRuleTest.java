@@ -22,10 +22,13 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class RewriteRegexRuleTest extends AbstractRuleTest
@@ -33,22 +36,34 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
     public static Stream<Arguments> scenarios()
     {
         return Stream.of(
-            new Scenario("/foo0/bar", null, ".*", "/replace", "/replace", null),
-            new Scenario("/foo1/bar", "n=v", ".*", "/replace", "/replace", "n=v"),
-            new Scenario("/foo2/bar", null, "/xxx.*", "/replace", null, null),
-            new Scenario("/foo3/bar", null, "/(.*)/(.*)", "/$2/$1/xxx", "/bar/foo3/xxx", null),
-            new Scenario("/f%20o3/bar", null, "/(.*)/(.*)", "/$2/$1/xxx", "/bar/f%20o3/xxx", null),
-            new Scenario("/foo4/bar", null, "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "p2=bar&p1=foo4"),
-            new Scenario("/foo5/bar", "n=v", "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "n=v&p2=bar&p1=foo5"),
-            new Scenario("/foo6/bar", null, "/(.*)/(.*)", "/foo6/bar?p2=$2&p1=$1", "/foo6/bar", "p2=bar&p1=foo6"),
-            new Scenario("/foo7/bar", "n=v", "/(.*)/(.*)", "/foo7/bar?p2=$2&p1=$1", "/foo7/bar", "n=v&p2=bar&p1=foo7"),
-            new Scenario("/foo8/bar", null, "/(foo8)/(.*)(bar)", "/$3/$1/xxx$2", "/bar/foo8/xxx", null),
-            new Scenario("/foo9/$bar", null, ".*", "/$replace", "/$replace", null),
-            new Scenario("/fooA/$bar", null, "/fooA/(.*)", "/$1/replace", "/$bar/replace", null),
-            new Scenario("/fooB/bar/info", null, "/fooB/(NotHere)?([^/]*)/(.*)", "/$3/other?p1=$2", "/info/other", "p1=bar"),
-            new Scenario("/fooC/bar/info", null, "/fooC/(NotHere)?([^/]*)/(.*)", "/$3/other?p1=$2&$Q", "/info/other", "p1=bar&"),
-            new Scenario("/fooD/bar/info", "n=v", "/fooD/(NotHere)?([^/]*)/(.*)", "/$3/other?p1=$2&$Q", "/info/other", "p1=bar&n=v"),
-            new Scenario("/fooE/bar/info", "n=v", "/fooE/(NotHere)?([^/]*)/(.*)", "/$3/other?p1=$2", "/info/other", "n=v&p1=bar")
+            // Simple replacement
+            new Scenario("/foo0/bar", "/.*", "/replace", "/replace", null),
+            // Non-matching rule (no replacement done)
+            new Scenario("/foo2/bar", "/xxx.*", "/replace", "/foo2/bar", null),
+            // Replacement with named references
+            new Scenario("/foo1/bar?n=v", "^/.*\\?(?<query>.*)$", "/replace?${query}", "/replace", "n=v"),
+            // group of everything after last slash
+            new Scenario("/foo3/bar", "/(.*)/(.*)", "/$2/$1/xxx", "/bar/foo3/xxx", null),
+            // TODO: path is not encoded when it reaches the X-Path handler
+            new Scenario("/f%20o3/bar", "/(.*)/(.*)", "/$2/$1/xxx", "/bar/f%20o3/xxx", null),
+            new Scenario("/foo4/bar", "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "p2=bar&p1=foo4"),
+            new Scenario("/foo4.2/bar/zed", "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "p2=zed&p1=foo4.2/bar"),
+            new Scenario("/foo4.3/bar/zed", "/([^/]*)/([^/]*)/.*", "/test?p2=$2&p1=$1", "/test", "p2=bar&p1=foo4.3"),
+            // Example of bad regex group (accidentally covered query)
+            new Scenario("/foo4.4/bar?x=y", "/(.*)/(.*)", "/test?p2=$2&p1=$1", "/test", "p2=bar?x=y&p1=foo4.4"),
+            // Fixed Example of above bad regex group (covered query properly)
+            new Scenario("/foo4.5/bar?x=y", "/([^/]*)/([^/?]*).*", "/test?p2=$2&p1=$1", "/test", "p2=bar&p1=foo4.5"),
+            // specific regex groups
+            new Scenario("/foo5/bar", "^/(foo5)/(.*)(bar)", "/$3/$1/xxx$2", "/bar/foo5/xxx", null),
+            // target input with raw "$"
+            new Scenario("/foo6/$bar", "/.*", "/replace", "/replace", null),
+            // target input with raw "$", and replacement with "$" character
+            new Scenario("/foo6/$bar", "/.*", "/\\$replace", "/$replace", null),
+            new Scenario("/fooA/$bar", "/fooA/(.*)", "/$1/replace", "/$bar/replace", null),
+            new Scenario("/fooB/bar/info", "/fooB/(NotHere)?([^/]*)/(.*)", "/$3/other?p1=$2", "/info/other", "p1=bar"),
+            new Scenario("/fooC/bar/info", "/fooC/(NotHere)?([^/]*)/([^?]*)(?:\\?|/\\?|/|)(?<query>.*)", "/$3/other?p1=$2&${query}", "/info/other", "p1=bar&"),
+            new Scenario("/fooD/bar/info?n=v", "/fooD/(NotHere)?([^/]*)/([^?]*)(?:\\?|/\\?|/|)(?<query>.*)", "/$3/other?p1=$2&${query}", "/info/other", "p1=bar&n=v"),
+            new Scenario("/fooE/bar/info?n=v", "/fooE/(NotHere)?([^/]*)/([^?]*)(?:\\?|/\\?|/|)(?<query>.*)", "/$3/other?p1=$2", "/info/other", "p1=bar")
         ).map(Arguments::of);
     }
 
@@ -76,9 +91,40 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
         RewriteRegexRule rule = new RewriteRegexRule(scenario.regex, scenario.replacement);
         start(rule);
 
-        String target = scenario.path;
-        if (scenario.query != null)
-            target += "?" + scenario.query;
+        String request = """
+            GET $T HTTP/1.1
+            Host: localhost
+                        
+            """.replace("$T", scenario.pathQuery);
+
+        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
+        assertEquals(HttpStatus.OK_200, response.getStatus(), "Response status code");
+        assertEquals(scenario.expectedPath, response.get("X-Path"), "Response X-Path header value");
+        if (scenario.expectedQuery != null)
+            assertEquals(scenario.expectedQuery, response.get("X-Query"), "Response X-Query header value");
+    }
+
+    public static Stream<Arguments> inputPathQueries()
+    {
+        return Stream.of(
+            Arguments.of("/foo/bar", "/test?&p2=bar&p1=foo"),
+            Arguments.of("/foo/bar/", "/test?&p2=bar&p1=foo"),
+            Arguments.of("/foo/bar?", "/test?&p2=bar&p1=foo"),
+            Arguments.of("/foo/bar/?", "/test?&p2=bar&p1=foo"),
+            Arguments.of("/foo/bar?a=b", "/test?a=b&p2=bar&p1=foo"),
+            Arguments.of("/foo/bar/?a=b", "/test?a=b&p2=bar&p1=foo")
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("inputPathQueries")
+    public void testRegexOptionalTargetQuery(String target, String expectedResult) throws Exception
+    {
+        String regex = "^/([^/]*)/([^/\\?]*)(?:\\?|/\\?|/|)(?<query>.*)$";
+        String replacement = "/test?${query}&p2=$2&p1=$1";
+        RewriteRegexRule rule = new RewriteRegexRule(regex, replacement);
+        start(rule);
+
         String request = """
             GET $T HTTP/1.1
             Host: localhost
@@ -86,14 +132,16 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
             """.replace("$T", target);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
-        assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals(scenario.expectedPath, response.get("X-Path"));
-        if (scenario.expectedQuery != null)
-            assertEquals(scenario.expectedQuery, response.get("X-Query"));
+        assertEquals(HttpStatus.OK_200, response.getStatus(), "Response status code");
+        String result = response.get("X-Path");
+        String query = response.get("X-Query");
+        if(StringUtil.isNotBlank(query))
+            result = result + '?' + query;
 
+        assertThat(result, is(expectedResult));
     }
 
-    private record Scenario(String path, String query, String regex, String replacement, String expectedPath, String expectedQuery)
+    private record Scenario(String pathQuery, String regex, String replacement, String expectedPath, String expectedQuery)
     {
     }
 }

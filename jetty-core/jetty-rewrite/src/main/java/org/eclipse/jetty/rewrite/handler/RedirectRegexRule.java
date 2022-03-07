@@ -21,7 +21,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.Name;
 
 /**
@@ -80,13 +79,7 @@ public class RedirectRegexRule extends RegexRule
             @Override
             public void process(Request ignored, Response response, Callback callback)
             {
-                String target = getLocation();
-                for (int g = 1; g <= matcher.groupCount(); ++g)
-                {
-                    String group = matcher.group(g);
-                    target = StringUtil.replace(target, "$" + g, group);
-                }
-
+                String target = matcher.replaceAll(getLocation());
                 response.setStatus(_statusCode);
                 response.setHeader(HttpHeader.LOCATION, Request.toRedirectURI(this, target));
                 callback.succeeded();
