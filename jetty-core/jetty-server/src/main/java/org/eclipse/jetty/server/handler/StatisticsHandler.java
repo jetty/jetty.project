@@ -346,7 +346,7 @@ public class StatisticsHandler extends Handler.Wrapper
             {
                 if (_minimumReadRate > 0)
                 {
-                    Long rr = (Long) _statisticsRequest.getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
+                    Long rr = (Long)_statisticsRequest.getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
                     if (rr < _minimumReadRate)
                     {
                         _errorContent = new Content.Error(new TimeoutException("read rate is too low: " + rr));
@@ -356,7 +356,7 @@ public class StatisticsHandler extends Handler.Wrapper
                 }
                 if (_minimumWriteRate > 0)
                 {
-                    Long wr = (Long) _statisticsRequest.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
+                    Long wr = (Long)_statisticsRequest.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
                     if (wr < _minimumWriteRate)
                     {
                         _errorContent = new Content.Error(new TimeoutException("write rate is too low: " + wr));
@@ -376,7 +376,7 @@ public class StatisticsHandler extends Handler.Wrapper
             @Override
             public WrapperProcessor wrapProcessor(Processor processor)
             {
-                _statisticsRequest = (StatisticsRequest) processor;
+                _statisticsRequest = (StatisticsRequest)processor;
                 return super.wrapProcessor(processor);
             }
         }
