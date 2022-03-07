@@ -205,7 +205,7 @@ public class StatisticsHandlerTest
     }
 
     @Test
-    public void testMinimumDataRateHandler() throws Exception
+    public void testMinimumDataReadRateHandler() throws Exception
     {
         StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(1100, 0);
         mdrh.setHandler(new Handler.Processor()
@@ -259,6 +259,89 @@ public class StatisticsHandlerTest
         AtomicInteger statusHolder = new AtomicInteger();
         endPoint.waitForResponse(false, 5, TimeUnit.SECONDS, statusHolder::set);
         assertThat(statusHolder.get(), is(500));
+    }
+
+    @Test
+    public void testMinimumDataWriteRateHandler() throws Exception
+    {
+        CountDownLatch latch = new CountDownLatch(1);
+        StatisticsHandler.MinimumDataRateHandler mdrh = new StatisticsHandler.MinimumDataRateHandler(0, 1100);
+        int expectedContentLength = 1000;
+        mdrh.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                write(response, 0, new Callback()
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        callback.succeeded();
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        callback.failed(x);
+                        latch.countDown();
+                    }
+                });
+            }
+
+            private void write(Response response, int counter, Callback finalCallback)
+            {
+                try
+                {
+                    Thread.sleep(1);
+                }
+                catch (InterruptedException e)
+                {
+                    // ignore
+                }
+
+                if (counter < expectedContentLength)
+                {
+                    Callback cb = new Callback()
+                    {
+                        @Override
+                        public void succeeded()
+                        {
+                            write(response, counter + 1, finalCallback);
+                        }
+
+                        @Override
+                        public void failed(Throwable x)
+                        {
+                            finalCallback.failed(x);
+                        }
+                    };
+                    response.write(false, cb, ByteBuffer.allocate(1));
+                }
+                else
+                {
+                    response.write(true, finalCallback, ByteBuffer.allocate(1));
+                }
+            }
+        });
+
+        _latchHandler.setHandler(mdrh);
+        _server.start();
+
+        String request = """
+                GET / HTTP/1.1
+                Host: localhost
+                
+                """;
+
+        LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
+        AtomicInteger statusHolder = new AtomicInteger();
+        ByteBuffer byteBuffer = endPoint.waitForResponse(false, 5, TimeUnit.SECONDS, statusHolder::set);
+        assertThat(statusHolder.get(), is(200));
+        assertThat(byteBuffer.remaining(), lessThan(expectedContentLength));
     }
 
     @Test
