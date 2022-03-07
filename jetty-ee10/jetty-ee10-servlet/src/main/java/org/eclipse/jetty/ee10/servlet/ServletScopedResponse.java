@@ -42,7 +42,6 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -603,9 +602,7 @@ public class ServletScopedResponse extends ContextResponse
                 case HttpStatus.PROCESSING_102:
                     try (SharedBlockingCallback.Blocker blocker = _blocker.acquire())
                     {
-                        // TODO static MetaData
-                        _servletChannel.getRequest().getHttpChannel().getHttpStream()
-                            .send(new MetaData.Response(null, 102, null), false, blocker);
+                        Response.writeError(_request, _response, blocker, HttpStatus.PROCESSING_102);
                     }
                     break;
 

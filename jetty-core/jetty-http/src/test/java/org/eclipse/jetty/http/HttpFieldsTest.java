@@ -334,6 +334,52 @@ public class HttpFieldsTest
         assertFalse(e.hasMoreElements());
     }
 
+    /**
+     * <p>
+     * Test where multiple headers arrive with the same name, but
+     * those values are interleaved with other headers names.
+     * </p>
+     */
+    @Test
+    public void testRemoveInterleaved()
+    {
+        HttpFields originalHeaders = HttpFields.build()
+            .put(new HostPortHttpField("local"))
+            .add("Accept", "images/jpeg")
+            .add("Accept-Encoding", "Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0")
+            .add("Accept", "text/plain")
+            .add("Accept-Charset", "iso-8859-5, unicode-1-1;q=0.8")
+            .add("Accept", "*/*")
+            .add("Connection", "closed");
+
+        assertEquals(7, originalHeaders.size(), "Size of Original fields");
+
+        assertEquals("Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0", originalHeaders.get(HttpHeader.ACCEPT_ENCODING));
+        assertEquals("iso-8859-5, unicode-1-1;q=0.8", originalHeaders.get(HttpHeader.ACCEPT_CHARSET));
+        assertEquals("images/jpeg", originalHeaders.get(HttpHeader.ACCEPT), "Should have only gotten the first value?");
+        assertEquals("images/jpeg, text/plain, */*", String.join(", ", originalHeaders.getValuesList(HttpHeader.ACCEPT)), "Should have gotten all of the values");
+
+        HttpFields tookImmutable = originalHeaders.takeAsImmutable();
+
+        assertEquals(7, tookImmutable.size(), "Size of (took as) Immutable fields");
+
+        assertEquals("Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0", tookImmutable.get(HttpHeader.ACCEPT_ENCODING));
+        assertEquals("iso-8859-5, unicode-1-1;q=0.8", tookImmutable.get(HttpHeader.ACCEPT_CHARSET));
+        assertEquals("images/jpeg", tookImmutable.get(HttpHeader.ACCEPT), "Should have only gotten the first value?");
+        assertEquals("images/jpeg, text/plain, */*", String.join(", ", tookImmutable.getValuesList(HttpHeader.ACCEPT)), "Should have gotten all of the values");
+
+        // Lets remove "Accept" headers in a copy of the headers
+        HttpFields.Mutable headersCopy = HttpFields.build(tookImmutable);
+
+        assertEquals(7, headersCopy.size(), "Size of Mutable fields");
+
+        // Attempt to remove all the "Accept" headers.
+        headersCopy.remove("Accept");
+
+        assertEquals("Accept-Encoding: gzip;q=1.0, identity; q=0.5, *;q=0", headersCopy.get(HttpHeader.ACCEPT_ENCODING));
+        assertNull(headersCopy.get(HttpHeader.ACCEPT));
+    }
+
     @Test
     public void testAdd()
     {

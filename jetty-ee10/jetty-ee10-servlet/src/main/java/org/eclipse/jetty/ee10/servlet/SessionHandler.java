@@ -93,6 +93,7 @@ public class SessionHandler extends AbstractSessionHandler
      */
     public final class CookieConfig implements SessionCookieConfig
     {
+        //TODO should this be on the AbstractSessionHandler
         private Map<String, String> _attributes = new HashMap<>();
 
         @Override
@@ -116,12 +117,14 @@ public class SessionHandler extends AbstractSessionHandler
         @Override
         public void setAttribute(String name, String value)
         {
+            //TODO check servletcontext is not already started
             _attributes.put(name, value);
         }
 
         @Override
         public String getAttribute(String name)
         {
+            //TODO use them
             return _attributes.get(name);
         }
 
@@ -221,8 +224,14 @@ public class SessionHandler extends AbstractSessionHandler
         public static ServletAPISession wrapSession(Session session)
         {
             ServletAPISession apiSession = new ServletAPISession(session);
-            session.setAPISessin(apiSession);
             return apiSession;
+        }
+        
+        public static Session getSession(HttpSession httpSession)
+        {
+            if (httpSession instanceof ServletAPISession apiSession)
+                return apiSession.getSession();
+            return null;
         }
         
         private final Session _session;
@@ -762,7 +771,7 @@ public class SessionHandler extends AbstractSessionHandler
         new HttpStream.Wrapper(s)
         {
             @Override
-            public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
             {
                 if (response != null)
                 {
@@ -770,7 +779,7 @@ public class SessionHandler extends AbstractSessionHandler
                     if (session != null)
                         commit(session);
                 }
-                super.send(response, last, callback, content);
+                super.send(request, response, last, callback, content);
             }
 
             @Override

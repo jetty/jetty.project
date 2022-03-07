@@ -50,7 +50,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     
     @Override
     public void checkSessionBeforeShutdown(String id,
-                                           SessionDataStore store,
+                                           TestableSessionDataStore store,
                                            SessionCache cache,
                                            TestableSessionHandler sessionHandler) throws Exception
     {
@@ -63,22 +63,24 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     
     @Override
     public void checkSessionAfterShutdown(String id,
-                                          SessionDataStore store,
+                                          TestableSessionDataStore store,
                                           SessionCache cache,
                                           TestableSessionHandler sessionHandler) throws Exception
     {
         if (cache.isInvalidateOnShutdown())
         {
+            //should have been invalidated and removed
             assertFalse(store.exists(id));
             assertFalse(cache.contains(id));
             assertTrue(sessionHandler._sessionDestroyedListenersCalled.contains(id));
         }
         else
         {
+            //Session should still exist, but not be in the cache
             assertTrue(store.exists(id));
             assertFalse(cache.contains(id));
-            long activateCount = sessionHandler._sessionPassivationListenersCalled.stream().filter(s -> s.equals(id)).count();
-            long passivateCount = sessionHandler._sessionActivationListenersCalled.stream().filter(s -> s.equals(id)).count();
+            long passivateCount = sessionHandler._sessionPassivationListenersCalled.stream().filter(s -> s.equals(id)).count();
+            long activateCount = sessionHandler._sessionActivationListenersCalled.stream().filter(s -> s.equals(id)).count();
             assertEquals(2, passivateCount);
             assertEquals(1, activateCount); //no re-activate on shutdown
         }
@@ -218,10 +220,8 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionHandler);
@@ -229,9 +229,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         TestableSessionDataStore store = new TestableSessionDataStore(true); //fake passivation
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-
-        //TODO if starting context the TestableSessionHandler needs to be started too
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
+        cache.start();
+        store.start(); //TODO why are these not starting any more?
 
         //put a session in the cache and store
         long now = System.currentTimeMillis();
@@ -258,18 +259,18 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
-        //TODO start context needs to start session handler
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
+        cache.start();
+        store.start(); //TODO why are these not starting any more?
 
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
@@ -288,18 +289,18 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
-        //TODO start needs to start session handler
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
+        cache.start();
+        store.start(); //TODO why are these not starting any more?
 
         //add data for a session to the store
         long now = System.currentTimeMillis();
@@ -322,18 +323,18 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
-        //TODO start session handler
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
+        cache.start();
+        store.start(); //TODO why are these not starting any more?
 
         //create data for a session in the store
         long now = System.currentTimeMillis();
@@ -362,19 +363,19 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
-        //TODO start session handler
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         SessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
         SessionCache cache = (SessionCache)cacheFactory.getSessionCache(sessionHandler);
 
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
-
+        server.setHandler(sessionHandler);
+        server.start();
+        cache.start();
+        store.start(); //TODO why are these not starting any more?
+        
         //test one that isn't contained
         assertFalse(cache.contains("1234"));
 
@@ -392,12 +393,8 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
-        //TODO start session handler
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
-        
+        sessionHandler.setServer(server);
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionHandler);
@@ -405,7 +402,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
+        cache.start();
+        store.start(); //TODO why are these not starting any more?
 
         //test NEVER EVICT
         //test session that is not resident
@@ -471,11 +471,8 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     {
         Server server = new Server();
 
-        ContextHandler context = new ContextHandler("/test");
-        context.setServer(server);
-
-        //TODO start session handler
         TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
         
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_INACTIVITY); //evict after 1 second inactivity
@@ -484,7 +481,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         TestableSessionDataStore store = new TestableSessionDataStore();
         cache.setSessionDataStore(store);
         sessionHandler.setSessionCache(cache);
-        context.start();
+        server.setHandler(sessionHandler);
+        server.start();
+        cache.start();
+        store.start(); //TODO why are these not starting any more?
 
         //make a session
         long now = System.currentTimeMillis();

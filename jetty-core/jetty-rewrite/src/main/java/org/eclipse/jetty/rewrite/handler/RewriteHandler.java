@@ -229,6 +229,6 @@ public class RewriteHandler extends Handler.Wrapper
             return super.handle(request);
 
         // At least one rule matched, call super with the result of the rule applications.
-        return input.wrapProcessor(super.handle(output));
+        return output.wrapProcessor(super.handle(output));
     }
 }

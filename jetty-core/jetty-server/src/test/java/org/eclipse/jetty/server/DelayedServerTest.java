@@ -56,10 +56,10 @@ public class DelayedServerTest extends HttpServerTestBase
             return new Http1Stream(method, uri, version)
             {
                 @Override
-                public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+                public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
                 {
                     DelayedCallback delay = new DelayedCallback(callback);
-                    super.send(response, last, delay, content);
+                    super.send(request, response, last, delay, content);
                 }
             };
         }
@@ -79,7 +79,8 @@ public class DelayedServerTest extends HttpServerTestBase
             {
                 try
                 {
-                    Thread.sleep(10);
+                    Thread.sleep(2);
+                    Thread.yield();
                 }
                 catch (InterruptedException ignored)
                 {

@@ -21,6 +21,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -126,8 +127,10 @@ public abstract class DelayedHandler extends Handler.Wrapper
         {
             _response = response;
             _callback = callback;
+            HttpConfiguration config = _request.getHttpChannel().getHttpConfiguration();
+
             // TODO pass in HttpConfiguration size limits
-            new Content.FieldsFuture(_request).whenComplete(this);
+            new Content.FieldsFuture(_request, -1, -1).whenComplete(this);
         }
 
         @Override

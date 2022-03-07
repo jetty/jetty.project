@@ -31,7 +31,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,6 +81,58 @@ public class ContentTest
         assertNotNull(content);
         assertThat(BufferUtil.toString(content.getByteBuffer()), equalTo("hello"));
         content.release();
+    }
+
+    @Test
+    public void testReadBytes() throws Exception
+    {
+        FuturePromise<ByteBuffer> promise = new FuturePromise<>();
+        Content.readBytes(_provider, promise);
+
+        Runnable todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add("hello", false);
+        todo.run();
+        assertFalse(promise.isDone());
+
+        todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add(" cruel", false);
+        _provider.add(" world", true);
+        todo.run();
+
+        todo = _provider.takeDemand();
+        assertNull(todo);
+        assertTrue(promise.isDone());
+        ByteBuffer output = promise.get(10, TimeUnit.SECONDS);
+        assertNotNull(output);
+        assertThat(BufferUtil.toString(output), equalTo("hello cruel world"));
+    }
+
+    @Test
+    public void testReadUtf8() throws Exception
+    {
+        FuturePromise<String> promise = new FuturePromise<>();
+        Content.readUtf8String(_provider, promise);
+
+        Runnable todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add("hello", false);
+        todo.run();
+        assertFalse(promise.isDone());
+
+        todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add(" cruel", false);
+        _provider.add(" world", true);
+        todo.run();
+
+        todo = _provider.takeDemand();
+        assertNull(todo);
+        assertTrue(promise.isDone());
+        String output = promise.get(10, TimeUnit.SECONDS);
+        assertNotNull(output);
+        assertThat(output, equalTo("hello cruel world"));
     }
 
     @Test
@@ -164,6 +218,7 @@ public class ContentTest
         while (todo == null && System.currentTimeMillis() < wait)
             todo = _provider.takeDemand();
         assertNotNull(todo);
+
         _provider.add(" cruel", false);
         _provider.add(" world", true);
         todo.run();
@@ -171,6 +226,81 @@ public class ContentTest
 
         assertNull(throwable.get());
         assertThat(out.toString(StandardCharsets.UTF_8), equalTo("hello cruel world"));
+    }
+
+    @Test
+    public void testInputStreamFailed() throws Exception
+    {
+        InputStream in = Content.asInputStream(_provider);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        AtomicReference<Throwable> throwable = new AtomicReference<>();
+        CountDownLatch complete = new CountDownLatch(1);
+        new Thread(() ->
+        {
+            try
+            {
+                IO.copy(in, out);
+            }
+            catch (Throwable t)
+            {
+                throwable.set(t);
+            }
+            finally
+            {
+                complete.countDown();
+            }
+        }).start();
+
+        long wait = System.currentTimeMillis() + 1000;
+        Runnable todo = _provider.takeDemand();
+        while (todo == null && System.currentTimeMillis() < wait)
+            todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add("hello", false);
+        todo.run();
+
+        wait = System.currentTimeMillis() + 1000;
+        todo = _provider.takeDemand();
+        while (todo == null && System.currentTimeMillis() < wait)
+            todo = _provider.takeDemand();
+        assertNotNull(todo);
+
+        Throwable cause = new Throwable("test cause");
+        _provider.add(new Content.Error(cause));
+        todo.run();
+
+        assertTrue(complete.await(10, TimeUnit.SECONDS));
+
+        assertNotNull(throwable.get());
+        assertThat(out.toString(StandardCharsets.UTF_8), equalTo("hello"));
+    }
+
+    @Test
+    public void testFields() throws Exception
+    {
+        Content.FieldsFuture future = new Content.FieldsFuture(_provider);
+
+        Runnable todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add("one=1", false);
+        todo.run();
+        assertFalse(future.isDone());
+
+        todo = _provider.takeDemand();
+        assertNotNull(todo);
+        _provider.add("&two=2&", false);
+        _provider.add("three=3", true);
+        todo.run();
+
+        todo = _provider.takeDemand();
+        assertNull(todo);
+        assertTrue(future.isDone());
+        Fields fields = future.get(10, TimeUnit.SECONDS);
+        assertNotNull(fields);
+        assertThat(fields.getSize(), equalTo(3));
+        assertThat(fields.get("one").getValue(), equalTo("1"));
+        assertThat(fields.get("two").getValue(), equalTo("2"));
+        assertThat(fields.get("three").getValue(), equalTo("3"));
     }
 
     @Test

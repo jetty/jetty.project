@@ -154,7 +154,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected HttpParser newHttpParser(HttpCompliance compliance)
     {
-        HttpParser parser = new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize(), compliance);
+        HttpParser parser = new HttpParser(_requestHandler, getHttpConfiguration().getRequestHeaderSize(), compliance);
         parser.setHeaderCacheSize(getHttpConfiguration().getHeaderCacheSize());
         parser.setHeaderCacheCaseSensitive(getHttpConfiguration().isHeaderCacheCaseSensitive());
         return parser;
@@ -500,7 +500,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         // Defensive check to avoid an infinite select/wakeup/fillAndParseForContent/wait loop
         // in case the parser was mistakenly closed and the connection was not aborted.
         if (_parser.isTerminated())
-            throw new IllegalStateException("Parser is terminated: " + _parser);
+        {
+            _requestHandler.messageComplete();
+            return;
+        }
 
         // When fillRequestBuffer() is called, it must always be followed by a parseRequestBuffer() call otherwise this method
         // doesn't trigger EOF/earlyEOF which breaks AsyncRequestReadTest.testPartialReadThenShutdown().
@@ -982,7 +985,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public boolean content(ByteBuffer buffer)
         {
-            if (_stream.get()._content != null || _retainableByteBuffer == null)
+            Http1Stream stream = _stream.get();
+            if (stream == null || stream._content != null || _retainableByteBuffer == null)
                 throw new IllegalStateException();
 
             _retainableByteBuffer.retain();
@@ -990,7 +994,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (LOG.isDebugEnabled())
                 LOG.debug("content {}/{} for {}", BufferUtil.toDetailString(buffer), _retainableByteBuffer, HttpConnection.this);
 
-            _stream.get()._content = new Content.Abstract(false, false)
+            stream._content = new Content.Abstract(false, false)
             {
                 final RetainableByteBuffer _retainable = _retainableByteBuffer;
                 @Override
@@ -1305,7 +1309,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         public Content readContent()
         {
             if (_content == null)
-                parseAndFillForContent();
+            {
+                if (_parser.isTerminated())
+                    _content = Content.EOF;
+                else
+                    parseAndFillForContent();
+            }
 
             Content content = _content;
             _content = Content.next(content);
@@ -1337,7 +1346,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (_expect100Continue)
             {
                 _expect100Continue = false;
-                send(HttpGenerator.CONTINUE_100_INFO, false, Callback.NOOP);
+                send(_request, HttpGenerator.CONTINUE_100_INFO, false, Callback.NOOP);
             }
 
             tryFillInterested(_demandContentCallback);
@@ -1351,7 +1360,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+        public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
         {
             if (response == null)
             {

@@ -181,9 +181,6 @@ public class DefaultSessionCache extends AbstractSessionCache
     public Session newSession(SessionData data)
     {
         Session session = new Session(getSessionManager(), data);
-        Session.APISession apiSession = getSessionManager().newSessionAPIWrapper(session);
-        assert apiSession.getSession() == session;
-        assert session.getAPISession() == apiSession;
         return session;
     }
 

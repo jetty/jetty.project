@@ -66,7 +66,7 @@ public class RedirectPatternRuleTest extends AbstractRuleTest
         start(rule);
 
         String request = """
-            GET / HTTP/1.1
+            GET /api/rest?foo=1 HTTP/1.1
             Host: localhost
                         
             """;

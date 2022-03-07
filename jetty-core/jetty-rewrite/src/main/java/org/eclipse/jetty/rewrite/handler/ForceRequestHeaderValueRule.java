@@ -57,7 +57,9 @@ public class ForceRequestHeaderValueRule extends Rule
         if (existingValue.equals(headerValue))
             return null;
 
-        HttpFields.Mutable newHeaders = HttpFields.build(headers).put(headerName, headerValue);
+        HttpFields.Mutable newHeaders = HttpFields.build(headers);
+        newHeaders.remove(headerName);
+        newHeaders.add(headerName, headerValue);
         return new Request.WrapperProcessor(input)
         {
             @Override

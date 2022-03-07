@@ -50,7 +50,7 @@ public class ProxyCustomizer implements HttpConfiguration.Customizer
     @Override
     public Request customize(Request request, HttpFields.Mutable responseHeaders)
     {
-        EndPoint endPoint = request.getHttpChannel().getConnection().getEndPoint();
+        EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
         if (endPoint instanceof ProxyConnectionFactory.ProxyEndPoint)
         {
             EndPoint underlyingEndpoint = ((ProxyConnectionFactory.ProxyEndPoint)endPoint).unwrap();

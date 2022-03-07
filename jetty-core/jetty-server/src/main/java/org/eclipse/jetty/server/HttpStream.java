@@ -33,8 +33,7 @@ public interface HttpStream extends Callback
 
     void prepareResponse(HttpFields.Mutable headers);
 
-    // TODO add MetaData.Request request.
-    void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content);
+    void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content);
 
     boolean isPushSupported();
 
@@ -114,9 +113,9 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+        public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
         {
-            _wrapped.send(response, last, callback, content);
+            _wrapped.send(request, response, last, callback, content);
         }
 
         @Override

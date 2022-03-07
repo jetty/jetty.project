@@ -1184,7 +1184,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logKeepAliveRequests(StringBuilder b, Request request, Response response)
     {
-        long requests = request.getHttpChannel().getConnection().getMessagesIn();
+        long requests = request.getConnectionMetaData().getConnection().getMessagesIn();
         if (requests >= 0)
             b.append(requests);
         else

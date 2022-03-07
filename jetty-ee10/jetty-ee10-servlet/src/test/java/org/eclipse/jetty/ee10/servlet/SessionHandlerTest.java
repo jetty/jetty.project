@@ -79,13 +79,16 @@ public class SessionHandlerTest
         }
 
         Server server = new Server();
+        ServletContextHandler sch = new ServletContextHandler();
+        server.setHandler(sch);
         SessionHandler sessionHandler = new SessionHandler();
+        sch.setSessionHandler(sessionHandler);
         try
         {
             sessionHandler.addEventListener(new Listener1());
             sessionHandler.addEventListener(new Listener2());
             sessionHandler.setServer(server);
-            sessionHandler.start();
+            server.start();
             Session session = new Session(sessionHandler, new SessionData("aa", "_", "0.0", 0, 0, 0, 0));
             sessionHandler.callSessionCreatedListeners(session);
             sessionHandler.callSessionDestroyedListeners(session);
@@ -93,7 +96,7 @@ public class SessionHandlerTest
         }
         finally
         {
-            sessionHandler.stop();
+            server.stop();
         }
     }
 }
