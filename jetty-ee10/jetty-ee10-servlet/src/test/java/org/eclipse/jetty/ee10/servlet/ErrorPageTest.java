@@ -113,7 +113,7 @@ public class ErrorPageTest
         _context.insertHandler(noopHandler);
 
         _errorPageErrorHandler = new ErrorPageErrorHandler();
-        _context.setErrorHandler(_errorPageErrorHandler);
+        _context.setErrorProcessor(_errorPageErrorHandler);
         _errorPageErrorHandler.addErrorPage(595, "/error/595");
         _errorPageErrorHandler.addErrorPage(597, "/sync");
         _errorPageErrorHandler.addErrorPage(599, "/error/599");

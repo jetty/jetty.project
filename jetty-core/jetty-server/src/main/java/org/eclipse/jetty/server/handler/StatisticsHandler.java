@@ -148,8 +148,8 @@ public class StatisticsHandler extends Handler.Wrapper
             return switch (name)
             {
                 // TODO class.getName + extra
-                case "o.e.j.s.h.StatsHandler.bytesRead" -> _bytesRead;
-                case "o.e.j.s.h.StatsHandler.bytesWritten" -> _bytesWritten;
+                case "o.e.j.s.h.StatsHandler.bytesRead" -> _bytesRead.longValue();
+                case "o.e.j.s.h.StatsHandler.bytesWritten" -> _bytesWritten.longValue();
                 case "o.e.j.s.h.StatsHandler.spentTime" -> spentTimeNs();
                 case "o.e.j.s.h.StatsHandler.dataReadRate" -> dataRatePerSecond(_bytesRead.longValue());
                 case "o.e.j.s.h.StatsHandler.dataWriteRate" -> dataRatePerSecond(_bytesWritten.longValue());
@@ -342,24 +342,20 @@ public class StatisticsHandler extends Handler.Wrapper
             }
 
             @Override
+            public Object getAttribute(String name)
+            {
+                return _statisticsRequest.getAttribute(name);
+            }
+
+            @Override
             public void demandContent(Runnable onContentAvailable)
             {
                 if (_minimumReadRate > 0)
                 {
-                    Long rr = (Long)_statisticsRequest.getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
+                    Long rr = (Long)getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
                     if (rr < _minimumReadRate)
                     {
                         _errorContent = new Content.Error(new TimeoutException("read rate is too low: " + rr));
-                        onContentAvailable.run();
-                        return;
-                    }
-                }
-                if (_minimumWriteRate > 0)
-                {
-                    Long wr = (Long)_statisticsRequest.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
-                    if (wr < _minimumWriteRate)
-                    {
-                        _errorContent = new Content.Error(new TimeoutException("write rate is too low: " + wr));
                         onContentAvailable.run();
                         return;
                     }
@@ -378,6 +374,41 @@ public class StatisticsHandler extends Handler.Wrapper
             {
                 _statisticsRequest = (StatisticsRequest)processor;
                 return super.wrapProcessor(processor);
+            }
+
+            @Override
+            public void process(Request ignored, Response response, Callback callback) throws Exception
+            {
+                super.process(ignored, new MinimumDataRateResponse(this, response), callback);
+            }
+        }
+
+        private class MinimumDataRateResponse extends Response.Wrapper
+        {
+            private MinimumDataRateResponse(Request request, Response wrapped)
+            {
+                super(request, wrapped);
+            }
+
+            @Override
+            public void write(boolean last, Callback callback, ByteBuffer... content)
+            {
+                if (_minimumWriteRate > 0)
+                {
+                    MinimumDataRateRequest request = (MinimumDataRateRequest)getRequest();
+                    if (((Long)request.getAttribute("o.e.j.s.h.StatsHandler.bytesWritten")) > 0L)
+                    {
+                        Long wr = (Long)request.getAttribute("o.e.j.s.h.StatsHandler.dataWriteRate");
+                        if (wr < _minimumWriteRate)
+                        {
+                            TimeoutException cause = new TimeoutException("write rate is too low: " + wr);
+                            request._errorContent = new Content.Error(cause);
+                            callback.failed(cause);
+                            return;
+                        }
+                    }
+                }
+                super.write(last, callback, content);
             }
         }
 

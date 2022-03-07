@@ -219,8 +219,9 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
      * @return The current {@link ContextHandler.ScopedContext context} used for this error handling for this request.  If the request is asynchronous,
      * then it is the context that called async. Otherwise it is the last non-null context passed to #setContext
      */
-    public ContextHandler.ScopedContext getErrorContext()
+    public ServletContextHandler.Context getErrorContext()
     {
+        // TODO: review.
         return _servletChannel.getContext();
     }
 

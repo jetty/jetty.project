@@ -99,7 +99,7 @@ public class AsyncServletTest
         context.addEventListener(new DebugListener());
 
         _errorHandler = new ErrorPageErrorHandler();
-        context.setErrorHandler(_errorHandler);
+        context.setErrorProcessor(_errorHandler);
         _errorHandler.addErrorPage(300, 599, "/error/custom");
 
         _servletHandler = context.getServletHandler();
@@ -119,7 +119,7 @@ public class AsyncServletTest
         __history.clear();
         __latch = new CountDownLatch(1);
 
-        _connector.addBean(new HttpChannel.Listener()
+        context.addEventListener(new ServletChannel.Listener()
         {
             @Override
             public void onComplete(Request request)
