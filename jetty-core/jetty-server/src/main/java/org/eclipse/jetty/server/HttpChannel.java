@@ -661,6 +661,7 @@ public class HttpChannel extends Attributes.Lazy
                 HttpStream stream;
                 boolean commit;
                 long written;
+                boolean last;
                 try (AutoLock ignored = _lock.lock())
                 {
                     if (!_processing)
@@ -683,6 +684,8 @@ public class HttpChannel extends Attributes.Lazy
 
                     written = _response._written;
                     commit = _response._headers.commit();
+                    last = _response._last;
+                    _response._last = true;
                 }
 
                 MetaData.Response responseMetaData = commit ? _response.prepareResponse(stream, true) : null;
@@ -695,10 +698,10 @@ public class HttpChannel extends Attributes.Lazy
                     stream.failed(unconsumed);
                 else if (_response._committedContentLength >= 0L && _response._committedContentLength != written)
                     stream.failed(new IOException("content-length %d != %d written".formatted(_response._committedContentLength, written)));
-                else if (commit)
-                    stream.send(_metaData, responseMetaData, true, stream);
-                else
+                else if (last)
                     stream.succeeded();
+                else
+                    stream.send(_metaData, responseMetaData, true, stream);
             }
 
             @Override
@@ -800,6 +803,7 @@ public class HttpChannel extends Attributes.Lazy
         private Callback _onWriteComplete;
         private long _written;
         private long _committedContentLength = -1L;
+        private boolean _last;
 
         private ChannelResponse(ChannelRequest request)
         {
@@ -873,6 +877,9 @@ public class HttpChannel extends Attributes.Lazy
                     failure = new IllegalStateException("not processing");
                 else if (_request._error != null)
                     failure = _request._error.getCause();
+                else if (last && _last)
+                    failure = new IllegalStateException("last already written");
+
                 if (_stream == null)
                     failure = new IllegalStateException("completed");
                 else
@@ -880,7 +887,7 @@ public class HttpChannel extends Attributes.Lazy
                     _onWriteComplete = callback;
                     for (ByteBuffer b : content)
                         _written += b.remaining();
-
+                    _last = last;
                     stream = _stream;
                     written = _written;
                 }
