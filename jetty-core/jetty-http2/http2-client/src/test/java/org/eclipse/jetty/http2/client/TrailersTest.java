@@ -15,18 +15,11 @@ package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
@@ -40,6 +33,8 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -48,10 +43,13 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.Test;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class TrailersTest extends AbstractTest
@@ -106,30 +104,48 @@ public class TrailersTest extends AbstractTest
     public void testServletRequestTrailers() throws Exception
     {
         CountDownLatch trailerLatch = new CountDownLatch(1);
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
+            private Request _request;
+            private Callback _callback;
+
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                Request jettyRequest = (Request)request;
+                _request = request;
+                _callback = callback;
+                request.demandContent(this::firstRead);
+            }
+
+            private void firstRead()
+            {
+                Content content = _request.readContent();
+
                 // No trailers yet.
-                assertNull(jettyRequest.getTrailerHttpFields());
+                assertThat(content, not(instanceOf(Content.Trailers.class)));
 
                 trailerLatch.countDown();
 
-                // Read the content.
-                ServletInputStream input = jettyRequest.getInputStream();
+                _request.demandContent(this::readRemaining);
+            }
+
+            private void readRemaining()
+            {
                 while (true)
                 {
-                    int read = input.read();
-                    if (read < 0)
-                        break;
+                    Content content = _request.readContent();
+                    if (content == null)
+                    {
+                        _request.demandContent(this::readRemaining);
+                        return;
+                    }
+                    if (content instanceof Content.Trailers contentTrailers)
+                    {
+                        HttpFields trailers = contentTrailers.getTrailers();
+                        assertNotNull(trailers.get("X-Trailer"));
+                        _callback.succeeded();
+                    }
                 }
-
-                // Now we have the trailers.
-                HttpFields trailers = jettyRequest.getTrailerHttpFields();
-                assertNotNull(trailers);
-                assertNotNull(trailers.get("X-Trailer"));
             }
         });
 
@@ -238,19 +254,13 @@ public class TrailersTest extends AbstractTest
     {
         String trailerName = "X-Trailer";
         String trailerValue = "Zot!";
-        start(new EmptyHttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                Request jettyRequest = (Request)request;
-                Response jettyResponse = jettyRequest.getResponse();
-                HttpFields.Mutable trailers = HttpFields.build();
-                jettyResponse.setTrailerFields(() ->
-                    trailers.stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue)));
-
-                jettyResponse.getOutputStream().write("hello_trailers".getBytes(StandardCharsets.UTF_8));
-                jettyResponse.flushBuffer();
+                HttpFields.Mutable trailers = response.getTrailers();
+                Response.write(response, false, UTF_8.encode("hello_trailers"));
                 // Force the content to be sent above, and then only send the trailers below.
                 trailers.put(trailerName, trailerValue);
             }
@@ -296,7 +306,14 @@ public class TrailersTest extends AbstractTest
     @Test
     public void testRequestTrailerInvalidHpackSent() throws Exception
     {
-        start(new EmptyHttpServlet());
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request request = newRequest("POST", HttpFields.EMPTY);
@@ -324,21 +341,14 @@ public class TrailersTest extends AbstractTest
     public void testRequestTrailerInvalidHpackReceived() throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
-                    // Read the content to read the trailers
-                    ServletInputStream input = request.getInputStream();
-                    while (true)
-                    {
-                        int read = input.read();
-                        if (read < 0)
-                            break;
-                    }
+                    Content.consumeAll(request);
                 }
                 catch (IOException x)
                 {

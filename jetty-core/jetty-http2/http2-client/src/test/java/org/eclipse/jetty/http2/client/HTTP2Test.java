@@ -14,6 +14,8 @@
 package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.nio.charset.StandardCharsets;
@@ -26,9 +28,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -50,7 +49,10 @@ import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
@@ -74,7 +76,14 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testRequestNoContentResponseNoContent() throws Exception
     {
-        start(new EmptyHttpServlet());
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         Session session = newClient(new Session.Listener.Adapter());
 
@@ -154,12 +163,12 @@ public class HTTP2Test extends AbstractTest
     public void testRequestNoContentResponseContent() throws Exception
     {
         final byte[] content = "Hello World!".getBytes(StandardCharsets.UTF_8);
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                resp.getOutputStream().write(content);
+                Response.write(response, true, ByteBuffer.wrap(content));
             }
         });
 
@@ -201,12 +210,14 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testRequestContentResponseContent() throws Exception
     {
-        start(new EmptyHttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                IO.copy(request.getInputStream(), response.getOutputStream());
+                InputStream inputStream = Request.asInputStream(request);
+                OutputStream outputStream = Response.asOutputStream(response);
+                IO.copy(inputStream, outputStream);
             }
         });
 
@@ -245,12 +256,12 @@ public class HTTP2Test extends AbstractTest
     public void testMultipleRequests() throws Exception
     {
         final String downloadBytes = "X-Download";
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                int download = request.getIntHeader(downloadBytes);
+                int download = (int)request.getHeaders().getLongField(downloadBytes);
                 byte[] content = new byte[download];
                 new Random().nextBytes(content);
                 response.write(true, callback, ByteBuffer.wrap(content));
@@ -288,12 +299,13 @@ public class HTTP2Test extends AbstractTest
     public void testCustomResponseCode() throws Exception
     {
         final int status = 475;
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(status);
+                callback.succeeded();
             }
         });
 
@@ -322,19 +334,19 @@ public class HTTP2Test extends AbstractTest
         final String host = "fooBar";
         final int port = 1313;
         final String authority = host + ":" + port;
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                assertEquals(host, request.getServerName());
-                assertEquals(port, request.getServerPort());
+                assertEquals(host, Request.getServerName(request));
+                assertEquals(port, Request.getServerPort(request));
             }
         });
 
         Session session = newClient(new Session.Listener.Adapter());
         HostPortHttpField hostHeader = new HostPortHttpField(authority);
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), hostHeader, servletPath, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP.asString(), hostHeader, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame frame = new HeadersFrame(metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
         session.newStream(frame, new Promise.Adapter<>(), new Stream.Listener.Adapter()
@@ -797,7 +809,14 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testClientInvalidHeader() throws Exception
     {
-        start(new EmptyHttpServlet());
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         // A bad header in the request should fail on the client.
         Session session = newClient(new Session.Listener.Adapter());
@@ -814,12 +833,13 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testServerInvalidHeader() throws Exception
     {
-        start(new EmptyHttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
                 response.getHeaders().put(":custom", "special");
+                callback.succeeded();
             }
         });
 
@@ -847,15 +867,15 @@ public class HTTP2Test extends AbstractTest
     public void testServerInvalidHeaderFlushed() throws Exception
     {
         CountDownLatch serverFailure = new CountDownLatch(1);
-        start(new EmptyHttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.getHeaders().put(":custom", "special");
                 try
                 {
-                    response.flushBuffer();
+                    Response.write(response, false);
                 }
                 catch (IOException x)
                 {
@@ -992,7 +1012,7 @@ public class HTTP2Test extends AbstractTest
 
         // Client cannot create new requests after receiving a GOAWAY.
         HostPortHttpField authority3 = new HostPortHttpField("localhost" + ":" + port);
-        MetaData.Request metaData3 = new MetaData.Request("GET", HttpScheme.HTTP.asString(), authority3, servletPath, HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
+        MetaData.Request metaData3 = new MetaData.Request("GET", HttpScheme.HTTP.asString(), authority3, "/", HttpVersion.HTTP_2, HttpFields.EMPTY, -1);
         HeadersFrame request3 = new HeadersFrame(metaData3, null, true);
         FuturePromise<Stream> promise3 = new FuturePromise<>();
         clientSession.newStream(request3, promise3, new Stream.Listener.Adapter());

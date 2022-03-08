@@ -13,20 +13,12 @@
 
 package org.eclipse.jetty.http2.client;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -41,7 +33,11 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
@@ -50,7 +46,6 @@ import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -91,7 +86,7 @@ public class IdleTimeoutTest extends AbstractTest
 
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        session.newStream(requestFrame, new Promise.Adapter<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -130,7 +125,7 @@ public class IdleTimeoutTest extends AbstractTest
         // The request is not replied, and the server should idle timeout.
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        session.newStream(requestFrame, new Promise.Adapter<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -177,7 +172,7 @@ public class IdleTimeoutTest extends AbstractTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        session.newStream(requestFrame, new Promise.Adapter<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -226,7 +221,7 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        session.newStream(requestFrame, new Promise.Adapter<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -263,7 +258,7 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        session.newStream(requestFrame, new Promise.Adapter<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -304,7 +299,7 @@ public class IdleTimeoutTest extends AbstractTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        session.newStream(requestFrame, new Promise.Adapter<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -332,12 +327,13 @@ public class IdleTimeoutTest extends AbstractTest
     public void testClientEnforcingStreamIdleTimeout() throws Exception
     {
         final int idleTimeout = 1000;
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            public void process(Request request, Response response, Callback callback)
             {
                 sleep(2 * idleTimeout);
+                callback.succeeded();
             }
         });
 
@@ -347,7 +343,7 @@ public class IdleTimeoutTest extends AbstractTest
         final CountDownLatch timeoutLatch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        session.newStream(requestFrame, new Promise.Adapter<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -515,7 +511,7 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
         HeadersFrame requestFrame = new HeadersFrame(metaData, null, false);
-        FuturePromise<Stream> promise = new FuturePromise<Stream>()
+        FuturePromise<Stream> promise = new FuturePromise<>()
         {
             @Override
             public void succeeded(Stream stream)
@@ -550,18 +546,36 @@ public class IdleTimeoutTest extends AbstractTest
     {
         int bufferSize = 8192;
         long delay = 1000;
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
+            private Request _request;
+            private Callback _callback;
+
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                ServletInputStream input = request.getInputStream();
-                byte[] buffer = new byte[bufferSize];
+                _request = request;
+                _callback = callback;
+                request.demandContent(this::onContentAvailable);
+            }
+
+            private void onContentAvailable()
+            {
                 while (true)
                 {
-                    int read = input.read(buffer);
-                    LoggerFactory.getLogger(IdleTimeoutTest.class).info("Read {} bytes", read);
-                    if (read < 0)
+                    Content content = _request.readContent();
+                    if (content == null)
+                    {
+                        _request.demandContent(this::onContentAvailable);
+                        return;
+                    }
+                    if (content instanceof Content.Error error)
+                    {
+                        _callback.failed(error.getCause());
+                        return;
+                    }
+                    content.release();
+                    if (content.isLast())
                         break;
                     sleep(delay);
                 }
@@ -614,19 +628,18 @@ public class IdleTimeoutTest extends AbstractTest
         connector = new ServerConnector(server, 1, 1, h2);
         connector.setIdleTimeout(10 * idleTimeout);
         server.addConnector(connector);
-        ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
         AtomicReference<CountDownLatch> phaser = new AtomicReference<>();
-        context.addServlet(new ServletHolder(new HttpServlet()
+        server.setHandler(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            public void process(Request request, Response response, Callback callback)
             {
                 phaser.get().countDown();
-
                 // Hold the dispatched requests enough for the idle requests to idle timeout.
                 sleep(2 * idleTimeout);
+                callback.succeeded();
             }
-        }), servletPath + "/*");
+        });
         server.start();
 
         prepareClient();

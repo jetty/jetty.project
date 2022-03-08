@@ -192,7 +192,7 @@ public class StreamCloseTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 PushPromiseFrame pushFrame = new PushPromiseFrame(stream.getId(), newRequest("GET", HttpFields.EMPTY));
-                stream.push(pushFrame, new Promise.Adapter<Stream>()
+                stream.push(pushFrame, new Promise.Adapter<>()
                 {
                     @Override
                     public void succeeded(final Stream pushedStream)
