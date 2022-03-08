@@ -74,6 +74,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
@@ -273,9 +274,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     public ServletContextHandler(Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
-
-//        if (File.separatorChar == '/')
-//            addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
+        if (File.separatorChar == '/')
+            addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
 
         if (contextPath != null)
             setContextPath(contextPath);
@@ -283,7 +283,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             ((Handler.Wrapper)parent).setHandler(this);
         else if (parent instanceof Collection)
             parent.addHandler(this);
-
 
         _options = options;
         _sessionHandler = sessionHandler;
@@ -2239,494 +2238,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
     }
 
-    public class PartialContext extends StaticContext
-    {
-        protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
-        protected boolean _extendedListenerTypes = false;
-
-        protected PartialContext()
-        {
-        }
-
-        public ContextHandler getContextHandler()
-        {
-            return ServletContextHandler.this;
-        }
-
-        @Override
-        public ServletContext getContext(String uripath)
-        {
-            List<ServletContextHandler> contexts = new ArrayList<>();
-            List<ServletContextHandler> handlers = getServer().getDescendants(ServletContextHandler.class);
-            String matchedPath = null;
-
-            for (ServletContextHandler ch : handlers)
-            {
-                if (ch == null)
-                    continue;
-                String contextPath = ch.getContextPath();
-
-                if (uripath.equals(contextPath) ||
-                    (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') ||
-                    "/".equals(contextPath))
-                {
-                    // look first for vhost matching context only
-                    if (getVirtualHosts() != null && getVirtualHosts().size() > 0)
-                    {
-                        if (ch.getVirtualHosts() != null && ch.getVirtualHosts().size() > 0)
-                        {
-                            for (String h1 : getVirtualHosts())
-                            {
-                                for (String h2 : ch.getVirtualHosts())
-                                {
-                                    if (h1.equals(h2))
-                                    {
-                                        if (matchedPath == null || contextPath.length() > matchedPath.length())
-                                        {
-                                            contexts.clear();
-                                            matchedPath = contextPath;
-                                        }
-
-                                        if (matchedPath.equals(contextPath))
-                                            contexts.add(ch);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (matchedPath == null || contextPath.length() > matchedPath.length())
-                        {
-                            contexts.clear();
-                            matchedPath = contextPath;
-                        }
-
-                        if (matchedPath.equals(contextPath))
-                            contexts.add(ch);
-                    }
-                }
-            }
-
-            if (contexts.size() > 0)
-                return contexts.get(0).getServletContext();
-
-            // try again ignoring virtual hosts
-            matchedPath = null;
-            for (ServletContextHandler ch : handlers)
-            {
-                if (ch == null)
-                    continue;
-                String contextPath = ch.getContextPath();
-
-                if (uripath.equals(contextPath) || (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') || "/".equals(contextPath))
-                {
-                    if (matchedPath == null || contextPath.length() > matchedPath.length())
-                    {
-                        contexts.clear();
-                        matchedPath = contextPath;
-                    }
-
-                    if (matchedPath.equals(contextPath))
-                        contexts.add(ch);
-                }
-            }
-
-            if (contexts.size() > 0)
-                return contexts.get(0).getServletContext();
-            return null;
-        }
-
-        @Override
-        public String getMimeType(String file)
-        {
-            if (_mimeTypes == null)
-                return null;
-            return _mimeTypes.getMimeByExtension(file);
-        }
-
-        @Override
-        public RequestDispatcher getRequestDispatcher(String uriInContext)
-        {
-            // uriInContext is encoded, potentially with query.
-            if (uriInContext == null)
-                return null;
-
-            if (!uriInContext.startsWith("/"))
-                return null;
-
-            try
-            {
-                String contextPath = getContextPath();
-                // uriInContext is canonicalized by HttpURI.
-                HttpURI.Mutable uri = HttpURI.build(uriInContext);
-                String pathInfo = uri.getDecodedPath();
-                if (StringUtil.isEmpty(pathInfo))
-                    return null;
-
-                if (!StringUtil.isEmpty(contextPath))
-                {
-                    uri.path(URIUtil.addPaths(contextPath, uri.getPath()));
-                    pathInfo = uri.getDecodedPath().substring(contextPath.length());
-                }
-                return new Dispatcher(ServletContextHandler.this, uri, pathInfo);
-            }
-            catch (Exception e)
-            {
-                LOG.trace("IGNORED", e);
-            }
-            return null;
-        }
-
-        @Override
-        public String getRealPath(String path)
-        {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
-            if (path == null)
-                return null;
-            if (path.length() == 0)
-                path = URIUtil.SLASH;
-            else if (path.charAt(0) != '/')
-                path = URIUtil.SLASH + path;
-
-            try
-            {
-                Resource resource = ServletContextHandler.this.getResource(path);
-                if (resource != null)
-                {
-                    File file = resource.getFile();
-                    if (file != null)
-                        return file.getCanonicalPath();
-                }
-            }
-            catch (Exception e)
-            {
-                LOG.trace("IGNORED", e);
-            }
-
-            return null;
-        }
-
-        @Override
-        public URL getResource(String path) throws MalformedURLException
-        {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
-            if (path == null)
-                return null;
-            Resource resource = ServletContextHandler.this.getResource(path);
-            if (resource != null && resource.exists())
-                return resource.getURI().toURL();
-            return null;
-        }
-
-        @Override
-        public InputStream getResourceAsStream(String path)
-        {
-            try
-            {
-                URL url = getResource(path);
-                if (url == null)
-                    return null;
-                Resource r = Resource.newResource(url);
-                // Cannot serve directories as an InputStream
-                if (r.isDirectory())
-                    return null;
-                return r.getInputStream();
-            }
-            catch (Exception e)
-            {
-                LOG.trace("IGNORED", e);
-                return null;
-            }
-        }
-
-        @Override
-        public Set<String> getResourcePaths(String path)
-        {
-            // This is an API call from the application which may have arbitrary non canonical paths passed
-            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
-            // ContextHandler.this.getResource(path).
-            path = URIUtil.canonicalPath(path);
-            if (path == null)
-                return null;
-            return ServletContextHandler.this.getResourcePaths(path);
-        }
-
-        @Override
-        public void log(String msg)
-        {
-            getLogger().info(msg);
-        }
-
-        @Override
-        public void log(String message, Throwable throwable)
-        {
-            if (throwable == null)
-                getLogger().warn(message);
-            else
-                getLogger().warn(message, throwable);
-        }
-
-        @Override
-        public String getInitParameter(String name)
-        {
-            return ServletContextHandler.this.getInitParameter(name);
-        }
-
-        @Override
-        public Enumeration<String> getInitParameterNames()
-        {
-            return ServletContextHandler.this.getInitParameterNames();
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            Object o = ServletContextHandler.this.getAttribute(name);
-            if (o == null)
-                o = super.getAttribute(name);
-            return o;
-        }
-
-        @Override
-        public Enumeration<String> getAttributeNames()
-        {
-            HashSet<String> set = new HashSet<>();
-            Enumeration<String> e = super.getAttributeNames();
-            while (e.hasMoreElements())
-            {
-                set.add(e.nextElement());
-            }
-
-            set.addAll(ServletContextHandler.this.getAttributeNameSet());
-            return Collections.enumeration(set);
-        }
-
-        @Override
-        public void setAttribute(String name, Object value)
-        {
-            Object oldValue = super.getAttribute(name);
-
-            if (value == null)
-                super.removeAttribute(name);
-            else
-                super.setAttribute(name, value);
-
-            if (!_servletContextAttributeListeners.isEmpty())
-            {
-                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_servletContext, name, oldValue == null ? value : oldValue);
-
-                for (ServletContextAttributeListener listener : _servletContextAttributeListeners)
-                {
-                    if (oldValue == null)
-                        listener.attributeAdded(event);
-                    else if (value == null)
-                        listener.attributeRemoved(event);
-                    else
-                        listener.attributeReplaced(event);
-                }
-            }
-        }
-
-        @Override
-        public void removeAttribute(String name)
-        {
-            Object oldValue = super.getAttribute(name);
-            super.removeAttribute(name);
-            if (oldValue != null && !_servletContextAttributeListeners.isEmpty())
-            {
-                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_servletContext, name, oldValue);
-                for (ServletContextAttributeListener listener : _servletContextAttributeListeners)
-                {
-                    listener.attributeRemoved(event);
-                }
-            }
-        }
-
-        @Override
-        public String getServletContextName()
-        {
-            String name = ServletContextHandler.this.getDisplayName();
-            if (name == null)
-                name = ServletContextHandler.this.getContextPath();
-            return name;
-        }
-
-        @Override
-        public String getContextPath()
-        {
-            return getRequestContextPath();
-        }
-
-        @Override
-        public String toString()
-        {
-            return "ServletContext@" + ServletContextHandler.this.toString();
-        }
-
-        @Override
-        public boolean setInitParameter(String name, String value)
-        {
-            if (ServletContextHandler.this.getInitParameter(name) != null)
-                return false;
-            ServletContextHandler.this.getInitParams().put(name, value);
-            return true;
-        }
-
-        @Override
-        public void addListener(String className)
-        {
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-
-            try
-            {
-                ClassLoader classLoader = ServletContextHandler.this.getClassLoader();
-                @SuppressWarnings({"unchecked", "rawtypes"})
-                Class<? extends EventListener> clazz = classLoader == null ? Loader.loadClass(className) : (Class)classLoader.loadClass(className);
-                addListener(clazz);
-            }
-            catch (ClassNotFoundException e)
-            {
-                throw new IllegalArgumentException(e);
-            }
-        }
-
-        @Override
-        public <T extends EventListener> void addListener(T t)
-        {
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-
-            checkListener(t.getClass());
-
-            ServletContextHandler.this.addEventListener(t);
-            ServletContextHandler.this.addProgrammaticListener(t);
-        }
-
-        @Override
-        public void addListener(Class<? extends EventListener> listenerClass)
-        {
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-
-            try
-            {
-                EventListener e = createListener(listenerClass);
-                addListener(e);
-            }
-            catch (ServletException e)
-            {
-                throw new IllegalArgumentException(e);
-            }
-        }
-
-        public void checkListener(Class<? extends EventListener> listener) throws IllegalStateException
-        {
-            boolean ok = false;
-            int startIndex = (isExtendedListenerTypes() ? EXTENDED_LISTENER_TYPE_INDEX : DEFAULT_LISTENER_TYPE_INDEX);
-            for (int i = startIndex; i < SERVLET_LISTENER_TYPES.length; i++)
-            {
-                if (SERVLET_LISTENER_TYPES[i].isAssignableFrom(listener))
-                {
-                    ok = true;
-                    break;
-                }
-            }
-            if (!ok)
-                throw new IllegalArgumentException("Inappropriate listener class " + listener.getName());
-        }
-
-        public void setExtendedListenerTypes(boolean extended)
-        {
-            _extendedListenerTypes = extended;
-        }
-
-        public boolean isExtendedListenerTypes()
-        {
-            return _extendedListenerTypes;
-        }
-
-        @Override
-        public ClassLoader getClassLoader()
-        {
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-
-            // no security manager just return the classloader
-            ClassLoader classLoader = ServletContextHandler.this.getClassLoader();
-            if (!isUsingSecurityManager())
-            {
-                return classLoader;
-            }
-            else
-            {
-                // check to see if the classloader of the caller is the same as the context
-                // classloader, or a parent of it, as required by the javadoc specification.
-
-                // Wrap in a PrivilegedAction so that only Jetty code will require the
-                // "createSecurityManager" permission, not also application code that calls this method.
-                Caller caller = AccessController.doPrivileged((PrivilegedAction<Caller>)Caller::new);
-                ClassLoader callerLoader = caller.getCallerClassLoader(2);
-                while (callerLoader != null)
-                {
-                    if (callerLoader == classLoader)
-                        return classLoader;
-                    else
-                        callerLoader = callerLoader.getParent();
-                }
-                System.getSecurityManager().checkPermission(new RuntimePermission("getClassLoader"));
-                return classLoader;
-            }
-        }
-
-        @Override
-        public JspConfigDescriptor getJspConfigDescriptor()
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getJspConfigDescriptor()");
-            return null;
-        }
-
-        public void setJspConfigDescriptor(JspConfigDescriptor d)
-        {
-
-        }
-
-        @Override
-        public void declareRoles(String... roleNames)
-        {
-            if (!isStarting())
-                throw new IllegalStateException();
-            if (!_enabled)
-                throw new UnsupportedOperationException();
-        }
-
-        public void setEnabled(boolean enabled)
-        {
-            _enabled = enabled;
-        }
-
-        public boolean isEnabled()
-        {
-            return _enabled;
-        }
-
-        @Override
-        public String getVirtualServerName()
-        {
-            List<String> hosts = getVirtualHosts();
-            if (hosts != null && !hosts.isEmpty())
-                return hosts.get(0);
-            return null;
-        }
-    }
-
     public class ServletContextHandlerContext extends ContextHandlerContext
     {
         public ServletContextApi getServletContext()
@@ -2741,12 +2252,18 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         public <T> T createInstance(BaseHolder<T> holder) throws ServletException
         {
-            getAttribute("");
             try
             {
                 //set a thread local
                 DecoratedObjectFactory.associateInfo(holder);
-                return _servletContext.createInstance(holder.getHeldClass());
+                try
+                {
+                    return ((Class<T>)holder.getHeldClass()).getDeclaredConstructor().newInstance();
+                }
+                catch (Exception e)
+                {
+                    throw new ServletException(e);
+                }
             }
             finally
             {
@@ -2771,8 +2288,60 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
     }
 
-    public class ServletContextApi extends PartialContext
+    public class ServletContextApi implements ServletContext
     {
+        public static final int SERVLET_MAJOR_VERSION = 6;
+        public static final int SERVLET_MINOR_VERSION = 0;
+
+        private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
+        private int _effectiveMinorVersion = SERVLET_MINOR_VERSION;
+        protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
+        protected boolean _extendedListenerTypes = false;
+
+        public ServletContextApi()
+        {
+        }
+
+        @Override
+        public String getServerInfo()
+        {
+            return getServer().getServerInfo();
+        }
+
+        @Override
+        public int getMajorVersion()
+        {
+            return SERVLET_MAJOR_VERSION;
+        }
+
+        @Override
+        public int getMinorVersion()
+        {
+            return SERVLET_MINOR_VERSION;
+        }
+
+        @Override
+        public int getEffectiveMajorVersion()
+        {
+            return _effectiveMajorVersion;
+        }
+
+        @Override
+        public int getEffectiveMinorVersion()
+        {
+            return _effectiveMinorVersion;
+        }
+
+        public void setEffectiveMajorVersion(int v)
+        {
+            _effectiveMajorVersion = v;
+        }
+
+        public void setEffectiveMinorVersion(int v)
+        {
+            _effectiveMinorVersion = v;
+        }
+
         public ServletContextHandlerContext getContext()
         {
             return ServletContextHandler.this.getContext();
@@ -3009,15 +2578,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 return null; //existing completed registration for servlet name
         }
 
-        @Override
         public String getInitParameter(String name)
         {
             //since servlet spec 4.0
             Objects.requireNonNull(name);
-            return super.getInitParameter(name);
+            return ServletContextHandler.this.getInitParameter(name);
         }
 
-        @Override
         public boolean setInitParameter(String name, String value)
         {
             //since servlet spec 4.0
@@ -3029,13 +2596,24 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             if (!_enabled)
                 throw new UnsupportedOperationException();
 
-            return super.setInitParameter(name, value);
+            if (ServletContextHandler.this.getInitParameter(name) != null)
+                return false;
+            ServletContextHandler.this.getInitParams().put(name, value);
+            return true;
         }
 
-        @Override
         public <T> T createInstance(Class<T> clazz) throws ServletException
         {
-            return _objFactory.decorate(super.createInstance(clazz));
+            T result;
+            try
+            {
+                result = clazz.getDeclaredConstructor().newInstance();
+            }
+            catch (Exception e)
+            {
+                throw new ServletException(e);
+            }
+            return _objFactory.decorate(result);
         }
 
         @Override
@@ -3177,23 +2755,34 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             }
         }
         
-        @Override
         public <T extends Servlet> T createServlet(Class<T> clazz) throws ServletException
         {
             if (!_enabled)
                 throw new UnsupportedOperationException();
-            return super.createServlet(clazz);
+            try
+            {
+                return clazz.getDeclaredConstructor().newInstance();
+            }
+            catch (Exception e)
+            {
+                throw new ServletException(e);
+            }
         }
 
-        @Override
         public <T extends Filter> T createFilter(Class<T> clazz) throws ServletException
         {
             if (!_enabled)
                 throw new UnsupportedOperationException();
-            return super.createFilter(clazz);
+            try
+            {
+                return clazz.getDeclaredConstructor().newInstance();
+            }
+            catch (Exception e)
+            {
+                throw new ServletException(e);
+            }
         }
         
-        @Override
         public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException
         {
             if (!_enabled)
@@ -3210,17 +2799,54 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 if (!ServletContextListener.class.isAssignableFrom(clazz))
                     throw e;
             }
-            return super.createListener(clazz);
+            try
+            {
+                return clazz.getDeclaredConstructor().newInstance();
+            }
+            catch (Exception e)
+            {
+                throw new ServletException(e);
+            }
         }
 
-        @Override
         public void addListener(String className)
         {
             if (!isStarting())
                 throw new IllegalStateException();
             if (!_enabled)
                 throw new UnsupportedOperationException();
-            super.addListener(className);
+
+            try
+            {
+                ClassLoader classLoader = ServletContextHandler.this.getClassLoader();
+                @SuppressWarnings({"unchecked", "rawtypes"})
+                Class<? extends EventListener> clazz = classLoader == null ? Loader.loadClass(className) : (Class)classLoader.loadClass(className);
+                if (!_enabled)
+                    throw new UnsupportedOperationException();
+
+                try
+                {
+                    EventListener result;
+                    try
+                    {
+                        result = clazz.getDeclaredConstructor().newInstance();
+                    }
+                    catch (Exception e)
+                    {
+                        throw new ServletException(e);
+                    }
+                    EventListener el = result;
+                    addListener(el);
+                }
+                catch (ServletException e)
+                {
+                    throw new IllegalArgumentException(e);
+                }
+            }
+            catch (ClassNotFoundException e)
+            {
+                throw new IllegalArgumentException(e);
+            }
         }
 
         @Override
@@ -3250,14 +2876,31 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             }
         }
 
-        @Override
         public void addListener(Class<? extends EventListener> listenerClass)
         {
             if (!isStarting())
                 throw new IllegalStateException();
             if (!_enabled)
                 throw new UnsupportedOperationException();
-            super.addListener(listenerClass);
+
+            try
+            {
+                EventListener result;
+                try
+                {
+                    result = listenerClass.getDeclaredConstructor().newInstance();
+                }
+                catch (Exception e)
+                {
+                    throw new ServletException(e);
+                }
+                EventListener el = result;
+                addListener(el);
+            }
+            catch (ServletException e)
+            {
+                throw new IllegalArgumentException(e);
+            }
         }
 
         @Override
@@ -3266,7 +2909,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             return _jspConfig;
         }
 
-        @Override
         public void setJspConfigDescriptor(JspConfigDescriptor d)
         {
             _jspConfig = d;
@@ -3310,6 +2952,383 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 throw new IllegalStateException();
             
             setDefaultResponseCharacterEncoding(encoding);
+        }
+
+        public ContextHandler getContextHandler()
+        {
+            return ServletContextHandler.this;
+        }
+
+        @Override
+        public ServletContext getContext(String uripath)
+        {
+            List<ServletContextHandler> contexts = new ArrayList<>();
+            List<ServletContextHandler> handlers = getServer().getDescendants(ServletContextHandler.class);
+            String matchedPath = null;
+
+            for (ServletContextHandler ch : handlers)
+            {
+                if (ch == null)
+                    continue;
+                String contextPath = ch.getContextPath();
+
+                if (uripath.equals(contextPath) ||
+                    (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') ||
+                    "/".equals(contextPath))
+                {
+                    // look first for vhost matching context only
+                    if (getVirtualHosts() != null && getVirtualHosts().size() > 0)
+                    {
+                        if (ch.getVirtualHosts() != null && ch.getVirtualHosts().size() > 0)
+                        {
+                            for (String h1 : getVirtualHosts())
+                            {
+                                for (String h2 : ch.getVirtualHosts())
+                                {
+                                    if (h1.equals(h2))
+                                    {
+                                        if (matchedPath == null || contextPath.length() > matchedPath.length())
+                                        {
+                                            contexts.clear();
+                                            matchedPath = contextPath;
+                                        }
+
+                                        if (matchedPath.equals(contextPath))
+                                            contexts.add(ch);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (matchedPath == null || contextPath.length() > matchedPath.length())
+                        {
+                            contexts.clear();
+                            matchedPath = contextPath;
+                        }
+
+                        if (matchedPath.equals(contextPath))
+                            contexts.add(ch);
+                    }
+                }
+            }
+
+            if (contexts.size() > 0)
+                return contexts.get(0).getServletContext();
+
+            // try again ignoring virtual hosts
+            matchedPath = null;
+            for (ServletContextHandler ch : handlers)
+            {
+                if (ch == null)
+                    continue;
+                String contextPath = ch.getContextPath();
+
+                if (uripath.equals(contextPath) || (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') || "/".equals(contextPath))
+                {
+                    if (matchedPath == null || contextPath.length() > matchedPath.length())
+                    {
+                        contexts.clear();
+                        matchedPath = contextPath;
+                    }
+
+                    if (matchedPath.equals(contextPath))
+                        contexts.add(ch);
+                }
+            }
+
+            if (contexts.size() > 0)
+                return contexts.get(0).getServletContext();
+            return null;
+        }
+
+        @Override
+        public String getMimeType(String file)
+        {
+            if (_mimeTypes == null)
+                return null;
+            return _mimeTypes.getMimeByExtension(file);
+        }
+
+        @Override
+        public RequestDispatcher getRequestDispatcher(String uriInContext)
+        {
+            // uriInContext is encoded, potentially with query.
+            if (uriInContext == null)
+                return null;
+
+            if (!uriInContext.startsWith("/"))
+                return null;
+
+            try
+            {
+                String contextPath = getContextPath();
+                // uriInContext is canonicalized by HttpURI.
+                HttpURI.Mutable uri = HttpURI.build(uriInContext);
+                String pathInfo = uri.getDecodedPath();
+                if (StringUtil.isEmpty(pathInfo))
+                    return null;
+
+                if (!StringUtil.isEmpty(contextPath))
+                {
+                    uri.path(URIUtil.addPaths(contextPath, uri.getPath()));
+                    pathInfo = uri.getDecodedPath().substring(contextPath.length());
+                }
+                return new Dispatcher(ServletContextHandler.this, uri, pathInfo);
+            }
+            catch (Exception e)
+            {
+                LOG.trace("IGNORED", e);
+            }
+            return null;
+        }
+
+        @Override
+        public String getRealPath(String path)
+        {
+            // This is an API call from the application which may have arbitrary non canonical paths passed
+            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // ContextHandler.this.getResource(path).
+            path = URIUtil.canonicalPath(path);
+            if (path == null)
+                return null;
+            if (path.length() == 0)
+                path = URIUtil.SLASH;
+            else if (path.charAt(0) != '/')
+                path = URIUtil.SLASH + path;
+
+            try
+            {
+                Resource resource = ServletContextHandler.this.getResource(path);
+                if (resource != null)
+                {
+                    File file = resource.getFile();
+                    if (file != null)
+                        return file.getCanonicalPath();
+                }
+            }
+            catch (Exception e)
+            {
+                LOG.trace("IGNORED", e);
+            }
+
+            return null;
+        }
+
+        @Override
+        public URL getResource(String path) throws MalformedURLException
+        {
+            // This is an API call from the application which may have arbitrary non canonical paths passed
+            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // ContextHandler.this.getResource(path).
+            path = URIUtil.canonicalPath(path);
+            if (path == null)
+                return null;
+            Resource resource = ServletContextHandler.this.getResource(path);
+            if (resource != null && resource.exists())
+                return resource.getURI().toURL();
+            return null;
+        }
+
+        @Override
+        public InputStream getResourceAsStream(String path)
+        {
+            try
+            {
+                URL url = getResource(path);
+                if (url == null)
+                    return null;
+                Resource r = Resource.newResource(url);
+                // Cannot serve directories as an InputStream
+                if (r.isDirectory())
+                    return null;
+                return r.getInputStream();
+            }
+            catch (Exception e)
+            {
+                LOG.trace("IGNORED", e);
+                return null;
+            }
+        }
+
+        @Override
+        public Set<String> getResourcePaths(String path)
+        {
+            // This is an API call from the application which may have arbitrary non canonical paths passed
+            // Thus we canonicalize here, to avoid the enforcement of only canonical paths in
+            // ContextHandler.this.getResource(path).
+            path = URIUtil.canonicalPath(path);
+            if (path == null)
+                return null;
+            return ServletContextHandler.this.getResourcePaths(path);
+        }
+
+        @Override
+        public void log(String msg)
+        {
+            getLogger().info(msg);
+        }
+
+        @Override
+        public void log(String message, Throwable throwable)
+        {
+            if (throwable == null)
+                getLogger().warn(message);
+            else
+                getLogger().warn(message, throwable);
+        }
+
+        @Override
+        public Enumeration<String> getInitParameterNames()
+        {
+            return ServletContextHandler.this.getInitParameterNames();
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return getContext().getAttribute(name);
+        }
+
+        @Override
+        public Enumeration<String> getAttributeNames()
+        {
+            return Collections.enumeration(getContext().getAttributeNameSet());
+        }
+
+        @Override
+        public void setAttribute(String name, Object value)
+        {
+            Object oldValue = getContext().setAttribute(name, value);
+
+            if (!_servletContextAttributeListeners.isEmpty())
+            {
+                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_servletContext, name, oldValue == null ? value : oldValue);
+
+                for (ServletContextAttributeListener listener : _servletContextAttributeListeners)
+                {
+                    if (oldValue == null)
+                        listener.attributeAdded(event);
+                    else if (value == null)
+                        listener.attributeRemoved(event);
+                    else
+                        listener.attributeReplaced(event);
+                }
+            }
+        }
+
+        @Override
+        public void removeAttribute(String name)
+        {
+            Object oldValue = getContext().removeAttribute(name);
+            if (oldValue != null && !_servletContextAttributeListeners.isEmpty())
+            {
+                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_servletContext, name, oldValue);
+                for (ServletContextAttributeListener listener : _servletContextAttributeListeners)
+                {
+                    listener.attributeRemoved(event);
+                }
+            }
+        }
+
+        @Override
+        public String getServletContextName()
+        {
+            String name = ServletContextHandler.this.getDisplayName();
+            if (name == null)
+                name = ServletContextHandler.this.getContextPath();
+            return name;
+        }
+
+        @Override
+        public String getContextPath()
+        {
+            return getRequestContextPath();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ServletContext@" + ServletContextHandler.this.toString();
+        }
+
+        public void checkListener(Class<? extends EventListener> listener) throws IllegalStateException
+        {
+            boolean ok = false;
+            int startIndex = (isExtendedListenerTypes() ? EXTENDED_LISTENER_TYPE_INDEX : DEFAULT_LISTENER_TYPE_INDEX);
+            for (int i = startIndex; i < SERVLET_LISTENER_TYPES.length; i++)
+            {
+                if (SERVLET_LISTENER_TYPES[i].isAssignableFrom(listener))
+                {
+                    ok = true;
+                    break;
+                }
+            }
+            if (!ok)
+                throw new IllegalArgumentException("Inappropriate listener class " + listener.getName());
+        }
+
+        public void setExtendedListenerTypes(boolean extended)
+        {
+            _extendedListenerTypes = extended;
+        }
+
+        public boolean isExtendedListenerTypes()
+        {
+            return _extendedListenerTypes;
+        }
+
+        @Override
+        public ClassLoader getClassLoader()
+        {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
+
+            // no security manager just return the classloader
+            ClassLoader classLoader = ServletContextHandler.this.getClassLoader();
+            if (!isUsingSecurityManager())
+            {
+                return classLoader;
+            }
+            else
+            {
+                // check to see if the classloader of the caller is the same as the context
+                // classloader, or a parent of it, as required by the javadoc specification.
+
+                // Wrap in a PrivilegedAction so that only Jetty code will require the
+                // "createSecurityManager" permission, not also application code that calls this method.
+                Caller caller = AccessController.doPrivileged((PrivilegedAction<Caller>)Caller::new);
+                ClassLoader callerLoader = caller.getCallerClassLoader(2);
+                while (callerLoader != null)
+                {
+                    if (callerLoader == classLoader)
+                        return classLoader;
+                    else
+                        callerLoader = callerLoader.getParent();
+                }
+                System.getSecurityManager().checkPermission(new RuntimePermission("getClassLoader"));
+                return classLoader;
+            }
+        }
+
+        public void setEnabled(boolean enabled)
+        {
+            _enabled = enabled;
+        }
+
+        public boolean isEnabled()
+        {
+            return _enabled;
+        }
+
+        @Override
+        public String getVirtualServerName()
+        {
+            List<String> hosts = getVirtualHosts();
+            if (hosts != null && !hosts.isEmpty())
+                return hosts.get(0);
+            return null;
         }
     }
 

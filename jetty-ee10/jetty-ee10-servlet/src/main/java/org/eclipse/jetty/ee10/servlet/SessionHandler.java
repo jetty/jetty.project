@@ -402,31 +402,41 @@ public class SessionHandler extends AbstractSessionHandler
         // Look for a session cookie name
         if (_servletContextHandlerContext != null)
         {
-            String tmp = _servletContextHandlerContext.getServletContext().getInitParameter(__SessionCookieProperty);
+            _servletContextHandlerContext.getServletContext();
+            String tmp = ServletContextHandler.this.getInitParameter(__SessionCookieProperty);
             if (tmp != null)
                 _sessionCookie = tmp;
 
-            tmp = _servletContextHandlerContext.getServletContext().getInitParameter(__SessionIdPathParameterNameProperty);
+            _servletContextHandlerContext.getServletContext();
+            tmp = ServletContextHandler.this.getInitParameter(__SessionIdPathParameterNameProperty);
             if (tmp != null)
                 setSessionIdPathParameterName(tmp);
 
             // set up the max session cookie age if it isn't already
             if (_maxCookieAge == -1)
             {
-                tmp = _servletContextHandlerContext.getServletContext().getInitParameter(__MaxAgeProperty);
+                _servletContextHandlerContext.getServletContext();
+                tmp = ServletContextHandler.this.getInitParameter(__MaxAgeProperty);
                 if (tmp != null)
                     _maxCookieAge = Integer.parseInt(tmp.trim());
             }
 
             // set up the session domain if it isn't already
             if (_sessionDomain == null)
-                _sessionDomain = _servletContextHandlerContext.getServletContext().getInitParameter(__SessionDomainProperty);
+            {
+                _servletContextHandlerContext.getServletContext();
+                _sessionDomain = ServletContextHandler.this.getInitParameter(__SessionDomainProperty);
+            }
 
             // set up the sessionPath if it isn't already
             if (_sessionPath == null)
-                _sessionPath = _servletContextHandlerContext.getServletContext().getInitParameter(__SessionPathProperty);
+            {
+                _servletContextHandlerContext.getServletContext();
+                _sessionPath = ServletContextHandler.this.getInitParameter(__SessionPathProperty);
+            }
 
-            tmp = _servletContextHandlerContext.getServletContext().getInitParameter(__CheckRemoteSessionEncoding);
+            _servletContextHandlerContext.getServletContext();
+            tmp = ServletContextHandler.this.getInitParameter(__CheckRemoteSessionEncoding);
             if (tmp != null)
                 _checkingRemoteSessionIdEncoding = Boolean.parseBoolean(tmp);
         }

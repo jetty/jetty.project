@@ -728,7 +728,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return host;
     }
 
-    public class ContextHandlerContext extends Attributes.Layer implements Context
+    public class ContextHandlerContext extends Attributes.Layer implements org.eclipse.jetty.server.Context
     {
         public ContextHandlerContext()
         {
