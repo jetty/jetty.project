@@ -203,8 +203,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public String getId()
     {
-        // TODO
-        return getClass().getSimpleName() + "#" + _idGenerator.getAndIncrement();
+        return getEndPoint() + "#" + _idGenerator.getAndIncrement();
     }
 
     @Override
@@ -1081,6 +1080,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     protected class Http1Stream implements HttpStream
     {
         private final long _nanoTimestamp = System.nanoTime();
+        private final String _id;
         private final String _method;
         private final HttpURI.Mutable _uri;
         private final HttpVersion _version;
@@ -1099,6 +1099,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
         protected Http1Stream(String method, String uri, HttpVersion version)
         {
+            long id = _idGenerator.getAndIncrement();
+            _id = id == 0 ? "0" : Long.toString(_idGenerator.getAndIncrement());
             _method = method;
             _uri = uri == null ? null : HttpURI.build(method, uri);
             _version = version;
@@ -1295,8 +1297,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public String getId()
         {
-            // TODO
-            return getClass().getSimpleName() + "#" + _idGenerator.getAndIncrement();
+            return _id;
         }
 
         @Override

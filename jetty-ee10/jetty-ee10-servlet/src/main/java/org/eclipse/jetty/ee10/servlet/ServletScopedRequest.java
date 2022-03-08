@@ -57,6 +57,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Request;
@@ -370,13 +371,13 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public String getRequestId()
         {
-            return ServletScopedRequest.this.getId();
+            return ServletScopedRequest.this.getConnectionMetaData().getId() + "#" + ServletScopedRequest.this.getId();
         }
 
         @Override
         public String getProtocolRequestId()
         {
-            return ServletScopedRequest.this.getHttpChannel().getHttpStream().getId();
+            return ServletScopedRequest.this.getId();
         }
 
         @Override
@@ -401,7 +402,10 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
                 @Override
                 public String getProtocolConnectionId()
                 {
-                    return connectionMetaData.getConnection().toString(); // TODO getId
+                    // TODO review
+                    if (HttpVersion.HTTP_3.is(connectionMetaData.getProtocol()))
+                        return connectionMetaData.getId();
+                    return "";
                 }
 
                 @Override

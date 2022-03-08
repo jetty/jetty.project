@@ -23,6 +23,11 @@ import org.eclipse.jetty.util.Callback;
 
 public interface HttpStream extends Callback
 {
+    /**
+     * @return an ID unique within the lifetime scope of the associated protocol connection.
+     * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
+     * @see HttpStream#getId();
+     */
     String getId();
 
     long getNanoTimeStamp();

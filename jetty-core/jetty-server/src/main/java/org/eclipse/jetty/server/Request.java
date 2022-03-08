@@ -107,7 +107,9 @@ import org.eclipse.jetty.util.thread.Invocable;
 public interface Request extends Attributes, Content.Reader
 {
     /**
-     * @return a unique ID for this request
+     * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
+     * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
+     * @see HttpStream#getId();
      */
     String getId();
 

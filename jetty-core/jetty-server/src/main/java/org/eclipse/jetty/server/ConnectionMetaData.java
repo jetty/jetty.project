@@ -22,6 +22,9 @@ import org.eclipse.jetty.util.HostPort;
 
 public interface ConnectionMetaData extends Attributes
 {
+    /**
+     * @return a unique (within the lifetime of the JVM) identifier string for the network connection to the JVM
+     */
     String getId();
 
     HttpVersion getVersion();

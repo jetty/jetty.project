@@ -478,9 +478,7 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public String getId()
         {
-            if (_id == null)
-                _id = getConnectionMetaData().getId() + "#" + _stream.getId();
-            return _id;
+            return _stream.getId();
         }
 
         @Override
