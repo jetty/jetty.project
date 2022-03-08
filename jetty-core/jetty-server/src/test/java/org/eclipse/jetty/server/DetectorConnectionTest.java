@@ -30,9 +30,11 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -487,14 +489,17 @@ public class DetectorConnectionTest
                 "3039" + // 12345
                 "1F90"; // 8080
 
-        String httpReq =
-            "GET /path HTTP/1.1\n" +
-                "Host: server:80\n" +
-                "Connection: close\n" +
-                "\n";
-        String response = getResponse(TypeUtil.fromHexString(proxyReq), httpReq.getBytes(StandardCharsets.US_ASCII));
+        String httpReq = """
+                GET /path HTTP/1.1
+                Host: server:80
+                Connection: close
 
-        assertThat(response, Matchers.nullValue());
+                """;
+        try (StacklessLogging ignore = new StacklessLogging(DetectorConnectionFactory.class))
+        {
+            String response = getResponse(StringUtil.fromHexString(proxyReq), httpReq.getBytes(StandardCharsets.US_ASCII));
+            assertThat(response, Matchers.nullValue());
+        }
     }
 
     @Test

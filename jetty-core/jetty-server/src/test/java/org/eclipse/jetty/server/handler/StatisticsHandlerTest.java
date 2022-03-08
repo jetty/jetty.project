@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.ConnectionStatistics;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
@@ -246,19 +247,22 @@ public class StatisticsHandlerTest
                 "Content-Length: 1000\r\n" +
                 "\r\n";
 
-        LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
-
-        // send 10 byte every 10 ms -> should avg to ~1000 bytes/s
-        for (int i = 0; i < 100; i++)
+        try (StacklessLogging ignore = new StacklessLogging(ContextRequest.class))
         {
-            Thread.sleep(10);
-            endPoint.addInput(ByteBuffer.allocate(10));
-        }
+            LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
 
-        _latchHandler.await();
-        AtomicInteger statusHolder = new AtomicInteger();
-        endPoint.waitForResponse(false, 5, TimeUnit.SECONDS, statusHolder::set);
-        assertThat(statusHolder.get(), is(500));
+            // send 10 byte every 10 ms -> should avg to ~1000 bytes/s
+            for (int i = 0; i < 100; i++)
+            {
+                Thread.sleep(10);
+                endPoint.addInput(ByteBuffer.allocate(10));
+            }
+
+            _latchHandler.await();
+            AtomicInteger statusHolder = new AtomicInteger();
+            endPoint.waitForResponse(false, 5, TimeUnit.SECONDS, statusHolder::set);
+            assertThat(statusHolder.get(), is(500));
+        }
     }
 
     @Test

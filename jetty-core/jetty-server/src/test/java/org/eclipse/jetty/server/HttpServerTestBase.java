@@ -316,7 +316,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         OutputStream os = client.getOutputStream();
 
-        try (StacklessLogging ignored = new StacklessLogging(Server.class))
+        try (StacklessLogging ignored = new StacklessLogging(ContextRequest.class))
         {
             LOG.info("Expecting Exception: TEST handler exception...");
             os.write(request.toString().getBytes());

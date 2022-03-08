@@ -355,6 +355,7 @@ public class StatisticsHandler extends Handler.Wrapper
                     Long rr = (Long)getAttribute("o.e.j.s.h.StatsHandler.dataReadRate");
                     if (rr < _minimumReadRate)
                     {
+                        // TODO should this be a QuietException to reduce log verbosity from bad clients?
                         _errorContent = new Content.Error(new TimeoutException("read rate is too low: " + rr));
                         onContentAvailable.run();
                         return;
