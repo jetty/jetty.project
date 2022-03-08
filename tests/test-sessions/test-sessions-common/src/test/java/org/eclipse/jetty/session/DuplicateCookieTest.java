@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
@@ -51,13 +50,11 @@ public class DuplicateCookieTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer server1 = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         server1.start();
         int port1 = server1.getPort();
 
@@ -74,17 +71,12 @@ public class DuplicateCookieTest
             assertEquals(0, s4422.getRequests());
 
             //make a request with another session cookie in there that does not exist
-            CountDownLatch latch = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(latch);
             Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=check");
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=123")); //doesn't exist
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=4422")); //does exist
             ContentResponse response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             assertEquals("4422", response.getContentAsString());
-
-            //ensure request has finished processing so session will be completed
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check session is drained of requests
             assertEquals(0, s4422.getRequests());
@@ -106,13 +98,11 @@ public class DuplicateCookieTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer server1 = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         server1.start();
         int port1 = server1.getPort();
 
@@ -139,8 +129,6 @@ public class DuplicateCookieTest
             assertEquals(0, s2255.getRequests());
 
             //make a request where the valid session cookie is first
-            CountDownLatch latch = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(latch);
             Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=check");
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=1122")); //is valid
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=2233")); //is invalid
@@ -148,9 +136,6 @@ public class DuplicateCookieTest
             ContentResponse response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             assertEquals("1122", response.getContentAsString());
-
-            //ensure request has finished processing so session will be completed
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check valid session is drained of requests
             assertEquals(0, s1122.getRequests());
@@ -172,13 +157,11 @@ public class DuplicateCookieTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer server1 = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         server1.start();
         int port1 = server1.getPort();
 
@@ -206,8 +189,6 @@ public class DuplicateCookieTest
 
             //make a request with the valid session cookie last
             // Create the session
-            CountDownLatch latch = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(latch);
             Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=check");
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=2233")); //is invalid
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=2255")); //is invalid
@@ -215,9 +196,6 @@ public class DuplicateCookieTest
             ContentResponse response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             assertEquals("1122", response.getContentAsString());
-
-            //ensure request has completed so session will be completed
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check valid session drained of requests
             assertEquals(0, s1122.getRequests());
@@ -239,13 +217,11 @@ public class DuplicateCookieTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer server1 = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         server1.start();
         int port1 = server1.getPort();
 
@@ -272,8 +248,6 @@ public class DuplicateCookieTest
             assertEquals(0, s2255.getRequests());
 
             //make a request with another session cookie with the valid session surrounded by invalids
-            CountDownLatch latch = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(latch);
             Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=check");
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=2233")); //is invalid
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=1122")); //is valid
@@ -281,9 +255,6 @@ public class DuplicateCookieTest
             ContentResponse response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             assertEquals("1122", response.getContentAsString());
-
-            //ensure request has completed so session will be completed
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check valid session drained of requests
             assertEquals(0, s1122.getRequests());
@@ -305,13 +276,11 @@ public class DuplicateCookieTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer server1 = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         server1.start();
         int port1 = server1.getPort();
 
@@ -337,16 +306,11 @@ public class DuplicateCookieTest
             assertEquals(0, s9111.getRequests());
 
             //make a request with multiple valid session ids
-            CountDownLatch latch = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(latch);
             Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=check");
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=1234"));
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=5678"));
             ContentResponse response = request.send();
             assertEquals(HttpServletResponse.SC_BAD_REQUEST, response.getStatus());
-
-            //ensure request has completed so any session will be completed
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check that all sessions have their request counts decremented correctly after the request, back to 0
             assertEquals(0, s1234.getRequests());
@@ -370,13 +334,11 @@ public class DuplicateCookieTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer server1 = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         server1.start();
         int port1 = server1.getPort();
 
@@ -394,16 +356,11 @@ public class DuplicateCookieTest
             assertEquals(0, s1234.getRequests());
 
             //make a request with multiple valid session ids
-            CountDownLatch latch = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(latch);
             Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=check");
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=1234"));
             request.headers(headers -> headers.add("Cookie", "JSESSIONID=1234"));
             ContentResponse response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-
-            //ensure request has finished processing so session will be completed
-            assertTrue(latch.await(5, TimeUnit.SECONDS));
 
             //check that all valid sessions have their request counts decremented correctly after the request, back to 0
             assertEquals(0, s1234.getRequests());

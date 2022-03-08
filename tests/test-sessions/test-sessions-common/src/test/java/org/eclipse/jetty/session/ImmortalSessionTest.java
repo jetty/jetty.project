@@ -71,7 +71,7 @@ public class ImmortalSessionTest
         String servletMapping = "/server";
 
         //turn off session expiry by setting maxInactiveInterval to -1
-        TestServer server = new TestServer(0, -1, scavengeInterval, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, -1, scavengeInterval, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
 

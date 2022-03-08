@@ -14,8 +14,6 @@
 package org.eclipse.jetty.session;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -42,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * you must use session eviction, to try to ensure that as the session
  * bounces around it gets a fresh load of data from the SessionDataStore.
  */
-public abstract class AbstractClusteredInvalidationSessionTest extends AbstractTestBase
+public abstract class AbstractClusteredInvalidationSessionTest extends AbstractSessionTestBase
 {
     @Test
     public void testInvalidation() throws Exception
@@ -56,11 +54,9 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
         SessionDataStoreFactory storeFactory1 = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory1).setGracePeriodSec(scavengeInterval);
 
-        TestServer server1 = new TestServer(0, maxInactiveInterval, scavengeInterval, cacheFactory1, storeFactory1);
+        SessionTestSupport server1 = new SessionTestSupport(0, maxInactiveInterval, scavengeInterval, cacheFactory1, storeFactory1);
         ServletContextHandler context = server1.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
 
         try
         {
@@ -71,7 +67,7 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
             cacheFactory2.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
             SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();
             ((AbstractSessionDataStoreFactory)storeFactory2).setGracePeriodSec(scavengeInterval);
-            TestServer server2 = new TestServer(0, maxInactiveInterval, scavengeInterval, cacheFactory2, storeFactory2);
+            SessionTestSupport server2 = new SessionTestSupport(0, maxInactiveInterval, scavengeInterval, cacheFactory2, storeFactory2);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
             try
@@ -90,36 +86,21 @@ public abstract class AbstractClusteredInvalidationSessionTest extends AbstractT
                     urls[1] = "http://localhost:" + port2 + contextPath + servletMapping.substring(1);
 
                     // Create the session on node1
-                    CountDownLatch latch = new CountDownLatch(1);
-                    scopeListener.setExitSynchronizer(latch);
                     ContentResponse response1 = client.GET(urls[0] + "?action=init");
 
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
 
-                    //ensure request is fully finished processing
-                    latch.await(5, TimeUnit.SECONDS);
-
                     // Be sure the session is also present in node2
-                    latch = new CountDownLatch(1);
-                    scopeListener.setExitSynchronizer(latch);
                     Request request2 = client.newRequest(urls[1] + "?action=increment");
                     ContentResponse response2 = request2.send();
                     assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
 
-                    //ensure request is fully finished processing
-                    latch.await(5, TimeUnit.SECONDS);
-
                     // Invalidate on node1
-                    latch = new CountDownLatch(1);
-                    scopeListener.setExitSynchronizer(latch);
                     Request request1 = client.newRequest(urls[0] + "?action=invalidate");
                     response1 = request1.send();
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
-
-                    //ensure request is fully finished processing
-                    latch.await(5, TimeUnit.SECONDS);
 
                     // Be sure on node2 we don't see the session anymore
                     request2 = client.newRequest(urls[1] + "?action=test");

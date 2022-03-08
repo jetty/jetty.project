@@ -85,7 +85,7 @@ public class SessionListenerTest
         TestSessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         storeFactory.setGracePeriodSec(scavengePeriod);
 
-        TestServer server = new TestServer(0, inactivePeriod, scavengePeriod,
+        SessionTestSupport server = new SessionTestSupport(0, inactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         TestHttpSessionListener listener = new TestHttpSessionListener(true, true);
@@ -111,7 +111,7 @@ public class SessionListenerTest
                 assertNotNull(sessionCookie);
                 assertTrue(TestServlet.bindingListener.bound);
 
-                String sessionId = TestServer.extractSessionId(sessionCookie);
+                String sessionId = SessionTestSupport.extractSessionId(sessionCookie);
                 assertThat(sessionId, is(in(listener.createdSessions)));
 
                 // Make a request which will invalidate the existing session
@@ -149,7 +149,7 @@ public class SessionListenerTest
         TestSessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         storeFactory.setGracePeriodSec(scavengePeriod);
 
-        TestServer server = new TestServer(0, inactivePeriod, scavengePeriod,
+        SessionTestSupport server = new SessionTestSupport(0, inactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         ThrowingSessionListener listener = new ThrowingSessionListener();
@@ -175,7 +175,7 @@ public class SessionListenerTest
                 assertNotNull(sessionCookie);
                 assertTrue(TestServlet.bindingListener.bound);
 
-                String sessionId = TestServer.extractSessionId(sessionCookie);
+                String sessionId = SessionTestSupport.extractSessionId(sessionCookie);
 
                 // Make a request which will invalidate the existing session
                 Request request2 = client.newRequest(url + "?action=test");
@@ -232,7 +232,7 @@ public class SessionListenerTest
         TestSessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         storeFactory.setGracePeriodSec(scavengePeriod);
 
-        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
+        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -259,7 +259,7 @@ public class SessionListenerTest
                 String sessionCookie = response1.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
 
-                String sessionId = TestServer.extractSessionId(sessionCookie);
+                String sessionId = SessionTestSupport.extractSessionId(sessionCookie);
 
                 assertThat(sessionId, is(in(listener.createdSessions)));
 
@@ -298,7 +298,7 @@ public class SessionListenerTest
         TestSessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         storeFactory.setGracePeriodSec(scavengePeriod);
 
-        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod,
+        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
         SimpleTestServlet servlet = new SimpleTestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -335,7 +335,7 @@ public class SessionListenerTest
 
                 //should be a new session id
                 String cookie2 = response.getHeaders().get("Set-Cookie");
-                assertNotEquals("1234", TestServer.extractSessionId(cookie2));
+                assertNotEquals("1234", SessionTestSupport.extractSessionId(cookie2));
 
                 assertTrue(listener.destroyedSessions.contains("1234"));
 

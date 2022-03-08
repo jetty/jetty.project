@@ -45,7 +45,7 @@ public class IdleSessionTest
 {
 
     protected TestServlet _servlet = new TestServlet();
-    protected TestServer _server1 = null;
+    protected SessionTestSupport _server1 = null;
 
     public void pause(int sec) throws InterruptedException
     {
@@ -69,7 +69,7 @@ public class IdleSessionTest
         cacheFactory.setFlushOnResponseCommit(true);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        _server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        _server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
@@ -93,7 +93,7 @@ public class IdleSessionTest
             pause(evictionSec * 2);
             
             //check that the session has been idled
-            String id = TestServer.extractSessionId(sessionCookie);
+            String id = SessionTestSupport.extractSessionId(sessionCookie);
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
 
@@ -127,7 +127,7 @@ public class IdleSessionTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             sessionCookie = response.getHeaders().get("Set-Cookie");
             assertNotNull(sessionCookie);
-            id = TestServer.extractSessionId(sessionCookie);
+            id = SessionTestSupport.extractSessionId(sessionCookie);
 
             //and wait until the session should be idled out
             pause(evictionSec * 2);
@@ -169,7 +169,7 @@ public class IdleSessionTest
         cacheFactory.setFlushOnResponseCommit(true);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        _server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        _server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletHolder holder = new ServletHolder(_servlet);
         ServletContextHandler contextHandler = _server1.addContext(contextPath);
         contextHandler.addServlet(holder, servletMapping);
@@ -189,7 +189,7 @@ public class IdleSessionTest
             assertNotNull(sessionCookie);
 
             //the session should never be cached
-            String id = TestServer.extractSessionId(sessionCookie);
+            String id = SessionTestSupport.extractSessionId(sessionCookie);
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
 
@@ -217,7 +217,7 @@ public class IdleSessionTest
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
             sessionCookie = response.getHeaders().get("Set-Cookie");
             assertNotNull(sessionCookie);
-            id = TestServer.extractSessionId(sessionCookie);
+            id = SessionTestSupport.extractSessionId(sessionCookie);
             
             //stop the scavenger
             if (_server1.getHouseKeeper() != null)

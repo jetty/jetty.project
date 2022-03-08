@@ -54,7 +54,7 @@ public class SessionInvalidationTest
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
 
-        TestServer server = new TestServer(0, 0, scavengePeriod,
+        SessionTestSupport server = new SessionTestSupport(0, 0, scavengePeriod,
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();
@@ -104,7 +104,7 @@ public class SessionInvalidationTest
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
 
-        TestServer server = new TestServer(0, 0, scavengePeriod,
+        SessionTestSupport server = new SessionTestSupport(0, 0, scavengePeriod,
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();

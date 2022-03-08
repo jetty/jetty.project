@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.RequestDispatcher;
@@ -66,7 +65,7 @@ public class CreationTest
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer server1 = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
@@ -74,9 +73,6 @@ public class CreationTest
         ListenerHolder h = contextHandler.getServletHandler().newListenerHolder(Source.EMBEDDED);
         h.setListener(new MySessionListener());
         contextHandler.getServletHandler().addListener(h);
-        
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -89,18 +85,12 @@ public class CreationTest
             //make a session
             String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=create&check=false";
 
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
-
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
-
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
         }
         finally
         {
@@ -125,12 +115,10 @@ public class CreationTest
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer server1 = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -142,9 +130,6 @@ public class CreationTest
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=create&check=false";
 
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
-
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
@@ -152,26 +137,18 @@ public class CreationTest
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
 
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
-
             //session should now be evicted from the cache
-            String id = TestServer.extractSessionId(sessionCookie);
+            String id = SessionTestSupport.extractSessionId(sessionCookie);
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
 
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             //make another request for the same session
             Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=test");
             response = request.send();
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-   
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             //session should now be evicted from the cache again
-            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(TestServer.extractSessionId(sessionCookie)));
+            assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(SessionTestSupport.extractSessionId(sessionCookie)));
         }
         finally
         {
@@ -194,12 +171,10 @@ public class CreationTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -211,15 +186,9 @@ public class CreationTest
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=createinv&check=false";
 
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
-
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
 
             //check that the session does not exist
             assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
@@ -246,12 +215,10 @@ public class CreationTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         cacheFactory.setSaveOnCreate(true);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -263,14 +230,9 @@ public class CreationTest
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=createinv&check=true";
 
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
-
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-
-            synchronizer.await(5, TimeUnit.SECONDS);
 
             //check that the session does not exist
             assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
@@ -294,12 +256,10 @@ public class CreationTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         servlet.setStore(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore());
         server1.start();
@@ -311,15 +271,9 @@ public class CreationTest
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping + "?action=createinvcreate&check=false";
 
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
-
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
 
             //check that the session does not exist
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
@@ -348,12 +302,10 @@ public class CreationTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
         ctxB.addServlet(TestServletB.class, servletMapping);
@@ -367,13 +319,8 @@ public class CreationTest
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
             //make a request to set up a session on the server
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET(url + "?action=forward");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-
-            //wait for request to have exited server completely
-            synchronizer.await(5, TimeUnit.SECONDS);
 
             //check that the sessions exist persisted
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));
@@ -403,12 +350,10 @@ public class CreationTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer server1 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server1.addContext(contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         contextHandler.addServlet(holder, servletMapping);
         ServletContextHandler ctxB = server1.addContext(contextB);
         ctxB.addServlet(TestServletB.class, servletMapping);
@@ -421,14 +366,8 @@ public class CreationTest
             client.start();
             String url = "http://localhost:" + port1 + contextPath + servletMapping;
 
-            //make a request to set up a session on the server
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET(url + "?action=forwardinv");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-
-            //wait for request to have exited server completely
-            synchronizer.await(5, TimeUnit.SECONDS);
 
             //check that the session does not exist 
             assertFalse(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(servlet._id));

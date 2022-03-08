@@ -52,7 +52,7 @@ public class ConcurrencyTest
 
         String contextPath = "";
         String servletMapping = "/server";
-        TestServer server1 = new TestServer(0, 60, 5, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, 60, 5, cacheFactory, storeFactory);
 
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 

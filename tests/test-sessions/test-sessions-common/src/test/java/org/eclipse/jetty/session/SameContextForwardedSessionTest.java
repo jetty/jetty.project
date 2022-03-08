@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.RequestDispatcher;
@@ -50,11 +49,9 @@ public class SameContextForwardedSessionTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        TestServer testServer = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport testServer = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
         ServletContextHandler testServletContextHandler = testServer.addContext("/context");
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        testServer.getServerConnector().addBean(scopeListener);
         ServletHolder holder = new ServletHolder(new Servlet1());
         testServletContextHandler.addServlet(holder, "/one");
         testServletContextHandler.addServlet(Servlet2.class, "/two");
@@ -70,19 +67,14 @@ public class SameContextForwardedSessionTest
             try
             {
                 //make a request to the first servlet, which will forward it to other servlets
-                CountDownLatch latch = new CountDownLatch(1);
-                scopeListener.setExitSynchronizer(latch);
                 ContentResponse response = client.GET("http://localhost:" + serverPort + "/context/one");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
 
-                //wait until all of the request handling has finished 
-                latch.await(5, TimeUnit.SECONDS);
-
                 //test that the session was created, and that it contains the attributes from servlet3 and servlet1
-                testServletContextHandler.getSessionHandler().getSessionCache().contains(TestServer.extractSessionId(sessionCookie));
-                testServletContextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(TestServer.extractSessionId(sessionCookie));
+                testServletContextHandler.getSessionHandler().getSessionCache().contains(SessionTestSupport.extractSessionId(sessionCookie));
+                testServletContextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(SessionTestSupport.extractSessionId(sessionCookie));
 
                 //Make a fresh request
                 Request request = client.newRequest("http://localhost:" + serverPort + "/context/four");

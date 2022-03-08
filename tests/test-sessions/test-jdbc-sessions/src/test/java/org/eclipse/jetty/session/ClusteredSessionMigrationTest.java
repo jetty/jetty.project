@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * to reduce test time, we only apply it to the JDBCSessionDataStore.
  */
 @Testcontainers(disabledWithoutDocker = true)
-public class ClusteredSessionMigrationTest extends AbstractTestBase
+public class ClusteredSessionMigrationTest extends AbstractSessionTestBase
 {
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
@@ -66,9 +66,9 @@ public class ClusteredSessionMigrationTest extends AbstractTestBase
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         cacheFactory.setSaveOnCreate(true); //immediately save the session when it is created so node2 can see it
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
+        SessionTestSupport server1 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC,
             cacheFactory, storeFactory);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 
@@ -83,7 +83,7 @@ public class ClusteredSessionMigrationTest extends AbstractTestBase
             cacheFactory2.setSaveOnCreate(true);
             SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();
 
-            TestServer server2 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
+            SessionTestSupport server2 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC,
                 cacheFactory2, storeFactory2);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
 

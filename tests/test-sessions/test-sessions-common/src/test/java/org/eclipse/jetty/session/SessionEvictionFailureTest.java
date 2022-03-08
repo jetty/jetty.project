@@ -165,7 +165,7 @@ public class SessionEvictionFailureTest
         cacheFactory.setEvictionPolicy(evictionPeriod);
         SessionDataStoreFactory storeFactory = new MockSessionDataStoreFactory();
 
-        TestServer server = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         context.getSessionHandler().getSessionCache().setSaveOnInactiveEviction(true);
         //test values: allow first save, fail evict save, allow save, fail evict save, allow save, allow save on shutdown
@@ -198,7 +198,7 @@ public class SessionEvictionFailureTest
 
                 // Make another request to see if the session is still in the cache and can be used,
                 //allow it to be saved this time
-                assertTrue(context.getSessionHandler().getSessionCache().contains(TestServer.extractSessionId(sessionCookie)));
+                assertTrue(context.getSessionHandler().getSessionCache().contains(SessionTestSupport.extractSessionId(sessionCookie)));
                 Request request = client.newRequest(url + "?action=test");
                 response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());

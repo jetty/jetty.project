@@ -53,7 +53,7 @@ public class RemoveSessionTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
@@ -91,10 +91,10 @@ public class RemoveSessionTest
                 assertEquals(1, ((DefaultSessionCache)m.getSessionCache()).getSessionsTotal());
                 
                 //check the session is no longer in the cache
-                assertFalse(((AbstractSessionCache)m.getSessionCache()).contains(TestServer.extractSessionId(sessionCookie)));
+                assertFalse(((AbstractSessionCache)m.getSessionCache()).contains(SessionTestSupport.extractSessionId(sessionCookie)));
 
                 //check the session is not persisted any more
-                assertFalse(m.getSessionCache().getSessionDataStore().exists(TestServer.extractSessionId(sessionCookie)));
+                assertFalse(m.getSessionCache().getSessionDataStore().exists(SessionTestSupport.extractSessionId(sessionCookie)));
 
                 // The session is not there anymore, even if we present an old cookie
                 request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check");

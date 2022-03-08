@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Test that a session that was live on node1, but then more
  * recently used on node2 does not expire over on node1.
  */
-public abstract class AbstractClusteredSessionScavengingTest extends AbstractTestBase
+public abstract class AbstractClusteredSessionScavengingTest extends AbstractSessionTestBase
 {
     public void pause(int secs)
         throws InterruptedException
@@ -67,7 +67,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
         ((AbstractSessionDataStoreFactory)storeFactory1).setGracePeriodSec(scavengePeriod);
         ((AbstractSessionDataStoreFactory)storeFactory1).setSavePeriodSec(0); //always save when the session exits
 
-        TestServer server1 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory1, storeFactory1);
+        SessionTestSupport server1 = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory1, storeFactory1);
         TestServlet servlet1 = new TestServlet();
         ServletHolder holder1 = new ServletHolder(servlet1);
         ServletContextHandler context = server1.addContext(contextPath);
@@ -87,7 +87,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
             SessionDataStoreFactory storeFactory2 = createSessionDataStoreFactory();
             ((AbstractSessionDataStoreFactory)storeFactory2).setGracePeriodSec(scavengePeriod);
             ((AbstractSessionDataStoreFactory)storeFactory2).setSavePeriodSec(0); //always save when the session exits
-            TestServer server2 = new TestServer(0, maxInactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
+            SessionTestSupport server2 = new SessionTestSupport(0, maxInactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
             ServletContextHandler context2 = server2.addContext(contextPath);
             context2.addServlet(TestServlet.class, servletMapping);
             SessionHandler m2 = context2.getSessionHandler();
@@ -106,7 +106,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                     assertTrue(response1.getContentAsString().startsWith("init"));
                     String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
-                    String id = TestServer.extractSessionId(sessionCookie);
+                    String id = SessionTestSupport.extractSessionId(sessionCookie);
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsCurrent());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsMax());
                     assertEquals(1, ((DefaultSessionCache)m1.getSessionCache()).getSessionsTotal());
@@ -139,7 +139,7 @@ public abstract class AbstractClusteredSessionScavengingTest extends AbstractTes
                     Thread.sleep(TimeUnit.SECONDS.toMillis(scavengePeriod)); // wait until just after the original expiry time has passed
 
                     //check that the session wasn't in fact scavenged because it was in use on node1
-                    assertFalse(listener1._destroys.contains(TestServer.extractSessionId(sessionCookie)));
+                    assertFalse(listener1._destroys.contains(SessionTestSupport.extractSessionId(sessionCookie)));
                     assertAfterScavenge(m1);
                 }
                 finally

@@ -44,7 +44,7 @@ public class RedirectSessionTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        TestServer testServer = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport testServer = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
         ServletContextHandler testServletContextHandler = testServer.addContext("/context");
         testServletContextHandler.addServlet(Servlet1.class, "/one");
         testServletContextHandler.addServlet(Servlet2.class, "/two");

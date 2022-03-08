@@ -15,7 +15,6 @@ package org.eclipse.jetty.session;
 
 import java.io.IOException;
 import java.net.HttpCookie;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
@@ -44,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class SessionRenewTest
 {
-    protected TestServer _server;
+    protected SessionTestSupport _server;
 
     /**
      * Tests renewing a session id when sessions are not being cached.
@@ -56,7 +55,7 @@ public class SessionRenewTest
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
         //make the server with a NullSessionCache
-        _server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        _server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
         doTest(new RenewalVerifier()
             {
 
@@ -82,7 +81,7 @@ public class SessionRenewTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        _server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        _server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
         doTest(new RenewalVerifier()
         {
@@ -106,13 +105,11 @@ public class SessionRenewTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
 
-        _server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        _server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
         
         String contextPathA = "";
         String servletMapping = "/server";
         WebAppContext contextA = _server.addWebAppContext(".", contextPathA);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server.getServerConnector().addBean(scopeListener);
         contextA.setParentLoaderPriority(true);
         contextA.addServlet(TestServlet.class, servletMapping);
         
@@ -135,18 +132,13 @@ public class SessionRenewTest
             contextB.getSessionHandler().getSessionCache().getSessionDataStore().store("1234", dataB);
 
             //make a request to change the sessionid
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             Request request = client.newRequest("http://localhost:" + port + contextPathA + servletMapping + "?action=renew");
             request.cookie(new HttpCookie(SessionHandler.__DefaultSessionCookie, "1234"));
             ContentResponse renewResponse = request.send();
             assertEquals(HttpServletResponse.SC_OK, renewResponse.getStatus());
             String newSessionCookie = renewResponse.getHeaders().get("Set-Cookie");
             assertTrue(newSessionCookie != null);
-            String updatedId = TestServer.extractSessionId(newSessionCookie);
-
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
+            String updatedId = SessionTestSupport.extractSessionId(newSessionCookie);
             
             //session ids should be updated on all contexts
             contextA.getSessionHandler().getSessionCache().contains(updatedId);
@@ -178,8 +170,6 @@ public class SessionRenewTest
         String contextPath = "";
         String servletMapping = "/server";
         WebAppContext context = _server.addWebAppContext(".", contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server.getServerConnector().addBean(scopeListener);
         context.setParentLoaderPriority(true);
         context.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionIdListener testListener = new TestHttpSessionIdListener();
@@ -194,35 +184,25 @@ public class SessionRenewTest
             client.start();
 
             //make a request to create a session
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
             assertFalse(testListener.isCalled());
 
             //make a request to change the sessionid
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=renew");
             ContentResponse renewResponse = request.send();
             assertEquals(HttpServletResponse.SC_OK, renewResponse.getStatus());
            
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
-            
             String renewSessionCookie = renewResponse.getHeaders().get("Set-Cookie");
             assertNotNull(renewSessionCookie);
             assertNotSame(sessionCookie, renewSessionCookie);
             assertTrue(testListener.isCalled());
 
             if (verifier != null)
-                verifier.verify(context, TestServer.extractSessionId(sessionCookie), TestServer.extractSessionId(renewSessionCookie));
+                verifier.verify(context, SessionTestSupport.extractSessionId(sessionCookie), SessionTestSupport.extractSessionId(renewSessionCookie));
         }
         finally
         {
