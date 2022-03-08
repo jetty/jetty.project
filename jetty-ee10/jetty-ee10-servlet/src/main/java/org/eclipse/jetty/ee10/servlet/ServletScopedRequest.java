@@ -323,8 +323,6 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         private MultiMap<String> _queryParameters;
         private SessionManager _sessionManager;
         private Session _session;
-        private String _requestedSessionId;
-        private boolean _requestedSessionIdFromCookie;
         
         public static Session getSession(HttpSession httpSession)
         {
@@ -346,16 +344,6 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         public void setSessionManager(SessionManager sessionManager)
         {
             _sessionManager = sessionManager;
-        }
-
-        public void setRequestedSessionId(String requestedSessionId)
-        {
-            _requestedSessionId = requestedSessionId;
-        }
-
-        public void setRequestedSessionIdFromCookie(boolean requestedSessionIdFromCookie)
-        {
-            _requestedSessionIdFromCookie = requestedSessionIdFromCookie;
         }
 
         public ServletScopedRequest getRequest()
@@ -521,8 +509,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public String getRequestedSessionId()
         {
-            // TODO
-            return null;
+            return (String)ServletScopedRequest.this.getAttribute(SessionManager.__Requested_Session_Id);
         }
 
         @Override
@@ -554,10 +541,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public HttpSession getSession()
         {
-            if (_session == null)
-                return null;
-            
-            return _session.getAPISession();
+            return (_session == null ? null : _session.getAPISession());
         }
 
         @Override
@@ -570,22 +554,22 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public boolean isRequestedSessionIdValid()
         {
-            // TODO
-            return false;
+            if (getRequestedSessionId() == null || _session == null)
+                return false;
+            //check requestedId (which may have worker suffix) against the actual session id
+            return (getSessionManager().getSessionIdManager().getId(getRequestedSessionId()).equals(_session.getId()));
         }
 
         @Override
         public boolean isRequestedSessionIdFromCookie()
         {
-            // TODO
-            return false;
+            return (Boolean)ServletScopedRequest.this.getAttribute(SessionManager.__Requested_Session_Id_From_Cookie);
         }
 
         @Override
         public boolean isRequestedSessionIdFromURL()
         {
-            // TODO
-            return false;
+            return getRequestedSessionId() != null && !isRequestedSessionIdFromCookie(); 
         }
 
         @Override

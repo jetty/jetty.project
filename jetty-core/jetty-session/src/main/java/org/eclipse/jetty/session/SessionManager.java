@@ -26,6 +26,14 @@ import org.eclipse.jetty.util.component.LifeCycle;
 public interface SessionManager extends LifeCycle
 {
     /**
+     * Names of Request attributes storing session related
+     * information.
+     */
+    String __Resolved_Session = "org.eclipse.jetty.session.ResolvedSession";
+    String __Requested_Session_Id = "org.eclipse.jetty.session.RequestedSessionId";
+    String __Requested_Session_Id_From_Cookie = "org.eclipse.jetty.session.RequestedSessionIdFromCookie";
+    
+    /**
      * Session cookie name.
      * Defaults to <code>JSESSIONID</code>, but can be set with the
      * <code>org.eclipse.jetty.servlet.SessionCookie</code> context init parameter.

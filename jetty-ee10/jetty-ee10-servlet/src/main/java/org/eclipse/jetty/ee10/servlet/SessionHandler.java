@@ -50,6 +50,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionHandler;
 import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -590,154 +591,18 @@ public class SessionHandler extends AbstractSessionHandler
         _sessionTrackingModes = new HashSet<>(sessionTrackingModes);
         _usingCookies = _sessionTrackingModes.contains(SessionTrackingMode.COOKIE);
         _usingURLs = _sessionTrackingModes.contains(SessionTrackingMode.URL);
-    } 
-    
-    /**
-     * Look for a requested session ID in cookies and URI parameters
-     *
-     * @param request the request to check
-     */
-    protected void resolveRequestedSessionId(ServletScopedRequest.MutableHttpServletRequest request)
-    {
-        String requestedSessionId = request.getRequestedSessionId();
-
-        if (requestedSessionId != null)
-        {
-            Session session = getSession(requestedSessionId);
-            if (session != null && session.isValid())
-            {
-                request.setSession(session);
-            }
-            return;
-        }
-        else if (!DispatcherType.REQUEST.equals(request.getDispatcherType()))
-            return;
-
-        boolean requestedSessionIdFromCookie = false;
-        Session session = null;
-
-        //first try getting id from a cookie
-        if (isUsingCookies())
-        {
-            Cookie[] cookies = request.getCookies();
-            if (cookies != null && cookies.length > 0)
-            {
-                final String sessionCookie = getSessionCookie();
-                for (Cookie cookie : cookies)
-                {
-                    if (sessionCookie.equalsIgnoreCase(cookie.getName()))
-                    {
-                        String id = cookie.getValue();
-                        requestedSessionIdFromCookie = true;
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Got Session ID {} from cookie {}", id, sessionCookie);
-
-                        if (session == null)
-                        {
-                            //we currently do not have a session selected, use this one if it is valid
-                            Session s = getSession(id);
-                            if (s != null && s.isValid())
-                            {
-                                //associate it with the request so its reference count is decremented as the
-                                //request exits
-                                requestedSessionId = id;
-                                session = s;
-                                request.setSession(session);
-
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Selected session {}", session);
-                            }
-                            else
-                            {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("No session found for session cookie id {}", id);
-
-                                //if we don't have a valid session id yet, just choose the current id
-                                if (requestedSessionId == null)
-                                    requestedSessionId = id;
-                            }
-                        }
-                        else
-                        {
-                            //we currently have a valid session selected. We will throw an error
-                            //if there is a _different_ valid session id cookie. Duplicate ids, or
-                            //invalid session ids are ignored
-                            if (!session.getId().equals(getSessionIdManager().getId(id)))
-                            {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Multiple different valid session ids: {}, {}", requestedSessionId, id);
-                                
-                                //load the session to see if it is valid or not
-                                Session s = getSession(id);
-                                if (s != null && s.isValid())
-                                {
-                                    //TODO release the session straight away??
-                                    try
-                                    {
-                                        _sessionCache.release(id, s);
-                                    }
-                                    catch (Exception x)
-                                    {
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("Error releasing duplicate valid session: {}", id);
-                                    }
-
-                                    throw new BadMessageException("Duplicate valid session cookies: " + requestedSessionId + " ," + id);
-                                }
-                            }
-                            else
-                            {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Duplicate valid session cookie id: {}", id);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        //try getting id from a url
-        if (isUsingURLs() && (requestedSessionId == null))
-        {
-            String uri = request.getRequestURI();
-            String prefix = getSessionIdPathParameterNamePrefix();
-            if (prefix != null)
-            {
-                int s = uri.indexOf(prefix);
-                if (s >= 0)
-                {
-                    s += prefix.length();
-                    int i = s;
-                    while (i < uri.length())
-                    {
-                        char c = uri.charAt(i);
-                        if (c == ';' || c == '#' || c == '?' || c == '/')
-                            break;
-                        i++;
-                    }
-
-                    requestedSessionId = uri.substring(s, i);
-                    requestedSessionIdFromCookie = false;
-
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Got Session ID {} from URL", requestedSessionId);
-
-                    session = getSession(requestedSessionId);
-                    if (session != null && session.isValid())
-                    {
-                        request.setSession(session);  //associate the session with the request
-                    }
-                }
-            }
-        }
-
-        request.setRequestedSessionId(requestedSessionId);
-        request.setRequestedSessionIdFromCookie(requestedSessionId != null && requestedSessionIdFromCookie);
     }
 
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
+        // find and set the session if one exists
+        resolveRequestedSessionId(request);
+        
+        Session session = (Session)request.getAttribute(SessionManager.__Resolved_Session);
+        String requestedSessionId = (String)request.getAttribute(__Requested_Session_Id);
+        boolean requestedSessionIdFromCookie = (Boolean)request.getAttribute(__Requested_Session_Id_From_Cookie);
+        
         ServletScopedRequest servletScopedRequest = Request.as(request, ServletScopedRequest.class);
         ServletScopedRequest.MutableHttpServletRequest mutableServletRequest = 
             (servletScopedRequest == null ? null : servletScopedRequest.getMutableHttpServletRequest());
@@ -747,18 +612,12 @@ public class SessionHandler extends AbstractSessionHandler
         if (mutableServletRequest == null)
             throw new IllegalStateException("Request is not a MutableHttpServletRequest");
 
+        mutableServletRequest.setSession(session);
         mutableServletRequest.setSessionManager(this);
-        mutableServletRequest.setSession(null);
-
-        // find and set the session if one exists
-        resolveRequestedSessionId(mutableServletRequest);
 
         ServletScopedResponse servletScopedResponse = servletScopedRequest.getResponse();
         ServletScopedResponse.MutableHttpServletResponse mutableServletResponse = 
             (servletScopedResponse == null ? null : servletScopedResponse.getMutableHttpServletResponse());
-        
-        //Get the session that was selected by resolveRequestedSessionId
-        Session session = ServletScopedRequest.MutableHttpServletRequest.getSession(mutableServletRequest.getSession());
         
         //Update the cookie
         HttpCookie cookie = access(session, request.getConnectionMetaData().isSecure());
