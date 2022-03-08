@@ -310,6 +310,8 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         private MultiMap<String> _queryParameters;
         private SessionManager _sessionManager;
         private Session _session;
+        private String _requestedSessionId;
+        private boolean _requestedSessionIdFromCookie;
         
         public static Session getSession(HttpSession httpSession)
         {
@@ -318,7 +320,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             return null;
         }
 
-        public void setSession(Session session)
+        protected void setSession(Session session)
         {
             _session = session;
         }
@@ -328,7 +330,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             return _sessionManager;
         }
 
-        public void setSessionManager(SessionManager sessionManager)
+        protected void setSessionManager(SessionManager sessionManager)
         {
             _sessionManager = sessionManager;
         }
@@ -496,7 +498,12 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public String getRequestedSessionId()
         {
-            return (String)ServletContextRequest.this.getAttribute(SessionManager.__Requested_Session_Id);
+            return _requestedSessionId;
+        }
+        
+        protected void setRequestedSessionId(String requestedSessionId)
+        {
+            _requestedSessionId = requestedSessionId;
         }
 
         @Override
@@ -521,21 +528,66 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public HttpSession getSession(boolean create)
         {
-            // TODO
-            return null;
+            if (_session != null)
+            {
+                if (!_session.isValid())
+                    _session = null;
+                else
+                    return _session.getAPISession();
+            }
+
+            if (!create)
+                return null;
+
+            if (getResponse().isCommitted())
+                throw new IllegalStateException("Response is committed");
+
+            if (_sessionManager == null)
+                throw new IllegalStateException("No SessionManager");
+
+            //TODO is this getBaseRequest or getRequest???
+            _session = _sessionManager.newSession(ServletContextRequest.getBaseRequest(this), getRequestedSessionId());
+            if (_session == null)
+                throw new IllegalStateException("Create session failed");
+
+            org.eclipse.jetty.http.HttpCookie cookie = _sessionManager.getSessionCookie(_session, getContextPath(), isSecure());
+
+            if (cookie != null)
+                Response.replaceCookie(ServletContextRequest.getBaseRequest(_httpServletRequest).getResponse(), cookie);
+
+            return _session.getAPISession();
         }
 
         @Override
         public HttpSession getSession()
         {
-            return (_session == null ? null : _session.getAPISession());
+            return getSession(true);
         }
 
         @Override
         public String changeSessionId()
         {
-            // TODO
-            return null;
+            HttpSession httpSession = getSession(false);
+            if (httpSession == null)
+                throw new IllegalStateException("No session");
+
+            Session session = SessionHandler.ServletAPISession.getSession(httpSession);
+            if (session == null)
+                throw new IllegalStateException("!org.eclipse.jetty.session.Session");
+            
+            if (getSessionManager() == null)
+                throw new IllegalStateException("No SessionManager.");
+
+            session.renewId(ServletContextRequest.getBaseRequest(this));
+            
+            if (getRemoteUser() != null)
+                session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+            
+            if (session.isIdChanged() && getSessionManager().isUsingCookies())
+                Response.replaceCookie(ServletContextRequest.getBaseRequest(_httpServletRequest).getResponse(), 
+                    getSessionManager().getSessionCookie(session, getContextPath(), isSecure()));
+
+            return session.getId();
         }
 
         @Override
@@ -550,7 +602,12 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public boolean isRequestedSessionIdFromCookie()
         {
-            return (Boolean)ServletContextRequest.this.getAttribute(SessionManager.__Requested_Session_Id_From_Cookie);
+            return _requestedSessionIdFromCookie;
+        }
+        
+        protected void setRequestedSessionIdFromCookie(boolean requestedSessionIdFromCookie)
+        {
+            _requestedSessionIdFromCookie = requestedSessionIdFromCookie;
         }
 
         @Override

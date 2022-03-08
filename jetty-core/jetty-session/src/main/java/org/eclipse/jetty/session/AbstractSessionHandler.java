@@ -79,6 +79,10 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     private final SampleStatistic _sessionTimeStats = new SampleStatistic();
     private final CounterStatistic _sessionsCreatedStats = new CounterStatistic();
     
+    public record RequestedSession(Session session, String sessionId, boolean sessionIdFromCookie)
+    {        
+    }
+    
     protected abstract void configureCookies();
     
     public AbstractSessionHandler()
@@ -174,20 +178,9 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * 
      * @param request
      */
-    protected void resolveRequestedSessionId(Request request)
+    protected RequestedSession resolveRequestedSessionId(Request request)
     {
-        String requestedSessionId = (String)request.getAttribute(__Requested_Session_Id);
-
-        if (requestedSessionId != null)
-        {
-            Session session = getSession(requestedSessionId);
-            if (session != null && session.isValid())
-            {
-                request.setAttribute(__Resolved_Session, session);
-            }
-            return;
-        }
-
+        String requestedSessionId = null;
         boolean requestedSessionIdFromCookie = false;
         Session session = null;
 
@@ -218,7 +211,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
                                 //request exits
                                 requestedSessionId = id;
                                 session = s;
-                                request.setAttribute(__Resolved_Session, session);
+                                //request.setAttribute(__Resolved_Session, session);
 
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("Selected session {}", session);
@@ -287,15 +280,14 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
                     LOG.debug("Got Session ID {} from URL", requestedSessionId);
 
                 session = getSession(requestedSessionId);
-                if (session != null && session.isValid())
+                /* if (session != null && session.isValid())
                 {
                     request.setAttribute(__Resolved_Session, session);  //associate the session with the request
-                }
+                }*/
             }
         }
 
-        request.setAttribute(__Requested_Session_Id, requestedSessionId);
-        request.setAttribute(__Requested_Session_Id_From_Cookie, requestedSessionId != null && requestedSessionIdFromCookie);
+        return new RequestedSession((session != null && session.isValid()) ? session : null, requestedSessionId, requestedSessionIdFromCookie);
     }
     
     /**
