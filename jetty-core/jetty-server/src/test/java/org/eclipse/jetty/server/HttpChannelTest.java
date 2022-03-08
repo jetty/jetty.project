@@ -33,6 +33,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
@@ -128,8 +129,7 @@ public class HttpChannelTest
         task.run();
         assertThat(stream.isComplete(), is(false));
 
-        sendCB.getAndSet(null).succeeded(); // succeed the original send
-        sendCB.getAndSet(null).succeeded(); // succeed the completion send
+        sendCB.getAndSet(null).succeeded();
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
@@ -373,13 +373,9 @@ public class HttpChannelTest
             assertThat(callback, notNullValue());
 
             callback.succeeded();
-            assertThat(stream.isComplete(), is(false));
+            assertThat(stream.isComplete(), is(last));
             assertThat(stream.isDemanding(), is(!last));
         }
-
-        Callback callback = sendCB.getAndSet(null);
-        assertThat(callback, notNullValue());
-        callback.succeeded();
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), nullValue());
@@ -925,9 +921,6 @@ public class HttpChannelTest
             callback.succeeded();
         }
 
-        callback = sendCB.getAndSet(null);
-        callback.succeeded();
-
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
@@ -959,8 +952,6 @@ public class HttpChannelTest
         assertThat(timeline.next(), allOf(startsWith("send 0 l=true "), containsString("<<<echo>>>")));
         // ensure all data is consumed
         assertThat(timeline.next(), allOf(startsWith("readContent: EOF")));
-        // ensure all data is flushed
-        assertThat(timeline.next(), allOf(startsWith("send 0 l=true 0 null")));
         // succeed the stream
         assertThat(timeline.next(), allOf(startsWith("succeeded")));
         // End of history
@@ -1161,7 +1152,10 @@ public class HttpChannelTest
         assertFalse(callback.isDone());
 
         // process error callback
-        todo.run();
+        try (StacklessLogging ignore = new StacklessLogging(ContextRequest.class))
+        {
+            todo.run();
+        }
 
         // onError was called
         assertThat(error.get(), sameInstance(failure));

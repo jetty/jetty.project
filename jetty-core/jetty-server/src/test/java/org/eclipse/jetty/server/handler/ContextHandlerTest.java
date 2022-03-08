@@ -264,7 +264,6 @@ public class ContextHandlerTest
         todo.run();
 
         sendCB.getAndSet(null).succeeded();
-        sendCB.getAndSet(null).succeeded();
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), nullValue());

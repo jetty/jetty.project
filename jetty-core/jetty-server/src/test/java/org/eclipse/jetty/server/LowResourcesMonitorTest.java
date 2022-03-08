@@ -120,7 +120,6 @@ public class LowResourcesMonitorTest
         _lowResourcesMonitor.setMonitorThreads(true);
         Thread.sleep(1200);
         int maxThreads = _threadPool.getThreads() - _threadPool.getIdleThreads() + 10;
-        System.out.println("maxThreads:" + maxThreads);
         _threadPool.setMaxThreads(maxThreads);
         Thread.sleep(1200);
         assertFalse(_lowResourcesMonitor.isLowOnResources(), _lowResourcesMonitor.getReasons());

@@ -887,7 +887,7 @@ public class HttpChannel extends Attributes.Lazy
                     _onWriteComplete = callback;
                     for (ByteBuffer b : content)
                         _written += b.remaining();
-                    _last = last;
+                    _last |= last;
                     stream = _stream;
                     written = _written;
                 }
