@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * eventually scavenge the orphaned session, even if the session was
  * never used on node2.
  */
-public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestBase
+public abstract class AbstractClusteredOrphanedSessionTest extends AbstractSessionTestBase
 {
     /**
      * @throws Exception on test failure
@@ -58,7 +58,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
             ((AbstractSessionDataStoreFactory)storeFactory1).setGracePeriodSec(0);
         }
 
-        TestServer server1 = new TestServer(0, inactivePeriod, -1, cacheFactory1, storeFactory1);
+        SessionTestSupport server1 = new SessionTestSupport(0, inactivePeriod, -1, cacheFactory1, storeFactory1);
         server1.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
         try
         {
@@ -72,7 +72,7 @@ public abstract class AbstractClusteredOrphanedSessionTest extends AbstractTestB
             {
                 ((AbstractSessionDataStoreFactory)storeFactory2).setGracePeriodSec(0);
             }
-            TestServer server2 = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
+            SessionTestSupport server2 = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory2, storeFactory2);
             server2.addContext(contextPath).addServlet(TestServlet.class, servletMapping);
             try
             {

@@ -16,8 +16,6 @@ package org.eclipse.jetty.session;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
@@ -42,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  *
  * This test is only appropriate for clustered session managers.
  */
-public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
+public abstract class AbstractWebAppObjectInSessionTest extends AbstractSessionTestBase
 {
     @Test
     public void testWebappObjectInSession() throws Exception
@@ -93,13 +91,11 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
+        SessionTestSupport server1 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC,
             cacheFactory, storeFactory);
         WebAppContext wac1 = server1.addWebAppContext(warDir.getCanonicalPath(), contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server1.getServerConnector().addBean(scopeListener);
         wac1.addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
         try
@@ -107,7 +103,7 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
             server1.start();
             int port1 = server1.getPort();
 
-            TestServer server2 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
+            SessionTestSupport server2 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC,
                 cacheFactory, storeFactory);
             server2.addWebAppContext(warDir.getCanonicalPath(), contextPath).addServlet(WebAppObjectInSessionServlet.class.getName(), servletMapping);
 
@@ -121,8 +117,6 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
                 try
                 {
                     // Perform one request to server1 to create a session
-                    CountDownLatch synchronizer = new CountDownLatch(1);
-                    scopeListener.setExitSynchronizer(synchronizer);
                     Request request = client.newRequest("http://localhost:" + port1 + contextPath + servletMapping + "?action=set");
                     request.method(HttpMethod.GET);
                     ContentResponse response = request.send();
@@ -131,9 +125,6 @@ public abstract class AbstractWebAppObjectInSessionTest extends AbstractTestBase
                     assertNotNull(sessionCookie);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)([Pp])ath=", "$1\\$Path=");
-                    
-                    //ensure request has finished being handled
-                    synchronizer.await(5, TimeUnit.SECONDS);
                     
                     // Perform a request to server2 using the session cookie from the previous request
                     Request request2 = client.newRequest("http://localhost:" + port2 + contextPath + servletMapping + "?action=get");

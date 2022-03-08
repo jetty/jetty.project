@@ -16,8 +16,6 @@ package org.eclipse.jetty.session;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -150,11 +148,8 @@ public class DeleteUnloadableSessionTest
         AbstractSessionDataStoreFactory storeFactory = new DelSessionDataStoreFactory();
         storeFactory.setGracePeriodSec(scavengePeriod);
 
-        TestServer server = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
-
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getServerConnector().addBean(scopeListener);
 
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -168,19 +163,13 @@ public class DeleteUnloadableSessionTest
             client.start();
             try
             {
-                CountDownLatch latch = new CountDownLatch(1);
-                scopeListener.setExitSynchronizer(latch);
                 String sessionCookie = "JSESSIONID=w0rm3zxpa6h1zg1mevtv76b3te00.w0;$Path=/";
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=test");
                 HttpField cookie = new HttpField("Cookie", sessionCookie);
                 request.headers(headers -> headers.put(cookie));
                 ContentResponse response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-
-                //ensure request fully finished handlers
-                latch.await(5, TimeUnit.SECONDS);
-
-                assertFalse(context.getSessionHandler().getSessionCache().getSessionDataStore().exists(TestServer.extractSessionId(sessionCookie)));
+                assertFalse(context.getSessionHandler().getSessionCache().getSessionDataStore().exists(SessionTestSupport.extractSessionId(sessionCookie)));
             }
             finally
             {

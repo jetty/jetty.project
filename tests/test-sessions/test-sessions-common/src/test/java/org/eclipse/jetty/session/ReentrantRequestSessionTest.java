@@ -14,8 +14,6 @@
 package org.eclipse.jetty.session;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -49,13 +47,10 @@ public class ReentrantRequestSessionTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new NullSessionDataStoreFactory();
 
-        TestServer server = new TestServer(0, -1, 60, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, -1, 60, cacheFactory, storeFactory);
 
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
-
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getServerConnector().addBean(scopeListener);
 
         try
         {
@@ -67,16 +62,11 @@ public class ReentrantRequestSessionTest
             try
             {
                 //create the session
-                CountDownLatch latch = new CountDownLatch(1);
-                scopeListener.setExitSynchronizer(latch);
                 ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-
-                //ensure request fully finished processing
-                latch.await(5, TimeUnit.SECONDS);
 
                 //make a request that will make a simultaneous request for the same session
                 Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=reenter&port=" + port + "&path=" + contextPath + servletMapping);

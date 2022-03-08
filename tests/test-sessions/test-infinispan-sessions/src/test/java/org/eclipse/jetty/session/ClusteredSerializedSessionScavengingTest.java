@@ -55,7 +55,7 @@ public class ClusteredSerializedSessionScavengingTest extends AbstractClusteredS
     }
 
     /**
-     * @see org.eclipse.jetty.server.session.AbstractTestBase#createSessionDataStoreFactory()
+     * @see org.eclipse.jetty.server.session.AbstractSessionTestBase#createSessionDataStoreFactory()
      */
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()

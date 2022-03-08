@@ -86,9 +86,9 @@ public class ReloadedSessionMissingClassTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = JdbcTestHelper.newSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server1 = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC, cacheFactory, storeFactory);
+        SessionTestSupport server1 = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC, cacheFactory, storeFactory);
 
         WebAppContext webApp = server1.addWebAppContext(unpackedWarDir.getCanonicalPath(), contextPath);
         webApp.getSessionHandler().getSessionCache().setRemoveUnloadableSessions(true);

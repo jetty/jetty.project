@@ -15,8 +15,6 @@ package org.eclipse.jetty.session;
 
 import java.io.IOException;
 import java.lang.reflect.Proxy;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
 import jakarta.servlet.ServletException;
@@ -52,14 +50,12 @@ public class AsyncTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        TestServer server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
         String contextPath = "";
         String mapping = "/server";
 
         ServletContextHandler contextHandler = server.addContext(contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getServerConnector().addBean(scopeListener);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         contextHandler.addServlet(holder, mapping);
@@ -74,19 +70,14 @@ public class AsyncTest
             String url = "http://localhost:" + port + contextPath + mapping + "?action=async";
 
             //make a request to set up a session on the server
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
-       
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             //session should now be evicted from the cache after request exited
-            String id = TestServer.extractSessionId(sessionCookie);
+            String id = SessionTestSupport.extractSessionId(sessionCookie);
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextHandler.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
         }
@@ -104,14 +95,12 @@ public class AsyncTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        TestServer server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
         String contextPath = "";
         String mapping = "/server";
 
         ServletContextHandler contextHandler = server.addContext(contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getServerConnector().addBean(scopeListener);
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
         contextHandler.addServlet(holder, mapping);
@@ -126,17 +115,12 @@ public class AsyncTest
             String url = "http://localhost:" + port + contextPath + mapping + "?action=asyncComplete";
 
             //make a request to set up a session on the server
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
-            String id = TestServer.extractSessionId(sessionCookie);
-
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
+            String id = SessionTestSupport.extractSessionId(sessionCookie);
 
             //session should now be evicted from the cache after request exited
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
@@ -157,11 +141,9 @@ public class AsyncTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        TestServer server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
         ServletContextHandler contextA = server.addContext("/ctxA");
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getServerConnector().addBean(scopeListener); //just pick one of the contexts to register the listener
         CrossContextServlet ccServlet = new CrossContextServlet();
         ServletHolder ccHolder = new ServletHolder(ccServlet);
         contextA.addServlet(ccHolder, "/*");
@@ -182,19 +164,14 @@ public class AsyncTest
             String url = "http://localhost:" + port + "/ctxA/test?action=async";
 
             //make a request to set up a session on the server
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
 
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
-
             //session should now be evicted from the cache after request exited
-            String id = TestServer.extractSessionId(sessionCookie);
+            String id = SessionTestSupport.extractSessionId(sessionCookie);
             assertFalse(contextB.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextB.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
         }
@@ -211,14 +188,12 @@ public class AsyncTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        TestServer server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
         String contextPath = "";
         String mapping = "/server";
 
         ServletContextHandler contextHandler = server.addContext(contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getServerConnector().addBean(scopeListener);
 
         TestServlet servlet = new TestServlet();
         ServletHolder holder = new ServletHolder(servlet);
@@ -235,17 +210,12 @@ public class AsyncTest
             String url = "http://localhost:" + port + contextPath + mapping + "?action=asyncWithSession";
 
             //make a request to set up a session on the server
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
-            String id = TestServer.extractSessionId(sessionCookie);
-            
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
+            String id = SessionTestSupport.extractSessionId(sessionCookie);
 
             //session should now be evicted from the cache after request exited
             assertFalse(contextHandler.getSessionHandler().getSessionCache().contains(id));
@@ -267,11 +237,9 @@ public class AsyncTest
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
         SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        TestServer server = new TestServer(0, -1, -1, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, -1, -1, cacheFactory, storeFactory);
 
         ServletContextHandler contextA = server.addContext("/ctxA");
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getServerConnector().addBean(scopeListener);
         CrossContextServlet ccServlet = new CrossContextServlet();
         ServletHolder ccHolder = new ServletHolder(ccServlet);
         contextA.addServlet(ccHolder, "/*");
@@ -292,19 +260,15 @@ public class AsyncTest
             String url = "http://localhost:" + port + "/ctxA/test?action=asyncComplete";
 
             //make a request to set up a session on the server
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET(url);
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             
             assertTrue(sessionCookie != null);
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
 
             //session should now be evicted from the cache A after request exited
-            String id = TestServer.extractSessionId(sessionCookie);
+            String id = SessionTestSupport.extractSessionId(sessionCookie);
             assertFalse(contextA.getSessionHandler().getSessionCache().contains(id));
             assertTrue(contextA.getSessionHandler().getSessionCache().getSessionDataStore().exists(id));
         }

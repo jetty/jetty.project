@@ -193,7 +193,7 @@ public class RequestScopedSessionSaveTest
         };
 
         storeFactory.setSavePeriodSec(10);
-        TestServer server = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
         TestServlet servlet = new TestServlet(RequestAwareContextScopeListener.ATTRIBUTE);
         ServletHolder holder = new ServletHolder(servlet);
         ServletContextHandler contextHandler = server.addContext(contextPath);

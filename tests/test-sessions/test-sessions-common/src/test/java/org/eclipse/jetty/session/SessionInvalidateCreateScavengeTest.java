@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * newly created session correctly (removed from the server and session listeners called).
  * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=377610
  */
-public class SessionInvalidateCreateScavengeTest extends AbstractTestBase
+public class SessionInvalidateCreateScavengeTest extends AbstractSessionTestBase
 {
     @Override
     public SessionDataStoreFactory createSessionDataStoreFactory()
@@ -75,7 +75,7 @@ public class SessionInvalidateCreateScavengeTest extends AbstractTestBase
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(scavengePeriod);
 
-        TestServer server = new TestServer(0, inactivePeriod, scavengePeriod,
+        SessionTestSupport server = new SessionTestSupport(0, inactivePeriod, scavengePeriod,
             cacheFactory, storeFactory);
         ServletContextHandler context = server.addContext(contextPath);
         TestServlet servlet = new TestServlet();

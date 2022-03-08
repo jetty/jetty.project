@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * ModifyMaxInactiveIntervalTest
  */
-public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
+public class ModifyMaxInactiveIntervalTest extends AbstractSessionTestBase
 {
     public static int __scavenge = 1;
 
@@ -49,9 +49,9 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server = new TestServer(0, inactivePeriod, __scavenge, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, inactivePeriod, __scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
@@ -69,7 +69,7 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
-                String id = TestServer.extractSessionId(sessionCookie);
+                String id = SessionTestSupport.extractSessionId(sessionCookie);
 
                 //check that the maxInactive is -1
                 Session s = ctxA.getSessionHandler().getSession(id);
@@ -96,9 +96,9 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server = new TestServer(0, oldMaxInactive, scavengeSec, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, oldMaxInactive, scavengeSec, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
@@ -151,9 +151,9 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server = new TestServer(0, oldMaxInactive, scavengeSec, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, oldMaxInactive, scavengeSec, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
@@ -208,9 +208,9 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(evict);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server = new TestServer(0, oldMaxInactive, scavenge, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, oldMaxInactive, scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
@@ -262,9 +262,9 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(evict);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server = new TestServer(0, oldMaxInactive, scavenge, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, oldMaxInactive, scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
@@ -314,9 +314,9 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server = new TestServer(0, oldMaxInactive, scavenge, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, oldMaxInactive, scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
@@ -366,9 +366,9 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server = new TestServer(0, maxInactive, scavenge, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, maxInactive, scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
@@ -415,9 +415,9 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server = new TestServer(0, oldMaxInactive, __scavenge, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, oldMaxInactive, __scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 
@@ -468,9 +468,9 @@ public class ModifyMaxInactiveIntervalTest extends AbstractTestBase
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = createSessionDataStoreFactory();
-        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(TestServer.DEFAULT_SCAVENGE_SEC);
+        ((AbstractSessionDataStoreFactory)storeFactory).setGracePeriodSec(SessionTestSupport.DEFAULT_SCAVENGE_SEC);
 
-        TestServer server = new TestServer(0, maxInactive, __scavenge, cacheFactory, storeFactory);
+        SessionTestSupport server = new SessionTestSupport(0, maxInactive, __scavenge, cacheFactory, storeFactory);
         ServletContextHandler ctxA = server.addContext("/mod");
         ctxA.addServlet(TestModServlet.class, "/test");
 

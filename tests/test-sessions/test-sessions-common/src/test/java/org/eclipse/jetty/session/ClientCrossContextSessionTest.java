@@ -53,7 +53,7 @@ public class ClientCrossContextSessionTest
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         SessionDataStoreFactory storeFactory = new NullSessionDataStoreFactory();
 
-        TestServer server = new TestServer(0, TestServer.DEFAULT_MAX_INACTIVE, TestServer.DEFAULT_SCAVENGE_SEC,
+        SessionTestSupport server = new SessionTestSupport(0, SessionTestSupport.DEFAULT_MAX_INACTIVE, SessionTestSupport.DEFAULT_SCAVENGE_SEC,
             cacheFactory, storeFactory);
         TestServletA servletA = new TestServletA();
         ServletHolder holderA = new ServletHolder(servletA);
@@ -79,7 +79,7 @@ public class ClientCrossContextSessionTest
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertNotNull(sessionCookie);
-                String sessionId = TestServer.extractSessionId(sessionCookie);
+                String sessionId = SessionTestSupport.extractSessionId(sessionCookie);
 
                 // Perform a request to contextB with the same session cookie
                 Request request = client.newRequest("http://localhost:" + port + contextB + servletMapping);

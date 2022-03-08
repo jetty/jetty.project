@@ -21,7 +21,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 
-public class TestServer
+public class SessionTestSupport
 {
     public static int DEFAULT_MAX_INACTIVE = 30;
     public static int DEFAULT_SCAVENGE_SEC = 10;
@@ -55,7 +55,7 @@ public class TestServer
         return sessionCookie;
     }
 
-    public TestServer(int port, int maxInactivePeriod, int scavengePeriod, SessionCacheFactory cacheFactory, SessionDataStoreFactory storeFactory) throws Exception
+    public SessionTestSupport(int port, int maxInactivePeriod, int scavengePeriod, SessionCacheFactory cacheFactory, SessionDataStoreFactory storeFactory) throws Exception
     {
         _server = new Server(port);
         _maxInactivePeriod = maxInactivePeriod;

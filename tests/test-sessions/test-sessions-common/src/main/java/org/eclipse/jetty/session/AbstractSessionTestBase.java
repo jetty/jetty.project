@@ -16,7 +16,7 @@ package org.eclipse.jetty.session;
 /**
  * AbstractTestBase
  */
-public abstract class AbstractTestBase
+public abstract class AbstractSessionTestBase
 {
     public abstract SessionDataStoreFactory createSessionDataStoreFactory();
 }
