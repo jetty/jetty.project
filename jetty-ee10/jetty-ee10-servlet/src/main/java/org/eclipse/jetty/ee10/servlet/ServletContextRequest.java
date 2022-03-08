@@ -75,11 +75,11 @@ import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ServletScopedRequest extends ContextRequest implements Runnable
+public class ServletContextRequest extends ContextRequest implements Runnable
 {
     public static final String __MULTIPART_CONFIG_ELEMENT = "org.eclipse.jetty.multipartConfig";
 
-    private static final Logger LOG = LoggerFactory.getLogger(ServletScopedRequest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletContextRequest.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int INPUT_NONE = 0;
     private static final int INPUT_STREAM = 1;
@@ -88,10 +88,10 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
     private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
     private static final MultiMap<String> BAD_PARAMS = new MultiMap<>();
 
-    public static ServletScopedRequest getBaseRequest(ServletRequest request)
+    public static ServletContextRequest getBaseRequest(ServletRequest request)
     {
-        if (request instanceof MutableHttpServletRequest)
-            return ((MutableHttpServletRequest)request).getRequest();
+        if (request instanceof ServletApiRequest)
+            return ((ServletApiRequest)request).getRequest();
 
         Object channel = request.getAttribute(ServletChannel.class.getName());
         if (channel instanceof ServletChannel)
@@ -102,23 +102,23 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
             request = ((ServletRequestWrapper)request).getRequest();
         }
 
-        if (request instanceof MutableHttpServletRequest)
-            return ((MutableHttpServletRequest)request).getRequest();
+        if (request instanceof ServletApiRequest)
+            return ((ServletApiRequest)request).getRequest();
 
         return null;
     }
 
     ServletChannel _servletChannel;
-    final MutableHttpServletRequest _httpServletRequest;
+    final ServletApiRequest _httpServletRequest;
     final ServletHandler.MappedServlet _mappedServlet;
-    ServletScopedResponse _response;
+    ServletContextResponse _response;
     final HttpInput _httpInput;
     final String _pathInContext;
     private UserIdentity.Scope _scope;
 
     final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
 
-    protected ServletScopedRequest(
+    protected ServletContextRequest(
         ServletContextHandler.ServletContextContext servletContextContext,
         ServletChannel servletChannel,
         Request request,
@@ -127,7 +127,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
     {
         super(servletContextContext.getContextHandler(), servletContextContext.getContext(), request, pathInContext);
         _servletChannel = servletChannel;
-        _httpServletRequest = new MutableHttpServletRequest();
+        _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
         _httpInput = new HttpInput(_servletChannel);
         _pathInContext = pathInContext;
@@ -143,7 +143,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
     @Override
     protected ContextResponse newContextResponse(Request request, Response response)
     {
-        _response = new ServletScopedResponse(_servletChannel, this, response);
+        _response = new ServletContextResponse(_servletChannel, this, response);
         _servletChannel.setCallback(getCallback());
         return _response;
     }
@@ -153,7 +153,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         return _servletChannel.getState();
     }
 
-    public ServletScopedResponse getResponse()
+    public ServletContextResponse getResponse()
     {
         return _response;
     }
@@ -241,7 +241,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         return _httpServletRequest;
     }
 
-    public MutableHttpServletRequest getMutableHttpServletRequest()
+    public ServletApiRequest getMutableHttpServletRequest()
     {
         return _httpServletRequest;
     }
@@ -256,7 +256,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         return _mappedServlet;
     }
 
-    public static ServletScopedRequest getRequest(HttpServletRequest httpServletRequest)
+    public static ServletContextRequest getRequest(HttpServletRequest httpServletRequest)
     {
         while (httpServletRequest != null)
         {
@@ -309,7 +309,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         return isNoParams;
     }
 
-    public class MutableHttpServletRequest implements HttpServletRequest
+    public class ServletApiRequest implements HttpServletRequest
     {
         private AsyncContextState _async;
         private String _characterEncoding;
@@ -346,33 +346,33 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
             _sessionManager = sessionManager;
         }
 
-        public ServletScopedRequest getRequest()
+        public ServletContextRequest getRequest()
         {
-            return ServletScopedRequest.this;
+            return ServletContextRequest.this;
         }
 
         public HttpFields getFields()
         {
-            return ServletScopedRequest.this.getHeaders();
+            return ServletContextRequest.this.getHeaders();
         }
 
         @Override
         public String getRequestId()
         {
-            return ServletScopedRequest.this.getConnectionMetaData().getId() + "#" + ServletScopedRequest.this.getId();
+            return ServletContextRequest.this.getConnectionMetaData().getId() + "#" + ServletContextRequest.this.getId();
         }
 
         @Override
         public String getProtocolRequestId()
         {
-            return ServletScopedRequest.this.getId();
+            return ServletContextRequest.this.getId();
         }
 
         @Override
         public ServletConnection getServletConnection()
         {
             // TODO cache the results
-            final ConnectionMetaData connectionMetaData = ServletScopedRequest.this.getConnectionMetaData();
+            final ConnectionMetaData connectionMetaData = ServletContextRequest.this.getConnectionMetaData();
             return new ServletConnection()
             {
                 @Override
@@ -459,7 +459,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public String getPathInfo()
         {
-            return ServletScopedRequest.this._mappedServlet.getServletPathMapping(getRequest().getPathInContext()).getPathInfo();
+            return ServletContextRequest.this._mappedServlet.getServletPathMapping(getRequest().getPathInContext()).getPathInfo();
         }
 
         @Override
@@ -474,13 +474,13 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public String getContextPath()
         {
-            return ServletScopedRequest.this.getContext().getContextPath();
+            return ServletContextRequest.this.getContext().getContextPath();
         }
 
         @Override
         public String getQueryString()
         {
-            return ServletScopedRequest.this.getHttpURI().getQuery();
+            return ServletContextRequest.this.getHttpURI().getQuery();
         }
 
         @Override
@@ -509,26 +509,26 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public String getRequestedSessionId()
         {
-            return (String)ServletScopedRequest.this.getAttribute(SessionManager.__Requested_Session_Id);
+            return (String)ServletContextRequest.this.getAttribute(SessionManager.__Requested_Session_Id);
         }
 
         @Override
         public String getRequestURI()
         {
-            HttpURI uri = ServletScopedRequest.this.getHttpURI();
+            HttpURI uri = ServletContextRequest.this.getHttpURI();
             return uri == null ? null : uri.getPath();
         }
 
         @Override
         public StringBuffer getRequestURL()
         {
-            return new StringBuffer(ServletScopedRequest.this.getHttpURI().asString());
+            return new StringBuffer(ServletContextRequest.this.getHttpURI().asString());
         }
 
         @Override
         public String getServletPath()
         {
-            return ServletScopedRequest.this._mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
+            return ServletContextRequest.this._mappedServlet.getServletPathMapping(_pathInContext).getServletPath();
         }
 
         @Override
@@ -563,7 +563,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public boolean isRequestedSessionIdFromCookie()
         {
-            return (Boolean)ServletScopedRequest.this.getAttribute(SessionManager.__Requested_Session_Id_From_Cookie);
+            return (Boolean)ServletContextRequest.this.getAttribute(SessionManager.__Requested_Session_Id_From_Cookie);
         }
 
         @Override
@@ -615,13 +615,13 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public Object getAttribute(String name)
         {
-            return ServletScopedRequest.this.getAttribute(name);
+            return ServletContextRequest.this.getAttribute(name);
         }
 
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            return Collections.enumeration(ServletScopedRequest.this.getAttributeNameSet());
+            return Collections.enumeration(ServletContextRequest.this.getAttributeNameSet());
         }
 
         @Override
@@ -800,14 +800,14 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
 
         private void extractQueryParameters()
         {
-            HttpURI httpURI = ServletScopedRequest.this.getHttpURI();
+            HttpURI httpURI = ServletContextRequest.this.getHttpURI();
             if (httpURI == null || StringUtil.isEmpty(httpURI.getQuery()))
                 _queryParameters = NO_PARAMS;
             else
             {
                 try
                 {
-                    _queryParameters = Request.extractQueryParameters(ServletScopedRequest.this);
+                    _queryParameters = Request.extractQueryParameters(ServletContextRequest.this);
                 }
                 catch (IllegalStateException | IllegalArgumentException e)
                 {
@@ -820,19 +820,19 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public String getProtocol()
         {
-            return ServletScopedRequest.this.getConnectionMetaData().getProtocol();
+            return ServletContextRequest.this.getConnectionMetaData().getProtocol();
         }
 
         @Override
         public String getScheme()
         {
-            return ServletScopedRequest.this.getHttpURI().getScheme();
+            return ServletContextRequest.this.getHttpURI().getScheme();
         }
 
         @Override
         public String getServerName()
         {
-            HttpURI uri = ServletScopedRequest.this.getHttpURI();
+            HttpURI uri = ServletContextRequest.this.getHttpURI();
             if ((uri != null) && StringUtil.isNotBlank(uri.getAuthority()))
                 return formatAddrOrHost(uri.getHost());
             else
@@ -866,7 +866,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         {
             int port = -1;
 
-            HttpURI uri = ServletScopedRequest.this.getHttpURI();
+            HttpURI uri = ServletContextRequest.this.getHttpURI();
             if ((uri != null) && StringUtil.isNotBlank(uri.getAuthority()))
                 port = uri.getPort();
             else
@@ -926,26 +926,26 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public String getRemoteAddr()
         {
-            return Request.getRemoteAddr(ServletScopedRequest.this);
+            return Request.getRemoteAddr(ServletContextRequest.this);
         }
 
         @Override
         public String getRemoteHost()
         {
             // TODO: review.
-            return Request.getRemoteAddr(ServletScopedRequest.this);
+            return Request.getRemoteAddr(ServletContextRequest.this);
         }
 
         @Override
         public void setAttribute(String name, Object o)
         {
-            ServletScopedRequest.this.setAttribute(name, o);
+            ServletContextRequest.this.setAttribute(name, o);
         }
 
         @Override
         public void removeAttribute(String name)
         {
-            ServletScopedRequest.this.removeAttribute(name);
+            ServletContextRequest.this.removeAttribute(name);
         }
 
         @Override
@@ -1005,13 +1005,13 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public boolean isSecure()
         {
-            return ServletScopedRequest.this.getConnectionMetaData().isSecure();
+            return ServletContextRequest.this.getConnectionMetaData().isSecure();
         }
 
         @Override
         public RequestDispatcher getRequestDispatcher(String path)
         {
-            ServletContextHandler.Context context = ServletScopedRequest.this.getContext();
+            ServletContextHandler.Context context = ServletContextRequest.this.getContext();
             if (path == null || context == null)
                 return null;
 
@@ -1033,7 +1033,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public int getRemotePort()
         {
-            return Request.getRemotePort(ServletScopedRequest.this);
+            return Request.getRemotePort(ServletContextRequest.this);
         }
 
         @Override
@@ -1051,13 +1051,13 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         @Override
         public String getLocalAddr()
         {
-            return Request.getLocalAddr(ServletScopedRequest.this);
+            return Request.getLocalAddr(ServletContextRequest.this);
         }
 
         @Override
         public int getLocalPort()
         {
-            return Request.getLocalPort(ServletScopedRequest.this);
+            return Request.getLocalPort(ServletContextRequest.this);
         }
 
         @Override
@@ -1073,7 +1073,7 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
             if (_async == null)
                 _async = new AsyncContextState(state);
             // TODO adapt to new context and base Request
-            AsyncContextEvent event = new AsyncContextEvent(null, _async, state, ServletScopedRequest.this, this, _response.getHttpServletResponse());
+            AsyncContextEvent event = new AsyncContextEvent(null, _async, state, ServletContextRequest.this, this, _response.getHttpServletResponse());
             state.startAsync(event);
             return _async;
         }

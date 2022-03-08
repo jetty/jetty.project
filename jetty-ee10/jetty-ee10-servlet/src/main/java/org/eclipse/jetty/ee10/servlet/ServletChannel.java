@@ -69,7 +69,7 @@ public class ServletChannel implements Runnable
     private EndPoint _endPoint;
     private ServletRequestState _state;
     private ServletContextHandler.ServletContextContext _servletContextContext;
-    private ServletScopedRequest _request;
+    private ServletContextRequest _request;
     private long _oldIdleTimeout;
     private Callback _callback;
 
@@ -111,7 +111,7 @@ public class ServletChannel implements Runnable
         }
     }
 
-    public void init(ServletScopedRequest request)
+    public void init(ServletContextRequest request)
     {
         _servletContextContext = request.getContext().getServletContext();
         _request = request;
@@ -225,12 +225,12 @@ public class ServletChannel implements Runnable
         return _connector.getServer();
     }
 
-    public ServletScopedRequest getRequest()
+    public ServletContextRequest getRequest()
     {
         return _request;
     }
 
-    public ServletScopedResponse getResponse()
+    public ServletContextResponse getResponse()
     {
         return _request.getResponse();
     }

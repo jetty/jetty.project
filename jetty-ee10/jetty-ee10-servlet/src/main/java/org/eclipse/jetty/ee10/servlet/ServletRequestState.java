@@ -906,8 +906,8 @@ public class ServletRequestState
         //       - after unhandle for sync
         //       - after both unhandle and complete for async
 
-        ServletScopedRequest servletScopedRequest = _servletChannel.getRequest();
-        HttpServletRequest httpServletRequest = servletScopedRequest.getHttpServletRequest();
+        ServletContextRequest servletContextRequest = _servletChannel.getRequest();
+        HttpServletRequest httpServletRequest = servletContextRequest.getHttpServletRequest();
 
         final Request request = _servletChannel.getRequest();
         final Response response = _servletChannel.getResponse();
@@ -933,11 +933,11 @@ public class ServletRequestState
             }
 
             response.setStatus(code);
-            servletScopedRequest.errorClose();
+            servletContextRequest.errorClose();
 
-            request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletScopedRequest.getErrorContext());
+            request.setAttribute(ErrorHandler.ERROR_CONTEXT, servletContextRequest.getErrorContext());
             request.setAttribute(ERROR_REQUEST_URI, httpServletRequest.getRequestURI());
-            request.setAttribute(ERROR_SERVLET_NAME, servletScopedRequest.getServletName());
+            request.setAttribute(ERROR_SERVLET_NAME, servletContextRequest.getServletName());
             request.setAttribute(ERROR_STATUS_CODE, code);
             request.setAttribute(ERROR_MESSAGE, message);
 
@@ -1198,9 +1198,9 @@ public class ServletRequestState
         if (event != null && event.getSuppliedResponse() != null)
             return event.getSuppliedResponse();
 
-        ServletScopedRequest servletScopedRequest = _servletChannel.getRequest();
-        if (servletScopedRequest != null)
-            return servletScopedRequest.getHttpServletResponse();
+        ServletContextRequest servletContextRequest = _servletChannel.getRequest();
+        if (servletContextRequest != null)
+            return servletContextRequest.getHttpServletResponse();
         return null;
     }
 
