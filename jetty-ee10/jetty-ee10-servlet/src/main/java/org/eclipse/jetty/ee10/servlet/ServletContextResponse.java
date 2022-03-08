@@ -107,7 +107,7 @@ public class ServletContextResponse extends ContextResponse
         return _httpServletResponse;
     }
     
-    public ServletApiResponse getMutableHttpServletResponse()
+    public ServletApiResponse getServletApiResponse()
     {
         return _httpServletResponse;
     }

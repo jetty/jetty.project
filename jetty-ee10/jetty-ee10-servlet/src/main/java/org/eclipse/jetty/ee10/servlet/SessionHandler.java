@@ -602,7 +602,7 @@ public class SessionHandler extends AbstractSessionHandler
         
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         ServletContextRequest.ServletApiRequest mutableServletRequest =
-            (servletContextRequest == null ? null : servletContextRequest.getMutableHttpServletRequest());
+            (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
 
 
         //TODO if not the correct type of request, pass it on to our wrapped handlers?
@@ -614,7 +614,7 @@ public class SessionHandler extends AbstractSessionHandler
 
         ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
         ServletContextResponse.ServletApiResponse mutableServletResponse =
-            (servletContextResponse == null ? null : servletContextResponse.getMutableHttpServletResponse());
+            (servletContextResponse == null ? null : servletContextResponse.getServletApiResponse());
         
         //Update the cookie
         HttpCookie cookie = access(session, request.getConnectionMetaData().isSecure());

@@ -241,7 +241,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         return _httpServletRequest;
     }
 
-    public ServletApiRequest getMutableHttpServletRequest()
+    public ServletApiRequest getServletApiRequest()
     {
         return _httpServletRequest;
     }
