@@ -287,6 +287,23 @@ public interface Response extends Content.Writer
         response.write(true, callback);
     }
 
+    static Response getOriginalResponse(Response response)
+    {
+        while (response instanceof Response.Wrapper wrapped)
+        {
+            response = wrapped.getWrapped();
+        }
+        return response;
+    }
+
+    static long getBytesWritten(Response response)
+    {
+        Response originalResponse = getOriginalResponse(response);
+        if (originalResponse instanceof HttpChannel.ChannelResponse channelResponse)
+            return channelResponse.getByteWritten();
+        return -1;
+    }
+
     class Wrapper implements Response
     {
         private final Request _request;

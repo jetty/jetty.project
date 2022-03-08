@@ -18,7 +18,6 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -153,12 +152,7 @@ public interface Request extends Attributes, Content.Reader
      */
     List<HttpCookie> getCookies();
 
-    default long getTimeStamp()
-    {
-        // TODO this is horrid
-        return System.currentTimeMillis() -
-            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - getHttpChannel().getHttpStream().getNanoTimeStamp());
-    }
+    long getTimeStamp();
 
     // TODO: see above.
     boolean isSecure();
@@ -463,6 +457,12 @@ public interface Request extends Attributes, Content.Reader
         }
 
         @Override
+        public long getTimeStamp()
+        {
+            return getWrapped().getTimeStamp();
+        }
+
+        @Override
         public boolean isSecure()
         {
             return getWrapped().isSecure();
@@ -536,6 +536,14 @@ public interface Request extends Attributes, Content.Reader
             request = wrapped.getWrapped();
         }
         return request;
+    }
+
+    static long getBytesRead(Request request)
+    {
+        Request originalRequest = getOriginalRequest(request);
+        if (originalRequest instanceof HttpChannel.ChannelRequest channelRequest)
+            return channelRequest.getBytesRead();
+        return -1;
     }
 
     /**

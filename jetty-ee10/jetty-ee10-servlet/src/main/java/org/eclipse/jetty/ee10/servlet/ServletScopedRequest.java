@@ -179,22 +179,9 @@ public class ServletScopedRequest extends ContextRequest implements Runnable
         // Make the response immutable and soft close the output.
     }
 
-    // TODO: should be on Request instead?
-    private long _timeStamp = 0;
-    
-    public long getTimeStamp()
-    {
-        return 0;
-    }
-
     public boolean isHead()
     {
         return HttpMethod.HEAD.is(getMethod());
-    }
-
-    public void setTimeStamp(long timeStamp)
-    {
-        _timeStamp = timeStamp;
     }
 
     @Override

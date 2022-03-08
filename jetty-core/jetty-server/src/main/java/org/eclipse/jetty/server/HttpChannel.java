@@ -128,14 +128,6 @@ public class HttpChannel extends Attributes.Lazy
         return _configuration;
     }
 
-    public long getBytesWritten()
-    {
-        try (AutoLock ignored = _lock.lock())
-        {
-            return _request._response._written;
-        }
-    }
-
     public void setStream(HttpStream stream)
     {
         try (AutoLock ignored = _lock.lock())
@@ -198,6 +190,44 @@ public class HttpChannel extends Attributes.Lazy
                 throw new IllegalStateException();
 
             _request = new ChannelRequest(request);
+            ChannelRequest capturedRequest = _request;
+            RequestLog requestLog = getServer().getRequestLog();
+            if (requestLog != null)
+            {
+                // TODO: make this efficient.
+                _stream = new HttpStream.Wrapper(_stream)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        try
+                        {
+                            requestLog.log(capturedRequest, capturedRequest._response);
+                        }
+                        catch (Throwable t)
+                        {
+                            LOG.warn("RequestLog Error", t);
+                        }
+
+                        super.succeeded();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        try
+                        {
+                            requestLog.log(capturedRequest, capturedRequest._response);
+                        }
+                        catch (Throwable t)
+                        {
+                            LOG.warn("RequestLog Error", t);
+                        }
+
+                        super.failed(x);
+                    }
+                };
+            }
 
             if (!HttpMethod.CONNECT.is(request.getMethod()) && !_request.getPathInContext().startsWith("/") && !HttpMethod.OPTIONS.is(request.getMethod()))
                 throw new BadMessageException("Bad URI path");
@@ -405,11 +435,13 @@ public class HttpChannel extends Attributes.Lazy
     {
         final MetaData.Request _metaData;
         final ChannelResponse _response;
+        long _read;
         String _id;
         Content.Error _error;
         Consumer<Throwable> _onError;
         Runnable _onContentAvailable;
         boolean _processing;
+        long timestamp = System.currentTimeMillis();
         private final Callback _callback = new RequestCallback();
 
         ChannelRequest(MetaData.Request metaData)
@@ -431,6 +463,11 @@ public class HttpChannel extends Attributes.Lazy
                     throw new IllegalStateException();
                 return _stream;
             }
+        }
+
+        long getBytesRead()
+        {
+            return _read;
         }
 
         @Override
@@ -530,6 +567,12 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
+        public long getTimeStamp()
+        {
+            return timestamp;
+        }
+
+        @Override
         public boolean isSecure()
         {
             return HttpScheme.HTTPS.is(getHttpURI().getScheme());
@@ -551,7 +594,10 @@ public class HttpChannel extends Attributes.Lazy
                 if (!_processing)
                     return new Content.Error(new IllegalStateException("not processing"));
             }
-            return getStream().readContent();
+            Content content = getStream().readContent();
+            if (content != null)
+                _read += content.remaining();
+            return content;
         }
 
         @Override
@@ -792,7 +838,7 @@ public class HttpChannel extends Attributes.Lazy
         }
     }
 
-    private class ChannelResponse extends HttpFields.MutableHttpFields implements Response, Callback
+    class ChannelResponse extends HttpFields.MutableHttpFields implements Response, Callback
     {
         private final ChannelRequest _request;
         private final ResponseHttpFields _headers;
@@ -810,6 +856,11 @@ public class HttpChannel extends Attributes.Lazy
             // Add the date header
             if (_configuration.getSendDateHeader())
                 _headers.put(getServer().getDateField());
+        }
+
+        long getByteWritten()
+        {
+            return _written;
         }
 
         @Override
@@ -1016,7 +1067,7 @@ public class HttpChannel extends Attributes.Lazy
                 getConnectionMetaData().getVersion(),
                 _status,
                 null,
-                this,
+                _headers,
                 _committedContentLength,
                 trailers);
         }
