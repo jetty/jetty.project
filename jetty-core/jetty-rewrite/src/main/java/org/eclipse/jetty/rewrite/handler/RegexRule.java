@@ -52,10 +52,7 @@ public abstract class RegexRule extends Rule
     @Override
     public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
     {
-        String target = input.getPathInContext();
-        String query = input.getHttpURI().getQuery();
-        if (query != null)
-            target = target + '?' + query;
+        String target = input.getHttpURI().getPathQuery();
         Matcher matcher = _regex.matcher(target);
         if (matcher.matches())
             return apply(input, matcher);
