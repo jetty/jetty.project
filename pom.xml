@@ -120,7 +120,7 @@
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.16.3</testcontainers.version>
     <weld.version>3.1.9.Final</weld.version>
-    <wildfly.common.version>1.5.4.Final</wildfly.common.version>
+    <wildfly.common.version>1.6.0.Final</wildfly.common.version>
     <wildfly.elytron.version>1.18.3.Final</wildfly.elytron.version>
     <xmemcached.version>2.4.7</xmemcached.version>
 
