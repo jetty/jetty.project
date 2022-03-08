@@ -198,7 +198,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     public interface ServletContainerInitializerCaller extends LifeCycle {}
 
-    protected ServletContextHandler.ServletContextContext _servletContextContext;
+    private final ServletContextContext _servletContext = new ServletContextContext();
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     private final AttributesMap _attributes = new AttributesMap();
     private final Map<String, String> _initParams = new HashMap<>();
@@ -308,7 +308,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     {
         dumpObjects(out, indent,
             new ClassLoaderDump(getClassLoader()),
-            new DumpableCollection("handler attributes " + this, _servletContextContext.getAttributeEntrySet()),
+            new DumpableCollection("handler attributes " + this, _servletContext.getAttributeEntrySet()),
             new DumpableCollection("context attributes " + this, getContext().getAttributeEntrySet()),
             new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
@@ -1259,8 +1259,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     @Override
     protected void doStart() throws Exception
     {
-        _servletContextContext = getContext().getServletContext();
-
         _objFactory.addDecorator(new DeprecationWarning());
         getServletContext().setAttribute(DecoratedObjectFactory.ATTR, _objFactory);
 
@@ -1413,7 +1411,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 channel.setAttribute(ServletChannel.class.getName(), servletChannel);
         }
 
-        ServletScopedRequest servletScopedRequest = new ServletScopedRequest(_servletContextContext, servletChannel, request, pathInContext, mappedServlet);
+        ServletScopedRequest servletScopedRequest = new ServletScopedRequest(_servletContext, servletChannel, request, pathInContext, mappedServlet);
         servletChannel.init(servletScopedRequest);
         return servletScopedRequest;
     }
@@ -2531,7 +2529,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             if (!_servletContextAttributeListeners.isEmpty())
             {
-                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_servletContextContext, name, oldValue == null ? value : oldValue);
+                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_servletContext, name, oldValue == null ? value : oldValue);
 
                 for (ServletContextAttributeListener listener : _servletContextAttributeListeners)
                 {
@@ -2552,7 +2550,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             super.removeAttribute(name);
             if (oldValue != null && !_servletContextAttributeListeners.isEmpty())
             {
-                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_servletContextContext, name, oldValue);
+                ServletContextAttributeEvent event = new ServletContextAttributeEvent(_servletContext, name, oldValue);
                 for (ServletContextAttributeListener listener : _servletContextAttributeListeners)
                 {
                     listener.attributeRemoved(event);
@@ -2740,16 +2738,14 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     public class Context extends ContextHandler.ScopedContext
     {
-        public ServletContextContext servletContext = new ServletContextContext();
-
         public Set<Map.Entry<String, Object>> getAttributeEntrySet()
         {
-            return servletContext.getAttributeEntrySet();
+            return _servletContext.getAttributeEntrySet();
         }
 
         public ServletContextContext getServletContext()
         {
-            return servletContext;
+            return _servletContext;
         }
 
         public ServletContextHandler getServletContextHandler()
@@ -2763,7 +2759,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             {
                 //set a thread local
                 DecoratedObjectFactory.associateInfo(holder);
-                return servletContext.createInstance(holder.getHeldClass());
+                return _servletContext.createInstance(holder.getHeldClass());
             }
             finally
             {
@@ -2784,7 +2780,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         public void setExtendedListenerTypes(boolean b)
         {
-            servletContext.setExtendedListenerTypes(b);
+            _servletContext.setExtendedListenerTypes(b);
         }
     }
 
