@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.client.http.internal;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.Map;
@@ -27,12 +27,12 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.util.Promise;
 
-class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Promise<Session>
+public class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Promise<Session>
 {
     private final AtomicMarkableReference<HttpConnectionOverHTTP2> connection = new AtomicMarkableReference<>(null, false);
     private final Map<String, Object> context;
 
-    HTTPSessionListenerPromise(Map<String, Object> context)
+    public HTTPSessionListenerPromise(Map<String, Object> context)
     {
         this.context = context;
     }
@@ -91,7 +91,7 @@ class HTTPSessionListenerPromise extends Session.Listener.Adapter implements Pro
             onClose(connection, frame);
     }
 
-    void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
+    public void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
     {
         connection.close();
     }

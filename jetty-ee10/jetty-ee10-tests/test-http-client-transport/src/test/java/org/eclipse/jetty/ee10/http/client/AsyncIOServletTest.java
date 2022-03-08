@@ -58,7 +58,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
-import org.eclipse.jetty.http2.client.http.HttpConnectionOverHTTP2;
+import org.eclipse.jetty.http2.client.http.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
