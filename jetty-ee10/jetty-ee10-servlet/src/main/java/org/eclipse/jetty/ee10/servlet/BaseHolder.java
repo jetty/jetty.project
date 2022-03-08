@@ -18,7 +18,7 @@ import java.util.function.BiFunction;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.UnavailableException;
-import org.eclipse.jetty.server.handler.ContextHandler.ScopedContext;
+import org.eclipse.jetty.server.handler.ContextHandler.ContextHandlerContext;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -166,7 +166,7 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         if (_servletHandler != null)
         {
             ServletContext context = _servletHandler.getServletContext();
-            if ((context instanceof ScopedContext) && ((ScopedContext)context).getContextHandler().isStarted())
+            if ((context instanceof ContextHandlerContext) && ((ContextHandlerContext)context).getContextHandler().isStarted())
                 throw new IllegalStateException("Started");
         }
     }
@@ -199,8 +199,8 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
             if (ctx == null)
                 return getHeldClass().getDeclaredConstructor().newInstance();
 
-            if (ServletContextHandler.Context.class.isAssignableFrom(ctx.getClass()))
-                return ((ServletContextHandler.Context)ctx).createInstance(this);
+            if (ServletContextHandler.ServletContextHandlerContext.class.isAssignableFrom(ctx.getClass()))
+                return ((ServletContextHandler.ServletContextHandlerContext)ctx).createInstance(this);
 
             return null;
         }
@@ -229,8 +229,8 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
         if (getServletHandler() != null)
             scontext = getServletHandler().getServletContext();
 
-        if (scontext instanceof ServletContextHandler.Context)
-            return ((ServletContextHandler.Context)scontext).getServletContextHandler();
+        if (scontext instanceof ServletContextHandler.ServletContextHandlerContext)
+            return ((ServletContextHandler.ServletContextHandlerContext)scontext).getServletContextHandler();
 
         //try the ServletContextHandler next
         return ServletContextHandler.getCurrentServletContextHandler();

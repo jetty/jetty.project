@@ -68,7 +68,7 @@ public class ServletChannel implements Runnable
     private HttpConfiguration _configuration;
     private EndPoint _endPoint;
     private ServletRequestState _state;
-    private ServletContextHandler.ServletContextContext _servletContextContext;
+    private ServletContextHandler.ServletContextApi _servletContextApi;
     private ServletContextRequest _request;
     private long _oldIdleTimeout;
     private Callback _callback;
@@ -113,7 +113,7 @@ public class ServletChannel implements Runnable
 
     public void init(ServletContextRequest request)
     {
-        _servletContextContext = request.getContext().getServletContext();
+        _servletContextApi = request.getContext().getServletContext();
         _request = request;
         _executor = request.getContext();
         _state = new ServletRequestState(this);
@@ -132,7 +132,7 @@ public class ServletChannel implements Runnable
                 _state);
     }
 
-    public ServletContextHandler.Context getContext()
+    public ServletContextHandler.ServletContextHandlerContext getContext()
     {
         return _request.getContext();
     }
@@ -142,9 +142,9 @@ public class ServletChannel implements Runnable
         return getContext().getContextHandler();
     }
 
-    public ServletContextHandler.ServletContextContext getServletContext()
+    public ServletContextHandler.ServletContextApi getServletContext()
     {
-        return _servletContextContext;
+        return _servletContextApi;
     }
 
     public HttpChannel getHttpChannel()
@@ -162,9 +162,9 @@ public class ServletChannel implements Runnable
         return _request.getHttpInput();
     }
 
-    public ServletContextHandler.ServletContextContext getServletContextContext()
+    public ServletContextHandler.ServletContextApi getServletContextContext()
     {
-        return _servletContextContext;
+        return _servletContextApi;
     }
 
     public boolean isSendError()
@@ -407,8 +407,8 @@ public class ServletChannel implements Runnable
                     {
                         dispatch(DispatcherType.REQUEST, () ->
                         {
-                            ServletContextHandler.ServletContextContext servletContextContext = getServletContextContext();
-                            ServletHandler servletHandler = servletContextContext.getContext().getServletContextHandler().getServletHandler();
+                            ServletContextHandler.ServletContextApi servletContextApi = getServletContextContext();
+                            ServletHandler servletHandler = servletContextApi.getContext().getServletContextHandler().getServletHandler();
                             ServletHandler.MappedServlet mappedServlet = _request._mappedServlet;
 
                             mappedServlet.handle(servletHandler, _request.getHttpServletRequest(), _request.getHttpServletResponse());
@@ -458,7 +458,7 @@ public class ServletChannel implements Runnable
                             // by then.
                             ensureConsumeAllOrNotPersistent();
 
-                            ContextHandler.ScopedContext context = (ContextHandler.ScopedContext)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
+                            ContextHandler.ContextHandlerContext context = (ContextHandler.ContextHandlerContext)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             Request.Processor errorProcessor = ErrorHandler.getErrorProcessor(getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body or have no processor, then create a minimal error response.
@@ -629,7 +629,7 @@ public class ServletChannel implements Runnable
     {
         try
         {
-            _servletContextContext.getContext().getServletContextHandler().requestInitialized(_request, _request.getHttpServletRequest());
+            _servletContextApi.getContext().getServletContextHandler().requestInitialized(_request, _request.getHttpServletRequest());
             _combinedListener.onBeforeDispatch(_request);
             dispatchable.dispatch();
         }
@@ -641,7 +641,7 @@ public class ServletChannel implements Runnable
         finally
         {
             _combinedListener.onAfterDispatch(_request);
-            _servletContextContext.getContext().getServletContextHandler().requestDestroyed(_request, _request.getHttpServletRequest());
+            _servletContextApi.getContext().getServletContextHandler().requestDestroyed(_request, _request.getHttpServletRequest());
         }
     }
 

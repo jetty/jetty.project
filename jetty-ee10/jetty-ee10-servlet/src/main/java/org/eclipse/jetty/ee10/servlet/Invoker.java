@@ -72,7 +72,7 @@ public class Invoker extends HttpServlet
     public void init()
     {
         ServletContext config = getServletContext();
-        _contextHandler = ((ContextHandler.ScopedContext)config).getContextHandler();
+        _contextHandler = ((ContextHandler.ContextHandlerContext)config).getContextHandler();
 
         Handler handler = _contextHandler.getHandler();
         while (handler != null && !(handler instanceof ServletHandler) && (handler instanceof Handler.Wrapper))

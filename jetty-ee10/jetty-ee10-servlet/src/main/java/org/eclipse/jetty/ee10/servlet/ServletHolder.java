@@ -640,8 +640,8 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
 
     private ContextHandler getContextHandler(ServletContext servletContext)
     {
-        if (servletContext instanceof ContextHandler.ScopedContext)
-            return ((ContextHandler.ScopedContext)servletContext).getContextHandler();
+        if (servletContext instanceof ContextHandler.ContextHandlerContext)
+            return ((ContextHandler.ContextHandlerContext)servletContext).getContextHandler();
         return null;
     }
 

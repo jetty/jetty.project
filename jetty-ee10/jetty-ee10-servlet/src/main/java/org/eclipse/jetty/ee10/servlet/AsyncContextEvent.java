@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class AsyncContextEvent extends AsyncEvent implements Runnable
 {
     private final ServletContext _servletContext;
-    private final ContextHandler.ScopedContext _context;
+    private final ContextHandler.ContextHandlerContext _context;
     private final AsyncContextState _asyncContext;
     private final HttpURI _baseURI;
     private final ServletRequestState _state;
@@ -35,12 +35,12 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     private volatile Scheduler.Task _timeoutTask;
     private Throwable _throwable;
 
-    public AsyncContextEvent(ContextHandler.ScopedContext context, AsyncContextState asyncContext, ServletRequestState state, Request baseRequest, ServletRequest request, ServletResponse response)
+    public AsyncContextEvent(ContextHandler.ContextHandlerContext context, AsyncContextState asyncContext, ServletRequestState state, Request baseRequest, ServletRequest request, ServletResponse response)
     {
         this(context, asyncContext, state, baseRequest, request, response, null);
     }
 
-    public AsyncContextEvent(ContextHandler.ScopedContext context, AsyncContextState asyncContext, ServletRequestState state, Request baseRequest, ServletRequest request, ServletResponse response, HttpURI baseURI)
+    public AsyncContextEvent(ContextHandler.ContextHandlerContext context, AsyncContextState asyncContext, ServletRequestState state, Request baseRequest, ServletRequest request, ServletResponse response, HttpURI baseURI)
     {
         super(null, request, response, null);
         _context = context;
@@ -80,7 +80,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         return _dispatchContext == null ? _servletContext : _dispatchContext;
     }
 
-    public ContextHandler.ScopedContext getContext()
+    public ContextHandler.ContextHandlerContext getContext()
     {
         return _context;
     }

@@ -79,7 +79,7 @@ public class SessionHandler extends AbstractSessionHandler
 
     private Set<SessionTrackingMode> _sessionTrackingModes;
     private SessionCookieConfig _cookieConfig = new CookieConfig();
-    private ServletContextHandler.Context _servletContextHandlerContext;
+    private ServletContextHandler.ServletContextHandlerContext _servletContextHandlerContext;
    
     /**
      * CookieConfig
@@ -266,7 +266,7 @@ public class SessionHandler extends AbstractSessionHandler
         @Override
         public ServletContext getServletContext()
         {
-            return ServletContextHandler.getServletContext((ContextHandler.ScopedContext)_session.getSessionManager().getContext());
+            return ServletContextHandler.getServletContext((ContextHandler.ContextHandlerContext)_session.getSessionManager().getContext());
         }
 
         @Override
@@ -388,9 +388,9 @@ public class SessionHandler extends AbstractSessionHandler
     {
 
         super.doStart();
-        if (!(_context instanceof ServletContextHandler.Context))
+        if (!(_context instanceof ServletContextHandler.ServletContextHandlerContext))
             throw new IllegalStateException("!ServlerContextHandler.Context");
-        _servletContextHandlerContext = (ServletContextHandler.Context)_context;
+        _servletContextHandlerContext = (ServletContextHandler.ServletContextHandlerContext)_context;
     }
 
     /**

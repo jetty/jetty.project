@@ -21,9 +21,9 @@ import org.eclipse.jetty.util.Callback;
 
 public class ContextResponse extends Response.Wrapper
 {
-    private final ContextHandler.ScopedContext _context;
+    private final ContextHandler.ContextHandlerContext _context;
 
-    public ContextResponse(ContextHandler.ScopedContext context, Request request, Response response)
+    public ContextResponse(ContextHandler.ContextHandlerContext context, Request request, Response response)
     {
         super(request, response);
         _context = context;

@@ -31,11 +31,11 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
-    private final ContextHandler.ScopedContext _context;
+    private final ContextHandler.ContextHandlerContext _context;
     private Response _response;
     private Callback _callback;
 
-    protected ContextRequest(ContextHandler contextHandler, ContextHandler.ScopedContext context, Request wrapped, String pathInContext)
+    protected ContextRequest(ContextHandler contextHandler, ContextHandler.ContextHandlerContext context, Request wrapped, String pathInContext)
     {
         super(wrapped);
         _pathInContext = pathInContext;

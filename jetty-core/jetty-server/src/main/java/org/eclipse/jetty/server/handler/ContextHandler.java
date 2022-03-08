@@ -60,14 +60,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     // TODO init param stuff to ServletContextHandler
 
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
-    private static final ThreadLocal<ScopedContext> __context = new ThreadLocal<>();
+    private static final ThreadLocal<ContextHandlerContext> __context = new ThreadLocal<>();
 
     /**
      * Get the current ServletContext implementation.
      *
      * @return ServletContext implementation
      */
-    public static ScopedContext getCurrentContext()
+    public static ContextHandlerContext getCurrentContext()
     {
         return __context.get();
     }
@@ -79,7 +79,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     // TODO should persistent attributes be an Attributes.Layer over server attributes?
     private final Attributes _persistentAttributes = new Mapped();
-    private final ScopedContext _context;
+    private final ContextHandlerContext _context;
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 
@@ -110,9 +110,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             parent.addHandler(this);
     }
 
-    protected ScopedContext newContext()
+    protected ContextHandlerContext newContext()
     {
-        return new ScopedContext();
+        return new ContextHandlerContext();
     }
 
     @Override
@@ -728,9 +728,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return host;
     }
 
-    public class ScopedContext extends Attributes.Layer implements Context
+    public class ContextHandlerContext extends Attributes.Layer implements Context
     {
-        public ScopedContext()
+        public ContextHandlerContext()
         {
             // TODO Should the ScopedContext attributes be a layer over the ServerContext attributes?
             super(_persistentAttributes);
@@ -788,7 +788,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         private <T> T get(Supplier<T> supplier, Request request)
         {
-            ScopedContext lastContext = __context.get();
+            ContextHandlerContext lastContext = __context.get();
             if (lastContext == this)
                 return supplier.get();
 
@@ -814,7 +814,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         void call(Invocable.Callable callable, Request request) throws Exception
         {
-            ScopedContext lastContext = __context.get();
+            ContextHandlerContext lastContext = __context.get();
             if (lastContext == this)
                 callable.call();
             else
@@ -842,7 +842,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         void accept(Consumer<Throwable> consumer, Throwable t, Request request)
         {
-            ScopedContext lastContext = __context.get();
+            ContextHandlerContext lastContext = __context.get();
             if (lastContext == this)
                 consumer.accept(t);
             else
@@ -877,7 +877,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         {
             try
             {
-                ScopedContext lastContext = __context.get();
+                ContextHandlerContext lastContext = __context.get();
                 if (lastContext == this)
                     runnable.run();
                 else

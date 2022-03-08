@@ -119,13 +119,13 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
 
     protected ServletContextRequest(
-        ServletContextHandler.ServletContextContext servletContextContext,
+        ServletContextHandler.ServletContextApi servletContextApi,
         ServletChannel servletChannel,
         Request request,
         String pathInContext,
         ServletHandler.MappedServlet mappedServlet)
     {
-        super(servletContextContext.getContextHandler(), servletContextContext.getContext(), request, pathInContext);
+        super(servletContextApi.getContextHandler(), servletContextApi.getContext(), request, pathInContext);
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
@@ -159,9 +159,9 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     }
 
     @Override
-    public ServletContextHandler.Context getContext()
+    public ServletContextHandler.ServletContextHandlerContext getContext()
     {
-        return (ServletContextHandler.Context)super.getContext();
+        return (ServletContextHandler.ServletContextHandlerContext)super.getContext();
     }
 
     public HttpInput getHttpInput()
@@ -217,10 +217,10 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     }
 
     /**
-     * @return The current {@link ContextHandler.ScopedContext context} used for this error handling for this request.  If the request is asynchronous,
+     * @return The current {@link ContextHandler.ContextHandlerContext context} used for this error handling for this request.  If the request is asynchronous,
      * then it is the context that called async. Otherwise it is the last non-null context passed to #setContext
      */
-    public ServletContextHandler.Context getErrorContext()
+    public ServletContextHandler.ServletContextHandlerContext getErrorContext()
     {
         // TODO: review.
         return _servletChannel.getContext();
@@ -1011,7 +1011,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public RequestDispatcher getRequestDispatcher(String path)
         {
-            ServletContextHandler.Context context = ServletContextRequest.this.getContext();
+            ServletContextHandler.ServletContextHandlerContext context = ServletContextRequest.this.getContext();
             if (path == null || context == null)
                 return null;
 

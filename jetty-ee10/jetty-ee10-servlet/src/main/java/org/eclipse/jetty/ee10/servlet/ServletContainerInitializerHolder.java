@@ -115,7 +115,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         //load all classnames
         classes.addAll(resolveStartupClasses());
 
-        ServletContextHandler.Context ctx = null;
+        ServletContextHandler.ServletContextHandlerContext ctx = null;
         if (getServletHandler() != null)
         {
             ctx = getServletHandler().getServletContextHandler().getContext();
@@ -123,9 +123,9 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
 
         if (ctx == null)
         {
-            ContextHandler.ScopedContext currentContext = ContextHandler.getCurrentContext();
-            if (currentContext instanceof ServletContextHandler.Context)
-                ctx = (ServletContextHandler.Context)currentContext;
+            ContextHandler.ContextHandlerContext currentContext = ContextHandler.getCurrentContext();
+            if (currentContext instanceof ServletContextHandler.ServletContextHandlerContext)
+                ctx = (ServletContextHandler.ServletContextHandlerContext)currentContext;
         }
         if (ctx == null)
             throw new IllegalStateException("No Context");

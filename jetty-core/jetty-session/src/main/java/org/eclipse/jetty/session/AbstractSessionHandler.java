@@ -30,7 +30,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandler.ScopedContext;
+import org.eclipse.jetty.server.handler.ContextHandler.ContextHandlerContext;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -58,7 +58,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     protected boolean _usingCookies = true;
     protected SessionIdManager _sessionIdManager;
     protected ClassLoader _loader;
-    protected ScopedContext _context;
+    protected ContextHandlerContext _context;
     protected SessionContext _sessionContext;
     protected SessionCache _sessionCache;
     protected Set<String> _candidateSessionIdsForExpiry = ConcurrentHashMap.newKeySet();
