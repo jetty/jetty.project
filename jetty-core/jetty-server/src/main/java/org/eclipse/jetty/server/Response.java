@@ -240,6 +240,8 @@ public interface Response
 
     static void writeError(Request request, Response response, Callback callback, int status, String message, Throwable cause)
     {
+        // TODO what about 102 Processing?
+
         // Let's be less verbose with BadMessageExceptions & QuietExceptions
         if (!LOG.isDebugEnabled() && (cause instanceof BadMessageException || cause instanceof QuietException))
             LOG.warn("{} {}", message, cause.getMessage());
