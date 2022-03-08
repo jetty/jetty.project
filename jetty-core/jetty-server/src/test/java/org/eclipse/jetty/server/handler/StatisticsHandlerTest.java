@@ -592,18 +592,20 @@ public class StatisticsHandlerTest
     @Test
     public void testHandlingsIncrementThenProcessingsIncrement() throws Exception
     {
-        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
+        CyclicBarrier[] barrier = {new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2), new CyclicBarrier(2)};
         _statsHandler.setHandler(new Handler.Abstract(Invocable.InvocationType.BLOCKING)
         {
             @Override
             public Request.Processor handle(Request request) throws Exception
             {
                 barrier[0].await();
+                barrier[1].await();
                 return (rq, rs, callback) ->
                 {
-                    barrier[1].await();
-                    callback.succeeded();
                     barrier[2].await();
+                    barrier[3].await();
+                    callback.succeeded();
+                    barrier[4].await();
                 };
             }
         });
@@ -624,6 +626,7 @@ public class StatisticsHandlerTest
         assertEquals(0, _statsHandler.getProcessingsActive());
         assertEquals(0, _statsHandler.getProcessingsMax());
         barrier[1].await();
+        barrier[2].await();
 
         assertEquals(1, _statistics.getConnections());
         assertEquals(1, _statsHandler.getRequests());
@@ -632,7 +635,8 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getProcessings());
         assertEquals(1, _statsHandler.getProcessingsActive());
         assertEquals(1, _statsHandler.getProcessingsMax());
-        barrier[2].await();
+        barrier[3].await();
+        barrier[4].await();
 
         assertEquals(1, _statistics.getConnections());
         assertEquals(1, _statsHandler.getRequests());
