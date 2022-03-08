@@ -16,6 +16,7 @@ package org.eclipse.jetty.util.thread;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.thread.Invocable.InvocationType;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -32,9 +33,16 @@ import org.slf4j.LoggerFactory;
 public class SerializedInvoker
 {
     private final AtomicReference<Link> _tail = new AtomicReference<>();
+    private final Logger _logger;
 
     public SerializedInvoker()
     {
+        this(LoggerFactory.getLogger(SerializedInvoker.class));
+    }
+
+    public SerializedInvoker(Logger logger)
+    {
+        _logger = logger;
     }
 
     /**
@@ -100,7 +108,7 @@ public class SerializedInvoker
 
     protected void onError(Runnable task, Throwable t)
     {
-        LoggerFactory.getLogger(task.getClass()).error("Error", t);
+        _logger.warn("Serialized invocation error", t);
     }
 
     private class Link implements Runnable, Invocable

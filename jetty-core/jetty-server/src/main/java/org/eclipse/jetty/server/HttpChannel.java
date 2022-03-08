@@ -97,7 +97,7 @@ public class HttpChannel extends Attributes.Lazy
         _connectionMetaData = connectionMetaData;
         _configuration = Objects.requireNonNull(configuration);
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
-        _serializedInvoker = new SerializedInvoker()
+        _serializedInvoker = new SerializedInvoker(LOG)
         {
             @Override
             protected void onError(Runnable task, Throwable t)
