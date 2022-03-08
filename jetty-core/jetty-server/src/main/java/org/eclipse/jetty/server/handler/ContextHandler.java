@@ -521,7 +521,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     protected String getPathInContext(Request request)
     {
-        String path = request.getHttpURI().getPath();
+        String path = request.getPathInContext();
         if (!path.startsWith(_context.getContextPath()))
             return null;
         if ("/".equals(_context.getContextPath()))

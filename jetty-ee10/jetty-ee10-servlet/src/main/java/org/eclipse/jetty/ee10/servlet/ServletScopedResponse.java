@@ -112,6 +112,13 @@ public class ServletScopedResponse extends ContextResponse
         return _httpServletResponse;
     }
 
+    public void resetForForward()
+    {
+        _httpOutput.resetBuffer();
+        _httpOutput.reopen();
+        _outputType = OutputType.NONE;
+    }
+
     public void completeOutput(Callback callback)
     {
         if (_outputType == OutputType.WRITER)

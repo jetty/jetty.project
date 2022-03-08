@@ -381,6 +381,7 @@ public class FileSessionDataStore extends AbstractSessionDataStore
 
                         String filename = p.getFileName().toString();
                         String context = getContextFromFilename(filename);
+
                         //now process it if it wasn't deleted, and it is for our context
                         if (Files.exists(p) && _contextString.equals(context))
                         {

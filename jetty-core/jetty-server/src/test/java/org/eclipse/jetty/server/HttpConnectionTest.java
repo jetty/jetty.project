@@ -169,7 +169,7 @@ public class HttpConnectionTest
         // header looking like another request is ignored
         String request = "GET /one\r\nGET :/two\r\n\r\n";
         String response = BufferUtil.toString(_connector.executeRequest(request).waitForOutput(10, TimeUnit.SECONDS));
-        assertThat(response, containsString("path=/one"));
+        assertThat(response, containsString("pathInContext=/one"));
         assertThat(response, not(containsString("two")));
     }
 
@@ -425,7 +425,7 @@ public class HttpConnectionTest
 
         int offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200");
-        checkContains(response, offset, "path=/");
+        checkContains(response, offset, "pathInContext=/");
     }
 
     @Test
@@ -439,7 +439,7 @@ public class HttpConnectionTest
         int offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200");
         offset = checkContains(response, offset, "Date: ");
-        checkContains(response, offset, "path=/");
+        checkContains(response, offset, "pathInContext=/");
     }
 
     @Test
@@ -453,7 +453,7 @@ public class HttpConnectionTest
         int offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200");
         offset = checkContains(response, offset, "Date: 1 Jan 1970");
-        checkContains(response, offset, "path=/");
+        checkContains(response, offset, "pathInContext=/");
     }
 
     @Test
@@ -470,7 +470,7 @@ public class HttpConnectionTest
     {
         String response = _connector.getResponse("GET /ooops/../path HTTP/1.0\r\nHost: localhost:80\r\n\n");
         checkContains(response, 0, "HTTP/1.1 200 OK");
-        checkContains(response, 0, "path=/path");
+        checkContains(response, 0, "pathInContext=/path");
     }
 
     @Test
@@ -509,7 +509,7 @@ public class HttpConnectionTest
         checkNotContained(response, offset, "HTTP/1.1");
         checkNotContained(response, offset, "200");
         checkContains(response, offset, "httpURI=http://0.0.0.0/R1");
-        checkContains(response, offset, "path=/R1");
+        checkContains(response, offset, "pathInContext=/R1");
     }
 
     @Test
@@ -523,7 +523,7 @@ public class HttpConnectionTest
         int offset = 0;
         offset = checkContains(response, offset, "HTTP/1.1 200");
         checkContains(response, offset, "httpURI=http://localhost/R1");
-        checkContains(response, offset, "path=/R1");
+        checkContains(response, offset, "pathInContext=/R1");
     }
 
     @Test
@@ -900,11 +900,11 @@ public class HttpConnectionTest
         String response = endp.getResponse() + endp.getResponse();
 
         offset = checkContains(response, offset, "HTTP/1.1 200");
-        offset = checkContains(response, offset, "path=/R1");
+        offset = checkContains(response, offset, "pathInContext=/R1");
         offset = checkContains(response, offset, "1234");
         checkNotContained(response, offset, "56789");
         offset = checkContains(response, offset, "HTTP/1.1 200");
-        offset = checkContains(response, offset, "path=/R2");
+        offset = checkContains(response, offset, "pathInContext=/R2");
         offset = checkContains(response, offset, "charset=UTF-8");
         checkContains(response, offset, "abcdefghij");
     }
@@ -928,7 +928,7 @@ public class HttpConnectionTest
         assertThat(TimeUnit.NANOSECONDS.toMillis(System.nanoTime()) - start, lessThanOrEqualTo(2000L));
 
         offset = checkContains(response, offset, "HTTP/1.1 200");
-        offset = checkContains(response, offset, "path=/R1");
+        offset = checkContains(response, offset, "pathInContext=/R1");
         offset = checkContains(response, offset, "1234");
         checkNotContained(response, offset, "56789");
     }
