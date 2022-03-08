@@ -161,7 +161,7 @@ public class PrefaceTest extends AbstractTest
             generator.control(lease, new PingFrame(true));
 
             List<ByteBuffer> buffers = lease.getByteBuffers();
-            socket.write(buffers.toArray(new ByteBuffer[buffers.size()]));
+            socket.write(buffers.toArray(new ByteBuffer[0]));
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
@@ -288,7 +288,7 @@ public class PrefaceTest extends AbstractTest
             clientSettings.put(SettingsFrame.ENABLE_PUSH, 1);
             generator.control(lease, new SettingsFrame(clientSettings, false));
             List<ByteBuffer> buffers = lease.getByteBuffers();
-            socket.write(buffers.toArray(new ByteBuffer[buffers.size()]));
+            socket.write(buffers.toArray(new ByteBuffer[0]));
 
             // However, we should not call onPreface() again.
             assertFalse(serverPrefaceLatch.get().await(1, TimeUnit.SECONDS));

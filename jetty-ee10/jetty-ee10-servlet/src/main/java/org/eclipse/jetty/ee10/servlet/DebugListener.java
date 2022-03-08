@@ -224,7 +224,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             String cname = findContextName(ace.getServletContext());
             String rname = findRequestName(ace.getAsyncContext().getRequest());
 
-            ServletScopedRequest br = ServletScopedRequest.getBaseRequest(ace.getAsyncContext().getRequest());
+            ServletContextRequest br = ServletContextRequest.getBaseRequest(ace.getAsyncContext().getRequest());
             Response response = br.getResponse();
             String headers = _showHeaders ? ("\n" + response.getHeaders().toString()) : "";
 
@@ -244,7 +244,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             DispatcherType d = r.getDispatcherType();
             if (d == DispatcherType.REQUEST)
             {
-                ServletScopedRequest br = ServletScopedRequest.getBaseRequest(r);
+                ServletContextRequest br = ServletContextRequest.getBaseRequest(r);
 
                 String headers = _showHeaders ? ("\n" + br.getHeaders().toString()) : "";
 
@@ -279,9 +279,9 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
             }
             else
             {
-                ServletScopedRequest br = ServletScopedRequest.getBaseRequest(r);
+                ServletContextRequest br = ServletContextRequest.getBaseRequest(r);
                 String headers = _showHeaders ? ("\n" + br.getResponse().getHeaders().toString()) : "";
-                log("<< %s ctx=%s r=%s async=false %d%s", d, cname, rname, ServletScopedRequest.getBaseRequest(r).getResponse().getStatus(), headers);
+                log("<< %s ctx=%s r=%s async=false %d%s", d, cname, rname, ServletContextRequest.getBaseRequest(r).getResponse().getStatus(), headers);
             }
         }
     };
@@ -289,7 +289,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
     final ServletContextScopeListener _contextScopeListener = new ServletContextScopeListener()
     {
         @Override
-        public void enterScope(ServletContextHandler.Context context, ServletScopedRequest request)
+        public void enterScope(ServletContextHandler.Context context, ServletContextRequest request)
         {
             String cname = findContextName(context.getServletContext());
             if (request == null)
@@ -309,7 +309,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         }
 
         @Override
-        public void exitScope(ServletContextHandler.Context context, ServletScopedRequest request)
+        public void exitScope(ServletContextHandler.Context context, ServletContextRequest request)
         {
             String cname = findContextName(context.getServletContext());
             if (request == null)

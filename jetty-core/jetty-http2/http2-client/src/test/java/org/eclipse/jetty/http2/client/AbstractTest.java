@@ -17,9 +17,6 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import jakarta.servlet.http.HttpServlet;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -32,6 +29,7 @@ import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -42,27 +40,20 @@ import org.junit.jupiter.api.AfterEach;
 public class AbstractTest
 {
     protected ServerConnector connector;
-    protected String servletPath = "/test";
     protected HTTP2Client client;
     protected Server server;
 
-    protected void start(HttpServlet servlet) throws Exception
+    protected void start(Handler handler) throws Exception
     {
         HTTP2CServerConnectionFactory connectionFactory = new HTTP2CServerConnectionFactory(new HttpConfiguration());
         connectionFactory.setInitialSessionRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         connectionFactory.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         prepareServer(connectionFactory);
-        ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
-        context.addServlet(new ServletHolder(servlet), servletPath + "/*");
-        customizeContext(context);
+        server.setHandler(handler);
         server.start();
 
         prepareClient();
         client.start();
-    }
-
-    protected void customizeContext(ServletContextHandler context)
-    {
     }
 
     protected void start(ServerSessionListener listener) throws Exception
@@ -117,12 +108,12 @@ public class AbstractTest
         return newRequest(method, "", fields);
     }
 
-    protected MetaData.Request newRequest(String method, String pathInfo, HttpFields fields)
+    protected MetaData.Request newRequest(String method, String path, HttpFields fields)
     {
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), servletPath + pathInfo, HttpVersion.HTTP_2, fields, -1);
+        return new MetaData.Request(method, HttpScheme.HTTP.asString(), new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields, -1);
     }
 
     @AfterEach

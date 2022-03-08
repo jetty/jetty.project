@@ -423,7 +423,7 @@ public class ServletHandler extends Handler.Wrapper
         return (req, resp, cb) ->
         {
             // We will always have a ServletScopedRequest and MappedServlet otherwise we will not reach ServletHandler.
-            ServletScopedRequest servletRequest = Request.as(request, ServletScopedRequest.class);
+            ServletContextRequest servletRequest = Request.as(request, ServletContextRequest.class);
             servletRequest.getServletChannel().handle();
         };
     }

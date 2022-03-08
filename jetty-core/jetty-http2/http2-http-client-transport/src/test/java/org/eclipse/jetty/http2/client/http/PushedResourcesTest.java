@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http2.client.http;
 
+import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +33,9 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.junit.jupiter.api.Test;
@@ -102,8 +105,9 @@ public class PushedResourcesTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
+                String target = request.getPathInContext();
                 if (target.equals(path1))
                 {
                     response.write(true, callback, ByteBuffer.wrap(pushBytes1));
@@ -114,12 +118,10 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    baseRequest.newPushBuilder()
-                        .path(path1)
-                        .push();
-                    baseRequest.newPushBuilder()
-                        .path(path2)
-                        .push();
+                    MetaData.Request push1 = new MetaData.Request(null, HttpURI.build().path(path1), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    response.push(push1);
+                    MetaData.Request push2 = new MetaData.Request(null, HttpURI.build().path(path2), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    response.push(push2);
                     response.write(true, callback, ByteBuffer.wrap(bytes));
                 }
             }
@@ -168,14 +170,15 @@ public class PushedResourcesTest extends AbstractTest
         start(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
+                String target = request.getPathInContext();
                 if (target.equals(oldPath))
-                    response.sendRedirect(newPath);
+                    Response.sendRedirect(request, response, callback, newPath);
                 else if (target.equals(newPath))
                     response.write(true, callback, ByteBuffer.wrap(pushBytes));
                 else
-                    baseRequest.newPushBuilder().path(oldPath).push();
+                    response.push(new MetaData.Request(null, HttpURI.build().path(oldPath), HttpVersion.HTTP_2, HttpFields.EMPTY));
             }
         });
 

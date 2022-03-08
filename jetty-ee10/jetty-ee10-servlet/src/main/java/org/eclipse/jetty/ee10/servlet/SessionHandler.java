@@ -27,11 +27,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.SessionTrackingMode;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionAttributeListener;
@@ -40,7 +38,6 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Syntax;
@@ -603,9 +600,9 @@ public class SessionHandler extends AbstractSessionHandler
         String requestedSessionId = (String)request.getAttribute(__Requested_Session_Id);
         boolean requestedSessionIdFromCookie = (Boolean)request.getAttribute(__Requested_Session_Id_From_Cookie);
         
-        ServletScopedRequest servletScopedRequest = Request.as(request, ServletScopedRequest.class);
-        ServletScopedRequest.MutableHttpServletRequest mutableServletRequest = 
-            (servletScopedRequest == null ? null : servletScopedRequest.getMutableHttpServletRequest());
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        ServletContextRequest.ServletApiRequest mutableServletRequest =
+            (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
 
 
         //TODO if not the correct type of request, pass it on to our wrapped handlers?
@@ -615,16 +612,16 @@ public class SessionHandler extends AbstractSessionHandler
         mutableServletRequest.setSession(session);
         mutableServletRequest.setSessionManager(this);
 
-        ServletScopedResponse servletScopedResponse = servletScopedRequest.getResponse();
-        ServletScopedResponse.MutableHttpServletResponse mutableServletResponse = 
-            (servletScopedResponse == null ? null : servletScopedResponse.getMutableHttpServletResponse());
+        ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
+        ServletContextResponse.ServletApiResponse mutableServletResponse =
+            (servletContextResponse == null ? null : servletContextResponse.getServletApiResponse());
         
         //Update the cookie
         HttpCookie cookie = access(session, request.getConnectionMetaData().isSecure());
 
         // Handle changed ID or max-age refresh, but only if this is not a redispatched request
         if (cookie != null)
-            Response.replaceCookie(servletScopedResponse, cookie);
+            Response.replaceCookie(servletContextResponse, cookie);
 
         request.getHttpChannel().addStreamWrapper(s ->
         new HttpStream.Wrapper(s)

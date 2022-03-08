@@ -13,14 +13,14 @@
 
 package org.eclipse.jetty.quic.server;
 
-import java.io.PrintWriter;
-
-import jakarta.servlet.ServletOutputStream;
 import org.eclipse.jetty.http.HttpCompliance;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -48,14 +48,15 @@ public class ServerQuicConnectorTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                PrintWriter writer = response.getWriter();
-                writer.println("<html>\n" +
-                    "\t<body>\n" +
-                    "\t\tRequest served\n" +
-                    "\t</body>\n" +
-                    "</html>");
+                response.write(true, callback, """
+                    <html>
+                      <body>
+                        Request served
+                      </body>
+                    </html>
+                    """);
             }
         });
 
@@ -88,13 +89,12 @@ public class ServerQuicConnectorTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 int contentLength = 16 * 1024 * 1024;
                 response.setContentLength(contentLength);
                 response.setContentType("text/plain");
-                ServletOutputStream outputStream = response.getOutputStream();
-                outputStream.println("0".repeat(contentLength));
+                response.write(true, callback, "0".repeat(contentLength));
             }
         });
 

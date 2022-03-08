@@ -84,7 +84,7 @@ public class ErrorHandler implements Request.Processor
     public void process(Request request, Response response, Callback callback) throws Exception
     {
 
-        ServletScopedRequest servletScopedRequest = Request.as(request, ServletScopedRequest.class);
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
 
         String cacheControl = getCacheControl();
         if (cacheControl != null)
@@ -93,8 +93,8 @@ public class ErrorHandler implements Request.Processor
         // Look for an error page dispatcher
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
         // and implement ErrorPageMapper directly, so we do this here in the base class.
-        String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(servletScopedRequest.getHttpServletRequest()) : null;
-        ServletContextHandler.Context context = servletScopedRequest.getErrorContext();
+        String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(servletContextRequest.getHttpServletRequest()) : null;
+        ServletContextHandler.Context context = servletContextRequest.getErrorContext();
         Dispatcher errorDispatcher = (errorPage != null && context != null)
             ? (Dispatcher)context.getServletContext().getRequestDispatcher(errorPage) : null;
 
@@ -102,7 +102,7 @@ public class ErrorHandler implements Request.Processor
         {
             try
             {
-                errorDispatcher.error(servletScopedRequest.getHttpServletRequest(), servletScopedRequest.getHttpServletResponse());
+                errorDispatcher.error(servletContextRequest.getHttpServletRequest(), servletContextRequest.getHttpServletResponse());
                 callback.succeeded();
                 return;
             }
@@ -120,7 +120,7 @@ public class ErrorHandler implements Request.Processor
         String message = (String)request.getAttribute(Dispatcher.ERROR_MESSAGE);
         if (message == null)
             message = HttpStatus.getMessage(response.getStatus());
-        generateAcceptableResponse(servletScopedRequest, servletScopedRequest.getHttpServletRequest(), servletScopedRequest.getHttpServletResponse(), response.getStatus(), message);
+        generateAcceptableResponse(servletContextRequest, servletContextRequest.getHttpServletRequest(), servletContextRequest.getHttpServletResponse(), response.getStatus(), message);
         callback.succeeded();
     }
 
@@ -129,7 +129,7 @@ public class ErrorHandler implements Request.Processor
      * <p>This method is called to generate an Error page of a mime type that is
      * acceptable to the user-agent.  The Accept header is evaluated in
      * quality order and the method
-     * {@link #generateAcceptableResponse(ServletScopedRequest, HttpServletRequest, HttpServletResponse, int, String, String)}
+     * {@link #generateAcceptableResponse(ServletContextRequest, HttpServletRequest, HttpServletResponse, int, String, String)}
      * is called for each mimetype until the response is written to or committed.</p>
      *
      * @param baseRequest The base request
@@ -139,7 +139,7 @@ public class ErrorHandler implements Request.Processor
      * @param message the http error message
      * @throws IOException if the response cannot be generated
      */
-    protected void generateAcceptableResponse(ServletScopedRequest baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message) throws IOException
+    protected void generateAcceptableResponse(ServletContextRequest baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message) throws IOException
     {
         List<String> acceptable = baseRequest.getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
 
@@ -222,7 +222,7 @@ public class ErrorHandler implements Request.Processor
      * @param contentType The mimetype to generate (may be *&#47;*or other wildcard)
      * @throws IOException if a response cannot be generated
      */
-    protected void generateAcceptableResponse(ServletScopedRequest baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String contentType) throws IOException
+    protected void generateAcceptableResponse(ServletContextRequest baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String contentType) throws IOException
     {
         // We can generate an acceptable contentType, but can we generate an acceptable charset?
         // TODO refactor this in jetty-10 to be done in the other calling loop
@@ -383,7 +383,7 @@ public class ErrorHandler implements Request.Processor
         if (showStacks && !_disableStacks)
             writeErrorPageStacks(request, writer);
 
-        ((ServletScopedRequest.MutableHttpServletRequest)request).getRequest().getServletChannel().getHttpConfiguration()
+        ((ServletContextRequest.ServletApiRequest)request).getRequest().getServletChannel().getHttpConfiguration()
             .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 

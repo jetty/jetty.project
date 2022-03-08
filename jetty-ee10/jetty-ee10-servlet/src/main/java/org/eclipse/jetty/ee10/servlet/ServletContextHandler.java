@@ -560,7 +560,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     protected void requestInitialized(Request baseRequest, HttpServletRequest request)
     {
-        ServletScopedRequest scopedRequest = Request.as(baseRequest, ServletScopedRequest.class);
+        ServletContextRequest scopedRequest = Request.as(baseRequest, ServletContextRequest.class);
 
         // Handle the REALLY SILLY request events!
         if (!_servletRequestAttributeListeners.isEmpty())
@@ -583,7 +583,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     protected void requestDestroyed(Request baseRequest, HttpServletRequest request)
     {
-        ServletScopedRequest scopedRequest = Request.as(baseRequest, ServletScopedRequest.class);
+        ServletContextRequest scopedRequest = Request.as(baseRequest, ServletContextRequest.class);
 
         // Handle more REALLY SILLY request events!
         if (!_servletRequestListeners.isEmpty())
@@ -1071,13 +1071,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
          */
-        void enterScope(ServletContextHandler.Context context, ServletScopedRequest request);
+        void enterScope(ServletContextHandler.Context context, ServletContextRequest request);
 
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        void exitScope(ServletContextHandler.Context context, ServletScopedRequest request);
+        void exitScope(ServletContextHandler.Context context, ServletContextRequest request);
     }
 
     public ServletContext getServletContext()
@@ -1392,7 +1392,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected ServletScopedRequest wrap(Request request, String pathInContext)
+    protected ServletContextRequest wrap(Request request, String pathInContext)
     {
         ServletHandler.MappedServlet mappedServlet = _servletHandler.getMappedServlet(pathInContext);
         if (mappedServlet == null)
@@ -1411,15 +1411,15 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 channel.setAttribute(ServletChannel.class.getName(), servletChannel);
         }
 
-        ServletScopedRequest servletScopedRequest = new ServletScopedRequest(_servletContext, servletChannel, request, pathInContext, mappedServlet);
-        servletChannel.init(servletScopedRequest);
-        return servletScopedRequest;
+        ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext, mappedServlet);
+        servletChannel.init(servletContextRequest);
+        return servletContextRequest;
     }
 
     @Override
     protected Request.Processor processByContextHandler(ContextRequest request)
     {
-        ServletScopedRequest scopedRequest = Request.as(request, ServletScopedRequest.class);
+        ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         DispatcherType dispatch = scopedRequest.getHttpServletRequest().getDispatcherType();
         if (dispatch == DispatcherType.REQUEST && isProtectedTarget(request.getPathInContext()))
             return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpServletResponse.SC_NOT_FOUND, null);
@@ -1432,7 +1432,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     {
         super.enterScope(request);
 
-        ServletScopedRequest scopedRequest = Request.as(request, ServletScopedRequest.class);
+        ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         if (!_contextListeners.isEmpty())
         {
             for (ServletContextScopeListener listener : _contextListeners)
@@ -1452,7 +1452,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     @Override
     protected void exitScope(Request request)
     {
-        ServletScopedRequest scopedRequest = Request.as(request, ServletScopedRequest.class);
+        ServletContextRequest scopedRequest = Request.as(request, ServletContextRequest.class);
         if (!_contextListeners.isEmpty())
         {
             for (int i = _contextListeners.size(); i-- > 0; )

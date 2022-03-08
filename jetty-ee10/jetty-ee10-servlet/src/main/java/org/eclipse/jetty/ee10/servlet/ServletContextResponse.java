@@ -56,7 +56,7 @@ import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 
-public class ServletScopedResponse extends ContextResponse
+public class ServletContextResponse extends ContextResponse
 {
     private static final int __MIN_BUFFER_SIZE = 1;
     private static final HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
@@ -70,8 +70,8 @@ public class ServletScopedResponse extends ContextResponse
     private final Response _response;
     private final HttpOutput _httpOutput;
     private final ServletChannel _servletChannel;
-    private final MutableHttpServletResponse _httpServletResponse;
-    private final ServletScopedRequest _request;
+    private final ServletApiResponse _httpServletResponse;
+    private final ServletContextRequest _request;
     private String _characterEncoding;
     private String _contentType;
     private MimeTypes.Type _mimeType;
@@ -82,14 +82,14 @@ public class ServletScopedResponse extends ContextResponse
 
     private long _contentLength = -1;
 
-    public ServletScopedResponse(ServletChannel servletChannel, ServletScopedRequest request, Response response)
+    public ServletContextResponse(ServletChannel servletChannel, ServletContextRequest request, Response response)
     {
         super(servletChannel.getContext(), response.getRequest(), response);
         _request = request;
         _response = response;
         _httpOutput = new HttpOutput(response, servletChannel);
         _servletChannel = servletChannel;
-        _httpServletResponse = new MutableHttpServletResponse(response);
+        _httpServletResponse = new ServletApiResponse(response);
     }
 
     public HttpOutput getHttpOutput()
@@ -107,7 +107,7 @@ public class ServletScopedResponse extends ContextResponse
         return _httpServletResponse;
     }
     
-    public MutableHttpServletResponse getMutableHttpServletResponse()
+    public ServletApiResponse getServletApiResponse()
     {
         return _httpServletResponse;
     }
@@ -434,12 +434,12 @@ public class ServletScopedResponse extends ContextResponse
         SET_CHARACTER_ENCODING
     }
 
-    public class MutableHttpServletResponse implements HttpServletResponse
+    public class ServletApiResponse implements HttpServletResponse
     {
         private final SharedBlockingCallback _blocker = new SharedBlockingCallback();
         private final Response _response;
 
-        MutableHttpServletResponse(Response response)
+        ServletApiResponse(Response response)
         {
             _response = response;
         }
@@ -472,7 +472,7 @@ public class ServletScopedResponse extends ContextResponse
 
         public void addCookie(HttpCookie cookie)
         {
-            Response.addCookie(ServletScopedResponse.this, cookie);
+            Response.addCookie(ServletContextResponse.this, cookie);
         }
 
         @Override
@@ -488,7 +488,7 @@ public class ServletScopedResponse extends ContextResponse
             if (sessionManager == null)
                 return url;
 
-            ServletScopedRequest request = _request;
+            ServletContextRequest request = _request;
             HttpServletRequest httpServletRequest = request.getHttpServletRequest();
 
             HttpURI uri = null;
@@ -634,7 +634,7 @@ public class ServletScopedResponse extends ContextResponse
         public void sendRedirect(int code, String location) throws IOException
         {
             FutureCallback callback = new FutureCallback();
-            Response.sendRedirect(_request, ServletScopedResponse.this, callback, code, location, false);
+            Response.sendRedirect(_request, ServletContextResponse.this, callback, code, location, false);
             callback.block();
         }
 
@@ -709,7 +709,7 @@ public class ServletScopedResponse extends ContextResponse
         @Override
         public String getCharacterEncoding()
         {
-            return ServletScopedResponse.this.getCharacterEncoding(false);
+            return ServletContextResponse.this.getCharacterEncoding(false);
         }
 
         @Override
@@ -735,7 +735,7 @@ public class ServletScopedResponse extends ContextResponse
 
             if (_outputType == OutputType.NONE)
             {
-                String encoding = ServletScopedResponse.this.getCharacterEncoding(true);
+                String encoding = ServletContextResponse.this.getCharacterEncoding(true);
                 Locale locale = getLocale();
                 if (_writer != null && _writer.isFor(locale, encoding))
                     _writer.reopen();
@@ -758,7 +758,7 @@ public class ServletScopedResponse extends ContextResponse
         @Override
         public void setCharacterEncoding(String encoding)
         {
-            ServletScopedResponse.this.setCharacterEncoding(encoding, EncodingFrom.SET_CHARACTER_ENCODING);
+            ServletContextResponse.this.setCharacterEncoding(encoding, EncodingFrom.SET_CHARACTER_ENCODING);
         }
 
         @Override
@@ -952,7 +952,7 @@ public class ServletScopedResponse extends ContextResponse
                 _locale = null;
                 _response.getHeaders().remove(HttpHeader.CONTENT_LANGUAGE);
                 if (_encodingFrom == EncodingFrom.SET_LOCALE)
-                    ServletScopedResponse.this.setCharacterEncoding(null, EncodingFrom.NOT_SET);
+                    ServletContextResponse.this.setCharacterEncoding(null, EncodingFrom.NOT_SET);
             }
             else
             {
@@ -968,7 +968,7 @@ public class ServletScopedResponse extends ContextResponse
 
                 String charset = context.getServletContextHandler().getLocaleEncoding(locale);
                 if (!StringUtil.isEmpty(charset) && __localeOverride.contains(_encodingFrom))
-                    ServletScopedResponse.this.setCharacterEncoding(charset, EncodingFrom.SET_LOCALE);
+                    ServletContextResponse.this.setCharacterEncoding(charset, EncodingFrom.SET_LOCALE);
             }
         }
 

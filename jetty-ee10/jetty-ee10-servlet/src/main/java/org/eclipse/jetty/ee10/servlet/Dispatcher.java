@@ -97,7 +97,7 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
-        ServletScopedRequest baseRequest = Objects.requireNonNull(ServletScopedRequest.getBaseRequest(request));
+        ServletContextRequest baseRequest = Objects.requireNonNull(ServletContextRequest.getBaseRequest(request));
         baseRequest.getResponse().resetForForward();
         _mappedServlet.handle(_servletHandler, new ForwardRequest(httpRequest), httpResponse);
 
