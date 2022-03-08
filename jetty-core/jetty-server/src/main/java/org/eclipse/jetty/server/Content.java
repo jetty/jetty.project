@@ -15,12 +15,14 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
@@ -264,7 +266,7 @@ public interface Content
         }
     }
 
-    interface Provider
+    interface Reader
     {
         Content readContent();
 
@@ -273,7 +275,7 @@ public interface Content
 
     // TODO should these static methods be instance methods?   They are not very buffer efficient
 
-    static void readBytes(Provider provider, Promise<ByteBuffer> content)
+    static void readBytes(Reader reader, Promise<ByteBuffer> content)
     {
         ByteBufferAccumulator out = new ByteBufferAccumulator();
         Runnable onDataAvailable = new Runnable()
@@ -283,10 +285,10 @@ public interface Content
             {
                 while (true)
                 {
-                    Content c = provider.readContent();
+                    Content c = reader.readContent();
                     if (c == null)
                     {
-                        provider.demandContent(this);
+                        reader.demandContent(this);
                         return;
                     }
                     if (c.hasRemaining())
@@ -308,10 +310,10 @@ public interface Content
         onDataAvailable.run();
     }
 
-    static ByteBuffer readBytes(Provider provider) throws InterruptedException, IOException
+    static ByteBuffer readBytes(Reader reader) throws InterruptedException, IOException
     {
         Promise.Completable<ByteBuffer> result = new Promise.Completable<>();
-        readBytes(provider, result);
+        readBytes(reader, result);
         try
         {
             return result.get();
@@ -322,7 +324,7 @@ public interface Content
         }
     }
 
-    static void readUtf8String(Provider provider, Promise<String> content)
+    static void readUtf8String(Reader reader, Promise<String> content)
     {
         Utf8StringBuilder builder = new Utf8StringBuilder();
         Runnable onDataAvailable = new Runnable()
@@ -332,10 +334,10 @@ public interface Content
             {
                 while (true)
                 {
-                    Content c = provider.readContent();
+                    Content c = reader.readContent();
                     if (c == null)
                     {
-                        provider.demandContent(this);
+                        reader.demandContent(this);
                         return;
                     }
                     if (c.hasRemaining())
@@ -357,10 +359,10 @@ public interface Content
         onDataAvailable.run();
     }
 
-    static String readUtf8String(Provider provider) throws InterruptedException, IOException
+    static String readUtf8String(Reader reader) throws InterruptedException, IOException
     {
         Promise.Completable<String> result = new Promise.Completable<>();
-        readUtf8String(provider, result);
+        readUtf8String(reader, result);
         try
         {
             return result.get();
@@ -371,17 +373,17 @@ public interface Content
         }
     }
 
-    static void consumeAll(Provider provider) throws Exception
+    static void consumeAll(Reader reader) throws Exception
     {
         try (Blocking.Callback callback = Blocking.callback())
         {
-            consumeAll(provider, callback);
+            consumeAll(reader, callback);
             callback.block();
         }
     }
 
     // TODO test this
-    static void consumeAll(Provider provider, Callback callback)
+    static void consumeAll(Reader reader, Callback callback)
     {
         new Invocable.Task()
         {
@@ -390,10 +392,10 @@ public interface Content
             {
                 while (true)
                 {
-                    Content content = provider.readContent();
+                    Content content = reader.readContent();
                     if (content == null)
                     {
-                        provider.demandContent(this);
+                        reader.demandContent(this);
                         return;
                     }
 
@@ -420,29 +422,29 @@ public interface Content
         }.run();
     }
 
-    abstract class Processor implements Provider
+    abstract class Processor implements Reader
     {
-        private final Provider _provider;
+        private final Reader _reader;
 
-        protected Processor(Provider provider)
+        protected Processor(Reader reader)
         {
-            _provider = provider;
+            _reader = reader;
         }
 
-        public Content.Provider getProvider()
+        public Reader getProvider()
         {
-            return _provider;
+            return _reader;
         }
     }
 
     class ContentPublisher implements Flow.Publisher<Content>
     {
-        private final Provider _provider;
+        private final Reader _reader;
         private final AtomicReference<TheSubscription> _theSubscription = new AtomicReference<>();
 
-        public ContentPublisher(Provider provider)
+        public ContentPublisher(Reader reader)
         {
-            _provider = provider;
+            _reader = reader;
         }
 
         @Override
@@ -469,7 +471,7 @@ public interface Content
             public void request(long n)
             {
                 if (_demand.getAndUpdate(d -> MathUtils.cappedAdd(d, n)) == 0)
-                    _provider.demandContent(this);
+                    _reader.demandContent(this);
             }
 
             @Override
@@ -483,10 +485,10 @@ public interface Content
             {
                 while (true)
                 {
-                    Content content = _provider.readContent();
+                    Content content = _reader.readContent();
                     if (content == null)
                     {
-                        _provider.demandContent(this);
+                        _reader.demandContent(this);
                         return;
                     }
 
@@ -516,12 +518,12 @@ public interface Content
 
     class FieldPublisher implements Flow.Publisher<Fields.Field>
     {
-        private final Provider _provider;
+        private final Reader _reader;
         private final AtomicReference<TheSubscription> _theSubscription = new AtomicReference<>();
 
-        public FieldPublisher(Provider provider)
+        public FieldPublisher(Reader reader)
         {
-            _provider = provider;
+            _reader = reader;
         }
 
         @Override
@@ -573,7 +575,7 @@ public interface Content
                 if (run)
                     run();
                 else
-                    _provider.demandContent(this);
+                    _reader.demandContent(this);
             }
 
             @Override
@@ -609,7 +611,7 @@ public interface Content
 
                         if (_content == null)
                         {
-                            _content = _provider.readContent();
+                            _content = _reader.readContent();
                             if (_content == null)
                             {
                                 demandContent = !_last;
@@ -650,7 +652,7 @@ public interface Content
                 else if (complete)
                     _subscriber.onComplete();
                 else if (demandContent)
-                    _provider.demandContent(this);
+                    _reader.demandContent(this);
             }
 
             protected Fields.Field parse(ByteBuffer buffer, boolean last)
@@ -705,21 +707,21 @@ public interface Content
 
     class FieldsFuture extends CompletableFuture<Fields> implements Runnable
     {
-        private final Provider _provider;
+        private final Reader _reader;
         private final Fields _fields = new Fields();
         private final Utf8StringBuilder _builder = new Utf8StringBuilder(); // TODO only UTF8???
         private final int _maxFields;
         private final int _maxSize;
         private String _name;
 
-        public FieldsFuture(Provider provider)
+        public FieldsFuture(Reader reader)
         {
-            this(provider, -1, -1);
+            this(reader, -1, -1);
         }
 
-        public FieldsFuture(Provider provider, int maxFields, int maxSize)
+        public FieldsFuture(Reader reader, int maxFields, int maxSize)
         {
-            _provider = provider;
+            _reader = reader;
             _maxFields = maxFields;
             _maxSize = maxSize; // TODO implement
             run();
@@ -730,10 +732,10 @@ public interface Content
         {
             while (true)
             {
-                Content content = _provider.readContent();
+                Content content = _reader.readContent();
                 if (content == null)
                 {
-                    _provider.demandContent(this);
+                    _reader.demandContent(this);
                     return;
                 }
 
@@ -815,7 +817,7 @@ public interface Content
     }
 
     // TODO test and document
-    static InputStream asInputStream(Provider provider)
+    static InputStream asInputStream(Reader reader)
     {
         return new InputStream()
         {
@@ -836,13 +838,13 @@ public interface Content
                         _content.release();
                     }
 
-                    _content = provider.readContent();
+                    _content = reader.readContent();
 
                     if (_content == null)
                     {
                         try (Blocking.Runnable blocking = _blocking.runnable())
                         {
-                            provider.demandContent(blocking);
+                            reader.demandContent(blocking);
                             blocking.block();
                         }
                         catch (IOException e)
@@ -913,5 +915,164 @@ public interface Content
                 _content = Content.EOF;
             }
         };
+    }
+
+    interface Writer
+    {
+        void write(boolean last, Callback callback, ByteBuffer... content);
+    }
+
+    static OutputStream asOutputStream(Writer writer)
+    {
+        return new OutputStream()
+        {
+            private final Blocking.Shared _blocking = new Blocking.Shared();
+
+            @Override
+            public void write(int b) throws IOException
+            {
+                write(new byte[]{(byte)b}, 0, 1);
+            }
+
+            @Override
+            public void write(byte[] b) throws IOException
+            {
+                write(b, 0, b.length);
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) throws IOException
+            {
+                try (Blocking.Callback callback = _blocking.callback())
+                {
+                    writer.write(false, callback, ByteBuffer.wrap(b, off, len));
+                    callback.block();
+                }
+                catch (IOException e)
+                {
+                    throw e;
+                }
+                catch (Exception e)
+                {
+                    throw new IOException(e);
+                }
+            }
+
+            @Override
+            public void flush() throws IOException
+            {
+                try (Blocking.Callback callback = _blocking.callback())
+                {
+                    writer.write(false, callback);
+                    callback.block();
+                }
+                catch (IOException e)
+                {
+                    throw e;
+                }
+                catch (Exception e)
+                {
+                    throw new IOException(e);
+                }
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                try (Blocking.Callback callback = _blocking.callback())
+                {
+                    writer.write(true, callback);
+                    callback.block();
+                }
+                catch (IOException e)
+                {
+                    throw e;
+                }
+                catch (Exception e)
+                {
+                    throw new IOException(e);
+                }
+            }
+        };
+    }
+
+    static void copy(Reader reader, Writer writer, Callback callback)
+    {
+        new Copy(reader, writer, null, callback).run();
+    }
+
+    static void copy(Reader reader, Writer writer, Consumer<HttpFields> trailers, Callback callback)
+    {
+        new Copy(reader, writer, trailers, callback).run();
+    }
+
+    class Copy implements Runnable, Invocable, Callback
+    {
+        private static final Content ITERATING = new Content.Abstract(true, false){};
+        private final Reader _reader;
+        private final Writer _writer;
+        private final Consumer<HttpFields> _trailers;
+        private final Callback _callback;
+        private final AtomicReference<Content> _content = new AtomicReference<>();
+
+        Copy(Reader provider, Writer writer, Consumer<HttpFields> trailers, Callback callback)
+        {
+            _reader = provider;
+            _writer = writer;
+            _trailers = trailers;
+            _callback = callback;
+        }
+
+        @Override
+        public InvocationType getInvocationType()
+        {
+            return InvocationType.NON_BLOCKING;
+        }
+
+        @Override
+        public void run()
+        {
+            while (true)
+            {
+                Content content = _reader.readContent();
+                if (content == null)
+                {
+                    _reader.demandContent(this);
+                    return;
+                }
+
+                if (content instanceof Content.Trailers trailers && _trailers != null)
+                    _trailers.accept(trailers.getTrailers());
+
+                if (!content.hasRemaining() && content.isLast())
+                {
+                    content.release();
+                    _callback.succeeded();
+                    return;
+                }
+
+                _content.set(ITERATING);
+                _writer.write(content.isLast(), this, content.getByteBuffer());
+                if (_content.compareAndSet(ITERATING, content))
+                    return;
+                content.release();
+            }
+        }
+
+        @Override
+        public void succeeded()
+        {
+            Content content = _content.getAndSet(null);
+            if (content == ITERATING)
+                return;
+            content.release();
+            run();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            _callback.failed(x);
+        }
     }
 }

@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Content;
@@ -23,7 +21,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.thread.Invocable;
 
 /**
  * Dump request handler.
@@ -39,85 +36,13 @@ public class EchoHandler extends Handler.Processor
         String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (StringUtil.isNotBlank(contentType))
             response.setContentType(contentType);
-        HttpFields.Mutable trailers = null;
-        if (request.getHeaders().contains(HttpHeader.TRAILER))
-            trailers = response.getTrailers();
+        HttpFields.Mutable trailers = (request.getHeaders().contains(HttpHeader.TRAILER)) ? response.getTrailers() : null;
         long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
         if (contentLength >= 0)
             response.setContentLength(contentLength);
         if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
-            new Echo(request, response, trailers, callback).run();
+            Content.copy(request, response, trailers == null ? null : trailers::add, callback);
         else
             callback.succeeded();
-    }
-
-    static class Echo implements Runnable, Invocable, Callback
-    {
-        private static final Content ITERATING = new Content.Abstract(true, false){};
-        private final Request _request;
-        private final Response _response;
-        private final HttpFields.Mutable _trailers;
-        private final Callback _callback;
-        private final AtomicReference<Content> _content = new AtomicReference<>();
-
-        Echo(Request request, Response response, HttpFields.Mutable trailers, Callback callback)
-        {
-            _request = request;
-            _response = response;
-            _trailers = trailers;
-            _callback = callback;
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
-        @Override
-        public void run()
-        {
-            while (true)
-            {
-                Content content = _request.readContent();
-                if (content == null)
-                {
-                    _request.demandContent(this);
-                    return;
-                }
-
-                if (content instanceof Content.Trailers && _trailers != null)
-                    _trailers.add("Echo", "Trailers").add(((Content.Trailers)content).getTrailers());
-
-                if (!content.hasRemaining() && content.isLast())
-                {
-                    content.release();
-                    _callback.succeeded();
-                    return;
-                }
-
-                _content.set(ITERATING);
-                _response.write(content.isLast(), this, content.getByteBuffer());
-                if (_content.compareAndSet(ITERATING, content))
-                    return;
-                content.release();
-            }
-        }
-
-        @Override
-        public void succeeded()
-        {
-            Content content = _content.getAndSet(null);
-            if (content == ITERATING)
-                return;
-            content.release();
-            run();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            _callback.failed(x);
-        }
     }
 }

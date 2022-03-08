@@ -104,7 +104,7 @@ import org.eclipse.jetty.util.thread.Invocable;
  * }
  * }</pre>
  */
-public interface Request extends Attributes, Content.Provider
+public interface Request extends Attributes, Content.Reader
 {
     /**
      * @return a unique ID for this request

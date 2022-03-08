@@ -27,9 +27,9 @@ public abstract class ContentProcessor extends Content.Processor
     private Content _output;
     private Runnable _onContentAvailable;
 
-    public ContentProcessor(Content.Provider provider)
+    public ContentProcessor(Content.Reader reader)
     {
-        super(provider);
+        super(reader);
     }
 
     @Override

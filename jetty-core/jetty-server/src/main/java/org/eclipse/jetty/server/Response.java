@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * An asynchronous HTTP response.
  * TODO Javadoc
  */
-public interface Response
+public interface Response extends Content.Writer
 {
     Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
 
@@ -55,6 +55,7 @@ public interface Response
 
     HttpFields.Mutable getTrailers();
 
+    @Override
     void write(boolean last, Callback callback, ByteBuffer... content);
 
     default void write(boolean last, Callback callback, String utf8Content)
@@ -360,75 +361,6 @@ public interface Response
     // TODO test and document
     static OutputStream asOutputStream(Response response)
     {
-        return new OutputStream()
-        {
-            private final Blocking.Shared _blocking = new Blocking.Shared();
-
-            @Override
-            public void write(int b) throws IOException
-            {
-                write(new byte[]{(byte)b}, 0, 1);
-            }
-
-            @Override
-            public void write(byte[] b) throws IOException
-            {
-                write(b, 0, b.length);
-            }
-
-            @Override
-            public void write(byte[] b, int off, int len) throws IOException
-            {
-                try (Blocking.Callback callback = _blocking.callback())
-                {
-                    response.write(false, callback, ByteBuffer.wrap(b, off, len));
-                    callback.block();
-                }
-                catch (IOException e)
-                {
-                    throw e;
-                }
-                catch (Exception e)
-                {
-                    throw new IOException(e);
-                }
-            }
-
-            @Override
-            public void flush() throws IOException
-            {
-                try (Blocking.Callback callback = _blocking.callback())
-                {
-                    response.write(false, callback);
-                    callback.block();
-                }
-                catch (IOException e)
-                {
-                    throw e;
-                }
-                catch (Exception e)
-                {
-                    throw new IOException(e);
-                }
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                try (Blocking.Callback callback = _blocking.callback())
-                {
-                    response.write(true, callback);
-                    callback.block();
-                }
-                catch (IOException e)
-                {
-                    throw e;
-                }
-                catch (Exception e)
-                {
-                    throw new IOException(e);
-                }
-            }
-        };
+        return Content.asOutputStream(response);
     }
 }
