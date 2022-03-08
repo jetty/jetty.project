@@ -295,7 +295,6 @@ public class ServletScopedResponse extends ContextResponse
         }
     }
 
-
     public String getCharacterEncoding(boolean setContentType)
     {
         // First try explicit char encoding.

@@ -139,8 +139,7 @@ public class ErrorHandler implements Request.Processor
      * @param message the http error message
      * @throws IOException if the response cannot be generated
      */
-    protected void generateAcceptableResponse(ServletScopedRequest baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message)
-    throws IOException
+    protected void generateAcceptableResponse(ServletScopedRequest baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message) throws IOException
     {
         List<String> acceptable = baseRequest.getHeaders().getQualityCSV(HttpHeader.ACCEPT, QuotedQualityCSV.MOST_SPECIFIC_MIME_ORDERING);
 
@@ -178,8 +177,7 @@ public class ErrorHandler implements Request.Processor
      * @throws IOException if a Writer cannot be returned
      */
     @Deprecated
-    protected Writer getAcceptableWriter(Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-    throws IOException
+    protected Writer getAcceptableWriter(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
         List<String> acceptable = baseRequest.getHeaders().getQualityCSV(HttpHeader.ACCEPT_CHARSET);
         if (acceptable.isEmpty())
@@ -224,8 +222,7 @@ public class ErrorHandler implements Request.Processor
      * @param contentType The mimetype to generate (may be *&#47;*or other wildcard)
      * @throws IOException if a response cannot be generated
      */
-    protected void generateAcceptableResponse(ServletScopedRequest baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String contentType)
-    throws IOException
+    protected void generateAcceptableResponse(ServletScopedRequest baseRequest, HttpServletRequest request, HttpServletResponse response, int code, String message, String contentType) throws IOException
     {
         // We can generate an acceptable contentType, but can we generate an acceptable charset?
         // TODO refactor this in jetty-10 to be done in the other calling loop
@@ -340,14 +337,12 @@ public class ErrorHandler implements Request.Processor
         baseRequest.getServletChannel().sendResponseAndComplete();
     }
 
-    protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message)
-    throws IOException
+    protected void handleErrorPage(HttpServletRequest request, Writer writer, int code, String message) throws IOException
     {
         writeErrorPage(request, writer, code, message, _showStacks);
     }
 
-    protected void writeErrorPage(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks)
-    throws IOException
+    protected void writeErrorPage(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks) throws IOException
     {
         if (message == null)
             message = HttpStatus.getMessage(code);
@@ -359,8 +354,7 @@ public class ErrorHandler implements Request.Processor
         writer.write("\n</body>\n</html>\n");
     }
 
-    protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message)
-    throws IOException
+    protected void writeErrorPageHead(HttpServletRequest request, Writer writer, int code, String message) throws IOException
     {
         Charset charset = (Charset)request.getAttribute(ERROR_CHARSET);
         if (charset != null)
@@ -381,8 +375,7 @@ public class ErrorHandler implements Request.Processor
         writer.write("</title>\n");
     }
 
-    protected void writeErrorPageBody(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks)
-    throws IOException
+    protected void writeErrorPageBody(HttpServletRequest request, Writer writer, int code, String message, boolean showStacks) throws IOException
     {
         String uri = request.getRequestURI();
 
@@ -394,8 +387,7 @@ public class ErrorHandler implements Request.Processor
             .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 
-    protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri)
-    throws IOException
+    protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
     {
         writer.write("<h2>HTTP ERROR ");
         String status = Integer.toString(code);
@@ -423,8 +415,7 @@ public class ErrorHandler implements Request.Processor
         writer.write("</table>\n");
     }
 
-    private void htmlRow(Writer writer, String tag, Object value)
-    throws IOException
+    private void htmlRow(Writer writer, String tag, Object value) throws IOException
     {
         writer.write("<tr><th>");
         writer.write(tag);
@@ -489,8 +480,7 @@ public class ErrorHandler implements Request.Processor
             .collect(Collectors.joining(",\n", "{\n", "\n}")));
     }
 
-    protected void writeErrorPageStacks(HttpServletRequest request, Writer writer)
-    throws IOException
+    protected void writeErrorPageStacks(HttpServletRequest request, Writer writer) throws IOException
     {
         Throwable th = (Throwable)request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
         if (th != null)
@@ -596,8 +586,7 @@ public class ErrorHandler implements Request.Processor
         return _showMessageInTitle;
     }
 
-    protected void write(Writer writer, String string)
-    throws IOException
+    protected void write(Writer writer, String string) throws IOException
     {
         if (string == null)
             return;
