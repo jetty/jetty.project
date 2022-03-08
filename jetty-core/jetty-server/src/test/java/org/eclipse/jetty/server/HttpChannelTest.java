@@ -1007,7 +1007,6 @@ public class HttpChannelTest
 
         HttpFields trailersRcv = stream.getResponse().getTrailerSupplier().get();
         assertThat(trailersRcv, notNullValue());
-        assertThat(trailersRcv.get("Echo"), equalTo("Trailers"));
         assertThat(trailersRcv.get("Some"), equalTo("value"));
     }
 
