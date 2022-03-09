@@ -184,13 +184,15 @@ public class ServletHolderTest
         //Test adding servlet by classname
         try (StacklessLogging stackless = new StacklessLogging(BaseHolder.class, ServletHandler.class, ContextHandler.class, ServletContextHandler.class))
         {
+            Server server = new Server();
             ServletContextHandler context = new ServletContextHandler();
+            server.setHandler(context);
             ServletHandler handler = context.getServletHandler();
             ServletHolder holder = new ServletHolder();
             holder.setName("foo");
             holder.setClassName("org.eclipse.jetty.servlet.ServletHolderTest$FakeServlet");
             handler.addServlet(holder);
-            handler.start();
+            server.start();
             assertTrue(holder.isAvailable());
             assertTrue(holder.isStarted());
         }

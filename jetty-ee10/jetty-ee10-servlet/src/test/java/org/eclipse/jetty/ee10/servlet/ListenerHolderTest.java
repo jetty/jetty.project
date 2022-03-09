@@ -45,7 +45,7 @@ public class ListenerHolderTest
             ServletHandler handler = context.getServletHandler();
             handler.addListener(holder);
             holder.setServletHandler(handler);
-            context.start();
+            server.start();
             assertNotNull(holder.getListener());
         }
     }
