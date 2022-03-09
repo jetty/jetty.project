@@ -68,6 +68,7 @@
     <module>jetty-ee10-webapp</module>
     <module>jetty-ee10-websocket</module>
     <module>jetty-ee10-tests</module>
+    <module>jetty-examples</module>
     <module>jetty-ee10-bom</module>
   </modules>
 
