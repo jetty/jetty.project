@@ -96,7 +96,6 @@ public class CookieCache extends CookieCutter
             return _cookieList;
 
         parseFields(_rawFields);
-        _cookieList.clear();
         _parsed = true;
         return _cookieList;
     }
