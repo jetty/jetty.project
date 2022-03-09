@@ -134,7 +134,6 @@ public class DefaultSessionIdManagerTest
             return null;
         }
 
-        @Override
         public List<HttpCookie> getCookies()
         {
             // TODO Auto-generated method stub

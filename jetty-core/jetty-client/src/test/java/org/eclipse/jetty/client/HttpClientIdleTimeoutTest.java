@@ -70,7 +70,7 @@ public class HttpClientIdleTimeoutTest
             @Override
             protected void service(Request request, Response response)
             {
-                List<HttpCookie> cookies = request.getCookies();
+                List<HttpCookie> cookies = Request.getCookies(request);
                 if (cookies == null || cookies.size() == 0)
                 {
                     // Send a cookie in the first response.

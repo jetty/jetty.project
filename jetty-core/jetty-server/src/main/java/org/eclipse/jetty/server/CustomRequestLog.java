@@ -1106,7 +1106,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logRequestCookie(String arg, StringBuilder b, Request request, Response response)
     {
-        List<HttpCookie> cookies = request.getCookies();
+        List<HttpCookie> cookies = Request.getCookies(request);
         if (cookies != null)
         {
             for (HttpCookie c : cookies)
@@ -1126,7 +1126,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private static void logRequestCookies(StringBuilder b, Request request, Response response)
     {
         b.append('-');
-        List<HttpCookie> cookies = request.getCookies();
+        List<HttpCookie> cookies = Request.getCookies(request);
         if (cookies == null || cookies.size() == 0)
             b.append("-");
         else

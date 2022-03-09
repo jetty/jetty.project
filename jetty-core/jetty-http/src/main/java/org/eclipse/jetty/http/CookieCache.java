@@ -11,15 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.handler;
+package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import jakarta.servlet.http.Cookie;
-import org.eclipse.jetty.http.ComplianceViolation;
-import org.eclipse.jetty.http.CookieCompliance;
-import org.eclipse.jetty.http.CookieCutter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,31 +23,31 @@ import org.slf4j.LoggerFactory;
  * Cookie parser
  * <p>Optimized stateful cookie parser.  Cookies fields are added with the
  * {@link #addCookieField(String)} method and parsed on the next subsequent
- * call to {@link #getCookies()}.
+ * call to {@link #getCookies(HttpFields)}.
  * If the added fields are identical to those last added (as strings), then the
  * cookies are not re parsed.
+ * 
  */
-public class Cookies extends CookieCutter
+public class CookieCache extends CookieCutter
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(Cookies.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(CookieCache.class);
     protected final List<String> _rawFields = new ArrayList<>();
-    protected final List<Cookie> _cookieList = new ArrayList<>();
+    protected final List<HttpCookie> _cookieList = new ArrayList<>();
     private int _addedFields;
     private boolean _parsed = false;
-    private Cookie[] _cookies;
     private boolean _set = false;
 
-    public Cookies()
+    public CookieCache()
     {
         this(CookieCompliance.RFC6265, null);
     }
 
-    public Cookies(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
+    public CookieCache(CookieCompliance compliance, ComplianceViolation.Listener complianceListener)
     {
         super(compliance, complianceListener);
     }
 
-    public void addCookieField(String rawField)
+    private void addCookieField(String rawField)
     {
         if (_set)
             throw new IllegalStateException();
@@ -79,10 +75,16 @@ public class Cookies extends CookieCutter
         _parsed = false;
     }
 
-    public Cookie[] getCookies()
+    public List<HttpCookie> getCookies(HttpFields headers)
     {
-        if (_set)
-            return _cookies;
+        // TODO this could be done a lot better with a single iteration and not creating a new list etc.
+        _set = false;
+        _addedFields = 0;
+        for (HttpField field : headers)
+        {
+            if (HttpHeader.COOKIE.equals(field.getHeader()))
+                addCookieField(field.getValue());
+        }
 
         while (_rawFields.size() > _addedFields)
         {
@@ -91,27 +93,12 @@ public class Cookies extends CookieCutter
         }
 
         if (_parsed)
-            return _cookies;
+            return _cookieList;
 
         parseFields(_rawFields);
-        _cookies = (Cookie[])_cookieList.toArray(new Cookie[_cookieList.size()]);
         _cookieList.clear();
         _parsed = true;
-        return _cookies;
-    }
-
-    public void setCookies(Cookie[] cookies)
-    {
-        _cookies = cookies;
-        _set = true;
-    }
-
-    public void reset()
-    {
-        if (_set)
-            _cookies = null;
-        _set = false;
-        _addedFields = 0;
+        return _cookieList;
     }
 
     @Override
@@ -119,15 +106,8 @@ public class Cookies extends CookieCutter
     {
         try
         {
-            Cookie cookie = new Cookie(name, value);
-            if (domain != null)
-                cookie.setDomain(domain);
-            if (path != null)
-                cookie.setPath(path);
-            if (version > 0)
-                cookie.setVersion(version);
-            if (comment != null)
-                cookie.setComment(comment);
+            // TODO probably should only do name & value now.  Version is not longer a thing!
+            HttpCookie cookie = new HttpCookie(name, value, domain, path, -1, false, false, comment, version);
             _cookieList.add(cookie);
         }
         catch (Exception e)

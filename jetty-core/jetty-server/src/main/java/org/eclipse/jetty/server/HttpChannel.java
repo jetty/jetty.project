@@ -15,7 +15,6 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -24,7 +23,6 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.DateGenerator;
-import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -558,12 +556,6 @@ public class HttpChannel extends Attributes.Lazy
         public HttpFields getHeaders()
         {
             return _metaData.getFields();
-        }
-
-        @Override
-        public List<HttpCookie> getCookies()
-        {
-            return null;
         }
 
         @Override

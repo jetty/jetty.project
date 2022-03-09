@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -147,11 +148,6 @@ public interface Request extends Attributes, Content.Reader
      * @return the HTTP headers of this request
      */
     HttpFields getHeaders();
-
-    /**
-     * @return the cookies in this {@code Request}
-     */
-    List<HttpCookie> getCookies();
 
     long getTimeStamp();
 
@@ -308,6 +304,27 @@ public interface Request extends Attributes, Content.Reader
         return params;
     }
 
+    @SuppressWarnings("unchecked")
+    static List<HttpCookie> getCookies(Request request)
+    {
+        // TODO modify Request and HttpChannel to be optimised for the known attributes
+        List<HttpCookie> cookies = (List<HttpCookie>)request.getAttribute(Request.class.getCanonicalName() + ".Cookies");
+        if (cookies != null)
+            return cookies;
+
+        CookieCache cookieCache = (CookieCache)request.getHttpChannel().getAttribute(Request.class.getCanonicalName() + ".CookieCache");
+        if (cookieCache == null)
+        {
+            // TODO compliance listeners?
+            cookieCache = new CookieCache(request.getHttpChannel().getHttpConfiguration().getRequestCookieCompliance(), null);
+            request.getHttpChannel().setAttribute(Request.class.getCanonicalName() + ".CookieCache", cookieCache);
+        }
+
+        cookies = cookieCache.getCookies(request.getHeaders());
+        request.setAttribute(Request.class.getCanonicalName() + ".Cookies", cookies);
+        return cookies;
+    }
+
     /**
      * Common point to generate a proper "Location" header for redirects.
      *
@@ -449,12 +466,6 @@ public interface Request extends Attributes, Content.Reader
         public HttpFields getHeaders()
         {
             return getWrapped().getHeaders();
-        }
-
-        @Override
-        public List<HttpCookie> getCookies()
-        {
-            return getWrapped().getCookies();
         }
 
         @Override

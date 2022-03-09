@@ -187,7 +187,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         if (isUsingCookies())
         {
             //Cookie[] cookies = request.getCookies();
-            List<HttpCookie> cookies = request.getCookies();
+            List<HttpCookie> cookies = Request.getCookies(request);
             if (cookies != null && cookies.size() > 0)
             {
                 final String sessionCookie = getSessionCookie();

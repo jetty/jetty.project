@@ -81,7 +81,7 @@ public class CookiePatternRule extends PatternRule
     {
         // TODO: fix once Request.getCookies() is implemented (currently always returns null)
         // Check that cookie is not already set
-        List<HttpCookie> cookies = input.getCookies();
+        List<HttpCookie> cookies = Request.getCookies(input);
         if (cookies != null)
         {
             for (HttpCookie cookie : cookies)
