@@ -180,7 +180,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             String content = BufferUtil.toString(responseData.getData());
 
             // The upgrade request is seen as HTTP/1.1.
-            assertThat(content, containsString("Hello from Jetty using HTTP/1.1"));
+            assertThat(content, containsString("Hello from Jetty using HTTP/2.0"));
             assertThat(content, containsString("uri=/one"));
 
             // Send an HTTP/2 request.

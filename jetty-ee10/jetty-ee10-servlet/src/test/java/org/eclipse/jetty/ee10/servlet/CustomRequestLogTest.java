@@ -626,7 +626,7 @@ public class CustomRequestLogTest
         @Override
         protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
         {
-            ServletScopedRequest baseRequest = Objects.requireNonNull(ServletScopedRequest.getBaseRequest(request));
+            ServletContextRequest baseRequest = Objects.requireNonNull(ServletContextRequest.getBaseRequest(request));
 
             if (request.getRequestURI().contains("error404"))
             {

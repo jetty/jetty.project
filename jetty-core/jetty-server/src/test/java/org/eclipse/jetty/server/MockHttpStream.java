@@ -233,8 +233,8 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public void upgrade(Connection connection)
+    public boolean upgrade()
     {
-
+        throw new UnsupportedOperationException();
     }
 }

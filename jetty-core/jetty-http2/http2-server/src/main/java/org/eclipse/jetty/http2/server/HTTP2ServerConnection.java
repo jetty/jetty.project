@@ -403,13 +403,13 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     @Override
     public HttpVersion getVersion()
     {
-        return null;
+        return HttpVersion.HTTP_2;
     }
 
     @Override
     public String getProtocol()
     {
-        return null;
+        return getVersion().asString();
     }
 
     @Override

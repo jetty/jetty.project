@@ -60,6 +60,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
+import static org.eclipse.jetty.server.HttpChannel.UPGRADE_CONNECTION_ATTRIBUTE;
 
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
@@ -586,17 +587,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     private boolean upgrade()
     {
-        /**
-         * TODO deal with upgrade later
-        Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
+        // TODO the null check on the channel's request is only necessary to workaround a NPE
+        boolean upgrade = _channel.getRequest() != null && _channel.getHttpStream().upgrade();
+        if (!upgrade)
+            return false;
+
+        // TODO is that the right attribute? Or should HttpStream.upgrade() return that connection?
+        Connection connection = (Connection)_channel.getRequest().getAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE);
         if (connection == null)
             return false;
 
         if (LOG.isDebugEnabled())
             LOG.debug("Upgrade from {} to {}", this, connection);
-        _channel.getState().upgrade();
         getEndPoint().upgrade(connection);
-        _channel.recycle();
+        //_channel.recycle(); // TODO should something be done to the channel?
         _parser.reset();
         _generator.reset();
         if (_retainableByteBuffer != null)
@@ -612,8 +616,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             }
         }
         return true;
-         */
-        return false;
     }
 
     @Override
@@ -929,8 +931,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         protected void onCompleteSuccess()
         {
-            // TODO is this too late to get the request?
-            boolean upgrading = _channel.getRequest() != null && _channel.getRequest().getAttribute(HttpChannel.UPGRADE_CONNECTION_ATTRIBUTE) != null;
+            // TODO is this too late to get the request? And is that the right attribute and the right thing to do?
+            boolean upgrading = _channel.getRequest() != null && _channel.getRequest().getAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE) != null;
             release().succeeded();
             // If successfully upgraded it is responsibility of the next protocol to close the connection.
             if (_shutdownOut && !upgrading)
@@ -1092,6 +1094,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         Content _content;
         private boolean _connectionClose = false;
         private boolean _connectionKeepAlive = false;
+        private boolean _connectionUpgrade = false;
         private boolean _unknownExpectation = false;
         private boolean _expect100Continue = false;
         private boolean _expect102Processing = false;
@@ -1121,6 +1124,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         _connectionClose |= field.contains(HttpHeaderValue.CLOSE.asString());
                         if (HttpVersion.HTTP_1_0.equals(_version))
                             _connectionKeepAlive |= field.contains(HttpHeader.KEEP_ALIVE.asString());
+                        _connectionUpgrade |= field.contains(HttpHeaderValue.UPGRADE.asString());
                         break;
 
                     case HOST:
@@ -1279,7 +1283,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
                     // TODO?
                     _parser.close();
-                    throw new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426);
+                    throw new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426, "Upgrade Required");
                 }
 
                 default:
@@ -1418,10 +1422,51 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public void upgrade(Connection connection)
+        public boolean upgrade()
         {
-            // TODO
-            throw new UnsupportedOperationException();
+            if (LOG.isDebugEnabled())
+                LOG.debug("upgrade {} {}", this, _upgrade);
+
+            @SuppressWarnings("ReferenceEquality")
+            boolean isUpgradedH2C = (_upgrade == PREAMBLE_UPGRADE_H2C);
+
+            if (!isUpgradedH2C && !_connectionUpgrade)
+                throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
+
+            // Find the upgrade factory
+            ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()
+                    .filter(f -> f instanceof ConnectionFactory.Upgrading)
+                    .map(ConnectionFactory.Upgrading.class::cast)
+                    .filter(f -> f.getProtocols().contains(_upgrade.getValue()))
+                    .findAny()
+                    .orElse(null);
+
+            if (factory == null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No factory for {} in {}", _upgrade, getConnector());
+                return false;
+            }
+
+            // Create new connection
+            HttpFields.Mutable response101 = HttpFields.build();
+            Connection upgradeConnection = factory.upgradeConnection(getConnector(), getEndPoint(), _request, response101);
+            if (upgradeConnection == null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Upgrade ignored for {} by {}", _upgrade, factory);
+                return false;
+            }
+
+            // Send 101 if needed
+            if (!isUpgradedH2C)
+                send(_request, new MetaData.Response(HttpVersion.HTTP_1_1, HttpStatus.SWITCHING_PROTOCOLS_101, response101, 0), false, Callback.NOOP);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgradeConnection);
+            _channel.getRequest().setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, upgradeConnection); // TODO is that the right attribute?
+            //getHttpTransport().onCompleted(); // TODO: succeed callback instead?
+            return true;
         }
 
         @Override
