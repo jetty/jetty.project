@@ -48,7 +48,7 @@ public interface HttpStream extends Callback
 
     boolean isComplete();
 
-    void upgrade(org.eclipse.jetty.io.Connection connection);
+    boolean upgrade();
 
     default Throwable consumeAll()
     {
@@ -148,9 +148,9 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public void upgrade(Connection connection)
+        public boolean upgrade()
         {
-            _wrapped.upgrade(connection);
+            return _wrapped.upgrade();
         }
 
         @Override

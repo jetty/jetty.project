@@ -886,10 +886,10 @@ public class HttpChannelTest
                 }
 
                 @Override
-                public void upgrade(Connection connection)
+                public boolean upgrade()
                 {
                     history.add("upgrade");
-                    super.upgrade(connection);
+                    return super.upgrade();
                 }
 
                 @Override
