@@ -138,6 +138,7 @@ public interface Request extends Attributes, Content.Reader
     Context getContext();
 
     /**
+     * TODO see discussion in #7713, as this path should probably be canonically encoded - ie everything but %25 and %2F decoded
      * @return The part of the decoded path of the URI after any context path prefix has been removed.
      */
     String getPathInContext();
