@@ -142,6 +142,12 @@ public class DefaultSessionIdManagerTest
         }
 
         @Override
+        public long getTimeStamp()
+        {
+            return 0;
+        }
+
+        @Override
         public boolean isSecure()
         {
             // TODO Auto-generated method stub

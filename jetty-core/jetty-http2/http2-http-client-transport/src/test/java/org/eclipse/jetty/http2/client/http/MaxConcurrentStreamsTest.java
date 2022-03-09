@@ -15,6 +15,7 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -29,8 +30,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.AbstractConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
@@ -96,13 +95,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testOneConcurrentStream() throws Exception
     {
         long sleep = 1000;
-        start(1, new EmptyServerHandler()
+        start(1, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 // Sleep a bit to allow the second request to be queued.
                 sleep(sleep);
+                callback.succeeded();
             }
         });
         client.setMaxConnectionsPerDestination(1);
@@ -137,7 +137,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testManyIterationsWithConcurrentStreams() throws Exception
     {
         int concurrency = 1;
-        start(concurrency, new EmptyServerHandler());
+        start(concurrency, new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         int iterations = 50;
         IntStream.range(0, concurrency).parallel().forEach(i ->
@@ -163,12 +170,13 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testSmallMaxConcurrentStreamsExceededOnClient() throws Exception
     {
         int maxConcurrentStreams = 1;
-        startServer(maxConcurrentStreams, new EmptyServerHandler()
+        startServer(maxConcurrentStreams, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(1000);
+                callback.succeeded();
             }
         });
 
@@ -242,12 +250,13 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     {
         int maxStreams = 2;
         long sleep = 1000;
-        start(maxStreams, new EmptyServerHandler()
+        start(maxStreams, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(sleep);
+                callback.succeeded();
             }
         });
         client.setMaxConnectionsPerDestination(1);
@@ -284,12 +293,13 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testAbortedWhileQueued() throws Exception
     {
         long sleep = 1000;
-        start(1, new EmptyServerHandler()
+        start(1, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(sleep);
+                callback.succeeded();
             }
         });
         client.setMaxConnectionsPerDestination(1);
@@ -313,12 +323,13 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     {
         int maxConcurrent = 10;
         long sleep = 500;
-        start(maxConcurrent, new EmptyServerHandler()
+        start(maxConcurrent, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 sleep(sleep);
+                callback.succeeded();
             }
         });
         client.setMaxConnectionsPerDestination(1);
@@ -340,10 +351,10 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testManyConcurrentRequestsWithSmallConcurrentStreams() throws Exception
     {
         byte[] data = new byte[64 * 1024];
-        start(1, new EmptyServerHandler()
+        start(1, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
                 response.write(true, callback, ByteBuffer.wrap(data));
             }
@@ -399,13 +410,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
     public void testTwoStreamsFirstTimesOut() throws Exception
     {
         long timeout = 1000;
-        start(1, new EmptyServerHandler()
+        start(1, new Handler.Processor()
         {
             @Override
-            protected void service(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                if (target.endsWith("/1"))
+                if (request.getPathInContext().endsWith("/1"))
                     sleep(2 * timeout);
+                callback.succeeded();
             }
         });
         client.setMaxConnectionsPerDestination(1);
@@ -440,25 +452,22 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 switch (request.getURI().getPath())
                 {
-                    case "/1":
+                    case "/1" ->
                     {
                         // Do not return to cause TCP congestion.
                         assertTrue(awaitLatch(request1Latch, 15, TimeUnit.SECONDS));
                         MetaData.Response response1 = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response1, null, true), Callback.NOOP);
-                        break;
                     }
-                    case "/3":
+                    case "/3" ->
                     {
                         MetaData.Response response3 = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response3, null, true), Callback.NOOP);
-                        break;
                     }
-                    default:
+                    default ->
                     {
                         MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.INTERNAL_SERVER_ERROR_500, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                        break;
                     }
                 }
                 // Return a Stream listener that consumes the content.
@@ -555,7 +564,7 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                 MetaData.Request request = (MetaData.Request)frame.getMetaData();
                 switch (request.getURI().getPath())
                 {
-                    case "/prime":
+                    case "/prime" ->
                     {
                         session1 = stream.getSession();
                         // Send another request from here to force the opening of the 2nd connection.
@@ -564,16 +573,14 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                             MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, result.getResponse().getStatus(), HttpFields.EMPTY);
                             stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                         });
-                        break;
                     }
-                    case "/prime2":
+                    case "/prime2" ->
                     {
                         session2 = stream.getSession();
                         MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                        break;
                     }
-                    case "/update_max_streams":
+                    case "/update_max_streams" ->
                     {
                         Session session = stream.getSession() == session1 ? session2 : session1;
                         Map<Integer, Integer> settings = new HashMap<>();
@@ -581,14 +588,12 @@ public class MaxConcurrentStreamsTest extends AbstractTest
                         session.settings(new SettingsFrame(settings, false), Callback.NOOP);
                         MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                        break;
                     }
-                    default:
+                    default ->
                     {
                         sleep(processing);
                         MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
                         stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
-                        break;
                     }
                 }
                 return null;

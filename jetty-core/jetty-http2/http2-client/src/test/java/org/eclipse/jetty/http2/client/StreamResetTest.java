@@ -14,7 +14,9 @@
 package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InterruptedIOException;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -35,14 +37,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.WriteListener;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -73,10 +67,12 @@ import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BufferUtil;
@@ -266,18 +262,18 @@ public class StreamResetTest extends AbstractTest
         CountDownLatch commitLatch = new CountDownLatch(1);
         CountDownLatch resetLatch = new CountDownLatch(1);
         CountDownLatch dataLatch = new CountDownLatch(1);
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 Charset charset = StandardCharsets.UTF_8;
                 byte[] data = "AFTER RESET".getBytes(charset);
 
                 response.setStatus(200);
                 response.setContentType("text/plain;charset=" + charset.name());
-                response.setContentLength(data.length * 10);
-                response.flushBuffer();
+                response.setContentLength(data.length * 10L);
+                Response.write(response, false);
                 // Wait for the commit callback to complete.
                 commitLatch.countDown();
 
@@ -300,8 +296,7 @@ public class StreamResetTest extends AbstractTest
                     for (int i = 0; i < 100; i++)
                     {
                         Thread.sleep(100);
-                        response.write(true, callback, ByteBuffer.wrap(data));
-                        response.flushBuffer();
+                        Response.write(response, false, ByteBuffer.wrap(data));
                     }
                 }
                 catch (InterruptedException x)
@@ -346,10 +341,10 @@ public class StreamResetTest extends AbstractTest
         CountDownLatch commitLatch = new CountDownLatch(1);
         CountDownLatch resetLatch = new CountDownLatch(1);
         CountDownLatch dataLatch = new CountDownLatch(1);
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void doGet(HttpServletRequest request, final HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 Charset charset = StandardCharsets.UTF_8;
                 final ByteBuffer data = ByteBuffer.wrap("AFTER RESET".getBytes(charset));
@@ -357,7 +352,7 @@ public class StreamResetTest extends AbstractTest
                 response.setStatus(200);
                 response.setContentType("text/plain;charset=" + charset.name());
                 response.setContentLength(data.remaining());
-                response.flushBuffer();
+                Response.write(response, false);
                 // Wait for the commit callback to complete.
                 commitLatch.countDown();
 
@@ -374,7 +369,6 @@ public class StreamResetTest extends AbstractTest
                 }
 
                 // Write some content asynchronously after the stream has been reset.
-                final AsyncContext context = request.startAsync();
                 new Thread(() ->
                 {
                     try
@@ -383,16 +377,11 @@ public class StreamResetTest extends AbstractTest
                         // doGet() so this is really asynchronous.
                         Thread.sleep(1000);
 
-                        HttpOutput output = (HttpOutput)response.getOutputStream();
-                        output.sendContent(data, new Callback()
+                        response.write(true, Callback.from(callback::succeeded, x ->
                         {
-                            @Override
-                            public void failed(Throwable x)
-                            {
-                                context.complete();
-                                dataLatch.countDown();
-                            }
-                        });
+                            callback.succeeded();
+                            dataLatch.countDown();
+                        }), data);
                     }
                     catch (Throwable x)
                     {
@@ -430,7 +419,14 @@ public class StreamResetTest extends AbstractTest
     @Test
     public void testClientResetConsumesQueuedData() throws Exception
     {
-        start(new EmptyHttpServlet());
+        start(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                callback.succeeded();
+            }
+        });
 
         Session client = newClient(new Session.Listener.Adapter());
         MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
@@ -475,17 +471,18 @@ public class StreamResetTest extends AbstractTest
         h2.setInitialStreamRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         connector = new ServerConnector(server, 1, 1, h2);
         server.addConnector(connector);
-        ServletContextHandler context = new ServletContextHandler(server, "/");
         AtomicReference<CountDownLatch> phaser = new AtomicReference<>();
-        context.addServlet(new ServletHolder(new HttpServlet()
+        server.setHandler(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 phaser.get().countDown();
-                IO.copy(request.getInputStream(), response.getOutputStream());
+                InputStream inputStream = Request.asInputStream(request);
+                OutputStream outputStream = Response.asOutputStream(response);
+                IO.copy(inputStream, outputStream);
             }
-        }), servletPath + "/*");
+        });
         server.start();
 
         prepareClient();
@@ -562,23 +559,16 @@ public class StreamResetTest extends AbstractTest
     @Test
     public void testServerExceptionConsumesQueuedData() throws Exception
     {
-        try (StacklessLogging suppressor = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
         {
-            start(new HttpServlet()
+            start(new Handler.Processor()
             {
                 @Override
-                protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+                public void process(Request request, Response response, Callback callback) throws Exception
                 {
-                    try
-                    {
-                        // Wait to let the data sent by the client to be queued.
-                        Thread.sleep(1000);
-                        throw new IllegalStateException("explicitly_thrown_by_test");
-                    }
-                    catch (InterruptedException e)
-                    {
-                        throw new InterruptedIOException();
-                    }
+                    // Wait to let the data sent by the client to be queued.
+                    Thread.sleep(1000);
+                    throw new IllegalStateException("explicitly_thrown_by_test");
                 }
             });
 
@@ -616,20 +606,18 @@ public class StreamResetTest extends AbstractTest
     {
         int windowSize = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
         CountDownLatch writeLatch = new CountDownLatch(1);
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                AsyncContext asyncContext = request.startAsync();
-                asyncContext.start(() ->
+                new Thread(() ->
                 {
                     try
                     {
                         // Make sure we are in async wait before writing.
                         Thread.sleep(1000);
-                        response.write(true, callback, ByteBuffer.wrap(new byte[10 * windowSize]));
-                        asyncContext.complete();
+                        Response.write(response, true, ByteBuffer.wrap(new byte[10 * windowSize]));
                     }
                     catch (IOException x)
                     {
@@ -639,7 +627,7 @@ public class StreamResetTest extends AbstractTest
                     {
                         x.printStackTrace();
                     }
-                });
+                }).start();
             }
         });
 
@@ -676,17 +664,16 @@ public class StreamResetTest extends AbstractTest
     {
         int windowSize = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
         CountDownLatch writeLatch = new CountDownLatch(1);
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
                 try
                 {
-                    ServletOutputStream output = response.getOutputStream();
-                    output.write(new byte[10 * windowSize]);
+                    Response.write(response, true, ByteBuffer.wrap(new byte[10 * windowSize]));
                 }
-                catch (IOException e)
+                catch (IOException x)
                 {
                     writeLatch.countDown();
                 }
@@ -731,41 +718,16 @@ public class StreamResetTest extends AbstractTest
     {
         int windowSize = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
         CountDownLatch writeLatch = new CountDownLatch(1);
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                AsyncContext asyncContext = request.startAsync();
-                ServletOutputStream output = response.getOutputStream();
-                output.setWriteListener(new WriteListener()
+                response.write(true, Callback.from(callback::succeeded, x ->
                 {
-                    private boolean written;
-
-                    @Override
-                    public void onWritePossible() throws IOException
-                    {
-                        while (output.isReady())
-                        {
-                            if (written)
-                            {
-                                asyncContext.complete();
-                                break;
-                            }
-                            else
-                            {
-                                output.write(new byte[10 * windowSize]);
-                                written = true;
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void onError(Throwable t)
-                    {
-                        writeLatch.countDown();
-                    }
-                });
+                    writeLatch.countDown();
+                    callback.succeeded();
+                }), ByteBuffer.wrap(new byte[10 * windowSize]));
             }
         });
 
@@ -803,10 +765,10 @@ public class StreamResetTest extends AbstractTest
         CountDownLatch requestLatch = new CountDownLatch(1);
         CountDownLatch readLatch = new CountDownLatch(1);
         CountDownLatch failureLatch = new CountDownLatch(1);
-        start(new HttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 try
                 {
@@ -814,11 +776,7 @@ public class StreamResetTest extends AbstractTest
                     readLatch.await();
 
                     // Attempt to read after reset must throw.
-                    request.getInputStream().read();
-                }
-                catch (InterruptedException x)
-                {
-                    throw new InterruptedIOException();
+                    Content.readBytes(request);
                 }
                 catch (IOException expected)
                 {
@@ -856,21 +814,19 @@ public class StreamResetTest extends AbstractTest
         CountDownLatch flusherLatch = new CountDownLatch(1);
         CountDownLatch writeLatch1 = new CountDownLatch(1);
         CountDownLatch writeLatch2 = new CountDownLatch(1);
-        start(new EmptyHttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                Request jettyRequest = (Request)request;
-                flusherRef.set(((AbstractEndPoint)jettyRequest.getHttpChannel().getEndPoint()).getWriteFlusher());
+                flusherRef.set(((AbstractEndPoint)request.getHttpChannel().getEndPoint()).getWriteFlusher());
                 flusherLatch.countDown();
 
-                ServletOutputStream output = response.getOutputStream();
                 try
                 {
                     // Large write, it blocks due to TCP congestion.
                     byte[] data = new byte[128 * 1024 * 1024];
-                    output.write(data);
+                    Response.write(response, false, ByteBuffer.wrap(data));
                 }
                 catch (IOException x)
                 {
@@ -878,7 +834,7 @@ public class StreamResetTest extends AbstractTest
                     try
                     {
                         // Try to write again, must fail immediately.
-                        output.write(0xFF);
+                        Response.write(response, true, ByteBuffer.wrap(new byte[]{1}));
                     }
                     catch (IOException e)
                     {
@@ -905,7 +861,7 @@ public class StreamResetTest extends AbstractTest
             // Max session HTTP/2 flow control window.
             generator.control(lease, new WindowUpdateFrame(0, Integer.MAX_VALUE - FlowControlStrategy.DEFAULT_WINDOW_SIZE));
 
-            HttpURI uri = HttpURI.from("http", host, port, servletPath);
+            HttpURI uri = HttpURI.from("http", host, port, "/");
             MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
             int streamId = 3;
             HeadersFrame headersFrame = new HeadersFrame(streamId, request, null, true);
@@ -936,57 +892,44 @@ public class StreamResetTest extends AbstractTest
         CountDownLatch requestLatch1 = new CountDownLatch(1);
         CountDownLatch requestLatch2 = new CountDownLatch(1);
         CountDownLatch writeLatch1 = new CountDownLatch(1);
-        start(new EmptyHttpServlet()
+        start(new Handler.Processor()
         {
             @Override
-            protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                if (request.getPathInfo().equals("/1"))
-                    service1(request, response);
-                else if (request.getPathInfo().equals("/2"))
-                    service2(request, response);
+                String target = request.getPathInContext();
+                if (target.equals("/1"))
+                    service1(request, response, callback);
+                else if (target.equals("/2"))
+                    service2(response, callback);
                 else
                     throw new IllegalArgumentException();
             }
 
-            private void service1(HttpServletRequest request, HttpServletResponse response) throws IOException
+            private void service1(Request request, Response response, Callback callback) throws Exception
             {
-                try
-                {
-                    Request jettyRequest = (Request)request;
-                    exchanger.exchange(((AbstractEndPoint)jettyRequest.getHttpChannel().getEndPoint()).getWriteFlusher());
-
-                    ServletOutputStream output = response.getOutputStream();
-                    // Large write, it blocks due to TCP congestion.
-                    output.write(new byte[128 * 1024 * 1024]);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new InterruptedIOException();
-                }
+                exchanger.exchange(((AbstractEndPoint)request.getHttpChannel().getEndPoint()).getWriteFlusher());
+                // Large write, it blocks due to TCP congestion.
+                response.write(true, callback, ByteBuffer.wrap(new byte[128 * 1024 * 1024]));
             }
 
-            private void service2(HttpServletRequest request, HttpServletResponse response) throws IOException
+            private void service2(Response response, Callback callback) throws Exception
             {
                 try
                 {
                     requestLatch1.countDown();
                     requestLatch2.await();
-                    ServletOutputStream output = response.getOutputStream();
                     int length = 512 * 1024;
                     AbstractHTTP2ServerConnectionFactory h2 = connector.getConnectionFactory(AbstractHTTP2ServerConnectionFactory.class);
                     if (h2 != null)
                         length = h2.getHttpConfiguration().getOutputAggregationSize();
-                    // Medium write so we don't aggregate it, must not block.
-                    output.write(new byte[length * 2]);
+                    // Medium write, so we don't aggregate it, must not block.
+                    Response.write(response, true, ByteBuffer.wrap(new byte[length * 2]));
                 }
                 catch (IOException x)
                 {
                     writeLatch1.countDown();
-                }
-                catch (InterruptedException x)
-                {
-                    throw new InterruptedIOException();
+                    callback.succeeded();
                 }
             }
         });
@@ -1008,7 +951,7 @@ public class StreamResetTest extends AbstractTest
             // Max session HTTP/2 flow control window.
             generator.control(lease, new WindowUpdateFrame(0, Integer.MAX_VALUE - FlowControlStrategy.DEFAULT_WINDOW_SIZE));
 
-            HttpURI uri = HttpURI.from("http", host, port, servletPath + "/1");
+            HttpURI uri = HttpURI.from("http", host, port, "/1");
             MetaData.Request request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
             HeadersFrame headersFrame = new HeadersFrame(3, request, null, true);
             generator.control(lease, headersFrame);
@@ -1019,7 +962,7 @@ public class StreamResetTest extends AbstractTest
             waitUntilTCPCongested(exchanger.exchange(null));
 
             // Send a second request.
-            uri = HttpURI.from("http", host, port, servletPath + "/2");
+            uri = HttpURI.from("http", host, port, "/2");
             request = new MetaData.Request(HttpMethod.GET.asString(), uri, HttpVersion.HTTP_2, HttpFields.EMPTY);
             int streamId = 5;
             headersFrame = new HeadersFrame(streamId, request, null, true);

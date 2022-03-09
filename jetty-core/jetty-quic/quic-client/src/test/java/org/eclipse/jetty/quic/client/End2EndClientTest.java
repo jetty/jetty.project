@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.quic.client;
 
-import java.io.PrintWriter;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -28,10 +27,13 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.quic.server.QuicServerConnector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -46,12 +48,13 @@ public class End2EndClientTest
     private Server server;
     private QuicServerConnector connector;
     private HttpClient client;
-    private final String responseContent = "" +
-        "<html>\n" +
-        "\t<body>\n" +
-        "\t\tRequest served\n" +
-        "\t</body>\n" +
-        "</html>";
+    private final String responseContent = """
+        <html>
+          <body>
+            Request served
+          </body>
+        </html>
+        """;
 
     @BeforeEach
     public void setUp() throws Exception
@@ -71,10 +74,9 @@ public class End2EndClientTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
-                PrintWriter writer = response.getWriter();
-                writer.print(responseContent);
+                response.write(true, callback, responseContent);
             }
         });
 

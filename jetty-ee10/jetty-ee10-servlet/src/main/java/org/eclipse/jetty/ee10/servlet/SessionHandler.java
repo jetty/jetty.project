@@ -47,7 +47,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionHandler;
 import org.eclipse.jetty.session.Session;
-import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -595,30 +594,30 @@ public class SessionHandler extends AbstractSessionHandler
     public Request.Processor handle(Request request) throws Exception
     {
         // find and set the session if one exists
-        resolveRequestedSessionId(request);
+        RequestedSession requestedSession = resolveRequestedSessionId(request);
         
-        Session session = (Session)request.getAttribute(SessionManager.__Resolved_Session);
+        /*        Session session = (Session)request.getAttribute(SessionManager.__Resolved_Session);
         String requestedSessionId = (String)request.getAttribute(__Requested_Session_Id);
-        boolean requestedSessionIdFromCookie = (Boolean)request.getAttribute(__Requested_Session_Id_From_Cookie);
+        boolean requestedSessionIdFromCookie = (Boolean)request.getAttribute(__Requested_Session_Id_From_Cookie);*/
         
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-        ServletContextRequest.ServletApiRequest mutableServletRequest =
+        ServletContextRequest.ServletApiRequest servletApiRequest =
             (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
 
 
         //TODO if not the correct type of request, pass it on to our wrapped handlers?
-        if (mutableServletRequest == null)
+        if (servletApiRequest == null)
             throw new IllegalStateException("Request is not a MutableHttpServletRequest");
 
-        mutableServletRequest.setSession(session);
-        mutableServletRequest.setSessionManager(this);
+        servletApiRequest.setSession(requestedSession.session());
+        servletApiRequest.setSessionManager(this);
+        servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
+        servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
 
         ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
-        ServletContextResponse.ServletApiResponse mutableServletResponse =
-            (servletContextResponse == null ? null : servletContextResponse.getServletApiResponse());
         
         //Update the cookie
-        HttpCookie cookie = access(session, request.getConnectionMetaData().isSecure());
+        HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
 
         // Handle changed ID or max-age refresh, but only if this is not a redispatched request
         if (cookie != null)
@@ -628,24 +627,22 @@ public class SessionHandler extends AbstractSessionHandler
         new HttpStream.Wrapper(s)
         {
             @Override
-            public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, Callback callback, ByteBuffer... content)
             {
-                if (response != null)
+                if (metadataResponse != null)
                 {
                     // Write out session
-                    if (session != null)
-                        commit(session);
+                    commit(ServletContextRequest.ServletApiRequest.getSession(servletApiRequest.getSession()));
                 }
-                super.send(request, response, last, callback, content);
+                super.send(metadataRequest, metadataResponse, last, callback, content);
             }
 
             @Override
             public void succeeded()
             {
-                super.succeeded();
                 // Leave session
-                if (session != null)
-                    complete(session);
+                super.succeeded();
+                complete(ServletContextRequest.ServletApiRequest.getSession(servletApiRequest.getSession()));
             }
 
             @Override
@@ -653,9 +650,7 @@ public class SessionHandler extends AbstractSessionHandler
             {
                 super.failed(x);
                 //Leave session
-                if (session != null)
-                    complete(session);
-
+                complete(ServletContextRequest.ServletApiRequest.getSession(servletApiRequest.getSession()));
             }
         });
 

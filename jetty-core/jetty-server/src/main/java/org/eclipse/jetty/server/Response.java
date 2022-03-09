@@ -53,6 +53,9 @@ public interface Response extends Content.Writer
 
     HttpFields.Mutable getHeaders();
 
+    // TODO: change this to trailers(Supplier<HttpFields> supplier)
+    //  so that the method name is less confusing?
+    //  (it has a side effect, but looks like a normal getter).
     HttpFields.Mutable getTrailers();
 
     @Override
@@ -63,6 +66,7 @@ public interface Response extends Content.Writer
         write(last, callback, StandardCharsets.UTF_8.encode(utf8Content));
     }
 
+    // TODO: this method should be moved to Request.
     void push(MetaData.Request request);
 
     boolean isCommitted();
@@ -285,6 +289,23 @@ public interface Response extends Content.Writer
         // fall back to very empty error page
         response.getHeaders().put(ErrorProcessor.ERROR_CACHE_CONTROL);
         response.write(true, callback);
+    }
+
+    static Response getOriginalResponse(Response response)
+    {
+        while (response instanceof Response.Wrapper wrapped)
+        {
+            response = wrapped.getWrapped();
+        }
+        return response;
+    }
+
+    static long getBytesWritten(Response response)
+    {
+        Response originalResponse = getOriginalResponse(response);
+        if (originalResponse instanceof HttpChannel.ChannelResponse channelResponse)
+            return channelResponse.getByteWritten();
+        return -1;
     }
 
     class Wrapper implements Response

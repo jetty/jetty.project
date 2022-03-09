@@ -135,7 +135,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTest
         assertEquals(HttpStatus.OK_200, response.getStatus(), "Response status code");
         String result = response.get("X-Path");
         String query = response.get("X-Query");
-        if(StringUtil.isNotBlank(query))
+        if (StringUtil.isNotBlank(query))
             result = result + '?' + query;
 
         assertThat(result, is(expectedResult));

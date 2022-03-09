@@ -32,6 +32,8 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.HTTP2ClientConnectionFactory;
+import org.eclipse.jetty.http2.client.http.internal.HTTPSessionListenerPromise;
+import org.eclipse.jetty.http2.client.http.internal.HttpConnectionOverHTTP2;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
@@ -189,7 +191,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         }
 
         @Override
-        void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
+        public void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
         {
             HttpClientTransportOverHTTP2.this.onClose(connection, frame);
         }

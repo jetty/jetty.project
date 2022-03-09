@@ -1035,7 +1035,7 @@ public class AsyncServletTest
         public void log(Request request, Response response)
         {
             int status = response.getStatus();
-            long written = response.getRequest().getHttpChannel().getBytesWritten();
+            long written = Response.getBytesWritten(response);
             _log.add(status + " " + written + " " + request.getHttpURI());
         }
     }

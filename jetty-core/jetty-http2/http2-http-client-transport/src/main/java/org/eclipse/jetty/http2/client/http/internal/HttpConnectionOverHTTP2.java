@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client.http;
+package org.eclipse.jetty.http2.client.http.internal;
 
 import java.nio.channels.AsynchronousCloseException;
 import java.util.Iterator;

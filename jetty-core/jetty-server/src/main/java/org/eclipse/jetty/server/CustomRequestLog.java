@@ -27,6 +27,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.util.DateCache;
@@ -213,6 +215,7 @@ import static java.lang.invoke.MethodType.methodType;
  * </td>
  * </tr>
  *
+ * // TODO ATTRIBUTE LOGGING
  * <tr>
  * <td>%r</td>
  * <td>
@@ -1038,91 +1041,83 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logResponseSize(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO  long written = request.getHttpChannel().getBytesWritten();
-//        b.append(written);
+        long written = Response.getBytesWritten(response);
+        b.append(written);
     }
 
     @SuppressWarnings("unused")
     private static void logResponseSizeCLF(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO  long written = request.getHttpChannel().getBytesWritten();
-//        if (written == 0)
-//            b.append('-');
-//        else
-//            b.append(written);
+        long written = Response.getBytesWritten(response);
+        if (written == 0)
+            b.append('-');
+        else
+            b.append(written);
     }
 
     @SuppressWarnings("unused")
     private static void logBytesSent(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO  b.append(response.getHttpChannel().getBytesWritten());
+        b.append(Response.getBytesWritten(response));
     }
 
     @SuppressWarnings("unused")
     private static void logBytesSentCLF(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO  long sent = response.getHttpChannel().getBytesWritten();
-//        if (sent == 0)
-//            b.append('-');
-//        else
-//            b.append(sent);
+        long sent = Response.getBytesWritten(response);
+        if (sent == 0)
+            b.append('-');
+        else
+            b.append(sent);
     }
 
     @SuppressWarnings("unused")
     private static void logBytesReceived(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO b.append(request.getHttpInput().getContentReceived());
+        b.append(Request.getBytesRead(request));
     }
 
     @SuppressWarnings("unused")
     private static void logBytesReceivedCLF(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO long received = request.getHttpInput().getContentReceived();
-//        if (received == 0)
-//            b.append('-');
-//        else
-//            b.append(received);
+        long received = Request.getBytesRead(request);
+        if (received == 0)
+            b.append('-');
+        else
+            b.append(received);
     }
 
     @SuppressWarnings("unused")
     private static void logBytesTransferred(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO b.append(request.getHttpInput().getContentReceived() + response.getHttpOutput().getWritten());
+        b.append(Request.getBytesRead(request) + Response.getBytesWritten(response));
     }
 
     @SuppressWarnings("unused")
     private static void logBytesTransferredCLF(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO long transferred = request.getHttpInput().getContentReceived() + response.getHttpOutput().getWritten();
-//        if (transferred == 0)
-//            b.append('-');
-//        else
-//            b.append(transferred);
+        long transferred = Request.getBytesRead(request) + Response.getBytesWritten(response);
+        if (transferred == 0)
+            b.append('-');
+        else
+            b.append(transferred);
     }
 
     @SuppressWarnings("unused")
     private static void logRequestCookie(String arg, StringBuilder b, Request request, Response response)
     {
-//      TODO Cookie[] cookies = request.getCookies();
-//        if (cookies != null)
-//        {
-//            for (Cookie c : cookies)
-//            {
-//                if (arg.equals(c.getName()))
-//                {
-//                    b.append(c.getValue());
-//                    return;
-//                }
-//            }
-//        }
+        List<HttpCookie> cookies = request.getCookies();
+        if (cookies != null)
+        {
+            for (HttpCookie c : cookies)
+            {
+                if (arg.equals(c.getName()))
+                {
+                    b.append(c.getValue());
+                    return;
+                }
+            }
+        }
 
         b.append('-');
     }
@@ -1131,20 +1126,20 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     private static void logRequestCookies(StringBuilder b, Request request, Response response)
     {
         b.append('-');
-//      TODO Cookie[] cookies = request.getCookies();
-//        if (cookies == null || cookies.length == 0)
-//            b.append("-");
-//        else
-//        {
-//            for (int i = 0; i < cookies.length; i++)
-//            {
-//                if (i != 0)
-//                    b.append(';');
-//                b.append(cookies[i].getName());
-//                b.append('=');
-//                b.append(cookies[i].getValue());
-//            }
-//        }
+        List<HttpCookie> cookies = request.getCookies();
+        if (cookies == null || cookies.size() == 0)
+            b.append("-");
+        else
+        {
+            for (int i = 0; i < cookies.size(); i++)
+            {
+                if (i != 0)
+                    b.append(';');
+                b.append(cookies.get(i).getName());
+                b.append('=');
+                b.append(cookies.get(i).getValue());
+            }
+        }
     }
 
     @SuppressWarnings("unused")
@@ -1281,7 +1276,7 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logUrlRequestPath(StringBuilder b, Request request, Response response)
     {
-        append(b, request.getHttpURI().toString());
+        append(b, request.getHttpURI().getPath());
     }
 
     @SuppressWarnings("unused")
@@ -1294,29 +1289,21 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logRequestTrailer(String arg, StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO HttpFields trailers = request.getTrailerHttpFields();
-//        if (trailers != null)
-//            append(b, trailers.get(arg));
-//        else
-//            b.append('-');
+        HttpFields trailers = response.getTrailers();
+        if (trailers != null)
+            append(b, trailers.get(arg));
+        else
+            b.append('-');
     }
 
     @SuppressWarnings("unused")
     private static void logResponseTrailer(String arg, StringBuilder b, Request request, Response response)
     {
         b.append('-');
-//      TODO Supplier<HttpFields> supplier = response.getTrailers();
-//        if (supplier != null)
-//        {
-//            HttpFields trailers = supplier.get();
-//
-//            if (trailers != null)
-//                append(b, trailers.get(arg));
-//            else
-//                b.append('-');
-//        }
-//        else
-//            b.append("-");
+        HttpFields trailers = response.getTrailers();
+        if (trailers != null)
+            append(b, trailers.get(arg));
+        else
+            b.append('-');
     }
 }
