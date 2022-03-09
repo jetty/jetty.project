@@ -152,10 +152,10 @@ public class ServletHandler extends Handler.Wrapper
     {
         try (AutoLock ignored = lock())
         {
-            ContextHandler.ContextHandlerContext context = ContextHandler.getCurrentContext();
-            if (!(context instanceof ServletContextHandler.ServletContextHandlerContext))
+            ContextHandler.Context context = ContextHandler.getCurrentContext();
+            if (!(context instanceof ServletContextHandler.Context))
                 throw new IllegalStateException("Cannot use ServletHandler without ServletContextHandler");
-            _servletContext = ((ServletContextHandler.ServletContextHandlerContext)context).getServletContext();
+            _servletContext = ((ServletContextHandler.Context)context).getServletContext();
             _contextHandler = context.getContextHandler();
 
             if (_contextHandler != null)

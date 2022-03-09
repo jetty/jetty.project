@@ -164,8 +164,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     public static ServletContextHandler getServletContextHandler(ServletContext servletContext, String purpose)
     {
-        if (servletContext instanceof ServletContextHandlerContext)
-            return ((ServletContextHandlerContext)servletContext).getServletContextHandler();
+        if (servletContext instanceof Context)
+            return ((Context)servletContext).getServletContextHandler();
         throw new IllegalStateException("No Jetty ServletContextHandler, " + purpose + " unavailable");
     }
 
@@ -181,18 +181,18 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         return getServletContext(ContextHandler.getCurrentContext());
     }
 
-    public static ServletContext getServletContext(ContextHandlerContext context)
+    public static ServletContext getServletContext(ContextHandler.Context context)
     {
-        if (context instanceof ServletContextHandlerContext)
-            return ((ServletContextHandlerContext)context).getServletContext();
+        if (context instanceof Context)
+            return ((Context)context).getServletContext();
         return null;
     }
 
     public static ServletContextHandler getCurrentServletContextHandler()
     {
-        ContextHandlerContext context = ContextHandler.getCurrentContext();
-        if (context instanceof ServletContextHandlerContext)
-            return ((ServletContextHandlerContext)context).getServletContextHandler();
+        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        if (context instanceof Context)
+            return ((Context)context).getServletContextHandler();
         return null;
     }
 
@@ -1068,13 +1068,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
          */
-        void enterScope(ServletContextHandlerContext context, ServletContextRequest request);
+        void enterScope(Context context, ServletContextRequest request);
 
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        void exitScope(ServletContextHandlerContext context, ServletContextRequest request);
+        void exitScope(Context context, ServletContextRequest request);
     }
 
     public ServletContext getServletContext()
@@ -1083,15 +1083,15 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     @Override
-    protected ContextHandlerContext newContext()
+    protected ContextHandler.Context newContext()
     {
-        return new ServletContextHandlerContext();
+        return new Context();
     }
 
     @Override
-    public ServletContextHandlerContext getContext()
+    public Context getContext()
     {
-        return (ServletContextHandlerContext)super.getContext();
+        return (Context)super.getContext();
     }
 
     protected void setParent(Container parent)
@@ -1136,7 +1136,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             if (listener instanceof ServletContextScopeListener)
             {
-                ContextHandlerContext currentContext = ContextHandler.getCurrentContext();
+                ContextHandler.Context currentContext = ContextHandler.getCurrentContext();
                 _contextListeners.add((ServletContextScopeListener)listener);
                 if (currentContext != null)
                     ((ServletContextScopeListener)listener).enterScope(getContext(), null);
@@ -1272,7 +1272,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         ClassLoader oldClassloader = null;
         Thread currentThread = null;
-        ContextHandlerContext oldContext = null;
+        ContextHandler.Context oldContext = null;
 
         _attributes.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
 
@@ -1320,7 +1320,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         // TODO: Review.
         enterScope(null);
 
-        ServletContextHandlerContext context = getContext();
+        Context context = getContext();
         try
         {
             // Set the classloader
@@ -2238,7 +2238,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
     }
 
-    public class ServletContextHandlerContext extends ContextHandlerContext
+    public class Context extends ContextHandler.Context
     {
         public ServletContextApi getServletContext()
         {
@@ -2342,7 +2342,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             _effectiveMinorVersion = v;
         }
 
-        public ServletContextHandlerContext getContext()
+        public Context getContext()
         {
             return ServletContextHandler.this.getContext();
         }

@@ -159,9 +159,9 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     }
 
     @Override
-    public ServletContextHandler.ServletContextHandlerContext getContext()
+    public ServletContextHandler.Context getContext()
     {
-        return (ServletContextHandler.ServletContextHandlerContext)super.getContext();
+        return (ServletContextHandler.Context)super.getContext();
     }
 
     public HttpInput getHttpInput()
@@ -217,10 +217,10 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     }
 
     /**
-     * @return The current {@link ContextHandler.ContextHandlerContext context} used for this error handling for this request.  If the request is asynchronous,
+     * @return The current {@link ContextHandler.Context context} used for this error handling for this request.  If the request is asynchronous,
      * then it is the context that called async. Otherwise it is the last non-null context passed to #setContext
      */
-    public ServletContextHandler.ServletContextHandlerContext getErrorContext()
+    public ServletContextHandler.Context getErrorContext()
     {
         // TODO: review.
         return _servletChannel.getContext();
@@ -1011,7 +1011,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public RequestDispatcher getRequestDispatcher(String path)
         {
-            ServletContextHandler.ServletContextHandlerContext context = ServletContextRequest.this.getContext();
+            ServletContextHandler.Context context = ServletContextRequest.this.getContext();
             if (path == null || context == null)
                 return null;
 

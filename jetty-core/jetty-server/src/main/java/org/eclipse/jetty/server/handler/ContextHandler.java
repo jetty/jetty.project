@@ -34,7 +34,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -60,14 +59,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     // TODO init param stuff to ServletContextHandler
 
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
-    private static final ThreadLocal<ContextHandlerContext> __context = new ThreadLocal<>();
+    private static final ThreadLocal<Context> __context = new ThreadLocal<>();
 
     /**
      * Get the current ServletContext implementation.
      *
      * @return ServletContext implementation
      */
-    public static ContextHandlerContext getCurrentContext()
+    public static Context getCurrentContext()
     {
         return __context.get();
     }
@@ -79,7 +78,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     // TODO should persistent attributes be an Attributes.Layer over server attributes?
     private final Attributes _persistentAttributes = new Mapped();
-    private final ContextHandlerContext _context;
+    private final Context _context;
     private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final List<VHost> _vhosts = new ArrayList<>();
 
@@ -110,9 +109,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             parent.addHandler(this);
     }
 
-    protected ContextHandlerContext newContext()
+    protected Context newContext()
     {
-        return new ContextHandlerContext();
+        return new Context();
     }
 
     @Override
@@ -125,7 +124,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @ManagedAttribute(value = "Context")
-    public Context getContext()
+    public org.eclipse.jetty.server.Context getContext()
     {
         return _context;
     }
@@ -728,9 +727,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         return host;
     }
 
-    public class ContextHandlerContext extends Attributes.Layer implements org.eclipse.jetty.server.Context
+    public class Context extends Attributes.Layer implements org.eclipse.jetty.server.Context
     {
-        public ContextHandlerContext()
+        public Context()
         {
             // TODO Should the ScopedContext attributes be a layer over the ServerContext attributes?
             super(_persistentAttributes);
@@ -788,7 +787,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         private <T> T get(Supplier<T> supplier, Request request)
         {
-            ContextHandlerContext lastContext = __context.get();
+            Context lastContext = __context.get();
             if (lastContext == this)
                 return supplier.get();
 
@@ -814,7 +813,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         void call(Invocable.Callable callable, Request request) throws Exception
         {
-            ContextHandlerContext lastContext = __context.get();
+            Context lastContext = __context.get();
             if (lastContext == this)
                 callable.call();
             else
@@ -842,7 +841,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         void accept(Consumer<Throwable> consumer, Throwable t, Request request)
         {
-            ContextHandlerContext lastContext = __context.get();
+            Context lastContext = __context.get();
             if (lastContext == this)
                 consumer.accept(t);
             else
@@ -877,7 +876,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         {
             try
             {
-                ContextHandlerContext lastContext = __context.get();
+                Context lastContext = __context.get();
                 if (lastContext == this)
                     runnable.run();
                 else
@@ -964,13 +963,13 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
          * @param context The context being entered
          * @param request A request that is applicable to the scope, or null
          */
-        default void enterScope(Context context, Request request) {}
+        default void enterScope(org.eclipse.jetty.server.Context context, Request request) {}
 
         /**
          * @param context The context being exited
          * @param request A request that is applicable to the scope, or null
          */
-        default void exitScope(Context context, Request request) {}
+        default void exitScope(org.eclipse.jetty.server.Context context, Request request) {}
     }
 
     private static class VHost

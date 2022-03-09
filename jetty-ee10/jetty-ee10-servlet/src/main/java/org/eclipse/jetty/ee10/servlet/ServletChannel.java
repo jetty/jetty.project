@@ -132,7 +132,7 @@ public class ServletChannel implements Runnable
                 _state);
     }
 
-    public ServletContextHandler.ServletContextHandlerContext getContext()
+    public ServletContextHandler.Context getContext()
     {
         return _request.getContext();
     }
@@ -458,7 +458,7 @@ public class ServletChannel implements Runnable
                             // by then.
                             ensureConsumeAllOrNotPersistent();
 
-                            ContextHandler.ContextHandlerContext context = (ContextHandler.ContextHandlerContext)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
+                            ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
                             Request.Processor errorProcessor = ErrorHandler.getErrorProcessor(getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body or have no processor, then create a minimal error response.

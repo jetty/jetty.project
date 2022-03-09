@@ -79,7 +79,7 @@ public class SessionHandler extends AbstractSessionHandler
 
     private Set<SessionTrackingMode> _sessionTrackingModes;
     private SessionCookieConfig _cookieConfig = new CookieConfig();
-    private ServletContextHandler.ServletContextHandlerContext _servletContextHandlerContext;
+    private ServletContextHandler.Context _servletContextHandlerContext;
    
     /**
      * CookieConfig
@@ -266,7 +266,7 @@ public class SessionHandler extends AbstractSessionHandler
         @Override
         public ServletContext getServletContext()
         {
-            return ServletContextHandler.getServletContext((ContextHandler.ContextHandlerContext)_session.getSessionManager().getContext());
+            return ServletContextHandler.getServletContext((ContextHandler.Context)_session.getSessionManager().getContext());
         }
 
         @Override
@@ -388,9 +388,9 @@ public class SessionHandler extends AbstractSessionHandler
     {
 
         super.doStart();
-        if (!(_context instanceof ServletContextHandler.ServletContextHandlerContext))
+        if (!(_context instanceof ServletContextHandler.Context))
             throw new IllegalStateException("!ServlerContextHandler.Context");
-        _servletContextHandlerContext = (ServletContextHandler.ServletContextHandlerContext)_context;
+        _servletContextHandlerContext = (ServletContextHandler.Context)_context;
     }
 
     /**
@@ -402,41 +402,32 @@ public class SessionHandler extends AbstractSessionHandler
         // Look for a session cookie name
         if (_servletContextHandlerContext != null)
         {
-            _servletContextHandlerContext.getServletContext();
-            String tmp = ServletContextHandler.this.getInitParameter(__SessionCookieProperty);
+            ServletContext servletContext = _servletContextHandlerContext.getServletContext();
+            String tmp = servletContext.getInitParameter(__SessionCookieProperty);
             if (tmp != null)
                 _sessionCookie = tmp;
 
-            _servletContextHandlerContext.getServletContext();
-            tmp = ServletContextHandler.this.getInitParameter(__SessionIdPathParameterNameProperty);
+            tmp = servletContext.getInitParameter(__SessionIdPathParameterNameProperty);
             if (tmp != null)
                 setSessionIdPathParameterName(tmp);
 
             // set up the max session cookie age if it isn't already
             if (_maxCookieAge == -1)
             {
-                _servletContextHandlerContext.getServletContext();
-                tmp = ServletContextHandler.this.getInitParameter(__MaxAgeProperty);
+                tmp = servletContext.getInitParameter(__MaxAgeProperty);
                 if (tmp != null)
                     _maxCookieAge = Integer.parseInt(tmp.trim());
             }
 
             // set up the session domain if it isn't already
             if (_sessionDomain == null)
-            {
-                _servletContextHandlerContext.getServletContext();
-                _sessionDomain = ServletContextHandler.this.getInitParameter(__SessionDomainProperty);
-            }
+                _sessionDomain = servletContext.getInitParameter(__SessionDomainProperty);
 
             // set up the sessionPath if it isn't already
             if (_sessionPath == null)
-            {
-                _servletContextHandlerContext.getServletContext();
-                _sessionPath = ServletContextHandler.this.getInitParameter(__SessionPathProperty);
-            }
+                _sessionPath = servletContext.getInitParameter(__SessionPathProperty);
 
-            _servletContextHandlerContext.getServletContext();
-            tmp = ServletContextHandler.this.getInitParameter(__CheckRemoteSessionEncoding);
+            tmp = servletContext.getInitParameter(__CheckRemoteSessionEncoding);
             if (tmp != null)
                 _checkingRemoteSessionIdEncoding = Boolean.parseBoolean(tmp);
         }

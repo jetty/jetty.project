@@ -962,7 +962,7 @@ public class ServletContextResponse extends ContextResponse
                 if (_outputType != OutputType.NONE)
                     return;
 
-                ServletContextHandler.ServletContextHandlerContext context = _servletChannel.getContext();
+                ServletContextHandler.Context context = _servletChannel.getContext();
                 if (context == null)
                     return;
 

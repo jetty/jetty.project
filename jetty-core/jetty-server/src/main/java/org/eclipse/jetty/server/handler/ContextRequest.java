@@ -18,7 +18,6 @@ import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -31,11 +30,11 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     private static final Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
     private final String _pathInContext;
     private final ContextHandler _contextHandler;
-    private final ContextHandler.ContextHandlerContext _context;
+    private final ContextHandler.Context _context;
     private Response _response;
     private Callback _callback;
 
-    protected ContextRequest(ContextHandler contextHandler, ContextHandler.ContextHandlerContext context, Request wrapped, String pathInContext)
+    protected ContextRequest(ContextHandler contextHandler, ContextHandler.Context context, Request wrapped, String pathInContext)
     {
         super(wrapped);
         _pathInContext = pathInContext;
@@ -124,7 +123,7 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     }
 
     @Override
-    public Context getContext()
+    public org.eclipse.jetty.server.Context getContext()
     {
         return _context;
     }
