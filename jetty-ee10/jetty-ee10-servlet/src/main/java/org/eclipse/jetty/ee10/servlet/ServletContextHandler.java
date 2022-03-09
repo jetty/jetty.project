@@ -1303,8 +1303,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 if (_classLoader != null && currentThread != null)
                     currentThread.setContextClassLoader(oldClassloader);
             }
-        }, 
-        null);
+        }, null);
     }
 
     @Override
