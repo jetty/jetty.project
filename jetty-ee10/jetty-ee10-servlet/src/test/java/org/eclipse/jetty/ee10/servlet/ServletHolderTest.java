@@ -21,7 +21,6 @@ import jakarta.servlet.ServletRegistration;
 import jakarta.servlet.UnavailableException;
 import jakarta.servlet.http.HttpServlet;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.MultiException;
 import org.junit.jupiter.api.Test;
@@ -125,9 +124,7 @@ public class ServletHolderTest
             assertNotNull(servlet);
 
             //test with a ServletContextHandler
-            Server server = new Server();
             ServletContextHandler context = new ServletContextHandler();
-            server.setHandler(context);
             ServletHandler handler = context.getServletHandler();
             handler.addServlet(holder);
             holder.setServletHandler(handler);
@@ -147,7 +144,7 @@ public class ServletHolderTest
             holder.setName("foo");
             holder.setForcedPath("/blah/");
             handler.addServlet(holder);
-            handler.start();
+            context.start();
             fail("No class in ServletHolder");
         }
         catch (UnavailableException e)
@@ -172,7 +169,7 @@ public class ServletHolderTest
             holder.setName("foo");
             holder.setHeldClass(FakeServlet.class);
             handler.addServlet(holder);
-            handler.start();
+            context.start();
             assertTrue(holder.isAvailable());
             assertTrue(holder.isStarted());
         }
@@ -188,9 +185,9 @@ public class ServletHolderTest
             ServletHandler handler = context.getServletHandler();
             ServletHolder holder = new ServletHolder();
             holder.setName("foo");
-            holder.setClassName("org.eclipse.jetty.servlet.ServletHolderTest$FakeServlet");
+            holder.setClassName("org.eclipse.jetty.ee10.servlet.ServletHolderTest$FakeServlet");
             handler.addServlet(holder);
-            handler.start();
+            context.start();
             assertTrue(holder.isAvailable());
             assertTrue(holder.isStarted());
         }
@@ -207,7 +204,7 @@ public class ServletHolderTest
             holder.setName("foo");
             holder.setClassName("a.b.c.class");
             handler.addServlet(holder);
-            handler.start();
+            context.start();
             fail("Unloadable class");
         }
         catch (UnavailableException e)

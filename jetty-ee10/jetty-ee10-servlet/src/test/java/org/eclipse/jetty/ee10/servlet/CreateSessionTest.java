@@ -29,6 +29,7 @@ import org.eclipse.jetty.session.DefaultSessionCacheFactory;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.HouseKeeper;
 import org.eclipse.jetty.session.NullSessionDataStoreFactory;
+import org.eclipse.jetty.session.SessionCache;
 import org.eclipse.jetty.session.SessionDataStoreFactory;
 import org.junit.jupiter.api.Test;
 
@@ -78,6 +79,7 @@ public class CreateSessionTest
         DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
         server.addBean(sessionIdManager, true);
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
         server.addBean(cacheFactory);
         
         SessionDataStoreFactory storeFactory = new NullSessionDataStoreFactory();

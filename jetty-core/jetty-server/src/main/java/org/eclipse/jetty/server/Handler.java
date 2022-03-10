@@ -253,7 +253,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             if (LOG.isDebugEnabled())
                 LOG.debug("starting {}", this);
             if (_server == null)
-                throw new IllegalStateException(String.format("No Server set for %s", this));
+                LOG.warn("No Server set for {}", this);
             super.doStart();
         }
 

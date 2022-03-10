@@ -785,7 +785,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return ContextHandler.this.getVirtualHosts();
         }
 
-        private <T> T get(Supplier<T> supplier, Request request)
+        public <T> T get(Supplier<T> supplier, Request request)
         {
             Context lastContext = __context.get();
             if (lastContext == this)
@@ -811,7 +811,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             }
         }
 
-        void call(Invocable.Callable callable, Request request) throws Exception
+        public void call(Invocable.Callable callable, Request request) throws Exception
         {
             Context lastContext = __context.get();
             if (lastContext == this)
@@ -839,7 +839,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             }
         }
 
-        void accept(Consumer<Throwable> consumer, Throwable t, Request request)
+        public void accept(Consumer<Throwable> consumer, Throwable t, Request request)
         {
             Context lastContext = __context.get();
             if (lastContext == this)
