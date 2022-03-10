@@ -95,8 +95,6 @@ public interface SessionManager extends LifeCycle
     
     void setUsingCookies(boolean usingCookies);
     
-    void setRefreshCookieAge(int ageInSeconds);
-    
     HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure);
     
     boolean isCheckingRemoteSessionIdEncoding();
@@ -105,7 +103,7 @@ public interface SessionManager extends LifeCycle
     
     void setHttpOnly(boolean httpOnly);
     
-    boolean getHttpOnly();
+    boolean isHttpOnly();
     
     void setSecureRequestOnly(boolean secureRequestOnly);
     
@@ -125,9 +123,15 @@ public interface SessionManager extends LifeCycle
     
     int getMaxCookieAge();
     
+    void setMaxCookieAge(int maxCookieAge);
+    
     int getRefreshCookieAge();
     
-    boolean getSecureCookies();
+    void setRefreshCookieAge(int ageInSeconds);
+    
+    boolean isSecureCookies();
+    
+    void setSecureCookies(boolean secure);
     
     String getSessionCookie();
     

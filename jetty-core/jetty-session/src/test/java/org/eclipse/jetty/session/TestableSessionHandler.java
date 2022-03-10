@@ -14,6 +14,8 @@
 package org.eclipse.jetty.session;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.eclipse.jetty.session.Session.APISession;
 
@@ -24,7 +26,6 @@ import org.eclipse.jetty.session.Session.APISession;
  */
 public class TestableSessionHandler extends AbstractSessionHandler
 {
-    boolean _idInUse;
     java.util.Collection<String> _sessionIdListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionCreatedListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionDestroyedListenersCalled = new ArrayList<>();
@@ -33,6 +34,8 @@ public class TestableSessionHandler extends AbstractSessionHandler
     java.util.Collection<String> _sessionBoundListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionActivationListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionPassivationListenersCalled = new ArrayList<>();
+    
+    protected Map<String, String> _cookieConfig = new HashMap<String, String>();
     
     @Override
     public APISession newSessionAPIWrapper(Session session)
@@ -49,17 +52,6 @@ public class TestableSessionHandler extends AbstractSessionHandler
         };
     }
     
-    public void setIdInUse(boolean idInUse)
-    {
-        _idInUse = idInUse;
-    }
-
-    @Override
-    public boolean isIdInUse(String id) throws Exception
-    {
-        return _idInUse;
-    }
-
     @Override
     public void callSessionIdListeners(Session session, String oldId)
     {
@@ -111,5 +103,37 @@ public class TestableSessionHandler extends AbstractSessionHandler
     @Override
     protected void configureCookies()
     {
+        String tmp = _cookieConfig.get(__SessionCookieProperty);
+        if (tmp != null)
+            _sessionCookie = tmp;
+
+        tmp = _cookieConfig.get(__SessionIdPathParameterNameProperty);
+        if (tmp != null)
+            setSessionIdPathParameterName(tmp);
+
+        // set up the max session cookie age if it isn't already
+        if (_maxCookieAge == -1)
+        {
+            tmp = _cookieConfig.get(__MaxAgeProperty);
+            if (tmp != null)
+                _maxCookieAge = Integer.parseInt(tmp.trim());
+        }
+
+        // set up the session domain if it isn't already
+        if (_sessionDomain == null)
+            _sessionDomain = _cookieConfig.get(__SessionDomainProperty);
+
+        // set up the sessionPath if it isn't already
+        if (_sessionPath == null)
+            _sessionPath = _cookieConfig.get(__SessionPathProperty);
+
+        tmp = _cookieConfig.get(__CheckRemoteSessionEncoding);
+        if (tmp != null)
+            _checkingRemoteSessionIdEncoding = Boolean.parseBoolean(tmp);
+    }
+    
+    public Map<String, String> getCookieConfig()
+    {
+        return _cookieConfig;
     }
 }

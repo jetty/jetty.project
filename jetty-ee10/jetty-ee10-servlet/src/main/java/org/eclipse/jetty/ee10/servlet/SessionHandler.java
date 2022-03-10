@@ -548,7 +548,6 @@ public class SessionHandler extends AbstractSessionHandler
             HttpSessionActivationListener listener = (HttpSessionActivationListener)value;
             listener.sessionDidActivate(event);
         }
-        
     }
 
     @Override
@@ -595,10 +594,6 @@ public class SessionHandler extends AbstractSessionHandler
     {
         // find and set the session if one exists
         RequestedSession requestedSession = resolveRequestedSessionId(request);
-        
-        /*        Session session = (Session)request.getAttribute(SessionManager.__Resolved_Session);
-        String requestedSessionId = (String)request.getAttribute(__Requested_Session_Id);
-        boolean requestedSessionIdFromCookie = (Boolean)request.getAttribute(__Requested_Session_Id_From_Cookie);*/
         
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         ServletContextRequest.ServletApiRequest servletApiRequest =

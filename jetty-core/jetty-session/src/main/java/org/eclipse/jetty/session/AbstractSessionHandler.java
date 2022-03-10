@@ -426,13 +426,19 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         return _maxCookieAge;
     }
     
+    @Override
+    public void setMaxCookieAge(int maxCookieAge)
+    {
+        _maxCookieAge = maxCookieAge;
+    }
+    
     /**
      * @return true if session cookies should be HTTP-only (Microsoft extension)
      * @see org.eclipse.jetty.http.HttpCookie#isHttpOnly()
      */
     @ManagedAttribute("true if cookies use the http only flag")
     @Override
-    public boolean getHttpOnly()
+    public boolean isHttpOnly()
     {
         return _httpOnly;
     }
@@ -451,9 +457,15 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      */
     @ManagedAttribute("if true, secure cookie flag is set on session cookies")
     @Override
-    public boolean getSecureCookies()
+    public boolean isSecureCookies()
     {
         return _secureCookies;
+    }
+    
+    @Override
+    public void setSecureCookies(boolean secure)
+    {
+        _secureCookies = secure;
     }
 
     @ManagedAttribute("the set session cookie")
