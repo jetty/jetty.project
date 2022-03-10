@@ -27,6 +27,9 @@ import org.slf4j.LoggerFactory;
  * Each Session has a timer associated with it that fires whenever it has
  * been idle (ie not accessed by a request) for a configurable amount of
  * time, or the Session expires.
+ * 
+ * The timer is only scheduled when all Requests have exited the Session.
+ * If a request enters a Session whose timer is active, it is cancelled.
  */
 public class SessionInactivityTimer
 {    
@@ -66,6 +69,7 @@ public class SessionInactivityTimer
                     if (_session.isExpiredAt(now))
                         SessionInactivityTimer.this._sessionManager.sessionExpired(_session, now);
 
+                    //TODO is this still needed? If we cancel the timer when a Request arrives
                     //check what happened to the session: if it didn't get evicted and
                     //it hasn't expired, we need to reset the timer
                     if (_session.isResident() && _session.getRequests() <= 0 && _session.isValid() &&
