@@ -78,7 +78,6 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
     public static Listener NOOP_LISTENER = new Listener() {};
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
-    private final org.eclipse.jetty.server.Context _context;
     private final AtomicLong _requests = new AtomicLong();
     private final Connector _connector;
     private final Executor _executor;
@@ -540,10 +539,11 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
                             // by then.
                             ensureConsumeAllOrNotPersistent();
 
-                            org.eclipse.jetty.server.Request.Processor errorProcessor = _context.getErrorProcessor();
+                            ContextHandler.Context context = (ContextHandler.Context)_request.getAttribute(ErrorHandler.ERROR_CONTEXT);
+                            ErrorHandler errorHandler = ErrorHandler.getErrorHandler(getServer(), context == null ? null : context.getContextHandler());
 
                             // If we can't have a body, then create a minimal error response.
-                            if (HttpStatus.hasNoBody(_response.getStatus()) || errorProcessor == null || !errorPageForMethod(_request.getMethod()))
+                            if (HttpStatus.hasNoBody(_response.getStatus()) || errorHandler == null || !errorHandler.errorPageForMethod(_request.getMethod()))
                             {
                                 sendResponseAndComplete();
                                 break;
@@ -591,13 +591,21 @@ public abstract class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case READ_CALLBACK:
                     {
-                        _context.run(_request.getHttpInput());
+                        ContextHandler handler = _state.getContextHandler();
+                        if (handler != null)
+                            handler.handle(_request, _request.getHttpInput());
+                        else
+                            _request.getHttpInput().run();
                         break;
                     }
 
                     case WRITE_CALLBACK:
                     {
-                        _context.run(_baseRequest, _response.getHttpOutput());
+                        ContextHandler handler = _state.getContextHandler();
+                        if (handler != null)
+                            handler.handle(_request, _response.getHttpOutput());
+                        else
+                            _response.getHttpOutput().run();
                         break;
                     }
 

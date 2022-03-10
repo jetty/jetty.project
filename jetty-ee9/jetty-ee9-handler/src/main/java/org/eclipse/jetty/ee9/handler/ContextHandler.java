@@ -23,6 +23,7 @@ import java.net.URLClassLoader;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
@@ -32,7 +33,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -60,12 +63,10 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Context;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
@@ -74,6 +75,7 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
+import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -103,9 +105,7 @@ import org.slf4j.LoggerFactory;
  */
 // TODO make this work
 @ManagedObject("EE9 Context")
-public class Ee9ContextHandler
-    extends org.eclipse.jetty.server.handler.ContextHandler // This is-a core context handler
-    implements org.eclipse.jetty.ee9.handler.Handler // this can also handle ee9 request by delegating to nested ScopedHandler
+public class ContextHandler extends ScopedHandler implements Attributes, Graceful
 {
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
@@ -128,7 +128,9 @@ public class Ee9ContextHandler
 
     private static final Logger LOG = LoggerFactory.getLogger(ContextHandler.class);
 
-    private static final ThreadLocal<SContext> __context = new ThreadLocal<>();
+    private static final ThreadLocal<Context> __context = new ThreadLocal<>();
+
+    private static String __serverInfo = "jetty/" + Server.getVersion();
 
     public static final String MANAGED_ATTRIBUTES = "org.eclipse.jetty.server.context.ManagedAttributes";
 
@@ -136,6 +138,36 @@ public class Ee9ContextHandler
     public static final String MAX_FORM_CONTENT_SIZE_KEY = "org.eclipse.jetty.server.Request.maxFormContentSize";
     public static final int DEFAULT_MAX_FORM_KEYS = 1000;
     public static final int DEFAULT_MAX_FORM_CONTENT_SIZE = 200000;
+
+    /**
+     * Get the current ServletContext implementation.
+     *
+     * @return ServletContext implementation
+     */
+    public static Context getCurrentContext()
+    {
+        return __context.get();
+    }
+
+    public static ContextHandler getContextHandler(ServletContext context)
+    {
+        if (context instanceof ContextHandler.Context)
+            return ((ContextHandler.Context)context).getContextHandler();
+        Context c = getCurrentContext();
+        if (c != null)
+            return c.getContextHandler();
+        return null;
+    }
+
+    public static String getServerInfo()
+    {
+        return __serverInfo;
+    }
+
+    public static void setServerInfo(String serverInfo)
+    {
+        __serverInfo = serverInfo;
+    }
 
     public enum ContextStatus
     {
@@ -154,24 +186,32 @@ public class Ee9ContextHandler
         PREFIX
     }
 
-    private final HandlerConvertor _handlerConvertor;
-
+    private org.eclipse.jetty.server.handler.ContextHandler _coreContextHandler;
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
-    protected SContext _scontext;
+    protected Context _scontext;
     private final Map<String, String> _initParams;
     private ClassLoader _classLoader;
     private boolean _contextPathDefault = true;
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
+    private String _contextPath = "/";
     private String _contextPathEncoded = "/";
-    private MimeTypes _mimeTypes; // TODO move to core?
+    private String _displayName;
+    private long _stopTimeout;
+    private Resource _baseResource;
+    private MimeTypes _mimeTypes;
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
+    private ErrorHandler _errorHandler;
+    private String[] _vhosts; // Host name portion, matching _vconnectors array
+    private boolean[] _vhostswildcard;
+    private String[] _vconnectors; // connector portion, matching _vhosts array
     private Logger _logger;
     private boolean _allowNullPathInfo;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
     private boolean _compactPath = false;
+    private boolean _usingSecurityManager = System.getSecurityManager() != null;
 
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
@@ -179,59 +219,63 @@ public class Ee9ContextHandler
     private final List<ServletContextAttributeListener> _servletContextAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestListener> _servletRequestListeners = new CopyOnWriteArrayList<>();
     private final List<ServletRequestAttributeListener> _servletRequestAttributeListeners = new CopyOnWriteArrayList<>();
+    private final List<ContextScopeListener> _contextListeners = new CopyOnWriteArrayList<>();
     private final Set<EventListener> _durableListeners = new HashSet<>();
     private Index<ProtectedTargetType> _protectedTargets = Index.empty(false);
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
 
-    public Ee9ContextHandler()
+    public enum Availability
     {
-        this(null);
+        STOPPED,        // stopped and can't be made unavailable nor shutdown
+        STARTING,       // starting inside of doStart. It may go to any of the next states.
+        AVAILABLE,      // running normally
+        UNAVAILABLE,    // Either a startup error or explicit call to setAvailable(false)
+        SHUTDOWN,       // graceful shutdown
     }
 
-    public Ee9ContextHandler(String contextPath)
+    private final AtomicReference<Availability> _availability = new AtomicReference<>(Availability.STOPPED);
+
+    public ContextHandler()
     {
-        this(null, contextPath);
+        this(null, null, null);
     }
 
-    protected Ee9ContextHandler(org.eclipse.jetty.server.Handler.Container parent, String contextPath)
+    protected ContextHandler(Context context)
     {
-        _scontext = new SContext(getContext());
-        if (parent != null)
-            parent.addHandler(this);
+        this(context, null, null);
+    }
 
+    public ContextHandler(String contextPath)
+    {
+        this(null, null, contextPath);
+    }
+
+    public ContextHandler(HandlerContainer parent, String contextPath)
+    {
+        this(null, parent, contextPath);
+    }
+
+    protected ContextHandler(Context context, HandlerContainer parent, String contextPath)
+    {
+        _coreContextHandler = c
+        _scontext = context == null ? new Context() : context;
         _initParams = new HashMap<>();
-        if (File.separatorChar == '/')
-            addAliasCheck(new SymlinkAllowedResourceAliasChecker(this));
-
         if (contextPath != null)
             setContextPath(contextPath);
-
-        _handlerConvertor = new HandlerConvertor();
-        super.setHandler(_handlerConvertor);
-    }
-
-    @Override
-    public void setHandler(org.eclipse.jetty.server.Handler handler)
-    {
-        throw new UnsupportedOperationException("cannot set handler");
-    }
-
-    @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-    {
-        _handlerConvertor.handle(target, baseRequest, request, response);
+        if (parent instanceof HandlerWrapper)
+            ((HandlerWrapper)parent).setHandler(this);
+        else if (parent instanceof HandlerCollection)
+            ((HandlerCollection)parent).addHandler(this);
     }
 
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        // TODO super dump plus init params at least
         super.dump(out, indent);
-        dumpObjects(out, indent,
-            new DumpableCollection("initparams " + this, getInitParams().entrySet()));
+        dumpObjects(out, indent, new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
-    public SContext getServletContext()
+    public Context getServletContext()
     {
         return _scontext;
     }
@@ -240,24 +284,242 @@ public class Ee9ContextHandler
      * @return the allowNullPathInfo true if /context is not redirected to /context/
      */
     @ManagedAttribute("Checks if the /context is not redirected to /context/")
-    public boolean getAllowNullPathInContext()
+    public boolean getAllowNullPathInfo()
     {
         return _allowNullPathInfo;
     }
 
     /**
-     * @param allowNullPathInContext true if /context is not redirected to /context/
+     * @param allowNullPathInfo true if /context is not redirected to /context/
      */
-    public void setAllowNullPathInContext(boolean allowNullPathInContext)
+    public void setAllowNullPathInfo(boolean allowNullPathInfo)
     {
-        _allowNullPathInfo = allowNullPathInContext;
+        _allowNullPathInfo = allowNullPathInfo;
     }
 
     @Override
     public void setServer(Server server)
     {
         super.setServer(server);
-        // TODO set on scoped handlers?
+        if (_errorHandler != null)
+            _errorHandler.setServer(server);
+    }
+
+    public boolean isUsingSecurityManager()
+    {
+        return _usingSecurityManager;
+    }
+
+    public void setUsingSecurityManager(boolean usingSecurityManager)
+    {
+        if (usingSecurityManager && System.getSecurityManager() == null)
+            throw new IllegalStateException("No security manager");
+        _usingSecurityManager = usingSecurityManager;
+    }
+
+    /**
+     * Set the virtual hosts for the context. Only requests that have a matching host header or fully qualified URL will be passed to that context with a
+     * virtual host name. A context with no virtual host names or a null virtual host name is available to all requests that are not served by a context with a
+     * matching virtual host name.
+     *
+     * @param vhosts Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
+     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
+     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
+     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
+     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
+     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
+     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
+     */
+    public void setVirtualHosts(String[] vhosts)
+    {
+
+        if (vhosts == null)
+        {
+            _vhosts = vhosts;
+        }
+        else
+        {
+
+            boolean hostMatch = false;
+            boolean connectorHostMatch = false;
+            _vhosts = new String[vhosts.length];
+            _vconnectors = new String[vhosts.length];
+            _vhostswildcard = new boolean[vhosts.length];
+            ArrayList<Integer> connectorOnlyIndexes = null;
+            for (int i = 0; i < vhosts.length; i++)
+            {
+                boolean connectorMatch = false;
+                _vhosts[i] = vhosts[i];
+                if (vhosts[i] == null)
+                    continue;
+                int connectorIndex = _vhosts[i].indexOf('@');
+                if (connectorIndex >= 0)
+                {
+                    connectorMatch = true;
+                    _vconnectors[i] = _vhosts[i].substring(connectorIndex + 1);
+                    _vhosts[i] = _vhosts[i].substring(0, connectorIndex);
+                    if (connectorIndex == 0)
+                    {
+                        if (connectorOnlyIndexes == null)
+                            connectorOnlyIndexes = new ArrayList<>();
+                        connectorOnlyIndexes.add(i);
+                    }
+                }
+
+                if (_vhosts[i].startsWith("*."))
+                {
+                    _vhosts[i] = _vhosts[i].substring(1);
+                    _vhostswildcard[i] = true;
+                }
+                if (_vhosts[i].isEmpty())
+                    _vhosts[i] = null;
+                else
+                {
+                    hostMatch = true;
+                    connectorHostMatch = connectorHostMatch || connectorMatch;
+                }
+                _vhosts[i] = normalizeHostname(_vhosts[i]);
+            }
+
+            if (connectorOnlyIndexes != null && hostMatch && !connectorHostMatch)
+            {
+                LOG.warn(
+                    "ContextHandler {} has a connector only entry e.g. \"@connector\" and one or more host only entries. \n" +
+                        "The host entries will be ignored to match legacy behavior.  To clear this warning remove the host entries or update to us at least one host@connector syntax entry that will match a host for an specific connector",
+                    Arrays.asList(vhosts));
+                String[] filteredHosts = new String[connectorOnlyIndexes.size()];
+                for (int i = 0; i < connectorOnlyIndexes.size(); i++)
+                {
+                    filteredHosts[i] = vhosts[connectorOnlyIndexes.get(i)];
+                }
+                setVirtualHosts(filteredHosts);
+            }
+        }
+    }
+
+    /**
+     * Either set virtual hosts or add to an existing set of virtual hosts.
+     *
+     * @param virtualHosts Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
+     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
+     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
+     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
+     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
+     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
+     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
+     */
+    public void addVirtualHosts(String[] virtualHosts)
+    {
+        if (virtualHosts == null || virtualHosts.length == 0) // since this is add, we don't null the old ones
+            return;
+
+        if (_vhosts == null)
+        {
+            setVirtualHosts(virtualHosts);
+        }
+        else
+        {
+            Set<String> currentVirtualHosts = new HashSet<>(Arrays.asList(getVirtualHosts()));
+            for (String vh : virtualHosts)
+            {
+                currentVirtualHosts.add(normalizeHostname(vh));
+            }
+            setVirtualHosts(currentVirtualHosts.toArray(new String[0]));
+        }
+    }
+
+    /**
+     * Removes an array of virtual host entries, if this removes all entries the _vhosts will be set to null
+     *
+     * @param virtualHosts Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
+     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
+     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
+     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
+     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
+     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
+     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
+     */
+    public void removeVirtualHosts(String[] virtualHosts)
+    {
+        if (virtualHosts == null || virtualHosts.length == 0 || _vhosts == null || _vhosts.length == 0)
+            return; // do nothing
+
+        Set<String> existingVirtualHosts = new HashSet<>(Arrays.asList(getVirtualHosts()));
+        for (String vh : virtualHosts)
+        {
+            existingVirtualHosts.remove(normalizeHostname(vh));
+        }
+        if (existingVirtualHosts.isEmpty())
+            setVirtualHosts(null); // if we ended up removing them all, just null out _vhosts
+        else
+            setVirtualHosts(existingVirtualHosts.toArray(new String[0]));
+    }
+
+    /**
+     * Get the virtual hosts for the context. Only requests that have a matching host header or fully qualified URL will be passed to that context with a
+     * virtual host name. A context with no virtual host names or a null virtual host name is available to all requests that are not served by a context with a
+     * matching virtual host name.
+     *
+     * @return Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
+     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
+     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
+     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
+     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
+     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
+     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
+     */
+    @ManagedAttribute(value = "Virtual hosts accepted by the context", readonly = true)
+    public String[] getVirtualHosts()
+    {
+        if (_vhosts == null)
+            return null;
+
+        String[] vhosts = new String[_vhosts.length];
+        for (int i = 0; i < _vhosts.length; i++)
+        {
+            StringBuilder sb = new StringBuilder();
+            if (_vhostswildcard[i])
+                sb.append("*");
+            if (_vhosts[i] != null)
+                sb.append(_vhosts[i]);
+            if (_vconnectors[i] != null)
+                sb.append("@").append(_vconnectors[i]);
+            vhosts[i] = sb.toString();
+        }
+        return vhosts;
+    }
+
+    @Override
+    public Object getAttribute(String name)
+    {
+        return _coreContextHandler.getAttribute(name);
+    }
+
+    public Enumeration<String> getAttributeNames()
+    {
+        return Collections.enumeration(getAttributeNameSet());
+    }
+
+    @Override
+    public Set<String> getAttributeNameSet()
+    {
+        return _coreContextHandler.getAttributeNameSet();
+    }
+
+    /**
+     * @return Returns the attributes.
+     */
+    public Attributes getAttributes()
+    {
+        return _coreContextHandler;
+    }
+
+    /**
+     * @return Returns the classLoader.
+     */
+    public ClassLoader getClassLoader()
+    {
+        return _classLoader;
     }
 
     /**
@@ -298,11 +560,19 @@ public class Ee9ContextHandler
     }
 
     /**
+     * @return Returns the contextPath.
+     */
+    @ManagedAttribute("True if URLs are compacted to replace the multiple '/'s with a single '/'")
+    public String getContextPath()
+    {
+        return _contextPath;
+    }
+
+    /**
      * @return Returns the encoded contextPath.
      */
     public String getContextPathEncoded()
     {
-        // TODO how is this set?
         return _contextPathEncoded;
     }
 
@@ -348,6 +618,15 @@ public class Ee9ContextHandler
         return _initParams;
     }
 
+    /*
+     * @see jakarta.servlet.ServletContext#getServletContextName()
+     */
+    @ManagedAttribute(value = "Display name of the Context", readonly = true)
+    public String getDisplayName()
+    {
+        return _displayName;
+    }
+
     /**
      * Add a context event listeners.
      *
@@ -364,7 +643,12 @@ public class Ee9ContextHandler
     {
         if (super.addEventListener(listener))
         {
-            // TODO do we need a context scope listener that takes SContext?
+            if (listener instanceof ContextScopeListener)
+            {
+                _contextListeners.add((ContextScopeListener)listener);
+                if (__context.get() != null)
+                    ((ContextScopeListener)listener).enterScope(__context.get(), null, "Listener registered");
+            }
 
             if (listener instanceof ServletContextListener)
             {
@@ -405,6 +689,9 @@ public class Ee9ContextHandler
     {
         if (super.removeEventListener(listener))
         {
+            if (listener instanceof ContextScopeListener)
+                _contextListeners.remove(listener);
+
             if (listener instanceof ServletContextListener)
             {
                 _servletContextListeners.remove(listener);
@@ -448,6 +735,101 @@ public class Ee9ContextHandler
         return getEventListeners().contains(listener);
     }
 
+    /**
+     * @return true if this context is shutting down
+     */
+    @ManagedAttribute("true for graceful shutdown, which allows existing requests to complete")
+    public boolean isShutdown()
+    {
+        return _availability.get() == Availability.SHUTDOWN;
+    }
+
+    /**
+     * Set shutdown status. This field allows for graceful shutdown of a context. A started context may be put into non accepting state so that existing
+     * requests can complete, but no new requests are accepted.
+     */
+    @Override
+    public CompletableFuture<Void> shutdown()
+    {
+        while (true)
+        {
+            Availability availability = _availability.get();
+            switch (availability)
+            {
+                case STOPPED:
+                    return CompletableFuture.failedFuture(new IllegalStateException(getState()));
+                case STARTING:
+                case AVAILABLE:
+                case UNAVAILABLE:
+                    if (!_availability.compareAndSet(availability, Availability.SHUTDOWN))
+                        continue;
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        return CompletableFuture.completedFuture(null);
+    }
+
+    /**
+     * @return false if this context is unavailable (sends 503)
+     */
+    public boolean isAvailable()
+    {
+        return _availability.get() == Availability.AVAILABLE;
+    }
+
+    /**
+     * Set Available status.
+     *
+     * @param available true to set as enabled
+     */
+    public void setAvailable(boolean available)
+    {
+        // Only supported state transitions are:
+        //   UNAVAILABLE --true---> AVAILABLE
+        //   STARTING -----false--> UNAVAILABLE
+        //   AVAILABLE ----false--> UNAVAILABLE
+        if (available)
+        {
+            while (true)
+            {
+                Availability availability = _availability.get();
+                switch (availability)
+                {
+                    case AVAILABLE:
+                        break;
+                    case UNAVAILABLE:
+                        if (!_availability.compareAndSet(availability, Availability.AVAILABLE))
+                            continue;
+                        break;
+                    default:
+                        throw new IllegalStateException(availability.toString());
+                }
+                break;
+            }
+        }
+        else
+        {
+            while (true)
+            {
+                Availability availability = _availability.get();
+                switch (availability)
+                {
+                    case STARTING:
+                    case AVAILABLE:
+                        if (!_availability.compareAndSet(availability, Availability.UNAVAILABLE))
+                            continue;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            }
+        }
+    }
+
     public Logger getLogger()
     {
         return _logger;
@@ -461,7 +843,7 @@ public class Ee9ContextHandler
     @Override
     protected void doStart() throws Exception
     {
-        if (getContextPath() == null)
+        if (_contextPath == null)
             throw new IllegalStateException("Null contextPath");
 
         if (getBaseResource() != null && getBaseResource().isAlias())
@@ -475,10 +857,9 @@ public class Ee9ContextHandler
 
         ClassLoader oldClassloader = null;
         Thread currentThread = null;
-        SContext oldContext = null;
+        Context oldContext = null;
 
-        // TODO Better way to do this?
-        super.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
+        setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
 
         if (_mimeTypes == null)
             _mimeTypes = new MimeTypes();
@@ -724,8 +1105,6 @@ public class Ee9ContextHandler
             // reset the classloader
             if ((oldClassloader == null || (oldClassloader != oldWebapploader)) && currentThread != null)
                 currentThread.setContextClassLoader(oldClassloader);
-
-            _scontext._attributes.clearAttributes();
         }
 
         if (mex != null)
@@ -1142,7 +1521,7 @@ public class Ee9ContextHandler
     @Override
     public Object removeAttribute(String name)
     {
-        return _persistentAttributes.removeAttribute(name);
+        return _coreContextHandler.removeAttribute(name);
     }
 
     /*
@@ -1154,7 +1533,7 @@ public class Ee9ContextHandler
     @Override
     public Object setAttribute(String name, Object value)
     {
-        return _persistentAttributes.setAttribute(name, value);
+        return _coreContextHandler.setAttribute(name, value);
     }
 
     /**
@@ -1162,14 +1541,15 @@ public class Ee9ContextHandler
      */
     public void setAttributes(Attributes attributes)
     {
-        _persistentAttributes.clearAttributes();
-        _persistentAttributes.addAll(attributes);
+        _coreContextHandler.clearAttributes();
+        for (String n : attributes.getAttributeNameSet())
+            _coreContextHandler.setAttribute(n, attributes.getAttribute(n));
     }
 
     @Override
     public void clearAttributes()
     {
-        _persistentAttributes.clearAttributes();
+        _coreContextHandler.clearAttributes();
     }
 
     /**
@@ -1252,7 +1632,8 @@ public class Ee9ContextHandler
         _contextPathEncoded = URIUtil.encodePath(contextPath);
         _contextPathDefault = false;
 
-        if (getServer() != null && (getServer().isStarting() || getServer().isStarted()))
+        // update context mappings
+        if (getServer() != null && getServer().isRunning())
             getServer().getDescendants(ContextHandlerCollection.class).forEach(ContextHandlerCollection::mapContexts);
     }
 
@@ -1707,117 +2088,70 @@ public class Ee9ContextHandler
      * derived {@link ContextHandler} implementations.
      * </p>
      */
-    public class SContext implements ServletContext
+    public class Context implements ServletContext
     {
-        private final Context _context;
+        private final org.eclipse.jetty.server.handler.ContextHandler.Context _coreContext;
         protected boolean _enabled = true; // whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
+        private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
+        private int _effectiveMinorVersion = SERVLET_MINOR_VERSION;
 
-        protected SContext(Context context)
+        protected Context()
         {
-            _context = context;
-        }
-
-        public Ee9ContextHandler getContextHandler()
-        {
-            return Ee9ContextHandler.this;
-        }
-
-        public Attributes getAttributes()
-        {
-            return _context;
+            _coreContext = _coreContextHandler.getContext();
         }
 
         @Override
-        public SContext getContext(String uripath)
+        public int getMajorVersion()
         {
-            List<ContextHandler> contexts = new ArrayList<>();
-            String matchedPath = null;
+            return SERVLET_MAJOR_VERSION;
+        }
 
-            // TODO this is probably wrong
-            List<org.eclipse.jetty.server.handler.ContextHandler> handlers = getServer().getDescendants(org.eclipse.jetty.server.handler.ContextHandler.class);
-            for (org.eclipse.jetty.server.handler.ContextHandler ch : handlers)
-            {
-                if (ch == null)
-                    continue;
-                // TODO  - can't be both types of ContextHandler
-                // if (!(handler instanceof ContextHandler ch))
-                //    continue;
+        @Override
+        public int getMinorVersion()
+        {
+            return SERVLET_MINOR_VERSION;
+        }
 
-                String contextPath = ch.getContextPath();
+        @Override
+        public String getServerInfo()
+        {
+            return ContextHandler.getServerInfo();
+        }
 
-                if (uripath.equals(contextPath) ||
-                    (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') ||
-                    "/".equals(contextPath))
-                {
-                    // look first for vhost matching context only
-                    if (getVirtualHosts() != null && getVirtualHosts().length > 0)
-                    {
-                        if (ch.getVirtualHosts() != null && ch.getVirtualHosts().size() > 0)
-                        {
-                            for (String h1 : getVirtualHosts())
-                            {
-                                for (String h2 : ch.getVirtualHosts())
-                                {
-                                    if (h1.equals(h2))
-                                    {
-                                        if (matchedPath == null || contextPath.length() > matchedPath.length())
-                                        {
-                                            contexts.clear();
-                                            matchedPath = contextPath;
-                                        }
+        @Override
+        public int getEffectiveMajorVersion()
+        {
+            return _effectiveMajorVersion;
+        }
 
-                                        if (matchedPath.equals(contextPath))
-                                            contexts.add(ch);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (matchedPath == null || contextPath.length() > matchedPath.length())
-                        {
-                            contexts.clear();
-                            matchedPath = contextPath;
-                        }
+        @Override
+        public int getEffectiveMinorVersion()
+        {
+            return _effectiveMinorVersion;
+        }
 
-                        if (matchedPath.equals(contextPath))
-                            contexts.add(ch);
-                    }
-                }
-            }
+        public void setEffectiveMajorVersion(int v)
+        {
+            _effectiveMajorVersion = v;
+        }
 
-            if (contexts.size() > 0)
-                return contexts.get(0)._scontext;
+        public void setEffectiveMinorVersion(int v)
+        {
+            _effectiveMinorVersion = v;
+        }
 
-            // try again ignoring virtual hosts
-            matchedPath = null;
-            for (org.eclipse.jetty.server.Handler handler : handlers)
-            {
-                if (handler == null)
-                    continue;
-                // TODO review
-                if (!(handler instanceof ContextHandler ch))
-                    continue;
+        public ContextHandler getContextHandler()
+        {
+            return ContextHandler.this;
+        }
 
-                String contextPath = ch.getContextPath();
-
-                if (uripath.equals(contextPath) || (uripath.startsWith(contextPath) && uripath.charAt(contextPath.length()) == '/') || "/".equals(contextPath))
-                {
-                    if (matchedPath == null || contextPath.length() > matchedPath.length())
-                    {
-                        contexts.clear();
-                        matchedPath = contextPath;
-                    }
-
-                    if (matchedPath.equals(contextPath))
-                        contexts.add(ch);
-                }
-            }
-
-            if (contexts.size() > 0)
-                return contexts.get(0)._scontext;
+        @Override
+        public ServletContext getContext(String uripath)
+        {
+            if (getContextPath().equals(uripath))
+                return _scontext;
+            // No cross context dispatch
             return null;
         }
 
@@ -1978,24 +2312,19 @@ public class Ee9ContextHandler
         @Override
         public Object getAttribute(String name)
         {
-            return _layer.getAttribute(name);
-        }
-
-        public Set<String> getAttributeNamesSet()
-        {
-            return _layer.getAttributeNameSet();
+            return _coreContext.getAttribute(name);
         }
 
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            return Collections.enumeration(getAttributeNamesSet());
+            return Collections.enumeration(_coreContext.getAttributeNameSet());
         }
 
         @Override
         public void setAttribute(String name, Object value)
         {
-            Object oldValue = _layer.setAttribute(name, value);
+            Object oldValue = _coreContext.setAttribute(name, value);
 
             if (!_servletContextAttributeListeners.isEmpty())
             {
@@ -2016,7 +2345,7 @@ public class Ee9ContextHandler
         @Override
         public void removeAttribute(String name)
         {
-            Object oldValue = _layer.removeAttribute(name);
+            Object oldValue = _coreContext.removeAttribute(name);
             if (oldValue != null && !_servletContextAttributeListeners.isEmpty())
             {
                 ServletContextAttributeEvent event = new ServletContextAttributeEvent(_scontext, name, oldValue);
@@ -2131,6 +2460,175 @@ public class Ee9ContextHandler
             return _extendedListenerTypes;
         }
 
+        // TODO  Empty implementations - should we merge in ServletContextHandler?
+        @Override
+        public RequestDispatcher getNamedDispatcher(String name)
+        {
+            return null;
+        }
+
+        @Override
+        public Servlet getServlet(String name) throws ServletException
+        {
+            return null;
+        }
+
+        @Override
+        public Enumeration<Servlet> getServlets()
+        {
+            return null;
+        }
+
+        @Override
+        public Enumeration<String> getServletNames()
+        {
+            return null;
+        }
+
+        @Override
+        public ServletRegistration.Dynamic addServlet(String servletName, String className)
+        {
+            return null;
+        }
+
+        @Override
+        public ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
+        {
+            return null;
+        }
+
+        @Override
+        public ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
+        {
+            return null;
+        }
+
+        @Override
+        public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile)
+        {
+            return null;
+        }
+
+        @Override
+        public <T extends Servlet> T createServlet(Class<T> clazz) throws ServletException
+        {
+            return null;
+        }
+
+        @Override
+        public ServletRegistration getServletRegistration(String servletName)
+        {
+            return null;
+        }
+
+        @Override
+        public Map<String, ? extends ServletRegistration> getServletRegistrations()
+        {
+            return null;
+        }
+
+        @Override
+        public Dynamic addFilter(String filterName, String className)
+        {
+            return null;
+        }
+
+        @Override
+        public Dynamic addFilter(String filterName, Filter filter)
+        {
+            return null;
+        }
+
+        @Override
+        public Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
+        {
+            return null;
+        }
+
+        @Override
+        public <T extends Filter> T createFilter(Class<T> clazz) throws ServletException
+        {
+            return null;
+        }
+
+        @Override
+        public FilterRegistration getFilterRegistration(String filterName)
+        {
+            return null;
+        }
+
+        @Override
+        public Map<String, ? extends FilterRegistration> getFilterRegistrations()
+        {
+            return null;
+        }
+
+        @Override
+        public SessionCookieConfig getSessionCookieConfig()
+        {
+            return null;
+        }
+
+        @Override
+        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
+        {
+
+        }
+
+        @Override
+        public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
+        {
+            return null;
+        }
+
+        @Override
+        public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
+        {
+            return null;
+        }
+
+        @Override
+        public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException
+        {
+            return null;
+        }
+
+        @Override
+        public int getSessionTimeout()
+        {
+            return 0;
+        }
+
+        @Override
+        public void setSessionTimeout(int sessionTimeout)
+        {
+
+        }
+
+        @Override
+        public String getRequestCharacterEncoding()
+        {
+            return null;
+        }
+
+        @Override
+        public void setRequestCharacterEncoding(String encoding)
+        {
+
+        }
+
+        @Override
+        public String getResponseCharacterEncoding()
+        {
+            return null;
+        }
+
+        @Override
+        public void setResponseCharacterEncoding(String encoding)
+        {
+
+        }
+
         @Override
         public ClassLoader getClassLoader()
         {
@@ -2161,6 +2659,7 @@ public class Ee9ContextHandler
                 System.getSecurityManager().checkPermission(new RuntimePermission("getClassLoader"));
                 return _classLoader;
             }
+
         }
 
         @Override
@@ -2205,444 +2704,6 @@ public class Ee9ContextHandler
     }
 
     /**
-     * A simple implementation of ServletContext that is used when there is no
-     * ContextHandler.  This is also used as the base for all other ServletContext
-     * implementations.
-     */
-    public static class StaticContext implements ServletContext
-    {
-        protected final Attributes.Mapped _attributes = new Attributes.Mapped();
-        private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
-        private int _effectiveMinorVersion = SERVLET_MINOR_VERSION;
-
-        // TODO review
-        public Attributes.Mapped getNonPersistentAttributes()
-        {
-            return _attributes;
-        }
-
-        @Override
-        public ServletContext getContext(String uripath)
-        {
-            return null;
-        }
-
-        @Override
-        public int getMajorVersion()
-        {
-            return SERVLET_MAJOR_VERSION;
-        }
-
-        @Override
-        public String getMimeType(String file)
-        {
-            return null;
-        }
-
-        @Override
-        public int getMinorVersion()
-        {
-            return SERVLET_MINOR_VERSION;
-        }
-
-        @Override
-        public RequestDispatcher getNamedDispatcher(String name)
-        {
-            return null;
-        }
-
-        @Override
-        public RequestDispatcher getRequestDispatcher(String uriInContext)
-        {
-            return null;
-        }
-
-        @Override
-        public String getRealPath(String path)
-        {
-            return null;
-        }
-
-        @Override
-        public URL getResource(String path) throws MalformedURLException
-        {
-            return null;
-        }
-
-        @Override
-        public InputStream getResourceAsStream(String path)
-        {
-            return null;
-        }
-
-        @Override
-        public Set<String> getResourcePaths(String path)
-        {
-            return null;
-        }
-
-        @Override
-        public String getServerInfo()
-        {
-            return ContextHandler.getServerInfo();
-        }
-
-        @Override
-        @Deprecated(since = "Servlet API 2.1")
-        public Servlet getServlet(String name) throws ServletException
-        {
-            return null;
-        }
-
-        @Override
-        @Deprecated(since = "Servlet API 2.1")
-        public Enumeration<String> getServletNames()
-        {
-            return Collections.enumeration(Collections.EMPTY_LIST);
-        }
-
-        @Override
-        @Deprecated(since = "Servlet API 2.0")
-        public Enumeration<Servlet> getServlets()
-        {
-            return Collections.enumeration(Collections.EMPTY_LIST);
-        }
-
-        @Override
-        @Deprecated(since = "Servlet API 2.1")
-        public void log(Exception exception, String msg)
-        {
-            LOG.warn(msg, exception);
-        }
-
-        @Override
-        public void log(String msg)
-        {
-            LOG.info(msg);
-        }
-
-        @Override
-        public void log(String message, Throwable throwable)
-        {
-            LOG.warn(message, throwable);
-        }
-
-        @Override
-        public String getInitParameter(String name)
-        {
-            return null;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public Enumeration<String> getInitParameterNames()
-        {
-            return Collections.enumeration(Collections.EMPTY_LIST);
-        }
-
-        @Override
-        public String getServletContextName()
-        {
-            return "No Context";
-        }
-
-        @Override
-        public String getContextPath()
-        {
-            return null;
-        }
-
-        @Override
-        public boolean setInitParameter(String name, String value)
-        {
-            return false;
-        }
-
-        @Override
-        public Dynamic addFilter(String filterName, Class<? extends Filter> filterClass)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addFilter(String, Class)");
-            return null;
-        }
-
-        @Override
-        public Dynamic addFilter(String filterName, Filter filter)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addFilter(String, Filter)");
-            return null;
-        }
-
-        @Override
-        public Dynamic addFilter(String filterName, String className)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addFilter(String, String)");
-            return null;
-        }
-
-        @Override
-        public jakarta.servlet.ServletRegistration.Dynamic addServlet(String servletName, Class<? extends Servlet> servletClass)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addServlet(String, Class)");
-            return null;
-        }
-
-        @Override
-        public jakarta.servlet.ServletRegistration.Dynamic addServlet(String servletName, Servlet servlet)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addServlet(String, Servlet)");
-            return null;
-        }
-
-        @Override
-        public jakarta.servlet.ServletRegistration.Dynamic addServlet(String servletName, String className)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addServlet(String, String)");
-            return null;
-        }
-
-        /**
-         * @since Servlet 4.0
-         */
-        @Override
-        public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addJspFile(String, String)");
-            return null;
-        }
-
-        @Override
-        public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getDefaultSessionTrackingModes()");
-            return null;
-        }
-
-        @Override
-        public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getEffectiveSessionTrackingModes()");
-            return null;
-        }
-
-        @Override
-        public FilterRegistration getFilterRegistration(String filterName)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getFilterRegistration(String)");
-            return null;
-        }
-
-        @Override
-        public Map<String, ? extends FilterRegistration> getFilterRegistrations()
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getFilterRegistrations()");
-            return null;
-        }
-
-        @Override
-        public ServletRegistration getServletRegistration(String servletName)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getServletRegistration(String)");
-            return null;
-        }
-
-        @Override
-        public Map<String, ? extends ServletRegistration> getServletRegistrations()
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getServletRegistrations()");
-            return null;
-        }
-
-        @Override
-        public SessionCookieConfig getSessionCookieConfig()
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getSessionCookieConfig()");
-            return null;
-        }
-
-        @Override
-        public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "setSessionTrackingModes(Set<SessionTrackingMode>)");
-        }
-
-        @Override
-        public void addListener(String className)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addListener(String)");
-        }
-
-        @Override
-        public <T extends EventListener> void addListener(T t)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addListener(T)");
-        }
-
-        @Override
-        public void addListener(Class<? extends EventListener> listenerClass)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "addListener(Class)");
-        }
-
-        public <T> T createInstance(Class<T> clazz) throws ServletException
-        {
-            try
-            {
-                return clazz.getDeclaredConstructor().newInstance();
-            }
-            catch (Exception e)
-            {
-                throw new ServletException(e);
-            }
-        }
-
-        @Override
-        public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException
-        {
-            return createInstance(clazz);
-        }
-
-        @Override
-        public <T extends Servlet> T createServlet(Class<T> clazz) throws ServletException
-        {
-            return createInstance(clazz);
-        }
-
-        @Override
-        public <T extends Filter> T createFilter(Class<T> clazz) throws ServletException
-        {
-            return createInstance(clazz);
-        }
-
-        @Override
-        public ClassLoader getClassLoader()
-        {
-            return ContextHandler.class.getClassLoader();
-        }
-
-        @Override
-        public int getEffectiveMajorVersion()
-        {
-            return _effectiveMajorVersion;
-        }
-
-        @Override
-        public int getEffectiveMinorVersion()
-        {
-            return _effectiveMinorVersion;
-        }
-
-        public void setEffectiveMajorVersion(int v)
-        {
-            _effectiveMajorVersion = v;
-        }
-
-        public void setEffectiveMinorVersion(int v)
-        {
-            _effectiveMinorVersion = v;
-        }
-
-        @Override
-        public JspConfigDescriptor getJspConfigDescriptor()
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getJspConfigDescriptor()");
-            return null;
-        }
-
-        @Override
-        public void declareRoles(String... roleNames)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "declareRoles(String...)");
-        }
-
-        @Override
-        public String getVirtualServerName()
-        {
-            return null;
-        }
-
-        /**
-         * @since Servlet 4.0
-         */
-        @Override
-        public int getSessionTimeout()
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getSessionTimeout()");
-            return 0;
-        }
-
-        /**
-         * @since Servlet 4.0
-         */
-        @Override
-        public void setSessionTimeout(int sessionTimeout)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "setSessionTimeout(int)");
-        }
-
-        /**
-         * @since Servlet 4.0
-         */
-        @Override
-        public String getRequestCharacterEncoding()
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getRequestCharacterEncoding()");
-            return null;
-        }
-
-        /**
-         * @since Servlet 4.0
-         */
-        @Override
-        public void setRequestCharacterEncoding(String encoding)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "setRequestCharacterEncoding(String)");
-        }
-
-        /**
-         * @since Servlet 4.0
-         */
-        @Override
-        public String getResponseCharacterEncoding()
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "getResponseCharacterEncoding()");
-            return null;
-        }
-
-        /**
-         * @since Servlet 4.0
-         */
-        @Override
-        public void setResponseCharacterEncoding(String encoding)
-        {
-            LOG.warn(UNIMPLEMENTED_USE_SERVLET_CONTEXT_HANDLER, "setResponseCharacterEncoding(String)");
-        }
-
-        @Override
-        public Object getAttribute(String name)
-        {
-            return _attributes.getAttribute(name);
-        }
-
-        @Override
-        public Enumeration<String> getAttributeNames()
-        {
-            return Collections.enumeration(_attributes.getAttributeNameSet());
-        }
-
-        @Override
-        public void setAttribute(String name, Object object)
-        {
-            _attributes.setAttribute(name, object);
-        }
-
-        @Override
-        public void removeAttribute(String name)
-        {
-            _attributes.removeAttribute(name);
-        }
-    }
-
-    /**
      * Interface to check aliases
      */
     public interface AliasCheck
@@ -2660,7 +2721,7 @@ public class Ee9ContextHandler
 
     /**
      * Approve all aliases.
-     * @deprecated use {@link AllowedResourceAliasChecker} instead.
+     * @deprecated use {@link org.eclipse.jetty.server.AllowedResourceAliasChecker} instead.
      */
     @Deprecated
     public static class ApproveAliases implements AliasCheck
@@ -2701,6 +2762,25 @@ public class Ee9ContextHandler
         }
     }
 
+    /**
+     * Listener for all threads entering context scope, including async IO callbacks
+     */
+    public static interface ContextScopeListener extends EventListener
+    {
+        /**
+         * @param context The context being entered
+         * @param request A request that is applicable to the scope, or null
+         * @param reason An object that indicates the reason the scope is being entered.
+         */
+        void enterScope(Context context, Request request, Object reason);
+
+        /**
+         * @param context The context being exited
+         * @param request A request that is applicable to the scope, or null
+         */
+        void exitScope(Context context, Request request);
+    }
+
     private static class Caller extends SecurityManager
     {
         public ClassLoader getCallerClassLoader(int depth)
@@ -2711,31 +2791,6 @@ public class Ee9ContextHandler
             if (classContext.length <= depth)
                 return null;
             return classContext[depth].getClassLoader();
-        }
-    }
-
-    private class HandlerConvertor extends ScopedHandler implements org.eclipse.jetty.server.Handler, org.eclipse.jetty.server.Request.Processor
-    {
-        @Override
-        public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
-        {
-            // An EE9 context always accepts
-            return this;
-        }
-
-        @Override
-        public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
-        {
-            // TODO This will receive the servlet scope wrapped request/response.
-            //      extract those and call EE9 handle
-            Request baseRequest = request.somehowConvert();
-            this.handle(null, baseRequest, baseRequest, response);
-        }
-
-        @Override
-        public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            Ee9ContextHandler.this.doHandle(target, baseRequest, request, response);
         }
     }
 }

@@ -46,10 +46,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Handler for Error pages
- * An ErrorHandler is registered with {@link ContextHandler#setErrorHandler(ErrorHandler)} or
- * {@link Server#setErrorHandler(ErrorHandler)}.
- * It is called by the HttpResponse.sendError method to write an error page via {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)}
- * or via {@link #badMessageError(int, String, HttpFields.Mutable)} for bad requests for which a dispatch cannot be done.
  */
 public class ErrorHandler extends AbstractHandler
 {

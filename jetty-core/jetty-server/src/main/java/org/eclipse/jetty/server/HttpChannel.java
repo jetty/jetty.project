@@ -126,6 +126,11 @@ public class HttpChannel extends Attributes.Lazy
         return _configuration;
     }
 
+    public long getRequests()
+    {
+        return _requests;
+    }
+
     public void setStream(HttpStream stream)
     {
         try (AutoLock ignored = _lock.lock())

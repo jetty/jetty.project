@@ -124,7 +124,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @ManagedAttribute(value = "Context")
-    public org.eclipse.jetty.server.Context getContext()
+    public Context getContext()
     {
         return _context;
     }

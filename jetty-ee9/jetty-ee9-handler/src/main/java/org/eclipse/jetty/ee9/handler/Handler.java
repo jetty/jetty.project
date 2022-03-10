@@ -18,7 +18,6 @@ import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -52,25 +51,21 @@ public interface Handler extends LifeCycle, Destroyable
      *
      * @param target The target of the request - either a URI or a name.
      * @param baseRequest The original unwrapped request object.
-     * @param request The request either as the {@link Request} object or a wrapper of that request. The
-     * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getRequest() getRequest()}</code>
-     * method can be used access the Request object if required.
-     * @param response The response as the {@link Response} object or a wrapper of that request. The
-     * <code>{@link HttpConnection#getCurrentConnection()}.{@link HttpConnection#getHttpChannel() getHttpChannel()}.{@link HttpChannel#getResponse() getResponse()}</code>
-     * method can be used access the Response object if required.
+     * @param request The request either as the {@link Request} object or a wrapper of that request.
+     * @param response The response as the {@link Response} object or a wrapper of that request.
      * @throws IOException if unable to handle the request or response processing
      * @throws ServletException if unable to handle the request or response due to underlying servlet issue
      */
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+    void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
         throws IOException, ServletException;
 
-    public void setServer(Server server);
+    void setServer(Server server);
 
     @ManagedAttribute(value = "the jetty server for this handler", readonly = true)
-    public Server getServer();
+    Server getServer();
 
     @ManagedOperation(value = "destroy associated resources", impact = "ACTION")
     @Override
-    public void destroy();
+    void destroy();
 }
 
