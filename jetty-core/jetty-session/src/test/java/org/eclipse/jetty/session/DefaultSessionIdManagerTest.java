@@ -41,6 +41,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class DefaultSessionIdManagerTest
 {
+    private class TestSessionHandler extends TestableSessionHandler
+    {
+        private boolean _idInUse;
+        
+        public void setIdInUse(boolean idInUse)
+        {
+            _idInUse = idInUse;
+        }
+
+        @Override
+        public boolean isIdInUse(String id) throws Exception
+        {
+            return _idInUse;
+        }
+    }
+    
     private class TestRequest implements Request
     {
         @Override
@@ -214,7 +230,7 @@ public class DefaultSessionIdManagerTest
 
         
         //test something that is not in use
-        TestableSessionHandler tsh1 = new TestableSessionHandler();
+        TestSessionHandler tsh1 = new TestSessionHandler();
         tsh1.setIdInUse(false);
         tsh1.setServer(server);
         server.addBean(tsh1);
@@ -222,7 +238,7 @@ public class DefaultSessionIdManagerTest
         assertFalse(sessionIdManager.isIdInUse("1234"));
         //test something that _is_ in use
         server.stop();
-        TestableSessionHandler tsh2 = new TestableSessionHandler();
+        TestSessionHandler tsh2 = new TestSessionHandler();
         tsh2.setIdInUse(true);
         tsh2.setServer(server);
         server.addBean(tsh2);
@@ -252,7 +268,7 @@ public class DefaultSessionIdManagerTest
         //it _is_ in use.
         Server server = new Server();
         DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
-        TestableSessionHandler tsh = new TestableSessionHandler();
+        TestSessionHandler tsh = new TestSessionHandler();
         tsh.setIdInUse(true);
         server.setHandler(tsh);
         server.start();
