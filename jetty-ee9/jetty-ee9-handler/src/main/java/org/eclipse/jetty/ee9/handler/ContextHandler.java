@@ -257,7 +257,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     protected ContextHandler(Context context, HandlerContainer parent, String contextPath)
     {
-        _coreContextHandler = c
+        _coreContextHandler = new org.eclipse.jetty.server.handler.ContextHandler();
         _scontext = context == null ? new Context() : context;
         _initParams = new HashMap<>();
         if (contextPath != null)

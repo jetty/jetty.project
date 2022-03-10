@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.session;
+package org.eclipse.jetty.ee9.servlet;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -22,12 +22,8 @@ import java.util.EventListener;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletContext;
@@ -46,33 +42,10 @@ import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionHandler;
-import org.eclipse.jetty.session.DefaultSessionCache;
-import org.eclipse.jetty.session.DefaultSessionIdManager;
-import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.Session;
-import org.eclipse.jetty.session.SessionCache;
-import org.eclipse.jetty.session.SessionCacheFactory;
-import org.eclipse.jetty.session.SessionContext;
-import org.eclipse.jetty.session.SessionDataStore;
-import org.eclipse.jetty.session.SessionDataStoreFactory;
-import org.eclipse.jetty.session.SessionIdManager;
-import org.eclipse.jetty.session.SessionInactivityTimer;
-import org.eclipse.jetty.session.SessionManager;
-import org.eclipse.jetty.session.UnreadableSessionDataException;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.statistic.CounterStatistic;
-import org.eclipse.jetty.util.statistic.SampleStatistic;
-import org.eclipse.jetty.util.thread.AutoLock;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
