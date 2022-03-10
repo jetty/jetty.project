@@ -63,7 +63,6 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.Attributes;
@@ -159,16 +158,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return null;
     }
 
-    public static String getServerInfo()
-    {
-        return __serverInfo;
-    }
-
-    public static void setServerInfo(String serverInfo)
-    {
-        __serverInfo = serverInfo;
-    }
-
     public enum ContextStatus
     {
         NOTSET,
@@ -186,7 +175,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         PREFIX
     }
 
-    private org.eclipse.jetty.server.handler.ContextHandler _coreContextHandler;
+    private final org.eclipse.jetty.server.handler.ContextHandler _coreContextHandler;
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     protected Context _scontext;
     private final Map<String, String> _initParams;
@@ -203,15 +192,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private Map<String, String> _localeEncodingMap;
     private String[] _welcomeFiles;
     private ErrorHandler _errorHandler;
-    private String[] _vhosts; // Host name portion, matching _vconnectors array
-    private boolean[] _vhostswildcard;
-    private String[] _vconnectors; // connector portion, matching _vhosts array
     private Logger _logger;
     private boolean _allowNullPathInfo;
     private int _maxFormKeys = Integer.getInteger(MAX_FORM_KEYS_KEY, DEFAULT_MAX_FORM_KEYS);
     private int _maxFormContentSize = Integer.getInteger(MAX_FORM_CONTENT_SIZE_KEY, DEFAULT_MAX_FORM_CONTENT_SIZE);
     private boolean _compactPath = false;
-    private boolean _usingSecurityManager = System.getSecurityManager() != null;
 
     private final List<EventListener> _programmaticListeners = new CopyOnWriteArrayList<>();
     private final List<ServletContextListener> _servletContextListeners = new CopyOnWriteArrayList<>();
@@ -240,32 +225,32 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         this(null, null, null);
     }
 
-    protected ContextHandler(Context context)
-    {
-        this(context, null, null);
-    }
-
     public ContextHandler(String contextPath)
     {
         this(null, null, contextPath);
     }
 
-    public ContextHandler(HandlerContainer parent, String contextPath)
+    public ContextHandler(org.eclipse.jetty.server.Handler.Container parent, String contextPath)
     {
         this(null, parent, contextPath);
     }
 
-    protected ContextHandler(Context context, HandlerContainer parent, String contextPath)
+    protected ContextHandler(Context context,
+                             org.eclipse.jetty.server.Handler.Container parent,
+                             String contextPath)
     {
         _coreContextHandler = new org.eclipse.jetty.server.handler.ContextHandler();
         _scontext = context == null ? new Context() : context;
         _initParams = new HashMap<>();
         if (contextPath != null)
             setContextPath(contextPath);
-        if (parent instanceof HandlerWrapper)
-            ((HandlerWrapper)parent).setHandler(this);
-        else if (parent instanceof HandlerCollection)
-            ((HandlerCollection)parent).addHandler(this);
+        if (parent != null)
+            parent.addHandler(_coreContextHandler);
+    }
+
+    public org.eclipse.jetty.server.handler.ContextHandler getContextHandler()
+    {
+        return _coreContextHandler;
     }
 
     @Override
@@ -305,188 +290,38 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _errorHandler.setServer(server);
     }
 
+    @Deprecated
     public boolean isUsingSecurityManager()
     {
-        return _usingSecurityManager;
+        return false;
     }
 
+    @Deprecated
     public void setUsingSecurityManager(boolean usingSecurityManager)
     {
-        if (usingSecurityManager && System.getSecurityManager() == null)
-            throw new IllegalStateException("No security manager");
-        _usingSecurityManager = usingSecurityManager;
+        if (usingSecurityManager)
+            throw new UnsupportedOperationException();
     }
 
-    /**
-     * Set the virtual hosts for the context. Only requests that have a matching host header or fully qualified URL will be passed to that context with a
-     * virtual host name. A context with no virtual host names or a null virtual host name is available to all requests that are not served by a context with a
-     * matching virtual host name.
-     *
-     * @param vhosts Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
-     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
-     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
-     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
-     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
-     */
     public void setVirtualHosts(String[] vhosts)
     {
-
-        if (vhosts == null)
-        {
-            _vhosts = vhosts;
-        }
-        else
-        {
-
-            boolean hostMatch = false;
-            boolean connectorHostMatch = false;
-            _vhosts = new String[vhosts.length];
-            _vconnectors = new String[vhosts.length];
-            _vhostswildcard = new boolean[vhosts.length];
-            ArrayList<Integer> connectorOnlyIndexes = null;
-            for (int i = 0; i < vhosts.length; i++)
-            {
-                boolean connectorMatch = false;
-                _vhosts[i] = vhosts[i];
-                if (vhosts[i] == null)
-                    continue;
-                int connectorIndex = _vhosts[i].indexOf('@');
-                if (connectorIndex >= 0)
-                {
-                    connectorMatch = true;
-                    _vconnectors[i] = _vhosts[i].substring(connectorIndex + 1);
-                    _vhosts[i] = _vhosts[i].substring(0, connectorIndex);
-                    if (connectorIndex == 0)
-                    {
-                        if (connectorOnlyIndexes == null)
-                            connectorOnlyIndexes = new ArrayList<>();
-                        connectorOnlyIndexes.add(i);
-                    }
-                }
-
-                if (_vhosts[i].startsWith("*."))
-                {
-                    _vhosts[i] = _vhosts[i].substring(1);
-                    _vhostswildcard[i] = true;
-                }
-                if (_vhosts[i].isEmpty())
-                    _vhosts[i] = null;
-                else
-                {
-                    hostMatch = true;
-                    connectorHostMatch = connectorHostMatch || connectorMatch;
-                }
-                _vhosts[i] = normalizeHostname(_vhosts[i]);
-            }
-
-            if (connectorOnlyIndexes != null && hostMatch && !connectorHostMatch)
-            {
-                LOG.warn(
-                    "ContextHandler {} has a connector only entry e.g. \"@connector\" and one or more host only entries. \n" +
-                        "The host entries will be ignored to match legacy behavior.  To clear this warning remove the host entries or update to us at least one host@connector syntax entry that will match a host for an specific connector",
-                    Arrays.asList(vhosts));
-                String[] filteredHosts = new String[connectorOnlyIndexes.size()];
-                for (int i = 0; i < connectorOnlyIndexes.size(); i++)
-                {
-                    filteredHosts[i] = vhosts[connectorOnlyIndexes.get(i)];
-                }
-                setVirtualHosts(filteredHosts);
-            }
-        }
+        _coreContextHandler.setVirtualHosts(vhosts == null ? Collections.emptyList() : Arrays.asList(vhosts));
     }
 
-    /**
-     * Either set virtual hosts or add to an existing set of virtual hosts.
-     *
-     * @param virtualHosts Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
-     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
-     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
-     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
-     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
-     */
     public void addVirtualHosts(String[] virtualHosts)
     {
-        if (virtualHosts == null || virtualHosts.length == 0) // since this is add, we don't null the old ones
-            return;
-
-        if (_vhosts == null)
-        {
-            setVirtualHosts(virtualHosts);
-        }
-        else
-        {
-            Set<String> currentVirtualHosts = new HashSet<>(Arrays.asList(getVirtualHosts()));
-            for (String vh : virtualHosts)
-            {
-                currentVirtualHosts.add(normalizeHostname(vh));
-            }
-            setVirtualHosts(currentVirtualHosts.toArray(new String[0]));
-        }
+        _coreContextHandler.addVirtualHosts(virtualHosts);
     }
 
-    /**
-     * Removes an array of virtual host entries, if this removes all entries the _vhosts will be set to null
-     *
-     * @param virtualHosts Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
-     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
-     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
-     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
-     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
-     */
     public void removeVirtualHosts(String[] virtualHosts)
     {
-        if (virtualHosts == null || virtualHosts.length == 0 || _vhosts == null || _vhosts.length == 0)
-            return; // do nothing
-
-        Set<String> existingVirtualHosts = new HashSet<>(Arrays.asList(getVirtualHosts()));
-        for (String vh : virtualHosts)
-        {
-            existingVirtualHosts.remove(normalizeHostname(vh));
-        }
-        if (existingVirtualHosts.isEmpty())
-            setVirtualHosts(null); // if we ended up removing them all, just null out _vhosts
-        else
-            setVirtualHosts(existingVirtualHosts.toArray(new String[0]));
+        _coreContextHandler.removeVirtualHosts(virtualHosts);
     }
 
-    /**
-     * Get the virtual hosts for the context. Only requests that have a matching host header or fully qualified URL will be passed to that context with a
-     * virtual host name. A context with no virtual host names or a null virtual host name is available to all requests that are not served by a context with a
-     * matching virtual host name.
-     *
-     * @return Array of virtual hosts that this context responds to. A null/empty array means any hostname is acceptable. Host names may be String
-     * representation of IP addresses. Host names may start with '*.' to wildcard one level of names. Hosts and wildcard hosts may be followed with
-     * '@connectorname', in which case they will match only if the the {@link Connector#getName()} for the request also matches. If an entry is just
-     * '@connectorname' it will match any host if that connector was used.  Note - In previous versions if one or more connectorname only entries existed
-     * and non of the connectors matched the handler would not match regardless of any hostname entries.  If there is one or more connectorname only
-     * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
-     * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
-     */
     @ManagedAttribute(value = "Virtual hosts accepted by the context", readonly = true)
     public String[] getVirtualHosts()
     {
-        if (_vhosts == null)
-            return null;
-
-        String[] vhosts = new String[_vhosts.length];
-        for (int i = 0; i < _vhosts.length; i++)
-        {
-            StringBuilder sb = new StringBuilder();
-            if (_vhostswildcard[i])
-                sb.append("*");
-            if (_vhosts[i] != null)
-                sb.append(_vhosts[i]);
-            if (_vconnectors[i] != null)
-                sb.append("@").append(_vconnectors[i]);
-            vhosts[i] = sb.toString();
-        }
-        return vhosts;
+        return _coreContextHandler.getVirtualHosts().toArray(new String[0]);
     }
 
     @Override
@@ -1111,112 +946,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             mex.ifExceptionThrow();
     }
 
-    public boolean checkVirtualHost(final Request baseRequest)
-    {
-        if (_vhosts == null || _vhosts.length == 0)
-            return true;
-
-        String vhost = normalizeHostname(baseRequest.getServerName());
-        String connectorName = baseRequest.getHttpChannel().getConnector().getName();
-
-        for (int i = 0; i < _vhosts.length; i++)
-        {
-            String contextVhost = _vhosts[i];
-            String contextVConnector = _vconnectors[i];
-
-            if (contextVConnector != null)
-            {
-                if (!contextVConnector.equalsIgnoreCase(connectorName))
-                    continue;
-
-                if (contextVhost == null)
-                {
-                    return true;
-                }
-            }
-
-            if (contextVhost != null)
-            {
-                if (_vhostswildcard[i])
-                {
-                    // wildcard only at the beginning, and only for one additional subdomain level
-                    int index = vhost.indexOf(".");
-                    if (index >= 0 && vhost.substring(index).equalsIgnoreCase(contextVhost))
-                    {
-                        return true;
-                    }
-                }
-                else if (vhost.equalsIgnoreCase(contextVhost))
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    public boolean checkContextPath(String uri)
-    {
-        // Are we not the root context?
-        if (_contextPath.length() > 1)
-        {
-            // reject requests that are not for us
-            if (!uri.startsWith(_contextPath))
-                return false;
-            if (uri.length() > _contextPath.length() && uri.charAt(_contextPath.length()) != '/')
-                return false;
-        }
-        return true;
-    }
-
-    /*
-     * @see org.eclipse.jetty.server.Handler#handle(jakarta.servlet.http.HttpServletRequest, jakarta.servlet.http.HttpServletResponse)
-     */
-    public boolean checkContext(final String target, final Request baseRequest, final HttpServletResponse response) throws IOException
-    {
-        DispatcherType dispatch = baseRequest.getDispatcherType();
-
-        // Check the vhosts
-        if (!checkVirtualHost(baseRequest))
-            return false;
-
-        if (!checkContextPath(target))
-            return false;
-
-        // Are we not the root context?
-        // redirect null path infos
-        if (!_allowNullPathInfo && _contextPath.length() == target.length() && _contextPath.length() > 1)
-        {
-            // context request must end with /
-            baseRequest.setHandled(true);
-            String queryString = baseRequest.getQueryString();
-            baseRequest.getResponse().sendRedirect(
-                HttpServletResponse.SC_MOVED_TEMPORARILY,
-                baseRequest.getRequestURI() + (queryString == null ? "/" : ("/?" + queryString)),
-                true);
-            return false;
-        }
-
-        switch (_availability.get())
-        {
-            case STOPPED:
-                return false;
-            case SHUTDOWN:
-            case UNAVAILABLE:
-                baseRequest.setHandled(true);
-                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                return false;
-            default:
-                if ((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
-                    return false;
-        }
-
-        return true;
-    }
-
     @Override
     public void doScope(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
+        // TODO this needs to be modified as the context will always be known at this point.
         if (LOG.isDebugEnabled())
             LOG.debug("scope {}|{}|{} @ {}", baseRequest.getContextPath(), baseRequest.getServletPath(), baseRequest.getPathInfo(), this);
 

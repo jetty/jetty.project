@@ -60,7 +60,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.eclipse.jetty.http.HttpStatus.INTERNAL_SERVER_ERROR_500;
-import static org.eclipse.jetty.server.HttpChannel.UPGRADE_CONNECTION_ATTRIBUTE;
 
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
@@ -1254,7 +1253,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     if (_unknownExpectation)
                     {
                         _requestHandler.badMessage(new BadMessageException(HttpStatus.EXPECTATION_FAILED_417));
-                        return null; // TODO ???
+                        return null; // TODO Is this enough ???
                     }
 
                     persistent = getHttpConfiguration().isPersistentConnectionsEnabled() &&
@@ -1265,7 +1264,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         _generator.setPersistent(false);
 
                     if (_upgrade != null && HttpConnection.this.upgrade())
-                        return null; // TODO ???
+                        return null; // TODO do we need to return a runnable to complete the upgrade ???
 
                     break;
                 }
@@ -1279,9 +1278,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         "*".equals(_uri.getPath()) &&
                         _headerBuilder.size() == 0 &&
                         HttpConnection.this.upgrade())
-                        return null; // TODO ?
+                        return null; // TODO do we need to return a runnable to complete the upgrade ???
 
-                    // TODO?
+                    // TODO is this sufficient?
                     _parser.close();
                     throw new BadMessageException(HttpStatus.UPGRADE_REQUIRED_426, "Upgrade Required");
                 }

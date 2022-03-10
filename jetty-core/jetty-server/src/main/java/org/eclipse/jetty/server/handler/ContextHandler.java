@@ -197,7 +197,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
      * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
      */
-    public void addVirtualHosts(String[] virtualHosts)
+    public void addVirtualHosts(String... virtualHosts)
     {
         if (virtualHosts == null || virtualHosts.length == 0) // since this is add, we don't null the old ones
             return;
@@ -218,7 +218,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      * entries and one or more host only entries but no hostname and connector entries we assume the old behavior and will log a warning.  The warning
      * can be removed by removing the host entries that were previously being ignored, or modifying to include a hostname and connectorname entry.
      */
-    public void removeVirtualHosts(String[] virtualHosts)
+    public void removeVirtualHosts(String... virtualHosts)
     {
         List<String> vhosts = new ArrayList<>(getVirtualHosts());
         if (virtualHosts == null || virtualHosts.length == 0 || vhosts.isEmpty())
