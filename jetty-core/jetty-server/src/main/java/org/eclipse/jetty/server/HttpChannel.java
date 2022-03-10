@@ -587,14 +587,18 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public Content readContent()
         {
+            HttpStream stream;
             try (AutoLock ignored = _lock.lock())
             {
+                if (_stream == null)
+                    throw new IllegalStateException();
+                stream = _stream;
                 if (_error != null)
                     return _error;
                 if (!_processing)
                     return new Content.Error(new IllegalStateException("not processing"));
             }
-            Content content = getStream().readContent();
+            Content content = stream.readContent();
             if (content != null)
                 _read += content.remaining();
             return content;
@@ -604,8 +608,13 @@ public class HttpChannel extends Attributes.Lazy
         public void demandContent(Runnable onContentAvailable)
         {
             boolean error;
+            HttpStream stream;
             try (AutoLock ignored = _lock.lock())
             {
+                if (_stream == null)
+                    throw new IllegalStateException();
+                stream = _stream;
+
                 error = _error != null || !_processing;
                 if (!error)
                 {
@@ -618,7 +627,7 @@ public class HttpChannel extends Attributes.Lazy
             if (error)
                 _serializedInvoker.run(onContentAvailable);
             else
-                getStream().demandContent();
+                stream.demandContent();
         }
 
         @Override
