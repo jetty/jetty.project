@@ -590,13 +590,13 @@ public class HttpChannel extends Attributes.Lazy
             HttpStream stream;
             try (AutoLock ignored = _lock.lock())
             {
-                if (_stream == null)
-                    throw new IllegalStateException();
-                stream = _stream;
                 if (_error != null)
                     return _error;
                 if (!_processing)
                     return new Content.Error(new IllegalStateException("not processing"));
+                if (_stream == null)
+                    throw new IllegalStateException();
+                stream = _stream;
             }
             Content content = stream.readContent();
             if (content != null)
@@ -611,10 +611,6 @@ public class HttpChannel extends Attributes.Lazy
             HttpStream stream;
             try (AutoLock ignored = _lock.lock())
             {
-                if (_stream == null)
-                    throw new IllegalStateException();
-                stream = _stream;
-
                 error = _error != null || !_processing;
                 if (!error)
                 {
@@ -622,6 +618,9 @@ public class HttpChannel extends Attributes.Lazy
                         throw new IllegalArgumentException("Demand pending");
                     _onContentAvailable = onContentAvailable;
                 }
+                if (_stream == null)
+                    throw new IllegalStateException();
+                stream = _stream;
             }
 
             if (error)
