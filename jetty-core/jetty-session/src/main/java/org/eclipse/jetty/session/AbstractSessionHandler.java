@@ -957,15 +957,14 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
             // sessions are immortal, they never expire
             if (evictionPolicy < SessionCache.EVICT_ON_INACTIVITY)
             {
-                // we do not want to evict inactive sessions
+                //session not subject to timeouts
                 time = -1;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Session {} is immortal && no inactivity eviction", id);
             }
             else
             {
-                // sessions are immortal but we want to evict after
-                // inactivity
+                // sessions are immortal but can be evicted, timeout is the eviction timeout
                 time = TimeUnit.SECONDS.toMillis(evictionPolicy);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Session {} is immortal; evict after {} sec inactivity", id, evictionPolicy);
@@ -976,7 +975,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
             // sessions are not immortal
             if (evictionPolicy == SessionCache.NEVER_EVICT)
             {
-                // timeout is the time remaining until its expiry
+                //timeout is the time remaining until its expiry
                 time = (timeRemaining > 0 ? timeRemaining : 0);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Session {} no eviction", id);
@@ -990,8 +989,8 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
             }
             else
             {
-                // want to evict on idle: timer is lesser of the session's
-                // expiration remaining and the time to evict
+                // want to evict on idle: timeout is lesser of the session's
+                // expiration remaining and the eviction timeout
                 time = (timeRemaining > 0 ? (Math.min(maxInactiveMs, TimeUnit.SECONDS.toMillis(evictionPolicy))) : 0);
 
                 if (LOG.isDebugEnabled())
