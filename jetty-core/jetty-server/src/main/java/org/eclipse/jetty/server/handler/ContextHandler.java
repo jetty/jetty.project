@@ -124,9 +124,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     @ManagedAttribute(value = "Context")
-    public Context getContext()
+    public ContextHandler.Context getContext()
     {
-        return _context;
+        return (ContextHandler.Context)_context;
     }
 
     /**

@@ -13,6 +13,9 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
+import org.eclipse.jetty.util.Callback;
+
+// TODO: improve javadoc.
 /**
  * Abstract WebSocket creator interface.
  * <p>
@@ -27,7 +30,8 @@ public interface WebSocketCreator
      *
      * @param req the request details
      * @param resp the response details
+     * @param callback callback
      * @return a websocket object to use, or null if no websocket should be created from this request.
      */
-    Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp);
+    Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp, Callback callback);
 }

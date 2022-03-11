@@ -15,7 +15,6 @@ package org.eclipse.jetty.websocket.core.extensions;
 
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.time.Duration;
 import java.util.Random;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;

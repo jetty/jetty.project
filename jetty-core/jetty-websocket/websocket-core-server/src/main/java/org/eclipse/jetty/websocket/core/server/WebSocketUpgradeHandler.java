@@ -13,19 +13,17 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import java.io.IOException;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.PathSpec;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 
-public class WebSocketUpgradeHandler extends HandlerWrapper
+public class WebSocketUpgradeHandler extends Handler.Wrapper
 {
     private final WebSocketMappings mappings;
     private final Configuration.ConfigurationCustomizer customizer = new Configuration.ConfigurationCustomizer();
@@ -38,6 +36,14 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
     public WebSocketUpgradeHandler(WebSocketComponents components)
     {
         this.mappings = new WebSocketMappings(components);
+        setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+            }
+        });
     }
 
     public void addMapping(String pathSpec, WebSocketNegotiator negotiator)
@@ -51,12 +57,50 @@ public class WebSocketUpgradeHandler extends HandlerWrapper
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+    public Request.Processor handle(Request request) throws Exception
     {
-        if (mappings.upgrade(request, response, customizer))
-            return;
+        Request.Processor processor = super.handle(request);
+        if (processor == null)
+            return null;
 
-        if (!baseRequest.isHandled())
-            super.handle(target, baseRequest, request, response);
+        String target = request.getPathInContext();
+        WebSocketNegotiator negotiator = mappings.getMatchedNegotiator(target, pathSpec ->
+        {
+            // Store PathSpec resource mapping as request attribute,
+            // for WebSocketCreator implementors to use later if they wish.
+            request.setAttribute(PathSpec.class.getName(), pathSpec);
+        });
+
+        if (negotiator == null)
+            return processor;
+        return new WebSocketProcessor(processor, negotiator);
+    }
+
+    private class WebSocketProcessor implements Request.Processor
+    {
+        private final Request.Processor _processor;
+        private final WebSocketNegotiator _negotiator;
+
+        public WebSocketProcessor(Request.Processor processor, WebSocketNegotiator negotiator)
+        {
+            _processor = processor;
+            _negotiator = negotiator;
+        }
+
+        @Override
+        public void process(Request request, Response response, Callback callback) throws Exception
+        {
+            try
+            {
+                if (mappings.upgrade(_negotiator, request, response, callback, customizer))
+                    return;
+
+                _processor.process(request, response, callback);
+            }
+            catch (Throwable t)
+            {
+                callback.failed(t);
+            }
+        }
     }
 }

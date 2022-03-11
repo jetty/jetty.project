@@ -13,13 +13,13 @@
 
 package org.eclipse.jetty.websocket.core.server.internal;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
 
@@ -28,9 +28,9 @@ public class RFC6455Negotiation extends WebSocketNegotiation
     private boolean successful;
     private String key;
 
-    public RFC6455Negotiation(Request baseRequest, HttpServletRequest request, HttpServletResponse response, WebSocketComponents components) throws BadMessageException
+    public RFC6455Negotiation(Request request, Response response, Callback callback, WebSocketComponents components) throws BadMessageException
     {
-        super(baseRequest, request, response, components);
+        super(request, response, callback, components);
     }
 
     @Override
@@ -40,7 +40,7 @@ public class RFC6455Negotiation extends WebSocketNegotiation
 
         boolean upgrade = false;
         QuotedCSV connectionCSVs = null;
-        for (HttpField field : baseRequest.getHttpFields())
+        for (HttpField field : baseRequest.getHeaders())
         {
             HttpHeader header = field.getHeader();
             if (header != null)

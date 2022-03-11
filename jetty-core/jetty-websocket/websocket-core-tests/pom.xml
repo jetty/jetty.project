@@ -27,13 +27,6 @@
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-core-common</artifactId>
     </dependency>
-    <!-- FIXME: REMOVE -->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-servlet</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>

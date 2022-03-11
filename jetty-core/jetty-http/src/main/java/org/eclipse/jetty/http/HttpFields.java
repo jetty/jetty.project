@@ -1037,7 +1037,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param ensure The field to ensure exists
          * @param fields The list of existing fields with the same header
          */
-        private static HttpField computeEnsure(HttpField ensure, List<HttpField> fields)
+        public static HttpField computeEnsure(HttpField ensure, List<HttpField> fields)
         {
             // If no existing fields return the ensure field
             if (fields == null || fields.isEmpty())
@@ -1082,7 +1082,7 @@ public interface HttpFields extends Iterable<HttpField>
          * @param values The QuotedCSV parsed field values.
          * @param fields The list of existing fields with the same header
          */
-        private static HttpField computeEnsure(HttpField ensure, String[] values, List<HttpField> fields)
+        public static HttpField computeEnsure(HttpField ensure, String[] values, List<HttpField> fields)
         {
             // If no existing fields return the ensure field
             if (fields == null || fields.isEmpty())
@@ -1435,7 +1435,7 @@ public interface HttpFields extends Iterable<HttpField>
             return asString();
         }
 
-        private String formatCsvExcludingExisting(QuotedCSV existing, String... values)
+        public static String formatCsvExcludingExisting(QuotedCSV existing, String... values)
         {
             // remove any existing values from the new values
             boolean add = true;

@@ -13,20 +13,17 @@
 
 package org.eclipse.jetty.websocket.core.chat;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
@@ -119,16 +116,14 @@ public class ChatWebSocketServer
         upgradeHandler.addMapping(new ServletPathSpec("/*"), WebSocketNegotiator.from(chat::negotiate));
         context.setHandler(upgradeHandler);
 
-        upgradeHandler.setHandler(new AbstractHandler()
+        upgradeHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                    throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
                 response.setStatus(200);
                 response.setContentType("text/plain");
-                response.getOutputStream().println("WebSocket Chat Server");
-                baseRequest.setHandled(true);
+                response.write(true, callback, "WebSocket Chat Server");
             }
         });
 

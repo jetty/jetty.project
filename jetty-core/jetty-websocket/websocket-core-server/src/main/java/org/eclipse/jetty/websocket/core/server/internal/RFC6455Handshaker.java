@@ -13,13 +13,12 @@
 
 package org.eclipse.jetty.websocket.core.server.internal;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -28,7 +27,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.websocket.core.FrameHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.internal.WebSocketConnection;
 import org.eclipse.jetty.websocket.core.internal.WebSocketCore;
@@ -41,7 +40,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     private static final HttpField CONNECTION_UPGRADE = new PreEncodedHttpField(HttpHeader.CONNECTION, HttpHeader.UPGRADE.asString());
 
     @Override
-    protected boolean validateRequest(HttpServletRequest request)
+    protected boolean validateRequest(Request request)
     {
         if (!HttpMethod.GET.is(request.getMethod()))
         {
@@ -50,7 +49,7 @@ public final class RFC6455Handshaker extends AbstractHandshaker
             return false;
         }
 
-        if (!HttpVersion.HTTP_1_1.is(request.getProtocol()))
+        if (!HttpVersion.HTTP_1_1.is(request.getConnectionMetaData().getProtocol()))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("not upgraded version!=1.1 {}", request);
@@ -61,9 +60,9 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     }
 
     @Override
-    protected WebSocketNegotiation newNegotiation(HttpServletRequest request, HttpServletResponse response, WebSocketComponents webSocketComponents)
+    protected WebSocketNegotiation newNegotiation(Request request, Response response, Callback callback, WebSocketComponents webSocketComponents)
     {
-        return new RFC6455Negotiation(Request.getBaseRequest(request), request, response, webSocketComponents);
+        return new RFC6455Negotiation(request, response, callback, webSocketComponents);
     }
 
     @Override
@@ -74,19 +73,6 @@ public final class RFC6455Handshaker extends AbstractHandshaker
             return false;
         if (((RFC6455Negotiation)negotiation).getKey() == null)
             throw new BadMessageException("Missing request header 'Sec-WebSocket-Key'");
-        return true;
-    }
-
-    @Override
-    protected boolean validateFrameHandler(FrameHandler frameHandler, HttpServletResponse response)
-    {
-        if (frameHandler == null)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("not upgraded: no frame handler provided");
-            return false;
-        }
-
         return true;
     }
 
@@ -103,8 +89,8 @@ public final class RFC6455Handshaker extends AbstractHandshaker
     @Override
     protected void prepareResponse(Response response, WebSocketNegotiation negotiation)
     {
-        response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
-        HttpFields.Mutable responseFields = response.getHttpFields();
+        response.setStatus(HttpStatus.SWITCHING_PROTOCOLS_101);
+        HttpFields.Mutable responseFields = response.getHeaders();
         responseFields.put(UPGRADE_WEBSOCKET);
         responseFields.put(CONNECTION_UPGRADE);
         responseFields.put(HttpHeader.SEC_WEBSOCKET_ACCEPT, WebSocketCore.hashKey(((RFC6455Negotiation)negotiation).getKey()));
