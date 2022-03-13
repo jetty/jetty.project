@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.DumpHandler;
@@ -1099,9 +1098,9 @@ public class HttpChannelTest
             public void process(Request request, Response response, Callback callback)
             {
                 handling.set(request);
-                request.addErrorListener(t -> {});
-                request.addErrorListener(error::set);
-                request.addErrorListener(t -> {});
+                request.addErrorListener(t -> true);
+                request.addErrorListener(t -> error.compareAndSet(null, t));
+                request.addErrorListener(t -> true);
             }
         };
         _server.setHandler(handler);

@@ -90,8 +90,8 @@ public class ProxyCustomizerTest
                 Collections.sort(attributeNames);
                 response.addHeader("attributeNames", String.join(",", attributeNames));
 
-                response.addHeader("localAddress", request.getConnectionMetaData().getLocalAddress().toString());
-                response.addHeader("remoteAddress", request.getConnectionMetaData().getRemoteAddress().toString());
+                response.addHeader("localAddress", request.getConnectionMetaData().getLocalSocketAddress().toString());
+                response.addHeader("remoteAddress", request.getConnectionMetaData().getRemoteSocketAddress().toString());
                 Object localAddress = request.getAttribute(ProxyCustomizer.LOCAL_ADDRESS_ATTRIBUTE_NAME);
                 if (localAddress != null)
                     response.addHeader("proxyLocalAddress", localAddress + ":" + request.getAttribute(ProxyCustomizer.LOCAL_PORT_ATTRIBUTE_NAME));

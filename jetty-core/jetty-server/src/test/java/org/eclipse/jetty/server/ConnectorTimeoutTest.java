@@ -65,11 +65,6 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     private int minimumTestRuntime = MAX_IDLE_TIME - MAX_IDLE_TIME / 5;
     private int maximumTestRuntime = MAX_IDLE_TIME * 10;
 
-    static
-    {
-        System.setProperty("org.eclipse.jetty.io.nio.IDLE_TICK", "500");
-    }
-
     @BeforeEach
     @Override
     public void before()

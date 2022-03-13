@@ -277,7 +277,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
         // If no remote IP from a header, determine it directly from the channel
         // Do not use the request methods, as they may have been lied to by the 
         // RequestCustomizer!
-        if (baseRequest.getConnectionMetaData().getRemoteAddress() instanceof InetSocketAddress inetAddr)
+        if (baseRequest.getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetAddr)
         {
             // TODO ????
             if (inetAddr.getAddress() != null)

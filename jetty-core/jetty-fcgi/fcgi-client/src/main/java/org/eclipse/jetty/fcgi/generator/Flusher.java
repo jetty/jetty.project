@@ -48,7 +48,7 @@ public class Flusher
 
     private void offer(Generator.Result result)
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             queue.offer(result);
         }
@@ -56,7 +56,7 @@ public class Flusher
 
     private Generator.Result poll()
     {
-        try (AutoLock l = lock.lock())
+        try (AutoLock ignored = lock.lock())
         {
             return queue.poll();
         }

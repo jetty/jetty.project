@@ -18,7 +18,6 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Callback;
 
 public interface HttpStream extends Callback
@@ -46,6 +45,7 @@ public interface HttpStream extends Callback
 
     boolean isCommitted();
 
+    // TODO: remove this method? Only used in tests.
     boolean isComplete();
 
     boolean upgrade();

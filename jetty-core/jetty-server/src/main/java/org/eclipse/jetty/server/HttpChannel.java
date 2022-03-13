@@ -19,10 +19,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -75,7 +75,6 @@ public class HttpChannel extends Attributes.Lazy
         }
     };
     private static final MetaData.Request ERROR_REQUEST = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
-    private static final HttpField EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES, DateGenerator.__01Jan1970);
     private final AutoLock _lock = new AutoLock();
     private final Runnable _handle = new RunHandle();
     private final Server _server;
@@ -251,7 +250,7 @@ public class HttpChannel extends Attributes.Lazy
         }
     }
 
-    protected Request getRequest()
+    public Request getRequest()
     {
         try (AutoLock ignored = _lock.lock())
         {
@@ -299,8 +298,8 @@ public class HttpChannel extends Attributes.Lazy
             if (_stream == null)
                 return null;
 
-            // If the channel doesn't have a request, then the error must have occurred during parsing the request header
-            // Make a temp request for logging and producing 400 response.
+            // If the channel doesn't have a request, then the error must have occurred during the parsing of
+            // the request line / headers, so make a temp request for logging and producing an error response.
             ChannelRequest request = _request == null ? _request = new ChannelRequest(ERROR_REQUEST) : _request;
 
             // Remember the error and arrange for any subsequent reads, demands or writes to fail with this error
@@ -322,13 +321,18 @@ public class HttpChannel extends Attributes.Lazy
             Runnable invokeWriteFailure = onWriteComplete == null ? null : () -> onWriteComplete.failed(x);
 
             // Invoke any onError listener(s);
-            Consumer<Throwable> onError = request._onError;
+            Predicate<Throwable> onError = request._onError;
             request._onError = null;
-            Runnable invokeOnError = onError == null ? null : () -> onError.accept(x);
+            Runnable invokeCallback = () -> request._callback.failed(x);
+            Runnable invokeOnError = onError == null ? invokeCallback : ()  ->
+            {
+                if (onError.test(x))
+                    invokeCallback.run();
+            };
 
             // Serialize all the error actions.
             request._processing = true;
-            return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError, () -> request._callback.failed(x));
+            return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError);
         }
     }
 
@@ -442,9 +446,8 @@ public class HttpChannel extends Attributes.Lazy
         final MetaData.Request _metaData;
         final ChannelResponse _response;
         long _read;
-        String _id;
         Content.Error _error;
-        Consumer<Throwable> _onError;
+        Predicate<Throwable> _onError;
         Runnable _onContentAvailable;
         boolean _processing;
         long timestamp = System.currentTimeMillis();
@@ -630,33 +633,28 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
-        public void addErrorListener(Consumer<Throwable> onError)
+        public boolean addErrorListener(Predicate<Throwable> onError)
         {
             try (AutoLock ignored = _lock.lock())
             {
                 if (_error != null)
-                {
-                    _serializedInvoker.run(() -> onError.accept(_error.getCause()));
-                    return;
-                }
+                    return false;
 
                 if (_onError == null)
+                {
                     _onError = onError;
+                }
                 else
                 {
-                    Consumer<Throwable> previous = _onError;
+                    Predicate<Throwable> previous = _onError;
                     _onError = throwable ->
                     {
-                        try
-                        {
-                            previous.accept(throwable);
-                        }
-                        finally
-                        {
-                            onError.accept(throwable);
-                        }
+                        if (previous.test(throwable))
+                            return onError.test(throwable);
+                        return true;
                     };
                 }
+                return true;
             }
         }
 

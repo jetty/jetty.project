@@ -437,13 +437,13 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     }
 
     @Override
-    public SocketAddress getRemoteAddress()
+    public SocketAddress getRemoteSocketAddress()
     {
         return null;
     }
 
     @Override
-    public SocketAddress getLocalAddress()
+    public SocketAddress getLocalSocketAddress()
     {
         return null;
     }

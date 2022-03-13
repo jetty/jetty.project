@@ -29,6 +29,7 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.ee9.fcgi.server.proxy.FastCGIProxyServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.fcgi.FCGI;
@@ -159,7 +160,7 @@ public class FastCGIProxyServletTest
             {
                 assertTrue(request.getRequestURI().endsWith(path));
                 response.setContentLength(data.length);
-                response.write(true, callback, ByteBuffer.wrap(data));
+                response.getOutputStream().write(data);
             }
         });
 
@@ -249,7 +250,7 @@ public class FastCGIProxyServletTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
-                response.write(true, callback, ByteBuffer.wrap(content));
+                response.getOutputStream().write(content);
             }
         });
 

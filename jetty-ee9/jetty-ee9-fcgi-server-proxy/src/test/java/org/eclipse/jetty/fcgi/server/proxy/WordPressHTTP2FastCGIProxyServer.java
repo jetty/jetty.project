@@ -13,8 +13,14 @@
 
 package org.eclipse.jetty.fcgi.server.proxy;
 
+import java.util.EnumSet;
+
+import jakarta.servlet.DispatcherType;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.ee9.fcgi.server.proxy.FastCGIProxyServlet;
+import org.eclipse.jetty.ee9.fcgi.server.proxy.TryFilesFilter;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
+import org.eclipse.jetty.ee9.servlet.FilterHolder;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHolder;
 import org.eclipse.jetty.http2.HTTP2Cipher;
@@ -27,10 +33,12 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
-public class DrupalHTTP2FastCGIProxyServer
+public class WordPressHTTP2FastCGIProxyServer
 {
     public static void main(String[] args) throws Exception
     {
+        int tlsPort = 8443;
+
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStorePath("src/test/resources/keystore.p12");
         sslContextFactory.setKeyStorePassword("storepwd");
@@ -39,8 +47,8 @@ public class DrupalHTTP2FastCGIProxyServer
         Server server = new Server();
 
         // HTTP(S) Configuration
-        HttpConfiguration config = new HttpConfiguration();
-        HttpConfiguration httpsConfig = new HttpConfiguration(config);
+        HttpConfiguration httpConfig = new HttpConfiguration();
+        HttpConfiguration httpsConfig = new HttpConfiguration(httpConfig);
         httpsConfig.addCustomizer(new SecureRequestCustomizer());
 
         // HTTP2 factory
@@ -54,31 +62,30 @@ public class DrupalHTTP2FastCGIProxyServer
         // HTTP2 Connector
         ServerConnector http2Connector =
             new ServerConnector(server, ssl, alpn, h2, new HttpConnectionFactory(httpsConfig));
-        http2Connector.setPort(8443);
+        http2Connector.setPort(tlsPort);
         http2Connector.setIdleTimeout(15000);
         server.addConnector(http2Connector);
 
-        // Drupal seems to only work on the root context,
-        // at least out of the box without additional plugins
+        String root = "/home/simon/programs/wordpress-3.7.1";
 
-        String root = "/home/simon/programs/drupal-7.23";
-
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler(server, "/wp");
         context.setResourceBase(root);
         context.setWelcomeFiles(new String[]{"index.php"});
 
         // Serve static resources
-        ServletHolder defaultServlet = new ServletHolder(DefaultServlet.class);
-        defaultServlet.setName("default");
+        ServletHolder defaultServlet = new ServletHolder("default", DefaultServlet.class);
         context.addServlet(defaultServlet, "/");
 
+        FilterHolder tryFilesFilter = context.addFilter(TryFilesFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
+//        tryFilesFilter.setInitParameter(TryFilesFilter.FILES_INIT_PARAM, "$path $path/index.php"); // Permalink /?p=123
+        tryFilesFilter.setInitParameter(TryFilesFilter.FILES_INIT_PARAM, "$path /index.php?p=$path"); // Permalink /%year%/%monthnum%/%postname%
+
         // FastCGI
-        ServletHolder fcgiServlet = new ServletHolder(FastCGIProxyServlet.class);
+        ServletHolder fcgiServlet = context.addServlet(FastCGIProxyServlet.class, "*.php");
         fcgiServlet.setInitParameter(FastCGIProxyServlet.SCRIPT_ROOT_INIT_PARAM, root);
         fcgiServlet.setInitParameter("proxyTo", "http://localhost:9000");
         fcgiServlet.setInitParameter("prefix", "/");
-        fcgiServlet.setInitParameter(FastCGIProxyServlet.SCRIPT_PATTERN_INIT_PARAM, "(.+\\.php)");
-        context.addServlet(fcgiServlet, "*.php");
+        fcgiServlet.setInitParameter(FastCGIProxyServlet.SCRIPT_PATTERN_INIT_PARAM, "(.+?\\.php)");
 
         server.start();
     }

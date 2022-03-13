@@ -205,7 +205,7 @@ public class InetAccessHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        SocketAddress socketAddress = request.getConnectionMetaData().getRemoteAddress();
+        SocketAddress socketAddress = request.getConnectionMetaData().getRemoteSocketAddress();
         if (socketAddress instanceof InetSocketAddress inetSocketAddress &&
             !isAllowed(inetSocketAddress.getAddress(), request))
             return null;

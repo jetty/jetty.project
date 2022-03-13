@@ -31,7 +31,6 @@ import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -151,7 +150,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void send(MetaData.Request request, MetaData.Response response, boolean lastContent, Callback callback, ByteBuffer... content)
     {
-        // TODO: convert this using IteratingCallback.
+        // TODO: convert this to use IStream.FrameList.
         ByteBufferAccumulator accumulator = new ByteBufferAccumulator();
         for (ByteBuffer buffer : content)
         {

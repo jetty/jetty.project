@@ -121,7 +121,7 @@ public class Generator
 
         public ByteBuffer[] getByteBuffers()
         {
-            return buffers.toArray(new ByteBuffer[buffers.size()]);
+            return buffers.toArray(new ByteBuffer[0]);
         }
 
         @Override

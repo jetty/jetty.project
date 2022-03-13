@@ -51,9 +51,9 @@ public class DelayedServerTest extends HttpServerTestBase
         }
 
         @Override
-        protected Http1Stream newHttpStream(String method, String uri, HttpVersion version)
+        protected HttpStreamOverHTTP1 newHttpStream(String method, String uri, HttpVersion version)
         {
-            return new Http1Stream(method, uri, version)
+            return new HttpStreamOverHTTP1(method, uri, version)
             {
                 @Override
                 public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)

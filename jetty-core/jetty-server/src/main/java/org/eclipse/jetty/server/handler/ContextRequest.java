@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -98,9 +98,14 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     }
 
     @Override
-    public void addErrorListener(Consumer<Throwable> onError)
+    public boolean addErrorListener(Predicate<Throwable> onError)
     {
-        super.addErrorListener(t -> _context.accept(onError, t, ContextRequest.this));
+        return super.addErrorListener(t ->
+        {
+            _context.accept(onError::test, t, ContextRequest.this);
+            // TODO: should return the return value of onError.
+            return false;
+        });
     }
 
     @Override

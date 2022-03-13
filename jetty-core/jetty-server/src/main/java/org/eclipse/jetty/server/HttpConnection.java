@@ -78,7 +78,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     private final HttpGenerator _generator;
     private final ByteBufferPool _bufferPool;
     private final RetainableByteBufferPool _retainableByteBufferPool;
-    private final AtomicReference<Http1Stream> _stream = new AtomicReference<>();
+    private final AtomicReference<HttpStreamOverHTTP1> _stream = new AtomicReference<>();
     private final Lazy _attributes = new Lazy();
     private final DemandContentCallback _demandContentCallback = new DemandContentCallback();
     private final SendCallback _sendCallback = new SendCallback();
@@ -165,9 +165,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         return new HttpChannel(server, this, configuration);
     }
 
-    protected Http1Stream newHttpStream(String method, String uri, HttpVersion version)
+    protected HttpStreamOverHTTP1 newHttpStream(String method, String uri, HttpVersion version)
     {
-        return new Http1Stream(method, uri, version);
+        return new HttpStreamOverHTTP1(method, uri, version);
     }
 
     protected RequestHandler newRequestHandler()
@@ -209,7 +209,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public HttpVersion getVersion()
     {
-        Http1Stream stream = _stream.get();
+        HttpStreamOverHTTP1 stream = _stream.get();
         return (stream != null) ? stream._version : HttpVersion.HTTP_1_1;
     }
 
@@ -238,13 +238,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     }
 
     @Override
-    public SocketAddress getRemoteAddress()
+    public SocketAddress getRemoteSocketAddress()
     {
         return getEndPoint().getRemoteSocketAddress();
     }
 
     @Override
-    public SocketAddress getLocalAddress()
+    public SocketAddress getLocalSocketAddress()
     {
         HttpConfiguration config = getHttpConfiguration();
         if (config != null)
@@ -268,7 +268,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         // TODO cache the HostPort?
-        SocketAddress addr = getLocalAddress();
+        SocketAddress addr = getLocalSocketAddress();
         if (addr instanceof InetSocketAddress)
         {
             InetSocketAddress inet = (InetSocketAddress)addr;
@@ -962,7 +962,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public void startRequest(String method, String uri, HttpVersion version)
         {
-            Http1Stream stream = newHttpStream(method, uri, version);
+            HttpStreamOverHTTP1 stream = newHttpStream(method, uri, version);
             if (!_stream.compareAndSet(null, stream))
                 throw new IllegalStateException("Stream pending");
             _headerBuilder.clear();
@@ -985,7 +985,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public boolean content(ByteBuffer buffer)
         {
-            Http1Stream stream = _stream.get();
+            HttpStreamOverHTTP1 stream = _stream.get();
             if (stream == null || stream._content != null || _retainableByteBuffer == null)
                 throw new IllegalStateException();
 
@@ -1025,7 +1025,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public boolean messageComplete()
         {
-            Http1Stream stream = _stream.get();
+            HttpStreamOverHTTP1 stream = _stream.get();
             stream._content = Content.last(stream._content);
             if (_trailers != null && (stream._content == null || stream._content == Content.EOF))
                 stream._content = new Content.Trailers(_trailers.asImmutable());
@@ -1049,7 +1049,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);
             _generator.setPersistent(false);
 
-            Http1Stream stream = _stream.get();
+            HttpStreamOverHTTP1 stream = _stream.get();
             if (stream == null)
             {
                 stream = newHttpStream("BAD", "/", HttpVersion.HTTP_1_1);
@@ -1078,7 +1078,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     private static final HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE, "h2c");
 
-    protected class Http1Stream implements HttpStream
+    protected class HttpStreamOverHTTP1 implements HttpStream
     {
         private final long _nanoTimestamp = System.nanoTime();
         private final String _id;
@@ -1099,7 +1099,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         private boolean _expect102Processing = false;
         private List<String> _complianceViolations;
 
-        protected Http1Stream(String method, String uri, HttpVersion version)
+        protected HttpStreamOverHTTP1(String method, String uri, HttpVersion version)
         {
             long id = _idGenerator.getAndIncrement();
             _id = id == 0 ? "0" : Long.toString(_idGenerator.getAndIncrement());
@@ -1471,7 +1471,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public void succeeded()
         {
-            Http1Stream stream = _stream.getAndSet(null);
+            HttpStreamOverHTTP1 stream = _stream.getAndSet(null);
             if (stream == null)
                 return; // TODO log
 
@@ -1556,7 +1556,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public void failed(Throwable x)
         {
-            Http1Stream stream = _stream.getAndSet(null);
+            HttpStreamOverHTTP1 stream = _stream.getAndSet(null);
             if (stream == null)
             {
                 if (LOG.isDebugEnabled())

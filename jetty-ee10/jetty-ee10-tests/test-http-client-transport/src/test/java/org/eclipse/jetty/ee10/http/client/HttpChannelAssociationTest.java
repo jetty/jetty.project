@@ -215,7 +215,7 @@ public class HttpChannelAssociationTest extends AbstractTest<TransportScenario>
                 return new HttpClientTransportOverFCGI(clientConnector, "")
                 {
                     @Override
-                    protected HttpConnectionOverFCGI newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
+                    protected org.eclipse.jetty.io.Connection newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
                     {
                         return new HttpConnectionOverFCGI(endPoint, destination, promise)
                         {

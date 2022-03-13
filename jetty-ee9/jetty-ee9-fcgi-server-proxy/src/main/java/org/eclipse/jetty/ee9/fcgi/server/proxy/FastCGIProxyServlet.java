@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.fcgi.server.proxy;
+package org.eclipse.jetty.ee9.fcgi.server.proxy;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -283,7 +283,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
         }
 
         @Override
-        protected void customize(Request request, HttpFields.Mutable fastCGIHeaders)
+        public void customize(Request request, HttpFields.Mutable fastCGIHeaders)
         {
             super.customize(request, fastCGIHeaders);
             customizeFastCGIHeaders(request, fastCGIHeaders);

@@ -84,13 +84,13 @@ public class MockConnectionMetaData extends Attributes.Mapped implements Connect
     }
 
     @Override
-    public SocketAddress getRemoteAddress()
+    public SocketAddress getRemoteSocketAddress()
     {
         return InetSocketAddress.createUnresolved("localhost", 12345);
     }
 
     @Override
-    public SocketAddress getLocalAddress()
+    public SocketAddress getLocalSocketAddress()
     {
         return InetSocketAddress.createUnresolved("localhost", 80);
     }

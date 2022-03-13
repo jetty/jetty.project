@@ -25,17 +25,13 @@ public class FCGI
 
         public static Role from(int code)
         {
-            switch (code)
+            return switch (code)
             {
-                case 1:
-                    return RESPONDER;
-                case 2:
-                    return AUTHORIZER;
-                case 3:
-                    return FILTER;
-                default:
-                    throw new IllegalArgumentException();
-            }
+                case 1 -> RESPONDER;
+                case 2 -> AUTHORIZER;
+                case 3 -> FILTER;
+                default -> throw new IllegalArgumentException();
+            };
         }
 
         public final int code;
@@ -61,31 +57,20 @@ public class FCGI
 
         public static FrameType from(int code)
         {
-            switch (code)
+            return switch (code)
             {
-                case 1:
-                    return BEGIN_REQUEST;
-                case 2:
-                    return ABORT_REQUEST;
-                case 3:
-                    return END_REQUEST;
-                case 4:
-                    return PARAMS;
-                case 5:
-                    return STDIN;
-                case 6:
-                    return STDOUT;
-                case 7:
-                    return STDERR;
-                case 8:
-                    return DATA;
-                case 9:
-                    return GET_VALUES;
-                case 10:
-                    return GET_VALUES_RESULT;
-                default:
-                    throw new IllegalArgumentException();
-            }
+                case 1 -> BEGIN_REQUEST;
+                case 2 -> ABORT_REQUEST;
+                case 3 -> END_REQUEST;
+                case 4 -> PARAMS;
+                case 5 -> STDIN;
+                case 6 -> STDOUT;
+                case 7 -> STDERR;
+                case 8 -> DATA;
+                case 9 -> GET_VALUES;
+                case 10 -> GET_VALUES_RESULT;
+                default -> throw new IllegalArgumentException();
+            };
         }
 
         public final int code;

@@ -64,7 +64,7 @@ public class ProxyProtocolTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                SocketAddress addr = request.getConnectionMetaData().getRemoteAddress();
+                SocketAddress addr = request.getConnectionMetaData().getRemoteSocketAddress();
                 if (addr instanceof InetSocketAddress iAddr)
                 {
                     if (iAddr.getHostString().equals(remoteAddr) && iAddr.getPort() == remotePort)

@@ -36,17 +36,17 @@ public class ProxiedRequestHandler extends Handler.Wrapper
             }
 
             @Override
-            public SocketAddress getRemoteAddress()
+            public SocketAddress getRemoteSocketAddress()
             {
                 // TODO replace with value determined from headers
-                return super.getRemoteAddress();
+                return super.getRemoteSocketAddress();
             }
 
             @Override
-            public SocketAddress getLocalAddress()
+            public SocketAddress getLocalSocketAddress()
             {
                 // TODO replace with value determined from headers
-                return super.getLocalAddress();
+                return super.getLocalSocketAddress();
             }
 
             @Override

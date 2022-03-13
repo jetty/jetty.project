@@ -46,13 +46,13 @@ public interface ConnectionMetaData extends Attributes
      * @return The address of the remote end of this connection.  By default, this is the first hop of the underlying
      *         network connection, but it may be wrapped to represent a more remote end point.
      */
-    SocketAddress getRemoteAddress();
+    SocketAddress getRemoteSocketAddress();
 
     /**
      * @return The address of the local end of this connection. By default, this is the address of the underlying
      *         network connection, but it may be wrapped if the deployment wishes to hide all local details.
      */
-    SocketAddress getLocalAddress();
+    SocketAddress getLocalSocketAddress();
 
     /**
      * @return The URI authority that this server represents. By default, this is the address of the network socket on
@@ -113,15 +113,15 @@ public interface ConnectionMetaData extends Attributes
         }
 
         @Override
-        public SocketAddress getRemoteAddress()
+        public SocketAddress getRemoteSocketAddress()
         {
-            return _wrapped.getRemoteAddress();
+            return _wrapped.getRemoteSocketAddress();
         }
 
         @Override
-        public SocketAddress getLocalAddress()
+        public SocketAddress getLocalSocketAddress()
         {
-            return _wrapped.getLocalAddress();
+            return _wrapped.getLocalSocketAddress();
         }
 
         @Override

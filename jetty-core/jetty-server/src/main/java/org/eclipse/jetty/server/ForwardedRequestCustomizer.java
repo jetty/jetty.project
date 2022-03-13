@@ -558,7 +558,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
             if (forPort <= 0)
             {
                 // TODO utility methods for this would be nice.
-                SocketAddress addr = request.getConnectionMetaData().getRemoteAddress();
+                SocketAddress addr = request.getConnectionMetaData().getRemoteSocketAddress();
                 if (addr instanceof InetSocketAddress)
                     forPort = ((InetSocketAddress)addr).getPort();
             }
@@ -572,9 +572,9 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
         ConnectionMetaData connectionMetaData = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
         {
             @Override
-            public SocketAddress getRemoteAddress()
+            public SocketAddress getRemoteSocketAddress()
             {
-                return remote != null ? remote : super.getRemoteAddress();
+                return remote != null ? remote : super.getRemoteSocketAddress();
             }
 
             @Override

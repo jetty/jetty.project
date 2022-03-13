@@ -18,8 +18,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.HttpCookie;
@@ -190,7 +190,7 @@ public interface Request extends Attributes, Content.Reader
     // TODO: what's the difference with a failed CompletionListener?
     //  For example, RST_STREAM events, but also idle timeouts which may also be delivered as read events and write events.
     //  Basically only needed if no I/O activity and the protocol supports async error events like h2 or h3.
-    void addErrorListener(Consumer<Throwable> onError);
+    boolean addErrorListener(Predicate<Throwable> onError);
 
     // TODO: called when the callback is completed.
     void addCompletionListener(Callback onComplete);
@@ -204,7 +204,7 @@ public interface Request extends Attributes, Content.Reader
 
     static String getLocalAddr(Request request)
     {
-        SocketAddress local = request.getConnectionMetaData().getLocalAddress();
+        SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
         if (local instanceof InetSocketAddress)
         {
             InetAddress address = ((InetSocketAddress)local).getAddress();
@@ -219,7 +219,7 @@ public interface Request extends Attributes, Content.Reader
 
     static int getLocalPort(Request request)
     {
-        SocketAddress local = request.getConnectionMetaData().getLocalAddress();
+        SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
         if (local instanceof InetSocketAddress)
             return ((InetSocketAddress)local).getPort();
         return -1;
@@ -227,7 +227,7 @@ public interface Request extends Attributes, Content.Reader
 
     static String getRemoteAddr(Request request)
     {
-        SocketAddress remote = request.getConnectionMetaData().getRemoteAddress();
+        SocketAddress remote = request.getConnectionMetaData().getRemoteSocketAddress();
         if (remote instanceof InetSocketAddress)
         {
             InetAddress address = ((InetSocketAddress)remote).getAddress();
@@ -242,7 +242,7 @@ public interface Request extends Attributes, Content.Reader
 
     static int getRemotePort(Request request)
     {
-        SocketAddress remote = request.getConnectionMetaData().getRemoteAddress();
+        SocketAddress remote = request.getConnectionMetaData().getRemoteSocketAddress();
         if (remote instanceof InetSocketAddress)
             return ((InetSocketAddress)remote).getPort();
         return -1;
@@ -258,7 +258,7 @@ public interface Request extends Attributes, Content.Reader
         if (authority != null)
             return request.getHttpChannel().formatAddrOrHost(authority.getHost());
 
-        SocketAddress local = request.getConnectionMetaData().getLocalAddress();
+        SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
         if (local instanceof InetSocketAddress)
             return request.getHttpChannel().formatAddrOrHost(((InetSocketAddress)local).getHostString());
 
@@ -277,7 +277,7 @@ public interface Request extends Attributes, Content.Reader
 
         if (authority == null)
         {
-            SocketAddress local = request.getConnectionMetaData().getLocalAddress();
+            SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
             if (local instanceof InetSocketAddress)
                 return ((InetSocketAddress)local).getPort();
         }
@@ -499,9 +499,9 @@ public interface Request extends Attributes, Content.Reader
         }
 
         @Override
-        public void addErrorListener(Consumer<Throwable> onError)
+        public boolean addErrorListener(Predicate<Throwable> onError)
         {
-            getWrapped().addErrorListener(onError);
+            return getWrapped().addErrorListener(onError);
         }
 
         @Override

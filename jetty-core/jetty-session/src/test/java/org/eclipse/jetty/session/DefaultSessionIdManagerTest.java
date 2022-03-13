@@ -15,7 +15,7 @@ package org.eclipse.jetty.session;
 
 import java.util.List;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
@@ -191,10 +191,10 @@ public class DefaultSessionIdManagerTest
         }
 
         @Override
-        public void addErrorListener(Consumer<Throwable> onError)
+        public boolean addErrorListener(Predicate<Throwable> onError)
         {
             // TODO Auto-generated method stub
-            
+            return false;
         }
 
         @Override
