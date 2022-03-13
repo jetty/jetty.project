@@ -57,9 +57,8 @@ import org.slf4j.LoggerFactory;
  */
 public class HttpChannel extends Attributes.Lazy
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
-
     public static final String UPGRADE_CONNECTION_ATTRIBUTE = HttpChannel.class.getName() + ".UPGRADE";
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
     private static final HttpField CONTENT_LENGTH_0 = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, "0")
     {
         @Override
@@ -75,6 +74,9 @@ public class HttpChannel extends Attributes.Lazy
         }
     };
     private static final MetaData.Request ERROR_REQUEST = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
+    private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
+    private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
+
     private final AutoLock _lock = new AutoLock();
     private final Runnable _handle = new RunHandle();
     private final Server _server;
@@ -230,6 +232,12 @@ public class HttpChannel extends Attributes.Lazy
                     }
                 };
             }
+
+            HttpFields.Mutable responseHeaders = _request._response.getHeaders();
+            if (getHttpConfiguration().getSendServerVersion())
+                responseHeaders.add(SERVER_VERSION);
+            if (getHttpConfiguration().getSendXPoweredBy())
+                responseHeaders.add(POWERED_BY);
 
             if (!HttpMethod.PRI.is(request.getMethod()) &&
                 !HttpMethod.CONNECT.is(request.getMethod()) &&
@@ -1070,7 +1078,7 @@ public class HttpChannel extends Attributes.Lazy
             Supplier<HttpFields> trailers = _trailers == null ? null : this::takeTrailers;
 
             return new MetaData.Response(
-                getConnectionMetaData().getVersion(),
+                getConnectionMetaData().getHttpVersion(),
                 _status,
                 null,
                 _headers,

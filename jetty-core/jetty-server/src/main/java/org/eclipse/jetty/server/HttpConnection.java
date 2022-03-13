@@ -207,7 +207,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     }
 
     @Override
-    public HttpVersion getVersion()
+    public HttpVersion getHttpVersion()
     {
         HttpStreamOverHTTP1 stream = _stream.get();
         return (stream != null) ? stream._version : HttpVersion.HTTP_1_1;
@@ -216,7 +216,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public String getProtocol()
     {
-        return getVersion().asString();
+        return getHttpVersion().asString();
     }
 
     @Override

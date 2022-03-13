@@ -27,7 +27,7 @@ public interface ConnectionMetaData extends Attributes
      */
     String getId();
 
-    HttpVersion getVersion();
+    HttpVersion getHttpVersion();
 
     String getProtocol();
 
@@ -77,9 +77,9 @@ public interface ConnectionMetaData extends Attributes
         }
 
         @Override
-        public HttpVersion getVersion()
+        public HttpVersion getHttpVersion()
         {
-            return _wrapped.getVersion();
+            return _wrapped.getHttpVersion();
         }
 
         @Override

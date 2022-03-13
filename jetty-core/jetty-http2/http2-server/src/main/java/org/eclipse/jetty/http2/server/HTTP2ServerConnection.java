@@ -401,7 +401,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     }
 
     @Override
-    public HttpVersion getVersion()
+    public HttpVersion getHttpVersion()
     {
         return HttpVersion.HTTP_2;
     }
@@ -409,7 +409,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     @Override
     public String getProtocol()
     {
-        return getVersion().asString();
+        return getHttpVersion().asString();
     }
 
     @Override

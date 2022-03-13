@@ -22,10 +22,11 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3Stream;
 import org.eclipse.jetty.http3.server.internal.HTTP3StreamServer;
-import org.eclipse.jetty.http3.server.internal.HttpChannelOverHTTP3;
+import org.eclipse.jetty.http3.server.internal.HttpStreamOverHTTP3;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3Session;
 import org.eclipse.jetty.http3.server.internal.ServerHTTP3StreamConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,15 +41,17 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
     public HTTP3ServerConnectionFactory(HttpConfiguration configuration)
     {
         super(configuration, new HTTP3SessionListener());
-        configuration.addCustomizer((connector, httpConfig, request) ->
+        configuration.addCustomizer((request, responseHeaders) ->
         {
-            HTTP3ServerConnector http3Connector = connector.getServer().getBean(HTTP3ServerConnector.class);
-            if (http3Connector != null && HttpVersion.HTTP_2.is(request.getHttpVersion().asString()))
+            ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
+            HTTP3ServerConnector http3Connector = connectionMetaData.getConnector().getServer().getBean(HTTP3ServerConnector.class);
+            if (http3Connector != null && HttpVersion.HTTP_2 == connectionMetaData.getHttpVersion())
             {
                 HttpField altSvc = http3Connector.getAltSvcHttpField();
                 if (altSvc != null)
-                    request.getResponse().getHttpFields().add(altSvc);
+                    responseHeaders.add(altSvc);
             }
+            return request;
         });
     }
 
@@ -70,9 +73,9 @@ public class HTTP3ServerConnectionFactory extends AbstractHTTP3ServerConnectionF
         {
             boolean result = session.getStreams().stream()
                 .map(stream -> (HTTP3Stream)stream)
-                .map(stream -> (HttpChannelOverHTTP3)stream.getAttachment())
+                .map(stream -> (HttpStreamOverHTTP3)stream.getAttachment())
                 .filter(Objects::nonNull)
-                .map(channel -> channel.getState().isIdle())
+                .map(HttpStreamOverHTTP3::isIdle)
                 .reduce(true, Boolean::logicalAnd);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} idle timeout on {}", result ? "confirmed" : "ignored", session);

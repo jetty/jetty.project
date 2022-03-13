@@ -48,7 +48,7 @@ public class MockConnectionMetaData extends Attributes.Mapped implements Connect
     }
 
     @Override
-    public HttpVersion getVersion()
+    public HttpVersion getHttpVersion()
     {
         return HttpVersion.HTTP_1_1;
     }

@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.http3.tests;
 
-import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -22,8 +21,6 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
@@ -31,9 +28,11 @@ import org.eclipse.jetty.http3.api.Session;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -48,13 +47,13 @@ public class HandlerClientServerTest extends AbstractClientServerTest
     public void testGet() throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response)
+            public void process(Request request, Response response, Callback callback)
             {
-                jettyRequest.setHandled(true);
                 serverLatch.countDown();
+                callback.succeeded();
             }
         });
 
@@ -83,13 +82,12 @@ public class HandlerClientServerTest extends AbstractClientServerTest
     public void testPost() throws Exception
     {
         CountDownLatch serverLatch = new CountDownLatch(1);
-        start(new AbstractHandler()
+        start(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request jettyRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public void process(Request request, Response response, Callback callback)
             {
-                jettyRequest.setHandled(true);
-                IO.copy(request.getInputStream(), response.getOutputStream());
+                Content.copy(request, response, callback);
                 serverLatch.countDown();
             }
         });

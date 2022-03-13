@@ -108,7 +108,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     }
 
     @Override
-    public HttpVersion getVersion()
+    public HttpVersion getHttpVersion()
     {
         return HttpVersion.HTTP_1_1;
     }

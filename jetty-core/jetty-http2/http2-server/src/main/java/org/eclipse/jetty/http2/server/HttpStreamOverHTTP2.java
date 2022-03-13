@@ -18,14 +18,11 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.HTTP2Channel;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -33,7 +30,6 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -43,8 +39,6 @@ import org.slf4j.LoggerFactory;
 public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP2.class);
-    private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
-    private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
 
     private final HttpChannel _httpChannel;
     private final IStream _stream;
@@ -80,18 +74,9 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             Runnable handler = _httpChannel.onRequest(request);
 
-            // TODO: move this code into HttpChannel.onRequest()
             HttpFields fields = request.getFields();
-
-            // TODO. handle 100 continue.
+            // TODO: handle 100 continue.
 //            _expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
-
-            HttpFields.Mutable response = _httpChannel.getResponse().getHeaders();
-            if (_httpChannel.getHttpConfiguration().getSendServerVersion())
-                response.add(SERVER_VERSION);
-            if (_httpChannel.getHttpConfiguration().getSendXPoweredBy())
-                response.add(POWERED_BY);
-            // TODO: end move.
 
             boolean endStream = frame.isEndStream();
             if (endStream)
@@ -396,6 +381,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public boolean isComplete()
     {
+        // TODO
         return false;
     }
 
