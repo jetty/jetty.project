@@ -751,7 +751,7 @@ public class HttpChannel extends Attributes.Lazy
                 // is the request fully consumed?
                 Throwable unconsumed = stream.consumeAll();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("consumeAll {} ", this, unconsumed);
+                    LOG.debug("consumeAll: {} {} ", unconsumed == null, this);
                 if (unconsumed != null && getConnectionMetaData().isPersistent())
                     stream.failed(unconsumed);
                 else if (_response._committedContentLength >= 0L && _response._committedContentLength != written)

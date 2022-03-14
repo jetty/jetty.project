@@ -52,7 +52,7 @@ public class MetaData implements Iterable<HttpField>
     public MetaData(HttpVersion version, HttpFields fields, long contentLength, Supplier<HttpFields> trailerSupplier)
     {
         _httpVersion = version;
-        _fields = fields == null ? null : fields.takeAsImmutable();
+        _fields = fields == null ? null : fields.asImmutable();
 
         _contentLength = contentLength > UNKNOWN_CONTENT_LENGTH ? contentLength : _fields == null ? -1 : _fields.getLongField(HttpHeader.CONTENT_LENGTH);
 

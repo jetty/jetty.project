@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http3.server.internal;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -27,6 +28,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
+import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
@@ -73,6 +75,9 @@ public class HttpStreamOverHTTP3 implements HttpStream
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
 
             Runnable handler = channel.onRequest(request);
+
+            if (frame.isLast())
+                content = Content.EOF;
 
             HttpFields fields = request.getFields();
 
@@ -437,6 +442,27 @@ public class HttpStreamOverHTTP3 implements HttpStream
     public boolean upgrade()
     {
         return false;
+    }
+
+    @Override
+    public void succeeded()
+    {
+        // If the stream is not closed, it is still reading the request content.
+        // Send a reset to the other end so that it stops sending data.
+        if (!stream.isClosed())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP3 Response #{}/{}: unconsumed request content, resetting stream", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
+            stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), new IOException("unconsumed content"));
+        }
+    }
+
+    @Override
+    public void failed(Throwable x)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP3 Response #{}/{} aborted", stream.getId(), Integer.toHexString(stream.getSession().hashCode()));
+        stream.reset(HTTP3ErrorCode.REQUEST_CANCELLED_ERROR.code(), x);
     }
 
     public boolean onIdleTimeout(Throwable failure, Consumer<Runnable> consumer)

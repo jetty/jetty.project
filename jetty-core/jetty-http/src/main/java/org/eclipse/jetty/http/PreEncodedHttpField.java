@@ -14,8 +14,7 @@
 package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.EnumMap;
 import java.util.ServiceLoader;
 
 import org.eclipse.jetty.util.TypeUtil;
@@ -34,63 +33,42 @@ import org.slf4j.LoggerFactory;
 public class PreEncodedHttpField extends HttpField
 {
     private static final Logger LOG = LoggerFactory.getLogger(PreEncodedHttpField.class);
-    private static final HttpFieldPreEncoder[] __encoders;
+    private static final EnumMap<HttpVersion, HttpFieldPreEncoder> __encoders = new EnumMap<>(HttpVersion.class);
 
     static
     {
-        List<HttpFieldPreEncoder> encoders = new ArrayList<>();
         TypeUtil.serviceProviderStream(ServiceLoader.load(HttpFieldPreEncoder.class)).forEach(provider ->
         {
             try
             {
                 HttpFieldPreEncoder encoder = provider.get();
-                if (index(encoder.getHttpVersion()) >= 0)
-                    encoders.add(encoder);
+                HttpFieldPreEncoder existing = __encoders.put(encoder.getHttpVersion(), encoder);
+                if (existing != null)
+                    LOG.warn("multiple {} for {}", HttpFieldPreEncoder.class.getSimpleName(), encoder.getHttpVersion());
             }
             catch (Error | RuntimeException e)
             {
-                LOG.debug("Unable to add HttpFieldPreEncoder", e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("unable to add {}", HttpFieldPreEncoder.class.getSimpleName(), e);
             }
         });
 
         if (LOG.isDebugEnabled())
-            LOG.debug("HttpField encoders loaded: {}", encoders);
-        int size = encoders.size();
+            LOG.debug("loaded {} {}s", __encoders.size(), HttpFieldPreEncoder.class.getSimpleName());
 
-        __encoders = new HttpFieldPreEncoder[size == 0 ? 1 : size];
-        for (HttpFieldPreEncoder e : encoders)
-        {
-            int i = index(e.getHttpVersion());
-            if (__encoders[i] == null)
-                __encoders[i] = e;
-            else
-                LOG.warn("multiple PreEncoders for {}", e.getHttpVersion());
-        }
-
-        // Always support HTTP1
-        if (__encoders[0] == null)
-            __encoders[0] = new Http1FieldPreEncoder();
+        // Always support HTTP1.
+        if (__encoders.isEmpty())
+            __encoders.put(HttpVersion.HTTP_1_1, new Http1FieldPreEncoder());
     }
 
-    private static int index(HttpVersion version)
-    {
-        return switch (version)
-        {
-            case HTTP_1_0, HTTP_1_1 -> 0;
-            case HTTP_2 -> 1;
-            case HTTP_3 -> 2;
-            default -> -1;
-        };
-    }
-
-    private final byte[][] _encodedField = new byte[__encoders.length][];
+    private final EnumMap<HttpVersion, byte[]> _encodedFields = new EnumMap<>(HttpVersion.class);
 
     public PreEncodedHttpField(HttpHeader header, String name, String value)
     {
         super(header, name, value);
-        for (int i = 0; i < __encoders.length; i++)
+        for (HttpFieldPreEncoder encoder : __encoders.values())
         {
-            _encodedField[i] = __encoders[i].getEncodedField(header, name, value);
+            _encodedFields.put(encoder.getHttpVersion(), encoder.getEncodedField(header, name, value));
         }
     }
 
@@ -106,11 +84,11 @@ public class PreEncodedHttpField extends HttpField
 
     public void putTo(ByteBuffer bufferInFillMode, HttpVersion version)
     {
-        bufferInFillMode.put(_encodedField[index(version)]);
+        bufferInFillMode.put(_encodedFields.get(version));
     }
 
     public int getEncodedLength(HttpVersion version)
     {
-        return _encodedField[index(version)].length;
+        return _encodedFields.get(version).length;
     }
 }
