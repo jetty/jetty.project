@@ -537,7 +537,6 @@
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>${maven.surefire.plugin.version}</version>
           <configuration>
-            <testFailureIgnore>true</testFailureIgnore>
             <failIfNoTests>false</failIfNoTests>
           </configuration>
         </plugin>
@@ -701,7 +700,6 @@
             <argLine>
               @{argLine} ${jetty.surefire.argLine}
             </argLine>
-            <testFailureIgnore>true</testFailureIgnore>
             <failIfNoTests>false</failIfNoTests>
             <forkCount>1</forkCount>
             <reuseForks>true</reuseForks> <!-- to work around crash at https://github.com/junit-team/junit5/issues/801 -->

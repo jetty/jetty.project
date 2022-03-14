@@ -26,7 +26,6 @@
           <junitPackage>org.eclipse.jetty.h2spec</junitPackage>
           <skipNoDockerAvailable>true</skipNoDockerAvailable>
           <reportsDirectory>${project.build.directory}/h2spec-reports</reportsDirectory>
-          <testFailureIgnore>true</testFailureIgnore>
           <excludeSpecs>
             <excludeSpec>3.5 - Sends invalid connection preface</excludeSpec>
           </excludeSpecs>

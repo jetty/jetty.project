@@ -31,7 +31,6 @@
         <configuration>
           <failIfNoSpecifiedTests>false</failIfNoSpecifiedTests>
           <failIfNoTests>false</failIfNoTests>
-          <testFailureIgnore>true</testFailureIgnore>
         </configuration>
       </plugin>
     </plugins>
