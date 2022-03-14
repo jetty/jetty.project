@@ -13,7 +13,7 @@
   <name>Jetty :: GCloud</name>
 
   <properties>
-    <gcloud.version>2.2.5</gcloud.version>
+    <gcloud.version>2.2.8</gcloud.version>
   </properties>
 
   <modules>
