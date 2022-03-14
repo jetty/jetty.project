@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.http2.client;
+package org.eclipse.jetty.http2.client.internal;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.CloseState;
