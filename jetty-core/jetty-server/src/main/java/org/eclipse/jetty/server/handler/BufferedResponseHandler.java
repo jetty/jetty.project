@@ -21,6 +21,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -47,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * generated can also be unbounded.
  * </p>
  */
-public class BufferedResponseHandler extends HandlerWrapper
+public class BufferedResponseHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
@@ -159,14 +162,10 @@ public class BufferedResponseHandler extends HandlerWrapper
         }
 
         // Install buffered interceptor and handle.
-        return new Request.Processor()
+        return (rq, rs, callback) ->
         {
-            @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
-            {
-                BufferedResponse bufferedResponse = new BufferedResponse(request, response, callback);
-                processor.process(request, bufferedResponse, bufferedResponse);
-            }
+            BufferedResponse bufferedResponse = new BufferedResponse(rq, rs, callback);
+            processor.process(rq, bufferedResponse, bufferedResponse);
         };
     }
 
@@ -174,39 +173,60 @@ public class BufferedResponseHandler extends HandlerWrapper
     {
         private final Callback _callback;
         private ByteBufferAccumulator _accumulator;
+        private boolean _firstWrite = true;
 
-        BufferedResponse(Request request, Response response, Callback callback)
+        private BufferedResponse(Request request, Response response, Callback callback)
         {
             super(request, response);
             _callback = callback;
         }
 
         @Override
-        public void write(boolean last, Callback callback, ByteBuffer... buffer)
+        public void write(boolean last, Callback callback, ByteBuffer... buffers)
         {
-            if (shouldBuffer(this, last))
+            if (_firstWrite)
             {
-                // TODO check on first write if mimetype is OK
+                if (shouldBuffer(this, last))
+                {
+                    HttpChannel httpChannel = getRequest().getHttpChannel();
+                    ByteBufferPool byteBufferPool = httpChannel.getConnector().getByteBufferPool();
+                    boolean useOutputDirectByteBuffers = httpChannel.getHttpConfiguration().isUseOutputDirectByteBuffers();
+                    _accumulator = new ByteBufferAccumulator(byteBufferPool, useOutputDirectByteBuffers);
+                }
+                _firstWrite = false;
             }
-            // TODO allocate the accumulator
-            // TODO enforce size limits?
+
+            if (_accumulator != null)
+            {
+                for (ByteBuffer b : buffers)
+                    _accumulator.copyBuffer(b);
+                callback.succeeded();
+            }
+            else
+            {
+                super.write(last, callback, buffers);
+            }
+            // TODO enforce size limits
             // TODO handle last
-            for (ByteBuffer b : buffer)
-                _accumulator.copyBuffer(b);
-            callback.succeeded(); // TODO infinite recursion?
         }
 
         @Override
         public void succeeded()
         {
-            super.write(true, Callback.from(_callback, _accumulator::close), _accumulator.takeByteBuffer());
+            // TODO pass all accumulated buffers as an array instead of allocating & copying into a single one.
+            if (_accumulator != null)
+                super.write(true, Callback.from(_callback, _accumulator::close), _accumulator.takeByteBuffer());
+            else
+                _callback.succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            _accumulator.close();
+            if (_accumulator != null)
+                _accumulator.close();
+            else
+                _callback.failed(x);
         }
     }
-
 }
