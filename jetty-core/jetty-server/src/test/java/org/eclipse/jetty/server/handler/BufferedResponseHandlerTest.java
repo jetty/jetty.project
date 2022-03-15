@@ -153,8 +153,11 @@ public class BufferedResponseHandlerTest
         String response = _local.getResponse("GET /ctx/include/path HTTP/1.1\r\nHost: localhost\r\n\r\n");
         assertThat(response, containsString(" 200 OK"));
         assertThat(response, containsString("Write: 0"));
-        assertThat(response, containsString("Write: 9"));
-        assertThat(response, containsString("Written: true"));
+        assertThat(response, containsString("Transfer-Encoding: chunked"));
+        assertThat(response, not(containsString("Content-Length: ")));
+        assertThat(response, not(containsString("Write: 1")));
+        assertThat(response, not(containsString("Write: 9")));
+        assertThat(response, not(containsString("Written: true")));
     }
 
     @Test
@@ -221,8 +224,8 @@ public class BufferedResponseHandlerTest
         {
             response.setStatus(200);
 
-//            if (_bufferSize > 0)
-//                request.setAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME, _bufferSize);
+            if (_bufferSize > 0)
+                request.setAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME, _bufferSize);
             if (_mimeType != null)
                 response.setContentType(_mimeType);
 

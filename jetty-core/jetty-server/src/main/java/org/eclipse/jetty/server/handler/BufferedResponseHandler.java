@@ -14,6 +14,8 @@
 package org.eclipse.jetty.server.handler;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Iterator;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -28,6 +30,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExclude;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +55,8 @@ import org.slf4j.LoggerFactory;
  */
 public class BufferedResponseHandler extends Handler.Wrapper
 {
+    public static final String BUFFER_SIZE_ATTRIBUTE_NAME = BufferedResponseHandler.class.getName() + ".buffer-size";
+
     private static final Logger LOG = LoggerFactory.getLogger(BufferedResponseHandler.class);
 
     private final IncludeExclude<String> _methods = new IncludeExclude<>();
@@ -172,7 +177,7 @@ public class BufferedResponseHandler extends Handler.Wrapper
     private class BufferedResponse extends Response.Wrapper implements Callback
     {
         private final Callback _callback;
-        private ByteBufferAccumulator _accumulator;
+        private CountingByteBufferAccumulator _accumulator;
         private boolean _firstWrite = true;
 
         private BufferedResponse(Request request, Response response, Callback callback)
@@ -191,23 +196,64 @@ public class BufferedResponseHandler extends Handler.Wrapper
                     HttpChannel httpChannel = getRequest().getHttpChannel();
                     ByteBufferPool byteBufferPool = httpChannel.getConnector().getByteBufferPool();
                     boolean useOutputDirectByteBuffers = httpChannel.getHttpConfiguration().isUseOutputDirectByteBuffers();
-                    _accumulator = new ByteBufferAccumulator(byteBufferPool, useOutputDirectByteBuffers);
+                    _accumulator = new CountingByteBufferAccumulator(byteBufferPool, useOutputDirectByteBuffers, getBufferSize());
                 }
                 _firstWrite = false;
             }
 
             if (_accumulator != null)
             {
-                for (ByteBuffer b : buffers)
-                    _accumulator.copyBuffer(b);
-                callback.succeeded();
+                Iterator<ByteBuffer> iterator = Arrays.stream(buffers).iterator();
+                IteratingCallback iteratingCallback = new IteratingCallback() {
+                    ByteBuffer currentBuffer;
+
+                    @Override
+                    protected Action process()
+                    {
+                        if (currentBuffer == null)
+                        {
+                            if (!iterator.hasNext())
+                                return Action.SUCCEEDED;
+                            currentBuffer = iterator.next();
+                        }
+
+                        boolean overflow = _accumulator.copyBuffer(currentBuffer);
+                        if (!currentBuffer.hasRemaining())
+                            currentBuffer = null;
+                        if (overflow)
+                        {
+                            ByteBuffer byteBuffer = _accumulator.takeByteBuffer();
+                            BufferedResponse.super.write(false, this, byteBuffer);
+                            return Action.SCHEDULED;
+                        }
+                        return Action.SUCCEEDED;
+                    }
+
+                    @Override
+                    protected void onCompleteSuccess()
+                    {
+                        callback.succeeded();
+                    }
+
+                    @Override
+                    protected void onCompleteFailure(Throwable cause)
+                    {
+                        callback.failed(cause);
+                    }
+                };
+                iteratingCallback.iterate();
             }
             else
             {
                 super.write(last, callback, buffers);
             }
-            // TODO enforce size limits
-            // TODO handle last
+            // TODO handle last better
+        }
+
+        private int getBufferSize()
+        {
+            Object attribute = getRequest().getAttribute(BufferedResponseHandler.BUFFER_SIZE_ATTRIBUTE_NAME);
+            return attribute instanceof Integer ? (int)attribute : Integer.MAX_VALUE;
         }
 
         @Override
@@ -227,6 +273,53 @@ public class BufferedResponseHandler extends Handler.Wrapper
                 _accumulator.close();
             else
                 _callback.failed(x);
+        }
+    }
+
+    private static class CountingByteBufferAccumulator implements AutoCloseable
+    {
+        private final ByteBufferAccumulator _accumulator;
+        private final int _maxSize;
+        private int _accumulatedCount;
+
+        public CountingByteBufferAccumulator(ByteBufferPool bufferPool, boolean direct, int maxSize)
+        {
+            if (maxSize <= 0)
+                throw new IllegalArgumentException("maxSize must be > 0, was: " + maxSize);
+            _maxSize = maxSize;
+            _accumulator = new ByteBufferAccumulator(bufferPool, direct);
+        }
+
+        public boolean copyBuffer(ByteBuffer buffer)
+        {
+            int remainingCapacity = _maxSize - _accumulatedCount;
+            if (buffer.remaining() >= remainingCapacity)
+            {
+                _accumulatedCount += remainingCapacity;
+                int end = buffer.position() + remainingCapacity;
+                _accumulator.copyBuffer(buffer.duplicate().limit(end));
+                buffer.position(end);
+                return true;
+            }
+            else
+            {
+                _accumulatedCount += buffer.remaining();
+                _accumulator.copyBuffer(buffer);
+                return false;
+            }
+        }
+
+        public ByteBuffer takeByteBuffer()
+        {
+            _accumulatedCount = 0;
+            return _accumulator.takeByteBuffer();
+        }
+
+        @Override
+        public void close()
+        {
+            _accumulatedCount = 0;
+            _accumulator.close();
         }
     }
 }
