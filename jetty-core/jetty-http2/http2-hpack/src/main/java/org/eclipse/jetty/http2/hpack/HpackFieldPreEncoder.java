@@ -18,6 +18,8 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpFieldPreEncoder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http2.hpack.internal.Huffman;
+import org.eclipse.jetty.http2.hpack.internal.NBitInteger;
 import org.eclipse.jetty.util.BufferUtil;
 
 /**

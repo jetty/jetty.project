@@ -19,9 +19,13 @@ import java.util.List;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.Callback;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SimpleFlowControlStrategy extends AbstractFlowControlStrategy
 {
+    private static final Logger LOG = LoggerFactory.getLogger(SimpleFlowControlStrategy.class);
+
     public SimpleFlowControlStrategy()
     {
         this(DEFAULT_WINDOW_SIZE);

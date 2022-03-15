@@ -22,6 +22,7 @@ import java.util.Map;
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
@@ -167,12 +168,12 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         return factory.newConnection(endPoint, context);
     }
 
-    protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
+    protected HttpConnection newHttpConnection(HttpDestination destination, Session session)
     {
         return new HttpConnectionOverHTTP2(destination, session);
     }
 
-    protected void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
+    protected void onClose(HttpConnection connection, GoAwayFrame frame)
     {
         connection.close();
     }
@@ -187,7 +188,7 @@ public class HttpClientTransportOverHTTP2 extends AbstractHttpClientTransport
         @Override
         protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
         {
-            return HttpClientTransportOverHTTP2.this.newHttpConnection(destination, session);
+            return (HttpConnectionOverHTTP2)HttpClientTransportOverHTTP2.this.newHttpConnection(destination, session);
         }
 
         @Override

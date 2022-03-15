@@ -18,9 +18,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
-import org.eclipse.jetty.http2.generator.HeaderGenerator;
-import org.eclipse.jetty.http2.generator.WindowUpdateGenerator;
-import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.internal.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.internal.generator.WindowUpdateGenerator;
+import org.eclipse.jetty.http2.internal.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.jupiter.api.Test;

@@ -16,6 +16,7 @@ package org.eclipse.jetty.http2.server;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData.Request;
+import org.eclipse.jetty.http2.server.internal.HTTP2ServerConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionFactory;

@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpProxy;
 import org.eclipse.jetty.client.Origin;
@@ -44,8 +45,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.RateControl;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -57,10 +57,11 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.parser.RateControl;
-import org.eclipse.jetty.http2.parser.ServerParser;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
+import org.eclipse.jetty.http2.internal.generator.Generator;
+import org.eclipse.jetty.http2.internal.parser.ServerParser;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnector;
@@ -271,7 +272,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             }
 
             @Override
-            protected void onClose(HttpConnectionOverHTTP2 connection, GoAwayFrame frame)
+            protected void onClose(HttpConnection connection, GoAwayFrame frame)
             {
                 super.onClose(connection, frame);
                 lastStream.set(frame.getLastStreamId());
@@ -434,7 +435,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
             HttpClient client = new HttpClient(new HttpClientTransportOverHTTP2(h2Client)
             {
                 @Override
-                protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
+                protected HttpConnection newHttpConnection(HttpDestination destination, Session session)
                 {
                     sessions.add(session);
                     return super.newHttpConnection(destination, session);

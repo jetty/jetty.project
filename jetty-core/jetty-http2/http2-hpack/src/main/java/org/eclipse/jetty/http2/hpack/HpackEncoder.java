@@ -31,6 +31,8 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
+import org.eclipse.jetty.http2.hpack.internal.Huffman;
+import org.eclipse.jetty.http2.hpack.internal.NBitInteger;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;

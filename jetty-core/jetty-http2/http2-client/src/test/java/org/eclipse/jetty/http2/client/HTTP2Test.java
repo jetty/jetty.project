@@ -34,8 +34,6 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -45,12 +43,9 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.HpackException;
-import org.eclipse.jetty.http2.parser.RateControl;
-import org.eclipse.jetty.http2.parser.ServerParser;
-import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
-import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.http2.internal.ErrorCode;
+import org.eclipse.jetty.http2.internal.HTTP2Session;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
@@ -740,70 +735,6 @@ public class HTTP2Test extends AbstractTest
         // Make sure onClose() is called.
         assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
         assertFalse(failureLatch.await(1, TimeUnit.SECONDS));
-    }
-
-    @Test
-    public void testGoAwayRespondedWithGoAway() throws Exception
-    {
-        ServerSessionListener.Adapter serverListener = new ServerSessionListener.Adapter()
-        {
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
-            {
-                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, HttpStatus.OK_200, HttpFields.EMPTY);
-                HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, true);
-                stream.headers(response, Callback.NOOP);
-                stream.getSession().close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
-                return null;
-            }
-        };
-        CountDownLatch goAwayLatch = new CountDownLatch(1);
-        RawHTTP2ServerConnectionFactory connectionFactory = new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), serverListener)
-        {
-            @Override
-            protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener, RateControl rateControl)
-            {
-                return super.newServerParser(connector, new ServerParser.Listener.Wrapper(listener)
-                {
-                    @Override
-                    public void onGoAway(GoAwayFrame frame)
-                    {
-                        super.onGoAway(frame);
-                        goAwayLatch.countDown();
-                    }
-                }, rateControl);
-            }
-        };
-        prepareServer(connectionFactory);
-        server.start();
-
-        prepareClient();
-        client.start();
-
-        CountDownLatch closeLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener.Adapter()
-        {
-            @Override
-            public void onClose(Session session, GoAwayFrame frame)
-            {
-                closeLatch.countDown();
-            }
-        });
-        MetaData.Request metaData = newRequest("GET", HttpFields.EMPTY);
-        HeadersFrame request = new HeadersFrame(metaData, null, true);
-        CountDownLatch responseLatch = new CountDownLatch(1);
-        session.newStream(request, new Promise.Adapter<>(), new Stream.Listener.Adapter()
-        {
-            @Override
-            public void onHeaders(Stream stream, HeadersFrame frame)
-            {
-                responseLatch.countDown();
-            }
-        });
-
-        assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
-        assertTrue(goAwayLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test

@@ -23,6 +23,8 @@ import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A flow control strategy that accumulates updates and emits window control
@@ -60,6 +62,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject
 public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
 {
+    private static final Logger LOG = LoggerFactory.getLogger(BufferingFlowControlStrategy.class);
+
     private final AtomicInteger maxSessionRecvWindow = new AtomicInteger(DEFAULT_WINDOW_SIZE);
     private final AtomicInteger sessionLevel = new AtomicInteger();
     private final Map<IStream, AtomicInteger> streamLevels = new ConcurrentHashMap<>();

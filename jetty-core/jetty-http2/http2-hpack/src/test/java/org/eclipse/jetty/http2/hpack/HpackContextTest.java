@@ -17,6 +17,8 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
+import org.eclipse.jetty.http2.hpack.internal.Huffman;
+import org.eclipse.jetty.http2.hpack.internal.NBitInteger;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 

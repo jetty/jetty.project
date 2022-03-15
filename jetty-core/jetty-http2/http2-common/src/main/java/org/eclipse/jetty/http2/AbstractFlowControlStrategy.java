@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 @ManagedObject
 public abstract class AbstractFlowControlStrategy implements FlowControlStrategy, Dumpable
 {
-    protected static final Logger LOG = LoggerFactory.getLogger(FlowControlStrategy.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractFlowControlStrategy.class);
 
     private final AtomicLong sessionStall = new AtomicLong();
     private final AtomicLong sessionStallTime = new AtomicLong();
