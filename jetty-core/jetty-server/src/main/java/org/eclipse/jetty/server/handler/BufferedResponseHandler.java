@@ -204,7 +204,8 @@ public class BufferedResponseHandler extends Handler.Wrapper
             if (_accumulator != null)
             {
                 Iterator<ByteBuffer> iterator = Arrays.stream(buffers).iterator();
-                IteratingCallback iteratingCallback = new IteratingCallback() {
+                IteratingCallback iteratingCallback = new IteratingCallback()
+                {
                     ByteBuffer currentBuffer;
 
                     @Override
