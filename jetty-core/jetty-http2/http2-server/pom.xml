@@ -15,34 +15,6 @@
     <manual.test.port>28888</manual.test.port>
   </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.mortbay.jetty</groupId>
-        <artifactId>h2spec-maven-plugin</artifactId>
-        <configuration>
-          <mainClass>org.eclipse.jetty.http2.server.H2SpecServer</mainClass>
-          <skip>${skipTests}</skip>
-          <junitPackage>org.eclipse.jetty.h2spec</junitPackage>
-          <skipNoDockerAvailable>true</skipNoDockerAvailable>
-          <reportsDirectory>${project.build.directory}/h2spec-reports</reportsDirectory>
-          <excludeSpecs>
-            <excludeSpec>3.5 - Sends invalid connection preface</excludeSpec>
-          </excludeSpecs>
-        </configuration>
-        <executions>
-          <execution>
-            <id>h2spec</id>
-            <phase>test</phase>
-            <goals>
-              <goal>h2spec</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.http2</groupId>
@@ -68,33 +40,4 @@
     </dependency>
   </dependencies>
 
-  <profiles>
-    <profile>
-      <id>run-spec-server</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>spec-server-run</id>
-                <phase>test</phase>
-                <configuration>
-                  <mainClass>org.eclipse.jetty.http2.server.H2SpecServer</mainClass>
-                  <classpathScope>test</classpathScope>
-                  <arguments>
-                    <argument>${manual.test.port}</argument>
-                  </arguments>
-                </configuration>
-                <goals>
-                  <goal>java</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

@@ -128,6 +128,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         HttpChannel httpChannel = new HttpChannel(getConnector().getServer(), this, httpConfig);
         HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
         httpChannel.setStream(httpStream);
+        stream.setAttachment(httpStream);
         Runnable task = httpStream.onRequest(frame);
         if (task != null)
             offerTask(task, false);
