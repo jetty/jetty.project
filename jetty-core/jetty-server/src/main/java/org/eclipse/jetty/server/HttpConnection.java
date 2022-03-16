@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
@@ -259,22 +258,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public HostPort getServerAuthority()
     {
-        HttpConfiguration config = getHttpConfiguration();
-        if (config != null)
-        {
-            HostPort override = config.getServerAuthority();
-            if (override != null)
-                return override;
-        }
-
-        // TODO cache the HostPort?
-        SocketAddress addr = getLocalSocketAddress();
-        if (addr instanceof InetSocketAddress)
-        {
-            InetSocketAddress inet = (InetSocketAddress)addr;
-            return new HostPort(inet.getHostString(), inet.getPort());
-        }
-        return new HostPort(addr.toString(), -1);
+        HostPort authority = ConnectionMetaData.getServerAuthority(getHttpConfiguration(), this);
+        if (authority == null)
+            authority = new HostPort(getLocalSocketAddress().toString(), -1);
+        return authority;
     }
 
     @Override
@@ -592,7 +579,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             return false;
 
         // TODO is that the right attribute? Or should HttpStream.upgrade() return that connection?
-        Connection connection = (Connection)_channel.getRequest().getAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE);
+        Connection connection = (Connection)_channel.getRequest().getAttribute(HttpChannel.UPGRADE_CONNECTION_ATTRIBUTE);
         if (connection == null)
             return false;
 
@@ -931,7 +918,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         protected void onCompleteSuccess()
         {
             // TODO is this too late to get the request? And is that the right attribute and the right thing to do?
-            boolean upgrading = _channel.getRequest() != null && _channel.getRequest().getAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE) != null;
+            boolean upgrading = _channel.getRequest() != null && _channel.getRequest().getAttribute(HttpChannel.UPGRADE_CONNECTION_ATTRIBUTE) != null;
             release().succeeded();
             // If successfully upgraded it is responsibility of the next protocol to close the connection.
             if (_shutdownOut && !upgrading)
@@ -1463,7 +1450,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgradeConnection);
-            _channel.getRequest().setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, upgradeConnection); // TODO is that the right attribute?
+            _channel.getRequest().setAttribute(HttpChannel.UPGRADE_CONNECTION_ATTRIBUTE, upgradeConnection); // TODO is that the right attribute?
             //getHttpTransport().onCompleted(); // TODO: succeed callback instead?
             return true;
         }

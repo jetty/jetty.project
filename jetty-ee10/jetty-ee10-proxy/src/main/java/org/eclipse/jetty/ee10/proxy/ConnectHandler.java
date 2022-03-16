@@ -44,7 +44,6 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Callback;
@@ -411,7 +410,7 @@ public class ConnectHandler extends HandlerWrapper
     {
         // Set the new connection as request attribute so that
         // Jetty understands that it has to upgrade the connection.
-        request.setAttribute(HttpTransport.UPGRADE_CONNECTION_ATTRIBUTE, connection);
+        request.setAttribute(HttpChannel.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         if (LOG.isDebugEnabled())
             LOG.debug("Upgraded connection to {}", connection);
     }

@@ -24,15 +24,17 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.IStream;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
-import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,15 +42,18 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP2.class);
 
+    private final HTTP2ServerConnection _connection;
     private final HttpChannel _httpChannel;
     private final IStream _stream;
     private final long _nanoTimeStamp;
     private Content _content;
     private MetaData.Response _metaData;
     private boolean committed;
+    private boolean _demand;
 
-    public HttpStreamOverHTTP2(HttpChannel httpChannel, IStream stream)
+    public HttpStreamOverHTTP2(HTTP2ServerConnection connection, HttpChannel httpChannel, IStream stream)
     {
+        _connection = connection;
         _httpChannel = httpChannel;
         _stream = stream;
         _nanoTimeStamp = System.nanoTime();
@@ -74,17 +79,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
 
             Runnable handler = _httpChannel.onRequest(request);
 
+            if (frame.isEndStream())
+                _content = Content.EOF;
+
             HttpFields fields = request.getFields();
+
             // TODO: handle 100 continue.
 //            _expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
-            boolean endStream = frame.isEndStream();
-            if (endStream)
-                onRequestComplete();
-
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("HTTP2 Request #{}/{}, {} {} {}{}{}",
+                LOG.debug("HTTP2 request #{}/{}, {} {} {}{}{}",
                     _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
                     request.getMethod(), request.getURI(), request.getHttpVersion(),
                     System.lineSeparator(), fields);
@@ -114,42 +119,89 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Content readContent()
     {
-        // TODO: should be locked?
         Content content = _content;
-        _content = null;
+        _content = Content.next(content);
         return content;
     }
 
     @Override
     public void demandContent()
     {
-        // TODO: make it idempotent.
-        _stream.demand(1);
+        if (!_demand)
+        {
+            _demand = true;
+            _stream.demand(1);
+        }
+    }
+
+    @Override
+    public Runnable onData(DataFrame frame, Callback callback)
+    {
+        _demand = false;
+
+        ByteBuffer buffer = frame.getData();
+        int length = buffer.remaining();
+        _content = new Content.Abstract(false, frame.isEndStream())
+        {
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return buffer;
+            }
+
+            @Override
+            public void release()
+            {
+                callback.succeeded();
+            }
+        };
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP2 Request #{}/{}: {} bytes of {} content",
+                _stream.getId(),
+                Integer.toHexString(_stream.getSession().hashCode()),
+                length,
+                frame.isEndStream() ? "last" : "some");
+        }
+
+        return _httpChannel.onContentAvailable();
+    }
+
+    @Override
+    public Runnable onTrailer(HeadersFrame frame)
+    {
+        HttpFields trailers = frame.getMetaData().getFields().asImmutable();
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP2 Request #{}/{}, trailer:{}{}",
+                    _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()),
+                    System.lineSeparator(), trailers);
+        }
+        _content = new Content.Trailers(trailers);
+        return _httpChannel.onContentAvailable();
     }
 
     @Override
     public void prepareResponse(HttpFields.Mutable headers)
     {
+        // Nothing to do here.
     }
 
     @Override
-    public void send(MetaData.Request request, MetaData.Response response, boolean lastContent, Callback callback, ByteBuffer... content)
+    public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... buffers)
     {
-        // TODO: convert this to use IStream.FrameList.
-        ByteBufferAccumulator accumulator = new ByteBufferAccumulator();
-        for (ByteBuffer buffer : content)
-        {
-            accumulator.copyBuffer(buffer);
-        }
-        ByteBuffer buffer = accumulator.toByteBuffer();
+        if (buffers.length > 1)
+            throw new IllegalStateException();
 
+        ByteBuffer content = buffers.length == 0 ? BufferUtil.EMPTY_BUFFER : buffers[0];
         if (response != null)
-            sendHeaders(request, response, lastContent, buffer, callback);
+            sendHeaders(request, response, content, last, callback);
         else
-            sendContent(request, lastContent, buffer, callback);
+            sendContent(request, content, last, callback);
     }
 
-    private void sendHeaders(MetaData.Request request, MetaData.Response response, boolean lastContent, ByteBuffer content, Callback callback)
+    private void sendHeaders(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean last, Callback callback)
     {
         _metaData = response;
 
@@ -175,7 +227,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         else
         {
             committed = true;
-            if (lastContent)
+            if (last)
             {
                 long realContentLength = BufferUtil.length(content);
                 long contentLength = response.getContentLength();
@@ -200,7 +252,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             if (hasContent)
             {
                 headersFrame = new HeadersFrame(streamId, _metaData, null, false);
-                if (lastContent)
+                if (last)
                 {
                     HttpFields trailers = retrieveTrailers();
                     if (trailers == null)
@@ -220,7 +272,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             }
             else
             {
-                if (lastContent)
+                if (last)
                 {
                     if (isTunnel(request, _metaData))
                     {
@@ -257,13 +309,13 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         _stream.send(new IStream.FrameList(headersFrame, dataFrame, trailersFrame), callback);
     }
 
-    private void sendContent(MetaData.Request request, boolean lastContent, ByteBuffer content, Callback callback)
+    private void sendContent(MetaData.Request request, ByteBuffer content, boolean last, Callback callback)
     {
         boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        if (hasContent || (lastContent && !isTunnel(request, _metaData)))
+        if (hasContent || (last && !isTunnel(request, _metaData)))
         {
-            if (lastContent)
+            if (last)
             {
                 HttpFields trailers = retrieveTrailers();
                 if (trailers == null)
@@ -272,14 +324,14 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
                 }
                 else
                 {
-                    SendTrailers sendTrailers = new SendTrailers(callback, trailers);
                     if (hasContent)
                     {
-                        sendDataFrame(content, true, false, callback);
+                        SendTrailers sendTrailers = new SendTrailers(callback, trailers);
+                        sendDataFrame(content, true, false, sendTrailers);
                     }
                     else
                     {
-                        sendTrailers.succeeded();
+                        sendTrailersFrame(new MetaData(HttpVersion.HTTP_2, trailers), callback);
                     }
                 }
             }
@@ -317,35 +369,62 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public void push(final MetaData.Request request)
+    public void push(MetaData.Request request)
     {
-/*
         if (!_stream.getSession().isPushEnabled())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("HTTP/2 Push disabled for {}", request);
+                LOG.debug("HTTP/2 push disabled for {}", request);
             return;
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP/2 Push {}", request);
+            LOG.debug("HTTP/2 push {}", request);
 
         _stream.push(new PushPromiseFrame(_stream.getId(), request), new Promise<>()
         {
             @Override
             public void succeeded(Stream pushStream)
             {
-                connection.push(connector, (IStream)pushStream, request);
+                _connection.push((IStream)pushStream, request);
             }
 
             @Override
             public void failed(Throwable x)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Could not push {}", request, x);
+                    LOG.debug("Could not HTTP/2 push {}", request, x);
             }
         }, new Stream.Listener.Adapter()); // TODO: handle reset from the client ?
-*/
+    }
+
+    public Runnable onPushRequest(MetaData.Request request)
+    {
+        try
+        {
+            Runnable task = _httpChannel.onRequest(request);
+            _httpChannel.getRequest().setAttribute("org.eclipse.jetty.pushed", Boolean.TRUE);
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("HTTP/2 push request #{}/{}:{}{} {} {}{}{}",
+                        _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()), System.lineSeparator(),
+                        request.getMethod(), request.getURI(), request.getHttpVersion(),
+                        System.lineSeparator(), request.getFields());
+            }
+
+            return task;
+        }
+        catch (BadMessageException x)
+        {
+            onBadMessage(x);
+            return null;
+        }
+        catch (Throwable x)
+        {
+            onBadMessage(new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500, null, x));
+            return null;
+        }
     }
 
     private void sendDataFrame(ByteBuffer content, boolean lastContent, boolean endStream, Callback callback)
@@ -386,62 +465,17 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
+    public boolean isIdle()
+    {
+        // TODO: is this necessary?
+        return false;
+    }
+
+    @Override
     public boolean upgrade()
     {
-        throw new UnsupportedOperationException("TODO");
-    }
-
-    @Override
-    public Runnable onData(DataFrame frame, Callback callback)
-    {
-        ByteBuffer buffer = frame.getData();
-        int length = buffer.remaining();
-        _content = new Content.Abstract(false, frame.isEndStream())
-        {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return buffer;
-            }
-
-            @Override
-            public void release()
-            {
-                callback.succeeded();
-            }
-        };
-
-        Runnable onContentAvailable = _httpChannel.onContentAvailable();
-        if (onContentAvailable != null)
-            onContentAvailable.run();
-
-        boolean endStream = frame.isEndStream();
-        if (endStream)
-            onRequestComplete();
-
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("HTTP2 Request #{}/{}: {} bytes of {} content",
-                _stream.getId(),
-                Integer.toHexString(_stream.getSession().hashCode()),
-                length,
-                endStream ? "last" : "some");
-        }
-
-        // TODO: should we return the onContentAvailable Runnable here?
-        return null;
-    }
-
-    private void onRequestComplete()
-    {
-        // TODO: HttpChannel event?
-    }
-
-    @Override
-    public Runnable onTrailer(HeadersFrame frame)
-    {
         // TODO
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -462,13 +496,6 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
             runnable.run();
             callback.succeeded();
         };
-    }
-
-    @Override
-    public boolean isIdle()
-    {
-        // TODO: is this necessary?
-        return false;
     }
 
     private class SendTrailers extends Callback.Nested

@@ -57,7 +57,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     @Override
     protected ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint)
     {
-        return new HTTPServerSessionListener(connector, endPoint);
+        return new HTTPServerSessionListener(endPoint);
     }
 
     @Override
@@ -72,12 +72,10 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
 
     protected class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
-        private final Connector connector;
         private final EndPoint endPoint;
 
-        public HTTPServerSessionListener(Connector connector, EndPoint endPoint)
+        public HTTPServerSessionListener(EndPoint endPoint)
         {
-            this.connector = connector;
             this.endPoint = endPoint;
         }
 
@@ -95,7 +93,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
         {
-            getConnection().onNewStream(connector, (IStream)stream, frame);
+            getConnection().onNewStream((IStream)stream, frame);
             return this;
         }
 

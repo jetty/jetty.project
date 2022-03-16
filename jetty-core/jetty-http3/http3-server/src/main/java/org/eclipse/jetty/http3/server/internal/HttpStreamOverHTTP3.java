@@ -203,8 +203,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
     {
         if (buffers.length > 1)
             throw new IllegalStateException();
-        ByteBuffer content = buffers.length == 0 ? BufferUtil.EMPTY_BUFFER : buffers[0];
 
+        ByteBuffer content = buffers.length == 0 ? BufferUtil.EMPTY_BUFFER : buffers[0];
         if (response != null)
             sendHeaders(request, response, content, last, callback);
         else

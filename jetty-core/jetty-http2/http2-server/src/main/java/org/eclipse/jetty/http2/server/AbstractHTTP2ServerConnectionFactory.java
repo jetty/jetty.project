@@ -53,6 +53,15 @@ import org.eclipse.jetty.util.component.LifeCycle;
 @ManagedObject
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
+    private static boolean isProtocolSupported(String protocol)
+    {
+        return switch (protocol)
+        {
+            case "h2", "h2c" -> true;
+            default -> false;
+        };
+    }
+
     private final HTTP2SessionContainer sessionContainer = new HTTP2SessionContainer();
     private final HttpConfiguration httpConfiguration;
     private int maxDynamicTableSize = 4096;
@@ -79,7 +88,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         super(protocols);
         for (String p : protocols)
         {
-            if (!HTTP2ServerConnection.isSupportedProtocol(p))
+            if (!isProtocolSupported(p))
                 throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: " + p);
         }
         addBean(sessionContainer);
@@ -284,7 +293,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         RetainableByteBufferPool retainableByteBufferPool = RetainableByteBufferPool.findOrAdapt(connector, connector.getByteBufferPool());
 
-        HTTP2Connection connection = new HTTP2ServerConnection(retainableByteBufferPool, connector.getExecutor(),
+        HTTP2Connection connection = new HTTP2ServerConnection(retainableByteBufferPool, connector,
             endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
         connection.setUseInputDirectByteBuffers(isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(isUseOutputDirectByteBuffers());

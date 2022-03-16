@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
@@ -47,6 +46,7 @@ import org.eclipse.jetty.http2.internal.parser.SettingsBodyParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
@@ -60,42 +60,23 @@ import org.eclipse.jetty.util.thread.AutoLock;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements ConnectionMetaData
 {
-    /**
-     * @param protocol An HTTP2 protocol variant
-     * @return True if the protocol version is supported
-     */
-    public static boolean isSupportedProtocol(String protocol)
-    {
-        switch (protocol)
-        {
-            case "h2":
-            case "h2-17":
-            case "h2-16":
-            case "h2-15":
-            case "h2-14":
-            case "h2c":
-            case "h2c-17":
-            case "h2c-16":
-            case "h2c-15":
-            case "h2c-14":
-                return true;
-            default:
-                return false;
-        }
-    }
-
+    private final Attributes attributes = new Lazy();
     private final AutoLock lock = new AutoLock();
     private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
     private final List<Frame> upgradeFrames = new ArrayList<>();
+    private final Connector connector;
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
+    private final String id;
     private boolean recycleHttpChannels = true;
 
-    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
-        super(retainableByteBufferPool, executor, endPoint, parser, session, inputBufferSize);
+        super(retainableByteBufferPool, connector.getExecutor(), endPoint, parser, session, inputBufferSize);
+        this.connector = connector;
         this.listener = listener;
         this.httpConfig = httpConfig;
+        this.id = StringUtil.randomAlphaNumeric(16);
     }
 
     @Override
@@ -139,13 +120,13 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         }
     }
 
-    public void onNewStream(Connector connector, IStream stream, HeadersFrame frame)
+    public void onNewStream(IStream stream, HeadersFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
 
-        HttpChannel httpChannel = new HttpChannel(connector.getServer(), this, httpConfig);
-        HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(httpChannel, stream);
+        HttpChannel httpChannel = new HttpChannel(getConnector().getServer(), this, httpConfig);
+        HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
         httpChannel.setStream(httpStream);
         Runnable task = httpStream.onRequest(frame);
         if (task != null)
@@ -236,17 +217,17 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         callback.succeeded();
     }
 
-    public void push(Connector connector, IStream stream, MetaData.Request request)
+    public void push(IStream stream, MetaData.Request request)
     {
-/*
-        // TODO: see onNewStream()
         if (LOG.isDebugEnabled())
             LOG.debug("Processing push {} on {}", request, stream);
-        HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
-        Runnable task = channel.onPushRequest(request);
+
+        HttpChannel httpChannel = new HttpChannel(getConnector().getServer(), this, httpConfig);
+        HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
+        httpChannel.setStream(httpStream);
+        Runnable task = httpStream.onPushRequest(request);
         if (task != null)
-            offerTask(task, true);
-*/
+            offerTask(task, false);
     }
 
 /*
@@ -397,7 +378,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     @Override
     public String getId()
     {
-        return null;
+        return id;
     }
 
     @Override
@@ -415,51 +396,49 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     @Override
     public Connection getConnection()
     {
-        return null;
+        return this;
     }
 
     @Override
     public Connector getConnector()
     {
-        return null;
+        return connector;
     }
 
     @Override
     public boolean isPersistent()
     {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isSecure()
     {
-        return false;
+        return getEndPoint() instanceof SslConnection.DecryptedEndPoint;
     }
 
     @Override
     public SocketAddress getRemoteSocketAddress()
     {
-        return null;
+        return getEndPoint().getRemoteSocketAddress();
     }
 
     @Override
     public SocketAddress getLocalSocketAddress()
     {
-        return null;
+        return getEndPoint().getLocalSocketAddress();
     }
 
     @Override
     public HostPort getServerAuthority()
     {
-        return null;
+        return ConnectionMetaData.getServerAuthority(httpConfig, this);
     }
 
-    private final Attributes attributes = new Mapped();
-
     @Override
-    public Object removeAttribute(String name)
+    public Object getAttribute(String name)
     {
-        return attributes.removeAttribute(name);
+        return attributes.getAttribute(name);
     }
 
     @Override
@@ -469,9 +448,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     }
 
     @Override
-    public Object getAttribute(String name)
+    public Object removeAttribute(String name)
     {
-        return attributes.getAttribute(name);
+        return attributes.removeAttribute(name);
     }
 
     @Override

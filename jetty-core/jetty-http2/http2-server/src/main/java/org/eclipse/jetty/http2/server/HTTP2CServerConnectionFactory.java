@@ -52,11 +52,6 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory 
     public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, @Name("protocols") String... protocols)
     {
         super(httpConfiguration, protocols);
-        for (String p : protocols)
-        {
-            if (!HTTP2ServerConnection.isSupportedProtocol(p))
-                throw new IllegalArgumentException("Unsupported HTTP2 Protocol variant: " + p);
-        }
     }
 
     @Override

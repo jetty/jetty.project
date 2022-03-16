@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 import org.eclipse.jetty.http.HttpVersion;
@@ -59,6 +60,19 @@ public interface ConnectionMetaData extends Attributes
      *         which the connection was accepted, but it may be wrapped to represent a virtual address.
      */
     HostPort getServerAuthority();
+
+    static HostPort getServerAuthority(HttpConfiguration httpConfiguration, ConnectionMetaData connectionMetaData)
+    {
+        HostPort authority = httpConfiguration.getServerAuthority();
+        if (authority != null)
+            return authority;
+
+        SocketAddress local = connectionMetaData.getLocalSocketAddress();
+        if (local instanceof InetSocketAddress inet)
+            return new HostPort(inet.getHostString(), inet.getPort());
+
+        return null;
+    }
 
     class Wrapper extends Attributes.Wrapper implements ConnectionMetaData
     {

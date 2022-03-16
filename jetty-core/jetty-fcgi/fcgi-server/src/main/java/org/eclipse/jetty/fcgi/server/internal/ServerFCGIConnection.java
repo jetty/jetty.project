@@ -16,8 +16,6 @@ package org.eclipse.jetty.fcgi.server.internal;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.IntStream;
 
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.generator.Flusher;
@@ -39,13 +37,13 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ServerFCGIConnection extends AbstractConnection implements ConnectionMetaData
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerFCGIConnection.class);
-    private static final String DIGITS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
     private final Attributes attributes = new Lazy();
     private final Connector connector;
@@ -69,11 +67,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
         this.configuration = configuration;
         this.sendStatus200 = sendStatus200;
         this.parser = new ServerParser(new ServerListener());
-        this.id = IntStream.range(0, 16)
-            .map(i -> ThreadLocalRandom.current().nextInt(DIGITS.length()))
-            .map(DIGITS::charAt)
-            .collect(StringBuilder::new, (b, c) -> b.append((char)c), StringBuilder::append)
-            .toString();
+        this.id = StringUtil.randomAlphaNumeric(16);
     }
 
     Flusher getFlusher()
@@ -158,8 +152,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     @Override
     public HostPort getServerAuthority()
     {
-        // TODO
-        return null;
+        return ConnectionMetaData.getServerAuthority(configuration, this);
     }
 
     @Override
