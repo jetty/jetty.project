@@ -30,6 +30,9 @@ module org.eclipse.jetty.ee10.webapp
     requires org.slf4j;
 
     requires transitive java.instrument;
+    requires transitive org.eclipse.jetty.ee10.handler;
+    requires transitive org.eclipse.jetty.ee10.security;
+    requires transitive org.eclipse.jetty.session;
     requires transitive org.eclipse.jetty.ee10.servlet;
     requires transitive org.eclipse.jetty.xml;
 

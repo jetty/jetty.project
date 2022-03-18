@@ -21,7 +21,6 @@ import java.net.URLClassLoader;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EventListener;
 import java.util.HashMap;
@@ -213,10 +212,9 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public static WebAppContext getCurrentWebAppContext()
     {
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
-        if (context != null)
+        ServletContextHandler handler = ServletContextHandler.getCurrentServletContextHandler();
+        if (handler != null)
         {
-            ContextHandler handler = context.getContextHandler();
             if (handler instanceof WebAppContext)
                 return (WebAppContext)handler;
         }
