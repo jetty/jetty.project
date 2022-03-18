@@ -61,7 +61,6 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -103,8 +102,8 @@ import org.slf4j.LoggerFactory;
  * </p>
  */
 // TODO make this work
-@ManagedObject("EE9 Context")
-public class Ee9ContextHandler
+@ManagedObject("EE10 Context")
+public class Ee10ContextHandler
     extends org.eclipse.jetty.server.handler.ContextHandler // This is-a core context handler
     implements org.eclipse.jetty.ee10.handler.Handler // this can also handle ee10 request by delegating to nested ScopedHandler
 {
@@ -210,17 +209,17 @@ public class Ee9ContextHandler
 
     private final AtomicReference<Availability> _availability = new AtomicReference<>(Availability.STOPPED);
 
-    public Ee9ContextHandler()
+    public Ee10ContextHandler()
     {
         this(null);
     }
 
-    public Ee9ContextHandler(String contextPath)
+    public Ee10ContextHandler(String contextPath)
     {
         this(null, contextPath);
     }
 
-    protected Ee9ContextHandler(org.eclipse.jetty.server.Handler.Container parent, String contextPath)
+    protected Ee10ContextHandler(org.eclipse.jetty.server.Handler.Container parent, String contextPath)
     {
         _scontext = new SContext(getContext());
         if (parent != null)
@@ -1745,9 +1744,9 @@ public class Ee9ContextHandler
             _context = context;
         }
 
-        public Ee9ContextHandler getContextHandler()
+        public Ee10ContextHandler getContextHandler()
         {
-            return Ee9ContextHandler.this;
+            return Ee10ContextHandler.this;
         }
 
         public Attributes getAttributes()
@@ -2762,7 +2761,7 @@ public class Ee9ContextHandler
         @Override
         public void doHandle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            Ee9ContextHandler.this.doHandle(target, baseRequest, request, response);
+            Ee10ContextHandler.this.doHandle(target, baseRequest, request, response);
         }
     }
 }
