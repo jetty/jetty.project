@@ -130,9 +130,30 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    private int get(Content content, byte[] bytes, int offset, int length)
+    private int get(Content content, ByteBuffer des)
     {
-        int consumed = content.get(bytes, offset, length);
+        int consumed;
+        if (des.hasArray())
+        {
+            consumed = content.get(des.array(), des.arrayOffset() + des.position(), des.remaining());
+            des.position(des.position() + consumed);
+        }
+        else
+        {
+            var capacity = des.remaining();
+            var src = content.getByteBuffer();
+            if (src.remaining() > capacity)
+            {
+                var copy = src.duplicate().limit(src.position() + capacity);
+                des.put(copy);
+                src.position(src.position() + (capacity - copy.remaining()));
+            }
+            else
+            {
+                des.put(src);
+            }
+            consumed = capacity - des.remaining();
+        }
         _contentConsumed.add(consumed);
         return consumed;
     }
@@ -239,7 +260,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         try (AutoLock lock = _contentProducer.lock())
         {
-            int read = read(_oneByteBuffer, 0, 1);
+            int read = read(ByteBuffer.wrap(_oneByteBuffer, 0, 1));
             if (read == 0)
                 throw new IOException("unready read=0");
             return read < 0 ? -1 : _oneByteBuffer[0] & 0xFF;
@@ -248,6 +269,11 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     @Override
     public int read(byte[] b, int off, int len) throws IOException
+    {
+        return read(ByteBuffer.wrap(b, off, len));
+    }
+
+    public int read(ByteBuffer buffer) throws IOException
     {
         try (AutoLock lock = _contentProducer.lock())
         {
@@ -259,7 +285,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 throw new IllegalStateException("read on unready input");
             if (!content.isSpecial())
             {
-                int read = get(content, b, off, len);
+                int read = get(content, buffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("read produced {} byte(s) {}", read, this);
                 if (content.isEmpty())
