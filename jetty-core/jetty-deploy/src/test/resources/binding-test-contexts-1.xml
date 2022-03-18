@@ -33,7 +33,7 @@
         <Ref refid="DeploymentManager">
           <Call name="addLifeCycleBinding">
             <Arg>
-              <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding">
+              <New class="org.eclipse.jetty.ee10.deployer.GlobalWebappConfigBinding">
                 <Set name="jettyXml"><SystemProperty name="jetty.home" />/context-binding-test-1.xml</Set>
               </New>
             </Arg>
@@ -44,7 +44,7 @@
         <Set name="appProviders">
           <Array type="org.eclipse.jetty.deploy.AppProvider">
             <Item>
-             <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+             <New class="org.eclipse.jetty.ee10.deployer.WebAppProvider">
               <Set name="monitoredDirName"><SystemProperty name="jetty.home" />/webapps</Set>
               <Set name="scanInterval">1</Set>
               <Set name="configurationManager">

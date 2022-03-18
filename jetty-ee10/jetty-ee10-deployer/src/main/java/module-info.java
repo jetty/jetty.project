@@ -11,21 +11,14 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.deploy
+module org.eclipse.jetty.ee10.deployer
 {
     requires java.xml;
     requires org.eclipse.jetty.xml;
-    requires org.eclipse.jetty.server;
+    requires org.eclipse.jetty.deploy;
     requires org.slf4j;
 
-    // Only required if using JMX.
-    requires static org.eclipse.jetty.jmx;
+    requires transitive org.eclipse.jetty.ee10.webapp;
 
-    exports org.eclipse.jetty.deploy;
-    exports org.eclipse.jetty.deploy.bindings;
-    exports org.eclipse.jetty.deploy.graph;
-    exports org.eclipse.jetty.deploy.providers;
-
-    exports org.eclipse.jetty.deploy.jmx to
-        org.eclipse.jetty.jmx;
+    exports org.eclipse.jetty.ee10.deployer;
 }

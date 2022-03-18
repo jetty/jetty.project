@@ -76,11 +76,11 @@ The format for the  XML file is the same as any context XML file and can be used
 
 To use this binding, you can either modify the existing `jetty-deploy.xml` which comes with the Jetty distribution (be sure to link:#startup-base-and-home[copy it to your $JETTY_BASE/etc directory first]), or by link:#custom-modules[creating a new module] file which calls to an additional XML file.
 
-[source, xml, subs="{sub-order}"]
+[source,xml,subs="{sub-order}"]
 ----
         <Call name="addLifeCycleBinding">
           <Arg>
-            <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding" >
+            <New class="org.eclipse.jetty.ee10.deployer.GlobalWebappConfigBinding" >
               <Set name="jettyXml"><Property name="jetty.home" default="." />/etc/global-webapp-config.xml</Set>
             </New>
           </Arg>
@@ -96,7 +96,7 @@ It supports hot (re)deployment.
 The basic operation of the `WebAppProvider` is to periodically scan a directory for deployables.
 In the standard Jetty Distribution, this is configured in the `${jetty.home}/etc/jetty-deploy.xml` file.
 
-[source, xml, subs="{sub-order}"]
+[source,xml,subs="{sub-order}"]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -110,7 +110,7 @@ In the standard Jetty Distribution, this is configured in the `${jetty.home}/etc
         </Set>
         <Call id="webappprovider" name="addAppProvider">
           <Arg>
-            <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+            <New class="org.eclipse.jetty.ee10.deployer.WebAppProvider">
               <Set name="monitoredDirName"><Property name="jetty.home" default="." />/webapps</Set>
               <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml</Set>
               <Set name="scanInterval">1</Set>

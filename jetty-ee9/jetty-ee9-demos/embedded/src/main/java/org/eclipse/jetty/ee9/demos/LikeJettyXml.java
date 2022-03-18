@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.PropertiesConfigurationManager;
-import org.eclipse.jetty.deploy.bindings.DebugListenerBinding;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
 import org.eclipse.jetty.ee9.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee9.plus.webapp.EnvConfiguration;

@@ -85,7 +85,7 @@
 
         <Call id="webappprovider" name="addAppProvider">
           <Arg>
-            <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+            <New class="org.eclipse.jetty.ee10.deployer.WebAppProvider">
               <Set name="monitoredDirName"><Property name="test.resourcesdir" default="src/test/resources" />/webapp-contexts/RFC2616</Set>
               <Set name="scanInterval">1</Set>
               <Set name="extractWars">true</Set>

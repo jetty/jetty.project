@@ -38,7 +38,7 @@
 
         <Call name="addAppProvider">
           <Arg>
-            <New id="webappprovider" class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+            <New id="webappprovider" class="org.eclipse.jetty.ee10.deployer.WebAppProvider">
               <Set name="monitoredDirName">
                 <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
                   <Arg><Property name="jetty.base"/></Arg>

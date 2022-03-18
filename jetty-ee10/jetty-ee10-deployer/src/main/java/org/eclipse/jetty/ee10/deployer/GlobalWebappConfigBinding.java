@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.bindings;
+package org.eclipse.jetty.ee10.deployer;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.AppProvider;
 import org.eclipse.jetty.deploy.graph.Node;
-import org.eclipse.jetty.deploy.providers.WebAppProvider;
-import org.eclipse.jetty.ee9.webapp.WebAppClassLoader;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebAppClassLoader;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -90,7 +90,8 @@ public class GlobalWebappConfigBinding implements AppLifeCycle.Binding
             {
                 XmlConfiguration jettyXmlConfig = new XmlConfiguration(globalContextSettings);
                 Resource resource = Resource.newResource(app.getOriginId());
-                app.getDeploymentManager().scope(jettyXmlConfig, resource);
+                Server server = app.getDeploymentManager().getServer();
+                jettyXmlConfig.setJettyStandardIdsAndProperties(server, resource);
                 AppProvider appProvider = app.getAppProvider();
                 if (appProvider instanceof WebAppProvider)
                 {

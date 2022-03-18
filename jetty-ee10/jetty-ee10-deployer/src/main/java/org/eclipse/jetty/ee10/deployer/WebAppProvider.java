@@ -11,16 +11,18 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers;
+package org.eclipse.jetty.ee10.deployer;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.ConfigurationManager;
+import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.deploy.util.FileID;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.StringUtil;
@@ -342,7 +344,7 @@ public class WebAppProvider extends ScanningAppProvider
         {
             int dash = contextPath.indexOf('-');
             String virtual = contextPath.substring(dash + 1);
-            context.setVirtualHosts(virtual.split(","));
+            context.setVirtualHosts(List.of(virtual.split(",")));
             contextPath = URIUtil.SLASH;
         }
 

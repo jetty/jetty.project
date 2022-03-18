@@ -159,7 +159,7 @@ Of course, you can also use this method to reduce the Configurations applied to 
 If you use the link:#deployment-architecture[deployer], you can set up the list of Configuration classes on the link:#default-web-app-provider[WebAppProvider].
 They will then be applied to each `WebAppContext` deployed by the deployer:
 
-[source, xml, subs="{sub-order}"]
+[source,xml,subs="{sub-order}"]
 ----
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
@@ -174,7 +174,7 @@ They will then be applied to each `WebAppContext` deployed by the deployer:
         </Set>
         <Call id="webappprovider" name="addAppProvider">
           <Arg>
-            <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+            <New class="org.eclipse.jetty.ee10.deployer.WebAppProvider">
               <Set name="monitoredDirName"><Property name="jetty.base" default="." />/webapps</Set>
               <Set name="configurationClasses">
                 <Array type="java.lang.String">

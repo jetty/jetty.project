@@ -5,7 +5,7 @@
   <Ref refid="DeploymentManager">
     <Call name="addLifeCycleBinding">
       <Arg>
-        <New class="org.eclipse.jetty.deploy.bindings.GlobalWebappConfigBinding">
+        <New class="org.eclipse.jetty.ee10.deployer.GlobalWebappConfigBinding">
           <Set name="jettyXml">
             <Call name="resolvePath" class="org.eclipse.jetty.xml.XmlConfiguration">
               <Arg><Property name="jetty.base"/></Arg>

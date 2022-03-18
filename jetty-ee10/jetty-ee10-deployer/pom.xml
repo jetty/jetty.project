@@ -1,0 +1,69 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.ee10</groupId>
+    <artifactId>jetty-ee10</artifactId>
+    <version>12.0.0-SNAPSHOT</version>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>jetty-ee10-deployer</artifactId>
+  <name>Jetty EE10 :: Deployer</name>
+  <description>The EE10 Specific Deployer of WebApps.</description>
+
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.deployer</bundle-symbolic-name>
+    <spotbugs.onlyAnalyze>org.eclipse.jetty.ee10.deployer.*</spotbugs.onlyAnalyze>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <argLine>
+            @{argLine} ${jetty.surefire.argLine} --add-opens org.eclipse.jetty.server/org.eclipse.jetty.server=ALL-UNNAMED
+          </argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-jakarta-servlet-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee10</groupId>
+      <artifactId>jetty-ee10-webapp</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-deploy</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-xml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.toolchain</groupId>
+      <artifactId>jetty-test-helper</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>jetty-http-tools</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-slf4j-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+</project>
