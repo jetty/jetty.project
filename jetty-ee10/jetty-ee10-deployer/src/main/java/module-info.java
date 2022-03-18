@@ -18,7 +18,13 @@ module org.eclipse.jetty.ee10.deployer
     requires org.eclipse.jetty.deploy;
     requires org.slf4j;
 
+    // Only required if using JMX.
+    requires static org.eclipse.jetty.jmx;
+
     requires transitive org.eclipse.jetty.ee10.webapp;
 
     exports org.eclipse.jetty.ee10.deployer;
+
+    exports org.eclipse.jetty.ee10.deployer.jmx to
+        org.eclipse.jetty.jmx;
 }

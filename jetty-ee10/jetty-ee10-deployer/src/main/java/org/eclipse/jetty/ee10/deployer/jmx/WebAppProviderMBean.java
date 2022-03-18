@@ -11,12 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers.jmx;
+package org.eclipse.jetty.ee10.deployer.jmx;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.ee10.deployer.WebAppProvider;
 import org.eclipse.jetty.jmx.ObjectMBean;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
