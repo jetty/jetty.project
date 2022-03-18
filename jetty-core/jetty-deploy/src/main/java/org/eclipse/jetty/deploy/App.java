@@ -14,7 +14,7 @@
 package org.eclipse.jetty.deploy;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.AttributesMap;
+import org.eclipse.jetty.util.Attributes;
 
 /**
  * The information about an App that is managed by the {@link DeploymentManager}
@@ -93,13 +93,14 @@ public class App
         {
             _context = getAppProvider().createContextHandler(this);
 
-            AttributesMap attributes = _manager.getContextAttributes();
+            Attributes.Mapped attributes = _manager.getContextAttributes();
             if (attributes != null && attributes.size() > 0)
             {
                 // Merge the manager attributes under the existing attributes
-                attributes = new AttributesMap(attributes);
-                attributes.addAll(_context.getAttributes());
-                _context.setAttributes(attributes);
+                for (String name : attributes.getAttributeNameSet())
+                {
+                    _context.setAttribute(name, attributes.getAttribute(name));
+                }
             }
         }
         return _context;

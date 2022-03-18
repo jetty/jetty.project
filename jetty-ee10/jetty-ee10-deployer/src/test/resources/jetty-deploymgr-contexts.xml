@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="addBean">
+    <Arg>
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+        <Set name="contexts">
+          <Ref refid="Contexts" />
+        </Set>
+        
+        <Call name="setContextAttribute">
+          <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
+          <Arg>.*/jetty-jakarta-servlet-api-[^/]*\.jar$</Arg>
+        </Call>
+        
+        <Call id="webappprovider" name="addAppProvider">
+          <Arg>
+            <New class="org.eclipse.jetty.ee10.deployer.WebAppProvider">
+              <Set name="monitoredDirName"><Property name="jetty.home" default="." />/webapps</Set>
+              <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml</Set>
+              <Set name="scanInterval">1</Set>
+              <Set name="extractWars">true</Set>
+              <Set name="configurationManager">
+                <New class="org.eclipse.jetty.deploy.PropertiesConfigurationManager">
+                  <Set name="file">
+                    <SystemProperty name="jetty.home"/>/xml-configured-jetty.properties
+                  </Set>
+                </New>
+              </Set>
+            </New>
+          </Arg>
+        </Call>
+
+      </New>
+    </Arg>
+  </Call>
+
+</Configure>

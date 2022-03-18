@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <Call name="addBean">
+    <Arg>
+      <New id="DeploymentManager" class="org.eclipse.jetty.deploy.DeploymentManager">
+        <Set name="contexts">
+          <Ref refid="Contexts" />
+        </Set>
+
+        <!-- Providers of Apps -->
+        <Set name="appProviders">
+          <Array type="org.eclipse.jetty.deploy.AppProvider">
+            <Item>
+             <New class="org.eclipse.jetty.ee10.deployer.WebAppProvider">
+              <Set name="monitoredDirName"><SystemProperty name="jetty.home" />/webapps</Set>
+              <Set name="scanInterval">1</Set>
+              <Set name="tempDir"><Property name="jetty.home" default="target" />/workish</Set>
+              <Set name="useRealPaths">false</Set>
+             </New>
+            </Item>
+          </Array>
+        </Set>
+      </New>
+    </Arg>
+  </Call>
+
+</Configure>

@@ -11,14 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.bindings;
+package org.eclipse.jetty.ee10.deployer;
 
 import java.io.File;
 import java.util.List;
 
 import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
-import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.PathAssert;

@@ -11,27 +11,26 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy;
+package org.eclipse.jetty.ee10.deployer;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.deploy.providers.WebAppProvider;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
@@ -84,7 +83,7 @@ public class DeploymentTempDirTest
         server.addBean(deploymentManager);
 
         contexts = new ContextHandlerCollection();
-        HandlerCollection handlerCollection = new HandlerCollection();
+        Handler.Collection handlerCollection = new Handler.Collection();
         handlerCollection.addHandler(contexts);
         handlerCollection.addHandler(new DefaultHandler());
         deploymentManager.setContexts(contexts);
@@ -193,9 +192,9 @@ public class DeploymentTempDirTest
 
     public WebAppContext getWebAppContext()
     {
-        Handler[] handlers = contexts.getHandlers();
-        assertThat(handlers.length, is(1));
-        return Arrays.stream(contexts.getHandlers())
+        List<Handler> handlers = contexts.getHandlers();
+        assertThat(handlers.size(), is(1));
+        return handlers.stream()
             .filter(h -> h instanceof WebAppContext)
             .map(h -> (WebAppContext)h)
             .findFirst()

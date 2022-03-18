@@ -60,6 +60,6 @@ public class ScanningAppProviderStartupTest
     public void testStartupContext()
     {
         // Check Server for Handlers
-        jetty.assertWebAppContextsExists("/foo");
+        jetty.assertContextHandlerExists("/foo");
     }
 }

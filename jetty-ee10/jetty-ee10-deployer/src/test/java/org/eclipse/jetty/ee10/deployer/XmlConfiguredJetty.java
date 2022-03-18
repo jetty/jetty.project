@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.test;
+package org.eclipse.jetty.ee10.deployer;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,7 +31,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -194,7 +196,7 @@ public class XmlConfiguredJetty
     {
         _xmlConfigurations.add(xmlConfig);
     }
-    
+
     public List<Resource> getConfigurations()
     {
         return Collections.unmodifiableList(_xmlConfigurations);
@@ -238,9 +240,9 @@ public class XmlConfiguredJetty
         assertThat(content, containsString(needle));
     }
 
-    public void assertContextHandlerExists(String... expectedContextPaths)
+    public void assertWebAppContextsExists(String... expectedContextPaths)
     {
-        List<ContextHandler> contexts = getContextHandlers();
+        List<WebAppContext> contexts = getWebAppContexts();
         if (expectedContextPaths.length != contexts.size())
         {
             System.err.println("## Expected Contexts");
@@ -249,7 +251,7 @@ public class XmlConfiguredJetty
                 System.err.println(expected);
             }
             System.err.println("## Actual Contexts");
-            for (ContextHandler context : contexts)
+            for (WebAppContext context : contexts)
             {
                 System.err.printf("%s ## %s%n", context.getContextPath(), context);
             }
@@ -259,7 +261,7 @@ public class XmlConfiguredJetty
         for (String expectedPath : expectedContextPaths)
         {
             boolean found = false;
-            for (ContextHandler context : contexts)
+            for (WebAppContext context : contexts)
             {
                 if (context.getContextPath().equals(expectedPath))
                 {
@@ -368,6 +370,17 @@ public class XmlConfiguredJetty
         }
 
         return contexts;
+    }
+
+    public List<WebAppContext> getWebAppContexts()
+    {
+        ContextHandlerCollection handlers = (ContextHandlerCollection)_server.getHandler();
+
+        return handlers.getHandlers()
+            .stream()
+            .filter((handler) -> handler instanceof WebAppContext)
+            .map(handler -> (WebAppContext) handler)
+            .collect(Collectors.toList());
     }
 
     public void load() throws Exception

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy.providers;
+package org.eclipse.jetty.ee10.deployer;
 
 import java.io.File;
 import java.nio.file.FileSystemException;
@@ -22,12 +22,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
-import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.ee10.handler.HandlerCollection;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -128,7 +126,7 @@ public class WebAppProviderTest
         jetty.assertWebAppContextsExists("/bar", "/foo", "/bob");
 
         // Check that baseResources are not aliases
-        jetty.getServer().getContainedBeans(ContextHandler.class).forEach(h -> assertFalse(h.getBaseResource().isAlias()));
+        jetty.getServer().getContainedBeans(ServletContextHandler.class).forEach(h -> assertFalse(h.getBaseResource().isAlias()));
 
         // Test for expected work/temp directory behaviour
         File workDir = jetty.getJettyDir("workish");
@@ -216,7 +214,7 @@ public class WebAppProviderTest
         {
             server.start();
             HandlerCollection handlers = (HandlerCollection)server.getHandler();
-            Handler[] children = server.getChildHandlersByClass(WebAppContext.class);
+            org.eclipse.jetty.ee10.handler.Handler[] children = handlers.getChildHandlersByClass(WebAppContext.class);
             assertEquals(1, children.length);
             assertEquals("/foo", ((WebAppContext)children[0]).getContextPath());
         }

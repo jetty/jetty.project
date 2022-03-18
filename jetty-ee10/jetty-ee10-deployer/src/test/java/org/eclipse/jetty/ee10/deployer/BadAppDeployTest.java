@@ -11,15 +11,15 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.deploy;
+package org.eclipse.jetty.ee10.deployer;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 import jakarta.servlet.ServletException;
-import org.eclipse.jetty.deploy.providers.WebAppProvider;
-import org.eclipse.jetty.ee9.webapp.WebAppContext;
+import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;

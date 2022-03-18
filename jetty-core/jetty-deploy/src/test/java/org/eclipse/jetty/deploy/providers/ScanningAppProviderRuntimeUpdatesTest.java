@@ -118,7 +118,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         waitForDirectoryScan();
         waitForDirectoryScan();
 
-        jetty.assertWebAppContextsExists("/foo");
+        jetty.assertContextHandlerExists("/foo");
     }
 
     /**
@@ -135,7 +135,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         waitForDirectoryScan();
         waitForDirectoryScan();
 
-        jetty.assertWebAppContextsExists("/foo");
+        jetty.assertContextHandlerExists("/foo");
 
         jetty.removeWebapp("foo.war");
         jetty.removeWebapp("foo.xml");
@@ -143,7 +143,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         waitForDirectoryScan();
         waitForDirectoryScan();
 
-        jetty.assertNoWebAppContexts();
+        jetty.assertNoContextHandlers();
     }
 
     /**
@@ -160,7 +160,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         waitForDirectoryScan();
         waitForDirectoryScan();
 
-        jetty.assertWebAppContextsExists("/foo");
+        jetty.assertContextHandlerExists("/foo");
 
         // Test that webapp response contains "-1"
         jetty.assertResponseContains("/foo/info", "FooServlet-1");
@@ -173,7 +173,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
         // This should result in the existing foo.war being replaced with the new foo.war
         waitForDirectoryScan();
         waitForDirectoryScan();
-        jetty.assertWebAppContextsExists("/foo");
+        jetty.assertContextHandlerExists("/foo");
 
         // Test that webapp response contains "-2"
         jetty.assertResponseContains("/foo/info", "FooServlet-2");
