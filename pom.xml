@@ -13,9 +13,7 @@
 
   <properties>
     <!-- build -->
-    <compiler.source>11</compiler.source>
-    <compiler.target>11</compiler.target>
-    <compiler.release>11</compiler.release>
+    <maven.compiler.release>11</maven.compiler.release>
     <jetty.url>https://www.eclipse.org/jetty/</jetty.url>
     <jmhjar.name>benchmarks</jmhjar.name>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
@@ -580,9 +578,6 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven.compiler.plugin.version}</version>
           <configuration>
-            <source>${compiler.source}</source>
-            <target>${compiler.target}</target>
-            <release>${compiler.release}</release>
             <showWarnings>true</showWarnings>
             <compilerArgs>
               <compilerArg>-Xlint:exports</compilerArg>
