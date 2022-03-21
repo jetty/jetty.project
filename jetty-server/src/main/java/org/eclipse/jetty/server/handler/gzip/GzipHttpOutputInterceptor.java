@@ -257,15 +257,22 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 
     private class GzipBufferCB extends IteratingNestedCallback
     {
-        private ByteBuffer _copy;
         private final ByteBuffer _content;
         private final boolean _last;
 
         public GzipBufferCB(ByteBuffer content, boolean complete, Callback callback)
         {
             super(callback);
+            
             _content = content;
             _last = complete;
+
+            _crc.update(_content.slice());
+
+            Deflater deflater = _deflaterEntry.get();
+            deflater.setInput(_content);
+            if (_last)
+                deflater.finish();
         }
 
         @Override
@@ -293,11 +300,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                     _channel.getByteBufferPool().release(_buffer);
                     _buffer = null;
                 }
-                if (_copy != null)
-                {
-                    _channel.getByteBufferPool().release(_copy);
-                    _copy = null;
-                }
                 return Action.SUCCEEDED;
             }
 
@@ -305,7 +307,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             if (_buffer == null)
             {
                 // allocate a buffer and add the gzip header
-                _buffer = _channel.getByteBufferPool().acquire(_bufferSize, false);
+                _buffer = _channel.getByteBufferPool().acquire(_bufferSize, _channel.isUseOutputDirectByteBuffers());
                 BufferUtil.fill(_buffer, GZIP_HEADER, 0, GZIP_HEADER.length);
             }
             else
@@ -318,54 +320,12 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             Deflater deflater = _deflaterEntry.get();
             if (!deflater.finished())
             {
-                if (deflater.needsInput())
-                {
-                    // if there is no more content available to compress
-                    // then we are either finished all content or just the current write.
-                    if (BufferUtil.isEmpty(_content))
-                    {
-                        if (_last)
-                            deflater.finish();
-                        else
-                            return Action.SUCCEEDED;
-                    }
-                    else
-                    {
-                        // If there is more content available to compress, we have to make sure
-                        // it is available in an array for the current deflator API, maybe slicing
-                        // of content.
-                        ByteBuffer slice;
-                        if (_content.hasArray())
-                            slice = _content;
-                        else
-                        {
-                            if (_copy == null)
-                                _copy = _channel.getByteBufferPool().acquire(_bufferSize, false);
-                            else
-                                BufferUtil.clear(_copy);
-                            slice = _copy;
-                            BufferUtil.append(_copy, _content);
-                        }
+                if (deflater.needsInput() && !_last)
+                    return Action.SUCCEEDED;
 
-                        // transfer the data from the slice to the the deflator
-                        byte[] array = slice.array();
-                        int off = slice.arrayOffset() + slice.position();
-                        int len = slice.remaining();
-                        _crc.update(array, off, len);
-                        // Ideally we would want to use the ByteBuffer API for Deflaters. However due the the ByteBuffer implementation
-                        // of the CRC32.update() it is less efficient for us to use this rather than to convert to array ourselves.
-                        _deflaterEntry.get().setInput(array, off, len);
-                        slice.position(slice.position() + len);
-                        if (_last && BufferUtil.isEmpty(_content))
-                            deflater.finish();
-                    }
-                }
-
-                // deflate the content into the available space in the buffer
-                int off = _buffer.arrayOffset() + _buffer.limit();
-                int len = BufferUtil.space(_buffer);
-                int produced = deflater.deflate(_buffer.array(), off, len, _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH);
-                _buffer.limit(_buffer.limit() + produced);
+                int pos = BufferUtil.flipToFill(_buffer);
+                deflater.deflate(_buffer, _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH);
+                BufferUtil.flipToFlush(_buffer, pos);
             }
 
             // If we have finished deflation and there is room for the trailer.
@@ -386,11 +346,10 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         @Override
         public String toString()
         {
-            return String.format("%s[content=%s last=%b copy=%s buffer=%s deflate=%s %s]",
+            return String.format("%s[content=%s last=%b buffer=%s deflate=%s %s]",
                 super.toString(),
                 BufferUtil.toDetailString(_content),
                 _last,
-                BufferUtil.toDetailString(_copy),
                 BufferUtil.toDetailString(_buffer),
                 _deflaterEntry,
                 _deflaterEntry != null && _deflaterEntry.get().finished() ? "(finished)" : "");
