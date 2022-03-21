@@ -32,6 +32,7 @@ import javax.naming.spi.ObjectFactory;
 
 import org.eclipse.jetty.jndi.NamingContext;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,11 +67,12 @@ public class TestJNDI
         }
     }
 
-    // TODO move test to EE* module(s)
-//    @Test
-//    public void testThreadContextClassloaderAndCurrentContext()
-//        throws Exception
-//    {
+    @Disabled("port to ee9")
+    @Test
+    public void testThreadContextClassloaderAndCurrentContext()
+        throws Exception
+    {
+        fail();
 //
 //        //create a jetty context, and start it so that its classloader it created
 //        //and it is the current context
@@ -191,7 +193,7 @@ public class TestJNDI
 //            ch2.stop();
 //            Thread.currentThread().setContextClassLoader(currentLoader);
 //        }
-//    }
+    }
 
     @Test
     public void testJavaNameParsing() throws Exception
