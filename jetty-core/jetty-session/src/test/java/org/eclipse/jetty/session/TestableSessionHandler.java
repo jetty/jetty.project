@@ -34,9 +34,21 @@ public class TestableSessionHandler extends AbstractSessionHandler
     java.util.Collection<String> _sessionBoundListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionActivationListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionPassivationListenersCalled = new ArrayList<>();
-    
+
     protected Map<String, String> _cookieConfig = new HashMap<String, String>();
-    
+
+    public void clearListeners()
+    {
+        _sessionIdListenersCalled.clear();
+        _sessionCreatedListenersCalled.clear();
+        _sessionDestroyedListenersCalled.clear();
+        _sessionAttributeListenersCalled.clear();
+        _sessionUnboundListenersCalled.clear();
+        _sessionBoundListenersCalled.clear();
+        _sessionActivationListenersCalled.clear();
+        _sessionPassivationListenersCalled.clear();
+    }
+
     @Override
     public APISession newSessionAPIWrapper(Session session)
     {

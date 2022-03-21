@@ -197,7 +197,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     private final AttributesMap _attributes = new AttributesMap();
     private final Map<String, String> _initParams = new HashMap<>();
-    private ClassLoader _classLoader;
     private boolean _contextPathDefault = true;
     private String _defaultRequestCharacterEncoding;
     private String _defaultResponseCharacterEncoding;
@@ -651,16 +650,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     }
 
     /**
-     * @param classLoader The classLoader to set.
-     */
-    public void setClassLoader(ClassLoader classLoader)
-    {
-        if (isStarted())
-            throw new IllegalStateException(getState());
-        _classLoader = classLoader;
-    }
-
-    /**
      * Set the default context path.
      * A default context path may be overriden by a default-context-path element
      * in a web.xml
@@ -815,10 +804,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (className == null)
             return null;
 
-        if (_classLoader == null)
+        ClassLoader loader = getClassLoader();
+        if (loader == null)
             return Loader.loadClass(className);
 
-        return _classLoader.loadClass(className);
+        return loader.loadClass(className);
     }
 
     public void addLocaleEncoding(String locale, String encoding)
@@ -1279,14 +1269,15 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             _durableListeners.addAll(getEventListeners());
 
+            ClassLoader loader = getClassLoader();
             try
             {
                 // Set the classloader, context and enter scope
-                if (_classLoader != null)
+                if (loader != null)
                 {
                     currentThread = Thread.currentThread();
                     oldClassloader = currentThread.getContextClassLoader();
-                    currentThread.setContextClassLoader(_classLoader);
+                    currentThread.setContextClassLoader(loader);
                 }
 
                 // defers the calling of super.doStart()
@@ -1300,7 +1291,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             {
                 exitScope(null);
                 // reset the classloader
-                if (_classLoader != null && currentThread != null)
+                if (loader != null && currentThread != null)
                     currentThread.setContextClassLoader(oldClassloader);
             }
         }, null);
@@ -1323,12 +1314,13 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         try
         {
             // Set the classloader
-            if (_classLoader != null)
+            ClassLoader loader = getClassLoader();
+            if (loader != null)
             {
-                oldWebapploader = _classLoader;
+                oldWebapploader = loader;
                 currentThread = Thread.currentThread();
                 oldClassloader = currentThread.getContextClassLoader();
-                currentThread.setContextClassLoader(_classLoader);
+                currentThread.setContextClassLoader(loader);
             }
 
             stopContext();
