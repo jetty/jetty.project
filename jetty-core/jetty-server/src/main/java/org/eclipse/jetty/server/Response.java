@@ -26,7 +26,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
@@ -65,9 +64,6 @@ public interface Response extends Content.Writer
     {
         write(last, callback, StandardCharsets.UTF_8.encode(utf8Content));
     }
-
-    // TODO: this method should be moved to Request.
-    void push(MetaData.Request request);
 
     boolean isCommitted();
 
@@ -358,12 +354,6 @@ public interface Response extends Content.Writer
         public void write(boolean last, Callback callback, ByteBuffer... content)
         {
             getWrapped().write(last, callback, content);
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            getWrapped().push(request);
         }
 
         @Override

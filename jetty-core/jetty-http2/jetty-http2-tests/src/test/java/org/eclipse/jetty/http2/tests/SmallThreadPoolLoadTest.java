@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.http2.tests;
 
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -33,12 +31,12 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.server.AbstractHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.hamcrest.Matchers;
@@ -198,12 +196,12 @@ public class SmallThreadPoolLoadTest extends AbstractTest
                     int contentLength = (int)request.getHeaders().getLongField("X-Download");
                     if (contentLength > 0)
                         response.write(true, callback, ByteBuffer.wrap(new byte[contentLength]));
+                    else
+                        callback.succeeded();
                 }
                 case POST ->
                 {
-                    InputStream inputStream = Request.asInputStream(request);
-                    OutputStream outputStream = Response.asOutputStream(response);
-                    IO.copy(inputStream, outputStream);
+                    Content.copy(request, response, callback);
                 }
             }
         }

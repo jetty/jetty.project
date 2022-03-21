@@ -118,10 +118,10 @@ public class PushedResourcesTest extends AbstractTest
                 }
                 else
                 {
-                    MetaData.Request push1 = new MetaData.Request(null, HttpURI.build().path(path1), HttpVersion.HTTP_2, HttpFields.EMPTY);
-                    response.push(push1);
-                    MetaData.Request push2 = new MetaData.Request(null, HttpURI.build().path(path2), HttpVersion.HTTP_2, HttpFields.EMPTY);
-                    response.push(push2);
+                    MetaData.Request push1 = new MetaData.Request(null, HttpURI.build(request.getHttpURI()).path(path1), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    request.push(push1);
+                    MetaData.Request push2 = new MetaData.Request(null, HttpURI.build(request.getHttpURI()).path(path2), HttpVersion.HTTP_2, HttpFields.EMPTY);
+                    request.push(push2);
                     response.write(true, callback, ByteBuffer.wrap(bytes));
                 }
             }
@@ -174,11 +174,18 @@ public class PushedResourcesTest extends AbstractTest
             {
                 String target = request.getPathInContext();
                 if (target.equals(oldPath))
+                {
                     Response.sendRedirect(request, response, callback, newPath);
+                }
                 else if (target.equals(newPath))
+                {
                     response.write(true, callback, ByteBuffer.wrap(pushBytes));
+                }
                 else
-                    response.push(new MetaData.Request(null, HttpURI.build().path(oldPath), HttpVersion.HTTP_2, HttpFields.EMPTY));
+                {
+                    request.push(new MetaData.Request(null, HttpURI.build(request.getHttpURI()).path(oldPath), HttpVersion.HTTP_2, HttpFields.EMPTY));
+                    callback.succeeded();
+                }
             }
         });
 

@@ -36,7 +36,7 @@ public class HTTP2CServer extends Server
 
         HttpConnectionFactory http1 = new HttpConnectionFactory(config);
         HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(config);
-        ServerConnector connector = new ServerConnector(this, http1, http2c);
+        ServerConnector connector = new ServerConnector(this, 1, 1, http1, http2c);
         connector.setPort(port);
         addConnector(connector);
 

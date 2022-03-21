@@ -78,17 +78,17 @@ public class HttpChannel extends Attributes.Lazy
     private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
 
     private final AutoLock _lock = new AutoLock();
-    private final Runnable _handle = new RunHandle();
+    private final Runnable _handlerInvoker = new HandlerInvoker();
     private final Server _server;
     private final ConnectionMetaData _connectionMetaData;
     private final HttpConfiguration _configuration;
     private final SerializedInvoker _serializedInvoker;
     private final Attributes _requestAttributes = new Attributes.Lazy();
     private long _requests;
-
     private HttpStream _stream;
     private ChannelRequest _request;
     private Consumer<Throwable> _onConnectionComplete;
+    private boolean _handled;
 
     public HttpChannel(Server server, ConnectionMetaData connectionMetaData, HttpConfiguration configuration)
     {
@@ -198,6 +198,7 @@ public class HttpChannel extends Attributes.Lazy
             RequestLog requestLog = getServer().getRequestLog();
             if (requestLog != null)
             {
+                // TODO: use addStreamWrapper() instead.
                 // TODO: make this efficient.
                 _stream = new HttpStream.Wrapper(_stream)
                 {
@@ -253,8 +254,8 @@ public class HttpChannel extends Attributes.Lazy
                     throw new BadMessageException(badMessage);
             }
 
-            // This is deliberately not serialized as to allow a handler to block.
-            return _handle;
+            // This is deliberately not serialized to allow a handler to block.
+            return _handlerInvoker;
         }
     }
 
@@ -271,6 +272,14 @@ public class HttpChannel extends Attributes.Lazy
         try (AutoLock ignored = _lock.lock())
         {
             return _request == null ? null : _request._response;
+        }
+    }
+
+    public boolean isHandled()
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            return _handled;
         }
     }
 
@@ -297,12 +306,16 @@ public class HttpChannel extends Attributes.Lazy
 
     public Runnable onError(Throwable x)
     {
-        // TODO: consumeAll() to open flow control windows for protocols that have it?
         if (LOG.isDebugEnabled())
             LOG.debug("onError {}", this, x);
+
+        HttpStream stream;
+        Runnable task = null;
         try (AutoLock ignored = _lock.lock())
         {
-            // If the channel doesn't have a stream, then the error is ignored
+            stream = _stream;
+
+            // If the channel doesn't have a stream, then the error is ignored.
             if (_stream == null)
                 return null;
 
@@ -310,38 +323,69 @@ public class HttpChannel extends Attributes.Lazy
             // the request line / headers, so make a temp request for logging and producing an error response.
             ChannelRequest request = _request == null ? _request = new ChannelRequest(ERROR_REQUEST) : _request;
 
-            // Remember the error and arrange for any subsequent reads, demands or writes to fail with this error
+            // Remember the error and arrange for any subsequent reads, demands or writes to fail with this error.
             if (request._error == null)
+            {
                 request._error = new Content.Error(x);
+            }
             else if (request._error.getCause() != x)
             {
                 request._error.getCause().addSuppressed(x);
                 return null;
             }
 
-            // invoke onDataAvailable if we are currently demanding
+            // Invoke onContentAvailable() if we are currently demanding.
             Runnable invokeOnContentAvailable = request._onContentAvailable;
             request._onContentAvailable = null;
 
-            // if a write is in progress, break the linkage and fail the callback
+            // If a write() is in progress, fail the write callback.
             Callback onWriteComplete = request._response._onWriteComplete;
             request._response._onWriteComplete = null;
             Runnable invokeWriteFailure = onWriteComplete == null ? null : () -> onWriteComplete.failed(x);
 
-            // Invoke any onError listener(s);
+            Runnable invokeCallback = () ->
+            {
+                // Only fail the callback if the application was not invoked.
+                boolean handled;
+                try (AutoLock ignore = _lock.lock())
+                {
+                    handled = _handled;
+                    _handled = true;
+                }
+                if (handled)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("already handled, skipping failing callback in {}", HttpChannel.this);
+                }
+                else
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("failing callback in {}", HttpChannel.this, x);
+                    request._callback.failed(x);
+                }
+            };
+
+            // Invoke error listeners.
             Predicate<Throwable> onError = request._onError;
             request._onError = null;
-            Runnable invokeCallback = () -> request._callback.failed(x);
-            Runnable invokeOnError = onError == null ? invokeCallback : ()  ->
+            Runnable invokeOnError = () ->
             {
-                if (onError.test(x))
+                if (onError == null || onError.test(x))
                     invokeCallback.run();
             };
 
             // Serialize all the error actions.
+            // TODO: is the next line necessary?
             request._processing = true;
-            return _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError);
+            task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError);
         }
+
+        // Consume content as soon as possible to open any flow control window.
+        Throwable unconsumed = stream.consumeAll();
+        if (unconsumed != null && LOG.isDebugEnabled())
+            LOG.debug("consuming content during error {}", unconsumed.toString());
+
+        return task;
     }
 
     public Runnable onConnectionClose(Throwable failed)
@@ -434,12 +478,31 @@ public class HttpChannel extends Attributes.Lazy
         return String.format("%s@%x{r=%s}", this.getClass().getSimpleName(), hashCode(), _request);
     }
 
-    private class RunHandle implements Invocable.Task
+    private class HandlerInvoker implements Invocable.Task
     {
         @Override
         public void run()
         {
-            _server.customizeHandleAndProcess(_request, _request._response, _request._callback);
+            // The chance to complete the callback is either given
+            // to the application, or the implementation does it.
+            ChannelRequest request;
+            try (AutoLock ignored = _lock.lock())
+            {
+                request = _handled ? null : _request;
+                _handled = true;
+            }
+            // Don't call the application if an error already completed this channel.
+            if (request != null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("invoking handler in {}", HttpChannel.this);
+                _server.customizeHandleAndProcess(request, request._response, request._callback);
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("already handled, skipping handler invocation in {}", HttpChannel.this);
+            }
         }
 
         @Override
@@ -641,6 +704,12 @@ public class HttpChannel extends Attributes.Lazy
         }
 
         @Override
+        public void push(MetaData.Request request)
+        {
+            getStream().push(request);
+        }
+
+        @Override
         public boolean addErrorListener(Predicate<Throwable> onError)
         {
             try (AutoLock ignored = _lock.lock())
@@ -722,6 +791,9 @@ public class HttpChannel extends Attributes.Lazy
                 boolean last;
                 try (AutoLock ignored = _lock.lock())
                 {
+                    if (_stream == null || _request != ChannelRequest.this)
+                        return;
+
                     if (!_processing)
                         throw new IllegalStateException("not processing");
 
@@ -734,11 +806,10 @@ public class HttpChannel extends Attributes.Lazy
                     if (_error != null)
                         throw new IllegalStateException("error " + _error, _error.getCause());
 
-                    if (_stream == null | _request != ChannelRequest.this)
-                        return;
                     stream = _stream;
                     _stream = null;
                     _request = null;
+                    _handled = false;
 
                     written = _response._written;
                     commit = _response._headers.commit();
@@ -751,7 +822,7 @@ public class HttpChannel extends Attributes.Lazy
                 // is the request fully consumed?
                 Throwable unconsumed = stream.consumeAll();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("consumeAll: {} {} ", unconsumed == null, this);
+                    LOG.debug("consumeAll: {} {} ", unconsumed == null, HttpChannel.this);
                 if (unconsumed != null && getConnectionMetaData().isPersistent())
                     stream.failed(unconsumed);
                 else if (_response._committedContentLength >= 0L && _response._committedContentLength != written)
@@ -783,6 +854,7 @@ public class HttpChannel extends Attributes.Lazy
                     _stream = null;
                     request = _request;
                     _request = null;
+                    _handled = false;
 
                     // reset response;
                     if (!committed)
@@ -931,7 +1003,7 @@ public class HttpChannel extends Attributes.Lazy
             HttpStream stream = null;
             long written = -1;
             Throwable failure = null;
-            boolean commit;
+            boolean commit = false;
             try (AutoLock ignored = _lock.lock())
             {
                 if (_onWriteComplete != null)
@@ -945,7 +1017,8 @@ public class HttpChannel extends Attributes.Lazy
 
                 if (_stream == null)
                     failure = new IllegalStateException("completed");
-                else
+
+                if (failure == null)
                 {
                     _onWriteComplete = callback;
                     for (ByteBuffer b : content)
@@ -953,15 +1026,22 @@ public class HttpChannel extends Attributes.Lazy
                     _last |= last;
                     stream = _stream;
                     written = _written;
+                    commit = _headers.commit();
                 }
-                commit = _headers.commit();
+            }
+
+            if (failure != null)
+            {
+                Throwable t = failure;
+                _serializedInvoker.run(() -> callback.failed(t));
+                return;
             }
 
             MetaData.Response responseMetaData = null;
             if (commit)
                 responseMetaData = prepareResponse(stream, last);
 
-            // If the content lengths were not compatible with what was written, then we need to abort
+            // If the content lengths were not compatible with what was written, then we need to abort.
             long contentLength = _committedContentLength;
             if (contentLength >= 0)
             {
@@ -980,11 +1060,12 @@ public class HttpChannel extends Attributes.Lazy
             {
                 Throwable t = failure;
                 _serializedInvoker.run(() -> callback.failed(t));
-                return;
             }
-
-            // Do the write
-            stream.send(_request._metaData, responseMetaData, last, this, content);
+            else
+            {
+                // Do the write
+                stream.send(_request._metaData, responseMetaData, last, this, content);
+            }
         }
 
         @Override
@@ -1026,12 +1107,6 @@ public class HttpChannel extends Attributes.Lazy
             {
                 return Invocable.getInvocationType(_onWriteComplete);
             }
-        }
-
-        @Override
-        public void push(MetaData.Request request)
-        {
-            _request.getStream().push(request);
         }
 
         @Override

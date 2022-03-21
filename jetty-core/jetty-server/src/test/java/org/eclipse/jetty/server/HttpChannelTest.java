@@ -1100,7 +1100,11 @@ public class HttpChannelTest
                 handling.set(request);
                 request.addErrorListener(t -> true);
                 request.addErrorListener(t -> error.compareAndSet(null, t));
-                request.addErrorListener(t -> true);
+                request.addErrorListener(t ->
+                {
+                    callback.failed(t);
+                    return true;
+                });
             }
         };
         _server.setHandler(handler);
@@ -1161,6 +1165,8 @@ public class HttpChannelTest
         assertTrue(demand.await(5, TimeUnit.SECONDS));
         // write callback was failed
         assertThat(callback.get(5, TimeUnit.SECONDS), sameInstance(failure));
+
+
 
         // request completed handling
         assertTrue(stream.isComplete());

@@ -68,6 +68,8 @@ public class ResponseTrailerTest extends AbstractTest
                 response.getTrailers();
                 if (data != null)
                     response.write(true, callback, ByteBuffer.wrap(data.getBytes(StandardCharsets.US_ASCII)));
+                else
+                    callback.succeeded();
             }
         });
 

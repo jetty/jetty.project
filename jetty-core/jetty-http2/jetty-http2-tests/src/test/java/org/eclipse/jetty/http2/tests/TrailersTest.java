@@ -263,6 +263,7 @@ public class TrailersTest extends AbstractTest
                 Response.write(response, false, UTF_8.encode("hello_trailers"));
                 // Force the content to be sent above, and then only send the trailers below.
                 trailers.put(trailerName, trailerValue);
+                callback.succeeded();
             }
         });
 

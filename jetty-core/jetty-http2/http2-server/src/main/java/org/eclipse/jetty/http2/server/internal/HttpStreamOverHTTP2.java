@@ -28,6 +28,8 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpChannel;
@@ -119,9 +121,19 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public Content readContent()
     {
-        Content content = _content;
-        _content = Content.next(content);
-        return content;
+        while (true)
+        {
+            Content content = _content;
+            _content = Content.next(content);
+            if (content != null)
+                return content;
+
+            IStream.Data data = _stream.readData();
+            if (data == null)
+                return null;
+
+            _content = newContent(data.frame(), data::complete);
+        }
     }
 
     @Override
@@ -138,34 +150,36 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     public Runnable onData(DataFrame frame, Callback callback)
     {
         _demand = false;
-
-        ByteBuffer buffer = frame.getData();
-        int length = buffer.remaining();
-        _content = new Content.Abstract(false, frame.isEndStream())
-        {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return buffer;
-            }
-
-            @Override
-            public void release()
-            {
-                callback.succeeded();
-            }
-        };
+        _content = newContent(frame, callback::succeeded);
 
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Request #{}/{}: {} bytes of {} content",
                 _stream.getId(),
                 Integer.toHexString(_stream.getSession().hashCode()),
-                length,
+                frame.remaining(),
                 frame.isEndStream() ? "last" : "some");
         }
 
         return _httpChannel.onContentAvailable();
+    }
+
+    private Content.Abstract newContent(DataFrame frame, Runnable complete)
+    {
+        return new Content.Abstract(false, frame.isEndStream())
+        {
+            @Override
+            public ByteBuffer getByteBuffer()
+            {
+                return frame.getData();
+            }
+
+            @Override
+            public void release()
+            {
+                complete.run();
+            }
+        };
     }
 
     @Override
@@ -484,7 +498,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         Runnable runnable = _httpChannel.onError(failure);
         if (runnable != null)
             consumer.accept(runnable);
-        return false;
+        return !_httpChannel.isHandled();
     }
 
     @Override
@@ -493,9 +507,31 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
         Runnable runnable = _httpChannel.onError(failure);
         return () ->
         {
-            runnable.run();
+            if (runnable != null)
+                runnable.run();
             callback.succeeded();
         };
+    }
+
+    @Override
+    public void succeeded()
+    {
+        // If the stream is not closed, it is still reading the request content.
+        // Send a reset to the other end so that it stops sending data.
+        if (!_stream.isClosed())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP2 response #{}/{}: unconsumed request content, resetting stream", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+            _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
+        }
+    }
+
+    @Override
+    public void failed(Throwable x)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 response #{}/{} aborted", _stream.getId(), Integer.toHexString(_stream.getSession().hashCode()));
+        _stream.reset(new ResetFrame(_stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
     }
 
     private class SendTrailers extends Callback.Nested

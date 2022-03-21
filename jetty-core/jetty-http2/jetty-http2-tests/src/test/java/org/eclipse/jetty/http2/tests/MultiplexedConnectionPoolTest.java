@@ -379,11 +379,12 @@ public class MultiplexedConnectionPoolTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                if (!request.getPathInContext().equals("/block"))
-                    return;
-
-                handlerSignalingSemaphore.release();
-                handlerWaitingSemaphore.acquire();
+                if (request.getPathInContext().equals("/block"))
+                {
+                    handlerSignalingSemaphore.release();
+                    handlerWaitingSemaphore.acquire();
+                }
+                callback.succeeded();
             }
         });
 

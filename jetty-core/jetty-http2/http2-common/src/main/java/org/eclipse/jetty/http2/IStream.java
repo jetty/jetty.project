@@ -48,6 +48,8 @@ public interface IStream extends Stream, Attachable, Closeable
      */
     public Listener getListener();
 
+    public Data readData();
+
     /**
      * @param listener the {@link org.eclipse.jetty.http2.api.Stream.Listener} associated with this stream
      * @see #getListener()
@@ -198,6 +200,28 @@ public interface IStream extends Stream, Attachable, Closeable
         public List<StreamFrame> getFrames()
         {
             return frames;
+        }
+    }
+
+    public static final class Data
+    {
+        private final DataFrame frame;
+        private final Runnable complete;
+
+        public Data(DataFrame frame, Runnable complete)
+        {
+            this.frame = frame;
+            this.complete = complete;
+        }
+
+        public DataFrame frame()
+        {
+            return frame;
+        }
+
+        public void complete()
+        {
+            complete.run();
         }
     }
 }

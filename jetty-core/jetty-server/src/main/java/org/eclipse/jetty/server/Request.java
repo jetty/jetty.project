@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
@@ -186,6 +187,8 @@ public interface Request extends Attributes, Content.Reader
      */
     @Override
     void demandContent(Runnable onContentAvailable);
+
+    void push(MetaData.Request request);
 
     // TODO: what's the difference with a failed CompletionListener?
     //  For example, RST_STREAM events, but also idle timeouts which may also be delivered as read events and write events.
@@ -496,6 +499,12 @@ public interface Request extends Attributes, Content.Reader
         public void demandContent(Runnable onContentAvailable)
         {
             getWrapped().demandContent(onContentAvailable);
+        }
+
+        @Override
+        public void push(MetaData.Request request)
+        {
+            getWrapped().push(request);
         }
 
         @Override

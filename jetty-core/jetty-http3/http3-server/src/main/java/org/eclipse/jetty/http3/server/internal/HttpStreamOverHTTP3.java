@@ -470,6 +470,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         Runnable runnable = channel.onError(failure);
         if (runnable != null)
             consumer.accept(runnable);
+        // TODO: see http2.
         return false;
     }
 

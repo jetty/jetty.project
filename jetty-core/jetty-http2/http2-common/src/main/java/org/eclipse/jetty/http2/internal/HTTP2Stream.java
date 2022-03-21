@@ -354,6 +354,22 @@ public class HTTP2Stream implements IStream, Callback, Dumpable, CyclicTimeouts.
     }
 
     @Override
+    public Data readData()
+    {
+        DataEntry dataEntry;
+        try (AutoLock l = lock.lock())
+        {
+            if (dataQueue == null || dataQueue.isEmpty())
+                return null;
+            dataEntry = dataQueue.poll();
+        }
+        DataFrame frame = dataEntry.frame;
+        if (updateClose(frame.isEndStream(), CloseState.Event.RECEIVED))
+            session.removeStream(this);
+        return new Data(frame, () -> dataEntry.callback.succeeded());
+    }
+
+    @Override
     public void setListener(Listener listener)
     {
         this.listener = listener;

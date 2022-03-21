@@ -576,7 +576,10 @@ public class IdleTimeoutTest extends AbstractTest
                     }
                     content.release();
                     if (content.isLast())
-                        break;
+                    {
+                        _callback.succeeded();
+                        return;
+                    }
                     sleep(delay);
                 }
             }
@@ -634,6 +637,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
+                System.err.println("processing request " + request.getHttpURI().getPath());
                 phaser.get().countDown();
                 // Hold the dispatched requests enough for the idle requests to idle timeout.
                 sleep(2 * idleTimeout);
@@ -648,11 +652,13 @@ public class IdleTimeoutTest extends AbstractTest
         Session client = newClientSession(new Session.Listener.Adapter());
 
         // Send requests until one is queued on the server but not dispatched.
+        int count = 0;
         while (true)
         {
+            ++count;
             phaser.set(new CountDownLatch(1));
 
-            MetaData.Request request = newRequest("GET", HttpFields.EMPTY);
+            MetaData.Request request = newRequest("GET", "/" + count, HttpFields.EMPTY);
             HeadersFrame frame = new HeadersFrame(request, null, false);
             FuturePromise<Stream> promise = new FuturePromise<>();
             client.newStream(frame, promise, new Stream.Listener.Adapter());

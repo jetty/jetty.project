@@ -323,6 +323,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(path, httpURI.getPath());
                 assertEquals(query, httpURI.getQuery());
+                callback.succeeded();
             }
         });
 
@@ -347,6 +348,7 @@ public class HttpClientTransportOverHTTP2Test extends AbstractTest
                 HttpURI httpURI = request.getHttpURI();
                 assertEquals(path, httpURI.getPath());
                 assertEquals(query, httpURI.getQuery());
+                callback.succeeded();
             }
         });
 

@@ -40,6 +40,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
@@ -164,12 +165,19 @@ public class PrefaceTest extends AbstractTest
             socket.write(buffers.toArray(new ByteBuffer[0]));
 
             Queue<SettingsFrame> settings = new ArrayDeque<>();
+            AtomicBoolean closed = new AtomicBoolean();
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
                 public void onSettings(SettingsFrame frame)
                 {
                     settings.offer(frame);
+                }
+
+                @Override
+                public void onGoAway(GoAwayFrame frame)
+                {
+                    closed.set(true);
                 }
             }, 4096, 8192);
             parser.init(UnaryOperator.identity());
@@ -179,10 +187,12 @@ public class PrefaceTest extends AbstractTest
             {
                 BufferUtil.clearToFill(buffer);
                 int read = socket.read(buffer);
-                BufferUtil.flipToFlush(buffer, 0);
                 if (read < 0)
                     break;
+                BufferUtil.flipToFlush(buffer, 0);
                 parser.parse(buffer);
+                if (closed.get())
+                    break;
             }
 
             assertEquals(2, settings.size());
