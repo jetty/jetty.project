@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.ArrayDeque;
@@ -21,6 +22,7 @@ import java.util.Deque;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
@@ -29,6 +31,7 @@ import org.eclipse.jetty.http.QuotedCSV;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IncludeExcludeSet;
 import org.eclipse.jetty.util.InetAddressSet;
 import org.eclipse.jetty.util.StringUtil;
@@ -63,8 +66,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ThreadLimitHandler.class);
 
-    private static final String REMOTE = "o.e.j.s.h.TLH.REMOTE";
-    private static final String PERMIT = "o.e.j.s.h.TLH.PASS";
     private final boolean _rfc7239;
     private final String _forwardedHeader;
     private final IncludeExcludeSet<String, InetAddress> _includeExcludeSet = new IncludeExcludeSet<>(InetAddressSet.class);
@@ -157,89 +158,71 @@ public class ThreadLimitHandler extends Handler.Wrapper
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
+        Request.Processor baseProcessor = super.handle(request);
+        if (baseProcessor == null)
+        {
+            // if no wrapped handler, do not handle
+            return null;
+        }
+
         // Allow ThreadLimit to be enabled dynamically without restarting server
         if (!_enabled)
         {
             // if disabled, handle normally
-            return super.handle(request);
+            return baseProcessor;
+        }
+
+        // Get the remote address of the request
+        Remote remote = getRemote(request);
+        if (remote == null)
+        {
+            // if remote is not known, handle normally
+            return baseProcessor;
+        }
+
+        CompletableFuture<Closeable> futurePermit = remote.acquire();
+        // Did we get a permit?
+        if (futurePermit.isDone())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Threadpermitted {}", remote);
+            return (rq, rs, cb) -> baseProcessor.process(rq, rs, Callback.from(cb, () -> getAndClose(futurePermit)));
         }
         else
         {
-            /*
-            // Get the remote address of the request
-            Remote remote = getRemote(baseRequest);
-            if (remote == null)
+            if (LOG.isDebugEnabled())
+                LOG.debug("Threadlimited {}", remote);
+            return (rq, rs, cb) -> futurePermit.thenAccept(c ->
             {
-                // if remote is not known, handle normally
-                super.handle(target, baseRequest, request, response);
-            }
-            else
-            {
-                // Do we already have a future permit from a previous invocation?
-                Closeable permit = (Closeable)baseRequest.getAttribute(PERMIT);
                 try
                 {
-                    if (permit != null)
-                    {
-                        // Yes, remove it from any future async cycles.
-                        baseRequest.removeAttribute(PERMIT);
-                    }
-                    else
-                    {
-                        // No, then lets try to acquire one
-                        CompletableFuture<Closeable> futurePermit = remote.acquire();
-
-                        // Did we get a permit?
-                        if (futurePermit.isDone())
-                        {
-                            // yes
-                            permit = futurePermit.get();
-                        }
-                        else
-                        {
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Threadlimited {} {}", remote, target);
-                            // No, lets asynchronously suspend the request
-                            AsyncContext async = baseRequest.startAsync();
-                            // let's never timeout the async.  If this is a DOS, then good to make them wait, if this is not
-                            // then give them maximum time to get a thread.
-                            async.setTimeout(0);
-
-                            // dispatch the request when we do eventually get a pass
-                            futurePermit.thenAccept(c ->
-                            {
-                                baseRequest.setAttribute(PERMIT, c);
-                                async.dispatch();
-                            });
-                            return;
-                        }
-                    }
-
-                    // Use the permit
-                    super.handle(target, baseRequest, request, response);
+                    baseProcessor.process(rq, rs, Callback.from(cb, () -> getAndClose(futurePermit)));
                 }
-                catch (InterruptedException | ExecutionException e)
+                catch (Throwable x)
                 {
-                    throw new ServletException(e);
+                    cb.failed(x);
                 }
-                finally
-                {
-                    if (permit != null)
-                        permit.close();
-                }
-            }
-
-             */
+            });
         }
-        return null;
+    }
+
+    private static void getAndClose(CompletableFuture<Closeable> cf)
+    {
+        try
+        {
+            LOG.debug("getting {}", cf);
+            Closeable closeable = cf.get();
+            LOG.debug("closing {}", closeable);
+            closeable.close();
+        }
+        catch (IOException | InterruptedException | ExecutionException e)
+        {
+            LOG.warn("Error closing permit enclosed in {}", cf, e);
+        }
     }
 
     private Remote getRemote(Request baseRequest)
     {
-        Remote remote = (Remote)baseRequest.getAttribute(REMOTE);
-        if (remote != null)
-            return remote;
-
         String ip = getRemoteIP(baseRequest);
         LOG.debug("ip={}", ip);
         if (ip == null)
@@ -249,7 +232,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
         if (limit <= 0)
             return null;
 
-        remote = _remotes.get(ip);
+        Remote remote = _remotes.get(ip);
         if (remote == null)
         {
             Remote r = new Remote(ip, limit);
@@ -257,9 +240,6 @@ public class ThreadLimitHandler extends Handler.Wrapper
             if (remote == null)
                 remote = r;
         }
-
-        baseRequest.setAttribute(REMOTE, remote);
-
         return remote;
     }
 
@@ -329,7 +309,7 @@ public class ThreadLimitHandler extends Handler.Wrapper
         private final int _limit;
         private final AutoLock _lock = new AutoLock();
         private int _permits;
-        private Deque<CompletableFuture<Closeable>> _queue = new ArrayDeque<>();
+        private final Deque<CompletableFuture<Closeable>> _queue = new ArrayDeque<>();
         private final CompletableFuture<Closeable> _permitted = CompletableFuture.completedFuture(this);
 
         public Remote(String ip, int limit)
