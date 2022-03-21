@@ -590,7 +590,10 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} inflate {}", this, request);
-            baseRequest.getHttpInput().addInterceptor(new GzipHttpInputInterceptor(_inflaterPool, baseRequest.getHttpChannel().getByteBufferPool(), _inflateBufferSize));
+            GzipHttpInputInterceptor gzipHttpInputInterceptor =
+                    new GzipHttpInputInterceptor(_inflaterPool, baseRequest.getHttpChannel().getByteBufferPool(),
+                            _inflateBufferSize, baseRequest.getHttpChannel().isUseInputDirectByteBuffers());
+            baseRequest.getHttpInput().addInterceptor(gzipHttpInputInterceptor);
         }
 
         // Are we already being gzipped?

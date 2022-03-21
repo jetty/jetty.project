@@ -46,6 +46,7 @@ public class GZIPContentDecoder implements Destroyable
     private long _value;
     private byte _flags;
     private ByteBuffer _inflated;
+    private boolean _useDirectBuffers;
 
     public GZIPContentDecoder()
     {
@@ -59,15 +60,26 @@ public class GZIPContentDecoder implements Destroyable
 
     public GZIPContentDecoder(ByteBufferPool pool, int bufferSize)
     {
-        this(new InflaterPool(0, true), pool, bufferSize);
+        this(new InflaterPool(0, true), pool, bufferSize, false);
+    }
+
+    public GZIPContentDecoder(ByteBufferPool pool, int bufferSize, boolean useDirectBuffers)
+    {
+        this(new InflaterPool(0, true), pool, bufferSize, useDirectBuffers);
     }
 
     public GZIPContentDecoder(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize)
+    {
+        this(inflaterPool, pool, bufferSize, false);
+    }
+
+    public GZIPContentDecoder(InflaterPool inflaterPool, ByteBufferPool pool, int bufferSize, boolean useDirectBuffers)
     {
         _inflaterEntry = inflaterPool.acquire();
         _inflater = _inflaterEntry.get();
         _bufferSize = bufferSize;
         _pool = pool;
+        _useDirectBuffers = useDirectBuffers;
         reset();
     }
 
@@ -209,6 +221,13 @@ public class GZIPContentDecoder implements Destroyable
                             if (buffer == null)
                                 buffer = acquire(_bufferSize);
 
+                            if (_inflater.needsInput())
+                            {
+                                if (!compressed.hasRemaining())
+                                    return;
+                                _inflater.setInput(compressed);
+                            }
+
                             try
                             {
                                 int pos = BufferUtil.flipToFill(buffer);
@@ -226,12 +245,6 @@ public class GZIPContentDecoder implements Destroyable
                                 buffer = null;
                                 if (decodedChunk(chunk))
                                     return;
-                            }
-                            else if (_inflater.needsInput())
-                            {
-                                if (!compressed.hasRemaining())
-                                    return;
-                                _inflater.setInput(compressed);
                             }
                             else if (_inflater.finished())
                             {
@@ -432,7 +445,7 @@ public class GZIPContentDecoder implements Destroyable
      */
     public ByteBuffer acquire(int capacity)
     {
-        return _pool == null ? BufferUtil.allocate(capacity) : _pool.acquire(capacity, false);
+        return _pool == null ? BufferUtil.allocate(capacity) : _pool.acquire(capacity, _useDirectBuffers);
     }
 
     /**

@@ -305,7 +305,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             if (_buffer == null)
             {
                 // allocate a buffer and add the gzip header
-                _buffer = _channel.getByteBufferPool().acquire(_bufferSize, false);
+                _buffer = _channel.getByteBufferPool().acquire(_bufferSize, _channel.isUseOutputDirectByteBuffers());
                 BufferUtil.fill(_buffer, GZIP_HEADER, 0, GZIP_HEADER.length);
             }
             else
@@ -328,6 +328,13 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                             deflater.finish();
                         else
                             return Action.SUCCEEDED;
+                    }
+                    else if (_channel.isUseOutputDirectByteBuffers())
+                    {
+                        _crc.update(_content.slice());
+                        deflater.setInput(_content);
+                        if (_last)
+                            deflater.finish();
                     }
                     else
                     {
@@ -353,7 +360,8 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                         int len = slice.remaining();
                         _crc.update(array, off, len);
                         // Ideally we would want to use the ByteBuffer API for Deflaters. However due the the ByteBuffer implementation
-                        // of the CRC32.update() it is less efficient for us to use this rather than to convert to array ourselves.
+                        // of the CRC32.update() it is less efficient for us to use this rather than to convert to array ourselves,
+                        // unless the ByteBuffer is a DirectByteBuffer.
                         _deflaterEntry.get().setInput(array, off, len);
                         slice.position(slice.position() + len);
                         if (_last && BufferUtil.isEmpty(_content))
@@ -362,10 +370,19 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                 }
 
                 // deflate the content into the available space in the buffer
-                int off = _buffer.arrayOffset() + _buffer.limit();
-                int len = BufferUtil.space(_buffer);
-                int produced = deflater.deflate(_buffer.array(), off, len, _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH);
-                _buffer.limit(_buffer.limit() + produced);
+                if (_channel.isUseOutputDirectByteBuffers())
+                {
+                    int pos = BufferUtil.flipToFill(_buffer);
+                    deflater.deflate(_buffer, _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH);
+                    BufferUtil.flipToFlush(_buffer, pos);
+                }
+                else
+                {
+                    int off = _buffer.arrayOffset() + _buffer.limit();
+                    int len = BufferUtil.space(_buffer);
+                    int produced = deflater.deflate(_buffer.array(), off, len, _syncFlush ? Deflater.SYNC_FLUSH : Deflater.NO_FLUSH);
+                    _buffer.limit(_buffer.limit() + produced);
+                }
             }
 
             // If we have finished deflation and there is room for the trailer.
