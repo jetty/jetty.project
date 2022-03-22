@@ -57,7 +57,7 @@ public class DirtyAttributeTest
         //NOTE:  we don't call passivate and activate here because the session by definition 
         //_cannot_ contain any attributes, we have literally only just created it
         
-        sessionHandler.clearListeners();
+        sessionHandler.clear();
         
         //Mutate an attribute in the same request
         session.setAttribute("aaa", "one");
@@ -71,7 +71,7 @@ public class DirtyAttributeTest
         assertFalse(sessionHandler._sessionUnboundListenersCalled.contains(id));
         assertTrue(sessionHandler._sessionAttributeListenersCalled.contains(id));
 
-        sessionHandler.clearListeners();
+        sessionHandler.clear();
         
         //simulate another request mutating the same attribute to the same value
         session = sessionCache.getAndEnter(id, true);
@@ -86,7 +86,7 @@ public class DirtyAttributeTest
         assertFalse(sessionHandler._sessionBoundListenersCalled.contains(id));
         assertFalse(sessionHandler._sessionAttributeListenersCalled.contains(id));
 
-        sessionHandler.clearListeners();
+        sessionHandler.clear();
         
         //simulate another request mutating to a different value
         session = sessionCache.getAndEnter(id, true);

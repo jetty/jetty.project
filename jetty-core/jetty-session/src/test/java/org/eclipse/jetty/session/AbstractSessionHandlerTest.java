@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -194,5 +195,149 @@ public class AbstractSessionHandlerTest
         sessionCache.setEvictionPolicy(evictionTimeout);
         timeout = sessionHandler.calculateInactivityTimeout("1234", timeToExpiry, maxIdleTime);
         assertEquals(maxIdleTime, timeout); //the maxIdleTime is smaller than the eviction timeout
+    }
+    
+    /**
+     * Test that an immortal session is never scavenged, regardless of whether it
+     * is evicted from the cache or not.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testImmortalScavenge() throws Exception
+    {
+        int scavengeSec = 1;
+        int maxInactiveSec = -1;
+        
+        Server server = new Server();
+        DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
+        server.addBean(idManager, true);
+        HouseKeeper housekeeper = new HouseKeeper();
+        housekeeper.setIntervalSec(scavengeSec);
+        scavengeSec = (int)housekeeper.getIntervalSec(); //housekeeper puts some jitter in the interval if it is short
+        housekeeper.setSessionIdManager(idManager);
+        idManager.setSessionHouseKeeper(housekeeper);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setMaxInactiveInterval(maxInactiveSec);
+        DefaultSessionCache sessionCache = new DefaultSessionCache(sessionHandler);
+        sessionCache.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        TestableSessionDataStore sessionDataStore = new TestableSessionDataStore();
+        sessionCache.setSessionDataStore(sessionDataStore);
+        sessionHandler.setSessionCache(sessionCache);
+        
+        server.setHandler(sessionHandler);
+        server.start();
+        
+        //check with never evict
+        long waitMs = scavengeSec * 2500; //wait for at least 1 run of the scavenger
+        checkScavenge(true, waitMs, sessionHandler);
+        
+        server.stop();
+        
+        //Check with eviction on exit
+        sessionCache.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+        server.start();
+        checkScavenge(true, waitMs, sessionHandler);
+        
+        //Check with evict on idle
+        server.stop();
+        scavengeSec = scavengeSec * 2;
+        waitMs = scavengeSec * 2500; //wait for at least 1 run of the scavenger
+        housekeeper.setIntervalSec(scavengeSec); //make scavenge cycles longer
+        sessionCache.setEvictionPolicy(scavengeSec / 2); //make idle shorter than scavenge
+        server.start();
+        checkScavenge(true, waitMs, sessionHandler);
+    }
+    
+    /**
+     * Test that a session that has a max valid time is always scavenged,
+     * regardless of whether it is evicted from the cache or not.
+     * @throws Exception
+     */
+    @Test
+    public void testNonImmortalScavenge() throws Exception
+    {
+        int scavengeSec = 1;
+        int maxInactiveSec = 3;
+        
+        Server server = new Server();
+        DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
+        server.addBean(idManager, true);
+        HouseKeeper housekeeper = new HouseKeeper();
+        housekeeper.setIntervalSec(scavengeSec);
+        scavengeSec = (int)housekeeper.getIntervalSec(); //housekeeper puts some jitter in the interval if it is short
+        housekeeper.setSessionIdManager(idManager);
+        idManager.setSessionHouseKeeper(housekeeper);
+        
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setMaxInactiveInterval(maxInactiveSec);
+        DefaultSessionCache sessionCache = new DefaultSessionCache(sessionHandler);
+        sessionCache.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        TestableSessionDataStore sessionDataStore = new TestableSessionDataStore();
+        sessionCache.setSessionDataStore(sessionDataStore);
+        sessionHandler.setSessionCache(sessionCache);
+        
+        server.setHandler(sessionHandler);
+        server.start();
+        
+        //check the session should be scavenged after the max valid of the session has passed
+        long waitMs = (maxInactiveSec + scavengeSec) * 1000;
+        checkScavenge(false, waitMs, sessionHandler);
+        
+        server.stop();
+        
+        //now change to EVICT_ON_EXIT and check that the session is still scavenged
+        sessionCache.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+        server.start();
+        checkScavenge(false, waitMs, sessionHandler);
+        
+        server.stop();
+        
+        //now change to evict after idle and check that the session is still scavenged
+        sessionCache.setEvictionPolicy(scavengeSec * 2);
+        server.start();
+        checkScavenge(false, waitMs, sessionHandler);
+    }
+
+    private void checkScavenge(boolean expectExist, long waitMs, TestableSessionHandler sessionHandler)
+        throws Exception
+    {
+        int evictionPolicy = sessionHandler.getSessionCache().getEvictionPolicy();
+        
+        //make a session
+        Session session = sessionHandler.newSession(null, "1234");
+        String id = session.getId();
+        sessionHandler.commit(session);
+        sessionHandler.complete(session); //exit the session
+        if (evictionPolicy != SessionCache.EVICT_ON_SESSION_EXIT)
+            assertTrue(sessionHandler.getSessionCache().contains(id));
+        assertTrue(sessionHandler.getSessionCache().getSessionDataStore().exists(id));
+        
+        //if there is an idle eviction timeout, wait until it is passed
+        if (evictionPolicy >= SessionCache.EVICT_ON_INACTIVITY)
+        {
+            Thread.sleep(evictionPolicy * 1500L);
+            //check it has been evicted from the cache
+            assertFalse(sessionHandler.getSessionCache().contains(id));
+        }
+        
+        //Wait some time. This must be at least one run of the scavenger, more
+        //if the session has a max valid time.
+        Thread.sleep(waitMs);
+
+        //test the session
+        session = sessionHandler.getSession(id);
+        if (expectExist)
+        {
+            assertNotNull(session);
+            assertTrue(session.isValid());
+            assertTrue(sessionHandler.getSessionCache().getSessionDataStore().exists(id));
+        }
+        else
+        {
+            assertNull(session);
+            assertFalse(sessionHandler.getSessionCache().getSessionDataStore().exists(id));
+        }
     }
 }

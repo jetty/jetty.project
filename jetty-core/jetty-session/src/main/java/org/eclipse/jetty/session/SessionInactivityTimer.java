@@ -47,13 +47,17 @@ public class SessionInactivityTimer
         _scheduler = scheduler;
         _timer = new CyclicTimeout(_scheduler)
         {
+            /**
+             * The timer on the session went off. This means
+             * that the session could either have expired, or
+             * it's idle timeout might have been reached.
+             */
             @Override
             public void onTimeoutExpired()
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Timer expired for session {}", _session.getId());
                 long now = System.currentTimeMillis();
-                //handle what to do with the session after the timer expired
                 
                 try (AutoLock lock = _session.lock())
                 {
@@ -66,8 +70,7 @@ public class SessionInactivityTimer
                     if (!_session.isValid())
                         return; //do nothing, session is no longer valid
 
-                    if (_session.isExpiredAt(now))
-                        SessionInactivityTimer.this._sessionManager.sessionExpired(_session, now);
+                    SessionInactivityTimer.this._sessionManager.sessionTimerExpired(_session, now);
 
                     //TODO is this still needed? If we cancel the timer when a Request arrives
                     //check what happened to the session: if it didn't get evicted and
