@@ -203,6 +203,12 @@ public class DefaultSessionIdManagerTest
             // TODO Auto-generated method stub
 
         }
+
+        @Override
+        public void push(org.eclipse.jetty.http.MetaData.Request request)
+        {
+            // TODO Auto-generated method stub
+        }
     }
     
     @Test
