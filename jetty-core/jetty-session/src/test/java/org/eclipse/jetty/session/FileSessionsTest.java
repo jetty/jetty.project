@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * TestFileSessions
  */
 @ExtendWith(WorkDirExtension.class)
-public class TestFileSessions
+public class FileSessionsTest
 {
     public WorkDir workDir;
     FileTestHelper _helper;
@@ -260,7 +260,7 @@ public class TestFileSessions
 
         //sweep - we're expecting a debug log with exception stacktrace due to file named 
         //nonNumber__0.0.0.0_spuriousFile so suppress it
-        try (StacklessLogging ignored = new StacklessLogging(TestFileSessions.class.getPackage()))
+        try (StacklessLogging ignored = new StacklessLogging(FileSessionsTest.class.getPackage()))
         {
             ((FileSessionDataStore)store).sweepDisk(System.currentTimeMillis() - (10 * TimeUnit.SECONDS.toMillis(gracePeriodSec)));
         }

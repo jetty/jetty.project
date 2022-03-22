@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  *
  */
-public class TestAbstractSessionHandler
+public class AbstractSessionHandlerTest
 {
     @Test
     public void testGetSessionCookie() throws Exception
