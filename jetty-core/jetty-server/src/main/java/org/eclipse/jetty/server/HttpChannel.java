@@ -631,7 +631,7 @@ public class HttpChannel extends Attributes.Lazy
         @Override
         public String getPathInContext()
         {
-            return _metaData.getURI().getDecodedPath();
+            return _metaData.getURI().getCanonicalPath();
         }
 
         @Override

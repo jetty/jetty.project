@@ -1763,7 +1763,7 @@ public class Request implements HttpServletRequest
             path = _uri.isAbsolute() ? "/" : null;
         else if (encoded.startsWith("/"))
         {
-            path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();
+            path = (encoded.length() == 1) ? "/" : _uri.getCanonicalPath();
         }
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
         {

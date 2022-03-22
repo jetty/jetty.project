@@ -34,20 +34,21 @@ import org.eclipse.jetty.util.UrlEncoded;
  * via the static methods such as {@link #build()} and {@link #from(String)}.
  *
  * A URI such as
- * {@code http://user@host:port/path;param1/%2e/info;param2?query#fragment}
+ * {@code http://user@host:port/path;param1/%2e/f%6fo%2fbar;param2?query#fragment}
  * is split into the following optional elements:<ul>
  * <li>{@link #getScheme()} - http:</li>
  * <li>{@link #getAuthority()} - //name@host:port</li>
  * <li>{@link #getHost()} - host</li>
  * <li>{@link #getPort()} - port</li>
- * <li>{@link #getPath()} - /path;param1/%2e/info;param2</li>
- * <li>{@link #getDecodedPath()} - /path/info</li>
+ * <li>{@link #getPath()} - /path;param1/%2e/f%6fo%2fbar;param2</li>
+ * <li>{@link #getCanonicalPath()} - /path/foo%2Fbar</li>
+ * <li>{@link #getDecodedPath()} - /path/foo/bar</li>
  * <li>{@link #getParam()} - param2</li>
  * <li>{@link #getQuery()} - query</li>
  * <li>{@link #getFragment()} - fragment</li>
  * </ul>
  * <p>The path part of the URI is provided in both raw form ({@link #getPath()}) and
- * decoded form ({@link #getDecodedPath}), which has: path parameters removed,
+ * decoded form ({@link #getCanonicalPath}), which has: path parameters removed,
  * percent encoded characters expanded and relative segments resolved.  This approach
  * is somewhat contrary to <a href="https://tools.ietf.org/html/rfc3986#section-3.3">RFC3986</a>
  * which no longer defines path parameters (removed after
@@ -154,6 +155,8 @@ public interface HttpURI
     String getAuthority();
 
     String getDecodedPath();
+
+    String getCanonicalPath();
 
     String getFragment();
 
@@ -275,7 +278,7 @@ public interface HttpURI
         private final String _query;
         private final String _fragment;
         private String _uri;
-        private String _decodedPath;
+        private String _canonicalPath;
         private final EnumSet<Violation> _violations = EnumSet.noneOf(Violation.class);
 
         private Immutable(Mutable builder)
@@ -289,7 +292,7 @@ public interface HttpURI
             _query = builder._query;
             _fragment = builder._fragment;
             _uri = builder._uri;
-            _decodedPath = builder._decodedPath;
+            _canonicalPath = builder._decodedPath;
             _violations.addAll(builder._violations);
         }
 
@@ -304,7 +307,7 @@ public interface HttpURI
             _query = null;
             _fragment = null;
             _uri = uri;
-            _decodedPath = null;
+            _canonicalPath = null;
         }
 
         @Override
@@ -372,9 +375,15 @@ public interface HttpURI
         @Override
         public String getDecodedPath()
         {
-            if (_decodedPath == null && _path != null)
-                _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
-            return _decodedPath;
+            return URIUtil.decodePath(getCanonicalPath());
+        }
+
+        @Override
+        public String getCanonicalPath()
+        {
+            if (_canonicalPath == null && _path != null)
+                _canonicalPath = URIUtil.canonicalPath(URIUtil.normalizePath(_path));
+            return _canonicalPath;
         }
 
         @Override
@@ -722,8 +731,14 @@ public interface HttpURI
         @Override
         public String getDecodedPath()
         {
+            return URIUtil.decodePath(getCanonicalPath());
+        }
+
+        @Override
+        public String getCanonicalPath()
+        {
             if (_decodedPath == null && _path != null)
-                _decodedPath = URIUtil.canonicalPath(URIUtil.decodePath(_path));
+                _decodedPath = URIUtil.canonicalPath(URIUtil.normalizePath(_path));
             return _decodedPath;
         }
 
@@ -931,7 +946,7 @@ public interface HttpURI
             _param = uri.getParam();
             _query = uri.getQuery();
             _uri = null;
-            _decodedPath = uri.getDecodedPath();
+            _decodedPath = uri.getCanonicalPath();
             if (uri.hasAmbiguousSeparator())
                 _violations.add(Violation.AMBIGUOUS_PATH_SEPARATOR);
             if (uri.hasAmbiguousSegment())
@@ -1385,7 +1400,7 @@ public interface HttpURI
             {
                 // The RFC requires this to be canonical before decoding, but this can leave dot segments and dot dot segments
                 // which are not canonicalized and could be used in an attempt to bypass security checks.
-                String decodedNonCanonical = URIUtil.decodePath(_path);
+                String decodedNonCanonical = URIUtil.normalizePath(_path);
                 _decodedPath = URIUtil.canonicalPath(decodedNonCanonical);
                 if (_decodedPath == null)
                     throw new IllegalArgumentException("Bad URI");

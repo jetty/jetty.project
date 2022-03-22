@@ -52,29 +52,29 @@ public class RequestTest
     public void testEncodedSpace() throws Exception
     {
         String request = """
-                GET /foo%20bar HTTP/1.1\r
+                GET /fo%6f%20bar HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
                 """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertThat(response.getContent(), containsString("httpURI.path=/foo%20bar"));
-        assertThat(response.getContent(), containsString("pathInContext=/foo bar"));
+        assertThat(response.getContent(), containsString("httpURI.path=/fo%6f%20bar"));
+        assertThat(response.getContent(), containsString("pathInContext=/foo%20bar"));
     }
 
     @Test
     public void testEncodedPath() throws Exception
     {
         String request = """
-                GET /foo%2Fbar HTTP/1.1\r
+                GET /fo%6f%2fbar HTTP/1.1\r
                 Host: local\r
                 Connection: close\r
                 \r
                 """;
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertThat(response.getContent(), containsString("httpURI.path=/foo%2Fbar"));
-        assertThat(response.getContent(), containsString("pathInContext=/foo/bar"));
+        assertThat(response.getContent(), containsString("httpURI.path=/fo%6f%2fbar"));
+        assertThat(response.getContent(), containsString("pathInContext=/foo%2Fbar"));
     }
 }

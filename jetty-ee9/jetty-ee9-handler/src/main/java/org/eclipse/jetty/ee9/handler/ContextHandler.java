@@ -1737,14 +1737,14 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 String contextPath = getContextPath();
                 // uriInContext is canonicalized by HttpURI.
                 HttpURI.Mutable uri = HttpURI.build(uriInContext);
-                String pathInfo = uri.getDecodedPath();
+                String pathInfo = uri.getCanonicalPath();
                 if (StringUtil.isEmpty(pathInfo))
                     return null;
 
                 if (!StringUtil.isEmpty(contextPath))
                 {
                     uri.path(URIUtil.addPaths(contextPath, uri.getPath()));
-                    pathInfo = uri.getDecodedPath().substring(contextPath.length());
+                    pathInfo = uri.getCanonicalPath().substring(contextPath.length());
                 }
                 return new Dispatcher(ContextHandler.this, uri, pathInfo);
             }
