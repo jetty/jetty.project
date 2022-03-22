@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,6 +51,7 @@ import jakarta.servlet.ServletRequestEvent;
 import jakarta.servlet.ServletRequestListener;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.SessionTrackingMode;
+import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -92,6 +94,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -992,6 +995,62 @@ public class ServletContextHandlerTest
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals(1, MySCAListener.replaces);
         assertEquals(1, MySCAListener.removes);
+    }
+
+    @Test
+    public void testAsyncServletRequestListenerListener() throws Exception
+    {
+        ContextHandlerCollection contexts = new ContextHandlerCollection();
+        _server.setHandler(contexts);
+
+        ServletContextHandler root = new ServletContextHandler(contexts, "/", ServletContextHandler.SESSIONS);
+        root.addEventListener(new MyRequestListener());
+        CountDownLatch latch = new CountDownLatch(1);
+        root.addServlet(new ServletHolder(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                System.err.println("GET " + req.getDispatcherType());
+                if (req.getDispatcherType() == DispatcherType.REQUEST)
+                {
+                    req.startAsync();
+                    resp.getOutputStream().setWriteListener(new WriteListener()
+                    {
+                        @Override
+                        public void onWritePossible() throws IOException
+                        {
+                            System.err.println("WRITE POSSIBLE");
+                            if (resp.getOutputStream().isReady())
+                            {
+                                resp.getOutputStream().print("OK");
+                                req.getAsyncContext().dispatch();
+                            }
+                        }
+
+                        @Override
+                        public void onError(Throwable t)
+                        {
+                            t.printStackTrace();
+                        }
+                    });
+                }
+                else
+                {
+                    if (resp.getOutputStream().isReady())
+                        resp.flushBuffer();
+                    latch.countDown();
+                }
+            }
+        }), "/test");
+        _server.start();
+
+        //test ServletRequestAttributeListener
+        String response = _connector.getResponse("GET /test HTTP/1.0\r\n\r\n");
+        latch.await(5, TimeUnit.SECONDS);
+        assertThat(response, Matchers.containsString("200 OK"));
+        assertThat(MyRequestListener.inits, equalTo(2));
+        assertThat(MyRequestListener.destroys, equalTo(2));
     }
 
     @Test
