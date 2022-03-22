@@ -816,7 +816,10 @@ public class StartArgs
     public String getMainClassname()
     {
         String mainClass = System.getProperty("jetty.server", isJPMS() ? MODULE_MAIN_CLASS : MAIN_CLASS);
-        return System.getProperty("main.class", mainClass);
+        Prop mainClassProp = properties.getProp("main.class", true);
+        if (mainClassProp != null)
+            return mainClassProp.value;
+        return mainClass;
     }
 
     public String getMavenLocalRepoDir()
@@ -876,6 +879,11 @@ public class StartArgs
     public Props getProperties()
     {
         return properties;
+    }
+
+    public Map<String, String> getSystemProperties()
+    {
+        return systemPropertySource;
     }
 
     public Set<String> getSkipFileValidationModules()

@@ -502,6 +502,10 @@ public class Main
         if (args.hasJvmArgs() || args.hasSystemProperties())
         {
             StartLog.warn("System properties and/or JVM args set.  Consider using --dry-run or --exec");
+            if (args.hasSystemProperties())
+                args.getSystemProperties().forEach((k, v) -> StartLog.warn("  Detected JVM System Property: %s=%s", k, System.getProperty(k)));
+            if (args.hasJvmArgs())
+                args.getJvmArgs().forEach((jvmArg) -> StartLog.warn("  Detected JVM Arg: %s", jvmArg));
         }
 
         ClassLoader cl = classpath.getClassLoader();
