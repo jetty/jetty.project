@@ -86,129 +86,102 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         }
     }
 
+    /**
+     * Test renewing a session id that is also being invalidated
+     *
+     */
     @Test
     public void testRenewWithInvalidate() throws Exception
     {
-        //Test that invalidation happens on ALL copies of the session that are in-use by requests
-        //TODO fix or move test
-        /*        int inactivePeriod = 20;
-        int scavengePeriod = 3;
+        Server server = new Server();
+        DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
+        server.addBean(idManager, true);
+
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
+        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionHandler);
+
+        TestableSessionDataStore store = new TestableSessionDataStore(true); //fake passivation
+        cache.setSessionDataStore(store);
+        sessionHandler.setSessionCache(cache);
+        server.setHandler(sessionHandler);
+        server.start();
+
+        //put a session in the cache and store
+        long now = System.currentTimeMillis();
+        SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
+        Session session = cache.newSession(data);
+        cache.add("1234", session);
+        assertTrue(cache.contains("1234"));
+        assertEquals(1, session.getRequests());
         
-        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
+        //decrement request count
+        cache.release("1234", session);
+        assertEquals(0, session.getRequests());
         
-        SessionDataStoreFactory storeFactory = new TestSessionDataStoreFactory();
-        TestServer server = new TestServer(0, inactivePeriod, scavengePeriod, cacheFactory, storeFactory);
-        ServletContextHandler contextHandler = server.addContext("/test");
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        server.getServerConnector().addBean(scopeListener);
+        //increment request count of session
+        Session s1 = cache.getAndEnter("1234", true);
+        assertEquals(1, session.getRequests());
         
-        TestHttpSessionListener listener = new TestHttpSessionListener();
-        contextHandler.getSessionHandler().addEventListener(listener);
-        
-        try
+        //increment request count of session
+        Session s2 = cache.getAndEnter("1234", true);
+        assertEquals(2, session.getRequests());
+
+        Thread renewThread = new Thread(() ->
         {
-            server.start();
-        
-            //Make a session
-            Request req0 = new Request(null, null);
-            HttpSession session = contextHandler.getSessionHandler().newHttpSession(req0); //pretend request created session
-            String id = session.getId();
-            req0.onCompleted(); //pretend request exited
-        
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().contains(id));
-        
-            //Make a fake request that does not exit the session
-            Request req1 = new Request(null, null);
-            HttpSession s1 = contextHandler.getSessionHandler().getHttpSession(id);
-            assertNotNull(s1);
-            assertSame(session, s1);
-            req1.enterSession(s1);
-            req1.setSessionHandler(contextHandler.getSessionHandler());
-            assertTrue(contextHandler.getSessionHandler().getSessionCache().contains(id));
-            assertEquals(1, ((Session)session).getRequests());
-        
-            //Make another fake request that does not exit the session
-            Request req2 = new Request(null, null);
-            HttpSession s2 = contextHandler.getSessionHandler().getHttpSession(id);
-            assertNotNull(s2);
-            assertSame(session, s2);
-            req2.enterSession(s2);
-            req2.setSessionHandler(contextHandler.getSessionHandler());
-            assertEquals(2, ((Session)session).getRequests());
-        
-            //Renew the session id
-            Request req3 = new Request(null, null);
-            final HttpSession s3 = contextHandler.getSessionHandler().getHttpSession(id);
-            assertNotNull(s3);
-            assertSame(session, s3);
-            req3.enterSession(s3);
-            req3.setSessionHandler(contextHandler.getSessionHandler());
-        
-            //Invalidate the session
-            Request req4 = new Request(null, null);
-            final HttpSession s4 = contextHandler.getSessionHandler().getHttpSession(id);
-            assertNotNull(s4);
-            assertSame(session, s4);
-            req4.enterSession(s4);
-            req4.setSessionHandler(contextHandler.getSessionHandler());
-        
-            Thread renewThread = new Thread(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    //simulate req3 calling Request.changeSessionId
-                    String oldid = ((Session)s3).getId(); //old id
-        
-                    //Session may already be invalid depending on timing
-                    try
-                    {
-                        ((Session)s3).renewId(req3);
-                        //After this call, the session must have changed id, and it may also be
-                        //invalid, depending on timing.
-                        assertFalse(oldid.equals(((Session)s3).getId()));
-                    }
-                    catch (IllegalStateException e)
-                    {
-                        //the session was invalid before we called renewId
-                    }
-                    catch (Throwable e)
-                    {
-                        //anything else is a failure
-                        fail(e);
-                    }
-                }
+            //simulate calling Request.changeSessionId
+            String oldid = s1.getId(); //old id
+            assertEquals("1234", oldid);
+
+            //Session may already be invalid depending on timing
+            try
+            {                    
+                s1.renewId(new TestableRequest());
+                //After this call, the session must have changed id, and it may also be
+                //invalid, depending on timing.
+                assertFalse(oldid.equals(s1.getId()));
             }
-                );
-        
-            Thread invalidateThread = new Thread(() ->
+            catch (IllegalStateException e)
             {
-                //simulate req4 doing an invalidate that we hope overlaps with req3 renewId
-                try
-                {
-                    Random random = new Random();
-                    if ((random.nextInt(10) % 2)  == 0)
-                        Thread.currentThread().sleep(2); //small sleep to try and make timing more random
-                    ((Session)s4).invalidate();
-                    assertFalse(((Session)s4).isValid());
-                }
-                catch (InterruptedException e)
-                {
-                    // no op
-                }
+                //the session was invalid before we called renewId
             }
-            );
-        
-            invalidateThread.start();
-            renewThread.start();
-            renewThread.join();
-            invalidateThread.join();
-        
+            catch (Throwable e)
+            {
+                //anything else is a failure
+                fail(e);
+            }
         }
-        finally
+        );
+        
+        Thread invalidateThread = new Thread(() ->
         {
-            server.stop();
-        }*/
+            //simulate a Request calling invalidate that we hope overlaps with the renewId
+            try
+            {
+                Random random = new Random();
+                if ((random.nextInt(10) % 2)  == 0)
+                    Thread.currentThread().sleep(2); //small sleep to try and make timing more random
+                s2.invalidate();
+                assertFalse(s2.isValid());
+            }
+            catch (InterruptedException e)
+            {
+                // no op
+            }
+        }
+        );
+        
+        invalidateThread.start();
+        renewThread.start();
+        renewThread.join();
+        invalidateThread.join();
+        
+        //as the Session object is shared between requests by the DefaultSessionCache,
+        //all variables should be the same
+        assertEquals(s1.getId(), s2.getId());
+        assertEquals(session.getId(), s1.getId());
     }
 
     /**
@@ -231,8 +204,6 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         sessionHandler.setSessionCache(cache);
         server.setHandler(sessionHandler);
         server.start();
-        cache.start();
-        store.start(); //TODO why are these not starting any more?
 
         //put a session in the cache and store
         long now = System.currentTimeMillis();
@@ -269,8 +240,6 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         sessionHandler.setSessionCache(cache);
         server.setHandler(sessionHandler);
         server.start();
-        cache.start();
-        store.start(); //TODO why are these not starting any more?
 
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
@@ -283,6 +252,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertTrue(((AbstractSessionCache)cache).contains("1234"));
     }
 
+    /**
+     * Test adding a session to the cache
+     * @throws Exception
+     */
     @Test
     public void testAdd()
         throws Exception
@@ -299,8 +272,6 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         sessionHandler.setSessionCache(cache);
         server.setHandler(sessionHandler);
         server.start();
-        cache.start();
-        store.start(); //TODO why are these not starting any more?
 
         //add data for a session to the store
         long now = System.currentTimeMillis();
@@ -317,6 +288,10 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertFalse(store.exists("1234"));
     }
 
+    /**
+     * Test releasing use of a session 
+     * @throws Exception
+     */
     @Test
     public void testRelease()
         throws Exception
@@ -333,9 +308,8 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         sessionHandler.setSessionCache(cache);
         server.setHandler(sessionHandler);
         server.start();
-        cache.start();
-        store.start(); //TODO why are these not starting any more?
 
+        //Test with NEVER_EVICT
         //create data for a session in the store
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
@@ -351,6 +325,18 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertEquals(0, session.getRequests());
         assertTrue(session.isResident());
         assertTrue(cache.contains("1234"));
+        assertTrue(store.exists("1234"));
+        
+        //Test EVICT_ON_SESSION_EXIT
+        cache.setEvictionPolicy(SessionCache.EVICT_ON_SESSION_EXIT);
+        //increment request count
+        cache.getAndEnter("1234", true);
+        assertEquals(1, session.getRequests());
+        //decrement request count
+        cache.release("1234", session);
+        assertEquals(0, session.getRequests());
+        assertFalse(session.isResident());
+        assertFalse(cache.contains("1234"));
         assertTrue(store.exists("1234"));
     }
 
@@ -373,8 +359,6 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         sessionHandler.setSessionCache(cache);
         server.setHandler(sessionHandler);
         server.start();
-        cache.start();
-        store.start(); //TODO why are these not starting any more?
         
         //test one that isn't contained
         assertFalse(cache.contains("1234"));
@@ -387,6 +371,9 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertTrue(cache.contains("1234"));
     }
 
+    /*
+     * Test eviction settings with idle session
+     */
     @Test
     public void testCheckInactiveSession()
         throws Exception
@@ -404,8 +391,6 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         sessionHandler.setSessionCache(cache);
         server.setHandler(sessionHandler);
         server.start();
-        cache.start();
-        store.start(); //TODO why are these not starting any more?
 
         //test NEVER EVICT
         //test session that is not resident
@@ -483,8 +468,6 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         sessionHandler.setSessionCache(cache);
         server.setHandler(sessionHandler);
         server.start();
-        cache.start();
-        store.start(); //TODO why are these not starting any more?
 
         //make a session
         long now = System.currentTimeMillis();

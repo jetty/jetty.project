@@ -50,6 +50,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * Test combinations of creating, forwarding and invalidating
  * a session.
+ * 
+ * TODO most of these are covered by unit tests, but  may be useful to move this to ee10 anyway?
  */
 public class CreationTest
 {

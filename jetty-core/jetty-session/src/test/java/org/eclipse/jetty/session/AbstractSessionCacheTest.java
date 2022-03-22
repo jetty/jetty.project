@@ -18,7 +18,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +25,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
