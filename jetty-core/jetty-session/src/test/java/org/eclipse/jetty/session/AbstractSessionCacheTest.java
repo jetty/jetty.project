@@ -354,6 +354,19 @@ public abstract class AbstractSessionCacheTest
         assertFalse(session.getSessionData().isDirty());
         assertFalse(session.getSessionData().isMetaDataDirty());
         
+        //call commit: change the session maxInactiveInterval, which should trigger a save
+        store._numSaves.set(0); //clear save counter
+        session = createUnExpiredSession(cache, store, "679", 100);
+        session.getSessionData().calcAndSetExpiry(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
+        cache.add("679", session);
+        session.setMaxInactiveInterval((int)TimeUnit.HOURS.toSeconds(1)); //change maxIdle
+        commitAndCheckSaveState(cache, store, session, true, true, false, false, 0, 1);
+        //call release: session not dirty but release changes metadata, so it will be saved
+        cache.release("679", session);
+        assertEquals(2, store._numSaves.get());
+        assertFalse(session.getSessionData().isDirty());
+        assertFalse(session.getSessionData().isMetaDataDirty());
+        
         //Test again with a savePeriod set - only save if time last saved exceeds 60sec
         store.setSavePeriodSec(60);
 
@@ -368,6 +381,19 @@ public abstract class AbstractSessionCacheTest
         assertEquals(1, store._numSaves.get());
         assertFalse(session.getSessionData().isDirty());
         assertFalse(session.getSessionData().isMetaDataDirty());
+              
+        //call commit: change the session maxInactiveInterval, which should trigger a save
+        store._numSaves.set(0); //clear save counter
+        session = createUnExpiredSession(cache, store, "891", 100);
+        session.getSessionData().calcAndSetExpiry(System.currentTimeMillis() + TimeUnit.DAYS.toMillis(1));
+        cache.add("891", session);
+        session.setMaxInactiveInterval((int)TimeUnit.HOURS.toSeconds(1)); //change maxIdle
+        commitAndCheckSaveState(cache, store, session, true, true, false, false, 0, 1);
+        //call release: session not dirty, release changes metadata but previous save too recent --> no write
+        cache.release("891", session);
+        assertEquals(1, store._numSaves.get());
+        assertFalse(session.getSessionData().isDirty());
+        assertTrue(session.getSessionData().isMetaDataDirty());
         
         //call commit: session has changed so session must be written
         store._numSaves.set(0); //clear save counter
