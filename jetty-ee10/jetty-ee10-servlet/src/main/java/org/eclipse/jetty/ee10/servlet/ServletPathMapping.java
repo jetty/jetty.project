@@ -85,12 +85,6 @@ public class ServletPathMapping implements HttpServletMapping
                     break;
 
                 case MIDDLE_GLOB:
-                    _mappingMatch = null;
-                    _matchValue = "";
-                    _servletPath = pathInContext;
-                    _pathInfo = null;
-                    break;
-
                 default:
                     throw new IllegalStateException();
             }
@@ -104,6 +98,7 @@ public class ServletPathMapping implements HttpServletMapping
         }
         else
         {
+            // TODO can we do better for RegexPathSpec
             _mappingMatch = null;
             _matchValue = "";
             _servletPath = pathInContext;
