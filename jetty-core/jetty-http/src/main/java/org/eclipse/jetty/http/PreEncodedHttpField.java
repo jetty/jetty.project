@@ -15,6 +15,7 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
+import java.util.Map;
 import java.util.ServiceLoader;
 
 import org.eclipse.jetty.util.TypeUtil;
@@ -57,7 +58,7 @@ public class PreEncodedHttpField extends HttpField
             LOG.debug("loaded {} {}s", __encoders.size(), HttpFieldPreEncoder.class.getSimpleName());
 
         // Always support HTTP1.
-        if (__encoders.isEmpty())
+        if (!__encoders.containsKey(HttpVersion.HTTP_1_1))
             __encoders.put(HttpVersion.HTTP_1_1, new Http1FieldPreEncoder());
     }
 
@@ -66,9 +67,9 @@ public class PreEncodedHttpField extends HttpField
     public PreEncodedHttpField(HttpHeader header, String name, String value)
     {
         super(header, name, value);
-        for (HttpFieldPreEncoder encoder : __encoders.values())
+        for (Map.Entry<HttpVersion, HttpFieldPreEncoder> entry : __encoders.entrySet())
         {
-            _encodedFields.put(encoder.getHttpVersion(), encoder.getEncodedField(header, name, value));
+            _encodedFields.put(entry.getKey(), entry.getValue().getEncodedField(header, name, value));
         }
     }
 
