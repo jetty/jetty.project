@@ -307,15 +307,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @param servletContextName The servletContextName to set.
+     * @param displayName The servletContextName to set.
      */
     @Override
-    public void setDisplayName(String servletContextName)
+    public void setDisplayName(String displayName)
     {
-        super.setDisplayName(servletContextName);
+        super.setDisplayName(displayName);
         ClassLoader cl = getClassLoader();
-        if (cl instanceof WebAppClassLoader && servletContextName != null)
-            ((WebAppClassLoader)cl).setName(servletContextName);
+        if (cl instanceof WebAppClassLoader && displayName != null)
+            ((WebAppClassLoader)cl).setName(displayName);
     }
 
     /**

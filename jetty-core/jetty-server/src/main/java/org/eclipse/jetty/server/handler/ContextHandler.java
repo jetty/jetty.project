@@ -461,6 +461,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     @Override
     protected void doStart() throws Exception
     {
+        if (getContextPath() == null)
+            throw new IllegalStateException("Null contextPath");
+
         // TODO lots of stuff in previous doStart. Some might go here, but most probably goes to the ServletContentHandler ?
         _context.call(super::doStart, null);
     }
