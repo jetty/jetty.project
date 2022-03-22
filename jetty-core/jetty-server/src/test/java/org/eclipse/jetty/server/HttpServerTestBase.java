@@ -204,8 +204,16 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             byte[] buffer = new byte[64 * 1024];
             Arrays.fill(buffer, (byte)'A');
 
-            os.write(buffer);
-            os.flush();
+            try
+            {
+                os.write(buffer);
+                os.flush();
+            }
+            catch (Throwable t)
+            {
+                if (LOG.isDebugEnabled())
+                    t.printStackTrace();
+            }
 
             // Read the response.
             String response = readResponse(client);
