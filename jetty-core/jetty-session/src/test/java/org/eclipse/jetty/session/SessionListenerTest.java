@@ -60,7 +60,7 @@ public class SessionListenerTest
             assertEquals(1L, sessionHandler._sessionBoundListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
             assertEquals(1L, sessionHandler._sessionAttributeListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
             
-            sessionHandler.clearListeners();
+            sessionHandler.clear();
 
             //invalidate the session, test that destroy listener is called, and unbinding listener called
             session.invalidate();

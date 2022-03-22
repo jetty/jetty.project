@@ -655,25 +655,28 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @param now the time at which to check for expiry
      */
     @Override
-    public void sessionExpired(Session session, long now)
+    public void sessionTimerExpired(Session session, long now)
     {
         if (session == null)
             return;
 
         try (AutoLock lock = session.lock())
         {
-            //instead of expiring the session directly here, accumulate a list of 
-            //session ids that need to be expired. This is an efficiency measure: as
-            //the expiration involves the SessionDataStore doing a delete, it is 
-            //most efficient if it can be done as a bulk operation to eg reduce
-            //roundtrips to the persistent store. Only do this if the HouseKeeper that
-            //does the scavenging is configured to actually scavenge
-            if (_sessionIdManager.getSessionHouseKeeper() != null &&
-                _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+            if (session.isExpiredAt(now))
             {
-                _candidateSessionIdsForExpiry.add(session.getId());
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Session {} is candidate for expiry", session.getId());
+                //instead of expiring the session directly here, accumulate a list of 
+                //session ids that need to be expired. This is an efficiency measure: as
+                //the expiration involves the SessionDataStore doing a delete, it is 
+                //most efficient if it can be done as a bulk operation to eg reduce
+                //roundtrips to the persistent store. Only do this if the HouseKeeper that
+                //does the scavenging is configured to actually scavenge
+                if (_sessionIdManager.getSessionHouseKeeper() != null &&
+                    _sessionIdManager.getSessionHouseKeeper().getIntervalSec() > 0)
+                {
+                    _candidateSessionIdsForExpiry.add(session.getId());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Session {} is candidate for expiry", session.getId());
+                }
             }
             else
             {

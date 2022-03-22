@@ -34,10 +34,11 @@ public class TestableSessionHandler extends AbstractSessionHandler
     java.util.Collection<String> _sessionBoundListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionActivationListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionPassivationListenersCalled = new ArrayList<>();
+    java.util.Collection<String> _expiredIds = new ArrayList<>();
 
     protected Map<String, String> _cookieConfig = new HashMap<String, String>();
 
-    public void clearListeners()
+    public void clear()
     {
         _sessionIdListenersCalled.clear();
         _sessionCreatedListenersCalled.clear();
@@ -47,6 +48,7 @@ public class TestableSessionHandler extends AbstractSessionHandler
         _sessionBoundListenersCalled.clear();
         _sessionActivationListenersCalled.clear();
         _sessionPassivationListenersCalled.clear();
+        _expiredIds.clear();
     }
 
     @Override

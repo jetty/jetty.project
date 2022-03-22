@@ -75,7 +75,7 @@ public interface SessionManager extends LifeCycle
     
     Session.APISession newSessionAPIWrapper(Session session);
     
-    void sessionExpired(Session session, long now);
+    void sessionTimerExpired(Session session, long now);
     
     HttpCookie access(Session session, boolean secure);
     
