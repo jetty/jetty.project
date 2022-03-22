@@ -11,18 +11,16 @@
 // ========================================================================
 //
 
-module org.eclipse.jetty.http
+package org.eclipse.jetty.http;
+
+/**
+ *
+ */
+public class Http11FieldPreEncoder extends Http1FieldPreEncoder
 {
-    requires org.slf4j;
-
-    requires transitive org.eclipse.jetty.io;
-
-    exports org.eclipse.jetty.http;
-    exports org.eclipse.jetty.http.pathmap;
-
-    uses org.eclipse.jetty.http.HttpFieldPreEncoder;
-
-    provides org.eclipse.jetty.http.HttpFieldPreEncoder with
-        org.eclipse.jetty.http.Http10FieldPreEncoder,
-        org.eclipse.jetty.http.Http11FieldPreEncoder;
+    @Override
+    public HttpVersion getHttpVersion()
+    {
+        return HttpVersion.HTTP_1_1;
+    }
 }

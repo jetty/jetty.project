@@ -15,7 +15,6 @@ package org.eclipse.jetty.http;
 
 import java.nio.ByteBuffer;
 import java.util.EnumMap;
-import java.util.Map;
 import java.util.ServiceLoader;
 
 import org.eclipse.jetty.util.TypeUtil;
@@ -58,8 +57,10 @@ public class PreEncodedHttpField extends HttpField
             LOG.debug("loaded {} {}s", __encoders.size(), HttpFieldPreEncoder.class.getSimpleName());
 
         // Always support HTTP1.
+        if (!__encoders.containsKey(HttpVersion.HTTP_1_0))
+            __encoders.put(HttpVersion.HTTP_1_0, new Http10FieldPreEncoder());
         if (!__encoders.containsKey(HttpVersion.HTTP_1_1))
-            __encoders.put(HttpVersion.HTTP_1_1, new Http1FieldPreEncoder());
+            __encoders.put(HttpVersion.HTTP_1_1, new Http11FieldPreEncoder());
     }
 
     private final EnumMap<HttpVersion, byte[]> _encodedFields = new EnumMap<>(HttpVersion.class);
@@ -67,9 +68,13 @@ public class PreEncodedHttpField extends HttpField
     public PreEncodedHttpField(HttpHeader header, String name, String value)
     {
         super(header, name, value);
-        for (Map.Entry<HttpVersion, HttpFieldPreEncoder> entry : __encoders.entrySet())
+        for (HttpFieldPreEncoder encoder : __encoders.values())
         {
-            _encodedFields.put(entry.getKey(), entry.getValue().getEncodedField(header, name, value));
+            HttpVersion version = encoder.getHttpVersion();
+            _encodedFields.put(encoder.getHttpVersion(),
+                version == HttpVersion.HTTP_1_1
+                    ? _encodedFields.get(HttpVersion.HTTP_1_0)
+                    : encoder.getEncodedField(header, name, value));
         }
     }
 

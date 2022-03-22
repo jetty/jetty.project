@@ -20,15 +20,8 @@ import static java.nio.charset.StandardCharsets.ISO_8859_1;
 /**
  *
  */
-public class Http1FieldPreEncoder implements HttpFieldPreEncoder
+public abstract class Http1FieldPreEncoder implements HttpFieldPreEncoder
 {
-
-    @Override
-    public HttpVersion getHttpVersion()
-    {
-        return HttpVersion.HTTP_1_0;
-    }
-
     @Override
     public byte[] getEncodedField(HttpHeader header, String headerString, String value)
     {
