@@ -342,6 +342,9 @@ public class Response implements HttpServletResponse
     @Override
     public String encodeURL(String url)
     {
+        if (url == null)
+            return null;
+
         final Request request = _channel.getRequest();
         SessionHandler sessionManager = request.getSessionHandler();
 
@@ -349,7 +352,8 @@ public class Response implements HttpServletResponse
             return url;
 
         HttpURI uri = null;
-        if (sessionManager.isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
+        boolean hasScheme = URIUtil.hasScheme(url);
+        if (sessionManager.isCheckingRemoteSessionIdEncoding() && hasScheme)
         {
             uri = HttpURI.from(url);
             String path = uri.getPath();
@@ -370,9 +374,6 @@ public class Response implements HttpServletResponse
         String sessionURLPrefix = sessionManager.getSessionIdPathParameterNamePrefix();
         if (sessionURLPrefix == null)
             return url;
-
-        if (url == null)
-            return null;
 
         // should not encode if cookies in evidence
         if ((sessionManager.isUsingCookies() && request.isRequestedSessionIdFromCookie()) || !sessionManager.isUsingURLs())
@@ -404,9 +405,6 @@ public class Response implements HttpServletResponse
 
         String id = sessionManager.getExtendedId(session);
 
-        if (uri == null)
-            uri = HttpURI.from(url);
-
         // Already encoded
         int prefix = url.indexOf(sessionURLPrefix);
         if (prefix != -1)
@@ -421,20 +419,24 @@ public class Response implements HttpServletResponse
                 url.substring(suffix);
         }
 
+        // check for a null path
+        String nonNullPath = "";
+        if (hasScheme)
+        {
+            if (uri == null)
+                uri = HttpURI.from(url);
+            if (uri.getPath() == null)
+                nonNullPath = "/";
+        }
+
         // edit the session
         int suffix = url.indexOf('?');
         if (suffix < 0)
             suffix = url.indexOf('#');
         if (suffix < 0)
-        {
-            return url +
-                ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path, insert the root path
-                sessionURLPrefix + id;
-        }
+            return url + nonNullPath + sessionURLPrefix + id;
 
-        return url.substring(0, suffix) +
-            ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
-            sessionURLPrefix + id + url.substring(suffix);
+        return url.substring(0, suffix) + nonNullPath + sessionURLPrefix + id + url.substring(suffix);
     }
 
     @Override
