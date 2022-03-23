@@ -220,7 +220,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _response = response;
         _servletChannel = channel;
         _connectionMetaData = _response.getRequest().getConnectionMetaData();
-        _byteBufferPool = _response.getRequest().getResources().getByteBufferPool();
+        _byteBufferPool = _response.getRequest().getComponents().getByteBufferPool();
 
         _channelState = _servletChannel.getState();
         _interceptor = new DefaultInterceptor();

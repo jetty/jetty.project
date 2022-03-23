@@ -129,7 +129,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         _servletChannel = servletChannel;
         _httpServletRequest = new ServletApiRequest();
         _mappedServlet = mappedServlet;
-        _httpInput = new HttpInput(_servletChannel);
+        _httpInput = new HttpInput(_servletChannel); // TODO recycle
         _pathInContext = pathInContext;
     }
 

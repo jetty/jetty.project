@@ -78,7 +78,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.DeprecationWarning;
 import org.eclipse.jetty.util.Index;
@@ -194,7 +193,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     private final ServletContextApi _servletContext = new ServletContextApi();
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
-    private final AttributesMap _attributes = new AttributesMap();
     private final Map<String, String> _initParams = new HashMap<>();
     private boolean _contextPathDefault = true;
     private String _defaultRequestCharacterEncoding;
@@ -1260,8 +1258,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             Thread currentThread = null;
             ContextHandler.Context oldContext = null;
 
+            // TODO who uses this???
             if (getServer() != null)
-                _attributes.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
+                _servletContext.setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
 
             if (_mimeTypes == null)
                 _mimeTypes = new MimeTypes();
@@ -1386,8 +1385,14 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             return null;
 
         // Get a servlet request, possibly from a cached version in the channel attributes.
-        // TODO We should cache this heavy weight object!
-        ServletChannel servletChannel = new ServletChannel();
+        // TODO We should cache this heavy weight object!  Something like:
+        ServletChannel servletChannel = (ServletChannel)request.getComponents().getCache().get("blah.blah.ServletChannel");
+        if (servletChannel == null)
+        {
+            // TODO this may not be the right object to recycle, but ultimately we want to reuse: HttpInput, HttpOutput, ServletChannelState etc. etc.
+            servletChannel = new ServletChannel();
+            request.getComponents().getCache().put("blah.blah.ServletChannel", servletChannel);
+        }
 
         ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext, mappedServlet);
         servletChannel.init(servletContextRequest);

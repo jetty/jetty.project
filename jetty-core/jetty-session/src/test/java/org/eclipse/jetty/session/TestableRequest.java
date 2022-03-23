@@ -8,6 +8,7 @@ import java.util.function.Predicate;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
@@ -47,6 +48,12 @@ public class TestableRequest implements Request
 
     @Override
     public String getId()
+    {
+        return null;
+    }
+
+    @Override
+    public Components getComponents()
     {
         return null;
     }

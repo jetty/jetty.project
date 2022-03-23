@@ -115,9 +115,9 @@ public interface Request extends Attributes, Content.Reader
     String getId();
 
     /**
-     * @return the {@link Resources} to be used with this request.
+     * @return the {@link Components} to be used with this request.
      */
-    Resources getResources();
+    Components getComponents();
 
     /**
      * @return the {@code ConnectionMetaData} associated to this request
@@ -437,9 +437,9 @@ public interface Request extends Attributes, Content.Reader
         }
 
         @Override
-        public Resources getResources()
+        public Components getComponents()
         {
-            return getWrapped().getResources();
+            return getWrapped().getComponents();
         }
 
         @Override

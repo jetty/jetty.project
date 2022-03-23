@@ -62,7 +62,7 @@ import org.slf4j.LoggerFactory;
  * Note how Runnables are returned to indicate that further work is needed. These
  * can be given to an ExecutionStrategy instead of calling known methods like HttpChannel.handle().
  */
-public class HttpChannel implements Resources
+public class HttpChannel implements Components
 {
     public static final String UPGRADE_CONNECTION_ATTRIBUTE = HttpChannel.class.getName() + ".UPGRADE";
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
@@ -108,14 +108,14 @@ public class HttpChannel implements Resources
     private final ConnectionMetaData _connectionMetaData;
     private final SerializedInvoker _serializedInvoker;
     private final Attributes _requestAttributes = new Attributes.Lazy();
-    private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
+    private final ResponseHttpFields _responseHeaders = new ResponseHttpFields(); // TODO this may be needed by request log after success/failed (but rarely)
     private long _requests;
     private ChannelRequest _request;
     private HttpStream _stream;
     private boolean _processing;
     private boolean _handled;
-    private long _contentBytesRead;
-    private long _contentBytesWritten;
+    private long _contentBytesRead; // TODO this is needed by request log after success/failed
+    private long _contentBytesWritten; // TODO this is needed by request log after success/failed
     private long _committedContentLength = -1;
     private ResponseHttpFields _responseTrailers;
     private Runnable _onContentAvailable;
@@ -681,7 +681,7 @@ public class HttpChannel implements Resources
         }
 
         @Override
-        public Resources getResources()
+        public Components getComponents()
         {
             return getHttpChannel();
         }

@@ -117,7 +117,7 @@ public class ServletChannel implements Runnable
         _servletContextApi = request.getContext().getServletContext();
         _request = request;
         _executor = request.getContext();
-        _state = new ServletRequestState(this);
+        _state = new ServletRequestState(this); // TODO can this be recycled?
         _endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
         _connector = request.getConnectionMetaData().getConnector();
 

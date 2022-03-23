@@ -20,10 +20,10 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
- * Resources made available via a {@link Request}
+ * Components made available via a {@link Request}
  * TODO flesh out this idea... maybe better name?
  */
-public interface Resources
+public interface Components
 {
     ByteBufferPool getByteBufferPool();
 
@@ -41,6 +41,7 @@ public interface Resources
      * If the connection is known to be none-persistent then the cache may be a noop cache and discard
      * all items set on it.
      * @return A Map, which may be an empty map that discards all items.
+     * TODO This should be Attributes like everything else.
      */
     Map<String, Object> getCache();
 }
