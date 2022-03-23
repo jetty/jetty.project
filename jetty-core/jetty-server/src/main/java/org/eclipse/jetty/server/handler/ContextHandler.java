@@ -875,7 +875,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             run(runnable, null);
         }
 
-        void run(Runnable runnable, Request request)
+        public void run(Runnable runnable, Request request)
         {
             try
             {

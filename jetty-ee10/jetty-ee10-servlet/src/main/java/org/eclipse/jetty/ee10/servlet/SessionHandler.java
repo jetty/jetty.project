@@ -38,6 +38,7 @@ import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest.ServletApiRequest;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Syntax;
@@ -80,6 +81,62 @@ public class SessionHandler extends AbstractSessionHandler
     private SessionCookieConfig _cookieConfig = new CookieConfig();
     private ServletContextHandler.Context _servletContextHandlerContext;
    
+    /**
+     * StreamWrapper to intercept commit and complete events to ensure
+     * session handling happens in context, with request available.
+     */
+    private final class SessionStreamWrapper extends HttpStream.Wrapper
+    {
+        private final ServletApiRequest _servletApiRequest;
+        private final Request _request;
+        private final org.eclipse.jetty.server.Context _context;
+
+        private SessionStreamWrapper(HttpStream wrapped, ServletApiRequest servletApiRequest, Request request)
+        {
+            super(wrapped);
+            _servletApiRequest = servletApiRequest;
+            _request = request;
+            _context = _request.getContext();
+        }
+
+        @Override
+        public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, Callback callback, ByteBuffer... content)
+        {
+            if (metadataResponse != null)
+            {
+                // Write out session
+                _context.run(this::doCommit, _request);
+            }
+            super.send(metadataRequest, metadataResponse, last, callback, content);
+        }
+
+        @Override
+        public void succeeded()
+        {
+            // Leave session
+            _context.run(this::doComplete, _request);
+            super.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            //Leave session
+            _context.run(this::doComplete, _request);
+            super.failed(x);
+        }
+        
+        private void doCommit()
+        {
+            commit(ServletContextRequest.ServletApiRequest.getSession(_servletApiRequest.getSession()));
+        }
+        
+        private void doComplete()
+        {
+            complete(ServletContextRequest.ServletApiRequest.getSession(_servletApiRequest.getSession()));
+        }
+    }
+
     /**
      * CookieConfig
      *
@@ -618,36 +675,7 @@ public class SessionHandler extends AbstractSessionHandler
         if (cookie != null)
             Response.replaceCookie(servletContextResponse, cookie);
 
-        request.getHttpChannel().addStreamWrapper(s ->
-        new HttpStream.Wrapper(s)
-        {
-            @Override
-            public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, Callback callback, ByteBuffer... content)
-            {
-                if (metadataResponse != null)
-                {
-                    // Write out session
-                    commit(ServletContextRequest.ServletApiRequest.getSession(servletApiRequest.getSession()));
-                }
-                super.send(metadataRequest, metadataResponse, last, callback, content);
-            }
-
-            @Override
-            public void succeeded()
-            {
-                // Leave session
-                super.succeeded();
-                complete(ServletContextRequest.ServletApiRequest.getSession(servletApiRequest.getSession()));
-            }
-
-            @Override
-            public void failed(Throwable x)
-            {
-                super.failed(x);
-                //Leave session
-                complete(ServletContextRequest.ServletApiRequest.getSession(servletApiRequest.getSession()));
-            }
-        });
+        request.getHttpChannel().addStreamWrapper(s -> new SessionStreamWrapper(s, servletApiRequest, request));
 
         return super.handle(request);
     }

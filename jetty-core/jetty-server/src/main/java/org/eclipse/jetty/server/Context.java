@@ -53,4 +53,7 @@ public interface Context extends Attributes, Decorator, Executor
 
     /** scope the calling thread to the context and run the runnable. */
     void run(Runnable runnable);
+    
+    /** scope the calling thread to the context and request and run the runnable. */
+    void run(Runnable runnable, Request request);
 }
