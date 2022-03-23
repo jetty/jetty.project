@@ -32,6 +32,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * RedirectSessionTest
  *
  * Test that creating a session and then doing a redirect preserves the session.
+ * 
+ * TODO move to ee10
  */
 public class RedirectSessionTest
 {

@@ -316,6 +316,38 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
     }
 
     /**
+     * Test that the DefaultSessionCache shares the session object amongst
+     * requests.
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testSessionShared() throws Exception
+    {
+        Server server = new Server();
+
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
+        AbstractSessionCacheFactory cacheFactory = newSessionCacheFactory(SessionCache.NEVER_EVICT, false, false, false, false);
+        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionHandler);
+
+        TestableSessionDataStore store = new TestableSessionDataStore();
+        cache.setSessionDataStore(store);
+        sessionHandler.setSessionCache(cache);
+        server.setHandler(sessionHandler);
+        server.start();
+       
+        long now = System.currentTimeMillis();
+        Session session = cache.newSession("1234", now, -1); //create an immortal session
+        cache.add("1234", session); //add it to the cache
+        
+        //now fake another request coming in for the same session
+        Session sessionB = cache.getAndEnter("1234", true);
+        assertSame(session, sessionB);
+        assertEquals(2, session.getRequests());
+    }
+    
+    /**
      * Test adding a session to the cache
      * @throws Exception
      */
