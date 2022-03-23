@@ -1041,14 +1041,14 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logResponseSize(StringBuilder b, Request request, Response response)
     {
-        long written = Response.getBytesWritten(response);
+        long written = Response.getContentBytesWritten(response);
         b.append(written);
     }
 
     @SuppressWarnings("unused")
     private static void logResponseSizeCLF(StringBuilder b, Request request, Response response)
     {
-        long written = Response.getBytesWritten(response);
+        long written = Response.getContentBytesWritten(response);
         if (written == 0)
             b.append('-');
         else
@@ -1058,13 +1058,13 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logBytesSent(StringBuilder b, Request request, Response response)
     {
-        b.append(Response.getBytesWritten(response));
+        b.append(Response.getContentBytesWritten(response));
     }
 
     @SuppressWarnings("unused")
     private static void logBytesSentCLF(StringBuilder b, Request request, Response response)
     {
-        long sent = Response.getBytesWritten(response);
+        long sent = Response.getContentBytesWritten(response);
         if (sent == 0)
             b.append('-');
         else
@@ -1074,13 +1074,13 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logBytesReceived(StringBuilder b, Request request, Response response)
     {
-        b.append(Request.getBytesRead(request));
+        b.append(Request.getContentBytesRead(request));
     }
 
     @SuppressWarnings("unused")
     private static void logBytesReceivedCLF(StringBuilder b, Request request, Response response)
     {
-        long received = Request.getBytesRead(request);
+        long received = Request.getContentBytesRead(request);
         if (received == 0)
             b.append('-');
         else
@@ -1090,13 +1090,13 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logBytesTransferred(StringBuilder b, Request request, Response response)
     {
-        b.append(Request.getBytesRead(request) + Response.getBytesWritten(response));
+        b.append(Request.getContentBytesRead(request) + Response.getContentBytesWritten(response));
     }
 
     @SuppressWarnings("unused")
     private static void logBytesTransferredCLF(StringBuilder b, Request request, Response response)
     {
-        long transferred = Request.getBytesRead(request) + Response.getBytesWritten(response);
+        long transferred = Request.getContentBytesRead(request) + Response.getContentBytesWritten(response);
         if (transferred == 0)
             b.append('-');
         else

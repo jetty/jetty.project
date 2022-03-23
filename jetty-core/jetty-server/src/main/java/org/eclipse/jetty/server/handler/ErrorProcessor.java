@@ -199,7 +199,7 @@ public class ErrorProcessor implements Request.Processor
                 return false;
         }
 
-        int bufferSize = request.getHttpChannel().getHttpConfiguration().getOutputBufferSize();
+        int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
         ByteBuffer buffer = request.getConnectionMetaData().getConnector().getByteBufferPool().acquire(bufferSize, false);
 
         // write into the response aggregate buffer and flush it asynchronously.
@@ -308,7 +308,7 @@ public class ErrorProcessor implements Request.Processor
         if (showStacks)
             writeErrorHtmlStacks(request, writer);
 
-        request.getHttpChannel().getHttpConfiguration()
+        request.getConnectionMetaData().getHttpConfiguration()
             .writePoweredBy(writer, "<hr/>", "<hr/>\n");
     }
 

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.server.internal;
 
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -26,17 +26,18 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 
-class ResponseHttpFields implements HttpFields.Mutable
+// TODO: review whether it needs to override these many methods, as it may be enough to override iterator().
+public class ResponseHttpFields implements HttpFields.Mutable
 {
-    private final Mutable _fields;
+    private final Mutable _fields = HttpFields.build();
     private final AtomicBoolean _committed = new AtomicBoolean();
 
-    ResponseHttpFields(Mutable fields)
+    public HttpFields.Mutable getMutableHttpFields()
     {
-        _fields = fields;
+        return _fields;
     }
 
-    boolean commit()
+    public boolean commit()
     {
         return _committed.compareAndSet(false, true);
     }
@@ -46,7 +47,7 @@ class ResponseHttpFields implements HttpFields.Mutable
         return _committed.get();
     }
 
-    public void recycle()
+    public void reset()
     {
         _committed.set(false);
         _fields.clear();

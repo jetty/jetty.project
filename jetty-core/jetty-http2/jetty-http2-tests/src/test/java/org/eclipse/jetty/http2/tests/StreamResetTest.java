@@ -837,7 +837,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                flusherRef.set(((AbstractEndPoint)request.getHttpChannel().getEndPoint()).getWriteFlusher());
+                flusherRef.set(((AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint()).getWriteFlusher());
                 flusherLatch.countDown();
 
                 try
@@ -926,7 +926,7 @@ public class StreamResetTest extends AbstractTest
 
             private void service1(Request request, Response response, Callback callback) throws Exception
             {
-                exchanger.exchange(((AbstractEndPoint)request.getHttpChannel().getEndPoint()).getWriteFlusher());
+                exchanger.exchange(((AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint()).getWriteFlusher());
                 // Large write, it blocks due to TCP congestion.
                 response.write(true, callback, ByteBuffer.wrap(new byte[128 * 1024 * 1024]));
             }

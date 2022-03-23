@@ -28,6 +28,8 @@ public interface ConnectionMetaData extends Attributes
      */
     String getId();
 
+    HttpConfiguration getHttpConfiguration();
+
     HttpVersion getHttpVersion();
 
     String getProtocol();
@@ -88,6 +90,12 @@ public interface ConnectionMetaData extends Attributes
         public String getId()
         {
             return _wrapped.getId();
+        }
+
+        @Override
+        public HttpConfiguration getHttpConfiguration()
+        {
+            return _wrapped.getHttpConfiguration();
         }
 
         @Override

@@ -67,7 +67,7 @@ public class SecuredRedirectHandler extends Handler.Wrapper
 
         return (rq, rs, cb) ->
         {
-            HttpConfiguration httpConfig = rq.getHttpChannel().getHttpConfiguration();
+            HttpConfiguration httpConfig = rq.getConnectionMetaData().getHttpConfiguration();
 
             int securePort = httpConfig.getSecurePort();
             if (securePort > 0)

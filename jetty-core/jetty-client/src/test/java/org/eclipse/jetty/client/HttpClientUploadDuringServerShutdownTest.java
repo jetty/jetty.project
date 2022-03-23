@@ -143,7 +143,7 @@ public class HttpClientUploadDuringServerShutdownTest
             @Override
             protected void service(Request request, Response response)
             {
-                endPointRef.set(request.getHttpChannel().getEndPoint());
+                endPointRef.set(request.getConnectionMetaData().getConnection().getEndPoint());
                 serverLatch.countDown();
             }
         });

@@ -24,8 +24,8 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.pathmap.PathSpecSet;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -193,9 +193,9 @@ public class BufferedResponseHandler extends Handler.Wrapper
             {
                 if (shouldBuffer(this, last))
                 {
-                    HttpChannel httpChannel = getRequest().getHttpChannel();
-                    ByteBufferPool byteBufferPool = httpChannel.getConnector().getByteBufferPool();
-                    boolean useOutputDirectByteBuffers = httpChannel.getHttpConfiguration().isUseOutputDirectByteBuffers();
+                    ConnectionMetaData connectionMetaData = getRequest().getConnectionMetaData();
+                    ByteBufferPool byteBufferPool = connectionMetaData.getConnector().getByteBufferPool();
+                    boolean useOutputDirectByteBuffers = connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
                     _accumulator = new CountingByteBufferAccumulator(byteBufferPool, useOutputDirectByteBuffers, getBufferSize());
                 }
                 _firstWrite = false;

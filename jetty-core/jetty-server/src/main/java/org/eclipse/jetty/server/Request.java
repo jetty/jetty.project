@@ -115,11 +115,6 @@ public interface Request extends Attributes, Content.Reader
     String getId();
 
     /**
-     * @return the {@code HttpChannel} associated to this request
-     */
-    HttpChannel getHttpChannel();
-
-    /**
      * @return the {@code ConnectionMetaData} associated to this request
      */
     ConnectionMetaData getConnectionMetaData();
@@ -190,13 +185,21 @@ public interface Request extends Attributes, Content.Reader
 
     void push(MetaData.Request request);
 
-    // TODO: what's the difference with a failed CompletionListener?
-    //  For example, RST_STREAM events, but also idle timeouts which may also be delivered as read events and write events.
-    //  Basically only needed if no I/O activity and the protocol supports async error events like h2 or h3.
+    /**
+     * <p>Adds a listener for asynchronous errors.</p>
+     * <p>The listener is a predicate function that should return {@code true} to indicate
+     * that the function has completed (either successfully or with a failure) the callback
+     * received from {@link Handler.Processor#process(Request, Response, Callback)}, or
+     * {@code false} otherwise.</p>
+     * <p>Listeners are processed in sequence, and the first that returns {@code true}
+     * stops the processing of subsequent listeners, which are therefore not invoked.</p>
+     *
+     * @param onError the predicate function
+     * @return true if the listener completes the callback, false otherwise
+     */
     boolean addErrorListener(Predicate<Throwable> onError);
 
-    // TODO: called when the callback is completed.
-    void addCompletionListener(Callback onComplete);
+    void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper);
 
     // TODO: why this?
     //  Remove when Request.getContext() is merged.
@@ -214,8 +217,7 @@ public interface Request extends Attributes, Content.Reader
             String result = address == null
                 ? ((InetSocketAddress)local).getHostString()
                 : address.getHostAddress();
-
-            return request.getHttpChannel().formatAddrOrHost(result);
+            return HostPort.normalizeHost(result);
         }
         return local.toString();
     }
@@ -237,8 +239,7 @@ public interface Request extends Attributes, Content.Reader
             String result = address == null
                 ? ((InetSocketAddress)remote).getHostString()
                 : address.getHostAddress();
-
-            return request.getHttpChannel().formatAddrOrHost(result);
+            return HostPort.normalizeHost(result);
         }
         return remote.toString();
     }
@@ -255,15 +256,15 @@ public interface Request extends Attributes, Content.Reader
     {
         HttpURI uri = request.getHttpURI();
         if (uri.hasAuthority())
-            return request.getHttpChannel().formatAddrOrHost(uri.getHost());
+            return HostPort.normalizeHost(uri.getHost());
 
         HostPort authority = request.getConnectionMetaData().getServerAuthority();
         if (authority != null)
-            return request.getHttpChannel().formatAddrOrHost(authority.getHost());
+            return HostPort.normalizeHost(authority.getHost());
 
         SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
         if (local instanceof InetSocketAddress)
-            return request.getHttpChannel().formatAddrOrHost(((InetSocketAddress)local).getHostString());
+            return HostPort.normalizeHost(((InetSocketAddress)local).getHostString());
 
         return local.toString();
     }
@@ -315,12 +316,13 @@ public interface Request extends Attributes, Content.Reader
         if (cookies != null)
             return cookies;
 
-        CookieCache cookieCache = (CookieCache)request.getHttpChannel().getAttribute(Request.class.getCanonicalName() + ".CookieCache");
+        // TODO: review whether to store the cookie cache at the connection level, or whether to cache them at all.
+        CookieCache cookieCache = (CookieCache)request.getConnectionMetaData().getAttribute(Request.class.getCanonicalName() + ".CookieCache");
         if (cookieCache == null)
         {
             // TODO compliance listeners?
-            cookieCache = new CookieCache(request.getHttpChannel().getHttpConfiguration().getRequestCookieCompliance(), null);
-            request.getHttpChannel().setAttribute(Request.class.getCanonicalName() + ".CookieCache", cookieCache);
+            cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), null);
+            request.getConnectionMetaData().setAttribute(Request.class.getCanonicalName() + ".CookieCache", cookieCache);
         }
 
         cookies = cookieCache.getCookies(request.getHeaders());
@@ -339,7 +341,7 @@ public interface Request extends Attributes, Content.Reader
     static String toRedirectURI(Request request, String location)
     {
         // TODO write some tests for this
-        if (!URIUtil.hasScheme(location) && !request.getHttpChannel().getHttpConfiguration().isRelativeRedirectAllowed())
+        if (!URIUtil.hasScheme(location) && !request.getConnectionMetaData().getHttpConfiguration().isRelativeRedirectAllowed())
         {
             StringBuilder url = new StringBuilder(128);
             HttpURI uri = request.getHttpURI();
@@ -436,12 +438,6 @@ public interface Request extends Attributes, Content.Reader
         }
 
         @Override
-        public HttpChannel getHttpChannel()
-        {
-            return getWrapped().getHttpChannel();
-        }
-
-        @Override
         public String getMethod()
         {
             return getWrapped().getMethod();
@@ -514,9 +510,9 @@ public interface Request extends Attributes, Content.Reader
         }
 
         @Override
-        public void addCompletionListener(Callback onComplete)
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
         {
-            getWrapped().addCompletionListener(onComplete);
+            getWrapped().addHttpStreamWrapper(wrapper);
         }
 
         @Override
@@ -559,11 +555,11 @@ public interface Request extends Attributes, Content.Reader
         return request;
     }
 
-    static long getBytesRead(Request request)
+    static long getContentBytesRead(Request request)
     {
         Request originalRequest = getOriginalRequest(request);
         if (originalRequest instanceof HttpChannel.ChannelRequest channelRequest)
-            return channelRequest.getBytesRead();
+            return channelRequest.getContentBytesRead();
         return -1;
     }
 

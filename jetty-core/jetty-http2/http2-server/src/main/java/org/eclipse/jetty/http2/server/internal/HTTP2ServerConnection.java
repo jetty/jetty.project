@@ -125,9 +125,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
 
-        HttpChannel httpChannel = new HttpChannel(getConnector().getServer(), this, httpConfig);
+        HttpChannel httpChannel = new HttpChannel(this);
         HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
-        httpChannel.setStream(httpStream);
+        httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);
         Runnable task = httpStream.onRequest(frame);
         if (task != null)
@@ -223,9 +223,9 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing push {} on {}", request, stream);
 
-        HttpChannel httpChannel = new HttpChannel(getConnector().getServer(), this, httpConfig);
+        HttpChannel httpChannel = new HttpChannel(this);
         HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
-        httpChannel.setStream(httpStream);
+        httpChannel.setHttpStream(httpStream);
         Runnable task = httpStream.onPushRequest(request);
         if (task != null)
             offerTask(task, false);
@@ -380,6 +380,12 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     public String getId()
     {
         return id;
+    }
+
+    @Override
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return httpConfig;
     }
 
     @Override

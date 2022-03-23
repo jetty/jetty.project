@@ -47,7 +47,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 throw new IllegalStateException();
             }
@@ -57,7 +57,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         final AtomicInteger callbacks = new AtomicInteger();
         final CountDownLatch openLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        connector.addBean(new Connection.Listener.Adapter()
+        connector.addBean(new Connection.Listener()
         {
             @Override
             public void onOpened(Connection connection)
@@ -106,7 +106,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         final AtomicInteger callbacks = new AtomicInteger();
         final CountDownLatch openLatch = new CountDownLatch(1);
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        connector.addBean(new Connection.Listener.Adapter()
+        connector.addBean(new Connection.Listener()
         {
             @Override
             public void onOpened(Connection connection)
@@ -177,7 +177,7 @@ public class ConnectionOpenCloseTest extends AbstractHttpTest
         final AtomicInteger callbacks = new AtomicInteger();
         final CountDownLatch openLatch = new CountDownLatch(2);
         final CountDownLatch closeLatch = new CountDownLatch(2);
-        connector.addBean(new Connection.Listener.Adapter()
+        connector.addBean(new Connection.Listener()
         {
             @Override
             public void onOpened(Connection connection)

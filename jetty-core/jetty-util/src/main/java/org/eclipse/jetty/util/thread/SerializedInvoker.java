@@ -32,18 +32,9 @@ import org.slf4j.LoggerFactory;
  */
 public class SerializedInvoker
 {
+    private static final Logger LOG = LoggerFactory.getLogger(SerializedInvoker.class);
+
     private final AtomicReference<Link> _tail = new AtomicReference<>();
-    private final Logger _logger;
-
-    public SerializedInvoker()
-    {
-        this(LoggerFactory.getLogger(SerializedInvoker.class));
-    }
-
-    public SerializedInvoker(Logger logger)
-    {
-        _logger = logger;
-    }
 
     /**
      * Arrange for a task to be invoked, mutually excluded from other tasks.
@@ -108,7 +99,7 @@ public class SerializedInvoker
 
     protected void onError(Runnable task, Throwable t)
     {
-        _logger.warn("Serialized invocation error", t);
+        LOG.warn("Serialized invocation error", t);
     }
 
     private class Link implements Runnable, Invocable

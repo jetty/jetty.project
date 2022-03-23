@@ -108,7 +108,7 @@ public class BlockedWritesWithSmallThreadPoolTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                serverEndPointRef.compareAndSet(null, (AbstractEndPoint)request.getHttpChannel().getEndPoint());
+                serverEndPointRef.compareAndSet(null, (AbstractEndPoint)request.getConnectionMetaData().getConnection().getEndPoint());
                 // Write a large content to cause TCP congestion.
                 response.write(true, callback, ByteBuffer.wrap(new byte[contentLength]));
             }

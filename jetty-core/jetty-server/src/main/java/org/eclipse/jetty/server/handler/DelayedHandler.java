@@ -47,7 +47,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
         protected Request.Processor delayed(Request request, Request.Processor processor)
         {
             // TODO remove this setting from HttpConfig?
-            if (!request.getHttpChannel().getHttpConfiguration().isDelayDispatchUntilContent())
+            if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
                 return processor;
             if (request.getContentLength() <= 0 && !request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
                 return processor;
@@ -96,7 +96,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
         @Override
         protected Request.Processor delayed(Request request, Request.Processor processor)
         {
-            if (!request.getHttpChannel().getHttpConfiguration().isDelayDispatchUntilContent())
+            if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
                 return processor;
             String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
             if (request.getContentLength() == 0 || StringUtil.isBlank(contentType))
@@ -127,7 +127,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
         {
             _response = response;
             _callback = callback;
-            HttpConfiguration config = _request.getHttpChannel().getHttpConfiguration();
+            HttpConfiguration config = _request.getConnectionMetaData().getHttpConfiguration();
 
             // TODO pass in HttpConfiguration size limits
             new Content.FieldsFuture(_request, -1, -1).whenComplete(this);

@@ -37,7 +37,7 @@ import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.MockConnectionMetaData;
 import org.eclipse.jetty.server.MockConnector;
 import org.eclipse.jetty.server.MockHttpStream;
@@ -100,7 +100,7 @@ public class ContextHandlerTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -121,8 +121,8 @@ public class ContextHandlerTest
         _contextHandler.setHandler(helloHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -134,7 +134,9 @@ public class ContextHandlerTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        // The original fields have been recycled.
+        assertThat(stream.getResponse().getFields().size(), equalTo(0));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
     }
 
@@ -177,8 +179,8 @@ public class ContextHandlerTest
         _contextHandler.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -211,11 +213,16 @@ public class ContextHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                request.addCompletionListener(Callback.from(() ->
+                request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
                 {
-                    assertInContext(request);
-                    scopeListener.assertInContext(request.getContext(), request);
-                }));
+                    @Override
+                    public void succeeded()
+                    {
+                        assertInContext(request);
+                        scopeListener.assertInContext(request.getContext(), request);
+                        super.succeeded();
+                    }
+                });
                 request.demandContent(() ->
                 {
                     assertInContext(request);
@@ -242,8 +249,8 @@ public class ContextHandlerTest
         _contextHandler.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         AtomicReference<Callback> sendCB = new AtomicReference<>();
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
@@ -284,7 +291,15 @@ public class ContextHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                request.addCompletionListener(Callback.from(() -> assertInContext(request)));
+                request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        assertInContext(request);
+                        super.succeeded();
+                    }
+                });
 
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demandContent(() ->
@@ -308,8 +323,8 @@ public class ContextHandlerTest
         _contextHandler.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -359,8 +374,8 @@ public class ContextHandlerTest
         _contextHandler.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -400,7 +415,7 @@ public class ContextHandlerTest
         };
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(connector);
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         HttpFields fields = HttpFields.build().asImmutable();
 
         MockHttpStream stream = new MockHttpStream(channel);
@@ -465,7 +480,7 @@ public class ContextHandlerTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -479,7 +494,8 @@ public class ContextHandlerTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(500));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_HTML_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_HTML_8859_1.asString()));
+        assertThat(stream.getResponse().getFields().size(), equalTo(0));
         assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("<h1>Context: /ctx</h1>"));
         assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("java.lang.RuntimeException: Testing"));
     }

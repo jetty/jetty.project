@@ -139,12 +139,13 @@ public class Server extends Handler.Wrapper implements Attributes
         if (!isStarted())
             return;
 
+        HttpChannel httpChannel = request.getHttpChannel();
         Request customized = request;
         boolean processing = false;
         try
         {
             // Customize before accepting.
-            HttpConfiguration configuration = request.getHttpChannel().getHttpConfiguration();
+            HttpConfiguration configuration = httpChannel.getHttpConfiguration();
 
             for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
             {
@@ -154,7 +155,7 @@ public class Server extends Handler.Wrapper implements Attributes
 
             Request.Processor processor = handle(customized);
             processing = true;
-            request.enableProcessing();
+            httpChannel.enableProcessing();
             if (processor == null)
                 Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
             else
@@ -163,7 +164,7 @@ public class Server extends Handler.Wrapper implements Attributes
         catch (Throwable x)
         {
             if (!processing)
-                request.enableProcessing();
+                httpChannel.enableProcessing();
             callback.failed(x);
         }
     }

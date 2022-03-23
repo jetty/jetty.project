@@ -84,8 +84,8 @@ public class HttpChannelTest
         _server.setHandler(helloHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -97,7 +97,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
     }
 
@@ -108,8 +108,8 @@ public class HttpChannelTest
         _server.setHandler(helloHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         AtomicReference<Callback> sendCB = new AtomicReference<>();
         MockHttpStream stream = new MockHttpStream(channel)
         {
@@ -133,7 +133,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
     }
 
@@ -143,7 +143,7 @@ public class HttpChannelTest
         _server.setHandler(new Handler.Processor()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            public void process(Request request, Response response, Callback callback)
             {
                 response.setStatus(200);
                 response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
@@ -170,8 +170,8 @@ public class HttpChannelTest
         });
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         CountDownLatch complete = new CountDownLatch(1);
         MockHttpStream stream = new MockHttpStream(channel)
         {
@@ -201,7 +201,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(stream.getResponseContent().remaining(), equalTo(10000));
     }
 
@@ -212,8 +212,8 @@ public class HttpChannelTest
         _server.setHandler(echoHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         HttpFields fields = HttpFields.build()
@@ -232,7 +232,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), containsString("text/html"));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), containsString("text/html"));
 
         String content = stream.getResponseContentAsString();
         assertThat(content, containsString("<h1>Dump Handler</h1>"));
@@ -247,8 +247,8 @@ public class HttpChannelTest
         _server.setHandler(echoHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         String message = "ECHO Echo echo";
@@ -268,7 +268,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
     }
 
@@ -279,8 +279,8 @@ public class HttpChannelTest
         _server.setHandler(echoHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         String[] parts = new String[] {"ECHO ", "Echo ", "echo"};
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
@@ -310,7 +310,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
     }
 
@@ -321,8 +321,8 @@ public class HttpChannelTest
         _server.setHandler(echoHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         String[] parts = new String[] {"ECHO ", "Echo ", "echo"};
         AtomicReference<Callback> sendCB = new AtomicReference<>();
         MockHttpStream stream = new MockHttpStream(channel, false)
@@ -380,7 +380,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
     }
 
@@ -399,7 +399,7 @@ public class HttpChannelTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -411,8 +411,8 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(404));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), notNullValue());
-        assertThat(stream.getResponse().getFields().getLongField(HttpHeader.CONTENT_LENGTH), greaterThan(0L));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), notNullValue());
+        assertThat(stream.getResponseHeaders().getLongField(HttpHeader.CONTENT_LENGTH), greaterThan(0L));
     }
 
     @Test
@@ -430,7 +430,7 @@ public class HttpChannelTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -446,7 +446,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), notNullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(500));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), containsString("text/html"));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), containsString("text/html"));
     }
 
     @Test
@@ -468,8 +468,8 @@ public class HttpChannelTest
         _server.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -500,8 +500,8 @@ public class HttpChannelTest
         _server.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -513,7 +513,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().getLongField(HttpHeader.CONTENT_LENGTH), equalTo(5L));
+        assertThat(stream.getResponseHeaders().getLongField(HttpHeader.CONTENT_LENGTH), equalTo(5L));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
     }
 
@@ -533,20 +533,20 @@ public class HttpChannelTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
-        Runnable task = channel.onRequest(request);
-        task.run();
+        Runnable onRequest = channel.onRequest(request);
+        onRequest.run();
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), notNullValue());
-        assertThat(stream.getFailure().getMessage(), containsString("content-length 10 > 5"));
+        assertThat(stream.getFailure().getMessage(), containsString("5 < 10"));
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), is(500));
-        assertThat(stream.getResponseContentAsString(), containsString("IOException: content-length 10 &gt; 5"));
+        assertThat(stream.getResponseContentAsString(), containsString("5 &lt; 10"));
     }
 
     @Test
@@ -564,8 +564,8 @@ public class HttpChannelTest
         _server.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -575,7 +575,7 @@ public class HttpChannelTest
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), notNullValue());
-        assertThat(stream.getFailure().getMessage(), containsString("content-length 10 > 5"));
+        assertThat(stream.getFailure().getMessage(), containsString("5 < 10"));
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), is(200));
     }
@@ -596,7 +596,7 @@ public class HttpChannelTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -606,10 +606,10 @@ public class HttpChannelTest
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), notNullValue());
-        assertThat(stream.getFailure().getMessage(), containsString("content-length 5 < 10"));
+        assertThat(stream.getFailure().getMessage(), containsString("10 > 5"));
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), is(500));
-        assertThat(stream.getResponseContentAsString(), containsString("IOException: content-length 5 &lt; 10"));
+        assertThat(stream.getResponseContentAsString(), containsString("10 &gt; 5"));
     }
 
     @Test
@@ -627,8 +627,8 @@ public class HttpChannelTest
         _server.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -638,7 +638,7 @@ public class HttpChannelTest
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), notNullValue());
-        assertThat(stream.getFailure().getMessage(), containsString("content-length 5 < 10"));
+        assertThat(stream.getFailure().getMessage(), containsString("10 > 5"));
         assertThat(stream.getResponse(), notNullValue());
     }
 
@@ -649,8 +649,8 @@ public class HttpChannelTest
         _server.setHandler(helloHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         String message = "ECHO Echo echo";
@@ -670,10 +670,10 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(helloHandler.getMessage()));
 
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONNECTION), nullValue());
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), nullValue());
         assertThat(stream.readContent(), sameInstance(Content.EOF));
     }
 
@@ -694,8 +694,8 @@ public class HttpChannelTest
         _server.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         HttpFields fields = HttpFields.build()
@@ -712,10 +712,10 @@ public class HttpChannelTest
         assertThat(stream.getFailure().getMessage(), containsString("Content not consumed"));
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
 
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONNECTION), nullValue());
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), nullValue());
         assertThat(stream.readContent(), nullValue());
     }
 
@@ -737,8 +737,8 @@ public class HttpChannelTest
         _server.setHandler(handler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         HttpFields fields = HttpFields.build()
@@ -754,10 +754,10 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo("12345"));
 
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONNECTION), equalTo(HttpHeaderValue.CLOSE.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONNECTION), equalTo(HttpHeaderValue.CLOSE.asString()));
         assertThat(stream.readContent(), nullValue());
     }
 
@@ -768,8 +768,8 @@ public class HttpChannelTest
         _server.setHandler(echoHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         String message = "ECHO Echo echo";
@@ -789,7 +789,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
 
         // 2nd request
@@ -803,8 +803,8 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), nullValue());
-        assertThat(stream.getResponse().getFields().getLongField(HttpHeader.CONTENT_LENGTH), equalTo(0L));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), nullValue());
+        assertThat(stream.getResponseHeaders().getLongField(HttpHeader.CONTENT_LENGTH), equalTo(0L));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(""));
     }
 
@@ -815,8 +815,8 @@ public class HttpChannelTest
         _server.setHandler(echoHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         AtomicReference<Callback> sendCB = new AtomicReference<>();
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
@@ -848,7 +848,7 @@ public class HttpChannelTest
         Runnable task = channel.onRequest(request);
 
         List<String> history = new ArrayList<>();
-        channel.addStreamWrapper(s ->
+        channel.addHttpStreamWrapper(s ->
             new HttpStream.Wrapper(s)
             {
                 @Override
@@ -924,7 +924,7 @@ public class HttpChannelTest
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
 
         Iterator<String> timeline = history.iterator();
@@ -964,8 +964,8 @@ public class HttpChannelTest
         _server.setHandler(echoHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         String[] parts = new String[] {"ECHO ", "Echo ", "echo"};
         HttpFields trailers = HttpFields.build().add("Some", "value").asImmutable();
         MockHttpStream stream = new MockHttpStream(channel, false)
@@ -994,17 +994,17 @@ public class HttpChannelTest
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
 
-        Runnable task = channel.onRequest(request);
-        task.run();
+        Runnable onRequest = channel.onRequest(request);
+        onRequest.run();
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), nullValue());
         assertThat(stream.getResponse(), notNullValue());
         assertThat(stream.getResponse().getStatus(), equalTo(200));
-        assertThat(stream.getResponse().getFields().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
+        assertThat(stream.getResponseHeaders().get(HttpHeader.CONTENT_TYPE), equalTo(MimeTypes.Type.TEXT_PLAIN_8859_1.asString()));
         assertThat(BufferUtil.toString(stream.getResponseContent()), equalTo(message));
 
-        HttpFields trailersRcv = stream.getResponse().getTrailerSupplier().get();
+        HttpFields trailersRcv = stream.getResponseTrailers();
         assertThat(trailersRcv, notNullValue());
         assertThat(trailersRcv.get("Some"), equalTo("value"));
     }
@@ -1047,8 +1047,8 @@ public class HttpChannelTest
         });
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         ByteBuffer data = BufferUtil.toBuffer("data");
         final int chunks = 100000;
         AtomicInteger count = new AtomicInteger(chunks);
@@ -1090,16 +1090,16 @@ public class HttpChannelTest
     @Test
     public void testOnError() throws Exception
     {
-        AtomicReference<Request> handling = new AtomicReference<>();
+        AtomicReference<Response> handling = new AtomicReference<>();
         AtomicReference<Throwable> error = new AtomicReference<>();
         Handler handler = new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                handling.set(request);
-                request.addErrorListener(t -> true);
-                request.addErrorListener(t -> error.compareAndSet(null, t));
+                handling.set(response);
+                request.addErrorListener(t -> false);
+                request.addErrorListener(t -> !error.compareAndSet(null, t));
                 request.addErrorListener(t ->
                 {
                     callback.failed(t);
@@ -1111,13 +1111,13 @@ public class HttpChannelTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
-        Runnable task = channel.onRequest(request);
-        task.run();
+        Runnable onRequest = channel.onRequest(request);
+        onRequest.run();
 
         // check we are handling
         assertNotNull(handling.get());
@@ -1127,8 +1127,8 @@ public class HttpChannelTest
 
         // failure happens
         IOException failure = new IOException("Testing");
-        Runnable todo = channel.onError(failure);
-        assertNotNull(todo);
+        Runnable onError = channel.onError(failure);
+        assertNotNull(onError);
 
         // onError not yet called
         assertThat(error.get(), nullValue());
@@ -1137,7 +1137,8 @@ public class HttpChannelTest
         assertFalse(stream.isComplete());
 
         // but now we cannot read, demand nor write
-        Content read = handling.get().readContent();
+        Request rq = handling.get().getRequest();
+        Content read = rq.readContent();
         assertTrue(read.isSpecial());
         assertTrue(read.isLast());
         assertInstanceOf(Content.Error.class, read);
@@ -1145,18 +1146,18 @@ public class HttpChannelTest
 
         CountDownLatch demand = new CountDownLatch(1);
         // Callback serialized until after onError task
-        handling.get().demandContent(demand::countDown);
+        rq.demandContent(demand::countDown);
         assertThat(demand.getCount(), is(1L));
 
         FuturePromise<Throwable> callback = new FuturePromise<>();
         // Callback serialized until after onError task
-        handling.get().getHttpChannel().getResponse().write(false, Callback.from(() -> {}, callback::succeeded));
+        handling.get().write(false, Callback.from(() -> {}, callback::succeeded));
         assertFalse(callback.isDone());
 
         // process error callback
         try (StacklessLogging ignore = new StacklessLogging(ContextRequest.class))
         {
-            todo.run();
+            onError.run();
         }
 
         // onError was called
@@ -1165,8 +1166,6 @@ public class HttpChannelTest
         assertTrue(demand.await(5, TimeUnit.SECONDS));
         // write callback was failed
         assertThat(callback.get(5, TimeUnit.SECONDS), sameInstance(failure));
-
-
 
         // request completed handling
         assertTrue(stream.isComplete());
@@ -1182,15 +1181,23 @@ public class HttpChannelTest
             @Override
             public Request.Processor handle(Request request) throws Exception
             {
-                request.addCompletionListener(Callback.from(completed::countDown));
+                request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        completed.countDown();
+                        super.succeeded();
+                    }
+                });
                 return super.handle(request);
             }
         };
         _server.setHandler(echoHandler);
         _server.start();
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData();
-        HttpChannel channel = new HttpChannel(_server, connectionMetaData, new HttpConfiguration());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannel(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
             @Override

@@ -102,28 +102,10 @@ public class ContextRequest extends Request.WrapperProcessor implements Invocabl
     {
         return super.addErrorListener(t ->
         {
+            // TODO: implement the line below
+            // return _context.apply(onError::test, t, ContextRequest.this);
             _context.accept(onError::test, t, ContextRequest.this);
-            // TODO: should return the return value of onError.
-            return false;
-        });
-    }
-
-    @Override
-    public void addCompletionListener(Callback onComplete)
-    {
-        super.addCompletionListener(new Callback()
-        {
-            @Override
-            public void succeeded()
-            {
-                _context.run(onComplete::succeeded, ContextRequest.this);
-            }
-
-            @Override
-            public void failed(Throwable t)
-            {
-                _context.accept(onComplete::failed, t, ContextRequest.this);
-            }
+            return true;
         });
     }
 

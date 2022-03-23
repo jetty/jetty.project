@@ -19,6 +19,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
@@ -53,10 +54,14 @@ public class StatisticsHandler extends Handler.Wrapper
         _connectionStats.computeIfAbsent(request.getConnectionMetaData().getId(), id ->
         {
             // TODO test this with localconnector endpoint that has multiple requests per connection.
-            request.getHttpChannel().addConnectionCloseListener(x ->
+            request.getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
             {
-                // complete connections stats
-                _connectionStats.remove(request.getConnectionMetaData().getId());
+                @Override
+                public void onClosed(Connection connection)
+                {
+                    // complete connections stats
+                    _connectionStats.remove(id);
+                }
             });
             return "SomeConnectionStatsObject";
         });
@@ -66,7 +71,7 @@ public class StatisticsHandler extends Handler.Wrapper
         _requestStats.increment();
 
         // TODO don't need to do this until we see a Processor
-        request.getHttpChannel().addStreamWrapper(s -> new HttpStream.Wrapper(s)
+        request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
         {
             @Override
             public void send(MetaData.Request request, MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)

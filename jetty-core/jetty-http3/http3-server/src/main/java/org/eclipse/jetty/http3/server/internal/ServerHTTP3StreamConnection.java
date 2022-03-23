@@ -55,9 +55,9 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implement
 
     public Runnable onRequest(HTTP3StreamServer stream, HeadersFrame frame)
     {
-        HttpChannel httpChannel = new HttpChannel(connector.getServer(), this, httpConfiguration);
+        HttpChannel httpChannel = new HttpChannel(this);
         HttpStreamOverHTTP3 httpStream = new HttpStreamOverHTTP3(this, httpChannel, stream);
-        httpChannel.setStream(httpStream);
+        httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);
         return httpStream.onRequest(frame);
     }
@@ -90,6 +90,12 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implement
     public String getId()
     {
         return session.getQuicSession().getConnectionId().toString();
+    }
+
+    @Override
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return httpConfiguration;
     }
 
     @Override

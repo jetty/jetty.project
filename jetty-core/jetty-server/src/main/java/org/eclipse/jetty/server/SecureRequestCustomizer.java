@@ -330,7 +330,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                         String cipherSuite = _sslSession.getCipherSuite();
                         int keySize = SslContextFactory.deduceKeyLength(cipherSuite);
 
-                        X509Certificate[] certs = getCertChain(getHttpChannel().getConnector(), _sslSession);
+                        X509Certificate[] certs = getCertChain(getConnectionMetaData().getConnector(), _sslSession);
 
                         byte[] bytes = _sslSession.getId();
                         String idStr = StringUtil.toHexString(bytes);

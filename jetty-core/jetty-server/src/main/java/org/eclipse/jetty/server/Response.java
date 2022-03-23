@@ -159,7 +159,7 @@ public interface Response extends Content.Writer
 
         Request request = response.getRequest();
         response.getHeaders().add(new HttpCookie.SetCookieHttpField(HttpCookie.checkSameSite(cookie, request.getContext()),
-            request.getHttpChannel().getHttpConfiguration().getResponseCookieCompliance()));
+            request.getConnectionMetaData().getHttpConfiguration().getResponseCookieCompliance()));
 
         // Expire responses with set-cookie headers so they do not get cached.
         response.getHeaders().put(HttpFields.EXPIRES_01JAN1970);
@@ -171,8 +171,7 @@ public interface Response extends Content.Writer
             throw new IllegalArgumentException("Cookie.name cannot be blank/null");
 
         Request request = response.getRequest();
-        HttpChannel httpChannel = request.getHttpChannel();
-        HttpConfiguration httpConfiguration = httpChannel.getHttpConfiguration();
+        HttpConfiguration httpConfiguration = request.getConnectionMetaData().getHttpConfiguration();
 
         for (ListIterator<HttpField> i = response.getHeaders().listIterator(); i.hasNext(); )
         {
@@ -265,7 +264,7 @@ public interface Response extends Content.Writer
         Context context = request.getContext();
         Request.Processor errorProcessor = context.getErrorProcessor();
         if (errorProcessor == null)
-            errorProcessor = request.getHttpChannel().getServer().getErrorProcessor();
+            errorProcessor = request.getConnectionMetaData().getConnector().getServer().getErrorProcessor();
 
         if (errorProcessor != null)
         {
@@ -296,11 +295,11 @@ public interface Response extends Content.Writer
         return response;
     }
 
-    static long getBytesWritten(Response response)
+    static long getContentBytesWritten(Response response)
     {
         Response originalResponse = getOriginalResponse(response);
         if (originalResponse instanceof HttpChannel.ChannelResponse channelResponse)
-            return channelResponse.getByteWritten();
+            return channelResponse.getContentBytesWritten();
         return -1;
     }
 

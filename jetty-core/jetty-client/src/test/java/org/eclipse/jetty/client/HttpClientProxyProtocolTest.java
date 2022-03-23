@@ -169,7 +169,7 @@ public class HttpClientProxyProtocolTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                EndPoint endPoint = request.getHttpChannel().getEndPoint();
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertTrue(endPoint instanceof ProxyConnectionFactory.ProxyEndPoint);
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
                 if (request.getPathInContext().equals("/tls_version"))

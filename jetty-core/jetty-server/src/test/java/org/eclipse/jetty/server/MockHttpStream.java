@@ -18,13 +18,13 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
@@ -40,6 +40,8 @@ public class MockHttpStream implements HttpStream
     private final AtomicReference<ByteBuffer> _out = new AtomicReference<>();
     private final HttpChannel _channel;
     private final AtomicReference<MetaData.Response> _response = new AtomicReference<>();
+    private final HttpFields.Mutable _responseHeaders = HttpFields.build();
+    private HttpFields.Mutable _responseTrailers;
 
     public MockHttpStream(HttpChannel channel)
     {
@@ -48,7 +50,7 @@ public class MockHttpStream implements HttpStream
 
     public MockHttpStream(HttpChannel channel, boolean atEof)
     {
-        channel.setStream(this);
+        channel.setHttpStream(this);
         _channel = channel;
         if (atEof)
             _content.set(Content.EOF);
@@ -82,6 +84,16 @@ public class MockHttpStream implements HttpStream
     public MetaData.Response getResponse()
     {
         return _response.get();
+    }
+
+    public HttpFields getResponseHeaders()
+    {
+        return _responseHeaders;
+    }
+
+    public HttpFields getResponseTrailers()
+    {
+        return _responseTrailers;
     }
 
     public ByteBuffer getResponseContent()
@@ -151,6 +163,9 @@ public class MockHttpStream implements HttpStream
         if (response != null)
         {
             MetaData.Response r = _response.getAndSet(response);
+
+            _responseHeaders.add(response.getFields());
+
             if (r != null && r.getStatus() >= 200)
             {
                 callback.failed(new IOException("already committed"));
@@ -167,6 +182,10 @@ public class MockHttpStream implements HttpStream
 
         if (last)
         {
+            Supplier<HttpFields> trailersSupplier = _response.get().getTrailerSupplier();
+            if (trailersSupplier != null)
+                _responseTrailers = HttpFields.build(trailersSupplier.get());
+
             if (!_out.compareAndSet(null, _accumulator.takeByteBuffer()))
             {
                 if (response != null || content.length > 0)

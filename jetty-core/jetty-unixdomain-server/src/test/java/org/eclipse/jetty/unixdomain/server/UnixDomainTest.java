@@ -116,7 +116,7 @@ public class UnixDomainTest
                 // Verify the URI is preserved.
                 assertEquals(uri, request.getHttpURI().asString());
 
-                EndPoint endPoint = request.getHttpChannel().getEndPoint();
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
 
                 // Verify the SocketAddresses.
                 SocketAddress local = endPoint.getLocalSocketAddress();
@@ -201,7 +201,7 @@ public class UnixDomainTest
             @Override
             public void process(Request request, Response response, Callback callback)
             {
-                EndPoint endPoint = request.getHttpChannel().getEndPoint();
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertThat(endPoint, Matchers.instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
                 assertThat(endPoint.getLocalSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));
                 assertThat(endPoint.getRemoteSocketAddress(), Matchers.instanceOf(unixDomainSocketAddressClass));

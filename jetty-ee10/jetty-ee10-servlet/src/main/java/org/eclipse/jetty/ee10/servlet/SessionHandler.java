@@ -675,7 +675,7 @@ public class SessionHandler extends AbstractSessionHandler
         if (cookie != null)
             Response.replaceCookie(servletContextResponse, cookie);
 
-        request.getHttpChannel().addStreamWrapper(s -> new SessionStreamWrapper(s, servletApiRequest, request));
+        request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, servletApiRequest, request));
 
         return super.handle(request);
     }

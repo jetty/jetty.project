@@ -133,7 +133,7 @@ public class ProxyProtocolTest
                 assertEquals(33824, Request.getRemotePort(request));
                 assertEquals("10.0.0.5", Request.getLocalAddr(request));
                 assertEquals(8888, Request.getLocalPort(request));
-                EndPoint endPoint = request.getHttpChannel().getEndPoint();
+                EndPoint endPoint = request.getConnectionMetaData().getConnection().getEndPoint();
                 assertThat(endPoint, instanceOf(ProxyConnectionFactory.ProxyEndPoint.class));
                 ProxyConnectionFactory.ProxyEndPoint proxyEndPoint = (ProxyConnectionFactory.ProxyEndPoint)endPoint;
                 assertNotNull(proxyEndPoint.getAttribute(ProxyConnectionFactory.TLS_VERSION));

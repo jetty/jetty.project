@@ -483,7 +483,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
             {
                 if (request.getPathInContext().endsWith("/one"))
-                    request.getHttpChannel().getEndPoint().close();
+                    request.getConnectionMetaData().getConnection().getEndPoint().close();
             }
         });
 

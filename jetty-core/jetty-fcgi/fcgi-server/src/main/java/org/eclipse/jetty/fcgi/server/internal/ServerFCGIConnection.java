@@ -102,6 +102,12 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
     }
 
     @Override
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return configuration;
+    }
+
+    @Override
     public HttpVersion getHttpVersion()
     {
         return HttpVersion.HTTP_1_1;
@@ -325,10 +331,10 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             // TODO: handle flags
             if (stream != null)
                 throw new UnsupportedOperationException("FastCGI Multiplexing");
-            HttpChannel channel = new HttpChannel(connector.getServer(), ServerFCGIConnection.this, configuration);
+            HttpChannel channel = new HttpChannel(ServerFCGIConnection.this);
             ServerGenerator generator = new ServerGenerator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
             stream = new HttpStreamOverFCGI(ServerFCGIConnection.this, generator, channel, request);
-            channel.setStream(stream);
+            channel.setHttpStream(stream);
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} start on {}", request, channel);
         }

@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextRequest;
@@ -1570,12 +1571,19 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         final int bufferSize = 1024;
         _connector.getConnectionFactory(HttpConnectionFactory.class).setInputBufferSize(bufferSize);
         CountDownLatch closed = new CountDownLatch(1);
-        startServer(new Handler.Processor(Invocable.InvocationType.BLOCKING)
+        startServer(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                request.getHttpChannel().addConnectionCloseListener(t -> closed.countDown());
+                request.getConnectionMetaData().getConnection().addEventListener(new Connection.Listener()
+                {
+                    @Override
+                    public void onClosed(Connection connection)
+                    {
+                        closed.countDown();
+                    }
+                });
                 while (true)
                 {
                     Content content = request.readContent();

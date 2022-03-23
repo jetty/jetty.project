@@ -149,21 +149,12 @@ public interface Connection extends Closeable
      */
     public interface Listener extends EventListener
     {
-        public void onOpened(Connection connection);
-
-        public void onClosed(Connection connection);
-
-        public static class Adapter implements Listener
+        public default void onOpened(Connection connection)
         {
-            @Override
-            public void onOpened(Connection connection)
-            {
-            }
+        }
 
-            @Override
-            public void onClosed(Connection connection)
-            {
-            }
+        public default void onClosed(Connection connection)
+        {
         }
     }
 }

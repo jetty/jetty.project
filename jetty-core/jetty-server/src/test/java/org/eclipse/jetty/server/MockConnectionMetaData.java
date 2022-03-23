@@ -23,8 +23,9 @@ import org.eclipse.jetty.util.HostPort;
 
 public class MockConnectionMetaData extends Attributes.Mapped implements ConnectionMetaData
 {
+    private final HttpConfiguration _httpConfig = new HttpConfiguration();
     private final Connector _connector;
-    boolean _persistent = true;
+    private boolean _persistent = true;
 
     public MockConnectionMetaData()
     {
@@ -45,6 +46,12 @@ public class MockConnectionMetaData extends Attributes.Mapped implements Connect
     public String getId()
     {
         return "test";
+    }
+
+    @Override
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return _httpConfig;
     }
 
     @Override

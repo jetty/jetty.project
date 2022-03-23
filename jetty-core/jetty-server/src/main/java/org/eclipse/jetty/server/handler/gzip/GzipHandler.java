@@ -101,7 +101,7 @@ public class GzipHandler extends Handler.Wrapper
         public void process(Request request, Response response, Callback callback) throws Exception
         {
             // TODO
-            super.process(this, new GzipResponse(request, response, null, null, getHttpChannel().getHttpConfiguration().getOutputBufferSize(), false), callback);
+            super.process(this, new GzipResponse(request, response, null, null, getConnectionMetaData().getHttpConfiguration().getOutputBufferSize(), false), callback);
         }
     }
 

@@ -457,7 +457,7 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
     @Override
     public Request customize(Request request, HttpFields.Mutable responseHeaders)
     {
-        HttpConfiguration httpConfig = request.getHttpChannel().getHttpConfiguration();
+        HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
         HttpFields httpFields = request.getHeaders();
 
         // Do a single pass through the header fields as it is a more efficient single iteration.

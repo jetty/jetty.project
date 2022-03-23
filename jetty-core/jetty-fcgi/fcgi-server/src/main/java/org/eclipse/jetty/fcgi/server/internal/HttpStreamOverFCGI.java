@@ -356,7 +356,7 @@ public class HttpStreamOverFCGI implements HttpStream
         @Override
         public void failed(Throwable x)
         {
-            Runnable task = _channel.onConnectionClose(x);
+            Runnable task = _channel.onError(x);
             if (task != null)
                 _connection.getConnector().getExecutor().execute(task);
         }

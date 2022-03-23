@@ -136,11 +136,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         return getServer().getInvocationType();
     }
 
-    public HttpConfiguration getHttpConfiguration()
-    {
-        return _configuration;
-    }
-
     public boolean isRecordHttpComplianceViolations()
     {
         return _recordHttpComplianceViolations;
@@ -161,7 +156,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected HttpChannel newHttpChannel(Server server, HttpConfiguration configuration)
     {
-        return new HttpChannel(server, this, configuration);
+        return new HttpChannel(this);
     }
 
     protected HttpStreamOverHTTP1 newHttpStream(String method, String uri, HttpVersion version)
@@ -203,6 +198,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     public String getId()
     {
         return getEndPoint() + "#" + _idGenerator.getAndIncrement();
+    }
+
+    @Override
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return _configuration;
     }
 
     @Override
@@ -624,6 +625,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public void onClose(Throwable cause)
     {
+        // TODO: do we really need to do this?
+        //  This event is fired really late, sendCallback should already be failed at this point.
         try
         {
             if (cause == null)
@@ -633,9 +636,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
         finally
         {
-            Runnable todo = _channel.onConnectionClose(cause);
-            if (todo != null)
-                todo.run();
+            if (cause != null)
+            {
+                Runnable todo = _channel.onError(cause);
+                if (todo != null)
+                    todo.run();
+            }
         }
         super.onClose(cause);
     }
@@ -689,7 +695,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public void failed(Throwable x)
         {
-            Runnable task = _channel.onConnectionClose(x);
+            Runnable task = _channel.onError(x);
             if (LOG.isDebugEnabled())
                 LOG.debug("demand failed {}", task, x);
             if (task != null)
@@ -953,7 +959,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             if (!_stream.compareAndSet(null, stream))
                 throw new IllegalStateException("Stream pending");
             _headerBuilder.clear();
-            _channel.setStream(stream);
+            _channel.setHttpStream(stream);
         }
 
         @Override
@@ -1041,7 +1047,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             {
                 stream = newHttpStream("BAD", "/", HttpVersion.HTTP_1_1);
                 _stream.set(stream);
-                _channel.setStream(stream);
+                _channel.setHttpStream(stream);
             }
             Runnable todo = _channel.onError(failure);
             if (todo != null)

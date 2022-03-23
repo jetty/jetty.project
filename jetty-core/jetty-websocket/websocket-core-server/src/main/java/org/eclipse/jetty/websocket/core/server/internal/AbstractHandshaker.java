@@ -23,6 +23,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -121,12 +122,12 @@ public abstract class AbstractHandshaker implements Handshaker
         if (connection == null)
             throw new WebSocketException("not upgraded: no connection");
 
-        HttpChannel httpChannel = request.getHttpChannel();
-        HttpConfiguration httpConfig = httpChannel.getHttpConfiguration();
+        ConnectionMetaData connectionMetaData = request.getConnectionMetaData();
+        HttpConfiguration httpConfig = connectionMetaData.getHttpConfiguration();
         connection.setUseInputDirectByteBuffers(httpConfig.isUseInputDirectByteBuffers());
         connection.setUseOutputDirectByteBuffers(httpConfig.isUseOutputDirectByteBuffers());
 
-        httpChannel.getConnector().getEventListeners().forEach(connection::addEventListener);
+        connectionMetaData.getConnector().getEventListeners().forEach(connection::addEventListener);
 
         coreSession.setWebSocketConnection(connection);
 
