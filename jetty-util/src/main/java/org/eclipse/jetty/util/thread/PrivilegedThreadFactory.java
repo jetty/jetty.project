@@ -20,6 +20,7 @@ package org.eclipse.jetty.util.thread;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 /**
@@ -32,7 +33,10 @@ import java.util.function.Supplier;
  * calling context - which contains ProtectionDomains that may
  * reference the context classloader - and remembers it for the
  * lifetime of the Thread.
+ *
+ * @deprecated use {@link Executors#privilegedThreadFactory()} instead.
  */
+@Deprecated
 class PrivilegedThreadFactory
 {
     /**
@@ -51,6 +55,6 @@ class PrivilegedThreadFactory
             {
                 return newThreadSupplier.get();
             }
-        });
+        }, AccessController.getContext());
     }
 }

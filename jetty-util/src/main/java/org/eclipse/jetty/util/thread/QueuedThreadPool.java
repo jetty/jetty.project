@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -103,6 +104,7 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     private final BlockingQueue<Runnable> _jobs;
     private final ThreadGroup _threadGroup;
     private final ThreadFactory _threadFactory;
+    private final ThreadFactory _privilegedThreadFactory = Executors.privilegedThreadFactory();
     private String _name = "qtp" + hashCode();
     private int _idleTimeout;
     private int _maxThreads;
@@ -813,14 +815,13 @@ public class QueuedThreadPool extends ContainerLifeCycle implements ThreadFactor
     @Override
     public Thread newThread(Runnable runnable)
     {
-        return PrivilegedThreadFactory.newThread(() ->
+        return _privilegedThreadFactory.newThread(() ->
         {
             Thread thread = new Thread(_threadGroup, runnable);
             thread.setDaemon(isDaemon());
             thread.setPriority(getThreadsPriority());
             thread.setName(_name + "-" + thread.getId());
             thread.setContextClassLoader(getClass().getClassLoader());
-            return thread;
         });
     }
 
