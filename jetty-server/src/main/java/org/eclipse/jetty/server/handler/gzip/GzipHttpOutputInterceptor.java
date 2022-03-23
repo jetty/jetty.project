@@ -257,7 +257,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 
     private class GzipBufferCB extends IteratingNestedCallback
     {
-        private ByteBuffer _copy;
         private final ByteBuffer _content;
         private final boolean _last;
 
@@ -300,11 +299,6 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                 {
                     _channel.getByteBufferPool().release(_buffer);
                     _buffer = null;
-                }
-                if (_copy != null)
-                {
-                    _channel.getByteBufferPool().release(_copy);
-                    _copy = null;
                 }
                 return Action.SUCCEEDED;
             }
@@ -354,11 +348,10 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         @Override
         public String toString()
         {
-            return String.format("%s[content=%s last=%b copy=%s buffer=%s deflate=%s %s]",
+            return String.format("%s[content=%s last=%b buffer=%s deflate=%s %s]",
                 super.toString(),
                 BufferUtil.toDetailString(_content),
                 _last,
-                BufferUtil.toDetailString(_copy),
                 BufferUtil.toDetailString(_buffer),
                 _deflaterEntry,
                 _deflaterEntry != null && _deflaterEntry.get().finished() ? "(finished)" : "");
