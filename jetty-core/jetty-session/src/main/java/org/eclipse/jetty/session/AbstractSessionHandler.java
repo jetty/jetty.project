@@ -242,7 +242,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
                                     //TODO release the session straight away??
                                     try
                                     {
-                                        _sessionCache.release(id, s);
+                                        _sessionCache.release(s);
                                     }
                                     catch (Exception x)
                                     {
@@ -829,7 +829,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
             return;
         try
         {
-            _sessionCache.release(session.getId(), session);
+            _sessionCache.release(session);
         }
         catch (Exception e)
         {
@@ -930,7 +930,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
             {
                 try
                 {
-                    _sessionCache.release(newId, session);
+                    _sessionCache.release(session);
                 }
                 catch (Exception e)
                 {

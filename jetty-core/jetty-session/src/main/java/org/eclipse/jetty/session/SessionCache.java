@@ -115,26 +115,10 @@ public interface SessionCache extends LifeCycle
      * once a request is finished with a Session. SessionCache
      * implementations may want to delay writing out Session contents
      * until the last request exits a Session.
-     *
-     * @param id the session id
-     * @param session the current session object
-     * @throws Exception if any error occurred
-     * @deprecated use {@link #release(String, Session)} instead
-     */
-    @Deprecated
-    void put(String id, Session session) throws Exception;
-
-    /**
-     * Finish using a Session. This is called by the SessionHandler
-     * once a request is finished with a Session. SessionCache
-     * implementations may want to delay writing out Session contents
-     * until the last request exits a Session.
-     *
-     * @param id the session id
      * @param session the current session object
      * @throws Exception if any error occurred
      */
-    void release(String id, Session session) throws Exception;
+    void release(Session session) throws Exception;
 
     /**
      * Called when a response is about to be committed. The

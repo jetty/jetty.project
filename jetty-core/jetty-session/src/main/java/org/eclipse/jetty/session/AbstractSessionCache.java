@@ -478,16 +478,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     }
 
     /**
-     * @deprecated use {@link #release(String, Session)} instead
-     */
-    @Override
-    @Deprecated
-    public void put(String id, Session session) throws Exception
-    {
-        release(id, session);
-    }
-
-    /**
      * Finish using the Session object.
      *
      * This should be called when a request exists the session. Only when the last
@@ -500,14 +490,16 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * If the evictionPolicy == SessionCache.EVICT_ON_SESSION_EXIT then after we have saved
      * the session, we evict it from the cache.
      *
-     * @see org.eclipse.jetty.server.session.SessionCache#release(java.lang.String, org.eclipse.jetty.server.session.Session)
+     * @see org.eclipse.jetty.server.session.SessionCache#release(org.eclipse.jetty.server.session.Session)
      */
     @Override
-    public void release(String id, Session session) throws Exception
+    public void release(Session session) throws Exception
     {
-        if (id == null || session == null)
-            throw new IllegalArgumentException("Put key=" + id + " session=" + (session == null ? "null" : session.getId()));
+        if (session == null || session.getId() == null)
+            throw new IllegalArgumentException((session == null ? "Null session" : "Null session id"));
 
+        String id = session.getId();
+        
         try (AutoLock lock = session.lock())
         {
             if (session.getSessionManager() == null)

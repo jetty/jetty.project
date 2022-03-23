@@ -628,7 +628,7 @@ public class SessionHandler extends AbstractSessionHandler
                                     //TODO release the session straight away??
                                     try
                                     {
-                                        _sessionCache.release(id, s);
+                                        _sessionCache.release(s);
                                     }
                                     catch (Exception x)
                                     {

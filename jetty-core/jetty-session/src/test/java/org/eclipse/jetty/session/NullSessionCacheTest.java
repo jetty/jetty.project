@@ -93,14 +93,14 @@ public class NullSessionCacheTest extends AbstractSessionCacheTest
         assertFalse(cache.contains("1234")); //null cache doesn't actually retain the session
         
         //mimic releasing the session after the request is finished
-        cache.release("1234", session);
+        cache.release(session);
         assertTrue(store.exists("1234"));
         assertFalse(cache.contains("1234"));
 
         //simulate a new request using the previously created session
         session = cache.get("1234"); //get the session again
         session.access(now); //simulate a request
-        cache.release("1234", session); //finish with the session
+        cache.release(session); //finish with the session
         assertFalse(cache.contains("1234"));
         assertFalse(session.isResident());
     }

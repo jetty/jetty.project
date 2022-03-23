@@ -325,7 +325,7 @@ public abstract class AbstractSessionCacheTest
         cache.add("1234", session);
         commitAndCheckSaveState(cache, store, session, false, true, false, true, 0, 0);        
         //call release: session has not changed, but metadata has, should be written
-        cache.release("1234", session);
+        cache.release(session);
         assertEquals(1, store._numSaves.get());
         assertFalse(session.getSessionData().isDirty());
         assertFalse(session.getSessionData().isMetaDataDirty());
@@ -337,7 +337,7 @@ public abstract class AbstractSessionCacheTest
         session.setAttribute("foo", "bar");
         commitAndCheckSaveState(cache, store, session, true, true, false, false, 0, 1);
         //call release: session not dirty but release changes metadata, so it will be saved
-        cache.release("456", session);
+        cache.release(session);
         assertEquals(2, store._numSaves.get());
         assertFalse(session.getSessionData().isDirty());
         assertFalse(session.getSessionData().isMetaDataDirty());
@@ -349,7 +349,7 @@ public abstract class AbstractSessionCacheTest
         cache.add("678", session);
         commitAndCheckSaveState(cache, store, session, false, true, false, true, 0, 0);
         //call release: the metadata is dirty session should be written
-        cache.release("678", session);
+        cache.release(session);
         assertEquals(1, store._numSaves.get());
         assertFalse(session.getSessionData().isDirty());
         assertFalse(session.getSessionData().isMetaDataDirty());
@@ -362,7 +362,7 @@ public abstract class AbstractSessionCacheTest
         session.setMaxInactiveInterval((int)TimeUnit.HOURS.toSeconds(1)); //change maxIdle
         commitAndCheckSaveState(cache, store, session, true, true, false, false, 0, 1);
         //call release: session not dirty but release changes metadata, so it will be saved
-        cache.release("679", session);
+        cache.release(session);
         assertEquals(2, store._numSaves.get());
         assertFalse(session.getSessionData().isDirty());
         assertFalse(session.getSessionData().isMetaDataDirty());
@@ -377,7 +377,7 @@ public abstract class AbstractSessionCacheTest
         session.getSessionData().setMetaDataDirty(false);
         commitAndCheckSaveState(cache, store, session, false, false, false, false, 0, 0);
         //call release: not dirty but release sets metadata true, plus save period exceeded so write
-        cache.release("1234", session);
+        cache.release(session);
         assertEquals(1, store._numSaves.get());
         assertFalse(session.getSessionData().isDirty());
         assertFalse(session.getSessionData().isMetaDataDirty());
@@ -390,7 +390,7 @@ public abstract class AbstractSessionCacheTest
         session.setMaxInactiveInterval((int)TimeUnit.HOURS.toSeconds(1)); //change maxIdle
         commitAndCheckSaveState(cache, store, session, true, true, false, false, 0, 1);
         //call release: session not dirty, release changes metadata but previous save too recent --> no write
-        cache.release("891", session);
+        cache.release(session);
         assertEquals(1, store._numSaves.get());
         assertFalse(session.getSessionData().isDirty());
         assertTrue(session.getSessionData().isMetaDataDirty());
@@ -403,7 +403,7 @@ public abstract class AbstractSessionCacheTest
         session.getSessionData().setMetaDataDirty(false);
         commitAndCheckSaveState(cache, store, session, true, false, false, false, 0, 1);
         //call release: not dirty, release sets metadirty true (recalc expiry) but previous save too recent to exceed save period --> no write
-        cache.release("012", session);
+        cache.release(session);
         assertEquals(1, store._numSaves.get());
         assertFalse(session.getSessionData().isDirty());
         assertTrue(session.getSessionData().isMetaDataDirty());
@@ -415,7 +415,7 @@ public abstract class AbstractSessionCacheTest
         session.getSessionData().setLastSaved(System.currentTimeMillis()); //simulate session last saved recently
         commitAndCheckSaveState(cache, store, session, false, true, false, true, 0, 0);
         //call release: not dirty, release sets metadirty true (recalc expiry) but not within saveperiod so skip write
-        cache.release("1234", session);
+        cache.release(session);
         assertEquals(0, store._numSaves.get());
         assertFalse(session.getSessionData().isDirty());
         assertTrue(session.getSessionData().isMetaDataDirty());
@@ -527,7 +527,7 @@ public abstract class AbstractSessionCacheTest
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
         Session session = cache.newSession(data);
         cache.add("1234", session);
-        cache.release("1234", session);
+        cache.release(session);
         assertTrue(cache.exists("1234"));
         result = cache.checkExpiration(Collections.singleton("1234"));
         assertTrue(result.isEmpty());
@@ -619,7 +619,7 @@ public abstract class AbstractSessionCacheTest
         Session session = cache.newSession(data);
         cache.add("1234", session);
         session.setAttribute("aaa", "111"); //add an attribute to be called with passivate/activate
-        cache.release("1234", session);
+        cache.release(session);
         checkSessionBeforeShutdown("1234", store, cache, sessionHandler);
 
         server.stop(); //TODO calls shutdown
@@ -660,7 +660,7 @@ public abstract class AbstractSessionCacheTest
         Session session = cache.newSession(data);
         cache.add("8888", session);
         session.setAttribute("aaa", "111");
-        cache.release("8888", session);
+        cache.release(session);
         checkSessionBeforeShutdown("8888", store, cache, sessionHandler);
 
         server.stop();

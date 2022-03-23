@@ -96,6 +96,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         {
         }
     }
+    
     @Override
     public AbstractSessionCacheFactory newSessionCacheFactory(int evictionPolicy, boolean saveOnCreate,
                                                               boolean saveOnInactiveEvict, boolean removeUnloadableSessions,
@@ -180,7 +181,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertEquals(1, session.getRequests());
         
         //decrement request count
-        cache.release("1234", session);
+        cache.release(session);
         assertEquals(0, session.getRequests());
         
         //increment request count of session
@@ -382,7 +383,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         cache.add("1234", session);
         
         //release use of newly added session
-        cache.release("1234", session);
+        cache.release(session);
 
         assertEquals(0, session.getRequests());
         assertTrue(session.isResident());
@@ -395,7 +396,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         cache.getAndEnter("1234", true);
         assertEquals(1, session.getRequests());
         //decrement request count
-        cache.release("1234", session);
+        cache.release(session);
         assertEquals(0, session.getRequests());
         assertFalse(session.isResident());
         assertFalse(cache.contains("1234"));
@@ -468,7 +469,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
 
         //test session that is resident but not valid
         cache.add("1234", session);
-        cache.release("1234", session); //this will write session
+        cache.release(session); //this will write session
         session._state = Session.State.INVALID;
         cache.checkInactiveSession(session);
         assertTrue(store.exists("1234"));
@@ -546,7 +547,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertTrue(cache.contains("1234"));
         long accessed = now - TimeUnit.SECONDS.toMillis(30); //make it idle
         data.setAccessed(accessed);
-        cache.release("1234", session);
+        cache.release(session);
         assertTrue(cache.contains("1234"));
         assertTrue(session.isResident());
         cache.checkInactiveSession(session);
@@ -593,7 +594,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         long accessed = now - TimeUnit.SECONDS.toMillis(30); //make it idle
         data.setAccessed(accessed);
         cache.commit(session);
-        cache.release(id, session); //write the session, start the idle timer
+        cache.release(session); //write the session, start the idle timer
         long lastSaved = data.getLastSaved();
 
         try (StacklessLogging ignored = new StacklessLogging(FileSessionsTest.class.getPackage()))
@@ -613,7 +614,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
             assertEquals("one", session.getAttribute("aaa"));
             session.setAttribute("aaa", "two");
             cache.commit(session);
-            cache.release(id, session);
+            cache.release(session);
 
             //check that the save succeeded
             assertTrue(data.getLastSaved() > lastSaved);
