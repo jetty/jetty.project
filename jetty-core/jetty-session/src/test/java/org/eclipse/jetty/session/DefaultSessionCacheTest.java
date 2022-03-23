@@ -13,9 +13,12 @@
 
 package org.eclipse.jetty.session;
 
+import java.util.Collections;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -33,7 +36,66 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class DefaultSessionCacheTest extends AbstractSessionCacheTest
 {
+    private class FailableSessionDataStore extends AbstractSessionDataStore
+    {
+        public boolean[] _nextStoreResult;
+        public int i = 0;
 
+        public FailableSessionDataStore(boolean[] results)
+        {
+            _nextStoreResult = results;
+        }
+        
+        @Override
+        public boolean isPassivating()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean doExists(String id) throws Exception
+        {
+            return true;
+        }
+
+        @Override
+        public SessionData doLoad(String id) throws Exception
+        {
+            return null;
+        }
+
+        @Override
+        public boolean delete(String id) throws Exception
+        {
+            return false;
+        }
+
+        @Override
+        public void doStore(String id, SessionData data, long lastSaveTime) throws Exception
+        {
+            if (_nextStoreResult != null && !_nextStoreResult[i++])
+            {
+                throw new IllegalStateException("Testing store");
+            }
+        }
+
+        @Override
+        public Set<String> doCheckExpired(Set<String> candidates, long timeLimit)
+        {
+            return candidates;
+        }
+
+        @Override
+        public Set<String> doGetExpired(long timeLimit)
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public void doCleanOrphans(long timeLimit)
+        {
+        }
+    }
     @Override
     public AbstractSessionCacheFactory newSessionCacheFactory(int evictionPolicy, boolean saveOnCreate,
                                                               boolean saveOnInactiveEvict, boolean removeUnloadableSessions,
@@ -42,7 +104,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         DefaultSessionCacheFactory factory = new DefaultSessionCacheFactory();
         factory.setEvictionPolicy(evictionPolicy);
         factory.setSaveOnCreate(saveOnCreate);
-        factory.setSaveOnInactiveEvict(saveOnInactiveEvict);
+        factory.setSaveOnInactiveEviction(saveOnInactiveEvict);
         factory.setRemoveUnloadableSessions(removeUnloadableSessions);
         factory.setFlushOnResponseCommit(flushOnResponseCommit);
         return factory;
@@ -450,6 +512,12 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertTrue(cache.contains("567"));
     }
 
+    /**
+     * Test that if saveOnEviction==true, the session will be persisted before
+     * it is evicted.
+     * 
+     * @throws Exception
+     */
     @Test
     public void testSaveOnEviction()
         throws Exception
@@ -486,5 +554,69 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
         assertFalse(session.isResident());
         SessionData retrieved = store.load("1234");
         assertEquals(accessed, retrieved.getAccessed()); //check that we persisted the session before we evicted
+    }
+    
+    /**
+     * Test that when saveOnEviction=true, if the save fails, the session
+     * remains in the cache and can be used later.
+     * @throws Exception
+     */
+    @Test
+    public void testSaveOnEvictionFail() throws Exception
+    {
+        Server server = new Server();
+
+        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        sessionHandler.setServer(server);
+        
+        DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
+        cacheFactory.setEvictionPolicy(SessionCache.EVICT_ON_INACTIVITY); //evict after 1 second inactivity
+        cacheFactory.setSaveOnInactiveEviction(true);
+        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionHandler);
+
+        //test values: allow first save, fail evict save, allow save
+        FailableSessionDataStore sessionDataStore = new FailableSessionDataStore(new boolean[]{true, false, true});
+        cache.setSessionDataStore(sessionDataStore);
+        sessionHandler.setSessionCache(cache);
+        server.setHandler(sessionHandler);
+        server.start();
+        
+        //make a session
+        long now = System.currentTimeMillis();
+        SessionData data = sessionDataStore.newSessionData("1234", now - 20, now - 10, now - 20, TimeUnit.MINUTES.toMillis(10));
+        data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
+        Session session = cache.newSession(data);
+        String id = session.getId();
+        cache.add("1234", session); //make it resident
+        session.setAttribute("aaa", "one");
+        assertTrue(cache.contains("1234"));
+        long accessed = now - TimeUnit.SECONDS.toMillis(30); //make it idle
+        data.setAccessed(accessed);
+        cache.commit(session);
+        cache.release(id, session); //write the session, start the idle timer
+        long lastSaved = data.getLastSaved();
+
+        try (StacklessLogging ignored = new StacklessLogging(FileSessionsTest.class.getPackage()))
+        {
+            //wait for the idle timer to go off
+            Thread.currentThread().sleep(SessionCache.EVICT_ON_INACTIVITY * 1500);
+
+            //write out on evict will fail
+            //check that session is still in the cache
+            assertTrue(cache.contains(id));
+            //check that the last-saved time didn't change
+            assertEquals(lastSaved, data.getLastSaved());
+
+            //test that the session can be mutated and saved
+            session = cache.getAndEnter(id, true);
+            assertNotNull(session);
+            assertEquals("one", session.getAttribute("aaa"));
+            session.setAttribute("aaa", "two");
+            cache.commit(session);
+            cache.release(id, session);
+
+            //check that the save succeeded
+            assertTrue(data.getLastSaved() > lastSaved);
+        }
     }
 }

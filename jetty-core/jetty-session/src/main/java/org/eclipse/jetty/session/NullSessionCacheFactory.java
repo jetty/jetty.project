@@ -39,13 +39,13 @@ public class NullSessionCacheFactory extends AbstractSessionCacheFactory
     }
 
     @Override
-    public boolean isSaveOnInactiveEvict()
+    public boolean isSaveOnInactiveEviction()
     {
         return false; //never kept in cache
     }
 
     @Override
-    public void setSaveOnInactiveEvict(boolean saveOnInactiveEvict)
+    public void setSaveOnInactiveEviction(boolean saveOnInactiveEvict)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Ignoring eviction policy setting for NullSessionCaches");

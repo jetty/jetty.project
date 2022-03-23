@@ -114,7 +114,7 @@ public class SessionDocs
         //EVICT_ON_INACTIVE: evict a session after 60sec inactivity
         cacheFactory.setEvictionPolicy(60);
         //Only useful with the EVICT_ON_INACTIVE policy
-        cacheFactory.setSaveOnInactiveEvict(true);
+        cacheFactory.setSaveOnInactiveEviction(true);
         cacheFactory.setFlushOnResponseCommit(true);
         cacheFactory.setInvalidateOnShutdown(false);
         cacheFactory.setRemoveUnloadableSessions(true);

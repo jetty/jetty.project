@@ -107,7 +107,7 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     /**
      * @return the saveOnInactiveEvict
      */
-    public boolean isSaveOnInactiveEvict()
+    public boolean isSaveOnInactiveEviction()
     {
         return _saveOnInactiveEvict;
     }
@@ -115,7 +115,7 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     /**
      * @param saveOnInactiveEvict the saveOnInactiveEvict to set
      */
-    public void setSaveOnInactiveEvict(boolean saveOnInactiveEvict)
+    public void setSaveOnInactiveEviction(boolean saveOnInactiveEvict)
     {
         _saveOnInactiveEvict = saveOnInactiveEvict;
     }
@@ -125,7 +125,7 @@ public abstract class AbstractSessionCacheFactory implements SessionCacheFactory
     {
         SessionCache cache = newSessionCache(manager);
         cache.setEvictionPolicy(getEvictionPolicy());
-        cache.setSaveOnInactiveEviction(isSaveOnInactiveEvict());
+        cache.setSaveOnInactiveEviction(isSaveOnInactiveEviction());
         cache.setSaveOnCreate(isSaveOnCreate());
         cache.setRemoveUnloadableSessions(isRemoveUnloadableSessions());
         cache.setFlushOnResponseCommit(isFlushOnResponseCommit());
