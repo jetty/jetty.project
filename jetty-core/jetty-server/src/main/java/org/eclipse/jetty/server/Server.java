@@ -741,6 +741,12 @@ public class Server extends Handler.Wrapper implements Attributes
         {
             runnable.run();
         }
+        
+        @Override
+        public void run(Runnable runnable, Request request)
+        {
+            runnable.run();
+        }
 
         @Override
         public void execute(Runnable runnable)
