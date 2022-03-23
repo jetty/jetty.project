@@ -24,22 +24,14 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.HttpChannel;
 
 public class AsyncContextState implements AsyncContext
 {
-    private final HttpChannel _channel;
     volatile ServletRequestState _state;
 
     public AsyncContextState(ServletRequestState state)
     {
         _state = state;
-        _channel = _state.getHttpChannel();
-    }
-
-    public HttpChannel getHttpChannel()
-    {
-        return _channel;
     }
 
     ServletRequestState state()

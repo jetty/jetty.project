@@ -71,7 +71,6 @@ import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
@@ -1387,17 +1386,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             return null;
 
         // Get a servlet request, possibly from a cached version in the channel attributes.
-        // TODO there is a little bit of effort here to recycle the ServletRequest, but not the underlying jetty request.
-        //      the servlet request is still a heavy weight object with state, input streams, cookie caches etc. so it is
-        //      probably worth while.
-        HttpChannel channel = request.getHttpChannel();
-        ServletChannel servletChannel = (ServletChannel)channel.getAttribute(ServletChannel.class.getName());
-        if (servletChannel == null)
-        {
-            servletChannel = new ServletChannel();
-            if (channel.getConnectionMetaData().isPersistent())
-                channel.setAttribute(ServletChannel.class.getName(), servletChannel);
-        }
+        // TODO We should cache this heavy weight object!
+        ServletChannel servletChannel = new ServletChannel();
 
         ServletContextRequest servletContextRequest = new ServletContextRequest(_servletContext, servletChannel, request, pathInContext, mappedServlet);
         servletChannel.init(servletContextRequest);

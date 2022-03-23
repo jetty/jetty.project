@@ -20,7 +20,6 @@ import java.util.concurrent.locks.Condition;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Content;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -46,7 +45,6 @@ class AsyncContentProducer implements ContentProducer
 
     private final AutoLock _lock = new AutoLock();
     private final ServletChannel _servletChannel;
-    private final HttpChannel _httpChannel;
     private HttpInput.Interceptor _interceptor;
     private HttpInput.Content _rawContent;
     private HttpInput.Content _transformedContent;
@@ -57,7 +55,6 @@ class AsyncContentProducer implements ContentProducer
     AsyncContentProducer(ServletChannel servletChannel)
     {
         _servletChannel = servletChannel;
-        _httpChannel = servletChannel.getHttpChannel();
     }
 
     @Override
@@ -151,7 +148,7 @@ class AsyncContentProducer implements ContentProducer
     public void checkMinDataRate()
     {
         assertLocked();
-        long minRequestDataRate = _httpChannel.getHttpConfiguration().getMinRequestDataRate();
+        long minRequestDataRate = _servletChannel.getHttpConfiguration().getMinRequestDataRate();
         if (LOG.isDebugEnabled())
             LOG.debug("checkMinDataRate [m={},t={}] {}", minRequestDataRate, _firstByteTimeStamp, this);
         if (minRequestDataRate > 0 && _firstByteTimeStamp != Long.MIN_VALUE)
@@ -509,14 +506,13 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public String toString()
     {
-        return String.format("%s@%x[r=%s,t=%s,i=%s,error=%b,c=%s]",
+        return String.format("%s@%x[r=%s,t=%s,i=%s,error=%b]",
             getClass().getSimpleName(),
             hashCode(),
             _rawContent,
             _transformedContent,
             _interceptor,
-            _error,
-            _httpChannel
+            _error
         );
     }
 

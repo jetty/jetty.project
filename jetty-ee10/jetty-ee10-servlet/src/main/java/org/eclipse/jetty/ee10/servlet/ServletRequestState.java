@@ -25,7 +25,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -137,7 +136,6 @@ public class ServletRequestState
     }
 
     private final AutoLock _lock = new AutoLock();
-    private final HttpChannel _channel;
     private final ServletChannel _servletChannel;
     private List<AsyncListener> _asyncListeners;
     private State _state = State.IDLE;
@@ -153,7 +151,6 @@ public class ServletRequestState
 
     protected ServletRequestState(ServletChannel servletChannel)
     {
-        _channel = servletChannel.getHttpChannel();
         _servletChannel = servletChannel;
     }
 
@@ -1100,7 +1097,8 @@ public class ServletRequestState
 
     protected void scheduleDispatch()
     {
-        _channel.getConnectionMetaData().getConnector().getExecutor().execute(_servletChannel);
+        // TODO long winded!!!
+        _servletChannel.getRequest().getConnectionMetaData().getConnector().getExecutor().execute(_servletChannel);
     }
 
     protected void cancelTimeout()
@@ -1176,11 +1174,6 @@ public class ServletRequestState
     public Request getBaseRequest()
     {
         return _servletChannel.getRequest();
-    }
-
-    public HttpChannel getHttpChannel()
-    {
-        return _channel;
     }
 
     public ServletContextHandler getContextHandler()

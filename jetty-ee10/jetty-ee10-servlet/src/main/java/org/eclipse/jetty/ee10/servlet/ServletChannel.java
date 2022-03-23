@@ -34,7 +34,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Content;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -60,7 +59,7 @@ import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKIN
 public class ServletChannel implements Runnable
 {
     public static Listener NOOP_LISTENER = new Listener() {};
-    private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServletChannel.class);
 
     private final AtomicLong _requests = new AtomicLong();
     private Connector _connector;
@@ -121,7 +120,7 @@ public class ServletChannel implements Runnable
         _connector = request.getConnectionMetaData().getConnector();
 
         // TODO: can we do this?
-        _configuration = request.getHttpChannel().getHttpConfiguration();
+        _configuration = request.getConnectionMetaData().getHttpConfiguration();
 
         request.getHttpInput().init();
 
@@ -145,11 +144,6 @@ public class ServletChannel implements Runnable
     public ServletContextHandler.ServletContextApi getServletContext()
     {
         return _servletContextApi;
-    }
-
-    public HttpChannel getHttpChannel()
-    {
-        return _request.getHttpChannel();
     }
 
     public HttpOutput getHttpOutput()
@@ -839,7 +833,7 @@ public class ServletChannel implements Runnable
     }
 
     /**
-     * <p>Listener for {@link HttpChannel} events.</p>
+     * <p>Listener for Channel events.</p>
      * <p>HttpChannel will emit events for the various phases it goes through while
      * processing an HTTP request and response.</p>
      * <p>Implementations of this interface may listen to those events to track
@@ -857,13 +851,15 @@ public class ServletChannel implements Runnable
      * performing the request processing, and they should not call blocking code
      * (otherwise the request processing will be blocked as well).</p>
      * <p>Listener instances that are set as a bean on the {@link Connector} are
-     * efficiently added to {@link HttpChannel}.  If additional listeners are added
+     * also added.  If additional listeners are added
      * using the deprecated {@code HttpChannel#addListener(Listener)}</p> method,
      * then an instance of {@code TransientListeners} must be added to the connector
      * in order for them to be invoked.
      */
     public interface Listener extends EventListener
     {
+        // TODO do we need this class?
+
         /**
          * Invoked just after the HTTP request line and headers have been parsed.
          *

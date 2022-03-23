@@ -34,7 +34,7 @@ import jakarta.servlet.WriteListener;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Response;
@@ -131,7 +131,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      * additional buffering that acts on all output.  Interceptors are
      * created in a chain, so that multiple concerns may intercept.
      * <p>
-     * The {@link HttpChannel} is an {@link Interceptor} and is always the
+     * The {@link DefaultInterceptor} is always the
      * last link in any Interceptor chain.
      * <p>
      * Responses are committed by the first call to
@@ -194,9 +194,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private static final Logger LOG = LoggerFactory.getLogger(HttpOutput.class);
     private static final ThreadLocal<CharsetEncoder> _encoder = new ThreadLocal<>();
 
+    private final ConnectionMetaData _connectionMetaData;
     private final ServletChannel _servletChannel;
     private final Response _response;
-    private HttpChannel _channel;
     private ServletRequestState _channelState;
     private SharedBlockingCallback _writeBlocker;
     private ApiState _apiState = ApiState.BLOCKING;
@@ -217,8 +217,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         _response = response;
         _servletChannel = channel;
+        _connectionMetaData = _response.getRequest().getConnectionMetaData();
 
-        _channel = _servletChannel.getHttpChannel();
         _channelState = _servletChannel.getState();
         _interceptor = new DefaultInterceptor();
         _writeBlocker = new WriteBlocker(_servletChannel);
@@ -236,12 +236,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         return _response;
     }
-
-    public HttpChannel getHttpChannel()
-    {
-        return _channel;
-    }
-
+    
     public Interceptor getInterceptor()
     {
         return _interceptor;
@@ -288,7 +283,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (_firstByteTimeStamp == -1)
         {
-            long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
+            long minDataRate = _connectionMetaData.getHttpConfiguration().getMinResponseDataRate();
             if (minDataRate > 0)
                 _firstByteTimeStamp = System.nanoTime();
             else
@@ -671,9 +666,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private ByteBuffer acquireBuffer()
     {
-
-        ByteBufferPool byteBufferPool = _channel.getConnectionMetaData().getConnector().getByteBufferPool();
-        boolean useOutputDirectByteBuffers = ((HttpConnection)_channel.getConnectionMetaData().getConnection())
+        ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
+        boolean useOutputDirectByteBuffers = ((HttpConnection)_connectionMetaData.getConnection())
             .getHttpConfiguration().isUseOutputDirectByteBuffers();
         if (_aggregate == null)
             _aggregate = byteBufferPool.acquire(getBufferSize(), useOutputDirectByteBuffers);
@@ -684,7 +678,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (_aggregate != null)
         {
-            ByteBufferPool bufferPool = _channel.getConnector().getByteBufferPool();
+            ByteBufferPool bufferPool = _connectionMetaData.getConnector().getByteBufferPool();
             if (failure == null)
                 bufferPool.release(_aggregate);
             else
@@ -1114,7 +1108,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         CharBuffer in = CharBuffer.wrap(s);
         CharBuffer crlf = eoln ? CharBuffer.wrap("\r\n") : null;
-        ByteBufferPool byteBufferPool = _channel.getConnectionMetaData().getConnector().getByteBufferPool();
+        ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
         ByteBuffer out = byteBufferPool.acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
         BufferUtil.flipToFill(out);
 
@@ -1336,7 +1330,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("sendContent(http={},{})", httpContent, callback);
 
-        boolean useOutputDirectByteBuffers = ((HttpConnection)_channel.getConnectionMetaData().getConnection())
+        boolean useOutputDirectByteBuffers = ((HttpConnection)_connectionMetaData.getConnection())
             .getHttpConfiguration().isUseOutputDirectByteBuffers();
         ByteBuffer buffer = useOutputDirectByteBuffers ? httpContent.getDirectBuffer() : null;
         if (buffer == null)
@@ -1411,7 +1405,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (_firstByteTimeStamp == -1 || _firstByteTimeStamp == Long.MAX_VALUE)
             return;
-        long minDataRate = getHttpChannel().getHttpConfiguration().getMinResponseDataRate();
+        long minDataRate = _connectionMetaData.getHttpConfiguration().getMinResponseDataRate();
         _flushed += bytes;
         long elapsed = System.nanoTime() - _firstByteTimeStamp;
         long minFlushed = minDataRate * TimeUnit.NANOSECONDS.toMillis(elapsed) / TimeUnit.SECONDS.toMillis(1);
@@ -1433,7 +1427,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _apiState = ApiState.BLOCKING;
             _softClose = true; // Stay closed until next request
             _interceptor = new DefaultInterceptor();
-            HttpConfiguration config = _channel.getHttpConfiguration();
+            HttpConfiguration config = _connectionMetaData.getHttpConfiguration();
             _bufferSize = config.getOutputBufferSize();
             _commitSize = config.getOutputAggregationSize();
             if (_commitSize > _bufferSize)
@@ -1765,7 +1759,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     /**
      * An iterating callback that will take content from an
-     * InputStream and write it to the associated {@link HttpChannel}.
+     * InputStream and write it to this HttpOutput.
      * A non direct buffer of size {@link HttpOutput#getBufferSize()} is used.
      * This callback is passed to the {@link Response#write(boolean, Callback, ByteBuffer...)} to
      * be notified as each buffer is written and only once all the input is consumed will the
@@ -1783,7 +1777,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             super(callback, true);
             _in = in;
             // Reading from InputStream requires byte[], don't use direct buffers.
-            ByteBufferPool byteBufferPool = _channel.getConnectionMetaData().getConnector().getByteBufferPool();
+            ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
             _buffer = byteBufferPool.acquire(getBufferSize(), false);
         }
 
@@ -1799,7 +1793,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (!_closed)
                 {
                     _closed = true;
-                    ByteBufferPool byteBufferPool = _channel.getConnectionMetaData().getConnector().getByteBufferPool();
+                    ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
                     byteBufferPool.release(_buffer);
                     IO.close(_in);
                 }
@@ -1831,7 +1825,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             try
             {
-                ByteBufferPool byteBufferPool = _channel.getConnectionMetaData().getConnector().getByteBufferPool();
+                ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
                 byteBufferPool.release(_buffer);
             }
             finally
@@ -1843,7 +1837,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     /**
      * An iterating callback that will take content from a
-     * ReadableByteChannel and write it to the {@link HttpChannel}.
+     * ReadableByteChannel and write it to this HttpOutput.
      * A {@link ByteBuffer} of size {@link HttpOutput#getBufferSize()} is used that will be direct if
      * {@code HttpChannel#isUseOutputDirectByteBuffers()} is true.
      * This callback is passed to the {@link Response#write(boolean, Callback, ByteBuffer...)} to
@@ -1861,8 +1855,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             super(callback, true);
             _in = in;
-            ByteBufferPool byteBufferPool = _channel.getConnectionMetaData().getConnector().getByteBufferPool();
-            boolean useOutputDirectByteBuffers = ((HttpConnection)_channel.getConnectionMetaData().getConnection())
+            ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
+            boolean useOutputDirectByteBuffers = ((HttpConnection)_connectionMetaData.getConnection())
                 .getHttpConfiguration().isUseOutputDirectByteBuffers();
             _buffer = byteBufferPool.acquire(getBufferSize(), useOutputDirectByteBuffers);
         }
@@ -1879,7 +1873,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (!_closed)
                 {
                     _closed = true;
-                    ByteBufferPool byteBufferPool = _channel.getConnectionMetaData().getConnector().getByteBufferPool();
+                    ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
                     byteBufferPool.release(_buffer);
                     IO.close(_in);
                 }
@@ -1904,7 +1898,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         public void onCompleteFailure(Throwable x)
         {
-            ByteBufferPool byteBufferPool = _channel.getConnectionMetaData().getConnector().getByteBufferPool();
+            ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
             byteBufferPool.release(_buffer);
             IO.close(_in);
             super.onCompleteFailure(x);

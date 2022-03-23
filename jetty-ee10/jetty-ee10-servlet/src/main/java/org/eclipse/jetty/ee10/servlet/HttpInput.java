@@ -22,7 +22,6 @@ import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -534,7 +533,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     }
 
     /**
-     * A content represents the production of a {@link HttpChannel} returned by {@link Request#readContent()} ()}.
+     * A content represents the production of a {@link org.eclipse.jetty.server.Content} returned by {@link Request#readContent()} ()}.
      * There are two fundamental types of content: special and non-special.
      * Non-special content always wraps a byte buffer that can be consumed and must be recycled once it is empty, either
      * via {@link #succeeded()} or {@link #failed(Throwable)}.

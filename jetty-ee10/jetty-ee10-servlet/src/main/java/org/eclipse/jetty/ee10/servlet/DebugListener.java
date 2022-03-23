@@ -258,7 +258,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
                     r.getMethod(),
                     url.toString(),
                     r.getProtocol(),
-                    br.getHttpChannel(),
+                    br.getConnectionMetaData(),
                     headers);
             }
             else

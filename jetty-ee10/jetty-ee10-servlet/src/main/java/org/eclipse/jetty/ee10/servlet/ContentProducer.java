@@ -13,18 +13,11 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 
 /**
- * ContentProducer is the bridge between {@link HttpInput} and {@link HttpChannel}.
- * It wraps a {@link HttpChannel} and uses the {@link HttpChannel#needContent()},
- * {@link HttpChannel#produceContent()} and {@link HttpChannel#failAllContent(Throwable)}
- * methods, tracks the current state of the channel's input by updating the
- * {@link HttpChannelState} and provides the necessary mechanism to unblock
- * the reader thread when using a blocking implementation or to know if the reader thread
- * has to be rescheduled when using an async implementation.
+ * ContentProducer is the bridge between {@link HttpInput} and {@link org.eclipse.jetty.server.Content.Reader}.
  */
 public interface ContentProducer
 {
@@ -49,7 +42,7 @@ public interface ContentProducer
 
     /**
      * Fail all content currently available in this {@link ContentProducer} instance
-     * as well as in the underlying {@link HttpChannel}.
+     * as well as in the underlying {@link org.eclipse.jetty.server.Content.Reader}.
      *
      * This call is always non-blocking.
      * Doesn't change state.
@@ -65,17 +58,17 @@ public interface ContentProducer
     void checkMinDataRate();
 
     /**
-     * Get the byte count produced by the underlying {@link HttpChannel}.
+     * Get the byte count produced by the underlying {@link org.eclipse.jetty.server.Content.Reader}.
      *
      * This call is always non-blocking.
      * Doesn't change state.
-     * @return the byte count produced by the underlying {@link HttpChannel}.
+     * @return the byte count produced by the underlying {@link org.eclipse.jetty.server.Content.Reader}.
      */
     long getRawContentArrived();
 
     /**
      * Get the byte count that can immediately be read from this
-     * {@link ContentProducer} instance or the underlying {@link HttpChannel}.
+     * {@link ContentProducer} instance or the underlying {@link org.eclipse.jetty.server.Content.Reader}.
      *
      * This call is always non-blocking.
      * Doesn't change state.
@@ -85,7 +78,7 @@ public interface ContentProducer
 
     /**
      * Check if this {@link ContentProducer} instance contains some
-     * content without querying the underlying {@link HttpChannel}.
+     * content without querying the underlying {@link org.eclipse.jetty.server.Content.Reader}.
      *
      * This call is always non-blocking.
      * Doesn't change state.
@@ -95,11 +88,11 @@ public interface ContentProducer
     boolean hasContent();
 
     /**
-     * Check if the underlying {@link HttpChannel} reached an error content.
+     * Check if the underlying {@link org.eclipse.jetty.server.Content.Reader} reached an error content.
      * This call is always non-blocking.
      * Doesn't change state.
      * Doesn't query the HttpChannel.
-     * @return true if the underlying {@link HttpChannel} reached an error content, false otherwise.
+     * @return true if the underlying {@link org.eclipse.jetty.server.Content.Reader} reached an error content, false otherwise.
      */
     boolean isError();
 

@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee10.servlet;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.util.BufferUtil;
 
+// TODO We should not need this class.  HttpInput needs to be updated to use the
 public class ContentTranslator extends HttpInput.Content
 {
     private final Content _content;
