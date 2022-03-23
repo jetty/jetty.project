@@ -15,6 +15,10 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.AbstractMap;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -33,6 +37,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.UriCompliance;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.ResponseHttpFields;
@@ -42,7 +47,9 @@ import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.SerializedInvoker;
+import org.eclipse.jetty.util.thread.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +62,7 @@ import org.slf4j.LoggerFactory;
  * Note how Runnables are returned to indicate that further work is needed. These
  * can be given to an ExecutionStrategy instead of calling known methods like HttpChannel.handle().
  */
-public class HttpChannel
+public class HttpChannel implements Resources
 {
     public static final String UPGRADE_CONNECTION_ATTRIBUTE = HttpChannel.class.getName() + ".UPGRADE";
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
@@ -76,6 +83,25 @@ public class HttpChannel
     private static final MetaData.Request ERROR_REQUEST = new MetaData.Request("GET", HttpURI.from("/"), HttpVersion.HTTP_1_0, HttpFields.EMPTY);
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
     private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
+    private static final Map<String, Object> NULL_CACHE = new AbstractMap<>()
+    {
+        @Override
+        public Set<Entry<String, Object>> entrySet()
+        {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public Object put(String key, Object value)
+        {
+            return null;
+        }
+
+        @Override
+        public void putAll(Map<? extends String, ?> m)
+        {
+        }
+    };
 
     private final AutoLock _lock = new AutoLock();
     private final Runnable _handlerInvoker = new HandlerInvoker();
@@ -97,6 +123,7 @@ public class HttpChannel
     private boolean _lastWrite;
     private Content.Error _error;
     private Predicate<Throwable> _onError;
+    private Map<String, Object> _cache;
 
     public HttpChannel(ConnectionMetaData connectionMetaData)
     {
@@ -211,6 +238,37 @@ public class HttpChannel
     public EndPoint getEndPoint()
     {
         return getConnection().getEndPoint();
+    }
+
+    @Override
+    public ByteBufferPool getByteBufferPool()
+    {
+        return getConnectionMetaData().getConnector().getByteBufferPool();
+    }
+
+    @Override
+    public Scheduler getScheduler()
+    {
+        return getServer().getBean(Scheduler.class);
+    }
+
+    @Override
+    public ThreadPool getThreadPool()
+    {
+        return getServer().getThreadPool();
+    }
+
+    @Override
+    public Map<String, Object> getCache()
+    {
+        if (_cache == null)
+        {
+            if (getConnectionMetaData().isPersistent())
+                _cache = new HashMap<>();
+            else
+                _cache = NULL_CACHE;
+        }
+        return _cache;
     }
 
     /**
@@ -620,6 +678,12 @@ public class HttpChannel
         public String getId()
         {
             return _id;
+        }
+
+        @Override
+        public Resources getResources()
+        {
+            return getHttpChannel();
         }
 
         @Override

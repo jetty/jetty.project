@@ -200,7 +200,7 @@ public class ErrorProcessor implements Request.Processor
         }
 
         int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
-        ByteBuffer buffer = request.getConnectionMetaData().getConnector().getByteBufferPool().acquire(bufferSize, false);
+        ByteBuffer buffer = request.getResources().getByteBufferPool().acquire(bufferSize, false);
 
         // write into the response aggregate buffer and flush it asynchronously.
         // Looping to reduce size if buffer overflows
@@ -252,14 +252,14 @@ public class ErrorProcessor implements Request.Processor
             @Override
             public void succeeded()
             {
-                request.getConnectionMetaData().getConnector().getByteBufferPool().release(buffer);
+                request.getResources().getByteBufferPool().release(buffer);
                 super.succeeded();
             }
 
             @Override
             public void failed(Throwable x)
             {
-                request.getConnectionMetaData().getConnector().getByteBufferPool().release(buffer);
+                request.getResources().getByteBufferPool().release(buffer);
                 super.failed(x);
             }
         }, buffer);

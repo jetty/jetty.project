@@ -121,7 +121,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         PENDING,  // write operating in progress
         UNREADY,  // write operating in progress, isReady has returned false
     }
-
+    
     /**
      * The HttpOutput.Interceptor is a single intercept point for all
      * output written to the HttpOutput: via writer; via output stream;
@@ -197,6 +197,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private final ConnectionMetaData _connectionMetaData;
     private final ServletChannel _servletChannel;
     private final Response _response;
+    private final ByteBufferPool _byteBufferPool;
+
     private ServletRequestState _channelState;
     private SharedBlockingCallback _writeBlocker;
     private ApiState _apiState = ApiState.BLOCKING;
@@ -218,6 +220,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _response = response;
         _servletChannel = channel;
         _connectionMetaData = _response.getRequest().getConnectionMetaData();
+        _byteBufferPool = _response.getRequest().getResources().getByteBufferPool();
 
         _channelState = _servletChannel.getState();
         _interceptor = new DefaultInterceptor();
@@ -666,11 +669,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private ByteBuffer acquireBuffer()
     {
-        ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
         boolean useOutputDirectByteBuffers = ((HttpConnection)_connectionMetaData.getConnection())
             .getHttpConfiguration().isUseOutputDirectByteBuffers();
         if (_aggregate == null)
-            _aggregate = byteBufferPool.acquire(getBufferSize(), useOutputDirectByteBuffers);
+            _aggregate = _byteBufferPool.acquire(getBufferSize(), useOutputDirectByteBuffers);
         return _aggregate;
     }
 
@@ -678,11 +680,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         if (_aggregate != null)
         {
-            ByteBufferPool bufferPool = _connectionMetaData.getConnector().getByteBufferPool();
             if (failure == null)
-                bufferPool.release(_aggregate);
+                _byteBufferPool.release(_aggregate);
             else
-                bufferPool.remove(_aggregate);
+                _byteBufferPool.remove(_aggregate);
             _aggregate = null;
         }
     }
@@ -1108,8 +1109,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         CharBuffer in = CharBuffer.wrap(s);
         CharBuffer crlf = eoln ? CharBuffer.wrap("\r\n") : null;
-        ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
-        ByteBuffer out = byteBufferPool.acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
+        ByteBuffer out = _byteBufferPool.acquire((int)(1 + (s.length() + 2) * encoder.averageBytesPerChar()), false);
         BufferUtil.flipToFill(out);
 
         while (true)
@@ -1141,7 +1141,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 BufferUtil.flipToFlush(out, 0);
                 ByteBuffer bigger = BufferUtil.ensureCapacity(out, out.capacity() + s.length() + 2);
-                byteBufferPool.release(out);
+                _byteBufferPool.release(out);
                 BufferUtil.flipToFill(bigger);
                 out = bigger;
                 continue;
@@ -1151,7 +1151,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
         BufferUtil.flipToFlush(out, 0);
         write(out.array(), out.arrayOffset(), out.remaining());
-        byteBufferPool.release(out);
+        _byteBufferPool.release(out);
     }
 
     /**
@@ -1777,8 +1777,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             super(callback, true);
             _in = in;
             // Reading from InputStream requires byte[], don't use direct buffers.
-            ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
-            _buffer = byteBufferPool.acquire(getBufferSize(), false);
+            _buffer = _byteBufferPool.acquire(getBufferSize(), false);
         }
 
         @Override
@@ -1793,8 +1792,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (!_closed)
                 {
                     _closed = true;
-                    ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
-                    byteBufferPool.release(_buffer);
+                    _byteBufferPool.release(_buffer);
                     IO.close(_in);
                 }
 
@@ -1825,8 +1823,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             try
             {
-                ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
-                byteBufferPool.release(_buffer);
+                _byteBufferPool.release(_buffer);
             }
             finally
             {
@@ -1855,10 +1852,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             super(callback, true);
             _in = in;
-            ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
             boolean useOutputDirectByteBuffers = ((HttpConnection)_connectionMetaData.getConnection())
                 .getHttpConfiguration().isUseOutputDirectByteBuffers();
-            _buffer = byteBufferPool.acquire(getBufferSize(), useOutputDirectByteBuffers);
+            _buffer = _byteBufferPool.acquire(getBufferSize(), useOutputDirectByteBuffers);
         }
 
         @Override
@@ -1873,8 +1869,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 if (!_closed)
                 {
                     _closed = true;
-                    ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
-                    byteBufferPool.release(_buffer);
+                    _byteBufferPool.release(_buffer);
                     IO.close(_in);
                 }
                 return Action.SUCCEEDED;
@@ -1898,8 +1893,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         public void onCompleteFailure(Throwable x)
         {
-            ByteBufferPool byteBufferPool = _connectionMetaData.getConnector().getByteBufferPool();
-            byteBufferPool.release(_buffer);
+            _byteBufferPool.release(_buffer);
             IO.close(_in);
             super.onCompleteFailure(x);
         }

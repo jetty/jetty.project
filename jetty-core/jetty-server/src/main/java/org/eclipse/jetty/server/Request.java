@@ -115,6 +115,11 @@ public interface Request extends Attributes, Content.Reader
     String getId();
 
     /**
+     * @return the {@link Resources} to be used with this request.
+     */
+    Resources getResources();
+
+    /**
      * @return the {@code ConnectionMetaData} associated to this request
      */
     ConnectionMetaData getConnectionMetaData();
@@ -429,6 +434,12 @@ public interface Request extends Attributes, Content.Reader
         public String getId()
         {
             return getWrapped().getId();
+        }
+
+        @Override
+        public Resources getResources()
+        {
+            return getWrapped().getResources();
         }
 
         @Override
