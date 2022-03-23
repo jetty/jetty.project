@@ -106,40 +106,6 @@ public class ThirdPartyModulesTests extends AbstractJettyHomeTest
     }
 
     @Test
-    public void testjminix() throws Exception
-    {
-        Path jettyBase = newTestJettyBaseDirectory();
-        String jettyVersion = System.getProperty("jettyVersion");
-        JettyHomeTester distribution = JettyHomeTester.Builder.newInstance()
-                .jettyVersion(jettyVersion)
-                .jettyBase(jettyBase)
-                .mavenLocalRepository(System.getProperty("mavenRepoPath"))
-                .build();
-
-        int httpPort = distribution.freePort();
-
-        String[] argsConfig = {
-                "--approve-all-licenses",
-                "--add-modules=jminix,http,logging-jcl-capture"
-        };
-
-        try (JettyHomeTester.Run runConfig = distribution.start(argsConfig))
-        {
-            assertTrue(runConfig.awaitFor(2, TimeUnit.MINUTES));
-            assertEquals(0, runConfig.getExitValue());
-
-            String[] argsStart = {
-                    "jetty.http.port=" + httpPort
-            };
-
-            try (JettyHomeTester.Run runStart = distribution.start(argsStart))
-            {
-                assertTrue(runStart.awaitConsoleLogsFor("Started Server@", 20, TimeUnit.SECONDS));
-            }
-        }
-    }
-
-    @Test
     public void testjolokia() throws Exception
     {
         Path jettyBase = newTestJettyBaseDirectory();

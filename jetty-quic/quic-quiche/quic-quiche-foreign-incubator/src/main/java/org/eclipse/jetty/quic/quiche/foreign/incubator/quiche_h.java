@@ -33,7 +33,7 @@ public class quiche_h
 {
     // This interface is a translation of the quiche.h header of a specific version.
     // It needs to be reviewed each time the native lib version changes.
-    private static final String EXPECTED_QUICHE_VERSION = "0.11.0";
+    private static final String EXPECTED_QUICHE_VERSION = "0.12.0";
 
     public static final byte C_FALSE = 0;
     public static final byte C_TRUE = 1;

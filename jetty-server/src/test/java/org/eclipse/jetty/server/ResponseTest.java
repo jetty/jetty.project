@@ -1642,7 +1642,7 @@ public class ResponseTest
     }
 
     @Test
-    public void testEncodeRedirect()
+    public void testEncodeURLs()
     {
         ContextHandler context = new ContextHandler("/path");
         Response response = getResponse();
@@ -1708,6 +1708,7 @@ public class ResponseTest
         assertEquals("/;jsessionid=12345", response.encodeURL("/"));
         assertEquals("/foo.html;jsessionid=12345#target", response.encodeURL("/foo.html#target"));
         assertEquals(";jsessionid=12345", response.encodeURL(""));
+        assertEquals("../foo/bar.jsp;jsessionid=12345", response.encodeURL("../foo/bar.jsp"));
     }
 
     @Test

@@ -10,6 +10,7 @@
   <properties>
     <bundle-symbolic-name>${project.groupId}.http.spi</bundle-symbolic-name>
     <spotbugs.onlyAnalyze>org.eclipse.jetty.http.spi.*</spotbugs.onlyAnalyze>
+    <jacoco.skip>true</jacoco.skip>
   </properties>
   <dependencies>
     <dependency>
@@ -78,13 +79,6 @@
             <Provide-Capability>osgi.serviceloader; osgi.serviceloader=com.sun.net.httpserver.spi.HttpServerProvider</Provide-Capability>
             <_nouses>true</_nouses>
           </instructions>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.jacoco</groupId>
-        <artifactId>jacoco-maven-plugin</artifactId>
-        <configuration>
-          <skip>true</skip>
         </configuration>
       </plugin>
     </plugins>
