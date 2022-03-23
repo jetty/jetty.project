@@ -136,9 +136,9 @@ started()
   for ((T = 0; T < $(($3 / 4)); T++))
   do
     sleep 4
-    [ -z "$(grep STARTED $1 2>/dev/null)" ] || return 0
-    [ -z "$(grep STOPPED $1 2>/dev/null)" ] || return 1
-    [ -z "$(grep FAILED $1 2>/dev/null)" ] || return 1
+    [ -z "$(tail -1 $1 | grep STARTED 2>/dev/null)" ] || return 0
+    [ -z "$(tail -1 $1 | grep STOPPED 2>/dev/null)" ] || return 1
+    [ -z "$(tail -1 $1 | grep FAILED 2>/dev/null)" ] || return 1
     local PID=$(cat "$2" 2>/dev/null) || return 1
     kill -0 "$PID" 2>/dev/null || return 1
     echo -n ". "
