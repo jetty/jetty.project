@@ -44,7 +44,27 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 
 /**
+ * <p>
  * Inline Servlet Filter to capture WebSocket upgrade requests and perform path mappings to {@link WebSocketCreator} objects.
+ * </p>
+ *
+ * <p>
+ * <em>Embedded Jetty Users</em> should initialize this filter using the {@link #configure(ServletContextHandler)} method.
+ * If you also want to establish some mappings of {@link PathSpec} to {@link WebSocketCreator} against this {@code WebSocketUpgradeFilter}
+ * then these actions must occur during the Servlet Initialization Phase.
+ * A convenience method is provided with {@link NativeWebSocketServletContainerInitializer#configure(ServletContextHandler, NativeWebSocketServletContainerInitializer.Configurator)}
+ * to create a lambda that will execute during the appropriate Servlet Initialization Phase.
+ * </p>
+ * <pre>
+ *     ServletContextHandler contextHandler = new ServletContextHandler(...);
+ *     WebSocketUpgradeFilter.configure(contextHandler);
+ *     NativeWebSocketServletContainerInitializer.configure(contextHandler, (context, container) -&gt; {
+ *         container.getPolicy().setMaxTextMessageBufferSize(65535);
+ *         container.getPolicy().setInputBufferSize(16384);
+ *         container.addMapping("/echo", ServerEchoSocket.class);
+ *         container.addMapping(new ServletPathSpec("/api"), (req, resp) -&gt; new ServerApiSocket());
+ *     });
+ * </pre>
  */
 @ManagedObject("WebSocket Upgrade Filter")
 public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, Dumpable
@@ -67,7 +87,7 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
      * </p>
      *
      * @param context the {@link ServletContextHandler} to use
-     * @return the configured default {@link WebSocketUpgradeFilter} instance
+     * @return the configured default {@link WebSocketUpgradeFilter} instance, use this reference later in your Servlet Initialization Phase to establish mappings of websockets.
      * @throws ServletException if the filer cannot be configured
      */
     public static WebSocketUpgradeFilter configure(ServletContextHandler context) throws ServletException
@@ -151,6 +171,22 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         this.configuration = configuration;
     }
 
+    /**
+     * <p>
+     * Add Mapping to underlying {@link NativeWebSocketConfiguration}
+     * </p>
+     *
+     * <p>
+     * IMPORTANT: Can only be used during Servlet Initialization phase.
+     * </p>
+     *
+     * <p>
+     * Embedded Jetty users, consider using {@link NativeWebSocketServletContainerInitializer#configure(ServletContextHandler, NativeWebSocketServletContainerInitializer.Configurator)}
+     * instead to define mappings early that happen during the Servlet Initialization phase.
+     * </p>
+     *
+     * @see NativeWebSocketConfiguration#addMapping(PathSpec, WebSocketCreator)
+     */
     @Override
     public void addMapping(PathSpec spec, WebSocketCreator creator)
     {
@@ -167,12 +203,38 @@ public class WebSocketUpgradeFilter implements Filter, MappedWebSocketCreator, D
         configuration.addMapping(spec, creator);
     }
 
+    /**
+     * <p>
+     * Add Mapping to underlying {@link NativeWebSocketConfiguration}
+     * </p>
+     *
+     * <p>
+     * IMPORTANT: Can only be used during Servlet Initialization phase.
+     * </p>
+     *
+     * <p>
+     * Embedded Jetty users, consider using {@link NativeWebSocketServletContainerInitializer#configure(ServletContextHandler, NativeWebSocketServletContainerInitializer.Configurator)}
+     * instead to define mappings early that happen during the Servlet Initialization phase.
+     * </p>
+     *
+     * @see NativeWebSocketConfiguration#addMapping(String, WebSocketCreator)
+     */
     @Override
     public void addMapping(String spec, WebSocketCreator creator)
     {
         configuration.addMapping(spec, creator);
     }
 
+    /**
+     * <p>
+     * Remove Mapping to underlying {@link NativeWebSocketConfiguration}
+     * </p>
+     *
+     * <p>
+     * IMPORTANT: Can only be used during Servlet Initialization phase.
+     * </p>
+     * @see NativeWebSocketConfiguration#removeMapping(String)
+     */
     @Override
     public boolean removeMapping(String spec)
     {
