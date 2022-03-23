@@ -94,6 +94,8 @@ public class ServletChannel implements Runnable
     public boolean failAllContent(Throwable x)
     {
         // TODO: what to do with x?
+        //       GW: I don't think we need to pass x in any more, as the content pooling is not dependent on
+        //       success or failure.   This should just be releaseAllContent()
         while (true)
         {
             Content content = _request.readContent();

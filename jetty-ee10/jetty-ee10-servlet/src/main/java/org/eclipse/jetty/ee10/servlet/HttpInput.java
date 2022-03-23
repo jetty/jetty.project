@@ -539,7 +539,9 @@ public class HttpInput extends ServletInputStream implements Runnable
      * via {@link #succeeded()} or {@link #failed(Throwable)}.
      * Special content indicates a special event, like EOF or an error and never wraps a byte buffer. Calling
      * {@link #succeeded()} or {@link #failed(Throwable)} on those have no effect.
+     * @deprecated This class should be removed in favour of the {@link org.eclipse.jetty.server.Content} class.
      */
+    @Deprecated
     public static class Content implements Callback
     {
         protected final ByteBuffer _content;
