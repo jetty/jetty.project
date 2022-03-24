@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.DumpHandler;
@@ -885,7 +886,7 @@ public class HttpChannelTest
                 }
 
                 @Override
-                public boolean upgrade()
+                public Connection upgrade()
                 {
                     history.add("upgrade");
                     return super.upgrade();

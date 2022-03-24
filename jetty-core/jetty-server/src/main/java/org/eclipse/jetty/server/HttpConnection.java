@@ -572,15 +572,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         return handle;
     }
 
-    private boolean upgrade()
+    private boolean upgrade(HttpStream stream)
     {
-        // TODO the null check on the channel's request is only necessary to workaround a NPE
-        boolean upgrade = _channel.getRequest() != null && _channel.getHttpStream().upgrade();
-        if (!upgrade)
-            return false;
-
-        // TODO is that the right attribute? Or should HttpStream.upgrade() return that connection?
-        Connection connection = (Connection)_channel.getRequest().getAttribute(HttpChannel.UPGRADE_CONNECTION_ATTRIBUTE);
+        Connection connection = stream.upgrade();
         if (connection == null)
             return false;
 
@@ -924,7 +918,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         protected void onCompleteSuccess()
         {
             // TODO is this too late to get the request? And is that the right attribute and the right thing to do?
-            boolean upgrading = _channel.getRequest() != null && _channel.getRequest().getAttribute(HttpChannel.UPGRADE_CONNECTION_ATTRIBUTE) != null;
+            boolean upgrading = _channel.getRequest() != null && _channel.getRequest().getAttribute(ConnectionMetaData.UPGRADE_CONNECTION_ATTRIBUTE) != null;
             release().succeeded();
             // If successfully upgraded it is responsibility of the next protocol to close the connection.
             if (_shutdownOut && !upgrading)
@@ -1082,6 +1076,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         private HostPortHttpField _hostField;
         private MetaData.Request _request;
         private HttpField _upgrade = null;
+        private Connection _upgradeConnection;
 
         Content _content;
         private boolean _connectionClose = false;
@@ -1256,7 +1251,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     if (!persistent)
                         _generator.setPersistent(false);
 
-                    if (_upgrade != null && HttpConnection.this.upgrade())
+                    if (_upgrade != null && HttpConnection.this.upgrade(_stream.get()))
                         return null; // TODO do we need to return a runnable to complete the upgrade ???
 
                     break;
@@ -1270,7 +1265,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     if (HttpMethod.PRI.is(_method) &&
                         "*".equals(_uri.getPath()) &&
                         _headerBuilder.size() == 0 &&
-                        HttpConnection.this.upgrade())
+                        HttpConnection.this.upgrade(_stream.get()))
                         return null; // TODO do we need to return a runnable to complete the upgrade ???
 
                     // TODO is this sufficient?
@@ -1414,14 +1409,29 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
 
         @Override
-        public boolean upgrade()
+        public void setUpgradeConnection(Connection connection)
+        {
+            _upgradeConnection = connection;
+            if (_channel.getRequest() != null)
+                _channel.getRequest().setAttribute(ConnectionMetaData.UPGRADE_CONNECTION_ATTRIBUTE, connection);
+        }
+
+        @Override
+        public Connection upgrade()
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("upgrade {} {}", this, _upgrade);
 
+            // If Upgrade attribute already set then we don't need to do anything here.
+            if (_upgradeConnection != null)
+                return _upgradeConnection;
+
+            // If no upgrade headers there is nothing to do.
+            if (!_connectionUpgrade && (_upgrade == null))
+                return null;
+
             @SuppressWarnings("ReferenceEquality")
             boolean isUpgradedH2C = (_upgrade == PREAMBLE_UPGRADE_H2C);
-
             if (!isUpgradedH2C && !_connectionUpgrade)
                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
 
@@ -1437,7 +1447,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("No factory for {} in {}", _upgrade, getConnector());
-                return false;
+                return null;
             }
 
             // Create new connection
@@ -1447,7 +1457,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Upgrade ignored for {} by {}", _upgrade, factory);
-                return false;
+                return null;
             }
 
             // Send 101 if needed
@@ -1456,9 +1466,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(), upgradeConnection);
-            _channel.getRequest().setAttribute(HttpChannel.UPGRADE_CONNECTION_ATTRIBUTE, upgradeConnection); // TODO is that the right attribute?
             //getHttpTransport().onCompleted(); // TODO: succeed callback instead?
-            return true;
+            return upgradeConnection;
         }
 
         @Override
@@ -1478,7 +1487,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 return;
             }
 
-            if (HttpConnection.this.upgrade())
+            if (HttpConnection.this.upgrade(stream))
                 return;
 
             // Finish consuming the request

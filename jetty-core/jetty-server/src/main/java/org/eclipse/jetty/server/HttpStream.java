@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.Callback;
 
 public interface HttpStream extends Callback
@@ -48,7 +49,9 @@ public interface HttpStream extends Callback
     // TODO: remove this method? Only used in tests.
     boolean isComplete();
 
-    boolean upgrade();
+    void setUpgradeConnection(Connection connection);
+
+    Connection upgrade();
 
     default Throwable consumeAll()
     {
@@ -148,7 +151,13 @@ public interface HttpStream extends Callback
         }
 
         @Override
-        public boolean upgrade()
+        public void setUpgradeConnection(Connection connection)
+        {
+            _wrapped.setUpgradeConnection(connection);
+        }
+
+        @Override
+        public Connection upgrade()
         {
             return _wrapped.upgrade();
         }

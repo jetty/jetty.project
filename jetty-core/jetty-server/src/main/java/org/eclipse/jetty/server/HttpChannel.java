@@ -64,7 +64,6 @@ import org.slf4j.LoggerFactory;
  */
 public class HttpChannel implements Components
 {
-    public static final String UPGRADE_CONNECTION_ATTRIBUTE = HttpChannel.class.getName() + ".UPGRADE";
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
     private static final HttpField CONTENT_LENGTH_0 = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, "0")
     {

@@ -24,6 +24,12 @@ import org.eclipse.jetty.util.HostPort;
 public interface ConnectionMetaData extends Attributes
 {
     /**
+     * Attribute used to get the {@link Connection} from the request attributes. This should not be used to set the
+     * connection as a request attribute, instead use {@link HttpStream#setUpgradeConnection(Connection)}.
+     */
+    String UPGRADE_CONNECTION_ATTRIBUTE = ConnectionMetaData.class.getName() + ".UPGRADE";
+
+    /**
      * @return a unique (within the lifetime of the JVM) identifier string for the network connection to the JVM
      */
     String getId();

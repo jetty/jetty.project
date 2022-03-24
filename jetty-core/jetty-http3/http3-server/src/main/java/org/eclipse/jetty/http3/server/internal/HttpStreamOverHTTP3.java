@@ -29,6 +29,7 @@ import org.eclipse.jetty.http3.api.Stream;
 import org.eclipse.jetty.http3.frames.DataFrame;
 import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
@@ -439,9 +440,15 @@ public class HttpStreamOverHTTP3 implements HttpStream
     }
 
     @Override
-    public boolean upgrade()
+    public void setUpgradeConnection(Connection connection)
     {
-        return false;
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Connection upgrade()
+    {
+        return null;
     }
 
     @Override

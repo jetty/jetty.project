@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
@@ -327,9 +328,15 @@ public class HttpStreamOverFCGI implements HttpStream
     }
 
     @Override
-    public boolean upgrade()
+    public void setUpgradeConnection(Connection connection)
     {
-        return false;
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Connection upgrade()
+    {
+        return null;
     }
 
     public boolean onIdleTimeout(Throwable timeout)

@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
@@ -252,7 +253,13 @@ public class MockHttpStream implements HttpStream
     }
 
     @Override
-    public boolean upgrade()
+    public void setUpgradeConnection(Connection connection)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Connection upgrade()
     {
         throw new UnsupportedOperationException();
     }

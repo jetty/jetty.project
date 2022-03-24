@@ -31,6 +31,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
@@ -479,6 +480,12 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
+    public void setUpgradeConnection(Connection connection)
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean isIdle()
     {
         // TODO: is this necessary?
@@ -486,7 +493,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     }
 
     @Override
-    public boolean upgrade()
+    public Connection upgrade()
     {
         // TODO
         throw new UnsupportedOperationException();

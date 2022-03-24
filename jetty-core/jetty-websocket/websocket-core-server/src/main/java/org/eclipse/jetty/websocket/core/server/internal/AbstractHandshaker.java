@@ -25,8 +25,8 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
@@ -134,12 +134,20 @@ public abstract class AbstractHandshaker implements Handshaker
         prepareResponse(response, negotiation);
         if (httpConfig.getSendServerVersion())
             response.getHeaders().put(SERVER_VERSION);
-        response.write(true, Callback.NOOP);
 
-        request.setAttribute(HttpChannel.UPGRADE_CONNECTION_ATTRIBUTE, connection);
+        request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+        {
+            @Override
+            public void succeeded()
+            {
+                setUpgradeConnection(connection);
+                super.succeeded();
+            }
+        });
+
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade connection={} session={} framehandler={}", connection, coreSession, handler);
-
+        response.write(true, callback);
         return true;
     }
 
