@@ -62,27 +62,28 @@ public class WebSocketServerComponents extends WebSocketComponents
      */
     public static WebSocketComponents ensureWebSocketComponents(Server server, ContextHandler contextHandler)
     {
-        WebSocketComponents components = (WebSocketComponents)contextHandler.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
+        ContextHandler.Context context = contextHandler.getContext();
+        WebSocketComponents components = (WebSocketComponents)context.getAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE);
         if (components != null)
             return components;
 
-        InflaterPool inflaterPool = (InflaterPool)contextHandler.getAttribute(WEBSOCKET_INFLATER_POOL_ATTRIBUTE);
+        InflaterPool inflaterPool = (InflaterPool)context.getAttribute(WEBSOCKET_INFLATER_POOL_ATTRIBUTE);
         if (inflaterPool == null)
             inflaterPool = InflaterPool.ensurePool(server);
 
-        DeflaterPool deflaterPool = (DeflaterPool)contextHandler.getAttribute(WEBSOCKET_DEFLATER_POOL_ATTRIBUTE);
+        DeflaterPool deflaterPool = (DeflaterPool)context.getAttribute(WEBSOCKET_DEFLATER_POOL_ATTRIBUTE);
         if (deflaterPool == null)
             deflaterPool = DeflaterPool.ensurePool(server);
 
-        ByteBufferPool bufferPool = (ByteBufferPool)contextHandler.getAttribute(WEBSOCKET_BUFFER_POOL_ATTRIBUTE);
+        ByteBufferPool bufferPool = (ByteBufferPool)context.getAttribute(WEBSOCKET_BUFFER_POOL_ATTRIBUTE);
         if (bufferPool == null)
             bufferPool = server.getBean(ByteBufferPool.class);
 
-        Executor executor = (Executor)contextHandler.getAttribute("org.eclipse.jetty.server.Executor");
+        Executor executor = (Executor)context.getAttribute("org.eclipse.jetty.server.Executor");
         if (executor == null)
             executor = server.getThreadPool();
 
-        DecoratedObjectFactory objectFactory = (DecoratedObjectFactory)contextHandler.getAttribute(DecoratedObjectFactory.ATTR);
+        DecoratedObjectFactory objectFactory = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
         WebSocketComponents serverComponents = new WebSocketServerComponents(inflaterPool, deflaterPool, bufferPool, objectFactory, executor);
         if (objectFactory != null)
             serverComponents.unmanage(objectFactory);
@@ -98,6 +99,7 @@ public class WebSocketServerComponents extends WebSocketComponents
         if (executor != null)
             serverComponents.unmanage(executor);
 
+        // Set to be managed as persistent attribute and bean on ContextHandler.
         contextHandler.addManaged(serverComponents);
         contextHandler.setAttribute(WEBSOCKET_COMPONENTS_ATTRIBUTE, serverComponents);
 

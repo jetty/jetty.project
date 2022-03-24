@@ -877,36 +877,28 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
         public void run(Runnable runnable, Request request)
         {
-            try
+            Context lastContext = __context.get();
+            if (lastContext == this)
+                runnable.run();
+            else
             {
-                Context lastContext = __context.get();
-                if (lastContext == this)
-                    runnable.run();
-                else
+                ClassLoader loader = getClassLoader();
+                ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
+                try
                 {
-                    ClassLoader loader = getClassLoader();
-                    ClassLoader lastLoader = Thread.currentThread().getContextClassLoader();
-                    try
-                    {
-                        __context.set(this);
-                        if (loader != null)
-                            Thread.currentThread().setContextClassLoader(loader);
-                        enterScope(request);
-                        runnable.run();
-                    }
-                    finally
-                    {
-                        exitScope(request);
-                        __context.set(lastContext);
-                        if (loader != null)
-                            Thread.currentThread().setContextClassLoader(lastLoader);
-                    }
+                    __context.set(this);
+                    if (loader != null)
+                        Thread.currentThread().setContextClassLoader(loader);
+                    enterScope(request);
+                    runnable.run();
                 }
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Failed to run in {}", _displayName, e);
-                throw new RuntimeException(e);
+                finally
+                {
+                    exitScope(request);
+                    __context.set(lastContext);
+                    if (loader != null)
+                        Thread.currentThread().setContextClassLoader(lastLoader);
+                }
             }
         }
 

@@ -29,7 +29,6 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.CloseStatus;
 import org.eclipse.jetty.websocket.core.Configuration;
@@ -81,7 +80,7 @@ public class WebSocketProxyTest
         {
             if (request.getHeaders().get("Upgrade") != null)
             {
-                if (blockServerUpgradeRequests && request.getPathInContext().startsWith("/server/"))
+                if (blockServerUpgradeRequests && request.getPathInContext().startsWith("/server"))
                 {
                     return (req, resp, cb) -> Response.writeError(req, resp, cb, HttpStatus.INTERNAL_SERVER_ERROR_500);
                 }
@@ -98,7 +97,7 @@ public class WebSocketProxyTest
         ServerConnector connector = new ServerConnector(_server);
         _server.addConnector(connector);
 
-        HandlerList handlers = new HandlerList();
+        Handler.Collection handlers = new Handler.Collection();
         testHandler = new TestHandler();
         handlers.addHandler(testHandler);
 

@@ -182,7 +182,7 @@ public abstract class AbstractHandshaker implements Handshaker
             @Override
             protected void handle(Runnable runnable)
             {
-                context.execute(runnable);
+                context.run(runnable);
             }
         };
     }
