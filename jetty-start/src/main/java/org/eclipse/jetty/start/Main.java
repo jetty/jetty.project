@@ -501,11 +501,11 @@ public class Main
 
         if (args.hasJvmArgs() || args.hasSystemProperties())
         {
-            StartLog.warn("System properties and/or JVM args set.  Consider using --dry-run or --exec");
+            StartLog.warn("Unknown Arguments detected.  Consider using --dry-run or --exec");
             if (args.hasSystemProperties())
-                args.getSystemProperties().forEach((k, v) -> StartLog.warn("  Detected JVM System Property: %s=%s", k, System.getProperty(k)));
+                args.getSystemProperties().forEach((k, v) -> StartLog.warn("  Argument: -D%s=%s (interpreted as a System property, from %s)", k, System.getProperty(k), v));
             if (args.hasJvmArgs())
-                args.getJvmArgs().forEach((jvmArg) -> StartLog.warn("  Detected JVM Arg: %s", jvmArg));
+                args.getJvmArgSources().forEach((jvmArg, source) -> StartLog.warn("  Argument: %s (interpreted as a JVM argument, from %s)", jvmArg, source));
         }
 
         ClassLoader cl = classpath.getClassLoader();

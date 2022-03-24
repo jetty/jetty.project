@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -98,7 +99,13 @@ public class MainTest
     {
         List<String> cmdLineArgs = new ArrayList<>();
         File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home");
+        Path testJettyBase = MavenTestingUtils.getTargetTestingPath("base-example-unknown");
+        FS.ensureDirectoryExists(testJettyBase);
+        Path zedIni = testJettyBase.resolve("start.d/zed.ini");
+        FS.ensureDirectoryExists(zedIni.getParent());
+        Files.writeString(zedIni, "--zed-0-zed");
         cmdLineArgs.add("jetty.home=" + testJettyHome);
+        cmdLineArgs.add("jetty.base=" + testJettyBase);
         cmdLineArgs.add("main.class=" + PropertyDump.class.getName());
         cmdLineArgs.add("--module=base");
         cmdLineArgs.add("--foople");
@@ -126,11 +133,13 @@ public class MainTest
 
         // Test a System Property that comes from JVM
         List<String> warnings = output.stream().filter((line) -> line.startsWith("WARN")).collect(Collectors.toList());
+        // warnings.forEach(System.out::println);
         Iterator<String> warningIter = warnings.iterator();
 
-        assertThat("Announcement", warningIter.next(), containsString("System properties and/or JVM args set."));
-        assertThat("System Prop Detail", warningIter.next(), containsString("Detected JVM System Property: zed.key=0.value"));
-        assertThat("JVM Arg Detail", warningIter.next(), containsString("Detected JVM Arg: --foople"));
+        assertThat("Announcement", warningIter.next(), containsString("Unknown Arguments detected."));
+        assertThat("System Prop on command line detail", warningIter.next(), containsString("Argument: -Dzed.key=0.value (interpreted as a System property, from <command-line>"));
+        assertThat("JVM Arg in ini detail", warningIter.next(), containsString("Argument: --zed-0-zed (interpreted as a JVM argument, from " + zedIni));
+        assertThat("JVM Arg on command line detail", warningIter.next(), containsString("Argument: --foople (interpreted as a JVM argument, from <command-line>"));
     }
 
     @Test
