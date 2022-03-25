@@ -446,6 +446,15 @@ public class ServletContextHandlerTest
         public static int destroys = 0;
         public static int inits = 0;
 
+        public MyRequestListener()
+        {
+            // since these are statics (to access them in a test assert)
+            // make sure they are zero when we construct this listener
+            // and not carried over from a past execution of the listener
+            destroys = 0;
+            inits = 0;
+        }
+
         @Override
         public void requestDestroyed(ServletRequestEvent sre)
         {
