@@ -143,9 +143,10 @@ public class HttpInput extends ServletInputStream implements Runnable
         var src = content.getByteBuffer();
         if (src.remaining() > capacity)
         {
-            var copy = src.duplicate().limit(src.position() + capacity);
-            des.put(copy);
-            src.position(src.position() + (capacity - copy.remaining()));
+            int limit = src.limit();
+            src.limit(src.position() + capacity);
+            des.put(src);
+            src.limit(limit);
         }
         else
         {
@@ -268,50 +269,15 @@ public class HttpInput extends ServletInputStream implements Runnable
     @Override
     public int read(byte[] b, int off, int len) throws IOException
     {
-        try (AutoLock lock = _contentProducer.lock())
-        {
-            // Calculate minimum request rate for DoS protection
-            _contentProducer.checkMinDataRate();
-
-            Content content = _contentProducer.nextContent();
-            if (content == null)
-                throw new IllegalStateException("read on unready input");
-            if (!content.isSpecial())
-            {
-                int read = get(content, b, off, len);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("read produced {} byte(s) {}", read, this);
-                if (content.isEmpty())
-                    _contentProducer.reclaim(content);
-                return read;
-            }
-
-            Throwable error = content.getError();
-            if (LOG.isDebugEnabled())
-                LOG.debug("read error={} {}", error, this);
-            if (error != null)
-            {
-                if (error instanceof IOException)
-                    throw (IOException)error;
-                throw new IOException(error);
-            }
-
-            if (content.isEof())
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("read at EOF, setting consumed EOF to true {}", this);
-                _consumedEof = true;
-                // If EOF do we need to wake for allDataRead callback?
-                if (onContentProducible())
-                    scheduleReadListenerNotification();
-                return -1;
-            }
-
-            throw new AssertionError("no data, no error and not EOF");
-        }
+        return read(null, b, off, len);
     }
 
     public int read(ByteBuffer buffer) throws IOException
+    {
+        return read(buffer, null, -1, -1);
+    }
+
+    private int read(ByteBuffer buffer, byte[] b, int off, int len) throws IOException
     {
         try (AutoLock lock = _contentProducer.lock())
         {
@@ -323,7 +289,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 throw new IllegalStateException("read on unready input");
             if (!content.isSpecial())
             {
-                int read = get(content, buffer);
+                int read = buffer == null ? get(content, b, off, len) : get(content, buffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("read produced {} byte(s) {}", read, this);
                 if (content.isEmpty())
