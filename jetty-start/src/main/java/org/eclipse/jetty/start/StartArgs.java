@@ -1356,7 +1356,7 @@ public class StartArgs
         // Anything else with a "-" is considered a JVM argument
         if (arg.startsWith("-"))
         {
-            StartLog.debug("Unrecognized Arg: %s (from %s)", arg, source);
+            StartLog.debug("Unrecognized Arg (possible JVM Arg): %s (from %s)", arg, source);
             // always use the latest source (overriding any past tracked source)
             jvmArgSources.put(arg, source);
             return;
