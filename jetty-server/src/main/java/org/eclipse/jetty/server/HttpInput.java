@@ -137,6 +137,25 @@ public class HttpInput extends ServletInputStream implements Runnable
         return consumed;
     }
 
+    private int get(Content content, ByteBuffer des)
+    {
+        var capacity = des.remaining();
+        var src = content.getByteBuffer();
+        if (src.remaining() > capacity)
+        {
+            var copy = src.duplicate().limit(src.position() + capacity);
+            des.put(copy);
+            src.position(src.position() + (capacity - copy.remaining()));
+        }
+        else
+        {
+            des.put(src);
+        }
+        var consumed = capacity - des.remaining();
+        _contentConsumed.add(consumed);
+        return consumed;
+    }
+
     public long getContentConsumed()
     {
         return _contentConsumed.sum();
@@ -260,6 +279,51 @@ public class HttpInput extends ServletInputStream implements Runnable
             if (!content.isSpecial())
             {
                 int read = get(content, b, off, len);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("read produced {} byte(s) {}", read, this);
+                if (content.isEmpty())
+                    _contentProducer.reclaim(content);
+                return read;
+            }
+
+            Throwable error = content.getError();
+            if (LOG.isDebugEnabled())
+                LOG.debug("read error={} {}", error, this);
+            if (error != null)
+            {
+                if (error instanceof IOException)
+                    throw (IOException)error;
+                throw new IOException(error);
+            }
+
+            if (content.isEof())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("read at EOF, setting consumed EOF to true {}", this);
+                _consumedEof = true;
+                // If EOF do we need to wake for allDataRead callback?
+                if (onContentProducible())
+                    scheduleReadListenerNotification();
+                return -1;
+            }
+
+            throw new AssertionError("no data, no error and not EOF");
+        }
+    }
+
+    public int read(ByteBuffer buffer) throws IOException
+    {
+        try (AutoLock lock = _contentProducer.lock())
+        {
+            // Calculate minimum request rate for DoS protection
+            _contentProducer.checkMinDataRate();
+
+            Content content = _contentProducer.nextContent();
+            if (content == null)
+                throw new IllegalStateException("read on unready input");
+            if (!content.isSpecial())
+            {
+                int read = get(content, buffer);
                 if (LOG.isDebugEnabled())
                     LOG.debug("read produced {} byte(s) {}", read, this);
                 if (content.isEmpty())
