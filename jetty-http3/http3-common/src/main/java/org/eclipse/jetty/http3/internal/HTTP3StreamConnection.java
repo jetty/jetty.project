@@ -91,6 +91,13 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
     }
 
     @Override
+    public void onClose(Throwable cause)
+    {
+        tryReleaseBuffer(true);
+        super.onClose(cause);
+    }
+
+    @Override
     protected boolean onReadTimeout(Throwable timeout)
     {
         // Idle timeouts are handled by HTTP3Stream.
@@ -113,7 +120,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
         processDataDemand();
         if (!parserDataMode)
         {
-            if (buffer != null && buffer.hasRemaining())
+            if (hasBuffer() && buffer.hasRemaining())
                 processNonDataFrames();
             else
                 fillInterested();
@@ -166,8 +173,8 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                                 LOG.debug("setting fill interest on {}", this);
                             fillInterested();
                         }
+                        tryReleaseBuffer(false);
                     }
-                    tryReleaseBuffer(false);
                     return;
                 }
             }
@@ -346,7 +353,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private void tryAcquireBuffer()
     {
-        if (buffer == null)
+        if (!hasBuffer())
         {
             buffer = buffers.acquire(getInputBufferSize(), isUseInputDirectByteBuffers());
             if (LOG.isDebugEnabled())
@@ -356,7 +363,7 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
 
     private void tryReleaseBuffer(boolean force)
     {
-        if (buffer != null)
+        if (hasBuffer())
         {
             if (buffer.hasRemaining() && force)
                 buffer.clear();
@@ -368,6 +375,11 @@ public abstract class HTTP3StreamConnection extends AbstractConnection
                 buffer = null;
             }
         }
+    }
+
+    public boolean hasBuffer()
+    {
+        return buffer != null;
     }
 
     private MessageParser.Result parseAndFill(boolean setFillInterest)
