@@ -256,7 +256,7 @@ public class BasicTest extends AbstractUseCase
             "-Xms1g",
             "-Xmx1g"
         );
-        List<String> actualJvmArgs = results.startArgs.getJvmArgs();
+        List<String> actualJvmArgs = new ArrayList<>(results.startArgs.getJvmArgSources().keySet());
         assertThat("JVM Args", actualJvmArgs, contains(expectedJvmArgs.toArray()));
     }
 
