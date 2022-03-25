@@ -339,15 +339,14 @@ public class StartArgs
         out.println("---------------------");
 
         jvmArgSources.forEach((key, sourceRef) ->
-            {
-                String value = System.getProperty(key);
-                String source = StartLog.isDebugEnabled() ? '(' + sourceRef + ')' : "";
-                if (value != null)
-                    out.printf(" %s = %s %s%n", key, value, source);
-                else
-                    out.printf(" %s %s%n", key, source);
-            }
-        );
+        {
+            String value = System.getProperty(key);
+            String source = StartLog.isDebugEnabled() ? '(' + sourceRef + ')' : "";
+            if (value != null)
+                out.printf(" %s = %s %s%n", key, value, source);
+            else
+                out.printf(" %s %s%n", key, source);
+        });
     }
 
     public void dumpProperties(PrintStream out)
@@ -1358,12 +1357,8 @@ public class StartArgs
         if (arg.startsWith("-"))
         {
             StartLog.debug("Unrecognized Arg: %s (from %s)", arg, source);
-
-            // Only add non-duplicates
-            if (!jvmArgSources.containsKey(arg))
-            {
-                jvmArgSources.put(arg, source);
-            }
+            // always use the latest source (overriding any past tracked source)
+            jvmArgSources.put(arg, source);
             return;
         }
 
