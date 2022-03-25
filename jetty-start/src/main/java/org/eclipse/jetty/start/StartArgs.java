@@ -149,7 +149,7 @@ public class StartArgs
     /**
      * JVM arguments, found via command line and in all active [exec] sections from enabled modules
      */
-    private final List<String> jvmArgs = new ArrayList<>();
+    private final Map<String, String> jvmArgSources = new LinkedHashMap<>();
 
     /**
      * List of all xml references found directly on command line or start.ini
@@ -331,21 +331,22 @@ public class StartArgs
 
     public void dumpJvmArgs(PrintStream out)
     {
-        if (jvmArgs.isEmpty())
+        if (jvmArgSources.isEmpty())
             return;
 
         out.println();
         out.println("Forked JVM Arguments:");
         out.println("---------------------");
 
-        for (String jvmArgKey : jvmArgs)
+        jvmArgSources.forEach((key, sourceRef) ->
         {
-            String value = System.getProperty(jvmArgKey);
+            String value = System.getProperty(key);
+            String source = StartLog.isDebugEnabled() ? '(' + sourceRef + ')' : "";
             if (value != null)
-                out.printf(" %s = %s%n", jvmArgKey, value);
+                out.printf(" %s = %s %s%n", key, value, source);
             else
-                out.printf(" %s%n", jvmArgKey);
-        }
+                out.printf(" %s %s%n", key, source);
+        });
     }
 
     public void dumpProperties(PrintStream out)
@@ -544,7 +545,7 @@ public class StartArgs
             for (String jvmArg : module.getJvmArgs())
             {
                 exec = true;
-                jvmArgs.add(jvmArg);
+                jvmArgSources.put(jvmArg, String.format("module[%s|jvm]", module.getName()));
             }
 
             // Find and Expand XML files
@@ -655,9 +656,25 @@ public class StartArgs
         return files;
     }
 
+    /**
+     * Gets the List of JVM arguments detected.
+     *
+     * @deprecated use {@link #getJvmArgSources()} instead, as it will return source references with each arg.
+     */
+    @Deprecated
     public List<String> getJvmArgs()
     {
-        return jvmArgs;
+        return new ArrayList<>(jvmArgSources.keySet());
+    }
+
+    /**
+     * Return ordered Map of JVM arguments to Source (locations)
+     *
+     * @return the ordered map of JVM Argument to Source (locations)
+     */
+    public Map<String, String> getJvmArgSources()
+    {
+        return jvmArgSources;
     }
 
     public CommandLineBuilder getMainArgs(Set<String> parts) throws IOException
@@ -681,7 +698,7 @@ public class StartArgs
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
             cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
 
-            for (String x : getJvmArgs())
+            for (String x : getJvmArgSources().keySet())
             {
                 if (x.startsWith("-D"))
                 {
@@ -816,7 +833,10 @@ public class StartArgs
     public String getMainClassname()
     {
         String mainClass = System.getProperty("jetty.server", isJPMS() ? MODULE_MAIN_CLASS : MAIN_CLASS);
-        return System.getProperty("main.class", mainClass);
+        Prop mainClassProp = properties.getProp("main.class", true);
+        if (mainClassProp != null)
+            return mainClassProp.value;
+        return mainClass;
     }
 
     public String getMavenLocalRepoDir()
@@ -878,6 +898,11 @@ public class StartArgs
         return properties;
     }
 
+    public Map<String, String> getSystemProperties()
+    {
+        return systemPropertySource;
+    }
+
     public Set<String> getSkipFileValidationModules()
     {
         return skipFileValidationModules;
@@ -895,7 +920,7 @@ public class StartArgs
 
     public boolean hasJvmArgs()
     {
-        return !jvmArgs.isEmpty();
+        return !jvmArgSources.isEmpty();
     }
 
     public boolean hasSystemProperties()
@@ -1331,11 +1356,9 @@ public class StartArgs
         // Anything else with a "-" is considered a JVM argument
         if (arg.startsWith("-"))
         {
-            // Only add non-duplicates
-            if (!jvmArgs.contains(arg))
-            {
-                jvmArgs.add(arg);
-            }
+            StartLog.debug("Unrecognized Arg (possible JVM Arg): %s (from %s)", arg, source);
+            // always use the latest source (overriding any past tracked source)
+            jvmArgSources.put(arg, source);
             return;
         }
 
@@ -1555,6 +1578,6 @@ public class StartArgs
     public String toString()
     {
         return String.format("%s[enabledModules=%s, xmlRefs=%s, properties=%s, jvmArgs=%s]",
-            getClass().getSimpleName(), modules, xmlRefs, properties, jvmArgs);
+            getClass().getSimpleName(), modules, xmlRefs, properties, jvmArgSources.keySet());
     }
 }
