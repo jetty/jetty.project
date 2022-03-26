@@ -26,7 +26,9 @@
               <categoryName>Jetty Bundles</categoryName>
               <includeReactor>true</includeReactor>
               <includeDependencies>false</includeDependencies>
-              <includePGPSignature>true</includePGPSignature>
+              <!-- due to a bug in tycho PGP signatures should be disabled until it is resolved -->
+              <!-- https://github.com/eclipse/tycho/issues/808 -->
+              <includePGPSignature>false</includePGPSignature>
             </configuration>
             <id>maven-p2-site</id>
             <phase>prepare-package</phase>
