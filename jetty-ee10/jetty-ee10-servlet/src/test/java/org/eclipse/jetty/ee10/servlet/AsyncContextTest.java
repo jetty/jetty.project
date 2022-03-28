@@ -382,7 +382,7 @@ public class AsyncContextTest
         assertThat("!AsyncDispatchingServlet", responseBody, containsString("Dispatched back to AsyncDispatchingServlet"));
     }
 
-    private class ForwardingServlet extends HttpServlet
+    private static class ForwardingServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
 
@@ -400,7 +400,7 @@ public class AsyncContextTest
         }
     }
 
-    private class SelfDispatchingServlet extends HttpServlet
+    private static class SelfDispatchingServlet extends HttpServlet
     {
         private static final long serialVersionUID = 1L;
 

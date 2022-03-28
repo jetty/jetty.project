@@ -1149,7 +1149,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             if (_async == null)
                 _async = new AsyncContextState(state);
             // TODO adapt to new context and base Request
-            AsyncContextEvent event = new AsyncContextEvent(null, _async, state, ServletContextRequest.this, this, _response.getHttpServletResponse());
+            AsyncContextEvent event = new AsyncContextEvent(null, _async, state, this, _response.getHttpServletResponse());
             state.startAsync(event);
             return _async;
         }
@@ -1161,7 +1161,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             if (_async == null)
                 _async = new AsyncContextState(state);
             // TODO adapt to new context and base Request
-            AsyncContextEvent event = new AsyncContextEvent(null, _async, state, null, servletRequest, servletResponse);
+            AsyncContextEvent event = new AsyncContextEvent(null, _async, state, servletRequest, servletResponse);
             state.startAsync(event);
             return _async;
         }

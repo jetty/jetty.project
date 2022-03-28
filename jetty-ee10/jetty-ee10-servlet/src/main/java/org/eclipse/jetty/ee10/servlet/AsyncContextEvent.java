@@ -18,8 +18,8 @@ import jakarta.servlet.AsyncEvent;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.thread.Scheduler;
 
@@ -35,19 +35,15 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     private volatile Scheduler.Task _timeoutTask;
     private Throwable _throwable;
 
-    public AsyncContextEvent(ContextHandler.Context context, AsyncContextState asyncContext, ServletRequestState state, Request baseRequest, ServletRequest request, ServletResponse response)
-    {
-        this(context, asyncContext, state, baseRequest, request, response, null);
-    }
-
-    public AsyncContextEvent(ContextHandler.Context context, AsyncContextState asyncContext, ServletRequestState state, Request baseRequest, ServletRequest request, ServletResponse response, HttpURI baseURI)
+    public AsyncContextEvent(ContextHandler.Context context, AsyncContextState asyncContext, ServletRequestState state, ServletRequest request, ServletResponse response)
     {
         super(null, request, response, null);
         _context = context;
         _asyncContext = asyncContext;
         _servletContext = ServletContextHandler.getServletContext(context);
         _state = state;
-        _baseURI = baseURI;
+        // TODO better than this:
+        _baseURI = request == null ? null : (request instanceof HttpServletRequest hr) ? HttpURI.from(hr.getRequestURI()) : null;
 
         // TODO: Should we store a wrapped request with the attributes?
         // We are setting these attributes during startAsync, when the spec implies that
