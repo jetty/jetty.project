@@ -1077,10 +1077,7 @@ public class HttpChannel implements Components
             MetaData.Response responseMetaData = null;
             try (AutoLock ignored = _request._lock.lock())
             {
-                httpChannel = checkCompletionLocked();
-
-                if (!httpChannel._processing)
-                    throw new IllegalStateException("not processing");
+                httpChannel = completeHttpChannel();
 
                 // We are being tough on handler implementations and expect them
                 // to not have pending operations when calling succeeded or failed.
@@ -1088,9 +1085,8 @@ public class HttpChannel implements Components
                     throw new IllegalStateException("demand pending");
                 if (httpChannel._writeCallback != null)
                     throw new IllegalStateException("write pending");
-                Content.Error error = httpChannel._error;
-                if (error != null)
-                    throw new IllegalStateException("error " + error, error.getCause());
+                if (httpChannel._error != null)
+                    throw new IllegalStateException("error " + httpChannel._error, httpChannel._error.getCause());
 
                 stream = httpChannel._stream;
 
@@ -1142,10 +1138,7 @@ public class HttpChannel implements Components
             HttpChannel httpChannel;
             try (AutoLock ignored = _request._lock.lock())
             {
-                httpChannel = checkCompletionLocked();
-
-                if (!httpChannel._processing)
-                    throw new IllegalStateException("not processing");
+                httpChannel = completeHttpChannel();
 
                 // Verify whether we can write an error response.
                 committed = httpChannel._stream.isCommitted();
@@ -1183,7 +1176,7 @@ public class HttpChannel implements Components
             }
         }
 
-        private HttpChannel checkCompletionLocked()
+        private HttpChannel completeHttpChannel()
         {
             HttpChannel httpChannel = _request._httpChannel;
             if (LOG.isDebugEnabled())
@@ -1194,6 +1187,10 @@ public class HttpChannel implements Components
                         LOG.warn("already completed {} by", _request, _completedBy);
                     throw new IllegalStateException(httpChannel == null ? "channel already completed" : "channel is completing");
                 }
+
+                if (!httpChannel._processing)
+                    throw new IllegalStateException("not processing");
+
                 _completed = true;
                 _completedBy = new Throwable(Thread.currentThread().toString());
                 LOG.debug("completing {}", _request);
@@ -1210,8 +1207,7 @@ public class HttpChannel implements Components
         {
             try (AutoLock ignored = _request._lock.lock())
             {
-                HttpChannel httpChannel = _request.lockedGetHttpChannel();
-                httpChannel.lockedRecycle();
+                _request._httpChannel.lockedRecycle();
             }
         }
 
