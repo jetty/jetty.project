@@ -39,17 +39,17 @@ public class MockHttpStream implements HttpStream
     private final CountDownLatch _completed = new CountDownLatch(1);
     private final ByteBufferAccumulator _accumulator = new ByteBufferAccumulator();
     private final AtomicReference<ByteBuffer> _out = new AtomicReference<>();
-    private final HttpChannel _channel;
+    private final HttpChannelState _channel;
     private final AtomicReference<MetaData.Response> _response = new AtomicReference<>();
     private final HttpFields.Mutable _responseHeaders = HttpFields.build();
     private HttpFields.Mutable _responseTrailers;
 
-    public MockHttpStream(HttpChannel channel)
+    public MockHttpStream(HttpChannelState channel)
     {
         this(channel, true);
     }
 
-    public MockHttpStream(HttpChannel channel, boolean atEof)
+    public MockHttpStream(HttpChannelState channel, boolean atEof)
     {
         channel.setHttpStream(this);
         _channel = channel;

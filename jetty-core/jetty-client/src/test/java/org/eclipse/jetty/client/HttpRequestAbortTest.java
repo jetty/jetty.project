@@ -27,6 +27,7 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.util.ByteBufferRequestContent;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
@@ -277,7 +278,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
     @ArgumentsSource(ScenarioProvider.class)
     public void testAbortOnContent(Scenario scenario) throws Exception
     {
-        try (StacklessLogging ignore = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannelState.class))
         {
             CountDownLatch serverLatch = new CountDownLatch(1);
             start(scenario, new EmptyServerHandler()

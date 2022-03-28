@@ -33,7 +33,7 @@ import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Content;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.HostPort;
@@ -331,7 +331,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             // TODO: handle flags
             if (stream != null)
                 throw new UnsupportedOperationException("FastCGI Multiplexing");
-            HttpChannel channel = new HttpChannel(ServerFCGIConnection.this);
+            HttpChannelState channel = new HttpChannelState(ServerFCGIConnection.this);
             ServerGenerator generator = new ServerGenerator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
             stream = new HttpStreamOverFCGI(ServerFCGIConnection.this, generator, channel, request);
             channel.setHttpStream(stream);

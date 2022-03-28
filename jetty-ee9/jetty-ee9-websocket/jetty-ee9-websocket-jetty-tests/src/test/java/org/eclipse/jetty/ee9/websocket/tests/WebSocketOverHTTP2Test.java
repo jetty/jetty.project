@@ -49,7 +49,7 @@ import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ClientConnector;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
@@ -293,7 +293,7 @@ public class WebSocketOverHTTP2Test
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         CountDownLatch latch = new CountDownLatch(1);
-        connector.addBean(new HttpChannel.Listener()
+        connector.addBean(new HttpChannelState.Listener()
         {
             @Override
             public void onComplete(Request request)
@@ -306,7 +306,7 @@ public class WebSocketOverHTTP2Test
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/ws/throw");
 
         ExecutionException failure;
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
         {
             failure = Assertions.assertThrows(ExecutionException.class, () ->
                 wsClient.connect(wsEndPoint, uri).get(5, TimeUnit.SECONDS));

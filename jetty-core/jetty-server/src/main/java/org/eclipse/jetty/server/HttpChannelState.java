@@ -62,9 +62,9 @@ import org.slf4j.LoggerFactory;
  * Note how Runnables are returned to indicate that further work is needed. These
  * can be given to an ExecutionStrategy instead of calling known methods like HttpChannel.handle().
  */
-public class HttpChannel implements Components
+public class HttpChannelState implements Components
 {
-    private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
     private static final HttpField CONTENT_LENGTH_0 = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, "0")
     {
         @Override
@@ -122,7 +122,7 @@ public class HttpChannel implements Components
     private Predicate<Throwable> _onError;
     private Map<String, Object> _cache;
 
-    public HttpChannel(ConnectionMetaData connectionMetaData)
+    public HttpChannelState(ConnectionMetaData connectionMetaData)
     {
         _connectionMetaData = connectionMetaData;
         // The SerializedInvoker is used to prevent infinite recursion of callbacks calling methods calling callbacks etc.
@@ -432,12 +432,12 @@ public class HttpChannel implements Components
                 if (handled)
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("already handled, skipping failing callback in {}", HttpChannel.this);
+                        LOG.debug("already handled, skipping failing callback in {}", HttpChannelState.this);
                 }
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("failing callback in {}", HttpChannel.this, x);
+                        LOG.debug("failing callback in {}", HttpChannelState.this, x);
                     request._callback.failed(x);
                 }
             };
@@ -537,13 +537,13 @@ public class HttpChannel implements Components
             if (request != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("invoking handler in {}", HttpChannel.this);
+                    LOG.debug("invoking handler in {}", HttpChannelState.this);
                 getConnectionMetaData().getConnector().getServer().customizeHandleAndProcess(request, request._response, request._callback);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("already handled, skipping handler invocation in {}", HttpChannel.this);
+                    LOG.debug("already handled, skipping handler invocation in {}", HttpChannelState.this);
             }
         }
 
@@ -564,10 +564,10 @@ public class HttpChannel implements Components
         private final ChannelResponse _response;
         private final AutoLock _lock;
         private final LongAdder _contentBytesRead = new LongAdder();
-        private HttpChannel _httpChannel;
+        private HttpChannelState _httpChannel;
         private Request _loggedRequest;
 
-        ChannelRequest(HttpChannel httpChannel, MetaData.Request metaData)
+        ChannelRequest(HttpChannelState httpChannel, MetaData.Request metaData)
         {
             _httpChannel = Objects.requireNonNull(httpChannel);
             _id = httpChannel.getHttpStream().getId();
@@ -600,12 +600,12 @@ public class HttpChannel implements Components
         @Override
         public Object getAttribute(String name)
         {
-            HttpChannel httpChannel = getHttpChannel();
+            HttpChannelState httpChannel = getHttpChannel();
             if (name.startsWith("org.eclipse.jetty"))
             {
                 if (Server.class.getName().equals(name))
                     return httpChannel.getConnectionMetaData().getConnector().getServer();
-                if (HttpChannel.class.getName().equals(name))
+                if (HttpChannelState.class.getName().equals(name))
                     return httpChannel;
                 // TODO: is the instanceof needed?
                 // TODO: possibly remove this if statement or move to Servlet.
@@ -625,7 +625,7 @@ public class HttpChannel implements Components
         @Override
         public Object setAttribute(String name, Object attribute)
         {
-            if (Server.class.getName().equals(name) || HttpChannel.class.getName().equals(name) || HttpConnection.class.getName().equals(name))
+            if (Server.class.getName().equals(name) || HttpChannelState.class.getName().equals(name) || HttpConnection.class.getName().equals(name))
                 return null;
             return getHttpChannel()._requestAttributes.setAttribute(name, attribute);
         }
@@ -660,7 +660,7 @@ public class HttpChannel implements Components
             return _connectionMetaData;
         }
 
-        HttpChannel getHttpChannel()
+        HttpChannelState getHttpChannel()
         {
             try (AutoLock ignore = _lock.lock())
             {
@@ -668,7 +668,7 @@ public class HttpChannel implements Components
             }
         }
 
-        private HttpChannel lockedGetHttpChannel()
+        private HttpChannelState lockedGetHttpChannel()
         {
             if (_httpChannel == null)
                 throw new IllegalStateException("channel already completed");
@@ -729,7 +729,7 @@ public class HttpChannel implements Components
             HttpStream stream;
             try (AutoLock ignored = _lock.lock())
             {
-                HttpChannel httpChannel = lockedGetHttpChannel();
+                HttpChannelState httpChannel = lockedGetHttpChannel();
 
                 Content error = httpChannel._error;
                 if (error != null)
@@ -755,7 +755,7 @@ public class HttpChannel implements Components
             HttpStream stream;
             try (AutoLock ignored = _lock.lock())
             {
-                HttpChannel httpChannel = lockedGetHttpChannel();
+                HttpChannelState httpChannel = lockedGetHttpChannel();
 
                 error = httpChannel._error != null || !httpChannel._processing;
                 if (!error)
@@ -786,7 +786,7 @@ public class HttpChannel implements Components
         {
             try (AutoLock ignored = _lock.lock())
             {
-                HttpChannel httpChannel = lockedGetHttpChannel();
+                HttpChannelState httpChannel = lockedGetHttpChannel();
 
                 if (httpChannel._error != null)
                     return false;
@@ -869,7 +869,7 @@ public class HttpChannel implements Components
             // TODO: getter with side effects, perhaps use a Supplier like in Jetty 11?
             try (AutoLock ignored = _request._lock.lock())
             {
-                HttpChannel httpChannel = _request.lockedGetHttpChannel();
+                HttpChannelState httpChannel = _request.lockedGetHttpChannel();
 
                 // TODO check if trailers allowed in version and transport?
                 HttpFields.Mutable trailers = httpChannel._responseTrailers;
@@ -891,7 +891,7 @@ public class HttpChannel implements Components
         public void write(boolean last, Callback callback, ByteBuffer... content)
         {
             long written;
-            HttpChannel httpChannel;
+            HttpChannelState httpChannel;
             HttpStream stream = null;
             Throwable failure = null;
             MetaData.Response responseMetaData = null;
@@ -955,7 +955,7 @@ public class HttpChannel implements Components
         {
             // Called when an individual write succeeds.
             Callback callback;
-            HttpChannel httpChannel;
+            HttpChannelState httpChannel;
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannel = _request.lockedGetHttpChannel();
@@ -973,7 +973,7 @@ public class HttpChannel implements Components
         {
             // Called when an individual write fails.
             Callback callback;
-            HttpChannel httpChannel;
+            HttpChannelState httpChannel;
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannel = _request.lockedGetHttpChannel();
@@ -1013,7 +1013,7 @@ public class HttpChannel implements Components
             _request.getHttpChannel().reset();
         }
 
-        private MetaData.Response lockedPrepareResponse(HttpChannel httpChannel, boolean last)
+        private MetaData.Response lockedPrepareResponse(HttpChannelState httpChannel, boolean last)
         {
             // Assume 200 unless told otherwise.
             if (_status == 0)
@@ -1064,7 +1064,7 @@ public class HttpChannel implements Components
             // Called when the request/response cycle is completing successfully.
             HttpStream stream;
             boolean nothingToWrite;
-            HttpChannel httpChannel;
+            HttpChannelState httpChannel;
             Throwable failure = null;
             MetaData.Response responseMetaData = null;
             try (AutoLock ignored = _request._lock.lock())
@@ -1127,7 +1127,7 @@ public class HttpChannel implements Components
             HttpStream stream;
             boolean committed;
             ChannelRequest request;
-            HttpChannel httpChannel;
+            HttpChannelState httpChannel;
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannel = completeHttpChannel(false);
@@ -1168,9 +1168,9 @@ public class HttpChannel implements Components
             }
         }
 
-        private HttpChannel completeHttpChannel(boolean succeeded)
+        private HttpChannelState completeHttpChannel(boolean succeeded)
         {
-            HttpChannel httpChannel = _request._httpChannel;
+            HttpChannelState httpChannel = _request._httpChannel;
             if (LOG.isDebugEnabled())
             {
                 if (_completedSuccessfully != null)
@@ -1233,7 +1233,7 @@ public class HttpChannel implements Components
             MetaData.Response responseMetaData = null;
             try (AutoLock ignored = _request._lock.lock())
             {
-                HttpChannel httpChannel = _request.lockedGetHttpChannel();
+                HttpChannelState httpChannel = _request.lockedGetHttpChannel();
 
                 httpChannel._writeCallback = callback;
                 for (ByteBuffer b : content)

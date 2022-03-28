@@ -38,6 +38,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.MultiMap;
@@ -558,7 +559,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        try (StacklessLogging ignore = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannelState.class))
         {
             assertThrows(ExecutionException.class, () ->
                 client.newRequest("localhost", connector.getLocalPort())

@@ -63,7 +63,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpInput.Content;
 import org.eclipse.jetty.server.HttpOutput;
@@ -328,7 +328,7 @@ public class AsyncIOServletTest extends AbstractTest<AsyncIOServletTest.AsyncTra
             }
         });
 
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannelState.class))
         {
             ContentResponse response = scenario.client.newRequest(scenario.newURI())
                 .path(scenario.servletPath)

@@ -134,12 +134,12 @@ public class Server extends Handler.Wrapper implements Attributes
         return _serverContext;
     }
 
-    void customizeHandleAndProcess(HttpChannel.ChannelRequest request, Response response, Callback callback)
+    void customizeHandleAndProcess(HttpChannelState.ChannelRequest request, Response response, Callback callback)
     {
         if (!isStarted())
             return;
 
-        HttpChannel httpChannel = request.getHttpChannel();
+        HttpChannelState httpChannel = request.getHttpChannel();
         Request customized = request;
         boolean processing = false;
         try

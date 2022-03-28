@@ -49,7 +49,7 @@ public abstract class AbstractHttpTest
         connector.setIdleTimeout(100000);
 
         server.addConnector(connector);
-        stacklessChannelLogging = new StacklessLogging(HttpChannel.class);
+        stacklessChannelLogging = new StacklessLogging(HttpChannelState.class);
     }
 
     @AfterEach

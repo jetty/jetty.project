@@ -70,6 +70,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -489,7 +490,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         client.setMaxConnectionsPerDestination(1);
 
-        try (StacklessLogging ignored = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
         {
             CountDownLatch latch = new CountDownLatch(2);
             client.newRequest("localhost", connector.getLocalPort())

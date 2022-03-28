@@ -60,7 +60,7 @@ public class ErrorProcessorTest
     @BeforeEach
     public void before() throws Exception
     {
-        stacklessLogging = new StacklessLogging(HttpChannel.class);
+        stacklessLogging = new StacklessLogging(HttpChannelState.class);
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);

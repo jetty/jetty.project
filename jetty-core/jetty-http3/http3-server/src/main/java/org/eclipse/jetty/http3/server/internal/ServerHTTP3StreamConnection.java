@@ -27,7 +27,7 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.HostPort;
@@ -55,7 +55,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implement
 
     public Runnable onRequest(HTTP3StreamServer stream, HeadersFrame frame)
     {
-        HttpChannel httpChannel = new HttpChannel(this);
+        HttpChannelState httpChannel = new HttpChannelState(this);
         HttpStreamOverHTTP3 httpStream = new HttpStreamOverHTTP3(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);

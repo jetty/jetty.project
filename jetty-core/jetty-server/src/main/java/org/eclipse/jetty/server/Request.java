@@ -569,7 +569,7 @@ public interface Request extends Attributes, Content.Reader
     static long getContentBytesRead(Request request)
     {
         Request originalRequest = unWrap(request);
-        if (originalRequest instanceof HttpChannel.ChannelRequest channelRequest)
+        if (originalRequest instanceof HttpChannelState.ChannelRequest channelRequest)
             return channelRequest.getContentBytesRead();
         return -1;
     }

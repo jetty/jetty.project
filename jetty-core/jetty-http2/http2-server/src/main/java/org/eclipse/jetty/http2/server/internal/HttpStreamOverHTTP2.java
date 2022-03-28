@@ -33,7 +33,7 @@ import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Content;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -46,7 +46,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP2.class);
 
     private final HTTP2ServerConnection _connection;
-    private final HttpChannel _httpChannel;
+    private final HttpChannelState _httpChannel;
     private final IStream _stream;
     private final long _nanoTimeStamp;
     private Content _content;
@@ -54,7 +54,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private boolean committed;
     private boolean _demand;
 
-    public HttpStreamOverHTTP2(HTTP2ServerConnection connection, HttpChannel httpChannel, IStream stream)
+    public HttpStreamOverHTTP2(HTTP2ServerConnection connection, HttpChannelState httpChannel, IStream stream)
     {
         _connection = connection;
         _httpChannel = httpChannel;

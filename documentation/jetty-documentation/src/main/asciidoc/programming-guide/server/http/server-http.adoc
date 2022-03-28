@@ -110,23 +110,23 @@ This event is converted to a call to `AbstractConnection.onFillable()`, where th
 
 The parser emit events that are protocol specific; the HTTP/2 parser, for example, emits events for each HTTP/2 frame that has been parsed, and similarly does the HTTP/3 parser.
 The parser events are then converted to protocol independent events such as _"request start"_, _"request headers"_, _"request content chunk"_, etc.
-that in turn are converted into method calls to `HttpChannel`.
+that in turn are converted into method calls to `HttpChannelState`.
 
 When enough of the HTTP request is arrived, the `Connection` calls `HttpChannel.handle()` that calls the `Handler` chain, that eventually calls the server application code.
 
 [[pg-server-http-channel-events]]
 ===== HttpChannel Events
 
-The central component processing HTTP requests is `HttpChannel`.
-There is a 1-to-1 relationship between an HTTP request/response and an `HttpChannel`, no matter what is the specific protocol that carries the HTTP request over the network (HTTP/1.1, HTTP/2, HTTP/3 or FastCGI).
+The central component processing HTTP requests is `HttpChannelState`.
+There is a 1-to-1 relationship between an HTTP request/response and an `HttpChannelState`, no matter what is the specific protocol that carries the HTTP request over the network (HTTP/1.1, HTTP/2, HTTP/3 or FastCGI).
 
-Advanced server applications may be interested in the progress of the processing of an HTTP request/response by `HttpChannel`.
+Advanced server applications may be interested in the progress of the processing of an HTTP request/response by `HttpChannelState`.
 A typical case is to know exactly _when_ the HTTP request/response processing is complete, for example to monitor processing times.
 
 NOTE: A `Handler` or a Servlet `Filter` may not report precisely when an HTTP request/response processing is finished.
 A server application may write a small enough content that is aggregated by Jetty for efficiency reasons; the write returns immediately, but nothing has been written to the network yet.
 
-`HttpChannel` notifies ``HttpChannel.Listener``s of the progress of the HTTP request/response handling.
+`HttpChannelState` notifies ``HttpChannel.Listener``s of the progress of the HTTP request/response handling.
 Currently, the following events are available:
 
 * `requestBegin`

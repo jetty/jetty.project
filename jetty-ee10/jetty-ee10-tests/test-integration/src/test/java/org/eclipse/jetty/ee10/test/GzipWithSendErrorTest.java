@@ -38,7 +38,7 @@ import org.eclipse.jetty.client.util.BytesRequestContent;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.Request;
@@ -179,7 +179,7 @@ public class GzipWithSendErrorTest
         // count of bytes against API read
         AtomicLong inputContentConsumed = new AtomicLong(0L);
 
-        connector.addBean(new HttpChannel.Listener()
+        connector.addBean(new HttpChannelState.Listener()
         {
             @Override
             public void onComplete(Request request)
@@ -285,7 +285,7 @@ public class GzipWithSendErrorTest
         // count of bytes against API read
         AtomicLong inputContentConsumed = new AtomicLong(0L);
 
-        connector.addBean(new HttpChannel.Listener()
+        connector.addBean(new HttpChannelState.Listener()
         {
             @Override
             public void onComplete(Request request)

@@ -30,7 +30,7 @@ import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -178,7 +178,7 @@ public class AsyncContextTest
     @Test
     public void testStartFlushCompleteThrow() throws Exception
     {
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannelState.class))
         {
             String request = "GET /ctx/startthrow?flush=true&complete=true HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +

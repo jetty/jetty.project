@@ -29,7 +29,7 @@ import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServerContainer;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.junit.jupiter.api.AfterEach;
@@ -102,7 +102,7 @@ public class JettyWebSocketNegotiationTest
         URI uri = URI.create("ws://localhost:" + connector.getLocalPort() + "/filterPath");
         EventSocket socket = new EventSocket();
 
-        try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stacklessLogging = new StacklessLogging(HttpChannelState.class))
         {
             CompletableFuture<Session> connect = client.connect(socket, uri);
             Throwable t = assertThrows(ExecutionException.class, () -> connect.get(5, TimeUnit.SECONDS));

@@ -300,7 +300,7 @@ public interface Response extends Content.Writer
     static long getContentBytesWritten(Response response)
     {
         Response originalResponse = getOriginalResponse(response);
-        if (originalResponse instanceof HttpChannel.ChannelResponse channelResponse)
+        if (originalResponse instanceof HttpChannelState.ChannelResponse channelResponse)
             return channelResponse.getContentBytesWritten();
         return -1;
     }

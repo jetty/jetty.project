@@ -31,7 +31,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Content;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -47,7 +47,7 @@ public class HttpStreamOverFCGI implements HttpStream
     private final HttpFields.Mutable _headers = HttpFields.build();
     private final ServerFCGIConnection _connection;
     private final ServerGenerator _generator;
-    private final HttpChannel _channel;
+    private final HttpChannelState _channel;
     private final int _id;
     private final long _nanoTime;
     private String _method;
@@ -60,7 +60,7 @@ public class HttpStreamOverFCGI implements HttpStream
     private boolean _shutdown;
     private boolean _aborted;
 
-    public HttpStreamOverFCGI(ServerFCGIConnection connection, ServerGenerator generator, HttpChannel channel, int id)
+    public HttpStreamOverFCGI(ServerFCGIConnection connection, ServerGenerator generator, HttpChannelState channel, int id)
     {
         _connection = connection;
         _generator = generator;
@@ -69,7 +69,7 @@ public class HttpStreamOverFCGI implements HttpStream
         _nanoTime = System.nanoTime();
     }
 
-    public HttpChannel getHttpChannel()
+    public HttpChannelState getHttpChannel()
     {
         return _channel;
     }

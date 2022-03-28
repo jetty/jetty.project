@@ -93,9 +93,9 @@ public class ExtendedServerTest extends HttpServerTestBase
         }
 
         @Override
-        protected HttpChannel newHttpChannel(Server server, HttpConfiguration configuration)
+        protected HttpChannelState newHttpChannel(Server server, HttpConfiguration configuration)
         {
-            return new HttpChannel(ExtendedHttpConnection.this)
+            return new HttpChannelState(ExtendedHttpConnection.this)
             {
                 @Override
                 public Runnable onRequest(MetaData.Request request)

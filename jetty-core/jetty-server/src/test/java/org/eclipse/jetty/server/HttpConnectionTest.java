@@ -1148,7 +1148,7 @@ public class HttpConnectionTest
         _server.start();
 
         String response = null;
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannelState.class))
         {
             LOG.info("Expect IOException: Response header too large...");
             response = _connector.getResponse("GET / HTTP/1.1\r\n" +

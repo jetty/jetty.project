@@ -354,7 +354,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
             .getBytes("utf-8"));
         os.flush();
 
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannelState.class))
         {
             Thread.sleep(300);
             os.write("1".getBytes("utf-8"));
@@ -459,7 +459,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
 
         long start = TimeUnit.NANOSECONDS.toMillis(System.nanoTime());
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class, AbstractConnection.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannelState.class, AbstractConnection.class))
         {
             for (int i = 0; i < (128 * 1024); i++)
             {

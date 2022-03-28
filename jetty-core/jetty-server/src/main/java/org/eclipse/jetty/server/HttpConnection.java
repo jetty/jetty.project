@@ -71,7 +71,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     private final AtomicLong _idGenerator = new AtomicLong();
     private final HttpConfiguration _configuration;
     private final Connector _connector;
-    private final HttpChannel _channel;
+    private final HttpChannelState _channel;
     private final RequestHandler _requestHandler;
     private final HttpParser _parser;
     private final HttpGenerator _generator;
@@ -154,9 +154,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         return parser;
     }
 
-    protected HttpChannel newHttpChannel(Server server, HttpConfiguration configuration)
+    protected HttpChannelState newHttpChannel(Server server, HttpConfiguration configuration)
     {
-        return new HttpChannel(this);
+        return new HttpChannelState(this);
     }
 
     protected HttpStreamOverHTTP1 newHttpStream(String method, String uri, HttpVersion version)
@@ -179,7 +179,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         return _connector;
     }
 
-    public HttpChannel getChannel()
+    public HttpChannelState getChannel()
     {
         return _channel;
     }

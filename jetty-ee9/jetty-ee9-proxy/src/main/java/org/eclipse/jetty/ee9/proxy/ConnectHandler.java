@@ -44,7 +44,7 @@ import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.Callback;
@@ -245,7 +245,7 @@ public class ConnectHandler extends HandlerWrapper
                 return;
             }
 
-            HttpChannel httpChannel = baseRequest.getHttpChannel();
+            HttpChannelState httpChannel = baseRequest.getHttpChannel();
             if (!httpChannel.isTunnellingSupported())
             {
                 if (LOG.isDebugEnabled())

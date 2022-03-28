@@ -49,7 +49,7 @@ import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
@@ -125,7 +125,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
 
-        HttpChannel httpChannel = new HttpChannel(this);
+        HttpChannelState httpChannel = new HttpChannelState(this);
         HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);
@@ -223,7 +223,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing push {} on {}", request, stream);
 
-        HttpChannel httpChannel = new HttpChannel(this);
+        HttpChannelState httpChannel = new HttpChannelState(this);
         HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         Runnable task = httpStream.onPushRequest(request);
