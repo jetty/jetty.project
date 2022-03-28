@@ -45,7 +45,7 @@ public class CookiePatternRuleTest extends AbstractRuleTest
                 response.write(false, Callback.NOOP, "pathInContext=%s%n".formatted(request.getPathInContext()));
                 response.write(false, Callback.NOOP, "path=%s%n".formatted(request.getHttpURI().getPath()));
                 response.write(false, Callback.NOOP, "query=%s%n".formatted(request.getHttpURI().getQuery()));
-                Request original = Request.getOriginalRequest(request);
+                Request original = Request.unWrap(request);
                 response.write(false, Callback.NOOP, "originalPath=%s%n".formatted(original.getHttpURI().getPath()));
                 response.write(false, Callback.NOOP, "originalQuery=%s%n".formatted(original.getHttpURI().getQuery()));
                 callback.succeeded();

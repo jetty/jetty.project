@@ -557,7 +557,7 @@ public interface Request extends Attributes, Content.Reader
         return null;
     }
 
-    static Request getOriginalRequest(Request request)
+    static Request unWrap(Request request)
     {
         while (request instanceof Request.Wrapper wrapped)
         {
@@ -568,7 +568,7 @@ public interface Request extends Attributes, Content.Reader
 
     static long getContentBytesRead(Request request)
     {
-        Request originalRequest = getOriginalRequest(request);
+        Request originalRequest = unWrap(request);
         if (originalRequest instanceof HttpChannel.ChannelRequest channelRequest)
             return channelRequest.getContentBytesRead();
         return -1;
