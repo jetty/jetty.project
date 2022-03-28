@@ -25,9 +25,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.AsyncContext;
@@ -188,19 +190,15 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     public Object getAttribute(String name)
     {
         // return hidden attributes for request logging
-        switch (name)
+        // TODO does this actually work?   Does the request logger have the wrapped request?
+        return switch (name)
         {
-            case "o.e.j.s.s.ServletScopedRequest.request":
-                return _httpServletRequest;
-            case "o.e.j.s.s.ServletScopedRequest.response":
-                return _response.getHttpServletResponse();
-            case "o.e.j.s.s.ServletScopedRequest.servlet":
-                return _mappedServlet.getServletPathMapping(getPathInContext()).getServletName();
-            case "o.e.j.s.s.ServletScopedRequest.url-pattern":
-                return _mappedServlet.getServletPathMapping(getPathInContext()).getPattern();
-            default:
-                return super.getAttribute(name);
-        }
+            case "o.e.j.s.s.ServletScopedRequest.request" -> _httpServletRequest;
+            case "o.e.j.s.s.ServletScopedRequest.response" -> _response.getHttpServletResponse();
+            case "o.e.j.s.s.ServletScopedRequest.servlet" -> _mappedServlet.getServletPathMapping(getPathInContext()).getServletName();
+            case "o.e.j.s.s.ServletScopedRequest.url-pattern" -> _mappedServlet.getServletPathMapping(getPathInContext()).getPattern();
+            default -> super.getAttribute(name);
+        };
     }
 
     /**
@@ -659,13 +657,47 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public Object getAttribute(String name)
         {
+            if (_async != null)
+            {
+                // This switch works by allowing the attribute to get underneath any dispatch wrapper.
+                switch (name)
+                {
+                    case AsyncContext.ASYNC_REQUEST_URI:
+                        return getRequestURI();
+                    case AsyncContext.ASYNC_CONTEXT_PATH:
+                        return getContextPath();
+                    case AsyncContext.ASYNC_SERVLET_PATH:
+                        return getServletPath();
+                    case AsyncContext.ASYNC_PATH_INFO:
+                        return getPathInfo();
+                    case AsyncContext.ASYNC_QUERY_STRING:
+                        return getQueryString();
+                    case AsyncContext.ASYNC_MAPPING:
+                        return getHttpServletMapping();
+                    default:
+                        break;
+                }
+            }
+
             return ServletContextRequest.this.getAttribute(name);
         }
 
         @Override
         public Enumeration<String> getAttributeNames()
         {
-            return Collections.enumeration(ServletContextRequest.this.getAttributeNameSet());
+            Set<String> set = ServletContextRequest.this.getAttributeNameSet();
+            if (_async != null)
+            {
+                set = new HashSet<>(set);
+                set.add(AsyncContext.ASYNC_REQUEST_URI);
+                set.add(AsyncContext.ASYNC_CONTEXT_PATH);
+                set.add(AsyncContext.ASYNC_SERVLET_PATH);
+                set.add(AsyncContext.ASYNC_PATH_INFO);
+                set.add(AsyncContext.ASYNC_QUERY_STRING);
+                set.add(AsyncContext.ASYNC_MAPPING);
+            }
+
+            return Collections.enumeration(set);
         }
 
         @Override
