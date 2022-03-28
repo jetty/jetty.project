@@ -461,7 +461,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public String getContextPath()
         {
-            return ServletContextRequest.this.getContext().getContextPath();
+            return ServletContextRequest.this.getContext().getServletContextHandler().getRequestContextPath();
         }
 
         @Override
