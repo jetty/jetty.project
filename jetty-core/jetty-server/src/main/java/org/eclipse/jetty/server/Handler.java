@@ -459,6 +459,8 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
 
     /**
      * <p>A {@link Handler.Container} that contains a list of other {@code Handler}s.</p>
+     * 
+     * TODO this should be called List instead
      */
     class Collection extends AbstractContainer
     {

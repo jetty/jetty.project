@@ -32,6 +32,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
@@ -201,8 +204,26 @@ public class FilterHolder extends Holder<Filter>
     {
         if (isAsyncSupported() || !request.isAsyncSupported())
             getFilter().doFilter(request, response, chain);
+        else if (request instanceof HttpServletRequest httpServletRequest)
+        {
+            getFilter().doFilter(new HttpServletRequestWrapper(httpServletRequest)
+            {
+                @Override
+                public boolean isAsyncSupported()
+                {
+                    return false;
+                }
+
+                @Override
+                public AsyncContext startAsync() throws IllegalStateException
+                {
+                    throw new IllegalStateException("Async Not Supported");
+                }
+            }, response, chain);
+        }
         else
         {
+            //TODO necessary to support non http?
             getFilter().doFilter(new ServletRequestWrapper(request)
             {
                 @Override
