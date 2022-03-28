@@ -26,7 +26,6 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -38,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * Dynamic Servlet Invoker.
  * This servlet invokes anonymous servlets that have not been defined
  * in the web.xml or by other means. The first element of the pathInfo
- * of a request passed to the envoker is treated as a servlet name for
+ * of a request passed to the invoker is treated as a servlet name for
  * an existing servlet, or as a class name of a new servlet.
  * This servlet is normally mapped to /servlet/*
  * This servlet support the following initParams:
@@ -71,15 +70,11 @@ public class Invoker extends HttpServlet
     @Override
     public void init()
     {
-        ServletContext config = getServletContext();
-        _contextHandler = ((ContextHandler.Context)config).getContextHandler();
+        ServletContext servletContext = getServletContext();
+        ServletContextHandler.ServletContextApi servletContextApi = (ServletContextHandler.ServletContextApi)servletContext;
+        _servletHandler = servletContextApi.getContext().getServletContextHandler().getServletHandler();
+        _contextHandler = servletContextApi.getContextHandler();
 
-        Handler handler = _contextHandler.getHandler();
-        while (handler != null && !(handler instanceof ServletHandler) && (handler instanceof Handler.Wrapper))
-        {
-            handler = ((Handler.Wrapper)handler).getHandler();
-        }
-        _servletHandler = (ServletHandler)handler;
         Enumeration<String> e = getInitParameterNames();
         while (e.hasMoreElements())
         {
