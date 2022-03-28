@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.eclipse.jetty.its</groupId>
+    <artifactId>it-parent-pom</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+  </parent>
+
+  <groupId>org.github.unb</groupId>
+  <artifactId>jetty-7677</artifactId>
+  <version>1.0</version>
+  <packaging>war</packaging>
+
+  <name>jetty-7677</name>
+
+  <properties>
+    <jetty.port.file>${project.build.directory}/jetty-start-it.txt</jetty.port.file>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.1.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-maven-plugin</artifactId>
+      <classifier>tests</classifier>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <configuration>
+            <failOnMissingWebXml>false</failOnMissingWebXml>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <includes>
+              <include>IntegrationTest*.java</include>
+            </includes>
+            <systemPropertyVariables>
+              <jetty.port.file>${jetty.port.file}</jetty.port.file>
+              <context.path>/</context.path>
+              <pingServlet>fals</pingServlet>
+              <helloServlet>false</helloServlet>
+              <contentCheck>class javax.annotation.Nullable not found</contentCheck>
+              <pathToCheck>/test</pathToCheck>
+              <maven.it.name>${project.groupId}:${project.artifactId}</maven.it.name>
+            </systemPropertyVariables>
+            <dependenciesToScan>
+              <dependency>org.eclipse.jetty:jetty-maven-plugin</dependency>
+            </dependenciesToScan>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.eclipse.jetty</groupId>
+        <artifactId>jetty-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>start-jetty</id>
+            <phase>test-compile</phase>
+            <goals>
+              <goal>start</goal>
+            </goals>
+            <configuration>
+              <systemProperties>
+                <jetty.port.file>${jetty.port.file}</jetty.port.file>
+              </systemProperties>
+              <jettyXmls>
+                <jettyXml>${basedir}/src/config/jetty.xml</jettyXml>
+              </jettyXmls>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

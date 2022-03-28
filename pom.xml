@@ -632,6 +632,7 @@
             <localRepositoryPath>${localRepoPath}</localRepositoryPath>
             <settingsFile>${settingsPath}</settingsFile>
             <skipInvocation>${skipTests}</skipInvocation>
+            <streamLogsOnFailures>true</streamLogsOnFailures>
             <pomIncludes>
               <pomInclude>*/pom.xml</pomInclude>
             </pomIncludes>
@@ -1178,6 +1179,10 @@
           <exclusion>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
