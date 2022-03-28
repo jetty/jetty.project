@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -43,7 +44,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.internal.ResponseHttpFields;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -113,8 +113,6 @@ public class HttpChannel implements Components
     private HttpStream _stream;
     private boolean _processing;
     private boolean _handled;
-    private long _contentBytesRead; // TODO this is needed by request log after success/failed
-    private long _contentBytesWritten; // TODO this is needed by request log after success/failed
     private long _committedContentLength = -1;
     private ResponseHttpFields _responseTrailers;
     private Runnable _onContentAvailable;
@@ -171,8 +169,6 @@ public class HttpChannel implements Components
         _responseHeaders.reset();
         _processing = false;
         _handled = false;
-        _contentBytesRead = 0;
-        _contentBytesWritten = 0;
         _committedContentLength = -1;
         if (_responseTrailers != null)
             _responseTrailers.reset();
@@ -519,17 +515,6 @@ public class HttpChannel implements Components
         }
     }
 
-    /**
-     * Format the address or host returned from Request methods
-     *
-     * @param addr The address or host
-     * @return Default implementation returns {@link HostPort#normalizeHost(String)}
-     */
-    protected String formatAddrOrHost(String addr)
-    {
-        return HostPort.normalizeHost(addr);
-    }
-
     public void enableProcessing()
     {
         try (AutoLock ignored = _lock.lock())
@@ -606,6 +591,7 @@ public class HttpChannel implements Components
         private final MetaData.Request _metaData;
         private final ChannelResponse _response;
         private final AutoLock _lock;
+        private final LongAdder _contentBytesRead = new LongAdder();
         private HttpChannel _httpChannel;
 
         ChannelRequest(HttpChannel httpChannel, MetaData.Request metaData)
@@ -625,7 +611,7 @@ public class HttpChannel implements Components
 
         long getContentBytesRead()
         {
-            return getHttpChannel()._contentBytesRead;
+            return _contentBytesRead.longValue();
         }
 
         @Override
@@ -773,11 +759,9 @@ public class HttpChannel implements Components
             }
 
             Content content = stream.readContent();
-            if (content != null)
-            {
-                // TODO: can this be moved to the HttpStream to save re-grabbing the lock to update _bytesRead?
-                getHttpChannel()._contentBytesRead += content.remaining();
-            }
+            if (content != null && content.hasRemaining())
+                _contentBytesRead.add(content.remaining());
+
             return content;
         }
 
@@ -859,6 +843,7 @@ public class HttpChannel implements Components
     {
         private final ChannelRequest _request;
         private int _status;
+        private long _contentBytesWritten;
 
         private ChannelResponse(ChannelRequest request)
         {
@@ -867,7 +852,7 @@ public class HttpChannel implements Components
 
         long getContentBytesWritten()
         {
-            return _request.getHttpChannel()._contentBytesWritten;
+            return _contentBytesWritten;
         }
 
         @Override
@@ -944,12 +929,12 @@ public class HttpChannel implements Components
                 {
                     httpChannel._writeCallback = callback;
                     for (ByteBuffer b : content)
-                        httpChannel._contentBytesWritten += b.remaining();
+                        _contentBytesWritten += b.remaining();
 
                     httpChannel._lastWrite |= last;
 
                     stream = httpChannel._stream;
-                    written = httpChannel._contentBytesWritten;
+                    written = _contentBytesWritten;
 
                     if (httpChannel._responseHeaders.commit())
                         responseMetaData = lockedPrepareResponse(httpChannel, last);
@@ -1047,7 +1032,7 @@ public class HttpChannel implements Components
             httpChannel._committedContentLength = mutableHeaders.getLongField(HttpHeader.CONTENT_LENGTH);
             if (last && httpChannel._committedContentLength < 0L)
             {
-                httpChannel._committedContentLength = httpChannel._contentBytesWritten;
+                httpChannel._committedContentLength = _contentBytesWritten;
                 if (httpChannel._committedContentLength == 0)
                     mutableHeaders.put(CONTENT_LENGTH_0);
                 else
@@ -1073,6 +1058,8 @@ public class HttpChannel implements Components
     private static class ChannelCallback implements Callback
     {
         private final ChannelRequest _request;
+        private boolean _completed;
+        private Throwable _completedBy;
 
         private ChannelCallback(ChannelRequest request)
         {
@@ -1090,7 +1077,7 @@ public class HttpChannel implements Components
             MetaData.Response responseMetaData = null;
             try (AutoLock ignored = _request._lock.lock())
             {
-                httpChannel = _request.lockedGetHttpChannel();
+                httpChannel = checkCompletionLocked();
 
                 if (!httpChannel._processing)
                     throw new IllegalStateException("not processing");
@@ -1107,7 +1094,7 @@ public class HttpChannel implements Components
 
                 stream = httpChannel._stream;
 
-                long written = httpChannel._contentBytesWritten;
+                long written = _request._response._contentBytesWritten;
                 if (httpChannel._responseHeaders.commit())
                     responseMetaData = _request._response.lockedPrepareResponse(httpChannel, true);
 
@@ -1155,7 +1142,7 @@ public class HttpChannel implements Components
             HttpChannel httpChannel;
             try (AutoLock ignored = _request._lock.lock())
             {
-                httpChannel = _request.lockedGetHttpChannel();
+                httpChannel = checkCompletionLocked();
 
                 if (!httpChannel._processing)
                     throw new IllegalStateException("not processing");
@@ -1196,6 +1183,29 @@ public class HttpChannel implements Components
             }
         }
 
+        private HttpChannel checkCompletionLocked()
+        {
+            HttpChannel httpChannel = _request._httpChannel;
+            if (LOG.isDebugEnabled())
+            {
+                if (_completed)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.warn("already completed {} by", _request, _completedBy);
+                    throw new IllegalStateException(httpChannel == null ? "channel already completed" : "channel is completing");
+                }
+                _completed = true;
+                _completedBy = new Throwable(Thread.currentThread().toString());
+                LOG.debug("completing {}", _request);
+                return httpChannel;
+            }
+
+            if (_completed)
+                throw new IllegalStateException(httpChannel == null ? "channel already completed" : "channel is completing");
+            _completed = true;
+            return httpChannel;
+        }
+
         private void recycle()
         {
             try (AutoLock ignored = _request._lock.lock())
@@ -1216,6 +1226,7 @@ public class HttpChannel implements Components
     private static class ErrorResponse extends Response.Wrapper implements Callback
     {
         private final ChannelRequest _request;
+        private final ChannelResponse _response;
         private final HttpStream _stream;
         private final Throwable _failure;
 
@@ -1223,6 +1234,7 @@ public class HttpChannel implements Components
         {
             super(request, request._response);
             _request = request;
+            _response = request._response;
             _stream = stream;
             _failure = failure;
         }
@@ -1237,7 +1249,7 @@ public class HttpChannel implements Components
 
                 httpChannel._writeCallback = callback;
                 for (ByteBuffer b : content)
-                    httpChannel._contentBytesWritten += b.remaining();
+                    _response._contentBytesWritten += b.remaining();
 
                 httpChannel._lastWrite |= last;
 

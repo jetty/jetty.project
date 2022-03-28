@@ -745,8 +745,10 @@ public class ServletHandlerTest
     public void testServletMappings() throws Exception
     {
         Server server = new Server();
+        ServletContextHandler context = new ServletContextHandler("/");
+        server.setHandler(context);
         ServletHandler handler = new ServletHandler();
-        server.setHandler(handler);
+        context.setHandler(handler);
         for (final String mapping : new String[] {"/", "/foo", "/bar/*", "*.bob"})
         {
             handler.addServletWithMapping(new ServletHolder(new HttpServlet()
@@ -778,8 +780,9 @@ public class ServletHandlerTest
     public void testFilterMappings() throws Exception
     {
         Server server = new Server();
+        ServletContextHandler context = new ServletContextHandler("/");
+        server.setHandler(context);
         ServletHandler handler = new ServletHandler();
-        server.setHandler(handler);
 
         ServletHolder foo = new ServletHolder(new HttpServlet()
         {

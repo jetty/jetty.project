@@ -824,6 +824,8 @@ public class ServletChannel implements Runnable
     {
         if (_state.abortResponse())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("abort {}", this, failure);
             _combinedListener.onResponseFailure(_request, failure);
             _callback.failed(failure);
         }

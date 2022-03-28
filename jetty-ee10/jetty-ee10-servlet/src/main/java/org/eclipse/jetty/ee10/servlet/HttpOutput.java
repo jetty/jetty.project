@@ -332,7 +332,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (LOG.isDebugEnabled())
             LOG.debug("onWriteComplete({},{}) {}->{} c={} cb={} w={}",
-                last, failure, state, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake);
+                last, failure, state, stateString(), BufferUtil.toDetailString(closeContent), closedCallback, wake, failure);
 
         try
         {

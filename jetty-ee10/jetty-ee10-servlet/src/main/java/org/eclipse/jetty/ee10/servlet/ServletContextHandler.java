@@ -233,6 +233,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         this(null, null, null, null, null);
     }
 
+    public ServletContextHandler(String contextPath)
+    {
+        this(null, contextPath);
+    }
+
     public ServletContextHandler(int options)
     {
         this(null, null, options);
