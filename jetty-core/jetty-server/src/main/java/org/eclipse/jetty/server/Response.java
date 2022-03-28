@@ -67,6 +67,8 @@ public interface Response extends Content.Writer
 
     boolean isCommitted();
 
+    boolean isCompletedSuccessfully();
+
     void reset();
 
     // TODO: inline and remove
@@ -359,6 +361,12 @@ public interface Response extends Content.Writer
         public boolean isCommitted()
         {
             return getWrapped().isCommitted();
+        }
+
+        @Override
+        public boolean isCompletedSuccessfully()
+        {
+            return getWrapped().isCompletedSuccessfully();
         }
 
         @Override

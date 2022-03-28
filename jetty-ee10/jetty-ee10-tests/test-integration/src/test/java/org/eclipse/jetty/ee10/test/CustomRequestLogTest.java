@@ -70,6 +70,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
+// TODO why is this test a duplicated?
 public class CustomRequestLogTest
 {
     private final BlockingQueue<String> _entries = new BlockingArrayQueue<>();

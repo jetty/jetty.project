@@ -1005,13 +1005,15 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logLocalHost(StringBuilder b, Request request, Response response)
     {
-        append(b, Request.getLocalAddr(request));
+        // Unwrap to bypass any customizers
+        append(b, Request.getLocalAddr(Request.unWrap(request)));
     }
 
     @SuppressWarnings("unused")
     private static void logRemoteHost(StringBuilder b, Request request, Response response)
     {
-        append(b, Request.getRemoteAddr(request));
+        // Unwrap to bypass any customizers
+        append(b, Request.getRemoteAddr(Request.unWrap(request)));
     }
 
     @SuppressWarnings("unused")
@@ -1029,13 +1031,15 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logLocalPort(StringBuilder b, Request request, Response response)
     {
-        append(b, String.valueOf(Request.getLocalPort(request)));
+        // Unwrap to bypass any customizers
+        b.append(Request.getLocalPort(Request.unWrap(request)));
     }
 
     @SuppressWarnings("unused")
     private static void logRemotePort(StringBuilder b, Request request, Response response)
     {
-        append(b, String.valueOf(Request.getRemotePort(request)));
+        // Unwrap to bypass any customizers
+        b.append(Request.getRemotePort(Request.unWrap(request)));
     }
 
     @SuppressWarnings("unused")
@@ -1125,10 +1129,9 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logRequestCookies(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
         List<HttpCookie> cookies = Request.getCookies(request);
         if (cookies == null || cookies.size() == 0)
-            b.append("-");
+            b.append('-');
         else
         {
             for (int i = 0; i < cookies.size(); i++)
@@ -1282,8 +1285,9 @@ public class CustomRequestLog extends ContainerLifeCycle implements RequestLog
     @SuppressWarnings("unused")
     private static void logConnectionStatus(StringBuilder b, Request request, Response response)
     {
-        b.append('-');
-//      TODO b.append(request.getHttpChannel().isResponseCompleted() ? (request.getHttpChannel().isPersistent() ? '+' : '-') : 'X');
+        b.append(response.isCompletedSuccessfully()
+            ? (request.getConnectionMetaData().isPersistent() ? '+' : '-')
+            : 'X');
     }
 
     @SuppressWarnings("unused")

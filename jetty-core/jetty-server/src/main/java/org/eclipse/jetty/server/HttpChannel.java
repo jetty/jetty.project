@@ -107,7 +107,7 @@ public class HttpChannel implements Components
     private final ConnectionMetaData _connectionMetaData;
     private final SerializedInvoker _serializedInvoker;
     private final Attributes _requestAttributes = new Attributes.Lazy();
-    private final ResponseHttpFields _responseHeaders = new ResponseHttpFields(); // TODO this may be needed by request log after success/failed (but rarely)
+    private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
     private long _requests;
     private ChannelRequest _request;
     private HttpStream _stream;
@@ -151,8 +151,19 @@ public class HttpChannel implements Components
         };
     }
 
-    private void lockedRecycle()
+    private void lockedLogAndRecycle()
     {
+        RequestLog requestLog = getServer().getRequestLog();
+        if (requestLog != null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("logging {}", this);
+
+            // TODO logging done with lock held!!!!
+            //      it should probably be an async call inserted between ChannelCallback completion and HttpStream completion
+            requestLog.log(_request.getLoggedRequest(), _request._response);
+        }
+
         if (LOG.isDebugEnabled())
             LOG.debug("recycling {}", this);
 
@@ -286,45 +297,6 @@ public class HttpChannel implements Components
 
             _request = new ChannelRequest(this, request);
             _requests++;
-            ChannelRequest capturedRequest = _request;
-            RequestLog requestLog = getConnectionMetaData().getConnector().getServer().getRequestLog();
-            if (requestLog != null)
-            {
-                // TODO: use addStreamWrapper() instead.
-                // TODO: make this efficient.
-                _stream = new HttpStream.Wrapper(_stream)
-                {
-                    @Override
-                    public void succeeded()
-                    {
-                        try
-                        {
-                            requestLog.log(capturedRequest, capturedRequest._response);
-                        }
-                        catch (Throwable t)
-                        {
-                            LOG.warn("RequestLog Error", t);
-                        }
-
-                        super.succeeded();
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        try
-                        {
-                            requestLog.log(capturedRequest, capturedRequest._response);
-                        }
-                        catch (Throwable t)
-                        {
-                            LOG.warn("RequestLog Error", t);
-                        }
-
-                        super.failed(x);
-                    }
-                };
-            }
 
             HttpFields.Mutable responseHeaders = _request._response.getHeaders();
             if (getHttpConfiguration().getSendServerVersion())
@@ -585,7 +557,7 @@ public class HttpChannel implements Components
     static class ChannelRequest implements Attributes, Request
     {
         private final long _timeStamp = System.currentTimeMillis();
-        private final Callback _callback = new ChannelCallback(this);
+        private final ChannelCallback _callback = new ChannelCallback(this);
         private final String _id;
         private final ConnectionMetaData _connectionMetaData;
         private final MetaData.Request _metaData;
@@ -593,6 +565,7 @@ public class HttpChannel implements Components
         private final AutoLock _lock;
         private final LongAdder _contentBytesRead = new LongAdder();
         private HttpChannel _httpChannel;
+        private Request _loggedRequest;
 
         ChannelRequest(HttpChannel httpChannel, MetaData.Request metaData)
         {
@@ -602,6 +575,16 @@ public class HttpChannel implements Components
             _metaData = Objects.requireNonNull(metaData);
             _response = new ChannelResponse(this);
             _lock = httpChannel._lock;
+        }
+
+        public void setLoggedRequest(Request request)
+        {
+            _loggedRequest = request;
+        }
+
+        public Request getLoggedRequest()
+        {
+            return _loggedRequest == null ? this : _loggedRequest;
         }
 
         HttpStream getStream()
@@ -1016,6 +999,15 @@ public class HttpChannel implements Components
         }
 
         @Override
+        public boolean isCompletedSuccessfully()
+        {
+            try (AutoLock ignored = _request._lock.lock())
+            {
+                return Boolean.TRUE.equals(_request._callback._completedSuccessfully);
+            }
+        }
+
+        @Override
         public void reset()
         {
             _request.getHttpChannel().reset();
@@ -1058,7 +1050,7 @@ public class HttpChannel implements Components
     private static class ChannelCallback implements Callback
     {
         private final ChannelRequest _request;
-        private boolean _completed;
+        private Boolean _completedSuccessfully;
         private Throwable _completedBy;
 
         private ChannelCallback(ChannelRequest request)
@@ -1077,7 +1069,7 @@ public class HttpChannel implements Components
             MetaData.Response responseMetaData = null;
             try (AutoLock ignored = _request._lock.lock())
             {
-                httpChannel = completeHttpChannel();
+                httpChannel = completeHttpChannel(true);
 
                 // We are being tough on handler implementations and expect them
                 // to not have pending operations when calling succeeded or failed.
@@ -1101,7 +1093,7 @@ public class HttpChannel implements Components
                 nothingToWrite = failure != null || httpChannel._lastWrite;
 
                 if (nothingToWrite)
-                    httpChannel.lockedRecycle();
+                    httpChannel.lockedLogAndRecycle();
             }
 
             // is the request fully consumed?
@@ -1124,7 +1116,7 @@ public class HttpChannel implements Components
             }
             else
             {
-                stream.send(_request._metaData, responseMetaData, true, Callback.from(this::recycle, stream));
+                stream.send(_request._metaData, responseMetaData, true, Callback.from(this::logAndRecycle, stream));
             }
         }
 
@@ -1138,7 +1130,7 @@ public class HttpChannel implements Components
             HttpChannel httpChannel;
             try (AutoLock ignored = _request._lock.lock())
             {
-                httpChannel = completeHttpChannel();
+                httpChannel = completeHttpChannel(false);
 
                 // Verify whether we can write an error response.
                 committed = httpChannel._stream.isCommitted();
@@ -1147,13 +1139,13 @@ public class HttpChannel implements Components
 
                 if (committed)
                 {
-                    httpChannel.lockedRecycle();
+                    httpChannel.lockedLogAndRecycle();
                 }
                 else
                 {
+                    // Cannot log or recycle just yet, since we need to generate the error response.
                     _request._response._status = HttpStatus.INTERNAL_SERVER_ERROR_500;
                     httpChannel._responseHeaders.reset();
-                    // Cannot recycle just yet, since we need to generate the error response.
                 }
             }
 
@@ -1171,17 +1163,17 @@ public class HttpChannel implements Components
             }
             else
             {
-                ErrorResponse response = new ErrorResponse(request, stream, x);
-                Response.writeError(request, response, Callback.from(response, this::recycle), x);
+                ErrorResponse responseAndCallback = new ErrorResponse(request, stream, x);
+                Response.writeError(request, responseAndCallback, responseAndCallback, x);
             }
         }
 
-        private HttpChannel completeHttpChannel()
+        private HttpChannel completeHttpChannel(boolean succeeded)
         {
             HttpChannel httpChannel = _request._httpChannel;
             if (LOG.isDebugEnabled())
             {
-                if (_completed)
+                if (_completedSuccessfully != null)
                 {
                     if (LOG.isDebugEnabled())
                         LOG.warn("already completed {} by", _request, _completedBy);
@@ -1191,23 +1183,23 @@ public class HttpChannel implements Components
                 if (!httpChannel._processing)
                     throw new IllegalStateException("not processing");
 
-                _completed = true;
+                _completedSuccessfully = succeeded;
                 _completedBy = new Throwable(Thread.currentThread().toString());
                 LOG.debug("completing {}", _request);
                 return httpChannel;
             }
 
-            if (_completed)
+            if (_completedSuccessfully != null)
                 throw new IllegalStateException(httpChannel == null ? "channel already completed" : "channel is completing");
-            _completed = true;
+            _completedSuccessfully = succeeded;
             return httpChannel;
         }
 
-        private void recycle()
+        private void logAndRecycle()
         {
             try (AutoLock ignored = _request._lock.lock())
             {
-                _request._httpChannel.lockedRecycle();
+                _request._httpChannel.lockedLogAndRecycle();
             }
         }
 
@@ -1261,9 +1253,14 @@ public class HttpChannel implements Components
             // ErrorProcessor has succeeded the ErrorRequest, so we need to ensure
             // that the ErrorResponse is committed before we fail the stream.
             if (_stream.isCommitted())
+            {
+                logAndRecycle();
                 _stream.failed(_failure);
+            }
             else
+            {
                 write(true, Callback.from(() -> _stream.failed(_failure), this::failed));
+            }
         }
 
         @Override
@@ -1271,7 +1268,16 @@ public class HttpChannel implements Components
         {
             if (x != _failure)
                 _failure.addSuppressed(x);
+            logAndRecycle();
             _stream.failed(_failure);
+        }
+
+        private void logAndRecycle()
+        {
+            try (AutoLock ignored = _request._lock.lock())
+            {
+                _request._httpChannel.lockedLogAndRecycle();
+            }
         }
     }
 }

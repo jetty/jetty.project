@@ -153,7 +153,11 @@ public class Server extends Handler.Wrapper implements Attributes
                 customized = next == null ? customized : next;
             }
 
+            if (customized != request && _requestLog != null)
+                request.setLoggedRequest(customized);
+
             Request.Processor processor = handle(customized);
+
             processing = true;
             httpChannel.enableProcessing();
             if (processor == null)

@@ -322,12 +322,12 @@ public interface Request extends Attributes, Content.Reader
             return cookies;
 
         // TODO: review whether to store the cookie cache at the connection level, or whether to cache them at all.
-        CookieCache cookieCache = (CookieCache)request.getConnectionMetaData().getAttribute(Request.class.getCanonicalName() + ".CookieCache");
+        CookieCache cookieCache = (CookieCache)request.getComponents().getCache().get(Request.class.getCanonicalName() + ".CookieCache");
         if (cookieCache == null)
         {
             // TODO compliance listeners?
             cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), null);
-            request.getConnectionMetaData().setAttribute(Request.class.getCanonicalName() + ".CookieCache", cookieCache);
+            request.getComponents().getCache().put(Request.class.getCanonicalName() + ".CookieCache", cookieCache);
         }
 
         cookies = cookieCache.getCookies(request.getHeaders());

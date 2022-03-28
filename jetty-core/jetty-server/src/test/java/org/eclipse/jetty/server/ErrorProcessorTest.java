@@ -448,10 +448,11 @@ public class ErrorProcessorTest
             response.setStatus(302);
             callback.succeeded();
         });
-        String rawResponse = connector.getResponse(
-            "GET / HTTP/1.1\r\n" +
-                "Host:\r\n" +
-                "\r\n");
+        String rawResponse = connector.getResponse("""
+                GET / HTTP/1.1
+                Host:
+                
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 

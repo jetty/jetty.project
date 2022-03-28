@@ -298,13 +298,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public long getMessagesIn()
     {
-        return 0; // TODO
+        return _channel.getRequests();
     }
 
     @Override
     public long getMessagesOut()
     {
-        return 0; // TODO
+        return _channel.getRequests(); // TODO not strictly correct
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -1043,6 +1043,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 _stream.set(stream);
                 _channel.setHttpStream(stream);
             }
+
+            // TODO communicate the real method/uri/version to the channel
+
             Runnable todo = _channel.onError(failure);
             if (todo != null)
                 getServer().getThreadPool().execute(todo);
