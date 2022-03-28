@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
@@ -62,7 +63,7 @@ public interface HttpContent
 
     ByteBuffer getDirectBuffer();
 
-    Resource getResource();
+    Path getResource();
 
     InputStream getInputStream() throws IOException;
 

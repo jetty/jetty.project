@@ -169,7 +169,7 @@ public class AllowSymLinkAliasCheckerTest
         server.addConnector(localConnector);
 
         ResourceHandler fileResourceHandler = new ResourceHandler();
-        fileResourceHandler.setDirectoriesListed(true);
+        fileResourceHandler.setDirAllowed(true);
         fileResourceHandler.setWelcomeFiles(new String[]{"index.html"});
         fileResourceHandler.setEtags(true);
 
