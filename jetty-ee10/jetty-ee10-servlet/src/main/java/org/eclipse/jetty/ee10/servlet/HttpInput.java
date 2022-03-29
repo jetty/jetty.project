@@ -21,9 +21,8 @@ import java.util.concurrent.atomic.LongAdder;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletInputStream;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -140,9 +139,10 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private int get(Content content, byte[] bytes, int offset, int length)
     {
-        int consumed = content.get(bytes, offset, length);
-        _contentConsumed.add(consumed);
-        return consumed;
+        length = Math.min(content.remaining(), length);
+        content.getByteBuffer().get(bytes, offset, length);
+        _contentConsumed.add(length);
+        return length;
     }
 
     public long getContentConsumed()
@@ -279,17 +279,17 @@ public class HttpInput extends ServletInputStream implements Runnable
                 return read;
             }
 
-            Throwable error = content.getError();
-            if (LOG.isDebugEnabled())
-                LOG.debug("read error={} {}", error, this);
-            if (error != null)
+            if (content instanceof Content.Error errorContent)
             {
+                Throwable error = errorContent.getCause();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("read error={} {}", error, this);
                 if (error instanceof IOException)
                     throw (IOException)error;
                 throw new IOException(error);
             }
 
-            if (content.isEof())
+            if (content == Content.EOF)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("read at EOF, setting consumed EOF to true {}", this);
@@ -374,16 +374,17 @@ public class HttpInput extends ServletInputStream implements Runnable
 
         if (content.isSpecial())
         {
-            Throwable error = content.getError();
-            if (error != null)
+
+            if (content instanceof Content.Error errorContent)
             {
+                Throwable error = errorContent.getCause();
                 if (LOG.isDebugEnabled())
                     LOG.debug("running error={} {}", error, this);
                 // TODO is this necessary to add here?
                 _servletChannel.getResponse().getHeaders().add(HttpFields.CONNECTION_CLOSE);
                 _readListener.onError(error);
             }
-            else if (content.isEof())
+            else if (content == Content.EOF)
             {
                 try
                 {
@@ -455,7 +456,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * <ul>
      *     <li>Calling {@link Content#getByteBuffer()} when {@link Content#isSpecial()} returns <code>true</code> throws
      *     {@link IllegalStateException}.</li>
-     *     <li>A {@link Content} can both be non-special and have {@link Content#isEof()} return <code>true</code>.</li>
+     *     <li>A {@link Content} can both be non-special and have {@code content == Content.EOF} return <code>true</code>.</li>
      *     <li>{@link Content} extends {@link Callback} to manage the lifecycle of the contained byte buffer. The code calling
      *     {@link #readFrom(Content)} is responsible for managing the lifecycle of both the passed and the returned content
      *     instances, once {@link ByteBuffer#hasRemaining()} returns <code>false</code> {@code HttpInput} will make sure
@@ -529,272 +530,6 @@ public class HttpInput extends ServletInputStream implements Runnable
         public String toString()
         {
             return getClass().getSimpleName() + "@" + hashCode() + " [p=" + _prev + ",n=" + _next + "]";
-        }
-    }
-
-    /**
-     * A content represents the production of a {@link org.eclipse.jetty.server.Content} returned by {@link Request#readContent()} ()}.
-     * There are two fundamental types of content: special and non-special.
-     * Non-special content always wraps a byte buffer that can be consumed and must be recycled once it is empty, either
-     * via {@link #succeeded()} or {@link #failed(Throwable)}.
-     * Special content indicates a special event, like EOF or an error and never wraps a byte buffer. Calling
-     * {@link #succeeded()} or {@link #failed(Throwable)} on those have no effect.
-     * @deprecated This class should be removed in favour of the {@link org.eclipse.jetty.server.Content} class.
-     */
-    @Deprecated
-    public static class Content implements Callback
-    {
-        protected final ByteBuffer _content;
-
-        public Content(ByteBuffer content)
-        {
-            _content = content;
-        }
-
-        /**
-         * Get the wrapped byte buffer. Throws {@link IllegalStateException} if the content is special.
-         * @return the wrapped byte buffer.
-         */
-        public ByteBuffer getByteBuffer()
-        {
-            return _content;
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return InvocationType.NON_BLOCKING;
-        }
-
-        /**
-         * Read the wrapped byte buffer. Throws {@link IllegalStateException} if the content is special.
-         * @param buffer The array into which bytes are to be written.
-         * @param offset The offset within the array of the first byte to be written.
-         * @param length The maximum number of bytes to be written to the given array.
-         * @return The amount of bytes read from the buffer.
-         */
-        public int get(byte[] buffer, int offset, int length)
-        {
-            length = Math.min(_content.remaining(), length);
-            _content.get(buffer, offset, length);
-            return length;
-        }
-
-        /**
-         * Skip some bytes from the buffer. Has no effect on a special content.
-         * @param length How many bytes to skip.
-         * @return How many bytes were skipped.
-         */
-        public int skip(int length)
-        {
-            length = Math.min(_content.remaining(), length);
-            _content.position(_content.position() + length);
-            return length;
-        }
-
-        /**
-         * Check if there is at least one byte left in the buffer.
-         * Always false on a special content.
-         * @return true if there is at least one byte left in the buffer.
-         */
-        public boolean hasContent()
-        {
-            return _content.hasRemaining();
-        }
-
-        /**
-         * Get the number of bytes remaining in the buffer.
-         * Always 0 on a special content.
-         * @return the number of bytes remaining in the buffer.
-         */
-        public int remaining()
-        {
-            return _content.remaining();
-        }
-
-        /**
-         * Check if the buffer is empty.
-         * Always true on a special content.
-         * @return true if there is 0 byte left in the buffer.
-         */
-        public boolean isEmpty()
-        {
-            return !_content.hasRemaining();
-        }
-
-        /**
-         * Check if the content is special. A content is deemed special
-         * if it does not hold bytes but rather conveys a special event,
-         * like when EOF has been reached or an error has occurred.
-         * @return true if the content is special, false otherwise.
-         */
-        public boolean isSpecial()
-        {
-            return false;
-        }
-
-        /**
-         * Check if EOF was reached. Both special and non-special content
-         * can have this flag set to true but in the case of non-special content,
-         * this can be interpreted as a hint as it is always going to be followed
-         * by another content that is both special and EOF.
-         * @return true if EOF was reached, false otherwise.
-         */
-        public boolean isEof()
-        {
-            return false;
-        }
-
-        /**
-         * Get the reported error. Only special contents can have an error.
-         * @return the error or null if there is none.
-         */
-        public Throwable getError()
-        {
-            return null;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("%s@%x{%s,spc=%s,eof=%s,err=%s}", getClass().getSimpleName(), hashCode(),
-                BufferUtil.toDetailString(_content), isSpecial(), isEof(), getError());
-        }
-    }
-
-    /**
-     * Simple non-special content wrapper allow overriding the EOF flag.
-     */
-    public static class WrappingContent extends Content
-    {
-        private final Content _delegate;
-        private final boolean _eof;
-
-        public WrappingContent(Content delegate, boolean eof)
-        {
-            super(delegate.getByteBuffer());
-            _delegate = delegate;
-            _eof = eof;
-        }
-
-        @Override
-        public boolean isEof()
-        {
-            return _eof;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            _delegate.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            _delegate.failed(x);
-        }
-
-        @Override
-        public InvocationType getInvocationType()
-        {
-            return _delegate.getInvocationType();
-        }
-    }
-
-    /**
-     * Abstract class that implements the standard special content behavior.
-     */
-    public abstract static class SpecialContent extends Content
-    {
-        public SpecialContent()
-        {
-            super(null);
-        }
-
-        @Override
-        public final ByteBuffer getByteBuffer()
-        {
-            throw new IllegalStateException(this + " has no buffer");
-        }
-
-        @Override
-        public final int get(byte[] buffer, int offset, int length)
-        {
-            throw new IllegalStateException(this + " has no buffer");
-        }
-
-        @Override
-        public final int skip(int length)
-        {
-            return 0;
-        }
-
-        @Override
-        public final boolean hasContent()
-        {
-            return false;
-        }
-
-        @Override
-        public final int remaining()
-        {
-            return 0;
-        }
-
-        @Override
-        public final boolean isEmpty()
-        {
-            return true;
-        }
-
-        @Override
-        public final boolean isSpecial()
-        {
-            return true;
-        }
-    }
-
-    /**
-     * EOF special content.
-     */
-    public static final class EofContent extends SpecialContent
-    {
-        @Override
-        public boolean isEof()
-        {
-            return true;
-        }
-
-        @Override
-        public String toString()
-        {
-            return getClass().getSimpleName();
-        }
-    }
-
-    /**
-     * Error special content.
-     */
-    public static final class ErrorContent extends SpecialContent
-    {
-        private final Throwable _error;
-
-        public ErrorContent(Throwable error)
-        {
-            _error = error;
-        }
-
-        @Override
-        public Throwable getError()
-        {
-            return _error;
-        }
-
-        @Override
-        public String toString()
-        {
-            return getClass().getSimpleName() + " [" + _error + "]";
         }
     }
 }
