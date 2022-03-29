@@ -50,6 +50,7 @@ import org.eclipse.jetty.http.QuotedQualityCSV;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.server.Response;
@@ -208,7 +209,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
             return super.handle(request);
         }
 
-        HttpContent content = _contentFactory.getContent(request.getPathInContext(), request.getHttpChannel().getHttpConfiguration().getOutputBufferSize());
+        HttpContent content = _contentFactory.getContent(request.getPathInContext(), request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
         if (content == null)
         {
             // no content - try other handlers
@@ -532,7 +533,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
             }
 
             // Serve welcome file
-            HttpContent c = _contentFactory.getContent(welcome, request.getHttpChannel().getHttpConfiguration().getOutputBufferSize());
+            HttpContent c = _contentFactory.getContent(welcome, request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
             sendData(request, response, callback, c, null);
             return;
         }
@@ -1331,8 +1332,9 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
             this.source = Files.newByteChannel(content.getResource());
             this.target = target;
             this.callback = callback;
-            int outputBufferSize = target.getRequest().getHttpChannel().getHttpConfiguration().getOutputBufferSize();
-            boolean useOutputDirectByteBuffers = target.getRequest().getHttpChannel().getHttpConfiguration().isUseOutputDirectByteBuffers();
+            HttpConfiguration httpConfiguration = target.getRequest().getConnectionMetaData().getHttpConfiguration();
+            int outputBufferSize = httpConfiguration.getOutputBufferSize();
+            boolean useOutputDirectByteBuffers = httpConfiguration.isUseOutputDirectByteBuffers();
             this.byteBuffer = useOutputDirectByteBuffers ? ByteBuffer.allocateDirect(outputBufferSize) : ByteBuffer.allocate(outputBufferSize); // TODO use pool
         }
 
