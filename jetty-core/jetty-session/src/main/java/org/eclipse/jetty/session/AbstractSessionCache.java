@@ -513,6 +513,9 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             //don't do anything with the session until the last request for it has finished
             if ((session.getRequests() <= 0))
             {
+                //reset the isIdChanged flag
+                session.setIdChanged(false);
+                
                 //save the session
                 if (!_sessionDataStore.isPassivating())
                 {

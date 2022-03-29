@@ -41,6 +41,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletRequestAttributeEvent;
 import jakarta.servlet.ServletRequestAttributeListener;
 import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
@@ -199,6 +200,18 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             case "o.e.j.s.s.ServletScopedRequest.url-pattern" -> _mappedServlet.getServletPathMapping(getPathInContext()).getPattern();
             default -> super.getAttribute(name);
         };
+    }
+
+    @Override
+    public Object removeAttribute(String name)
+    {
+        return super.removeAttribute(name);
+    }
+
+    @Override
+    public Object setAttribute(String name, Object attribute)
+    {
+        return super.setAttribute(name, attribute);
     }
 
     /**
@@ -1013,15 +1026,38 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         }
 
         @Override
-        public void setAttribute(String name, Object o)
+        public void setAttribute(String name, Object attribute)
         {
-            ServletContextRequest.this.setAttribute(name, o);
+            Object oldValue = ServletContextRequest.this.setAttribute(name, attribute);
+
+            if (!_requestAttributeListeners.isEmpty())
+            {
+                final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(getContext().getServletContext(), this, name, oldValue == null ? attribute : oldValue);
+                for (ServletRequestAttributeListener l : _requestAttributeListeners)
+                {
+                    if (oldValue == null)
+                        l.attributeAdded(event);
+                    else if (attribute == null)
+                        l.attributeRemoved(event);
+                    else
+                        l.attributeReplaced(event);
+                }
+            }
         }
 
         @Override
         public void removeAttribute(String name)
         {
-            ServletContextRequest.this.removeAttribute(name);
+            Object oldValue = ServletContextRequest.this.removeAttribute(name);
+           
+            if (oldValue != null && !_requestAttributeListeners.isEmpty())
+            {
+                final ServletRequestAttributeEvent event = new ServletRequestAttributeEvent(getContext().getServletContext(), this, name, oldValue);
+                for (ServletRequestAttributeListener listener : _requestAttributeListeners)
+                {
+                    listener.attributeRemoved(event);
+                }
+            }
         }
 
         @Override
