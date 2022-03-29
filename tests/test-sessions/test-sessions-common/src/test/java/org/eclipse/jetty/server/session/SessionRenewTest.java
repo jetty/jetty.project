@@ -40,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -183,8 +184,6 @@ public class SessionRenewTest
         String contextPath = "";
         String servletMapping = "/server";
         WebAppContext context = _server.addWebAppContext(".", contextPath);
-        TestHttpChannelCompleteListener scopeListener = new TestHttpChannelCompleteListener();
-        _server.getServerConnector().addBean(scopeListener);
         context.setParentLoaderPriority(true);
         context.addServlet(TestServlet.class, servletMapping);
         TestHttpSessionIdListener testListener = new TestHttpSessionIdListener();
@@ -199,32 +198,28 @@ public class SessionRenewTest
             client.start();
 
             //make a request to create a session
-            CountDownLatch synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
             assertEquals(HttpServletResponse.SC_OK, response.getStatus());
-
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
             assertFalse(testListener.isCalled());
 
             //make a request to change the sessionid
-            synchronizer = new CountDownLatch(1);
-            scopeListener.setExitSynchronizer(synchronizer);
             Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=renew");
             ContentResponse renewResponse = request.send();
             assertEquals(HttpServletResponse.SC_OK, renewResponse.getStatus());
-           
-            //ensure request has finished being handled
-            synchronizer.await(5, TimeUnit.SECONDS);
             
             String renewSessionCookie = renewResponse.getHeaders().get("Set-Cookie");
             assertNotNull(renewSessionCookie);
             assertNotSame(sessionCookie, renewSessionCookie);
             assertTrue(testListener.isCalled());
+
+            //make another request and check the cookie isn't set again
+            request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check");
+            ContentResponse checkResponse = request.send();
+            assertEquals(HttpServletResponse.SC_OK, checkResponse.getStatus());
+            assertNull(checkResponse.getHeaders().get("Set-Cookie"));
 
             if (verifier != null)
                 verifier.verify(context, TestServer.extractSessionId(sessionCookie), TestServer.extractSessionId(renewSessionCookie));
@@ -315,10 +310,10 @@ public class SessionRenewTest
 
                 assertTrue(sessionIdManager.isIdInUse(afterSessionId)); //new session id should be in use
                 assertFalse(sessionIdManager.isIdInUse(beforeSessionId));
-
-
-                if (((Session)afterSession).isIdChanged())
-                    ((org.eclipse.jetty.server.Response)response).replaceCookie(sessionManager.getSessionCookie(afterSession, request.getContextPath(), request.isSecure()));
+            }
+            else
+            {
+                request.getSession(false);
             }
         }
     }
