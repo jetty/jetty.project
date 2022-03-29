@@ -527,6 +527,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if ("/".equals(_context.getContextPath()))
             return path;
         if (path.length() == _context.getContextPath().length())
+            // TODO is that what we want to do? If so, cleanup and check ContextHandlerTest as some tests were modified to access /ctx/ instead of /ctx
             return "!redirect!";
         if (path.charAt(_context.getContextPath().length()) != '/')
             return null;
@@ -552,7 +553,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if (pathInContext == null)
             return null;
         // context request must end with /
-        if (pathInContext.equals("!redirect!"))
+        if (pathInContext.equals("!redirect!")) // TODO cleanup, ResourceHandlerTest.testJettyDirRedirect() expects 302 here
             return this::processMovedTemporarily;
 
         if (pathInContext.isEmpty() && !getAllowNullPathInContext())
