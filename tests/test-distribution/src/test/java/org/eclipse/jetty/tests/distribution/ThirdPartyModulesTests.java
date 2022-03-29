@@ -172,8 +172,8 @@ public class ThirdPartyModulesTests extends AbstractJettyHomeTest
 
                 startHttpClient();
                 ContentResponse response = client.GET("http://localhost:" + httpPort + "/jolokia");
-                assertEquals(HttpStatus.OK_200, response.getStatus(), new ResponseDetails(response));
-                assertThat(response.getContentAsString(), containsString("\"agentType\":\"servlet\""));
+                // default is no users specified, so this will return a 401.
+                assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus(), new ResponseDetails(response));
             }
         }
     }
