@@ -32,6 +32,9 @@ import org.eclipse.jetty.http.MimeTypes.Type;
  * reuse in from a cache).
  * </p>
  */
+// TODO can be a concrete class since Path abstracts out buffers, channel and streams -> only metadata is left
+// TODO also review metadata (like getContentLengthValue and getLastModifiedValue) to check if they can be removed as those
+//  are available via the Path API
 public interface HttpContent
 {
     HttpField getContentType();
@@ -78,6 +81,7 @@ public interface HttpContent
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
 
+    // TODO not needed anymore since path abstracts everything out already?
     public interface ContentFactory
     {
         /**
@@ -87,7 +91,7 @@ public interface HttpContent
          * @return A {@link HttpContent}
          * @throws IOException if unable to get content
          */
-        // TODO maxBuffer may not be needed anymore
+        // TODO maxBuffer is not needed anymore
         HttpContent getContent(String path, int maxBuffer) throws IOException;
     }
 }

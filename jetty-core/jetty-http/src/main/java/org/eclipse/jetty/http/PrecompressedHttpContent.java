@@ -66,7 +66,8 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public String getETagValue()
     {
-        return null;//_content.getResource().getWeakETag(_format.getEtagSuffix());
+        //return _content.getResource().getWeakETag(_format.getEtagSuffix());
+        return null;
     }
 
     @Override

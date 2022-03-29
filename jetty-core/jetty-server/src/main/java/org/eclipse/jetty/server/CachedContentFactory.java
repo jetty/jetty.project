@@ -685,12 +685,13 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             _content = content;
             _precompressedContent = precompressedContent;
 
-            _etag = null;//(CachedContentFactory.this._etags) ? new PreEncodedHttpField(HttpHeader.ETAG, _content.getResource().getWeakETag(format.getEtagSuffix())) : null;
+            // _etag = (CachedContentFactory.this._etags) ? new PreEncodedHttpField(HttpHeader.ETAG, _content.getResource().getWeakETag(format.getEtagSuffix())) : null;
+            _etag = null;
         }
 
         public boolean isValid()
         {
-            return _precompressedContent.isValid() && _content.isValid();// && _content.getResource().lastModified() <= _precompressedContent.getResource().lastModified();
+            return _precompressedContent.isValid() && _content.isValid(); // && _content.getResource().lastModified() <= _precompressedContent.getResource().lastModified();
         }
 
         @Override

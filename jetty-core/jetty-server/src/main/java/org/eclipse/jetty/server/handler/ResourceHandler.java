@@ -978,7 +978,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         return (reqRanges != null && reqRanges.hasMoreElements());
     }
 
-    // TODO add error message? in 11, this called Response.sendError(int, String)
+    // TODO add error message? in 11, this used to be Response.sendError(int, String)
     private void sendStatus(int status, Response response, Callback callback)
     {
         response.setStatus(status);
@@ -1064,7 +1064,6 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
     public void setDirAllowed(boolean dirAllowed)
     {
         _dirAllowed = dirAllowed;
-        //_resourceService.setDirAllowed(dirAllowed);
     }
 
     /**
@@ -1118,6 +1117,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
     /**
      * @param resourceBase The base resource as a string.
      */
+    // TODO how is that needed on top of setBaseResource(Path)? At least, the name is confusing.
     public void setResourceBase(String resourceBase)
     {
         try
@@ -1134,6 +1134,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
     /**
      * @param stylesheet The location of the stylesheet to be used as a String.
      */
+    // TODO accept a Path instead of a String?
     public void setStylesheet(String stylesheet)
     {
         try
@@ -1317,6 +1318,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         }
     }
 
+    // TODO a ReadableByteChannel IteratingCallback that writes to a Response looks generic enough to be moved to some util module
     private static class ContentWriterIteratingCallback extends IteratingCallback
     {
         private final ReadableByteChannel source;
