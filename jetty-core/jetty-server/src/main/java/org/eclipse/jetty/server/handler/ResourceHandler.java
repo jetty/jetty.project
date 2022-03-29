@@ -83,7 +83,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
     private Path _baseResource;
     private boolean _pathInfoOnly = false;
     private CompressedContentFormat[] _precompressedFormats = new CompressedContentFormat[0];
-    private WelcomeFactory _welcomeFactory;
+    private WelcomeFactory _welcomeFactory = this;
     private boolean _redirectWelcome = false;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
@@ -108,7 +108,12 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         for (int i = 0; i < _welcomes.length; i++)
         {
             String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
-            Path welcome = Path.of(welcomeInContext);
+            String path = pathInContext;
+            if (path.startsWith("/"))
+                path = path.substring(1);
+            if (path.endsWith("/"))
+                path = path.substring(0, path.length() - 1);
+            Path welcome = _baseResource.resolve(path).resolve(_welcomes[i]);
             if (Files.exists(welcome))
                 return welcomeInContext;
         }
@@ -212,9 +217,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 
     private void doGet(Request request, Response response, Callback callback, HttpContent content) throws Exception
     {
-        String servletPath = _pathInfoOnly ? "/" : request.getPathInContext();
-        String pathInfo = request.getPathInContext();
-        String pathInContext = URIUtil.addPaths(servletPath, pathInfo);
+        String pathInContext = request.getPathInContext();
 
         // Is this a Range request?
         Enumeration<String> reqRanges = request.getHeaders().getValues(HttpHeader.RANGE.asString());
@@ -222,7 +225,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
             reqRanges = null;
 
 
-        boolean endsWithSlash = (pathInfo == null ? (_pathInfoOnly ? "" : servletPath) : pathInfo).endsWith(URIUtil.SLASH);
+        boolean endsWithSlash = pathInContext.endsWith(URIUtil.SLASH);
         boolean checkPrecompressedVariants = _precompressedFormats.length > 0 && !endsWithSlash && reqRanges == null;
 
         try
@@ -523,6 +526,9 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
                 return;
             }
 
+            // Serve welcome file
+            HttpContent c = _contentFactory.getContent(welcome, request.getHttpChannel().getHttpConfiguration().getOutputBufferSize());
+            sendData(request, response, callback, c, null);
             return;
         }
 

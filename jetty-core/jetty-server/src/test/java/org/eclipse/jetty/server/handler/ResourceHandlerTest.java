@@ -59,7 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * TODO: increase the testing going on here
  */
-@Disabled // TODO
 public class ResourceHandlerTest
 {
     private static String LN = System.getProperty("line.separator");
