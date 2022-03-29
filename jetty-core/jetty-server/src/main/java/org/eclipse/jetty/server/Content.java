@@ -150,6 +150,14 @@ public interface Content
         return null;
     }
 
+    static int skip(Content content, int length)
+    {
+        ByteBuffer byteBuffer = content.getByteBuffer();
+        length = Math.min(byteBuffer.remaining(), length);
+        byteBuffer.position(byteBuffer.position() + length);
+        return length;
+    }
+
     abstract class Abstract implements Content
     {
         private final boolean _special;

@@ -128,12 +128,12 @@ public class SessionHandler extends AbstractSessionHandler
         
         private void doCommit()
         {
-            commit(ServletContextRequest.ServletApiRequest.getSession(_servletApiRequest.getSession()));
+            commit(ServletContextRequest.ServletApiRequest.getSession(_servletApiRequest.getSession(false)));
         }
         
         private void doComplete()
         {
-            complete(ServletContextRequest.ServletApiRequest.getSession(_servletApiRequest.getSession()));
+            complete(ServletContextRequest.ServletApiRequest.getSession(_servletApiRequest.getSession(false)));
         }
     }
 

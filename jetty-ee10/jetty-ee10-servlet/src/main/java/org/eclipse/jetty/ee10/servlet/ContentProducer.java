@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
+import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 
@@ -106,13 +107,13 @@ public interface ContentProducer
      * @return the next content that can be read from or null if the implementation does not block
      * and has no available content.
      */
-    HttpInput.Content nextContent();
+    Content nextContent();
 
     /**
-     * Free up the content by calling {@link HttpInput.Content#succeeded()} on it
+     * Free up the content by calling {@link Content#release()} on it
      * and updating this instance' internal state.
      */
-    void reclaim(HttpInput.Content content);
+    void reclaim(Content content);
 
     /**
      * Check if this {@link ContentProducer} instance has some content that can be read without blocking.

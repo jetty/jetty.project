@@ -81,7 +81,7 @@ public class ServletHandler extends Handler.Wrapper
     private static final Logger LOG = LoggerFactory.getLogger(ServletHandler.class);
 
     private final AutoLock _lock = new AutoLock();
-    private ServletContextHandler _contextHandler;
+    private ServletContextHandler _servletContextHandler;
     private ServletContext _servletContext;
     private final List<FilterHolder> _filters = new ArrayList<>();
     private final List<FilterMapping> _filterMappings = new ArrayList<>();
@@ -156,11 +156,11 @@ public class ServletHandler extends Handler.Wrapper
             if (!(context instanceof ServletContextHandler.Context))
                 throw new IllegalStateException("Cannot use ServletHandler without ServletContextHandler");
             _servletContext = ((ServletContextHandler.Context)context).getServletContext();
-            _contextHandler = context.getContextHandler();
+            _servletContextHandler = ((ServletContextHandler.Context)context).getServletContextHandler();
 
-            if (_contextHandler != null)
+            if (_servletContextHandler != null)
             {
-                SecurityHandler securityHandler = _contextHandler.getDescendant(SecurityHandler.class);
+                SecurityHandler securityHandler = _servletContextHandler.getDescendant(SecurityHandler.class);
                 // TODO: Security.
             }
 
@@ -190,7 +190,7 @@ public class ServletHandler extends Handler.Wrapper
                 _chainCache[FilterMapping.ASYNC] = new ConcurrentHashMap<>();
             }
 
-            if (_contextHandler == null)
+            if (_servletContextHandler == null)
                 initialize();
 
             super.doStart();
@@ -346,7 +346,7 @@ public class ServletHandler extends Handler.Wrapper
 
     public ServletContextHandler getServletContextHandler()
     {
-        return _contextHandler;
+        return _servletContextHandler;
     }
 
     @ManagedAttribute(value = "mappings of servlets", readonly = true)
@@ -614,6 +614,11 @@ public class ServletHandler extends Handler.Wrapper
         //Start the listeners so we can call them
         _listeners.forEach(c);
 
+        //call listeners contextInitialized
+        if (_servletContextHandler != null)
+            _servletContextHandler.contextInitialized();
+
+        
         //Only set initialized true AFTER the listeners have been called
         _initialized = true;
             
@@ -1390,20 +1395,20 @@ public class ServletHandler extends Handler.Wrapper
 
     void destroyServlet(Servlet servlet)
     {
-        if (_contextHandler != null)
-            _contextHandler.destroyServlet(servlet);
+        if (_servletContextHandler != null)
+            _servletContextHandler.destroyServlet(servlet);
     }
 
     void destroyFilter(Filter filter)
     {
-        if (_contextHandler != null)
-            _contextHandler.destroyFilter(filter);
+        if (_servletContextHandler != null)
+            _servletContextHandler.destroyFilter(filter);
     }
 
     void destroyListener(EventListener listener)
     {
-        if (_contextHandler != null)
-            _contextHandler.destroyListener(listener);
+        if (_servletContextHandler != null)
+            _servletContextHandler.destroyListener(listener);
     }
 
     /**

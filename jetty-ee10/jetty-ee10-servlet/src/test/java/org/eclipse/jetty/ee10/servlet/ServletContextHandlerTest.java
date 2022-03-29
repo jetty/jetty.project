@@ -1055,7 +1055,7 @@ public class ServletContextHandlerTest
     public void testAddServletFromServlet()
     {
         //A servlet cannot be added by another servlet
-        Logger logger = LoggerFactory.getLogger(ContextHandler.class.getName() + "ROOT");
+        Logger logger = LoggerFactory.getLogger(ServletContextHandler.class.getName());
 
         try (StacklessLogging ignored = new StacklessLogging(logger))
         {
