@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.DateParser;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
@@ -122,6 +123,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 // TODO        _context = (context == null ? null : context.getContextHandler());
 //        if (_mimeTypes == null)
 //            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
+        _mimeTypes = new MimeTypes();
 
         //_resourceService.setContentFactory(new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats()));
         //_resourceService.setWelcomeFactory(this);
@@ -432,7 +434,6 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
                     }
 
                     // If etag requires content to be served, then do not check if-modified-since
-                    callback.succeeded();
                     return true;
                 }
             }
@@ -444,14 +445,14 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
                 String mdlm = content.getLastModifiedValue();
                 if (ifms.equals(mdlm))
                 {
-                    sendStatus(304, response, Callback.NOOP);
+                    sendStatus(304, response, callback);
                     return false;
                 }
 
                 long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE.asString());
                 if (ifmsl != -1 && Files.getLastModifiedTime(content.getResource()).toMillis() / 1000 <= ifmsl / 1000)
                 {
-                    sendStatus(304, response, Callback.NOOP);
+                    sendStatus(304, response, callback);
                     return false;
                 }
             }
@@ -459,7 +460,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
             // Parse the if[un]modified dates and compare to resource
             if (ifums != -1 && Files.getLastModifiedTime(content.getResource()).toMillis() / 1000 > ifums / 1000)
             {
-                sendStatus(412, response, Callback.NOOP);
+                sendStatus(412, response, callback);
                 return false;
             }
         }
@@ -840,7 +841,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         return null;
     }
 
-    protected boolean sendData(Request request, Response response, Callback callback, final HttpContent content, Enumeration<String> reqRanges) throws IOException
+    protected boolean sendData(Request request, Response response, Callback callback, HttpContent content, Enumeration<String> reqRanges) throws IOException
     {
         long contentLength = content.getContentLengthValue();
 
@@ -1192,41 +1193,48 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
             if (path.startsWith("/"))
                 path = path.substring(1);
             Path resolved = _baseResource.resolve(path);
-            return new FileHttpContent(resolved);
+            String mimeType = _mimeTypes.getMimeByExtension(resolved.getFileName().toString());
+            return new FileHttpContent(resolved, mimeType);
         }
     }
 
     private static class FileHttpContent implements HttpContent
     {
         private final Path _path;
+        private final PreEncodedHttpField _contentType;
+        private final String _characterEncoding;
+        private final MimeTypes.Type _mimeType;
 
-        public FileHttpContent(Path path)
+        public FileHttpContent(Path path, String contentType)
         {
             _path = path;
+            _contentType = contentType == null ? null : new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, contentType);
+            _characterEncoding = _contentType == null ? null : MimeTypes.getCharsetFromContentType(contentType);
+            _mimeType = _contentType == null ? null : MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
         }
 
         @Override
         public HttpField getContentType()
         {
-            return null;
+            return _contentType;
         }
 
         @Override
         public String getContentTypeValue()
         {
-            return null;
+            return _contentType.getValue();
         }
 
         @Override
         public String getCharacterEncoding()
         {
-            return null;
+            return _characterEncoding;
         }
 
         @Override
         public MimeTypes.Type getMimeType()
         {
-            return null;
+            return _mimeType;
         }
 
         @Override
@@ -1244,25 +1252,42 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         @Override
         public HttpField getContentLength()
         {
-            return null;
+            long cl = getContentLengthValue();
+            return cl >= 0 ? new HttpField("Content-Length", Long.toString(cl)) : null;
         }
 
         @Override
         public long getContentLengthValue()
         {
-            return 0;
+            try
+            {
+                return Files.size(_path);
+            }
+            catch (IOException e)
+            {
+                return NO_CONTENT_LENGTH;
+            }
         }
 
         @Override
         public HttpField getLastModified()
         {
-            return null;
+            String lm = getLastModifiedValue();
+            return lm != null ? new HttpField(HttpHeader.LAST_MODIFIED, lm) : null;
         }
 
         @Override
         public String getLastModifiedValue()
         {
-            return null;
+            try
+            {
+                long lm = Files.getLastModifiedTime(_path).toMillis();
+                return DateGenerator.formatDate(lm);
+            }
+            catch (IOException e)
+            {
+                return null;
+            }
         }
 
         @Override
