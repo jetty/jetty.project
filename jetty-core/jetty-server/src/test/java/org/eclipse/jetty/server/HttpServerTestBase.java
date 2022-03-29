@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -120,7 +121,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             REQUEST2_CONTENT;
 
     @Test
-    public void testSimple() throws Exception
+    public void testSimpleGET() throws Exception
     {
         startServer(new HelloHandler());
 
@@ -128,18 +129,51 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             OutputStream os = client.getOutputStream();
 
-            String request = "GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "\r\n";
+            String request = """
+                GET / HTTP/1.1
+                Host: localhost
+                Connection: close
+                
+                """;
             os.write(request.getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
 
             // Read the response.
             String response = readResponse(client);
 
-            assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
-            assertThat(response, Matchers.containsString("Hello"));
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("Hello"));
+        }
+    }
+
+    @Test
+    public void testSimplePOST() throws Exception
+    {
+        startServer(new EchoHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = """
+                POST / HTTP/1.1
+                Host: localhost
+                Transfer-Encoding: chunked
+                Connection: close
+                
+                0a
+                0123456789
+                0;
+                
+                """;
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("0123456789"));
         }
     }
 
@@ -161,8 +195,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Read the response.
             String response = readResponse(client);
 
-            assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
-            assertThat(response, Matchers.containsString("Allow: GET"));
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("Allow: GET"));
         }
     }
 
@@ -183,8 +217,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Read the response.
             String response = readResponse(client);
 
-            assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
-            assertThat(response, Matchers.not(Matchers.containsString("Allow: ")));
+            assertThat(response, containsString("HTTP/1.1 400 "));
+            assertThat(response, Matchers.not(containsString("Allow: ")));
         }
     }
 
@@ -220,7 +254,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Read the response.
             String response = readResponse(client);
 
-            assertThat(response, Matchers.containsString("HTTP/1.1 431 "));
+            assertThat(response, containsString("HTTP/1.1 431 "));
         }
     }
 
@@ -256,7 +290,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Read the response.
             String response = readResponse(client);
 
-            assertThat(response, Matchers.containsString("HTTP/1.1 414 "));
+            assertThat(response, containsString("HTTP/1.1 414 "));
         }
     }
 
@@ -275,7 +309,71 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             // Read the response.
             String response = readResponse(client);
 
-            assertThat(response, Matchers.containsString("HTTP/1.1 400 "));
+            assertThat(response, containsString("HTTP/1.1 400 "));
+        }
+    }
+
+    @Test
+    public void testBadChunk() throws Exception
+    {
+        startServer(new EchoHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = """
+                POST / HTTP/1.1
+                Host: localhost
+                Transfer-Encoding: chunked
+                
+                xx;
+                
+                """;
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, containsString("HTTP/1.1 400 Bad Request"));
+            assertThat(response, containsString("Error 400 Early EOF"));
+        }
+    }
+
+    @Test
+    public void testBadChunkCommitted() throws Exception
+    {
+        startServer(new EchoHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = """
+                POST / HTTP/1.1
+                Host: localhost
+                Transfer-Encoding: chunked
+                
+                0a;
+                1234567890
+                xx;
+                
+                
+                """;
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("A"));
+            assertThat(response, containsString("1234567890"));
+            assertThat(response, not(endsWith("\r\n0\r\n\r\n")));
+            assertThat(response, not(endsWith("\r\n0;\r\n\r\n")));
+            assertThat(response, not(endsWith("\n0\n\n")));
+            assertThat(response, not(endsWith("\n0;\n\n")));
         }
     }
 
@@ -304,7 +402,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.flush();
 
             String response = readResponse(client);
-            assertThat(response, Matchers.containsString(" 500 "));
+            assertThat(response, containsString(" 500 "));
         }
     }
 
@@ -333,7 +431,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.flush();
 
             String response = readResponse(client);
-            assertThat(response, Matchers.containsString(" 500 "));
+            assertThat(response, containsString(" 500 "));
         }
     }
 
@@ -399,8 +497,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         String response = readResponse(client);
         client.close();
 
-        assertThat(response, Matchers.containsString(" 400 "));
-        assertThat(response, Matchers.containsString("<th>MESSAGE:</th><td>Early EOF</td>"));
+        assertThat(response, containsString(" 400 "));
+        assertThat(response, containsString("<th>MESSAGE:</th><td>Early EOF</td>"));
         assertThat("The 4th byte (-1) has not been passed to the handler", fourBytesRead.get(), is(false));
         assertTrue(earlyEOFException.await(10, TimeUnit.SECONDS));
     }
@@ -454,7 +552,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             try
             {
                 String response = readResponse(client);
-                assertThat(response, Matchers.containsString("HTTP/1.1 431 "));
+                assertThat(response, containsString("HTTP/1.1 431 "));
             }
             catch (Exception e)
             {
@@ -1216,7 +1314,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             assertThat(in, containsString("HTTP/1.1 200 OK"));
             assertTrue(in.indexOf("Transfer-Encoding: chunked") > 0);
             assertTrue(in.indexOf("Now is the time for all good men to come to the aid of the party") > 0);
-            assertThat(in, Matchers.not(Matchers.containsString("\r\n0\r\n")));
+            assertThat(in, Matchers.not(containsString("\r\n0\r\n")));
 
             client.close();
             Thread.sleep(200);

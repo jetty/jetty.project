@@ -451,14 +451,14 @@ public class HttpChannelState implements HttpChannel, Components
             // Invoke error listeners.
             Predicate<Throwable> onError = _onError;
             _onError = null;
-            Runnable invokeOnError = () ->
+            Runnable invokeOnErrorAndCallback = onError == null ? invokeCallback : () ->
             {
-                if (onError == null || !onError.test(x))
+                if (!onError.test(x))
                     invokeCallback.run();
             };
 
             // Serialize all the error actions.
-            task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnError);
+            task = _serializedInvoker.offer(invokeOnContentAvailable, invokeWriteFailure, invokeOnErrorAndCallback);
         }
 
         // Consume content as soon as possible to open any flow control window.
@@ -1199,7 +1199,7 @@ public class HttpChannelState implements HttpChannel, Components
 
             // Consume any input.
             Throwable unconsumed = stream.consumeAll();
-            if (unconsumed != null)
+            if (unconsumed != null && !TypeUtil.isAssociated(unconsumed, x))
                 x.addSuppressed(unconsumed);
 
             if (committed)

@@ -1213,6 +1213,7 @@ public class HttpChannelTest
         HttpFields fields = HttpFields.build()
             .add(HttpHeader.HOST, "localhost")
             .add(HttpHeader.CONTENT_TYPE, MimeTypes.Type.TEXT_PLAIN_8859_1.asString())
+            .add(HttpHeader.CONTENT_LENGTH, "12")
             .asImmutable();
         MetaData.Request request = new MetaData.Request("POST", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, -1);
 

@@ -40,7 +40,7 @@ public class EchoHandler extends Handler.Processor
         long contentLength = request.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
         if (contentLength >= 0)
             response.setContentLength(contentLength);
-        if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.CONTENT_TYPE))
+        if (contentLength > 0 || contentLength == -1 && request.getHeaders().contains(HttpHeader.TRANSFER_ENCODING))
             Content.copy(request, response, trailers == null ? null : trailers::add, callback);
         else
             callback.succeeded();

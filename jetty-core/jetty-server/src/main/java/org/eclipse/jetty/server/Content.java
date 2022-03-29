@@ -1049,6 +1049,12 @@ public interface Content
                     return;
                 }
 
+                if (content instanceof Error error)
+                {
+                    _callback.failed(error.getCause());
+                    return;
+                }
+
                 if (content instanceof Content.Trailers trailers && _trailers != null)
                     _trailers.accept(trailers.getTrailers());
 
