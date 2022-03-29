@@ -151,6 +151,7 @@ public enum HttpMethod
     public static final int PUT_AS_INT = ('P' & 0xff) << 24 | ('U' & 0xFF) << 16 | ('T' & 0xFF) << 8 | (' ' & 0xFF);
     public static final int POST_AS_INT = ('P' & 0xff) << 24 | ('O' & 0xFF) << 16 | ('S' & 0xFF) << 8 | ('T' & 0xFF);
     public static final int HEAD_AS_INT = ('H' & 0xff) << 24 | ('E' & 0xFF) << 16 | ('A' & 0xFF) << 8 | ('D' & 0xFF);
+
     static
     {
         for (HttpMethod method : HttpMethod.values())

@@ -217,6 +217,7 @@ public enum HttpCompliance // TODO in Jetty-10 convert this enum to a class so t
     }
 
     private static final EnumMap<HttpURI.Violation, HttpComplianceSection> __uriViolations = new EnumMap<>(HttpURI.Violation.class);
+
     static
     {
         // create a map from Violation to compliance in a loop, so that any new violations added are detected with ISE
