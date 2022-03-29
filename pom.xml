@@ -89,7 +89,7 @@
     <jetty-test-policy.version>1.2</jetty-test-policy.version>
     <jetty.test.version>5.9</jetty.test.version>
     <jmh.version>1.35</jmh.version>
-    <jna.version>5.10.0</jna.version>
+    <jna.version>5.11.0</jna.version>
     <jnr-constants.version>0.10.3</jnr-constants.version>
     <jnr-enxio.version>0.32.13</jnr-enxio.version>
     <jnr-ffi.version>2.2.11</jnr-ffi.version>
