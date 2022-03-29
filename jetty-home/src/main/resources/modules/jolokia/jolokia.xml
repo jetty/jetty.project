@@ -12,12 +12,12 @@
         <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
 
         <!-- comment out this section when you have security configured -->
-        <Get name="servletContext">
-          <Call name="log">
+        <Call class="org.slf4j.LoggerFactory" name="getLogger">
+          <Arg>org.eclipse.jetty</Arg>
+          <Call name="warn">
             <Arg>The jolokia webapp is deployed, but does not have users and security configured. (see ${jetty.base}/etc/jolokia.xml)</Arg>
-            <Arg></Arg>
           </Call>
-        </Get>
+        </Call>
 
         <Get name="securityHandler">
           <Set name="loginService">
