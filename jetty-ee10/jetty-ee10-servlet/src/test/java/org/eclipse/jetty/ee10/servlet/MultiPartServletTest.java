@@ -42,10 +42,10 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -161,7 +161,7 @@ public class MultiPartServletTest
         multiPart.addFieldPart("largePart", content, null);
         multiPart.close();
 
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class, MultiPartFormInputStream.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class, MultiPartFormInputStream.class))
         {
             ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(HttpScheme.HTTP.asString())
@@ -190,7 +190,7 @@ public class MultiPartServletTest
         multiPart.addFieldPart("largePart", content, null);
         multiPart.close();
 
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class, MultiPartFormInputStream.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class, MultiPartFormInputStream.class))
         {
             InputStreamResponseListener responseStream = new InputStreamResponseListener();
             client.newRequest("localhost", connector.getLocalPort())

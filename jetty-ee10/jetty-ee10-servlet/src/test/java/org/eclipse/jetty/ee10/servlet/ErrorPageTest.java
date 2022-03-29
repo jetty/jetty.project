@@ -42,10 +42,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -295,7 +295,7 @@ public class ErrorPageTest
     public void testErrorException() throws Exception
     {
         _errorPageErrorHandler.setUnwrapServletException(false);
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             String response = _connector.getResponse("GET /fail/exception HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
@@ -308,7 +308,7 @@ public class ErrorPageTest
         }
 
         _errorPageErrorHandler.setUnwrapServletException(true);
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             String response = _connector.getResponse("GET /fail/exception HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
@@ -337,7 +337,7 @@ public class ErrorPageTest
     @Test
     public void testGlobalErrorException() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
         {
             String response = _connector.getResponse("GET /fail/global?code=NAN HTTP/1.0\r\n\r\n");
             assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
@@ -461,7 +461,7 @@ public class ErrorPageTest
     {
         try (StacklessLogging ignore = new StacklessLogging(_context.getLogger()))
         {
-            try (StacklessLogging ignore2 = new StacklessLogging(HttpChannelState.class))
+            try (StacklessLogging ignore2 = new StacklessLogging(HttpChannel.class))
             {
                 __destroyed = new AtomicBoolean(false);
                 String response = _connector.getResponse("GET /unavailable/info HTTP/1.0\r\n\r\n");
@@ -477,7 +477,7 @@ public class ErrorPageTest
     {
         try (StacklessLogging ignore = new StacklessLogging(_context.getLogger()))
         {
-            try (StacklessLogging ignore2 = new StacklessLogging(HttpChannelState.class))
+            try (StacklessLogging ignore2 = new StacklessLogging(HttpChannel.class))
             {
                 __destroyed = new AtomicBoolean(false);
                 String response = _connector.getResponse("GET /unavailable/info?for=1 HTTP/1.0\r\n\r\n");

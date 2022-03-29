@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -41,7 +42,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -318,7 +318,7 @@ public class ServletRequestLogTest
         ServletHolder testHolder = new ServletHolder(testServlet);
         app.addServlet(testHolder, "/test/*");
 
-        try (StacklessLogging scope = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
             server.start();
 
@@ -395,7 +395,7 @@ public class ServletRequestLogTest
         ServletHolder testHolder = new ServletHolder(testServlet);
         app.addServlet(testHolder, "/test/*");
 
-        try (StacklessLogging scope = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
             server.start();
 
@@ -474,7 +474,7 @@ public class ServletRequestLogTest
         errorMapper.addErrorPage(500, "/errorpage");
         app.setErrorProcessor(errorMapper);
 
-        try (StacklessLogging scope = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging scope = new StacklessLogging(HttpChannel.class))
         {
             server.start();
 
