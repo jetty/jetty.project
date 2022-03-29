@@ -186,6 +186,8 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 
     public static Path getDefaultStylesheet()
     {
+        // TODO the returned path should point to the classpath.
+        // This points to a non-existent file '/jetty-dir.css'.
         return Path.of("/jetty-dir.css");
     }
 
