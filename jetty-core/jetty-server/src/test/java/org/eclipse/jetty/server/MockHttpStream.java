@@ -26,7 +26,6 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
@@ -40,20 +39,20 @@ public class MockHttpStream implements HttpStream
     private final CountDownLatch _completed = new CountDownLatch(1);
     private final ByteBufferAccumulator _accumulator = new ByteBufferAccumulator();
     private final AtomicReference<ByteBuffer> _out = new AtomicReference<>();
-    private final HttpChannelState _channel;
+    private final HttpChannel _channel;
     private final AtomicReference<MetaData.Response> _response = new AtomicReference<>();
     private final HttpFields.Mutable _responseHeaders = HttpFields.build();
     private HttpFields.Mutable _responseTrailers;
 
-    public MockHttpStream(HttpChannelState channel)
+    public MockHttpStream(HttpChannel channel)
     {
         this(channel, true);
     }
 
-    public MockHttpStream(HttpChannelState channel, boolean atEof)
+    public MockHttpStream(HttpChannel channel, boolean atEof)
     {
-        channel.setHttpStream(this);
         _channel = channel;
+        channel.setHttpStream(this);
         if (atEof)
             _content.set(Content.EOF);
     }
@@ -175,8 +174,8 @@ public class MockHttpStream implements HttpStream
             }
 
             if (response.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()) &&
-                _channel.getConnectionMetaData() instanceof MockConnectionMetaData)
-                ((MockConnectionMetaData)_channel.getConnectionMetaData()).notPersistent();
+                _channel.getConnectionMetaData() instanceof MockConnectionMetaData mock)
+                mock.notPersistent();
         }
 
         for (ByteBuffer buffer : content)
@@ -247,8 +246,8 @@ public class MockHttpStream implements HttpStream
     @Override
     public void failed(Throwable x)
     {
-        if (_channel.getConnectionMetaData() instanceof MockConnectionMetaData)
-            ((MockConnectionMetaData)_channel.getConnectionMetaData()).notPersistent();
+        if (_channel.getConnectionMetaData() instanceof MockConnectionMetaData mock)
+            mock.notPersistent();
         if (_complete.compareAndSet(null, x == null ? new Throwable() : x))
             _completed.countDown();
     }

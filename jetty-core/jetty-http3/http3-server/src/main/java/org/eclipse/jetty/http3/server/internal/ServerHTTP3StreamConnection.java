@@ -27,13 +27,14 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.quic.common.QuicStreamEndPoint;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.HostPort;
 
 public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implements ConnectionMetaData
 {
+    private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Attributes.Lazy();
     private final Connector connector;
     private final HttpConfiguration httpConfiguration;
@@ -55,7 +56,7 @@ public class ServerHTTP3StreamConnection extends HTTP3StreamConnection implement
 
     public Runnable onRequest(HTTP3StreamServer stream, HeadersFrame frame)
     {
-        HttpChannelState httpChannel = new HttpChannelState(this);
+        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);
         HttpStreamOverHTTP3 httpStream = new HttpStreamOverHTTP3(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);

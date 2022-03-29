@@ -30,6 +30,7 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
+import org.eclipse.jetty.ee10.handler.HttpChannel;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.api.Session;
@@ -293,7 +294,7 @@ public class WebSocketOverHTTP2Test
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         CountDownLatch latch = new CountDownLatch(1);
-        connector.addBean(new HttpChannelState.Listener()
+        connector.addBean(new HttpChannel.Listener()
         {
             @Override
             public void onComplete(Request request)

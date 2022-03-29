@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.server.internal;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -50,12 +50,21 @@ import org.eclipse.jetty.io.RetainableByteBuffer;
 import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpStream;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +81,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     private final AtomicLong _idGenerator = new AtomicLong();
     private final HttpConfiguration _configuration;
     private final Connector _connector;
-    private final HttpChannelState _channel;
+    private final HttpChannel _channel;
     private final RequestHandler _requestHandler;
     private final HttpParser _parser;
     private final HttpGenerator _generator;
@@ -90,7 +99,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     private volatile RetainableByteBuffer _retainableByteBuffer;
     private HttpFields.Mutable _trailers;
     private Runnable _onRequest;
-
+    private long _requests;
     // TODO why is this not on HttpConfiguration?
     private boolean _useInputDirectByteBuffers;
     private boolean _useOutputDirectByteBuffers;
@@ -155,7 +164,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         return parser;
     }
 
-    protected HttpChannelState newHttpChannel(Server server, HttpConfiguration configuration)
+    protected HttpChannel newHttpChannel(Server server, HttpConfiguration configuration)
     {
         return new HttpChannelState(this);
     }
@@ -180,7 +189,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         return _connector;
     }
 
-    public HttpChannelState getChannel()
+    public HttpChannel getChannel()
     {
         return _channel;
     }
@@ -299,13 +308,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public long getMessagesIn()
     {
-        return _channel.getRequests();
+        return _requests;
     }
 
     @Override
     public long getMessagesOut()
     {
-        return _channel.getRequests(); // TODO not strictly correct
+        return _requests; // TODO not strictly correct
     }
 
     public boolean isUseInputDirectByteBuffers()
@@ -633,7 +642,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         {
             if (cause != null)
             {
-                Runnable todo = _channel.onError(cause);
+                Runnable todo = _channel.onFailure(cause);
                 if (todo != null)
                     todo.run();
             }
@@ -690,7 +699,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public void failed(Throwable x)
         {
-            Runnable task = _channel.onError(x);
+            Runnable task = _channel.onFailure(x);
             if (LOG.isDebugEnabled())
                 LOG.debug("demand failed {}", task, x);
             if (task != null)
@@ -701,7 +710,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public InvocationType getInvocationType()
         {
-            return _channel.getOnContentAvailableInvocationType();
+            return Invocable.getInvocationType(_channel);
         }
     }
 
@@ -1047,7 +1056,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
             // TODO communicate the real method/uri/version to the channel
 
-            Runnable todo = _channel.onError(failure);
+            Runnable todo = _channel.onFailure(failure);
             if (todo != null)
                 getServer().getThreadPool().execute(todo);
         }
@@ -1060,7 +1069,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             _generator.setPersistent(false);
             if (_stream.get() != null)
             {
-                Runnable todo = _channel.onError(new BadMessageException("Early EOF"));
+                Runnable todo = _channel.onFailure(new BadMessageException("Early EOF"));
                 if (todo != null)
                     getServer().getThreadPool().execute(todo);
             }
@@ -1209,6 +1218,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             _request = new MetaData.Request(_method, _uri.asImmutable(), _version, _headerBuilder, _contentLength);
 
             Runnable handle = _channel.onRequest(_request);
+            ++_requests;
 
             if (_complianceViolations != null && !_complianceViolations.isEmpty())
             {

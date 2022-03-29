@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
+import org.eclipse.jetty.server.internal.ClassLoaderDump;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.junit.jupiter.api.Test;
 

@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
  * Implementations of UserIdentity should be immutable so that they may be
  * cached by Authenticators and LoginServices.
  */
+// TODO: move this class to ee9/ee10.
 public interface UserIdentity
 {
 

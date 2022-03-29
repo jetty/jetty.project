@@ -18,7 +18,7 @@ import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.internal.HttpConnection;
 
 /**
  * ScopedHandler.

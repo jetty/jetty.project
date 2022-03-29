@@ -33,8 +33,8 @@ import org.eclipse.jetty.http2.internal.ErrorCode;
 import org.eclipse.jetty.http2.internal.HTTP2Channel;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
@@ -46,7 +46,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private static final Logger LOG = LoggerFactory.getLogger(HttpStreamOverHTTP2.class);
 
     private final HTTP2ServerConnection _connection;
-    private final HttpChannelState _httpChannel;
+    private final HttpChannel _httpChannel;
     private final IStream _stream;
     private final long _nanoTimeStamp;
     private Content _content;
@@ -54,7 +54,7 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     private boolean committed;
     private boolean _demand;
 
-    public HttpStreamOverHTTP2(HTTP2ServerConnection connection, HttpChannelState httpChannel, IStream stream)
+    public HttpStreamOverHTTP2(HTTP2ServerConnection connection, HttpChannel httpChannel, IStream stream)
     {
         _connection = connection;
         _httpChannel = httpChannel;
@@ -502,16 +502,16 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
-        Runnable runnable = _httpChannel.onError(failure);
+        Runnable runnable = _httpChannel.onFailure(failure);
         if (runnable != null)
             consumer.accept(runnable);
-        return !_httpChannel.isHandled();
+        return !_httpChannel.isRequestHandled();
     }
 
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
-        Runnable runnable = _httpChannel.onError(failure);
+        Runnable runnable = _httpChannel.onFailure(failure);
         return () ->
         {
             if (runnable != null)

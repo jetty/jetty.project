@@ -31,11 +31,12 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ public class HttpStreamOverFCGI implements HttpStream
     private final HttpFields.Mutable _headers = HttpFields.build();
     private final ServerFCGIConnection _connection;
     private final ServerGenerator _generator;
-    private final HttpChannelState _channel;
+    private final HttpChannel _channel;
     private final int _id;
     private final long _nanoTime;
     private String _method;
@@ -60,7 +61,7 @@ public class HttpStreamOverFCGI implements HttpStream
     private boolean _shutdown;
     private boolean _aborted;
 
-    public HttpStreamOverFCGI(ServerFCGIConnection connection, ServerGenerator generator, HttpChannelState channel, int id)
+    public HttpStreamOverFCGI(ServerFCGIConnection connection, ServerGenerator generator, HttpChannel channel, int id)
     {
         _connection = connection;
         _generator = generator;
@@ -69,7 +70,7 @@ public class HttpStreamOverFCGI implements HttpStream
         _nanoTime = System.nanoTime();
     }
 
-    public HttpChannelState getHttpChannel()
+    public HttpChannel getHttpChannel()
     {
         return _channel;
     }
@@ -341,7 +342,7 @@ public class HttpStreamOverFCGI implements HttpStream
 
     public boolean onIdleTimeout(Throwable timeout)
     {
-        Runnable task = _channel.onError(timeout);
+        Runnable task = _channel.onFailure(timeout);
         if (task != null)
             execute(task);
         return false;
@@ -363,7 +364,7 @@ public class HttpStreamOverFCGI implements HttpStream
         @Override
         public void failed(Throwable x)
         {
-            Runnable task = _channel.onError(x);
+            Runnable task = _channel.onFailure(x);
             if (task != null)
                 _connection.getConnector().getExecutor().execute(task);
         }
@@ -371,7 +372,7 @@ public class HttpStreamOverFCGI implements HttpStream
         @Override
         public InvocationType getInvocationType()
         {
-            return _channel.getOnContentAvailableInvocationType();
+            return Invocable.getInvocationType(_channel);
         }
     }
 }

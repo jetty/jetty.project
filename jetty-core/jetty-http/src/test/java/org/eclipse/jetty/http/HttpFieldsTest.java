@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HttpFieldsTest
 {
-    static Stream<HttpFields.Mutable> mutables()
+    public static Stream<HttpFields.Mutable> mutables()
     {
         return Stream.of(
             HttpFields.build(),

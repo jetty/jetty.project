@@ -31,8 +31,8 @@ import org.eclipse.jetty.http3.frames.HeadersFrame;
 import org.eclipse.jetty.http3.internal.HTTP3ErrorCode;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
@@ -44,13 +44,13 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private final long nanoTime = System.nanoTime();
     private final ServerHTTP3StreamConnection connection;
-    private final HttpChannelState channel;
+    private final HttpChannel channel;
     private final HTTP3StreamServer stream;
     private Content content;
     private MetaData.Response metaData;
     private boolean committed;
 
-    public HttpStreamOverHTTP3(ServerHTTP3StreamConnection connection, HttpChannelState channel, HTTP3StreamServer stream)
+    public HttpStreamOverHTTP3(ServerHTTP3StreamConnection connection, HttpChannel channel, HTTP3StreamServer stream)
     {
         this.connection = connection;
         this.channel = channel;
@@ -474,15 +474,14 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     public boolean onIdleTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
-        Runnable runnable = channel.onError(failure);
+        Runnable runnable = channel.onFailure(failure);
         if (runnable != null)
             consumer.accept(runnable);
-        // TODO: see http2.
-        return false;
+        return !channel.isRequestHandled();
     }
 
     public Runnable onFailure(Throwable failure)
     {
-        return channel.onError(failure);
+        return channel.onFailure(failure);
     }
 }

@@ -47,8 +47,8 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -74,7 +74,7 @@ import org.slf4j.LoggerFactory;
  * Note how Runnables are returned to indicate that further work is needed. These
  * can be given to an ExecutionStrategy instead of calling known methods like HttpChannel.handle().
  */
-public class HttpChannelState implements Components
+public class HttpChannelState implements HttpChannel, Components
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannelState.class);
     private static final HttpField CONTENT_LENGTH_0 = new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH, "0")
@@ -120,7 +120,6 @@ public class HttpChannelState implements Components
     private final SerializedInvoker _serializedInvoker;
     private final Attributes _requestAttributes = new Attributes.Lazy();
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
-    private long _requests;
     private ChannelRequest _request;
     private HttpStream _stream;
     private boolean _processing;
@@ -207,11 +206,6 @@ public class HttpChannelState implements Components
         return _connectionMetaData.getHttpConfiguration();
     }
 
-    public long getRequests()
-    {
-        return _requests;
-    }
-
     public HttpStream getHttpStream()
     {
         try (AutoLock ignored = _lock.lock())
@@ -235,6 +229,7 @@ public class HttpChannelState implements Components
         return _connectionMetaData.getConnector().getServer();
     }
 
+    @Override
     public ConnectionMetaData getConnectionMetaData()
     {
         return _connectionMetaData;
@@ -308,7 +303,6 @@ public class HttpChannelState implements Components
                 throw new IllegalStateException("duplicate request");
 
             _request = new ChannelRequest(this, request);
-            _requests++;
 
             HttpFields.Mutable responseHeaders = _request._response.getHeaders();
             if (getHttpConfiguration().getSendServerVersion())
@@ -353,7 +347,7 @@ public class HttpChannelState implements Components
         }
     }
 
-    public boolean isHandled()
+    public boolean isRequestHandled()
     {
         try (AutoLock ignored = _lock.lock())
         {
@@ -387,7 +381,7 @@ public class HttpChannelState implements Components
         return Invocable.getInvocationType(onContent);
     }
 
-    public Runnable onError(Throwable x)
+    public Runnable onFailure(Throwable x)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("onError {}", this, x);
@@ -550,12 +544,51 @@ public class HttpChannelState implements Components
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("invoking handler in {}", HttpChannelState.this);
-                getConnectionMetaData().getConnector().getServer().customizeHandleAndProcess(request, request._response, request._callback);
+                customizeHandleAndProcess(request, request._response, request._callback);
             }
             else
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("already handled, skipping handler invocation in {}", HttpChannelState.this);
+            }
+        }
+
+        private void customizeHandleAndProcess(HttpChannelState.ChannelRequest request, Response response, Callback callback)
+        {
+            Server server = _connectionMetaData.getConnector().getServer();
+
+            if (!server.isStarted())
+                throw new IllegalStateException("server not started");
+
+            Request customized = request;
+            boolean processing = false;
+            try
+            {
+                // Customize before accepting.
+                HttpConfiguration configuration = getHttpConfiguration();
+
+                for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
+                {
+                    Request next = customizer.customize(request, response.getHeaders());
+                    customized = next == null ? customized : next;
+                }
+
+                if (customized != request && server.getRequestLog() != null)
+                    request.setLoggedRequest(customized);
+
+                Request.Processor processor = server.handle(customized);
+                processing = true;
+                enableProcessing();
+                if (processor == null)
+                    Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
+                else
+                    processor.process(customized, response, callback);
+            }
+            catch (Throwable x)
+            {
+                if (!processing)
+                    enableProcessing();
+                callback.failed(x);
             }
         }
 
@@ -566,7 +599,7 @@ public class HttpChannelState implements Components
         }
     }
 
-    static class ChannelRequest implements Attributes, Request
+    public static class ChannelRequest implements Attributes, Request
     {
         private final long _timeStamp = System.currentTimeMillis();
         private final ChannelCallback _callback = new ChannelCallback(this);
@@ -604,7 +637,7 @@ public class HttpChannelState implements Components
             return getHttpChannel()._stream;
         }
 
-        long getContentBytesRead()
+        public long getContentBytesRead()
         {
             return _contentBytesRead.longValue();
         }
@@ -834,7 +867,7 @@ public class HttpChannelState implements Components
         }
     }
 
-    static class ChannelResponse implements Response, Callback
+    public static class ChannelResponse implements Response, Callback
     {
         private final ChannelRequest _request;
         private int _status;
@@ -845,7 +878,7 @@ public class HttpChannelState implements Components
             _request = request;
         }
 
-        long getContentBytesWritten()
+        public long getContentBytesWritten()
         {
             return _contentBytesWritten;
         }

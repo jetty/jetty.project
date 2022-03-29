@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.MockConnectionMetaData;
 import org.eclipse.jetty.server.MockConnector;
@@ -100,7 +101,7 @@ public class ContextHandlerTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannelState channel = new HttpChannelState(connectionMetaData);
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -122,7 +123,7 @@ public class ContextHandlerTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannelState channel = new HttpChannelState(connectionMetaData);
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -180,7 +181,7 @@ public class ContextHandlerTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannelState channel = new HttpChannelState(connectionMetaData);
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -250,7 +251,7 @@ public class ContextHandlerTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannelState channel = new HttpChannelState(connectionMetaData);
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
         AtomicReference<Callback> sendCB = new AtomicReference<>();
         MockHttpStream stream = new MockHttpStream(channel, false)
         {
@@ -324,7 +325,7 @@ public class ContextHandlerTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannelState channel = new HttpChannelState(connectionMetaData);
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel, false);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -375,7 +376,7 @@ public class ContextHandlerTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannelState channel = new HttpChannelState(connectionMetaData);
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
@@ -415,7 +416,7 @@ public class ContextHandlerTest
         };
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(connector);
-        HttpChannelState channel = new HttpChannelState(connectionMetaData);
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
         HttpFields fields = HttpFields.build().asImmutable();
 
         MockHttpStream stream = new MockHttpStream(channel);
@@ -480,7 +481,7 @@ public class ContextHandlerTest
         _server.start();
 
         ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
-        HttpChannelState channel = new HttpChannelState(connectionMetaData);
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
         MockHttpStream stream = new MockHttpStream(channel);
 
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();

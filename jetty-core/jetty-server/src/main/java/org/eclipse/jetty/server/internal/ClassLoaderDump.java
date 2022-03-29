@@ -11,11 +11,12 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.server.internal;
 
 import java.io.IOException;
 import java.net.URLClassLoader;
 
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.DumpableCollection;
 

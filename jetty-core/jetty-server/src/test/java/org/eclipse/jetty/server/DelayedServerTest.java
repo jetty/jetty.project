@@ -19,6 +19,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.BeforeEach;
 

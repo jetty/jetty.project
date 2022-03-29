@@ -15,12 +15,10 @@ package org.eclipse.jetty.http2.server.internal;
 
 import java.io.IOException;
 import java.net.SocketAddress;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.Set;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -49,26 +47,23 @@ import org.eclipse.jetty.io.RetainableByteBufferPool;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.StringUtil;
-import org.eclipse.jetty.util.thread.AutoLock;
 
 public class HTTP2ServerConnection extends HTTP2Connection implements ConnectionMetaData
 {
+    private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Lazy();
-    private final AutoLock lock = new AutoLock();
-    private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
     private final List<Frame> upgradeFrames = new ArrayList<>();
     private final Connector connector;
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
     private final String id;
-    private boolean recycleHttpChannels = true;
 
     public HTTP2ServerConnection(RetainableByteBufferPool retainableByteBufferPool, Connector connector, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
@@ -83,16 +78,6 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     protected ServerParser getParser()
     {
         return (ServerParser)super.getParser();
-    }
-
-    public boolean isRecycleHttpChannels()
-    {
-        return recycleHttpChannels;
-    }
-
-    public void setRecycleHttpChannels(boolean recycleHttpChannels)
-    {
-        this.recycleHttpChannels = recycleHttpChannels;
     }
 
     @Override
@@ -125,7 +110,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing {} on {}", frame, stream);
 
-        HttpChannelState httpChannel = new HttpChannelState(this);
+        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);
         HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         stream.setAttachment(httpStream);
@@ -223,7 +208,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         if (LOG.isDebugEnabled())
             LOG.debug("Processing push {} on {}", request, stream);
 
-        HttpChannelState httpChannel = new HttpChannelState(this);
+        HttpChannel httpChannel = httpChannelFactory.newHttpChannel(this);
         HttpStreamOverHTTP2 httpStream = new HttpStreamOverHTTP2(this, httpChannel, stream);
         httpChannel.setHttpStream(httpStream);
         Runnable task = httpStream.onPushRequest(request);
@@ -232,6 +217,20 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     }
 
 /*
+    private final AutoLock lock = new AutoLock();
+    private final Queue<HttpChannelOverHTTP2> channels = new ArrayDeque<>();
+    private boolean recycleHttpChannels = true;
+
+    public boolean isRecycleHttpChannels()
+    {
+        return recycleHttpChannels;
+    }
+
+    public void setRecycleHttpChannels(boolean recycleHttpChannels)
+    {
+        this.recycleHttpChannels = recycleHttpChannels;
+    }
+
     private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)
     {
         HttpChannelOverHTTP2 channel = pollHttpChannel();

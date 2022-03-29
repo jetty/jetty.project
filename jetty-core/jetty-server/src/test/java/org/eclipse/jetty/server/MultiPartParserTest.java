@@ -19,7 +19,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.server.MultiPartParser.State;
+import org.eclipse.jetty.server.internal.MultiPartParser;
+import org.eclipse.jetty.server.internal.MultiPartParser.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
