@@ -18,7 +18,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -31,6 +30,9 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
@@ -59,6 +61,7 @@ import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.eclipse.jetty.util.resource.PathCollators;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,11 +86,11 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
     private Path _baseResource;
     private boolean _pathInfoOnly = false;
     private CompressedContentFormat[] _precompressedFormats = new CompressedContentFormat[0];
-    private WelcomeFactory _welcomeFactory = this;
+    private WelcomeFactory _welcomeFactory;
     private boolean _redirectWelcome = false;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
-    private HttpContent.ContentFactory _contentFactory = new FileContentFactory();
+    private HttpContent.ContentFactory _contentFactory;
     private final Map<String, List<String>> _preferredEncodingOrderCache = new ConcurrentHashMap<>();
     private String[] _preferredEncodingOrder = new String[0];
     private int _encodingCacheSize = 100;
@@ -128,10 +131,10 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 // TODO        _context = (context == null ? null : context.getContextHandler());
 //        if (_mimeTypes == null)
 //            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
-        _mimeTypes = new MimeTypes();
 
-        //_resourceService.setContentFactory(new ResourceContentFactory(this, _mimeTypes, _resourceService.getPrecompressedFormats()));
-        //_resourceService.setWelcomeFactory(this);
+        _mimeTypes = new MimeTypes();
+        _contentFactory = new PathContentFactory();
+        _welcomeFactory = this;
 
         super.doStart();
     }
@@ -157,7 +160,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
      */
     public List<String> getGzipEquivalentFileExtensions()
     {
-        return null; //_resourceService.getGzipEquivalentFileExtensions();
+        return _gzipEquivalentFileExtensions;
     }
 
     public MimeTypes getMimeTypes()
@@ -538,7 +541,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
             sendDirectory(request, response, content.getResource(), callback, pathInContext);
     }
 
-    protected void sendDirectory(Request request, Response response, Path resource, Callback callback, String pathInContext) throws IOException
+    private void sendDirectory(Request request, Response response, Path resource, Callback callback, String pathInContext) throws IOException
     {
         if (!_dirAllowed)
         {
@@ -567,9 +570,15 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         if (base == null || !Files.isDirectory(path))
             return null;
 
-        String[] rawListing = list(path);
-        if (rawListing == null)
+        List<Path> items;
+        try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path))
         {
+            Stream<Path> stream = StreamSupport.stream(directoryStream.spliterator(), false);
+            items = stream.collect(Collectors.toCollection(ArrayList::new));
+        }
+        catch (IOException e)
+        {
+            LOG.debug("Directory list access failure", e);
             return null;
         }
 
@@ -604,27 +613,13 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
             }
         }
 
-        // Gather up entries
-        List<Path> items = new ArrayList<>();
-        for (String l : rawListing)
-        {
-            Path item = path.resolve(l);
-            items.add(item);
-        }
-
-        // TODO Perform sort
-//        if (sortColumn.equals("M"))
-//        {
-//            items.sort(ResourceCollators.byLastModified(sortOrderAscending));
-//        }
-//        else if (sortColumn.equals("S"))
-//        {
-//            items.sort(ResourceCollators.bySize(sortOrderAscending));
-//        }
-//        else
-//        {
-//            items.sort(ResourceCollators.byName(sortOrderAscending));
-//        }
+        // Perform sort
+        if (sortColumn.equals("M"))
+            items.sort(PathCollators.byLastModified(sortOrderAscending));
+        else if (sortColumn.equals("S"))
+            items.sort(PathCollators.bySize(sortOrderAscending));
+        else
+            items.sort(PathCollators.byName(sortOrderAscending));
 
         String decodedBase = URIUtil.decodePath(base);
         String title = "Directory: " + StringUtil.sanitizeXmlString(decodedBase);
@@ -741,7 +736,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
                 continue; // skip
             }
 
-            if (Files.isDirectory(item) && !name.endsWith("/"))
+            if (Files.isDirectory(item))
             {
                 name += URIUtil.SLASH;
             }
@@ -819,37 +814,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         return buf.toString();
     }
 
-    private String[] list(Path path)
-    {
-        try (DirectoryStream<Path> dir = Files.newDirectoryStream(path))
-        {
-            List<String> entries = new ArrayList<>();
-            for (Path entry : dir)
-            {
-                String name = entry.getFileName().toString();
-
-                if (Files.isDirectory(entry))
-                {
-                    name += "/";
-                }
-
-                entries.add(name);
-            }
-            int size = entries.size();
-            return entries.toArray(new String[size]);
-        }
-        catch (DirectoryIteratorException e)
-        {
-            LOG.debug("Directory list failure", e);
-        }
-        catch (IOException e)
-        {
-            LOG.debug("Directory list access failure", e);
-        }
-        return null;
-    }
-
-    protected boolean sendData(Request request, Response response, Callback callback, HttpContent content, Enumeration<String> reqRanges) throws IOException
+    private boolean sendData(Request request, Response response, Callback callback, HttpContent content, Enumeration<String> reqRanges) throws IOException
     {
         long contentLength = content.getContentLengthValue();
 
@@ -869,6 +834,8 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         else
         {
             throw new UnsupportedOperationException("TODO");
+            // TODO rewrite with ByteChannel only which should simplify HttpContentRangeWriter as HttpContent's Path always provides a SeekableByteChannel
+            // but MultiPartOutputStream also needs to be rewritten.
 /*
             // Parse the satisfiable ranges
             List<InclusiveByteRange> ranges = InclusiveByteRange.satisfiableRanges(reqRanges, contentLength);
@@ -970,7 +937,34 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 
     private void putHeaders(Response response, HttpContent content, long contentLength)
     {
-        putHeaders(response.getHeaders(), content, contentLength, _etags);
+        HttpFields.Mutable fields1 = response.getHeaders();
+        HttpField lm = content.getLastModified();
+        if (lm != null)
+            fields1.put(lm);
+
+        if (contentLength == USE_KNOWN_CONTENT_LENGTH)
+        {
+            fields1.put(content.getContentLength());
+        }
+        else if (contentLength > NO_CONTENT_LENGTH)
+        {
+            fields1.putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
+        }
+
+        HttpField ct = content.getContentType();
+        if (ct != null)
+            fields1.put(ct);
+
+        HttpField ce = content.getContentEncoding();
+        if (ce != null)
+            fields1.put(ce);
+
+        if (_etags)
+        {
+            HttpField et = content.getETag();
+            if (et != null)
+                fields1.put(et);
+        }
 
         HttpFields.Mutable fields = response.getHeaders();
         if (_acceptRanges && !fields.contains(HttpHeader.ACCEPT_RANGES))
@@ -979,42 +973,12 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
             fields.add(_cacheControl);
     }
 
-    private void putHeaders(HttpFields.Mutable fields, HttpContent content, long contentLength, boolean etag)
-    {
-        HttpField lm = content.getLastModified();
-        if (lm != null)
-            fields.put(lm);
-
-        if (contentLength == USE_KNOWN_CONTENT_LENGTH)
-        {
-            fields.put(content.getContentLength());
-        }
-        else if (contentLength > NO_CONTENT_LENGTH)
-        {
-            fields.putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
-        }
-
-        HttpField ct = content.getContentType();
-        if (ct != null)
-            fields.put(ct);
-
-        HttpField ce = content.getContentEncoding();
-        if (ce != null)
-            fields.put(ce);
-
-        if (etag)
-        {
-            HttpField et = content.getETag();
-            if (et != null)
-                fields.put(et);
-        }
-    }
-
     private boolean hasDefinedRange(Enumeration<String> reqRanges)
     {
         return (reqRanges != null && reqRanges.hasMoreElements());
     }
 
+    // TODO add error message? in 11, this called Response.sendError(int, String)
     private void sendStatus(int status, Response response, Callback callback)
     {
         response.setStatus(status);
@@ -1193,7 +1157,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         _welcomes = welcomeFiles;
     }
 
-    private class FileContentFactory implements HttpContent.ContentFactory
+    private class PathContentFactory implements HttpContent.ContentFactory
     {
         @Override
         public HttpContent getContent(String path, int maxBuffer) throws IOException
@@ -1202,18 +1166,18 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
                 path = path.substring(1);
             Path resolved = _baseResource.resolve(path);
             String mimeType = _mimeTypes.getMimeByExtension(resolved.getFileName().toString());
-            return new FileHttpContent(resolved, mimeType);
+            return new PathHttpContent(resolved, mimeType);
         }
     }
 
-    private static class FileHttpContent implements HttpContent
+    private static class PathHttpContent implements HttpContent
     {
         private final Path _path;
         private final PreEncodedHttpField _contentType;
         private final String _characterEncoding;
         private final MimeTypes.Type _mimeType;
 
-        public FileHttpContent(Path path, String contentType)
+        public PathHttpContent(Path path, String contentType)
         {
             _path = path;
             _contentType = contentType == null ? null : new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, contentType);
@@ -1358,13 +1322,16 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         private final ReadableByteChannel source;
         private final Content.Writer target;
         private final Callback callback;
-        private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(4096); // TODO use pool
+        private final ByteBuffer byteBuffer;
 
-        public ContentWriterIteratingCallback(HttpContent content, Content.Writer target, Callback callback) throws IOException
+        public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
         {
-            this.source = content.getReadableByteChannel();
+            this.source = Files.newByteChannel(content.getResource());
             this.target = target;
             this.callback = callback;
+            int outputBufferSize = target.getRequest().getHttpChannel().getHttpConfiguration().getOutputBufferSize();
+            boolean useOutputDirectByteBuffers = target.getRequest().getHttpChannel().getHttpConfiguration().isUseOutputDirectByteBuffers();
+            this.byteBuffer = useOutputDirectByteBuffers ? ByteBuffer.allocateDirect(outputBufferSize) : ByteBuffer.allocate(outputBufferSize); // TODO use pool
         }
 
         @Override

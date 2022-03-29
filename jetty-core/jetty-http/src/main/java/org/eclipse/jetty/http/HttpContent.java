@@ -21,7 +21,6 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
-import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * HttpContent interface.
@@ -59,16 +58,22 @@ public interface HttpContent
 
     String getETagValue();
 
+    //TODO remove
     ByteBuffer getIndirectBuffer();
 
+    //TODO remove
     ByteBuffer getDirectBuffer();
 
+    //TODO rename?
     Path getResource();
 
+    //TODO remove
     InputStream getInputStream() throws IOException;
 
+    //TODO remove
     ReadableByteChannel getReadableByteChannel() throws IOException;
 
+    //TODO remove
     void release();
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
@@ -82,6 +87,7 @@ public interface HttpContent
          * @return A {@link HttpContent}
          * @throws IOException if unable to get content
          */
+        // TODO maxBuffer may not be needed anymore
         HttpContent getContent(String path, int maxBuffer) throws IOException;
     }
 }

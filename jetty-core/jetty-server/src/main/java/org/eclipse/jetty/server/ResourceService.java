@@ -32,6 +32,7 @@ import static java.util.Arrays.stream;
 /**
  * Abstract resource service, used by DefaultServlet and ResourceHandler
  */
+//TODO remove
 public class ResourceService
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceService.class);

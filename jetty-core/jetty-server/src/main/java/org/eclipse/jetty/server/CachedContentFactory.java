@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+//TODO rework
 public class CachedContentFactory implements HttpContent.ContentFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(CachedContentFactory.class);
