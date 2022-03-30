@@ -89,6 +89,7 @@ public class ErrorPageTest
         _context.addFilter(SingleDispatchFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
         _context.addServlet(DefaultServlet.class, "/");
         _context.addServlet(FailServlet.class, "/fail/*");
+        _context.addServlet(FailServletDoubleWrap.class, "/fail-double-wrap/*");
         _context.addServlet(FailClosedServlet.class, "/fail-closed/*");
         _context.addServlet(ErrorServlet.class, "/error/*");
         _context.addServlet(AppServlet.class, "/app/*");
@@ -307,6 +308,14 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
             assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
+            response = _connector.getResponse("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: jakarta.servlet.ServletException: jakarta.servlet.ServletException: java.lang.IllegalStateException: Test Exception"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class jakarta.servlet.ServletException"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServletDoubleWrap-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-double-wrap/exception"));
         }
 
         _errorPageErrorHandler.setUnwrapServletException(true);
@@ -320,6 +329,14 @@ public class ErrorPageTest
             assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
             assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServlet-"));
             assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail/exception"));
+            response = _connector.getResponse("GET /fail-double-wrap/exception HTTP/1.0\r\n\r\n");
+            assertThat(response, Matchers.containsString("HTTP/1.1 500 Server Error"));
+            assertThat(response, Matchers.containsString("ERROR_PAGE: /TestException"));
+            assertThat(response, Matchers.containsString("ERROR_CODE: 500"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION: java.lang.IllegalStateException: Test Exception"));
+            assertThat(response, Matchers.containsString("ERROR_EXCEPTION_TYPE: class java.lang.IllegalStateException"));
+            assertThat(response, Matchers.containsString("ERROR_SERVLET: org.eclipse.jetty.servlet.ErrorPageTest$FailServletDoubleWrap-"));
+            assertThat(response, Matchers.containsString("ERROR_REQUEST_URI: /fail-double-wrap/exception"));
         }
     }
 
@@ -634,6 +651,19 @@ public class ErrorPageTest
                 response.sendError(Integer.parseInt(code));
             else
                 throw new ServletException(new IllegalStateException("Test Exception"));
+        }
+    }
+
+    public static class FailServletDoubleWrap extends HttpServlet implements Servlet
+    {
+        @Override
+        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+        {
+            String code = request.getParameter("code");
+            if (code != null)
+                response.sendError(Integer.parseInt(code));
+            else
+                throw new ServletException(new ServletException(new IllegalStateException("Test Exception")));
         }
     }
 

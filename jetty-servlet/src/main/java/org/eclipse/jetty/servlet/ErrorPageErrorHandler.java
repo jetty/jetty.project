@@ -98,7 +98,7 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
 
         if (error instanceof ServletException && _unwrapServletException)
         {
-            Throwable unwrapped = ((ServletException)error).getRootCause();
+            Throwable unwrapped = getFirstNonServletException(error);
             if (unwrapped != null)
             {
                 request.setAttribute(Dispatcher.ERROR_EXCEPTION, unwrapped);
@@ -175,6 +175,20 @@ public class ErrorPageErrorHandler extends ErrorHandler implements ErrorHandler.
         }
 
         return errorPage;
+    }
+
+    /**
+     *
+     * @param t the initial exception
+     * @return the first non {@link ServletException} from root cause chain
+     */
+    private Throwable getFirstNonServletException(Throwable t) 
+    {
+        if (t instanceof ServletException && t.getCause() != null) 
+        {
+            return getFirstNonServletException(t.getCause());
+        }
+        return t;
     }
 
     public Map<String, String> getErrorPages()
