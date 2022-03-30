@@ -116,12 +116,8 @@ public class HttpChannelState implements HttpChannel, Components
 
     enum State
     {
-        /** Not in use */
+        /** Idle state */
         IDLE,
-        /** A stream has been set with setStream */
-        STREAM_SET,
-        /** A request has been set with onRequest */
-        ON_REQUEST,
         /** The HandlerInvoker Runnable has been executed */
         HANDLING,
         /** A Request.Processor has been called */
@@ -252,7 +248,6 @@ public class HttpChannelState implements HttpChannel, Components
     {
         try (AutoLock ignored = _lock.lock())
         {
-            changeStateLocked(State.IDLE, State.STREAM_SET);
             _stream = stream;
         }
     }
@@ -332,9 +327,10 @@ public class HttpChannelState implements HttpChannel, Components
 
         try (AutoLock ignored = _lock.lock())
         {
+            if (_stream == null)
+                throw new IllegalStateException("No HttpStream");
             if (_request != null)
                 throw new IllegalStateException("duplicate request");
-            changeStateLocked(State.STREAM_SET, State.ON_REQUEST);
             _request = new ChannelRequest(this, request);
 
             HttpFields.Mutable responseHeaders = _request._response.getHeaders();
@@ -432,7 +428,6 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 // If the channel doesn't have a request, then the error must have occurred during the parsing of
                 // the request line / headers, so make a temp request for logging and producing an error response.
-                changeStateLocked(State.STREAM_SET, State.ON_REQUEST);
                 _request = new ChannelRequest(this, ERROR_REQUEST);
             }
 
@@ -577,7 +572,7 @@ public class HttpChannelState implements HttpChannel, Components
             ChannelRequest request;
             try (AutoLock ignored = _lock.lock())
             {
-                changeStateLocked(State.ON_REQUEST, State.HANDLING);
+                changeStateLocked(State.IDLE, State.HANDLING);
                 request = _request;
             }
 
@@ -653,10 +648,12 @@ public class HttpChannelState implements HttpChannel, Components
                 complete(stream, failure);
         }
 
+        /**
+         * Called only as {@link Callback} by last write from {@link ChannelCallback#succeeded}
+         */
         @Override
         public void succeeded()
         {
-            // Called after last write if done in ChannelCallback#succeeded
             HttpStream stream;
             boolean complete;
             try (AutoLock ignored = _lock.lock())
@@ -668,10 +665,12 @@ public class HttpChannelState implements HttpChannel, Components
                 complete(stream, null);
         }
 
+        /**
+         * Called only as {@link Callback} by last write from {@link ChannelCallback#succeeded}
+         */
         @Override
         public void failed(Throwable failure)
         {
-            // Called after last write if done in ChannelCallback#succeeded
             HttpStream stream;
             boolean complete;
             try (AutoLock ignored = _lock.lock())
@@ -705,8 +704,10 @@ public class HttpChannelState implements HttpChannel, Components
             }
             finally
             {
+                // This is THE ONLY PLACE the stream is succeeded or failed.
                 if (failure == null)
-                    // TODO maybe this ? _serializedInvoker.run(stream::succeeded);
+                    // TODO _serializedInvoker.run(stream::succeeded);
+                    //      That would wait for all callback to be completed.
                     stream.succeeded();
                 else
                     stream.failed(_failure);
