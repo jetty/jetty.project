@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ListIterator;
 
@@ -30,6 +31,7 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -377,5 +379,56 @@ public interface Response extends Content.Writer
     static OutputStream asOutputStream(Response response)
     {
         return Content.asOutputStream(response);
+    }
+
+    // TODO test and document
+    static WritableByteChannel asWritableByteChannel(Response response)
+    {
+        ConnectionMetaData connectionMetaData = response.getRequest().getConnectionMetaData();
+
+        // TODO
+        // Return the socket channel when using HTTP11 without SSL to allow for zero-copy FileChannel.transferTo()
+//        if (connectionMetaData.getHttpVersion() == HttpVersion.HTTP_1_1 && !connectionMetaData.isSecure())
+//        {
+//            // This returns the socket channel.
+//            Object transport = connectionMetaData.getConnection().getEndPoint().getTransport();
+//            if (transport instanceof WritableByteChannel wbc)
+//                return wbc;
+//        }
+
+        return new WritableByteChannel()
+        {
+            private boolean closed;
+            @Override
+            public int write(ByteBuffer src) throws IOException
+            {
+                try (Blocking.Callback callback = Blocking.callback())
+                {
+                    int written = src.remaining();
+                    response.write(false, callback, src);
+                    callback.block();
+                    return written;
+                }
+            }
+
+            @Override
+            public boolean isOpen()
+            {
+                return !closed;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                if (closed)
+                    return;
+                try (Blocking.Callback callback = Blocking.callback())
+                {
+                    response.write(true, callback, BufferUtil.EMPTY_BUFFER);
+                    callback.block();
+                    closed = true;
+                }
+            }
+        };
     }
 }

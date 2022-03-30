@@ -43,6 +43,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.QuotedCSV;
@@ -71,6 +72,7 @@ import org.slf4j.LoggerFactory;
  *
  * This handle will serve static content and handle If-Modified-Since headers. No caching is done. Requests for resources that do not exist are let pass (Eg no
  * 404's).
+ * TODO there is a lot of URI manipulation, this should be factored out in a utility class.
  */
 public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 {
@@ -111,13 +113,12 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 
         for (int i = 0; i < _welcomes.length; i++)
         {
+            // TODO this logic is similar to the one in PathContentFactory.getContent()
             String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
             String path = pathInContext;
             if (path.startsWith("/"))
                 path = path.substring(1);
-            if (path.endsWith("/"))
-                path = path.substring(0, path.length() - 1);
-            Path welcome = _baseResource.resolve(path).resolve(_welcomes[i]);
+            Path welcome = Path.of(_baseResource.toUri().resolve(path).resolve(_welcomes[i]));
             if (Files.exists(welcome))
                 return welcomeInContext;
         }
@@ -217,6 +218,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         }
         else
         {
+            // TODO is it possible to get rid of the lambda allocation?
             return (rq, rs, cb) -> doGet(rq, rs, cb, content);
         }
     }
@@ -289,13 +291,13 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("InvalidPathException for pathInContext: {}", pathInContext, e);
-            sendStatus(404, response, callback);
+            Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
         }
         catch (IllegalArgumentException e)
         {
             LOG.warn("Failed to serve resource: {}", pathInContext, e);
             if (!response.isCommitted())
-                sendStatus(500, response, callback);
+                Response.writeError(request, response, callback, HttpStatus.INTERNAL_SERVER_ERROR_500);
         }
     }
 
@@ -417,7 +419,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 
                     if (!match)
                     {
-                        sendStatus(412, response, callback);
+                        Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
                         return false;
                     }
                 }
@@ -427,7 +429,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
                     // Handle special case of exact match OR gzip exact match
                     if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',') < 0)
                     {
-                        sendStatus(304, response, callback);
+                        Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                         return false;
                     }
 
@@ -437,7 +439,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
                     {
                         if (CompressedContentFormat.tagEquals(etag, tag))
                         {
-                            sendStatus(304, response, callback);
+                            Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                             return false;
                         }
                     }
@@ -454,14 +456,14 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
                 String mdlm = content.getLastModifiedValue();
                 if (ifms.equals(mdlm))
                 {
-                    sendStatus(304, response, callback);
+                    Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                     return false;
                 }
 
                 long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE.asString());
                 if (ifmsl != -1 && Files.getLastModifiedTime(content.getResource()).toMillis() / 1000 <= ifmsl / 1000)
                 {
-                    sendStatus(304, response, callback);
+                    Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                     return false;
                 }
             }
@@ -469,14 +471,14 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
             // Parse the if[un]modified dates and compare to resource
             if (ifums != -1 && Files.getLastModifiedTime(content.getResource()).toMillis() / 1000 > ifums / 1000)
             {
-                sendStatus(412, response, callback);
+                Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
                 return false;
             }
         }
         catch (IllegalArgumentException iae)
         {
             if (!response.isCommitted())
-                sendStatus(400, response, callback);
+                Response.writeError(request, response, callback, HttpStatus.BAD_REQUEST_400);
             throw iae;
         }
 
@@ -546,7 +548,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
     {
         if (!_dirAllowed)
         {
-            sendStatus(403, response, callback);
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
@@ -554,7 +556,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         String dir = getListHTML(resource, base, pathInContext.length() > 1, request.getHttpURI().getQuery());
         if (dir == null)
         {
-            sendStatus(403, response, callback);
+            Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
             return;
         }
 
@@ -979,13 +981,6 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         return (reqRanges != null && reqRanges.hasMoreElements());
     }
 
-    // TODO add error message? in 11, this used to be Response.sendError(int, String)
-    private void sendStatus(int status, Response response, Callback callback)
-    {
-        response.setStatus(status);
-        callback.succeeded();
-    }
-
     /**
      * @return If true, range requests and responses are supported
      */
@@ -1166,7 +1161,11 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         {
             if (path.startsWith("/"))
                 path = path.substring(1);
-            Path resolved = _baseResource.resolve(path);
+            // TODO cache _baseResource.toUri()
+            Path resolved = Path.of(_baseResource.toUri().resolve(path));
+            // TODO call alias checker
+            if (!Files.exists(resolved))
+                return null;
             String mimeType = _mimeTypes.getMimeByExtension(resolved.getFileName().toString());
             return new PathHttpContent(resolved, mimeType);
         }
@@ -1329,6 +1328,11 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 
         public ContentWriterIteratingCallback(HttpContent content, Response target, Callback callback) throws IOException
         {
+            // TODO: is it possible to do zero-copy transfer?
+//            WritableByteChannel c = Response.asWritableByteChannel(target);
+//            FileChannel fileChannel = (FileChannel) source;
+//            fileChannel.transferTo(0, contentLength, c);
+
             this.source = Files.newByteChannel(content.getResource());
             this.target = target;
             this.callback = callback;

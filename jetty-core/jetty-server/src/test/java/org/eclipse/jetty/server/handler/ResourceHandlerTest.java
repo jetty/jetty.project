@@ -51,6 +51,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -151,7 +153,7 @@ public class ResourceHandlerTest
     {
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(302));
+        assertThat(response.getStatus(), equalTo(301));
         assertThat(response.get(LOCATION), containsString("/resource/"));
     }
 
@@ -198,6 +200,15 @@ public class ResourceHandlerTest
                 "\r\n"));
 
         assertThat(response.getStatus(), equalTo(304));
+    }
+
+    @Test
+    public void testNonExistentFile() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/no-such-file.txt HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(404));
+        assertThat(response.getContent(), Matchers.containsString("Error 404 Not Found"));
     }
 
     @Test
