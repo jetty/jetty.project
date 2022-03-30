@@ -527,8 +527,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if ("/".equals(_context.getContextPath()))
             return path;
         if (path.length() == _context.getContextPath().length())
-            // TODO is that what we want to do? If so, cleanup and check ContextHandlerTest as some tests were modified to access /ctx/ instead of /ctx
-            return "!redirect!";
+            return "";
         if (path.charAt(_context.getContextPath().length()) != '/')
             return null;
         return path.substring(_context.getContextPath().length());
@@ -552,9 +551,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         String pathInContext = getPathInContext(request);
         if (pathInContext == null)
             return null;
-        // context request must end with /
-        if (pathInContext.equals("!redirect!")) // TODO cleanup, ResourceHandlerTest.testJettyDirRedirect() expects 302 here
-            return this::processMovedTemporarily;
 
         if (pathInContext.isEmpty() && !getAllowNullPathInContext())
             return this::processMovedPermanently;
@@ -573,17 +569,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return processor;
 
         return contextRequest.wrapProcessor(_context.get(contextRequest, contextRequest));
-    }
-
-    private void processMovedTemporarily(Request request, Response response, Callback callback)
-    {
-        String location = _contextPath + "/";
-        String queryString = request.getHttpURI().getParam();
-        if (queryString != null)
-            location += "?" + queryString;
-        response.setStatus(HttpStatus.MOVED_TEMPORARILY_302);
-        response.getHeaders().add(new HttpField(HttpHeader.LOCATION, location));
-        callback.succeeded();
     }
 
     protected void processMovedPermanently(Request request, Response response, Callback callback)
