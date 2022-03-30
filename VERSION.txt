@@ -1,3 +1,5 @@
+jetty-10.0.10
+
 jetty-10.0.9 - 30 March 2022
  + 5681 Unrecognized jetty-home/start.jar command line option not reported
    clearly
