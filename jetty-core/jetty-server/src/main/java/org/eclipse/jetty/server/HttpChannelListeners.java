@@ -23,7 +23,7 @@ package org.eclipse.jetty.server;
 public class HttpChannelListeners // TODO ??? implements HttpChannel.Listener
 {
     /* TODO
-    static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
+    static final Logger LOG = LoggerFactory.getLogger(HttpChannelListeners.class);
     public static HttpChannel.Listener NOOP = new HttpChannel.Listener() {};
 
     private final NotifyRequest onRequestBegin;

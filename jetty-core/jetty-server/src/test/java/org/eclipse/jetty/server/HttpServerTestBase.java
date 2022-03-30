@@ -31,7 +31,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.ArrayRetainableByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -72,15 +74,17 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpServerTestBase.class);
 
-    private static final String REQUEST1_HEADER = "POST / HTTP/1.0\n" +
-        "Host: localhost\n" +
-        "Content-Type: text/xml; charset=utf-8\n" +
-        "Connection: close\n" +
-        "Content-Length: ";
-    private static final String REQUEST1_CONTENT = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-        "<nimbus xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
-        "        xsi:noNamespaceSchemaLocation=\"nimbus.xsd\" version=\"1.0\">\n" +
-        "</nimbus>";
+    private static final String REQUEST1_HEADER = """
+        POST / HTTP/1.0
+        Host: localhost
+        Content-Type: text/xml; charset=utf-8
+        Connection: close
+        Content-Length:\s""";
+    private static final String REQUEST1_CONTENT = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <nimbus xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xsi:noNamespaceSchemaLocation="nimbus.xsd" version="1.0">
+        </nimbus>""";
     private static final String REQUEST1 = REQUEST1_HEADER + REQUEST1_CONTENT.getBytes().length + "\n\n" + REQUEST1_CONTENT;
 
     private static final String RESPONSE1 = "HTTP/1.1 200 OK\n" +
@@ -1167,29 +1171,29 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 client.setSoTimeout(5000);
                 OutputStream os = client.getOutputStream();
 
-                String request = "";
+                StringBuilder request = new StringBuilder();
 
                 for (int i = 1; i < pipeline; i++)
                 {
-                    request +=
-                        "GET /data?writes=1&block=16&id=" + i + " HTTP/1.1\r\n" +
-                            "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                            "user-agent: testharness/1.0 (blah foo/bar)\r\n" +
-                            "accept-encoding: nothing\r\n" +
-                            "cookie: aaa=1234567890\r\n" +
-                            "\r\n";
+                    request.append("GET /data?writes=1&block=16&id=")
+                        .append(i).append(" HTTP/1.1\r\n")
+                        .append("host: localhost:").append(_serverURI.getPort()).append("\r\n")
+                        .append("user-agent: testharness/1.0 (blah foo/bar)\r\n")
+                        .append("accept-encoding: nothing\r\n")
+                        .append("cookie: aaa=1234567890\r\n")
+                        .append("\r\n");
                 }
 
-                request +=
-                    "GET /data?writes=1&block=16 HTTP/1.1\r\n" +
-                        "host: localhost:" + _serverURI.getPort() + "\r\n" +
-                        "user-agent: testharness/1.0 (blah foo/bar)\r\n" +
-                        "accept-encoding: nothing\r\n" +
-                        "cookie: aaa=bbbbbb\r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n";
+                request
+                    .append("GET /data?writes=1&block=16 HTTP/1.1\r\n")
+                    .append("host: localhost:").append(_serverURI.getPort()).append("\r\n")
+                    .append("user-agent: testharness/1.0 (blah foo/bar)\r\n")
+                    .append("accept-encoding: nothing\r\n")
+                    .append("cookie: aaa=bbbbbb\r\n")
+                    .append("Connection: close\r\n")
+                    .append("\r\n");
 
-                os.write(request.getBytes());
+                os.write(request.toString().getBytes());
                 os.flush();
 
                 LineNumberReader in = new LineNumberReader(new InputStreamReader(client.getInputStream()));
@@ -1632,18 +1636,22 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             OutputStream os = client.getOutputStream();
 
             // Send two persistent pipelined requests and then shutdown output
-            os.write(("GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Transfer-Encoding: chunked\r\n" +
-                "\r\n" +
-                "1000\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.write(("""
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Transfer-Encoding: chunked\r
+                \r
+                1000\r
+                """).getBytes(StandardCharsets.ISO_8859_1));
             os.write(content);
             os.write("\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
-            os.write(("GET / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Transfer-Encoding: chunked\r\n" +
-                "\r\n" +
-                "1000\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            os.write(("""
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Transfer-Encoding: chunked\r
+                \r
+                1000\r
+                """).getBytes(StandardCharsets.ISO_8859_1));
             os.write(content);
             os.write("\r\n0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             os.flush();
@@ -1716,11 +1724,13 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             OutputStream os = client.getOutputStream();
             BufferedOutputStream out = new BufferedOutputStream(os, bufferSize);
-            out.write(("POST / HTTP/1.1\r\n" +
-                "Host: localhost\r\n" +
-                "Connection: close\r\n" +
-                "Transfer-Encoding: chunked\r\n" +
-                "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            out.write(("""
+                POST / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                Transfer-Encoding: chunked\r
+                \r
+                """).getBytes(StandardCharsets.ISO_8859_1));
 
             // single chunk
             out.write((Integer.toHexString(chunk.length) + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
@@ -1802,6 +1812,54 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     else
                         callback.succeeded();
                 }, callback::failed));
+        }
+    }
+
+    @Test
+    public void testProcessingAfterCompletion() throws Exception
+    {
+        AtomicReference<String> result = new AtomicReference<>();
+        Handler.Wrapper wrapper = new Handler.Wrapper()
+        {
+            @Override
+            public Request.Processor handle(Request request) throws Exception
+            {
+                Request.Processor processor = super.handle(request);
+                if (processor == null)
+                    return null;
+                request.setAttribute("test", "value");
+
+                return (req, resp, callback) ->
+                {
+                    processor.process(req, resp, callback);
+                    result.set(String.valueOf(req.getAttribute("test")));
+                };
+            }
+        };
+
+        wrapper.setHandler(new HelloHandler());
+        startServer(wrapper);
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            OutputStream os = client.getOutputStream();
+
+            String request = """
+                GET / HTTP/1.1\r
+                Host: localhost\r
+                Connection: close\r
+                \r
+                """;
+            os.write(request.getBytes(StandardCharsets.ISO_8859_1));
+            os.flush();
+
+            // Read the response.
+            String response = readResponse(client);
+
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("Hello"));
+
+            Awaitility.await().atMost(5, TimeUnit.SECONDS).until(result::get, equalTo("value"));
         }
     }
 }

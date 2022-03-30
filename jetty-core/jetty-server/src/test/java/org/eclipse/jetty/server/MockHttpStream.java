@@ -239,6 +239,7 @@ public class MockHttpStream implements HttpStream
     @Override
     public void succeeded()
     {
+        _channel.recycle();
         if (_complete.compareAndSet(null, SUCCEEDED))
             _completed.countDown();
     }

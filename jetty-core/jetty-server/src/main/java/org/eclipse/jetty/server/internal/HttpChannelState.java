@@ -114,21 +114,41 @@ public class HttpChannelState implements HttpChannel, Components
         }
     };
 
+    enum State
+    {
+        /** Not in use */
+        IDLE,
+        /** A stream has been set with setStream */
+        STREAM_SET,
+        /** A request has been set with onRequest */
+        ON_REQUEST,
+        /** The HandlerInvoker Runnable has been executed */
+        HANDLING,
+        /** A Request.Processor has been called */
+        PROCESSING,
+        /** The Request.Processor call has returned prior to callback completion */
+        PROCESSED,
+        /** Callback completion has been called prior to Request.Processor completion. */
+        COMPLETED,
+        /** The Request.Processor call has returned and the callback is complete */
+        PROCESSED_AND_COMPLETED,
+    }
+
     private final AutoLock _lock = new AutoLock();
-    private final Runnable _handlerInvoker = new HandlerInvoker();
+    private final HandlerInvoker _handlerInvoker = new HandlerInvoker();
     private final ConnectionMetaData _connectionMetaData;
     private final SerializedInvoker _serializedInvoker;
     private final Attributes _requestAttributes = new Attributes.Lazy();
     private final ResponseHttpFields _responseHeaders = new ResponseHttpFields();
+    private State _state = State.IDLE; // TODO could this be an AtomicReference?
+    private boolean _lastWrite = false;
+    private Throwable _failure;
     private ChannelRequest _request;
     private HttpStream _stream;
-    private boolean _processing;
-    private boolean _handled;
     private long _committedContentLength = -1;
     private ResponseHttpFields _responseTrailers;
     private Runnable _onContentAvailable;
     private Callback _writeCallback;
-    private boolean _lastWrite;
     private Content.Error _error;
     private Predicate<Throwable> _onError;
     private Map<String, Object> _cache;
@@ -140,65 +160,79 @@ public class HttpChannelState implements HttpChannel, Components
         _serializedInvoker = new SerializedInvoker()
         {
             @Override
-            protected void onError(Runnable task, Throwable t)
+            protected void onError(Runnable task, Throwable failure)
             {
+                Request request;
                 Content.Error error;
+                boolean completed;
                 try (AutoLock ignore = _lock.lock())
                 {
+                    completed = _state.ordinal() >= State.COMPLETED.ordinal();
+                    request = _request;
                     error = _request == null ? null : _error;
                 }
 
-                if (error != null)
+                if (request == null || completed)
+                {
+                    // It is too late to handle error, so just log it
+                    super.onError(task, failure);
+                }
+                else if (error == null)
+                {
+                    // Try to fail the request, but we might lose a race.
+                    try
+                    {
+                        _request._callback.failed(failure);
+                    }
+                    catch (Throwable t)
+                    {
+                        if (!TypeUtil.isAssociated(failure, t))
+                            failure.addSuppressed(t);
+                        super.onError(task, failure);
+                    }
+                }
+                else
                 {
                     // We are already in error, so we will not handle this one,
                     // but we will add as suppressed if we have not seen it already.
                     Throwable cause = error.getCause();
-                    if (cause != null && !TypeUtil.isAssociated(cause, t))
-                        error.getCause().addSuppressed(t);
-                    return;
+                    if (cause != null && !TypeUtil.isAssociated(cause, failure))
+                        error.getCause().addSuppressed(failure);
                 }
-                super.onError(task, t);
             }
         };
     }
 
-    private void lockedLogAndRecycle()
+    @Override
+    public void recycle()
     {
-        RequestLog requestLog = getServer().getRequestLog();
-        if (requestLog != null)
+        try (AutoLock ignored = _lock.lock())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("logging {}", this);
+                LOG.debug("recycling {}", this);
 
-            // TODO logging done with lock held!!!!
-            //      it should probably be an async call inserted between ChannelCallback completion and HttpStream completion
-            requestLog.log(_request.getLoggedRequest(), _request._response);
+            // Break the link between request and channel, so that
+            // applications cannot use request/response/callback anymore.
+            _request._httpChannel = null;
+
+            // Break the links with the upper and lower layers.
+            _request = null;
+            _stream = null;
+
+            // Recycle.
+            _requestAttributes.clearAttributes();
+            _responseHeaders.reset();
+            _state = State.IDLE;
+            _lastWrite = false;
+            _failure = null;
+            _committedContentLength = -1;
+            if (_responseTrailers != null)
+                _responseTrailers.reset();
+            _onContentAvailable = null;
+            _writeCallback = null;
+            _error = null;
+            _onError = null;
         }
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("recycling {}", this);
-
-        // Break the link between request and channel, so that
-        // applications cannot use request/response/callback anymore.
-        _request._httpChannel = null;
-
-        // Break the links with the upper and lower layers.
-        _request = null;
-        _stream = null;
-
-        // Recycle.
-        _requestAttributes.clearAttributes();
-        _responseHeaders.reset();
-        _processing = false;
-        _handled = false;
-        _committedContentLength = -1;
-        if (_responseTrailers != null)
-            _responseTrailers.reset();
-        _onContentAvailable = null;
-        _writeCallback = null;
-        _lastWrite = false;
-        _error = null;
-        _onError = null;
     }
 
     public HttpConfiguration getHttpConfiguration()
@@ -218,8 +252,7 @@ public class HttpChannelState implements HttpChannel, Components
     {
         try (AutoLock ignored = _lock.lock())
         {
-            if (_stream != null)
-                throw new IllegalStateException("stream pending");
+            changeStateLocked(State.IDLE, State.STREAM_SET);
             _stream = stream;
         }
     }
@@ -301,7 +334,7 @@ public class HttpChannelState implements HttpChannel, Components
         {
             if (_request != null)
                 throw new IllegalStateException("duplicate request");
-
+            changeStateLocked(State.STREAM_SET, State.ON_REQUEST);
             _request = new ChannelRequest(this, request);
 
             HttpFields.Mutable responseHeaders = _request._response.getHeaders();
@@ -351,7 +384,7 @@ public class HttpChannelState implements HttpChannel, Components
     {
         try (AutoLock ignored = _lock.lock())
         {
-            return _handled;
+            return _state.ordinal() >= State.HANDLING.ordinal();
         }
     }
 
@@ -399,8 +432,8 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 // If the channel doesn't have a request, then the error must have occurred during the parsing of
                 // the request line / headers, so make a temp request for logging and producing an error response.
+                changeStateLocked(State.STREAM_SET, State.ON_REQUEST);
                 _request = new ChannelRequest(this, ERROR_REQUEST);
-                _processing = true;
             }
 
             // Remember the error and arrange for any subsequent reads, demands or writes to fail with this error.
@@ -430,10 +463,9 @@ public class HttpChannelState implements HttpChannel, Components
                 boolean handled;
                 try (AutoLock ignore = _lock.lock())
                 {
-                    handled = _handled;
-                    _handled = true;
+                    handled = _state.ordinal() >= State.HANDLING.ordinal();
                     if (!handled)
-                        _processing = true;
+                        _state = State.PROCESSED;
                 }
                 if (handled)
                 {
@@ -493,18 +525,7 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
-    public void enableProcessing()
-    {
-        try (AutoLock ignored = _lock.lock())
-        {
-            if (_processing)
-                throw new IllegalStateException("request already processing " + this);
-            // TODO: use system property to record what thread accepted it.
-            _processing = true;
-        }
-    }
-
-    private void reset()
+    private void resetResponse()
     {
         try (AutoLock ignored = _lock.lock())
         {
@@ -520,48 +541,53 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
+    private void changeState(State from, State to)
+    {
+        try (AutoLock ignored = _lock.lock())
+        {
+            changeStateLocked(from, to);
+        }
+    }
+
+    private void changeStateLocked(State from, State to)
+    {
+        if (!_lock.isHeldByCurrentThread() || _state != from)  // TODO do we need the lock check?
+            throw new IllegalStateException(String.valueOf(_state));
+        _state = to;
+    }
+
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s}", this.getClass().getSimpleName(), hashCode(), _request);
+        try (AutoLock ignored = _lock.lock())
+        {
+            return String.format("%s@%x{s=%s,r=%s}", this.getClass().getSimpleName(), hashCode(), _state, _request);
+        }
     }
 
-    private class HandlerInvoker implements Invocable.Task
+    private class HandlerInvoker implements Invocable.Task, Callback
     {
         @Override
         public void run()
         {
-            // The chance to complete the callback is either given
-            // to the application, or the implementation does it.
+            // Once we switch to HANDLING state and beyond, then we assume that the
+            // application will call the callback, and thus any onFailure reports will not.
+            // However, if a thread calling the application throws, then that exception will be reported
+            // to the callback.
             ChannelRequest request;
             try (AutoLock ignored = _lock.lock())
             {
-                request = _handled ? null : _request;
-                _handled = true;
+                changeStateLocked(State.ON_REQUEST, State.HANDLING);
+                request = _request;
             }
-            // Don't call the application if an error already completed this channel.
-            if (request != null)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("invoking handler in {}", HttpChannelState.this);
-                customizeHandleAndProcess(request, request._response, request._callback);
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("already handled, skipping handler invocation in {}", HttpChannelState.this);
-            }
-        }
 
-        private void customizeHandleAndProcess(HttpChannelState.ChannelRequest request, Response response, Callback callback)
-        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("invoking handler in {}", HttpChannelState.this);
             Server server = _connectionMetaData.getConnector().getServer();
 
-            if (!server.isStarted())
-                throw new IllegalStateException("server not started");
-
+            Request.Processor processor;
             Request customized = request;
-            boolean processing = false;
+            Throwable failure = null;
             try
             {
                 // Customize before accepting.
@@ -569,26 +595,121 @@ public class HttpChannelState implements HttpChannel, Components
 
                 for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
                 {
-                    Request next = customizer.customize(request, response.getHeaders());
+                    Request next = customizer.customize(request, ((Response)request._response).getHeaders());
                     customized = next == null ? customized : next;
                 }
 
                 if (customized != request && server.getRequestLog() != null)
                     request.setLoggedRequest(customized);
 
-                Request.Processor processor = server.handle(customized);
-                processing = true;
-                enableProcessing();
+                processor = server.handle(customized);
                 if (processor == null)
-                    Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
-                else
-                    processor.process(customized, response, callback);
+                    processor = (req, res, cb) -> Response.writeError(req, res, cb, HttpStatus.NOT_FOUND_404);
+            }
+            catch (Throwable t)
+            {
+                processor = null;
+                failure = t;
+            }
+
+            changeState(State.HANDLING, State.PROCESSING);
+
+            try
+            {
+                if (processor != null)
+                    processor.process(customized, request._response, request._callback);
             }
             catch (Throwable x)
             {
-                if (!processing)
-                    enableProcessing();
-                callback.failed(x);
+                failure = x;
+            }
+            if (failure != null)
+                ((Callback)request._callback).failed(failure);
+
+            HttpStream stream;
+            boolean complete;
+            try (AutoLock ignored = _lock.lock())
+            {
+                complete = _state == State.COMPLETED;
+
+                if (_failure != null)
+                {
+                    if (failure != null)
+                    {
+                        if (!TypeUtil.isAssociated(failure, _failure))
+                            _failure.addSuppressed(failure);
+                    }
+                    failure = _failure;
+                }
+
+                if (complete)
+                    changeStateLocked(State.COMPLETED, State.PROCESSED_AND_COMPLETED);
+                else
+                    changeStateLocked(State.PROCESSING, State.PROCESSED);
+
+                stream = _stream;
+            }
+            if (complete)
+                complete(stream, failure);
+        }
+
+        @Override
+        public void succeeded()
+        {
+            // Called after last write if done in ChannelCallback#succeeded
+            HttpStream stream;
+            boolean complete;
+            try (AutoLock ignored = _lock.lock())
+            {
+                complete = _state == State.PROCESSED_AND_COMPLETED;
+                stream = _stream;
+            }
+            if (complete)
+                complete(stream, null);
+        }
+
+        @Override
+        public void failed(Throwable failure)
+        {
+            // Called after last write if done in ChannelCallback#succeeded
+            HttpStream stream;
+            boolean complete;
+            try (AutoLock ignored = _lock.lock())
+            {
+                complete = _state == State.PROCESSED_AND_COMPLETED;
+                stream = _stream;
+                if (_failure == null)
+                    _failure = failure;
+                else if (!TypeUtil.isAssociated(_failure, failure))
+                {
+                    _failure.addSuppressed(failure);
+                    failure = _failure;
+                }
+            }
+            if (complete)
+                complete(stream, failure);
+        }
+
+        private void complete(HttpStream stream, Throwable failure)
+        {
+            try
+            {
+                RequestLog requestLog = getServer().getRequestLog();
+                if (requestLog != null)
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("logging {}", HttpChannelState.this);
+
+                    requestLog.log(_request.getLoggedRequest(), _request._response);
+                }
+            }
+            finally
+            {
+                if (failure == null)
+                    // TODO maybe this ? _serializedInvoker.run(stream::succeeded);
+                    stream.succeeded();
+                else
+                    stream.failed(_failure);
             }
         }
 
@@ -780,7 +901,7 @@ public class HttpChannelState implements HttpChannel, Components
                 if (error != null)
                     return error;
 
-                if (!httpChannel._processing)
+                if (httpChannel._state.ordinal() < State.PROCESSING.ordinal())
                     return new Content.Error(new IllegalStateException("not processing"));
 
                 stream = httpChannel._stream;
@@ -802,7 +923,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 HttpChannelState httpChannel = lockedGetHttpChannel();
 
-                error = httpChannel._error != null || !httpChannel._processing;
+                error = httpChannel._error != null || httpChannel._state.ordinal() < State.PROCESSING.ordinal();
                 if (!error)
                 {
                     if (httpChannel._onContentAvailable != null)
@@ -946,7 +1067,7 @@ public class HttpChannelState implements HttpChannel, Components
 
                 if (httpChannel._writeCallback != null)
                     failure = new IllegalStateException("write pending");
-                else if (!httpChannel._processing)
+                else if (httpChannel._state.ordinal() < State.PROCESSING.ordinal())
                     failure = new IllegalStateException("not processing");
                 else if (httpChannel._error != null)
                     failure = httpChannel._error.getCause();
@@ -1048,14 +1169,20 @@ public class HttpChannelState implements HttpChannel, Components
         {
             try (AutoLock ignored = _request._lock.lock())
             {
-                return Boolean.TRUE.equals(_request._callback._completedSuccessfully);
+                if (_request._httpChannel == null)
+                    return false;
+                return switch (_request._httpChannel._state)
+                {
+                    case COMPLETED, PROCESSED_AND_COMPLETED -> _request._httpChannel._failure == null;
+                    default -> false;
+                };
             }
         }
 
         @Override
         public void reset()
         {
-            _request.getHttpChannel().reset();
+            _request.getHttpChannel().resetResponse();
         }
 
         private MetaData.Response lockedPrepareResponse(HttpChannelState httpChannel, boolean last)
@@ -1095,7 +1222,6 @@ public class HttpChannelState implements HttpChannel, Components
     private static class ChannelCallback implements Callback
     {
         private final ChannelRequest _request;
-        private Boolean _completedSuccessfully;
         private Throwable _completedBy;
 
         private ChannelCallback(ChannelRequest request)
@@ -1108,144 +1234,138 @@ public class HttpChannelState implements HttpChannel, Components
         {
             // Called when the request/response cycle is completing successfully.
             HttpStream stream;
-            boolean nothingToWrite;
-            HttpChannelState httpChannel;
+            boolean needLastWrite;
+            HttpChannelState httpChannelState;
             Throwable failure = null;
             MetaData.Response responseMetaData = null;
+            boolean complete;
             try (AutoLock ignored = _request._lock.lock())
             {
-                httpChannel = completeHttpChannel(true);
+                complete = complete();
+                httpChannelState = _request._httpChannel;
+                needLastWrite = !httpChannelState._lastWrite;
 
                 // We are being tough on handler implementations and expect them
                 // to not have pending operations when calling succeeded or failed.
-                if (httpChannel._onContentAvailable != null)
+                if (httpChannelState._onContentAvailable != null)
                     throw new IllegalStateException("demand pending");
-                if (httpChannel._writeCallback != null)
+                if (httpChannelState._writeCallback != null)
                     throw new IllegalStateException("write pending");
-                if (httpChannel._error != null)
-                    throw new IllegalStateException("error " + httpChannel._error, httpChannel._error.getCause());
+                if (httpChannelState._error != null)
+                    throw new IllegalStateException("error " + httpChannelState._error, httpChannelState._error.getCause());
 
-                stream = httpChannel._stream;
+                stream = httpChannelState._stream;
+
+                if (httpChannelState._responseHeaders.commit())
+                    responseMetaData = _request._response.lockedPrepareResponse(httpChannelState, true);
 
                 long written = _request._response._contentBytesWritten;
-                if (httpChannel._responseHeaders.commit())
-                    responseMetaData = _request._response.lockedPrepareResponse(httpChannel, true);
+                long committedContentLength = httpChannelState._committedContentLength;
 
-                long committedContentLength = httpChannel._committedContentLength;
                 if (committedContentLength >= 0 && committedContentLength != written)
-                    failure = new IOException("content-length %d != %d written".formatted(committedContentLength, written));
+                    failure = httpChannelState._failure = new IOException("content-length %d != %d written".formatted(committedContentLength, written));
 
-                nothingToWrite = failure != null || httpChannel._lastWrite;
+                // is the request fully consumed?
+                Throwable unconsumed = stream.consumeAll();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("consumeAll: {} {} ", unconsumed == null, httpChannelState);
 
-                if (nothingToWrite)
-                    httpChannel.lockedLogAndRecycle();
+                if (unconsumed != null && httpChannelState.getConnectionMetaData().isPersistent())
+                {
+                    if (failure == null)
+                        failure = httpChannelState._failure = unconsumed;
+                    else if (!TypeUtil.isAssociated(failure, unconsumed))
+                        failure.addSuppressed(unconsumed);
+                }
             }
 
-            // is the request fully consumed?
-            Throwable unconsumed = stream.consumeAll();
-            if (LOG.isDebugEnabled())
-                LOG.debug("consumeAll: {} {} ", unconsumed == null, httpChannel);
-
-            if (unconsumed != null && httpChannel.getConnectionMetaData().isPersistent())
-            {
-                // TODO: add existing failure as suppressed?
-                failure = unconsumed;
-            }
-
-            if (nothingToWrite)
-            {
-                if (failure == null)
-                    stream.succeeded();
-                else
-                    stream.failed(failure);
-            }
-            else
-            {
-                stream.send(_request._metaData, responseMetaData, true, Callback.from(this::logAndRecycle, stream));
-            }
+            if (failure == null && needLastWrite)
+                stream.send(_request._metaData, responseMetaData, true, httpChannelState._handlerInvoker);
+            else if (complete)
+                httpChannelState._handlerInvoker.complete(stream, failure);
         }
 
         @Override
-        public void failed(Throwable x)
+        public void failed(Throwable failure)
         {
             // Called when the request/response cycle is completing with a failure.
             HttpStream stream;
-            boolean committed;
+            boolean writeErrorResponse;
             ChannelRequest request;
-            HttpChannelState httpChannel;
+            HttpChannelState httpChannelState;
+            boolean complete;
             try (AutoLock ignored = _request._lock.lock())
             {
-                httpChannel = completeHttpChannel(false);
+                complete = complete();
+                httpChannelState = _request._httpChannel;
+                httpChannelState._failure = failure;
 
                 // Verify whether we can write an error response.
-                committed = httpChannel._stream.isCommitted();
-                stream = httpChannel._stream;
+                writeErrorResponse = !httpChannelState._stream.isCommitted();
+                stream = httpChannelState._stream;
                 request = _request;
 
-                if (committed)
-                {
-                    httpChannel.lockedLogAndRecycle();
-                }
-                else
+                // Consume any input.
+                Throwable unconsumed = stream.consumeAll();
+                if (unconsumed != null && !TypeUtil.isAssociated(unconsumed, failure))
+                    failure.addSuppressed(unconsumed);
+
+                if (writeErrorResponse)
                 {
                     // Cannot log or recycle just yet, since we need to generate the error response.
                     _request._response._status = HttpStatus.INTERNAL_SERVER_ERROR_500;
-                    httpChannel._responseHeaders.reset();
+                    httpChannelState._responseHeaders.reset();
                 }
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("failed {}", httpChannel, x);
+                LOG.debug("failed {}", httpChannelState, failure);
 
-            // Consume any input.
-            Throwable unconsumed = stream.consumeAll();
-            if (unconsumed != null && !TypeUtil.isAssociated(unconsumed, x))
-                x.addSuppressed(unconsumed);
-
-            if (committed)
+            if (writeErrorResponse)
             {
-                stream.failed(x);
+                ErrorResponse responseAndCallback = new ErrorResponse(request, stream);
+                Response.writeError(request, responseAndCallback, httpChannelState._handlerInvoker, failure);
             }
-            else
+            else if (complete)
             {
-                ErrorResponse responseAndCallback = new ErrorResponse(request, stream, x);
-                Response.writeError(request, responseAndCallback, responseAndCallback, x);
+                httpChannelState._handlerInvoker.complete(stream, failure);
             }
         }
 
-        private HttpChannelState completeHttpChannel(boolean succeeded)
+        private boolean complete()
         {
-            HttpChannelState httpChannel = _request._httpChannel;
-            if (LOG.isDebugEnabled())
+            HttpChannelState httpChannelState = _request._httpChannel;
+            if (httpChannelState == null)
             {
-                if (_completedSuccessfully != null)
+                if (LOG.isDebugEnabled())
+                    LOG.warn("already recycled after completion {} by", _request, _completedBy);
+                throw new IllegalStateException("channel already completed");
+            }
+
+            return switch (httpChannelState._state)
+            {
+                case PROCESSING ->
+                {
+                    if (LOG.isDebugEnabled())
+                        _completedBy = new Throwable(Thread.currentThread().getName());
+                    httpChannelState._state = State.COMPLETED;
+                    yield false;
+                }
+                case PROCESSED ->
+                {
+                    if (LOG.isDebugEnabled())
+                        _completedBy = new Throwable(Thread.currentThread().getName());
+                    httpChannelState._state = State.PROCESSED_AND_COMPLETED;
+                    yield true;
+                }
+                case PROCESSED_AND_COMPLETED, COMPLETED ->
                 {
                     if (LOG.isDebugEnabled())
                         LOG.warn("already completed {} by", _request, _completedBy);
-                    throw new IllegalStateException(httpChannel == null ? "channel already completed" : "channel is completing");
+                    throw new IllegalStateException("channel is completing");
                 }
-
-                if (!httpChannel._processing)
-                    throw new IllegalStateException("not processing");
-
-                _completedSuccessfully = succeeded;
-                _completedBy = new Throwable(Thread.currentThread().toString());
-                LOG.debug("completing {}", _request);
-                return httpChannel;
-            }
-
-            if (_completedSuccessfully != null)
-                throw new IllegalStateException(httpChannel == null ? "channel already completed" : "channel is completing");
-            _completedSuccessfully = succeeded;
-            return httpChannel;
-        }
-
-        private void logAndRecycle()
-        {
-            try (AutoLock ignored = _request._lock.lock())
-            {
-                _request._httpChannel.lockedLogAndRecycle();
-            }
+                default -> throw new IllegalStateException("not processing");
+            };
         }
 
         @Override
@@ -1256,20 +1376,18 @@ public class HttpChannelState implements HttpChannel, Components
         }
     }
 
-    private static class ErrorResponse extends Response.Wrapper implements Callback
+    private static class ErrorResponse extends Response.Wrapper
     {
         private final ChannelRequest _request;
         private final ChannelResponse _response;
         private final HttpStream _stream;
-        private final Throwable _failure;
 
-        public ErrorResponse(ChannelRequest request, HttpStream stream, Throwable failure)
+        public ErrorResponse(ChannelRequest request, HttpStream stream)
         {
             super(request, request._response);
             _request = request;
             _response = request._response;
             _stream = stream;
-            _failure = failure;
         }
 
         @Override
@@ -1290,39 +1408,6 @@ public class HttpChannelState implements HttpChannel, Components
                     responseMetaData = _request._response.lockedPrepareResponse(httpChannel, last);
             }
             _stream.send(_request._metaData, responseMetaData, last, callback, content);
-        }
-
-        @Override
-        public void succeeded()
-        {
-            // ErrorProcessor has succeeded the ErrorRequest, so we need to ensure
-            // that the ErrorResponse is committed before we fail the stream.
-            if (_stream.isCommitted())
-            {
-                logAndRecycle();
-                _stream.failed(_failure);
-            }
-            else
-            {
-                write(true, Callback.from(() -> _stream.failed(_failure), this::failed));
-            }
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            if (x != _failure)
-                _failure.addSuppressed(x);
-            logAndRecycle();
-            _stream.failed(_failure);
-        }
-
-        private void logAndRecycle()
-        {
-            try (AutoLock ignored = _request._lock.lock())
-            {
-                _request._httpChannel.lockedLogAndRecycle();
-            }
         }
     }
 }

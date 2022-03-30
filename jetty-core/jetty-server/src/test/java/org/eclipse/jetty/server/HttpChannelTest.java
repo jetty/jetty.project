@@ -33,7 +33,6 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.DumpHandler;
 import org.eclipse.jetty.server.handler.EchoHandler;
 import org.eclipse.jetty.server.handler.HelloHandler;
@@ -42,6 +41,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.thread.Invocable;
+import org.eclipse.jetty.util.thread.SerializedInvoker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -439,7 +439,7 @@ public class HttpChannelTest
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
         Runnable task = channel.onRequest(request);
 
-        try (StacklessLogging ignored = new StacklessLogging(Server.class))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
             task.run();
         }
@@ -452,7 +452,44 @@ public class HttpChannelTest
     }
 
     @Test
-    public void testThrowCommitted() throws Exception
+    public void testCompleteThenThrow() throws Exception
+    {
+        Handler handler = new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.write(true, Callback.from(callback, () ->
+                {
+                    throw new Error("testing");
+                }), "Before throw");
+            }
+        };
+        _server.setHandler(handler);
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
+        MockHttpStream stream = new MockHttpStream(channel);
+
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
+        Runnable task = channel.onRequest(request);
+
+        try (StacklessLogging ignored = new StacklessLogging(SerializedInvoker.class))
+        {
+            task.run();
+        }
+        assertThat(stream.isComplete(), is(true));
+        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getResponse(), notNullValue());
+        assertThat(stream.getResponse().getStatus(), equalTo(200));
+        assertThat(stream.getResponseContentAsString(), equalTo("Before throw"));
+    }
+
+    @Test
+    public void testCommitThenThrowFromCallback() throws Exception
     {
         Handler handler = new Handler.Processor()
         {
@@ -461,7 +498,7 @@ public class HttpChannelTest
             {
                 response.setStatus(200);
                 response.setContentLength(10);
-                response.write(false, Callback.from(callback, () ->
+                response.write(false, Callback.from(() ->
                 {
                     throw new Error("testing");
                 }));
@@ -478,7 +515,7 @@ public class HttpChannelTest
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
         Runnable task = channel.onRequest(request);
 
-        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
+        try (StacklessLogging ignored = new StacklessLogging(SerializedInvoker.class))
         {
             task.run();
         }
@@ -541,7 +578,10 @@ public class HttpChannelTest
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
         Runnable onRequest = channel.onRequest(request);
-        onRequest.run();
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
+        {
+            onRequest.run();
+        }
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), notNullValue());
@@ -604,7 +644,10 @@ public class HttpChannelTest
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/"), HttpVersion.HTTP_1_1, fields, 0);
         Runnable task = channel.onRequest(request);
-        task.run();
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
+        {
+            task.run();
+        }
 
         assertThat(stream.isComplete(), is(true));
         assertThat(stream.getFailure(), notNullValue());
@@ -1157,7 +1200,7 @@ public class HttpChannelTest
         assertFalse(callback.isDone());
 
         // process error callback
-        try (StacklessLogging ignore = new StacklessLogging(ContextRequest.class))
+        try (StacklessLogging ignore = new StacklessLogging(Response.class))
         {
             onError.run();
         }

@@ -523,6 +523,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void succeeded()
     {
+        _httpChannel.recycle();
+
         // If the stream is not closed, it is still reading the request content.
         // Send a reset to the other end so that it stops sending data.
         if (!_stream.isClosed())

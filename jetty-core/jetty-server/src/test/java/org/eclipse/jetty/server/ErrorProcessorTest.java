@@ -447,11 +447,10 @@ public class ErrorProcessorTest
             response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
             response.getHeaders().put("X-Error-Status", Integer.toString(response.getStatus()));
             response.setStatus(302);
-            callback.succeeded();
+            response.write(true, callback);
         });
         String rawResponse = connector.getResponse("""
-                GET / HTTP/1.1
-                Host:
+                GET /no/host HTTP/1.1
                 
                 """);
 
@@ -461,7 +460,7 @@ public class ErrorProcessorTest
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), is(0));
         assertThat(response.get(HttpHeader.LOCATION), is("/error"));
         assertThat(response.get("X-Error-Status"), is("400"));
-        assertThat(response.get("X-Error-Message"), is("Blank Host"));
+        assertThat(response.get("X-Error-Message"), is("No Host"));
     }
 
     @ParameterizedTest

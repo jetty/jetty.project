@@ -292,16 +292,6 @@ public class ContextHandlerTest
             @Override
             public void process(Request request, Response response, Callback callback) throws Exception
             {
-                request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
-                {
-                    @Override
-                    public void succeeded()
-                    {
-                        assertInContext(request);
-                        super.succeeded();
-                    }
-                });
-
                 CountDownLatch latch = new CountDownLatch(1);
                 request.demandContent(() ->
                 {
@@ -499,6 +489,60 @@ public class ContextHandlerTest
         assertThat(stream.getResponse().getFields().size(), equalTo(0));
         assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("<h1>Context: /ctx</h1>"));
         assertThat(BufferUtil.toString(stream.getResponseContent()), containsString("java.lang.RuntimeException: Testing"));
+    }
+
+    @Test
+    public void testExitScopeAfterCompletion() throws Exception
+    {
+        AtomicReference<String> result = new AtomicReference<>();
+        _contextHandler.addEventListener(new ContextHandler.ContextScopeListener()
+        {
+            @Override
+            public void enterScope(Context context, Request request)
+            {
+                result.set(null);
+                if (request != null)
+                    request.setAttribute("test", "entered");
+            }
+
+            @Override
+            public void exitScope(Context context, Request request)
+            {
+                if (request != null && "entered".equals(request.getAttribute("test")))
+                {
+                    request.setAttribute("test", "exited");
+                    result.set("OK");
+                }
+            }
+        });
+
+        Handler handler = new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                response.setStatus(200);
+                response.write(true, callback);
+            }
+        };
+        _contextHandler.setHandler(handler);
+        _server.start();
+
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector(_server));
+        HttpChannel channel = new HttpChannelState(connectionMetaData);
+        MockHttpStream stream = new MockHttpStream(channel);
+
+        HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
+        MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/path"), HttpVersion.HTTP_1_1, fields, 0);
+        Runnable task = channel.onRequest(request);
+        task.run();
+
+        assertThat(stream.isComplete(), is(true));
+        assertThat(stream.getFailure(), nullValue());
+        assertThat(stream.getResponse(), notNullValue());
+        assertThat(stream.getResponse().getStatus(), equalTo(200));
+
+        assertThat(result.get(), equalTo("OK"));
     }
 
     private static class ScopeListener implements ContextHandler.ContextScopeListener

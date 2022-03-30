@@ -545,7 +545,7 @@ public class CustomRequestLogTest
 
             """);
         connect.getResponse();
-        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/ ConnectionStatus: 400 X")); // TODO real URI???
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/no/host ConnectionStatus: 400 X"));
 
         _connector.getResponse("""
             GET /abort HTTP/1.1

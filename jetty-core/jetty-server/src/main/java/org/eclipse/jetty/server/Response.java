@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Blocking;
@@ -42,7 +41,7 @@ import org.slf4j.LoggerFactory;
  */
 public interface Response extends Content.Writer
 {
-    Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
+    Logger LOG = LoggerFactory.getLogger(Response.class);
 
     // This is needed so that response methods can access the wrapped Request#getContext method
     Request getRequest();
@@ -266,9 +265,6 @@ public interface Response extends Content.Writer
 
         Context context = request.getContext();
         Request.Processor errorProcessor = context.getErrorProcessor();
-        if (errorProcessor == null)
-            errorProcessor = request.getConnectionMetaData().getConnector().getServer().getErrorProcessor();
-
         if (errorProcessor != null)
         {
             Request errorRequest = new ErrorProcessor.ErrorRequest(request, status, message, cause);

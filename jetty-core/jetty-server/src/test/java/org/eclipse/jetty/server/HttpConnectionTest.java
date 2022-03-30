@@ -775,8 +775,10 @@ public class HttpConnectionTest
     {
         String response;
 
-        response = _connector.getResponse("GET / HTTP/1.1\r\n" +
-            "\r\n");
+        response = _connector.getResponse("""
+            GET / HTTP/1.1
+            
+            """);
         checkContains(response, 0, "HTTP/1.1 400");
     }
 
