@@ -118,16 +118,21 @@ public class HttpChannelState implements HttpChannel, Components
     {
         /** Idle state */
         IDLE,
+
         /** The HandlerInvoker Runnable has been executed */
         HANDLING,
+
         /** A Request.Processor has been called.
          * Any calls to {@link #onFailure(Throwable)} will fail the callback. */
         PROCESSING,
+
         /** The Request.Processor call has returned prior to callback completion.
          * The Content.Reader APIs are enabled. */
         PROCESSED,
+
         /** Callback completion has been called prior to Request.Processor completion. */
         COMPLETED,
+
         /** The Request.Processor call has returned and the callback is complete */
         PROCESSED_AND_COMPLETED,
     }
@@ -160,7 +165,7 @@ public class HttpChannelState implements HttpChannel, Components
             @Override
             protected void onError(Runnable task, Throwable failure)
             {
-                Request request;
+                ChannelRequest request;
                 Content.Error error;
                 boolean completed;
                 try (AutoLock ignore = _lock.lock())
@@ -180,7 +185,7 @@ public class HttpChannelState implements HttpChannel, Components
                     // Try to fail the request, but we might lose a race.
                     try
                     {
-                        _request._callback.failed(failure);
+                        request._callback.failed(failure);
                     }
                     catch (Throwable t)
                     {
@@ -399,9 +404,11 @@ public class HttpChannelState implements HttpChannel, Components
         return _serializedInvoker.offer(onContent);
     }
 
-    public Invocable.InvocationType getOnContentAvailableInvocationType()
+    @Override
+    public Invocable.InvocationType getInvocationType()
     {
         // TODO Can this actually be done, as we may need to invoke other Runnables after onContent?
+        //      Could we at least avoid the lock???
         Runnable onContent;
         try (AutoLock ignored = _lock.lock())
         {
