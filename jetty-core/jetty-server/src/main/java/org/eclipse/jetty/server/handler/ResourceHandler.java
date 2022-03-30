@@ -1333,6 +1333,14 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 //            FileChannel fileChannel = (FileChannel) source;
 //            fileChannel.transferTo(0, contentLength, c);
 
+            // TODO GW: in order for caches and file mapped buffers to work we really need to try to flush like:
+//            ByteBuffer source = content.getDirectBuffer();
+//            target.write(true, callback, source.slice());
+            // TODO GW: or perhaps with an IteratingCallback to slice the buffer
+            //      even if not using direct buffers, we'd still want to allow caches to work with something like:
+//            ByteBuffer source = content.getIndirectBuffer();
+//            target.write(true, callback, source.slice());
+
             this.source = Files.newByteChannel(content.getResource());
             this.target = target;
             this.callback = callback;
