@@ -62,7 +62,7 @@ public abstract class ContentProcessor extends Content.Processor
                 if (output != null)
                     return output;
                 available = false;
-                input = getProvider().readContent();
+                input = getReader().readContent();
                 output = process(input);
                 if (output != null)
                     return output;
@@ -90,7 +90,7 @@ public abstract class ContentProcessor extends Content.Processor
         iterate(false, onContentAvailable);
     }
 
-    private void iterate(boolean available, Runnable onContentAvailable)
+    private void iterate(boolean onContentAvailableCalled, Runnable onContentAvailable)
     {
         try (AutoLock ignored = _lock.lock())
         {
@@ -105,14 +105,14 @@ public abstract class ContentProcessor extends Content.Processor
                 onContentAvailable = null;
             }
 
-            _available |= available;
+            _available |= onContentAvailableCalled;
 
             if (_iterating)
                 return;
 
             if (_output == null)
             {
-                available = _available;
+                onContentAvailableCalled = _available;
                 _available = false;
             }
             else
@@ -166,14 +166,14 @@ public abstract class ContentProcessor extends Content.Processor
                 Content input = null;
                 try
                 {
-                    output = available ? null : process(null);
+                    output = onContentAvailableCalled ? null : process(null);
                     if (output == null)
                     {
-                        input = getProvider().readContent();
+                        input = getReader().readContent();
                         output = process(input);
-                        available = false;
+                        onContentAvailableCalled = false;
                         if (output == null && input == null)
-                            getProvider().demandContent(this::onContentAvailable);
+                            getReader().demandContent(this::onContentAvailable);
                     }
                 }
                 catch (Throwable t)
@@ -181,7 +181,7 @@ public abstract class ContentProcessor extends Content.Processor
                     if (output != null)
                         output.release();
                     output = new Content.Error(t, input != null && input.isLast());
-                    available = false;
+                    onContentAvailableCalled = false;
                 }
                 finally
                 {
@@ -192,7 +192,7 @@ public abstract class ContentProcessor extends Content.Processor
                         {
                             if (_available)
                             {
-                                available = true;
+                                onContentAvailableCalled = true;
                                 _available = false;
                             }
                             else if (input == null)

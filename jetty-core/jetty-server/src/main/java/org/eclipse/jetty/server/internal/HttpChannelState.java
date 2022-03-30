@@ -120,9 +120,11 @@ public class HttpChannelState implements HttpChannel, Components
         IDLE,
         /** The HandlerInvoker Runnable has been executed */
         HANDLING,
-        /** A Request.Processor has been called */
+        /** A Request.Processor has been called.
+         * Any calls to {@link #onFailure(Throwable)} will fail the callback. */
         PROCESSING,
-        /** The Request.Processor call has returned prior to callback completion */
+        /** The Request.Processor call has returned prior to callback completion.
+         * The Content.Reader APIs are enabled. */
         PROCESSED,
         /** Callback completion has been called prior to Request.Processor completion. */
         COMPLETED,

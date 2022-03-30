@@ -439,7 +439,7 @@ public interface Content
             _reader = reader;
         }
 
-        public Reader getProvider()
+        public Reader getReader()
         {
             return _reader;
         }
