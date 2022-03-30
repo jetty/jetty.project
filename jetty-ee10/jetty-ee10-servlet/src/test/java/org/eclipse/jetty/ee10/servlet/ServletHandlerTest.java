@@ -782,7 +782,7 @@ public class ServletHandlerTest
         Server server = new Server();
         ServletContextHandler context = new ServletContextHandler("/");
         server.setHandler(context);
-        ServletHandler handler = new ServletHandler();
+        ServletHandler handler = context.getServletHandler();
 
         ServletHolder foo = new ServletHolder(new HttpServlet()
         {

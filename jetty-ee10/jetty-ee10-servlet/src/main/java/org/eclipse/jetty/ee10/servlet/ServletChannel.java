@@ -407,7 +407,7 @@ public class ServletChannel implements Runnable
                             ServletHandler servletHandler = servletContextApi.getContext().getServletContextHandler().getServletHandler();
                             ServletHandler.MappedServlet mappedServlet = _request._mappedServlet;
 
-                            mappedServlet.handle(servletHandler, _request.getHttpServletRequest(), _request.getHttpServletResponse());
+                            mappedServlet.handle(servletHandler, _request.getPathInContext(), _request.getHttpServletRequest(), _request.getHttpServletResponse());
                         });
 
                         break;

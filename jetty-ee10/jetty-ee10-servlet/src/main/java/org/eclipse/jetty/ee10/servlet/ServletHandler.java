@@ -1470,9 +1470,8 @@ public class ServletHandler extends Handler.Wrapper
             return null;
         }
 
-        public void handle(ServletHandler servletHandler, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(ServletHandler servletHandler, String pathInContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            String pathInContext = URIUtil.addPaths(request.getContextPath(), request.getServletPath());
             FilterChain filterChain = servletHandler.getFilterChain(request, pathInContext, _servletHolder);
             if (LOG.isDebugEnabled())
                 LOG.debug("chain={}", filterChain);
