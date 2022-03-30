@@ -73,6 +73,8 @@ import org.slf4j.LoggerFactory;
  * This handle will serve static content and handle If-Modified-Since headers. No caching is done. Requests for resources that do not exist are let pass (Eg no
  * 404's).
  * TODO there is a lot of URI manipulation, this should be factored out in a utility class.
+ *
+ * TODO GW: Work out how this logic can be reused by the DefaultServlet... potentially for wrapped output streams
  */
 public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 {
@@ -114,6 +116,11 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         for (int i = 0; i < _welcomes.length; i++)
         {
             // TODO this logic is similar to the one in PathContentFactory.getContent()
+            // TODO GW: This logic needs to be extensible so that a welcome file may be a servlet (yeah I know it shouldn't
+            //          be called a welcome file then.   So for example if /foo/index.jsp is the welcome file, we can't
+            //          serve it's contents - rather we have to let the servlet layer to either a redirect or a RequestDispatcher to it.
+            //          Worse yet, if there was a servlet mapped to /foo/index.html, then we need to be able to dispatch to it
+            //          EVEN IF the file does not exist.
             String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
             String path = pathInContext;
             if (path.startsWith("/"))
@@ -219,6 +226,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         else
         {
             // TODO is it possible to get rid of the lambda allocation?
+            // TODO GW: perhaps HttpContent can extend Request.Processor?
             return (rq, rs, cb) -> doGet(rq, rs, cb, content);
         }
     }
@@ -838,7 +846,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         {
             throw new UnsupportedOperationException("TODO");
             // TODO rewrite with ByteChannel only which should simplify HttpContentRangeWriter as HttpContent's Path always provides a SeekableByteChannel
-            // but MultiPartOutputStream also needs to be rewritten.
+            //      but MultiPartOutputStream also needs to be rewritten.
 /*
             // Parse the satisfiable ranges
             List<InclusiveByteRange> ranges = InclusiveByteRange.satisfiableRanges(reqRanges, contentLength);
@@ -940,33 +948,50 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 
     private void putHeaders(Response response, HttpContent content, long contentLength)
     {
-        HttpFields.Mutable fields1 = response.getHeaders();
+        HttpFields.Mutable headers = response.getHeaders();
+
+        // TODO it is very inefficient to do many put's to a HttpFields, as each put is a full iteration.
+        //      it might be better remove headers on mass and then just add the extras:
+//        headers.remove(EnumSet.of(
+//            HttpHeader.LAST_MODIFIED,
+//            HttpHeader.CONTENT_LENGTH,
+//            HttpHeader.CONTENT_TYPE,
+//            HttpHeader.CONTENT_ENCODING,
+//            HttpHeader.ETAG,
+//            HttpHeader.ACCEPT_RANGES,
+//            HttpHeader.CACHE_CONTROL
+//            ));
+//        HttpField lm = content.getLastModified();
+//        if (lm != null)
+//            headers.add(lm);
+//        etc.
+
         HttpField lm = content.getLastModified();
         if (lm != null)
-            fields1.put(lm);
+            headers.put(lm);
 
         if (contentLength == USE_KNOWN_CONTENT_LENGTH)
         {
-            fields1.put(content.getContentLength());
+            headers.put(content.getContentLength());
         }
         else if (contentLength > NO_CONTENT_LENGTH)
         {
-            fields1.putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
+            headers.putLongField(HttpHeader.CONTENT_LENGTH, contentLength);
         }
 
         HttpField ct = content.getContentType();
         if (ct != null)
-            fields1.put(ct);
+            headers.put(ct);
 
         HttpField ce = content.getContentEncoding();
         if (ce != null)
-            fields1.put(ce);
+            headers.put(ce);
 
         if (_etags)
         {
             HttpField et = content.getETag();
             if (et != null)
-                fields1.put(et);
+                headers.put(et);
         }
 
         HttpFields.Mutable fields = response.getHeaders();
@@ -1226,7 +1251,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         public HttpField getContentLength()
         {
             long cl = getContentLengthValue();
-            return cl >= 0 ? new HttpField("Content-Length", Long.toString(cl)) : null;
+            return cl >= 0 ? new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH, cl) : null;
         }
 
         @Override
@@ -1266,25 +1291,25 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         @Override
         public HttpField getETag()
         {
-            return null;
+            return null; // TODO
         }
 
         @Override
         public String getETagValue()
         {
-            return null;
+            return null; // TODO
         }
 
         @Override
         public ByteBuffer getIndirectBuffer()
         {
-            return null;
+            return null; // TODO evaluate if it is worthwhile doing this for non-cached resources?
         }
 
         @Override
         public ByteBuffer getDirectBuffer()
         {
-            return null;
+            return null; // TODO evaluate if it is worthwhile doing this for non-cached resources?
         }
 
         @Override
