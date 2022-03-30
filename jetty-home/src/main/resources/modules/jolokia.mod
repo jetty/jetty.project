@@ -17,6 +17,7 @@ etc/jolokia.xml
 [files]
 maven://org.jolokia/jolokia-war/${jolokia.version}/war|lib/jolokia/jolokia.war
 basehome:modules/jolokia/jolokia.xml|etc/jolokia.xml
+basehome:modules/jolokia/jolokia-realm.properties|etc/jolokia-realm.properties
 
 [ini]
 jolokia.version?=@jolokia.version@

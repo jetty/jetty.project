@@ -95,7 +95,7 @@
     <jnr-ffi.version>2.2.11</jnr-ffi.version>
     <jnr-posix.version>3.1.15</jnr-posix.version>
     <jnr-unixsocket.version>0.38.17</jnr-unixsocket.version>
-    <jolokia.version>1.3.3</jolokia.version>
+    <jolokia.version>1.7.1</jolokia.version>
     <json-simple.version>1.1.1</json-simple.version>
     <json-smart.version>2.4.8</json-smart.version>
     <jsp.impl.version>9.0.52</jsp.impl.version>
