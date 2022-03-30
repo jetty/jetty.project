@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.RejectedExecutionException;
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCompliance;
 import org.eclipse.jetty.http.HttpField;
@@ -950,7 +952,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         }
     }
 
-    protected class RequestHandler implements HttpParser.RequestHandler
+    protected class RequestHandler implements HttpParser.RequestHandler, ComplianceViolation.Listener
     {
         protected RequestHandler()
         {
@@ -1084,6 +1086,31 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                 Runnable todo = _channel.onFailure(bad);
                 if (todo != null)
                     getServer().getThreadPool().execute(todo);
+            }
+        }
+
+        @Override
+        public void onComplianceViolation(ComplianceViolation.Mode mode, ComplianceViolation violation, String details)
+        {
+            //TODO configure this somewhere else
+            //TODO what about cookie compliance
+            //TODO what about http2 & 3
+            //TODO test this in core
+            if (isRecordHttpComplianceViolations())
+            {
+                HttpStreamOverHTTP1 stream = _stream.get();
+                if (stream != null)
+                {
+                    if (stream._complianceViolations == null)
+                    {
+                        stream._complianceViolations = new ArrayList<>();
+                    }
+                    String record = String.format("%s (see %s) in mode %s for %s in %s",
+                        violation.getDescription(), violation.getURL(), mode, details, HttpConnection.this);
+                    stream._complianceViolations.add(record);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug(record);
+                }
             }
         }
     }
