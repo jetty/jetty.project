@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>11.0.9-SNAPSHOT</version>
+    <version>11.0.9</version>
   </parent>
   <name>Demo :: Mock Resources</name>
   <artifactId>demo-mock-resources</artifactId>
