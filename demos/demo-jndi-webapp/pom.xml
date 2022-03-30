@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.demos</groupId>
     <artifactId>demos-parent</artifactId>
-    <version>11.0.9</version>
+    <version>11.0.10-SNAPSHOT</version>
   </parent>
   <artifactId>demo-jndi-webapp</artifactId>
   <name>Demo :: JNDI :: WebApp</name>
