@@ -48,13 +48,7 @@ import org.slf4j.LoggerFactory;
 import static org.eclipse.jetty.util.thread.Invocable.InvocationType.NON_BLOCKING;
 
 /**
- * HttpChannel represents a single endpoint for HTTP semantic processing.
- * The HttpChannel is both an HttpParser.RequestHandler, where it passively receives events from
- * an incoming HTTP request, and a Runnable, where it actively takes control of the request/response
- * life cycle and calls the application (perhaps suspending and resuming with multiple calls to run).
- * The HttpChannel signals the switch from passive mode to active mode by returning true to one of the
- * HttpParser.RequestHandler callbacks.   The completion of the active phase is signalled by a call to
- * HttpTransport.completed().
+ * TODO describe what this class does
  */
 public class ServletChannel implements Runnable
 {
