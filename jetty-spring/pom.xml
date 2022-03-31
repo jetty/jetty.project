@@ -9,7 +9,7 @@
   <name>Example :: Jetty Spring</name>
 
   <properties>
-    <spring-version>3.2.18.RELEASE</spring-version>
+    <spring-version>5.3.18</spring-version>
     <dependencies>target/dependencies</dependencies>
     <bundle-symbolic-name>${project.groupId}.spring</bundle-symbolic-name>
     <jacoco.skip>true</jacoco.skip>

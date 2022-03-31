@@ -17,7 +17,8 @@
 //
 
 /**
- * Jetty Spring : Spring IoC Configuration for Jetty
+ * Jetty Spring : (Deprecated) Spring IoC Configuration for Jetty
+ * @deprecated
  */
 package org.eclipse.jetty.spring;
 

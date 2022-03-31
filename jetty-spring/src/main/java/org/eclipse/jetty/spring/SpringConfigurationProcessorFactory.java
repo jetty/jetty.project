@@ -30,7 +30,9 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  *
  * @see SpringConfigurationProcessor
  * @see XmlConfiguration
+ * @deprecated Has been removed in Jetty 10+
  */
+@Deprecated
 public class SpringConfigurationProcessorFactory implements ConfigurationProcessorFactory
 {
     @Override
