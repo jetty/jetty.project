@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Flow;
@@ -724,14 +726,15 @@ public interface Content
 
         public FieldsFuture(Reader reader)
         {
-            this(reader, -1, -1);
+            this(reader, StandardCharsets.UTF_8, -1, -1);
         }
 
-        public FieldsFuture(Reader reader, int maxFields, int maxSize)
+        public FieldsFuture(Reader reader, Charset charset, int maxFields, int maxSize)
         {
             _reader = reader;
             _maxFields = maxFields;
             _maxSize = maxSize; // TODO implement
+            // TODO charset
             run();
         }
 

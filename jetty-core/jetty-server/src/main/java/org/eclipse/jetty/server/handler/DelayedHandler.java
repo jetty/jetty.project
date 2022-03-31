@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.server.handler;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.BiConsumer;
@@ -27,9 +29,13 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.StringUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class DelayedHandler extends Handler.Wrapper
 {
+    private static final Logger LOG = LoggerFactory.getLogger(DelayedHandler.class);
+
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
@@ -98,14 +104,40 @@ public abstract class DelayedHandler extends Handler.Wrapper
         {
             if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
                 return processor;
+
+            HttpConfiguration config = request.getConnectionMetaData().getHttpConfiguration();
+            if (!config.getFormEncodedMethods().contains(request.getMethod()))
+                return processor;
+
             String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
             if (request.getContentLength() == 0 || StringUtil.isBlank(contentType))
                 return processor;
 
+            // TODO mimeTypes from context
             MimeTypes.Type type = MimeTypes.CACHE.get(contentType);
-            if (MimeTypes.Type.FORM_ENCODED == type)
-                return new UntilFormProcessor(request, processor);
-            return new UntilContentProcessor(request, processor);
+            if (MimeTypes.Type.FORM_ENCODED != type)
+                return processor;
+
+            String cs = MimeTypes.getCharsetFromContentType(contentType);
+            Charset charset;
+            if (StringUtil.isEmpty(cs))
+                charset = StandardCharsets.UTF_8;
+            else
+            {
+                try
+                {
+                    charset = Charset.forName(cs);
+                }
+                catch (Exception e)
+                {
+                    LOG.debug("ignored", e);
+                    charset = null;
+                }
+            }
+            if (charset == null)
+                return processor; // TODO or send an error?
+
+            return new UntilFormProcessor(request, charset, processor);
         }
     }
 
@@ -113,13 +145,15 @@ public abstract class DelayedHandler extends Handler.Wrapper
     {
         private final Request.Processor _processor;
         private final Request _request;
+        private final Charset _charset;
         private Response _response;
         private Callback _callback;
 
-        public UntilFormProcessor(Request request, Request.Processor processor)
+        public UntilFormProcessor(Request request, Charset charset, Request.Processor processor)
         {
             _request = request;
             _processor = processor;
+            _charset = charset;
         }
 
         @Override
@@ -130,7 +164,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
             HttpConfiguration config = _request.getConnectionMetaData().getHttpConfiguration();
 
             // TODO pass in HttpConfiguration size limits
-            new Content.FieldsFuture(_request, -1, -1).whenComplete(this);
+            new Content.FieldsFuture(_request, _charset, -1, -1).whenComplete(this);
         }
 
         @Override
