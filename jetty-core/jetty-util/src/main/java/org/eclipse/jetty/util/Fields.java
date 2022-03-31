@@ -14,7 +14,6 @@
 package org.eclipse.jetty.util;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -22,6 +21,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -37,7 +37,7 @@ public class Fields implements Iterable<Fields.Field>
     private final Map<String, Field> fields;
 
     /**
-     * <p>Creates an empty, modifiable, case insensitive {@link Fields} instance.</p>
+     * <p>Creates an empty, modifiable, case insensitive {@code Fields} instance.</p>
      *
      * @see #Fields(Fields, boolean)
      */
@@ -47,9 +47,9 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
-     * <p>Creates an empty, modifiable, case insensitive {@link Fields} instance.</p>
+     * <p>Creates an empty, modifiable, case insensitive {@code Fields} instance.</p>
      *
-     * @param caseSensitive whether this {@link Fields} instance must be case sensitive
+     * @param caseSensitive whether this {@code Fields} instance must be case sensitive
      * @see #Fields(Fields, boolean)
      */
     public Fields(boolean caseSensitive)
@@ -59,17 +59,16 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
-     * <p>Creates a {@link Fields} instance by copying the fields from the given
-     * {@link Fields} and making it (im)mutable depending on the given {@code immutable} parameter</p>
+     * <p>Creates a {@code Fields} instance by copying the fields from the given
+     * {@code Fields} and making it (im)mutable depending on the given {@code immutable} parameter</p>
      *
-     * @param original the {@link Fields} to copy fields from
+     * @param original the {@code Fields} to copy fields from
      * @param immutable whether this instance is immutable
      */
     public Fields(Fields original, boolean immutable)
     {
         this.caseSensitive = original.caseSensitive;
-        Map<String, Field> copy = new LinkedHashMap<>();
-        copy.putAll(original.fields);
+        Map<String, Field> copy = new LinkedHashMap<>(original.fields);
         fields = immutable ? Collections.unmodifiableMap(copy) : copy;
     }
 
@@ -129,6 +128,30 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
+     * @param name the field name
+     * @return the first value of the field with the given name, or null if no such field exists
+     */
+    public String getValue(String name)
+    {
+        Field field = get(name);
+        if (field == null)
+            return null;
+        return field.getValue();
+    }
+
+    /**
+     * @param name the field name
+     * @return the values of the field with the given name, or null if no such field exists
+     */
+    public List<String> getValues(String name)
+    {
+        Field field = get(name);
+        if (field == null)
+            return null;
+        return field.getValues();
+    }
+
+    /**
      * <p>Inserts or replaces the given name/value pair as a single-valued {@link Field}.</p>
      *
      * @param name the field name
@@ -162,22 +185,30 @@ public class Fields implements Iterable<Fields.Field>
     public void add(String name, String value)
     {
         String key = normalizeName(name);
-        Field field = fields.get(key);
-        if (field == null)
+        fields.compute(key, (k, f) ->
         {
-            // Preserve the case for the field name
-            field = new Field(name, value);
-            fields.put(key, field);
-        }
-        else
-        {
-            field = new Field(field.getName(), field.getValues(), value);
-            fields.put(key, field);
-        }
+            if (f == null)
+                // Preserve the case for the field name
+                return new Field(name, value);
+            else
+                return new Field(f.getName(), f.getValues(), value);
+        });
     }
 
     /**
-     * <p>Removes the {@link Field} with the given name</p>
+     * <p>Adds the given field, storing it if none exists for the given name,
+     * or adding all the values to the existing field with the given name.</p>
+     *
+     * @param field the field to add
+     */
+    public void add(Field field)
+    {
+        if (field != null)
+            fields.merge(normalizeName(field.getName()), field, (k, f) -> new Field(f.getName(), f.getValues(), field.getValues()));
+    }
+
+    /**
+     * <p>Removes the {@link Field} with the given name.</p>
      *
      * @param name the name of the field to remove
      * @return the removed field, or null if no such field existed
@@ -188,7 +219,7 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
-     * <p>Empties this {@link Fields} instance from all fields</p>
+     * <p>Empties this {@code Fields} instance from all fields.</p>
      *
      * @see #isEmpty()
      */
@@ -198,7 +229,7 @@ public class Fields implements Iterable<Fields.Field>
     }
 
     /**
-     * @return whether this {@link Fields} instance is empty
+     * @return whether this {@code Fields} instance is empty
      */
     public boolean isEmpty()
     {
@@ -222,6 +253,16 @@ public class Fields implements Iterable<Fields.Field>
         return fields.values().iterator();
     }
 
+    /**
+     * @return the fields (name and values) of this instance copied into a {@code Map}
+     */
+    public Map<String, String[]> toStringArrayMap()
+    {
+        Map<String, String[]> result = new LinkedHashMap<>();
+        fields.forEach((k, f) -> result.put(f.getName(), f.getValues().toArray(new String[0])));
+        return result;
+    }
+
     @Override
     public String toString()
     {
@@ -239,16 +280,21 @@ public class Fields implements Iterable<Fields.Field>
 
         public Field(String name, String value)
         {
-            this(name, Collections.singletonList(value));
+            this(name, List.of(value));
         }
 
         private Field(String name, List<String> values, String... moreValues)
         {
+            this(name, values, List.of(moreValues));
+        }
+
+        private Field(String name, List<String> values, List<String> moreValues)
+        {
             this.name = name;
-            List<String> list = new ArrayList<>(values.size() + moreValues.length);
+            List<String> list = new ArrayList<>(values.size() + moreValues.size());
             list.addAll(values);
-            list.addAll(Arrays.asList(moreValues));
-            this.values = Collections.unmodifiableList(list);
+            list.addAll(moreValues);
+            this.values = List.copyOf(list);
         }
 
         @SuppressWarnings("ReferenceEquality")
@@ -277,9 +323,7 @@ public class Fields implements Iterable<Fields.Field>
         @Override
         public int hashCode()
         {
-            int result = name.hashCode();
-            result = 31 * result + values.hashCode();
-            return result;
+            return Objects.hash(name, values);
         }
 
         /**

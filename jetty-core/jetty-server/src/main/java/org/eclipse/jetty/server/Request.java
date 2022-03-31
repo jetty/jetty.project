@@ -31,8 +31,8 @@ import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -304,14 +304,13 @@ public interface Request extends Attributes, Content.Reader
         return Content.asInputStream(request);
     }
 
-    // TODO: use Fields rather than MultiMap!
-    static MultiMap<String> extractQueryParameters(Request request)
+    static Fields extractQueryParameters(Request request)
     {
-        MultiMap<String> params = new MultiMap<>();
+        Fields fields = new Fields(true);
         String query = request.getHttpURI().getQuery();
         if (StringUtil.isNotBlank(query))
-            UrlEncoded.decodeUtf8To(query, params);
-        return params;
+            UrlEncoded.decodeUtf8To(query, fields);
+        return fields;
     }
 
     @SuppressWarnings("unchecked")

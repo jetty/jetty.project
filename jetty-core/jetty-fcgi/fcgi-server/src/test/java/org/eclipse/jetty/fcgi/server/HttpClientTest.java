@@ -41,7 +41,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
@@ -140,7 +140,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.setContentType("text/plain;charset=utf-8");
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String paramValue1 = fields.getValue(paramName1);
                 org.eclipse.jetty.server.Response.write(response, false, UTF_8.encode(paramValue1));
                 String paramValue2 = fields.getValue(paramName2);
@@ -171,7 +171,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 response.setContentType("text/plain;charset=utf-8");
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 List<String> paramValues1 = fields.getValues(paramName1);
                 for (String paramValue : paramValues1)
                 {
@@ -207,7 +207,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
@@ -237,7 +237,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
@@ -268,7 +268,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
@@ -300,7 +300,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {

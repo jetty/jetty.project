@@ -39,7 +39,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.Fields;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -674,7 +674,7 @@ public class HttpClientRedirectTest extends AbstractHttpClientServerTest
         {
             try
             {
-                MultiMap<String> fields = Request.extractQueryParameters(request);
+                Fields fields = Request.extractQueryParameters(request);
 
                 String[] paths = request.getPathInContext().split("/", 4);
 
