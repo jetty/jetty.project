@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-sessions-parent</artifactId>
-    <version>9.4.46-SNAPSHOT</version>
+    <version>9.4.46.v20220331</version>
   </parent>
   <artifactId>test-hazelcast-sessions</artifactId>
   <name>Jetty Tests :: Sessions :: Hazelcast</name>
