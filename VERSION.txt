@@ -1,3 +1,5 @@
+jetty-9.4.47-SNAPSHOT
+
 jetty-9.4.46.v20220331 - 31 March 2022
  + 5965 Option --write-module-graph produces wrong .dot file
  + 6756 Deprecate `/jetty-spring/` artifact in `jetty-9.4.x` releases.
