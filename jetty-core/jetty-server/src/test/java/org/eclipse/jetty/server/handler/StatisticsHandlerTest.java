@@ -377,6 +377,7 @@ public class StatisticsHandlerTest
         barrier[1].await();
         barrier[2].await();
         assertTrue(_latchHandler.await());
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
@@ -935,6 +936,7 @@ public class StatisticsHandlerTest
         barrier[1].await();
         barrier[2].await();
         assertTrue(_latchHandler.await());
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
