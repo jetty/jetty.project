@@ -170,7 +170,7 @@ public class AllowSymLinkAliasCheckerTest
 
         ResourceHandler fileResourceHandler = new ResourceHandler();
         fileResourceHandler.setDirAllowed(true);
-        fileResourceHandler.setWelcomeFiles(new String[]{"index.html"});
+        fileResourceHandler.setWelcomeFiles(List.of("index.html"));
         fileResourceHandler.setEtags(true);
 
         ContextHandler fileResourceContext = new ContextHandler();

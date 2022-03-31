@@ -53,7 +53,6 @@ import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -76,7 +75,7 @@ import org.slf4j.LoggerFactory;
  *
  * TODO GW: Work out how this logic can be reused by the DefaultServlet... potentially for wrapped output streams
  */
-public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
+public class ResourceHandler extends Handler.Wrapper
 {
     private static final Logger LOG = LoggerFactory.getLogger(ResourceHandler.class);
 
@@ -87,11 +86,11 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
     private Path _defaultStylesheet;
     private MimeTypes _mimeTypes;
     private Path _stylesheet;
-    private String[] _welcomes = {"index.html"};
+    private List<String> _welcomes = List.of("index.html");
     private Path _baseResource;
     private boolean _pathInfoOnly = false;
     private CompressedContentFormat[] _precompressedFormats = new CompressedContentFormat[0];
-    private WelcomeFactory _welcomeFactory;
+    private Welcomer _welcomer;
     private boolean _redirectWelcome = false;
     private boolean _etags = false;
     private List<String> _gzipEquivalentFileExtensions;
@@ -108,32 +107,6 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
     }
 
     @Override
-    public String getWelcomeFile(String pathInContext) throws IOException
-    {
-        if (_welcomes == null)
-            return null;
-
-        for (int i = 0; i < _welcomes.length; i++)
-        {
-            // TODO this logic is similar to the one in PathContentFactory.getContent()
-            // TODO GW: This logic needs to be extensible so that a welcome file may be a servlet (yeah I know it shouldn't
-            //          be called a welcome file then.   So for example if /foo/index.jsp is the welcome file, we can't
-            //          serve it's contents - rather we have to let the servlet layer to either a redirect or a RequestDispatcher to it.
-            //          Worse yet, if there was a servlet mapped to /foo/index.html, then we need to be able to dispatch to it
-            //          EVEN IF the file does not exist.
-            String welcomeInContext = URIUtil.addPaths(pathInContext, _welcomes[i]);
-            String path = pathInContext;
-            if (path.startsWith("/"))
-                path = path.substring(1);
-            Path welcome = Path.of(_baseResource.toUri().resolve(path).resolve(_welcomes[i]));
-            if (Files.exists(welcome))
-                return welcomeInContext;
-        }
-        // not found
-        return null;
-    }
-
-    @Override
     public void doStart() throws Exception
     {
         Context context = ContextHandler.getCurrentContext();
@@ -143,7 +116,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
 
         _mimeTypes = new MimeTypes();
         _contentFactory = new PathContentFactory();
-        _welcomeFactory = this;
+        _welcomer = new DefaultWelcomer();
 
         super.doStart();
     }
@@ -203,7 +176,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         return Path.of("/jetty-dir.css");
     }
 
-    public String[] getWelcomeFiles()
+    public List<String> getWelcomeFiles()
     {
         return _welcomes;
     }
@@ -344,7 +317,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         return values;
     }
 
-    protected boolean isGzippedContent(String path)
+    private boolean isGzippedContent(String path)
     {
         if (path == null || _gzipEquivalentFileExtensions == null)
             return false;
@@ -379,7 +352,10 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         return null;
     }
 
-    protected boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
+    /**
+     * @return false if the request was processed, true otherwise.
+     */
+    private boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
     {
         try
         {
@@ -516,37 +492,8 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         }
 
         // look for a welcome file
-        String welcome = _welcomeFactory == null ? null : _welcomeFactory.getWelcomeFile(pathInContext);
-
-        if (welcome != null)
-        {
-            String servletPath = request.getContext().getContextPath();
-
-            if (_pathInfoOnly)
-                welcome = URIUtil.addPaths(servletPath, welcome);
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("welcome={}", welcome);
-
-            if (_redirectWelcome)
-            {
-                // Redirect to the index
-                response.setContentLength(0);
-
-                String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContext().getContextPath(), welcome));
-                String q = request.getHttpURI().getQuery();
-                if (q != null && !q.isEmpty())
-                    uri += "?" + q;
-
-                Response.sendRedirect(request, response, callback, uri);
-                return;
-            }
-
-            // Serve welcome file
-            HttpContent c = _contentFactory.getContent(welcome, request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
-            sendData(request, response, callback, c, null);
+        if (_welcomer.welcome(request, response, callback))
             return;
-        }
 
         if (passConditionalHeaders(request, response, content, callback))
             sendDirectory(request, response, content.getResource(), callback, pathInContext);
@@ -1136,23 +1083,6 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
     }
 
     /**
-     * @param resourceBase The base resource as a string.
-     */
-    // TODO how is that needed on top of setBaseResource(Path)? At least, the name is confusing.
-    public void setResourceBase(String resourceBase)
-    {
-        try
-        {
-            setBaseResource(Path.of(resourceBase));
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Invalid Base Resource reference: {}", resourceBase, e);
-            throw new IllegalArgumentException(resourceBase);
-        }
-    }
-
-    /**
      * @param stylesheet The location of the stylesheet to be used as a String.
      */
     // TODO accept a Path instead of a String?
@@ -1174,7 +1104,7 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         }
     }
 
-    public void setWelcomeFiles(String[] welcomeFiles)
+    public void setWelcomeFiles(List<String> welcomeFiles)
     {
         _welcomes = welcomeFiles;
     }
@@ -1403,6 +1333,79 @@ public class ResourceHandler extends Handler.Wrapper implements WelcomeFactory
         protected void onCompleteFailure(Throwable x)
         {
             callback.failed(x);
+        }
+    }
+
+    public interface Welcomer
+    {
+        /**
+         * @return true if the request was processed, false otherwise.
+         */
+        boolean welcome(Request request, Response response, Callback callback) throws Exception;
+    }
+
+    private class DefaultWelcomer implements Welcomer
+    {
+        @Override
+        public boolean welcome(Request request, Response response, Callback callback) throws Exception
+        {
+            String pathInContext = request.getPathInContext();
+            String welcome = getWelcomeFile(pathInContext);
+            if (welcome != null)
+            {
+                String contextPath = request.getContext().getContextPath();
+
+                if (_pathInfoOnly)
+                    welcome = URIUtil.addPaths(contextPath, welcome);
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("welcome={}", welcome);
+
+                if (_redirectWelcome)
+                {
+                    // Redirect to the index
+                    response.setContentLength(0);
+
+                    String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContext().getContextPath(), welcome));
+                    String q = request.getHttpURI().getQuery();
+                    if (q != null && !q.isEmpty())
+                        uri += "?" + q;
+
+                    Response.sendRedirect(request, response, callback, uri);
+                    return true;
+                }
+
+                // Serve welcome file
+                HttpContent c = _contentFactory.getContent(welcome, request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize());
+                sendData(request, response, callback, c, null);
+                return true;
+            }
+            return false;
+        }
+
+        private String getWelcomeFile(String pathInContext)
+        {
+            if (_welcomes == null)
+                return null;
+
+            for (String welcome : _welcomes)
+            {
+                // TODO this logic is similar to the one in PathContentFactory.getContent()
+                // TODO GW: This logic needs to be extensible so that a welcome file may be a servlet (yeah I know it shouldn't
+                //          be called a welcome file then.   So for example if /foo/index.jsp is the welcome file, we can't
+                //          serve it's contents - rather we have to let the servlet layer to either a redirect or a RequestDispatcher to it.
+                //          Worse yet, if there was a servlet mapped to /foo/index.html, then we need to be able to dispatch to it
+                //          EVEN IF the file does not exist.
+                String welcomeInContext = URIUtil.addPaths(pathInContext, welcome);
+                String path = pathInContext;
+                if (path.startsWith("/"))
+                    path = path.substring(1);
+                Path welcomePath = Path.of(_baseResource.toUri().resolve(path).resolve(welcome));
+                if (Files.exists(welcomePath))
+                    return welcomeInContext;
+            }
+            // not found
+            return null;
         }
     }
 }
