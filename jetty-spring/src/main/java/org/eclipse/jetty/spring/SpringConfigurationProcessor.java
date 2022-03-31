@@ -58,7 +58,9 @@ import org.springframework.core.io.UrlResource;
  * <p>
  * This processor is returned by the {@link SpringConfigurationProcessorFactory} for any XML document whos first
  * element is "beans". The factory is discovered by a {@link ServiceLoader} for {@link ConfigurationProcessorFactory}.
+ * @deprecated Has been removed in Jetty 10+
  */
+@Deprecated
 public class SpringConfigurationProcessor implements ConfigurationProcessor
 {
     private static final Logger LOG = Log.getLogger(SpringConfigurationProcessor.class);
@@ -66,6 +68,11 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
     private XmlConfiguration _configuration;
     private DefaultListableBeanFactory _beanFactory;
     private String _main;
+
+    public SpringConfigurationProcessor()
+    {
+        LOG.warn("DEPRECATION WARNING - The `jetty-spring` project will see no further updates, and has been fully removed from Jetty 10 onwards");
+    }
 
     @Override
     public void init(URL url, XmlParser.Node root, XmlConfiguration configuration)
@@ -141,7 +148,7 @@ public class SpringConfigurationProcessor implements ConfigurationProcessor
         {
             LOG.debug("{} - {}", bean, Arrays.asList(_beanFactory.getAliases(bean)));
             String[] aliases = _beanFactory.getAliases(bean);
-            if ("Main".equals(bean) || aliases != null && Arrays.asList(aliases).contains("Main"))
+            if ("Main".equals(bean) || Arrays.asList(aliases).contains("Main"))
             {
                 _main = bean;
                 break;

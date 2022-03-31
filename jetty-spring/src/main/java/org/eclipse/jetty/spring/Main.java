@@ -23,11 +23,14 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
  * Runs Jetty from a Spring configuration file passed as argument.
+ * @deprecated Has been removed in Jetty 10+
  */
+@Deprecated
 public class Main
 {
     public static void main(String[] args) throws Exception
     {
+        System.err.println("DEPRECATION WARNING - The `jetty-spring` project will see no further updates, and has been fully removed from Jetty 10 onwards");
         Resource config = Resource.newResource(args.length == 1 ? args[0] : "etc/jetty-spring.xml");
         XmlConfiguration.main(config.getFile().getAbsolutePath());
     }
