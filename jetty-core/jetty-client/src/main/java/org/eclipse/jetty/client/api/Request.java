@@ -243,30 +243,6 @@ public interface Request
     Map<String, Object> getAttributes();
 
     /**
-     * @return the content provider of this request
-     * @deprecated use {@link #getBody()} instead
-     */
-    @Deprecated
-    ContentProvider getContent();
-
-    /**
-     * @param content the content provider of this request
-     * @return this request object
-     * @deprecated use {@link #body(Content)} instead
-     */
-    @Deprecated
-    Request content(ContentProvider content);
-
-    /**
-     * @param content the content provider of this request
-     * @param contentType the content type
-     * @return this request object
-     * @deprecated use {@link #body(Content)} instead
-     */
-    @Deprecated
-    Request content(ContentProvider content, String contentType);
-
-    /**
      * @return the request content of this request
      */
     Content getBody();
