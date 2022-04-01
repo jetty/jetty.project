@@ -20,8 +20,10 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.ContentProcessor;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.compression.InflaterPool;
 
@@ -32,8 +34,7 @@ public class GzipRequest extends Request.WrapperProcessor
 
     private final boolean _inflateInput;
     private Decoder _decoder;
-    private ByteBuffer _chunk;
-    private Content _content;
+    private GzipContentProcessor gzipContentProcessor;
     private final int _inflateBufferSize;
     private final GzipHandler _gzipHandler;
     private final HttpFields _fields;
@@ -62,6 +63,7 @@ public class GzipRequest extends Request.WrapperProcessor
         {
             Components components = request.getComponents();
             _decoder = new Decoder(__inflaterPool, components.getByteBufferPool(), _inflateBufferSize);
+            gzipContentProcessor = new GzipContentProcessor(request);
         }
 
         int outputBufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
@@ -71,26 +73,20 @@ public class GzipRequest extends Request.WrapperProcessor
     }
 
     @Override
+    public void demandContent(Runnable onContentAvailable)
+    {
+        if (_inflateInput)
+            gzipContentProcessor.demandContent(onContentAvailable);
+        else
+            super.demandContent(onContentAvailable);
+    }
+
+    @Override
     public Content readContent()
     {
-        // TODO: use ContentProcessor (see #7403).
-        if (!_inflateInput)
-            return super.readContent();
-
-        if (_content == null)
-            _content = super.readContent();
-        if (_content == null)
-            return null;
-        if (_content.isSpecial())
-            return _content;
-
-        DecodedContent content = new DecodedContent();
-        if (_content.isEmpty())
-        {
-            _content.release();
-            _content = null;
-        }
-        return content;
+        if (_inflateInput)
+            return gzipContentProcessor.readContent();
+        return super.readContent();
     }
 
     public void destroy()
@@ -102,34 +98,88 @@ public class GzipRequest extends Request.WrapperProcessor
         }
     }
 
+    private class GzipContentProcessor extends ContentProcessor
+    {
+        private Content _content;
+
+        public GzipContentProcessor(Content.Reader reader)
+        {
+            super(reader);
+        }
+
+        @Override
+        protected Content process(Content content)
+        {
+            try
+            {
+                if (_content == null)
+                    _content = content;
+                if (_content == null)
+                    return null;
+                if (_content.isSpecial())
+                    return _content;
+
+                ByteBuffer decodedBuffer = _decoder.decode(_content);
+                if (BufferUtil.hasContent(decodedBuffer))
+                    return new DecodedContent(decodedBuffer, _content.isLast());
+                return null;
+            }
+            finally
+            {
+                if (_content != null && !_content.hasRemaining())
+                {
+                    _content.release();
+                    _content = null;
+                }
+            }
+        }
+    }
+
     private class DecodedContent implements Content
     {
-        final ByteBuffer decodedContent;
+        final ByteBuffer _decodedContent;
+        final boolean _isLast;
 
-        protected DecodedContent()
+        protected DecodedContent(ByteBuffer content, boolean isLast)
         {
-            _decoder.decodeChunks(_content.getByteBuffer());
-            decodedContent = _chunk;
+            _decodedContent = content;
+            _isLast = isLast;
         }
 
         @Override
         public ByteBuffer getByteBuffer()
         {
-            return decodedContent;
+            return _decodedContent;
+        }
+
+        @Override
+        public boolean isLast()
+        {
+            return _isLast;
         }
 
         @Override
         public void release()
         {
-            _decoder.release(decodedContent);
+            _decoder.release(_decodedContent);
         }
     }
 
-    private class Decoder extends GZIPContentDecoder
+    private static class Decoder extends GZIPContentDecoder
     {
+        private ByteBuffer _chunk;
+
         private Decoder(InflaterPool inflaterPool, ByteBufferPool bufferPool, int bufferSize)
         {
             super(inflaterPool, bufferPool, bufferSize);
+        }
+
+        public ByteBuffer decode(Content content)
+        {
+            decodeChunks(content.getByteBuffer());
+            ByteBuffer chunk = _chunk;
+            _chunk = null;
+            return chunk;
         }
 
         @Override
