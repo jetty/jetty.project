@@ -71,8 +71,8 @@ import org.eclipse.jetty.server.handler.ContextResponse;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
@@ -88,8 +88,8 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     private static final int INPUT_STREAM = 1;
     private static final int INPUT_READER = 2;
 
-    private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
-    private static final MultiMap<String> BAD_PARAMS = new MultiMap<>();
+    private static final Fields NO_PARAMS = new Fields(new Fields(), true);
+    private static final Fields BAD_PARAMS = new Fields(new Fields(), true);
 
     public static ServletContextRequest getBaseRequest(ServletRequest request)
     {
@@ -295,15 +295,15 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     }
 
     /**
-     * Compare inputParameters to NO_PARAMS by Reference
+     * Compares fields to {@link #NO_PARAMS} by Reference
      *
-     * @param inputParameters The parameters to compare to NO_PARAMS
-     * @return True if the inputParameters reference is equal to NO_PARAMS otherwise False
+     * @param fields The parameters to compare to {@link #NO_PARAMS}
+     * @return {@code true} if the fields reference is equal to {@link #NO_PARAMS}, otherwise {@code false}
      */
-    private static boolean isNoParams(MultiMap<String> inputParameters)
+    private static boolean isNoParams(Fields fields)
     {
         @SuppressWarnings("ReferenceEquality")
-        boolean isNoParams = (inputParameters == NO_PARAMS);
+        boolean isNoParams = (fields == NO_PARAMS);
         return isNoParams;
     }
 
@@ -316,9 +316,9 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         private String _readerEncoding;
         private String _contentType;
         private boolean _contentParamsExtracted;
-        private MultiMap<String> _contentParameters;
-        private MultiMap<String> _parameters;
-        private MultiMap<String> _queryParameters;
+        private Fields _contentParameters;
+        private Fields _parameters;
+        private Fields _queryParameters;
         private SessionManager _sessionManager;
         private Session _session;
         private String _requestedSessionId;
@@ -803,13 +803,13 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public String getParameter(String name)
         {
-            return getParameters().getValue(name, 0);
+            return getParameters().getValue(name);
         }
 
         @Override
         public Enumeration<String> getParameterNames()
         {
-            return Collections.enumeration(getParameters().keySet());
+            return Collections.enumeration(getParameters().getNames());
         }
 
         @Override
@@ -827,7 +827,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             return Collections.unmodifiableMap(getParameters().toStringArrayMap());
         }
 
-        private MultiMap<String> getParameters()
+        private Fields getParameters()
         {
             if (!_contentParamsExtracted)
             {
@@ -858,20 +858,19 @@ public class ServletContextRequest extends ContextRequest implements Runnable
                 extractQueryParameters();
 
             // Do parameters need to be combined?
-            if (isNoParams(_queryParameters) || _queryParameters.size() == 0)
+            if (isNoParams(_queryParameters) || _queryParameters.getSize() == 0)
                 _parameters = _contentParameters;
-            else if (isNoParams(_contentParameters) || _contentParameters.size() == 0)
+            else if (isNoParams(_contentParameters) || _contentParameters.getSize() == 0)
                 _parameters = _queryParameters;
             else if (_parameters == null)
             {
-                _parameters = new MultiMap<>();
-                _parameters.addAllValues(_queryParameters);
-                _parameters.addAllValues(_contentParameters);
+                _parameters = new Fields(_queryParameters, false);
+                _contentParameters.forEach(_parameters::add);
             }
 
             // protect against calls to recycled requests (which is illegal, but
             // this gives better failures
-            MultiMap<String> parameters = _parameters;
+            Fields parameters = _parameters;
             return parameters == null ? NO_PARAMS : parameters;
         }
 
@@ -879,10 +878,12 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         {
             String contentType = getContentType();
             if (contentType == null || contentType.isEmpty())
+            {
                 _contentParameters = NO_PARAMS;
+            }
             else
             {
-                _contentParameters = new MultiMap<>();
+                _contentParameters = new Fields();
                 // TODO
             }
         }

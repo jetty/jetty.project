@@ -24,7 +24,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class HTTP2CServer extends Server
@@ -56,7 +56,7 @@ public class HTTP2CServer extends Server
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            MultiMap<String> fields = Request.extractQueryParameters(request);
+            Fields fields = Request.extractQueryParameters(request);
 
             String code = fields.getValue("code");
             if (code != null)

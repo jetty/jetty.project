@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.MultiMap;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -200,14 +200,14 @@ public class HttpServerTestFixture
             response.setStatus(200);
 
             String input = Content.readUtf8String(request);
-            MultiMap<String> params = Request.extractQueryParameters(request);
+            Fields fields = Request.extractQueryParameters(request);
 
-            String tmp = params.getValue("writes");
+            String tmp = fields.getValue("writes");
             int writes = Integer.parseInt(tmp == null ? "10" : tmp);
-            tmp = params.getValue("block");
+            tmp = fields.getValue("block");
             int block = Integer.parseInt(tmp == null ? "10" : tmp);
-            String encoding = params.getValue("encoding");
-            String chars = params.getValue("chars");
+            String encoding = fields.getValue("encoding");
+            String chars = fields.getValue("chars");
             if (chars != null)
                 throw new IllegalStateException("chars no longer supported"); // TODO remove
 
