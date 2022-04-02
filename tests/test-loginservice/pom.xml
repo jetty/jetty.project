@@ -4,7 +4,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>tests-parent</artifactId>
-    <version>9.4.46-SNAPSHOT</version>
+    <version>9.4.47-SNAPSHOT</version>
   </parent>
   <artifactId>test-loginservice</artifactId>
   <name>Jetty Tests :: Login Service</name>
