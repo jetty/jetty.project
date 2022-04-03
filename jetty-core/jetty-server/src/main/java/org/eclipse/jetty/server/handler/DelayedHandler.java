@@ -14,21 +14,17 @@
 package org.eclipse.jetty.server.handler;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.BiConsumer;
 
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.FutureFormFields;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +93,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
         }
     }
 
-    public static class UntilContentOrForm extends DelayedHandler
+    public static class UntilFormFields extends DelayedHandler
     {
         @Override
         protected Request.Processor delayed(Request request, Request.Processor processor)
@@ -105,54 +101,26 @@ public abstract class DelayedHandler extends Handler.Wrapper
             if (!request.getConnectionMetaData().getHttpConfiguration().isDelayDispatchUntilContent())
                 return processor;
 
-            HttpConfiguration config = request.getConnectionMetaData().getHttpConfiguration();
-            if (!config.getFormEncodedMethods().contains(request.getMethod()))
-                return processor;
-
-            String contentType = request.getHeaders().get(HttpHeader.CONTENT_TYPE);
-            if (request.getContentLength() == 0 || StringUtil.isBlank(contentType))
-                return processor;
-
-            // TODO mimeTypes from context
-            MimeTypes.Type type = MimeTypes.CACHE.get(contentType);
-            if (MimeTypes.Type.FORM_ENCODED != type)
-                return processor;
-
-            String cs = MimeTypes.getCharsetFromContentType(contentType);
-            Charset charset;
-            if (StringUtil.isEmpty(cs))
-                charset = StandardCharsets.UTF_8;
-            else
-            {
-                try
-                {
-                    charset = Charset.forName(cs);
-                }
-                catch (Exception e)
-                {
-                    LOG.debug("ignored", e);
-                    charset = null;
-                }
-            }
+            Charset charset = FutureFormFields.getFormEncodedCharset(request);
             if (charset == null)
-                return processor; // TODO or send an error?
+                return processor;
 
-            return new UntilFormProcessor(request, charset, processor);
+            return new UntilFormFieldsProcessor(request, processor, charset);
         }
     }
 
-    private static class UntilFormProcessor implements Request.Processor, BiConsumer<Fields, Throwable>
+    private static class UntilFormFieldsProcessor implements Request.Processor, BiConsumer<Fields, Throwable>
     {
-        private final Request.Processor _processor;
         private final Request _request;
+        private final Request.Processor _processor;
         private final Charset _charset;
         private Response _response;
         private Callback _callback;
 
-        public UntilFormProcessor(Request request, Charset charset, Request.Processor processor)
+        public UntilFormFieldsProcessor(Request request, Request.Processor processor, Charset charset)
         {
-            _request = request;
             _processor = processor;
+            _request = request;
             _charset = charset;
         }
 
@@ -161,28 +129,27 @@ public abstract class DelayedHandler extends Handler.Wrapper
         {
             _response = response;
             _callback = callback;
-            HttpConfiguration config = _request.getConnectionMetaData().getHttpConfiguration();
 
-            // TODO pass in HttpConfiguration size limits
-            new Content.FieldsFuture(_request, _charset, -1, -1).whenComplete(this);
+            // TODO get the max sizes
+            FutureFormFields futureFormFields = new FutureFormFields(_request, _charset, -1, -1);
+            _request.setAttribute(FutureFormFields.class.getName(), futureFormFields);
+
+            if (futureFormFields.isDone())
+                _processor.process(_request, response, callback);
+            else
+                futureFormFields.whenComplete(this);
         }
 
         @Override
         public void accept(Fields fields, Throwable throwable)
         {
-            if (throwable != null)
-                Response.writeError(_request, _response, _callback, throwable);
-            else
+            try
             {
-                _request.setAttribute(UntilContentOrForm.class.getName(), fields);
-                try
-                {
-                    _processor.process(_request, _response, _callback);
-                }
-                catch (Throwable t)
-                {
-                    Response.writeError(_request, _response, _callback, t);
-                }
+                _processor.process(_request, _response, _callback);
+            }
+            catch (Throwable t)
+            {
+                Response.writeError(_request, _response, _callback, t);
             }
         }
     }

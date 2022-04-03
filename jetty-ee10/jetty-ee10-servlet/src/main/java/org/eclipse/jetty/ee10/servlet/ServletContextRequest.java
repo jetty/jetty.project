@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import jakarta.servlet.AsyncContext;
@@ -63,6 +64,7 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.FutureFormFields;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -844,7 +846,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
                     {
                         extractContentParameters();
                     }
-                    catch (IllegalStateException | IllegalArgumentException e)
+                    catch (IllegalStateException | IllegalArgumentException | ExecutionException | InterruptedException e)
                     {
                         LOG.warn(e.toString());
                         throw new BadMessageException("Unable to parse form content", e);
@@ -874,18 +876,11 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             return parameters == null ? NO_PARAMS : parameters;
         }
 
-        private void extractContentParameters()
+        private void extractContentParameters() throws ExecutionException, InterruptedException
         {
-            String contentType = getContentType();
-            if (contentType == null || contentType.isEmpty())
-            {
+            _contentParameters =  FutureFormFields.forRequest(getRequest()).get();
+            if (_contentParameters == null || _contentParameters.isEmpty())
                 _contentParameters = NO_PARAMS;
-            }
-            else
-            {
-                _contentParameters = new Fields();
-                // TODO
-            }
         }
 
         private void extractQueryParameters()

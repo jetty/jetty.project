@@ -113,7 +113,7 @@ public class Fields implements Iterable<Fields.Field>
         return result;
     }
 
-    private String normalizeName(String name)
+    protected String normalizeName(String name)
     {
         return caseSensitive ? name : name.toLowerCase(Locale.ENGLISH);
     }
@@ -203,8 +203,14 @@ public class Fields implements Iterable<Fields.Field>
      */
     public void add(Field field)
     {
-        if (field != null)
-            fields.merge(normalizeName(field.getName()), field, (k, f) -> new Field(f.getName(), f.getValues(), field.getValues()));
+        String key = normalizeName(field.getName());
+        fields.compute(key, (k, f) ->
+        {
+            if (f == null)
+                return field;
+            else
+                return new Field(f.getName(), f.getValues(), field.getValues());
+        });
     }
 
     /**
@@ -266,7 +272,15 @@ public class Fields implements Iterable<Fields.Field>
     @Override
     public String toString()
     {
-        return fields.toString();
+        StringBuilder s = new StringBuilder();
+        char d = '[';
+        for (Field f : fields.values())
+        {
+            s.append(d).append(f.getName()).append('=').append(f.getValues());
+            d = ',';
+        }
+        s.append(']');
+        return s.toString();
     }
 
     /**

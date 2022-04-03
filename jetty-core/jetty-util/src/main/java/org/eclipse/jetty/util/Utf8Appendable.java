@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **/
-public abstract class Utf8Appendable
+public abstract class Utf8Appendable implements CharsetStringBuilder
 {
     protected static final Logger LOG = LoggerFactory.getLogger(Utf8Appendable.class);
     // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
@@ -144,6 +144,7 @@ public abstract class Utf8Appendable
         }
     }
 
+    @Override
     public void append(byte b)
     {
         try
@@ -156,6 +157,7 @@ public abstract class Utf8Appendable
         }
     }
 
+    @Override
     public void append(ByteBuffer buf)
     {
         try
@@ -171,11 +173,13 @@ public abstract class Utf8Appendable
         }
     }
 
+    @Override
     public void append(byte[] b)
     {
         append(b, 0, b.length);
     }
 
+    @Override
     public void append(byte[] b, int offset, int length)
     {
         try
@@ -211,7 +215,7 @@ public abstract class Utf8Appendable
         }
     }
 
-    protected void appendByte(byte b) throws IOException
+    public void appendByte(byte b) throws IOException
     {
         if (b > 0 && _state == UTF8_ACCEPT)
         {
