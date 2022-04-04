@@ -30,6 +30,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -82,8 +83,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
      */
     public static FilterHolder getFilter(ServletContext servletContext)
     {
-        ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
-        ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
+        ContextHandler contextHandler = Objects.requireNonNull(ServletContextHandler.getServletContextHandler(servletContext));
+        ServletHandler servletHandler = contextHandler.getDescendant(ServletHandler.class);
         return servletHandler.getFilter(WebSocketUpgradeFilter.class.getName());
     }
 
@@ -107,8 +108,8 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
             if (existingFilter != null)
                 return existingFilter;
 
-            ContextHandler contextHandler = Objects.requireNonNull(ContextHandler.getContextHandler(servletContext));
-            ServletHandler servletHandler = contextHandler.getChildHandlerByClass(ServletHandler.class);
+            ContextHandler contextHandler = Objects.requireNonNull(ServletContextHandler.getServletContextHandler(servletContext));
+            ServletHandler servletHandler = contextHandler.getDescendant(ServletHandler.class);
 
             final String pathSpec = "/*";
             FilterHolder holder = new FilterHolder(new WebSocketUpgradeFilter());
@@ -157,6 +158,7 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
         HttpServletRequest httpreq = (HttpServletRequest)request;
         HttpServletResponse httpresp = (HttpServletResponse)response;
 
+        // TODO: how to use this without the original Request?
         if (mappings.upgrade(httpreq, httpresp, defaultCustomizer))
             return;
 
@@ -179,7 +181,9 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        mappings = WebSocketMappings.ensureMappings(config.getServletContext());
+        ServletContext servletContext = config.getServletContext();
+        ServletContextHandler contextHandler = ServletContextHandler.getServletContextHandler(servletContext);
+        mappings = WebSocketMappings.ensureMappings(contextHandler);
 
         String max = config.getInitParameter("idleTimeout");
         if (max == null)

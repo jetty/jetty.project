@@ -34,7 +34,13 @@ module org.eclipse.jetty.websocket.core.common
         org.eclipse.jetty.ee9.websocket.jetty.server,
         org.eclipse.jetty.ee9.websocket.jakarta.common,
         org.eclipse.jetty.ee9.websocket.jakarta.client,
-        org.eclipse.jetty.ee9.websocket.jakarta.server;
+        org.eclipse.jetty.ee9.websocket.jakarta.server,
+        org.eclipse.jetty.ee10.websocket.jetty.common,
+        org.eclipse.jetty.ee10.websocket.jetty.client,
+        org.eclipse.jetty.ee10.websocket.jetty.server,
+        org.eclipse.jetty.ee10.websocket.jakarta.common,
+        org.eclipse.jetty.ee10.websocket.jakarta.client,
+        org.eclipse.jetty.ee10.websocket.jakarta.server;
 
     exports org.eclipse.jetty.websocket.core.internal.messages to
         org.eclipse.jetty.ee9.websocket.jetty.common,
@@ -42,7 +48,13 @@ module org.eclipse.jetty.websocket.core.common
         org.eclipse.jetty.ee9.websocket.jetty.server,
         org.eclipse.jetty.ee9.websocket.jakarta.common,
         org.eclipse.jetty.ee9.websocket.jakarta.client,
-        org.eclipse.jetty.ee9.websocket.jakarta.server;
+        org.eclipse.jetty.ee9.websocket.jakarta.server,
+        org.eclipse.jetty.ee10.websocket.jetty.common,
+        org.eclipse.jetty.ee10.websocket.jetty.client,
+        org.eclipse.jetty.ee10.websocket.jetty.server,
+        org.eclipse.jetty.ee10.websocket.jakarta.common,
+        org.eclipse.jetty.ee10.websocket.jakarta.client,
+        org.eclipse.jetty.ee10.websocket.jakarta.server;
 
     uses org.eclipse.jetty.websocket.core.Extension;
     
