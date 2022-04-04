@@ -133,6 +133,7 @@ public abstract class DelayedHandler extends Handler.Wrapper
             // TODO get the max sizes
             FutureFormFields futureFormFields = new FutureFormFields(_request, _charset, -1, -1);
             _request.setAttribute(FutureFormFields.class.getName(), futureFormFields);
+            futureFormFields.run();
 
             if (futureFormFields.isDone())
                 _processor.process(_request, response, callback);

@@ -67,7 +67,9 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
             return NONE;
 
         // TODO get max sizes
-        return new FutureFormFields(request, charset, -1, -1);
+        FutureFormFields futureFormFields = new FutureFormFields(request, charset, -1, -1);
+        futureFormFields.run();
+        return futureFormFields;
     }
 
     private final Content.Reader _reader;
@@ -89,7 +91,6 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
         _maxFields = maxFields;
         _maxSize = maxSize;
         _builder = CharsetStringBuilder.forCharset(charset);
-        run();
     }
 
     @Override
