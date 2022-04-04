@@ -27,10 +27,10 @@ jetty-11.0.9 - 30 March 2022
  + 7617 Logback-access RequestLog not working
  + 7625 HTTP/3 error against www.google.com
  + 7677 jetty-maven-plugin - maven internal dependencies included on webapp
-   classloader 
+   classloader
  + 7683 GZIPContentDecoder ignores setUseInputDirectByteBuffers setting and
    always uses non-direct buffers (causing GC locking)
- + 7688 Read data to native memory from HttpInput 
+ + 7688 Read data to native memory from HttpInput
  + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
    allow for regex or uri-template matching
 
@@ -98,6 +98,40 @@ jetty-11.0.8 - 07 February 2022
  + 7523 Typo in AnnotationConfiguration
  + 7524 Missing package in JmxConfiguration
  + 7529 Upgrade quiche to version 0.11.0
+
+jetty-10.0.9 - 30 March 2022
+ + 5681 Unrecognized jetty-home/start.jar command line option not reported
+   clearly
+ + 5965 Option --write-module-graph produces wrong .dot file
+ + 6879 Remove jminix (not maintained) module as hawtio provide same features
+ + 7182 jetty.sh start process should remove jetty_state whenever deleting the
+   pid
+ + 7344 Incompatible with jacoco due to shutdown race condition
+ + 7414 QoSFilter.setMaxRequests throws NullPointerException
+ + 7513 Getter/setter type mismatch for mbean attribute file in class
+   org.eclipse.jetty.deploy.PropertiesConfigurationManager
+ + 7517 Some ArrayTrie methods throw StackOverflowError when cointaining a very
+   large entry
+ + 7518 ArrayTrie getBest fails to match the empty string entry in certain
+   cases
+ + 7545 Named arguments do not work in jetty-openid.xml
+ + 7548 Interrupt flag is not always cleared in between requests
+ + 7567 Gzip compression not working for multipart/form-data when added to the
+   allowed list using addIncludedMimeTypes.
+ + 7573 WebSockets - "Unsupported PathParam Type: java.lang.Integer"
+ + 7575 Misleading docs for `HttpClientTransportDynamic`
+ + 7613 Configurations.add(Configuration) results in
+   UnsupportedOperationException
+ + 7615 HttpServletResponse.encodeURL not working for URLs starting with ../
+ + 7617 Logback-access RequestLog not working
+ + 7625 HTTP/3 error against www.google.com
+ + 7677 jetty-maven-plugin - maven internal dependencies included on webapp
+   classloader
+ + 7683 GZIPContentDecoder ignores setUseInputDirectByteBuffers setting and
+   always uses non-direct buffers (causing GC locking)
+ + 7688 Read data to native memory from HttpInput
+ + 7748 Allow overriding of url-pattern mapping in ServletContextHandler to
+   allow for regex or uri-template matching
 
 jetty-10.0.8 - 07 February 2022
  + 2504 Expose more WebSocket details in JMX and Server Dump
@@ -737,7 +771,7 @@ jetty-11.0.0.beta1 - 10 July 2020
    SETTINGS Frame.
  + 4903 Give better errors for non public Websocket Endpoints
  + 4904 WebsocketClient creates more connections than needed
- + 4907 
+ + 4907
    org.eclipse.jetty.websocket.tests.SuspendResumeTest#testSuspendAfterClose
  + 4920 Restore ability to delete sessions on stop
  + 4921 Quickstart run improperly runs dynamically added context initializers
