@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.session;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -25,11 +26,14 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
@@ -155,7 +159,18 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         
         super.doStart();
     }
-    
+
+    @Override
+    public Request.Processor handle(Request request) throws Exception
+    {
+        Request.Processor processor = super.handle(request);
+        if (processor == null)
+            return null;
+
+        request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request));
+        return processor;
+    }
+
     @Override
     protected void doStop() throws Exception
     {
@@ -276,10 +291,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
                     LOG.debug("Got Session ID {} from URL", requestedSessionId);
 
                 session = getSession(requestedSessionId);
-                /* if (session != null && session.isValid())
-                {
-                    request.setAttribute(__Resolved_Session, session);  //associate the session with the request
-                }*/
             }
         }
 
@@ -1158,5 +1169,61 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     public void recordSessionTime(Session session)
     {
         _sessionTimeStats.record(Math.round((System.currentTimeMillis() - session.getSessionData().getCreated()) / 1000.0));
+    }
+
+    /**
+     * StreamWrapper to intercept commit and complete events to ensure
+     * session handling happens in context, with request available.
+     */
+    private class SessionStreamWrapper extends HttpStream.Wrapper
+    {
+        private final SessionManager _sessionManager;
+        private final Request _request;
+        private final org.eclipse.jetty.server.Context _context;
+
+        public SessionStreamWrapper(HttpStream wrapped, SessionManager sessionManager, Request request)
+        {
+            super(wrapped);
+            _sessionManager = sessionManager;
+            _request = request;
+            _context = _request.getContext();
+        }
+
+        @Override
+        public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, Callback callback, ByteBuffer... content)
+        {
+            if (metadataResponse != null)
+            {
+                // Write out session
+                _context.run(this::doCommit, _request);
+            }
+            super.send(metadataRequest, metadataResponse, last, callback, content);
+        }
+
+        @Override
+        public void succeeded()
+        {
+            // Leave session
+            _context.run(this::doComplete, _request);
+            super.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            //Leave session
+            _context.run(this::doComplete, _request);
+            super.failed(x);
+        }
+
+        private void doCommit()
+        {
+            commit(_sessionManager.getSession(_request));
+        }
+
+        private void doComplete()
+        {
+            complete(_sessionManager.getSession(_request));
+        }
     }
 }

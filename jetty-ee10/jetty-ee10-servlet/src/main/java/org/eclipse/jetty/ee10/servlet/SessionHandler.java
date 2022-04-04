@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -40,15 +39,12 @@ import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest.ServletApiRequest;
 import org.eclipse.jetty.http.HttpCookie;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.Syntax;
-import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.session.AbstractSessionHandler;
 import org.eclipse.jetty.session.Session;
-import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,62 +76,6 @@ public class SessionHandler extends AbstractSessionHandler
     private Set<SessionTrackingMode> _sessionTrackingModes;
     private SessionCookieConfig _cookieConfig = new CookieConfig();
     private ServletContextHandler.Context _servletContextHandlerContext;
-   
-    /**
-     * StreamWrapper to intercept commit and complete events to ensure
-     * session handling happens in context, with request available.
-     */
-    private final class SessionStreamWrapper extends HttpStream.Wrapper
-    {
-        private final ServletApiRequest _servletApiRequest;
-        private final Request _request;
-        private final org.eclipse.jetty.server.Context _context;
-
-        private SessionStreamWrapper(HttpStream wrapped, ServletApiRequest servletApiRequest, Request request)
-        {
-            super(wrapped);
-            _servletApiRequest = servletApiRequest;
-            _request = request;
-            _context = _request.getContext();
-        }
-
-        @Override
-        public void send(MetaData.Request metadataRequest, MetaData.Response metadataResponse, boolean last, Callback callback, ByteBuffer... content)
-        {
-            if (metadataResponse != null)
-            {
-                // Write out session
-                _context.run(this::doCommit, _request);
-            }
-            super.send(metadataRequest, metadataResponse, last, callback, content);
-        }
-
-        @Override
-        public void succeeded()
-        {
-            // Leave session
-            _context.run(this::doComplete, _request);
-            super.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            //Leave session
-            _context.run(this::doComplete, _request);
-            super.failed(x);
-        }
-        
-        private void doCommit()
-        {
-            commit(ServletContextRequest.ServletApiRequest.getSession(_servletApiRequest.getSession(false)));
-        }
-        
-        private void doComplete()
-        {
-            complete(ServletContextRequest.ServletApiRequest.getSession(_servletApiRequest.getSession(false)));
-        }
-    }
 
     /**
      * CookieConfig
@@ -284,7 +224,7 @@ public class SessionHandler extends AbstractSessionHandler
         public static Session getSession(HttpSession httpSession)
         {
             if (httpSession instanceof ServletAPISession apiSession)
-                return apiSession.getSession();
+                return apiSession.getCoreSession();
             return null;
         }
         
@@ -296,7 +236,7 @@ public class SessionHandler extends AbstractSessionHandler
         }
 
         @Override
-        public Session getSession()
+        public Session getCoreSession()
         {
             return _session;
         }
@@ -392,6 +332,13 @@ public class SessionHandler extends AbstractSessionHandler
     public SessionHandler()
     {
         setSessionTrackingModes(DEFAULT_SESSION_TRACKING_MODES);
+    }
+
+    @Override
+    public Session getSession(Request request)
+    {
+        ServletApiRequest apiRequest = Request.get(request, ServletContextRequest.class, ServletContextRequest::getServletApiRequest);
+        return apiRequest == null ? null : apiRequest.getCoreSession();
     }
 
     /**
@@ -667,9 +614,8 @@ public class SessionHandler extends AbstractSessionHandler
         {
             // find and set the session if one exists
             RequestedSession requestedSession = resolveRequestedSessionId(req);
-            req.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, servletApiRequest, req));
 
-            servletApiRequest.setSession(requestedSession.session());
+            servletApiRequest.setCoreSession(requestedSession.session());
             servletApiRequest.setSessionManager(this);
             servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
             servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());

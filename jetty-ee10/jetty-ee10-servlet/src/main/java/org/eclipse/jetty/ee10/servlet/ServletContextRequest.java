@@ -322,20 +322,25 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         private Fields _parameters;
         private Fields _queryParameters;
         private SessionManager _sessionManager;
-        private Session _session;
+        private Session _coreSession;
         private String _requestedSessionId;
         private boolean _requestedSessionIdFromCookie;
         
         public static Session getSession(HttpSession httpSession)
         {
             if (httpSession instanceof Session.APISession apiSession)
-                return apiSession.getSession();
+                return apiSession.getCoreSession();
             return null;
         }
 
-        protected void setSession(Session session)
+        void setCoreSession(Session session)
         {
-            _session = session;
+            _coreSession = session;
+        }
+
+        Session getCoreSession()
+        {
+            return _coreSession;
         }
 
         public SessionManager getSessionManager()
@@ -541,12 +546,12 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public HttpSession getSession(boolean create)
         {
-            if (_session != null)
+            if (_coreSession != null)
             {
-                if (!_session.isValid())
-                    _session = null;
+                if (!_coreSession.isValid())
+                    _coreSession = null;
                 else
-                    return _session.getAPISession();
+                    return _coreSession.getAPISession();
             }
 
             if (!create)
@@ -559,16 +564,16 @@ public class ServletContextRequest extends ContextRequest implements Runnable
                 throw new IllegalStateException("No SessionManager");
 
             //TODO is this getBaseRequest or getRequest???
-            _session = _sessionManager.newSession(ServletContextRequest.getBaseRequest(this), getRequestedSessionId());
-            if (_session == null)
+            _coreSession = _sessionManager.newSession(ServletContextRequest.getBaseRequest(this), getRequestedSessionId());
+            if (_coreSession == null)
                 throw new IllegalStateException("Create session failed");
 
-            org.eclipse.jetty.http.HttpCookie cookie = _sessionManager.getSessionCookie(_session, getContextPath(), isSecure());
+            org.eclipse.jetty.http.HttpCookie cookie = _sessionManager.getSessionCookie(_coreSession, getContextPath(), isSecure());
 
             if (cookie != null)
                 Response.replaceCookie(ServletContextRequest.getBaseRequest(_httpServletRequest).getResponse(), cookie);
 
-            return _session.getAPISession();
+            return _coreSession.getAPISession();
         }
 
         @Override
@@ -606,10 +611,10 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public boolean isRequestedSessionIdValid()
         {
-            if (getRequestedSessionId() == null || _session == null)
+            if (getRequestedSessionId() == null || _coreSession == null)
                 return false;
             //check requestedId (which may have worker suffix) against the actual session id
-            return (getSessionManager().getSessionIdManager().getId(getRequestedSessionId()).equals(_session.getId()));
+            return (getSessionManager().getSessionIdManager().getId(getRequestedSessionId()).equals(_coreSession.getId()));
         }
 
         @Override

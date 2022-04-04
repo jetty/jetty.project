@@ -70,8 +70,10 @@ public interface SessionManager extends LifeCycle
     String __MaxAgeProperty = "org.eclipse.jetty.servlet.MaxAge";
     
     Session getSession(String id) throws Exception;
-    
+
     Session newSession(Request request, String requestedSessionId);
+
+    Session getSession(Request request);
     
     Session.APISession newSessionAPIWrapper(Session session);
     

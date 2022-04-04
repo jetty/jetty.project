@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.session.Session.APISession;
 
 /**
@@ -57,7 +58,7 @@ public class TestableSessionHandler extends AbstractSessionHandler
         return new APISession()
         {
             @Override
-            public Session getSession()
+            public Session getCoreSession()
             {
                 return session;
             }
@@ -68,7 +69,13 @@ public class TestableSessionHandler extends AbstractSessionHandler
             }
         };
     }
-    
+
+    @Override
+    public Session getSession(Request request)
+    {
+        return null;
+    }
+
     @Override
     public void callSessionIdListeners(Session session, String oldId)
     {

@@ -41,7 +41,7 @@ public class Session
 {
     public interface APISession
     {
-        Session getSession();
+        Session getCoreSession();
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(Session.class);
@@ -115,7 +115,7 @@ public class Session
     public static Session getSession(Object session)
     {
         if (session instanceof APISession wrapper)
-            return wrapper.getSession();
+            return wrapper.getCoreSession();
         return null;
     }
 
