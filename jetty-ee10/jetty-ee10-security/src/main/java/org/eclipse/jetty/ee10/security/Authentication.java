@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.handler;
+package org.eclipse.jetty.ee10.security;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;

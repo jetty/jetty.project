@@ -16,7 +16,6 @@ package org.eclipse.jetty.ee10.security;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,15 +31,18 @@ import jakarta.servlet.HttpMethodConstraintElement;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
-import org.eclipse.jetty.ee10.handler.Request;
-import org.eclipse.jetty.ee10.handler.Response;
-import org.eclipse.jetty.ee10.handler.UserIdentity;
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
 import org.eclipse.jetty.http.pathmap.PathMappings;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.security.Constraint;
@@ -230,7 +232,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         List<String> methodOmissions = new ArrayList<>();
 
         //make constraint mappings for this url for each of the HttpMethodConstraintElements
-        Collection<HttpMethodConstraintElement> methodConstraintElements = securityElement.getHttpMethodConstraints();
+        java.util.Collection<HttpMethodConstraintElement> methodConstraintElements = securityElement.getHttpMethodConstraints();
         if (methodConstraintElements != null)
         {
             for (HttpMethodConstraintElement methodConstraintElement : methodConstraintElements)
@@ -617,6 +619,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         return roleInfo;
     }
 
+    /**
+     * Return true if ok to proceed, false otherwise.
+     */
     @Override
     protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response, RoleInfo roleInfo) throws IOException
     {
@@ -624,14 +629,17 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             return true;
 
         if (roleInfo.isForbidden())
+        {
+            //TODO - check this
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return false;
+        }
 
         UserDataConstraint dataConstraint = roleInfo.getUserDataConstraint();
         if (dataConstraint == null || dataConstraint == UserDataConstraint.None)
             return true;
 
-        Request baseRequest = Request.getBaseRequest(request);
-        HttpConfiguration httpConfig = baseRequest.getHttpChannel().getHttpConfiguration();
+        HttpConfiguration httpConfig = request.getConnectionMetaData().getHttpConfiguration();
 
         if (dataConstraint == UserDataConstraint.Confidential || dataConstraint == UserDataConstraint.Integral)
         {
@@ -640,17 +648,19 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
 
             if (httpConfig.getSecurePort() > 0)
             {
+                //Redirect to secure port
                 String scheme = httpConfig.getSecureScheme();
                 int port = httpConfig.getSecurePort();
 
-                String url = URIUtil.newURI(scheme, request.getServerName(), port, request.getRequestURI(), request.getQueryString());
+                String url = URIUtil.newURI(scheme, Request.getServerName(request), port, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
                 response.setContentLength(0);
-                response.sendRedirect(url, true);
+                
+                //TODO - check this
+                Response.sendRedirect(request, response, null, HttpStatus.MOVED_TEMPORARILY_302, url, true);
             }
             else
+                //TODO - check this
                 response.sendError(HttpStatus.FORBIDDEN_403, "!Secure");
-
-            request.setHandled(true);
             return false;
         }
         else

@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.handler;
+package org.eclipse.jetty.ee10.security;
 
 import java.security.Principal;
 import java.util.Map;
