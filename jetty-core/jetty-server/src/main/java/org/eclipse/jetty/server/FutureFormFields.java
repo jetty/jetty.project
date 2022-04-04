@@ -48,7 +48,7 @@ public class FutureFormFields extends CompletableFuture<Fields> implements Runna
             return null;
 
         // TODO mimeTypes from context
-        MimeTypes.Type type = MimeTypes.CACHE.get(contentType);
+        MimeTypes.Type type = MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
         if (MimeTypes.Type.FORM_ENCODED != type)
             return null;
 

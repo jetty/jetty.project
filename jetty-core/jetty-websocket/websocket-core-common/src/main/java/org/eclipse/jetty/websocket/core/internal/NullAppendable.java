@@ -52,4 +52,10 @@ public class NullAppendable extends Utf8Appendable
     {
         return null;
     }
+
+    @Override
+    public String takeString()
+    {
+        return null;
+    }
 }

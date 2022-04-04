@@ -15,12 +15,15 @@ package org.eclipse.jetty.server.handler.gzip;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -56,9 +59,10 @@ public class GzipResponse extends Response.Wrapper
     private DeflaterPool.Entry _deflaterEntry;
     private ByteBuffer _buffer;
 
-    public GzipResponse(Request request, Response response, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
+    public GzipResponse(Request request, Response wrapped, GzipFactory factory, HttpField vary, int bufferSize, boolean syncFlush)
     {
-        super(request, response);
+        super(request, wrapped);
+
         _factory = factory;
         _vary = vary;
         _bufferSize = bufferSize;
@@ -66,16 +70,16 @@ public class GzipResponse extends Response.Wrapper
     }
 
     @Override
-    public void write(boolean complete, Callback callback, ByteBuffer... content)
+    public void write(boolean last, Callback callback, ByteBuffer... content)
     {
         switch (_state.get())
         {
             case MIGHT_COMPRESS:
-                commit(complete, callback, content);
+                commit(last, callback, content);
                 break;
 
             case NOT_COMPRESSING:
-                super.write(complete, callback, content);
+                super.write(last, callback, content);
                 return;
 
             case COMMITTING:
@@ -83,7 +87,7 @@ public class GzipResponse extends Response.Wrapper
                 break;
 
             case COMPRESSING:
-                gzip(complete, callback, content);
+                gzip(last, callback, content);
                 break;
 
             default:
@@ -98,22 +102,19 @@ public class GzipResponse extends Response.Wrapper
         BufferUtil.putIntLittleEndian(_buffer, _deflaterEntry.get().getTotalIn());
     }
 
-    private void gzip(boolean last, Callback callback, ByteBuffer... content)
+    private void gzip(boolean complete, final Callback callback, ByteBuffer... content)
     {
-        /* TODO
-        if (content.hasRemaining() || last)
-            new GzipBufferCB(content, last, callback).iterate();
+        if (content != null || complete)
+            new GzipBufferCB(complete, callback, content).iterate();
         else
             callback.succeeded();
-
-         */
     }
 
-    protected void commit(boolean last, Callback callback, ByteBuffer... content)
+    protected void commit(boolean complete, Callback callback, ByteBuffer... content)
     {
-        /* TODO
         // Are we excluding because of status?
-        Response response = this;
+        Response response = GzipResponse.this;
+        Request request = response.getRequest();
         int sc = response.getStatus();
         if (sc > 0 && (sc < 200 || sc == 204 || sc == 205 || sc >= 300))
         {
@@ -122,22 +123,22 @@ public class GzipResponse extends Response.Wrapper
 
             if (sc == HttpStatus.NOT_MODIFIED_304)
             {
-                String requestEtags = (String)_channel.getRequest().getAttribute(GzipHandler.GZIP_HANDLER_ETAGS);
-                String responseEtag = response.getHttpFields().get(HttpHeader.ETAG);
+                String requestEtags = (String)request.getAttribute(GzipHandler.GZIP_HANDLER_ETAGS);
+                String responseEtag = response.getHeaders().get(HttpHeader.ETAG);
                 if (requestEtags != null && responseEtag != null)
                 {
                     String responseEtagGzip = etagGzip(responseEtag);
                     if (requestEtags.contains(responseEtagGzip))
-                        response.getHttpFields().put(HttpHeader.ETAG, responseEtagGzip);
+                        response.getHeaders().put(HttpHeader.ETAG, responseEtagGzip);
                 }
             }
 
-            _interceptor.write(content, last, callback);
+            super.write(complete, callback, content);
             return;
         }
 
         // Are we excluding because of mime-type?
-        String ct = response.getContentType();
+        String ct = response.getHeaders().get(HttpHeader.CONTENT_TYPE);
         if (ct != null)
         {
             String baseType = HttpField.valueParameters(ct, null);
@@ -145,19 +146,19 @@ public class GzipResponse extends Response.Wrapper
             {
                 LOG.debug("{} exclude by mimeType {}", this, ct);
                 noCompression();
-                _interceptor.write(content, last, callback);
+                super.write(complete, callback, content);
                 return;
             }
         }
 
         // Has the Content-Encoding header already been set?
-        HttpFields.Mutable fields = response.getHttpFields();
+        HttpFields.Mutable fields = response.getHeaders();
         String ce = fields.get(HttpHeader.CONTENT_ENCODING);
         if (ce != null)
         {
             LOG.debug("{} exclude by content-encoding {}", this, ce);
             noCompression();
-            _interceptor.write(content, last, callback);
+            super.write(complete, callback, content);
             return;
         }
 
@@ -168,16 +169,16 @@ public class GzipResponse extends Response.Wrapper
             if (_vary != null)
                 fields.ensureField(_vary);
 
-            long contentLength = response.getContentLength();
-            if (contentLength < 0 && last)
-                contentLength = content.remaining();
+            long contentLength = response.getHeaders().getLongField(HttpHeader.CONTENT_LENGTH);
+            if (contentLength < 0 && complete)
+                contentLength = Arrays.stream(content).map(BufferUtil::length).mapToLong(Long::valueOf).sum();
 
-            _deflaterEntry = _factory.getDeflaterEntry(_channel.getRequest(), contentLength);
+            _deflaterEntry = _factory.getDeflaterEntry(request, contentLength);
             if (_deflaterEntry == null)
             {
                 LOG.debug("{} exclude no deflater", this);
                 _state.set(GZState.NOT_COMPRESSING);
-                _interceptor.write(content, last, callback);
+                super.write(complete, callback, content);
                 return;
             }
 
@@ -196,17 +197,15 @@ public class GzipResponse extends Response.Wrapper
             if (BufferUtil.isEmpty(content))
             {
                 // We are committing, but have no content to compress, so flush empty buffer to write headers.
-                _interceptor.write(BufferUtil.EMPTY_BUFFER, last, callback);
+                super.write(complete, callback);
             }
             else
             {
-                gzip(content, last, callback);
+                gzip(complete, callback, content);
             }
         }
         else
             callback.failed(new WritePendingException());
-
-         */
     }
 
     private String etagGzip(String etag)
@@ -244,12 +243,13 @@ public class GzipResponse extends Response.Wrapper
         private ByteBuffer _copy;
         private final ByteBuffer[] _content;
         private final boolean _last;
+        private int _index = 0;
 
-        public GzipBufferCB(boolean last, Callback callback, ByteBuffer... content)
+        public GzipBufferCB(boolean complete, Callback callback, ByteBuffer... content)
         {
             super(callback);
             _content = content;
-            _last = last;
+            _last = complete;
         }
 
         @Override
@@ -266,7 +266,6 @@ public class GzipResponse extends Response.Wrapper
         @Override
         protected Action process() throws Exception
         {
-            /*
             // If we have no deflator
             if (_deflaterEntry == null)
             {
@@ -275,12 +274,12 @@ public class GzipResponse extends Response.Wrapper
                 // cleanup and succeed.
                 if (_buffer != null)
                 {
-                    _channel.getByteBufferPool().release(_buffer);
+                    getRequest().getComponents().getByteBufferPool().release(_buffer);
                     _buffer = null;
                 }
                 if (_copy != null)
                 {
-                    _channel.getByteBufferPool().release(_copy);
+                    getRequest().getComponents().getByteBufferPool().release(_copy);
                     _copy = null;
                 }
                 return Action.SUCCEEDED;
@@ -290,7 +289,7 @@ public class GzipResponse extends Response.Wrapper
             if (_buffer == null)
             {
                 // allocate a buffer and add the gzip header
-                _buffer = _channel.getByteBufferPool().acquire(_bufferSize, false);
+                _buffer = getRequest().getComponents().getByteBufferPool().acquire(_bufferSize, false);
                 BufferUtil.fill(_buffer, GZIP_HEADER, 0, GZIP_HEADER.length);
             }
             else
@@ -305,9 +304,22 @@ public class GzipResponse extends Response.Wrapper
             {
                 if (deflater.needsInput())
                 {
+                    ByteBuffer content = null;
+                    if (_content == null)
+                        content = BufferUtil.EMPTY_BUFFER;
+                    else if (_index < _content.length)
+                    {
+                        while (BufferUtil.isEmpty(content))
+                        {
+                            if (_index >= _content.length)
+                                break;
+                            content = _content[_index++];
+                        }
+                    }
+
                     // if there is no more content available to compress
                     // then we are either finished all content or just the current write.
-                    if (BufferUtil.isEmpty(_content))
+                    if (BufferUtil.isEmpty(content))
                     {
                         if (_last)
                             deflater.finish();
@@ -320,16 +332,16 @@ public class GzipResponse extends Response.Wrapper
                         // it is available in an array for the current deflator API, maybe slicing
                         // of content.
                         ByteBuffer slice;
-                        if (_content.hasArray())
-                            slice = _content;
+                        if (content.hasArray())
+                            slice = content;
                         else
                         {
                             if (_copy == null)
-                                _copy = _channel.getByteBufferPool().acquire(_bufferSize, false);
+                                _copy = getRequest().getComponents().getByteBufferPool().acquire(_bufferSize, false);
                             else
                                 BufferUtil.clear(_copy);
                             slice = _copy;
-                            BufferUtil.append(_copy, _content);
+                            BufferUtil.append(_copy, content);
                         }
 
                         // transfer the data from the slice to the the deflator
@@ -341,7 +353,8 @@ public class GzipResponse extends Response.Wrapper
                         // of the CRC32.update() it is less efficient for us to use this rather than to convert to array ourselves.
                         _deflaterEntry.get().setInput(array, off, len);
                         slice.position(slice.position() + len);
-                        if (_last && BufferUtil.isEmpty(_content))
+                        boolean lastOfCurrentContent = (_content == null) || _index >= _content.length;
+                        if (_last && lastOfCurrentContent && BufferUtil.isEmpty(content))
                             deflater.finish();
                     }
                 }
@@ -364,9 +377,7 @@ public class GzipResponse extends Response.Wrapper
             }
 
             // write the compressed buffer.
-            _interceptor.write(_buffer, _deflaterEntry == null, this);
-
-             */
+            GzipResponse.this.getWrapped().write(_deflaterEntry == null, this, _buffer);
             return Action.SCHEDULED;
         }
 
