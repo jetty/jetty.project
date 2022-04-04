@@ -36,7 +36,7 @@ public class TestableSessionHandler extends AbstractSessionHandler
     java.util.Collection<String> _sessionPassivationListenersCalled = new ArrayList<>();
     java.util.Collection<String> _expiredIds = new ArrayList<>();
 
-    protected Map<String, String> _cookieConfig = new HashMap<String, String>();
+    protected Map<String, String> _cookieConfig = new HashMap<>();
 
     public void clear()
     {
@@ -56,13 +56,16 @@ public class TestableSessionHandler extends AbstractSessionHandler
     {
         return new APISession()
         {
-
             @Override
             public Session getSession()
             {
                 return session;
             }
 
+            public String getId()
+            {
+                return session.getId();
+            }
         };
     }
     
@@ -114,36 +117,35 @@ public class TestableSessionHandler extends AbstractSessionHandler
         _sessionPassivationListenersCalled.add(session.getId());
     }
 
-    @Override
     protected void configureCookies()
     {
         String tmp = _cookieConfig.get(__SessionCookieProperty);
         if (tmp != null)
-            _sessionCookie = tmp;
+            setSessionCookie(tmp);
 
         tmp = _cookieConfig.get(__SessionIdPathParameterNameProperty);
         if (tmp != null)
             setSessionIdPathParameterName(tmp);
 
         // set up the max session cookie age if it isn't already
-        if (_maxCookieAge == -1)
+        if (getMaxCookieAge() == -1)
         {
             tmp = _cookieConfig.get(__MaxAgeProperty);
             if (tmp != null)
-                _maxCookieAge = Integer.parseInt(tmp.trim());
+                setMaxCookieAge(Integer.parseInt(tmp.trim()));
         }
 
         // set up the session domain if it isn't already
-        if (_sessionDomain == null)
-            _sessionDomain = _cookieConfig.get(__SessionDomainProperty);
+        if (getSessionDomain() == null)
+            setSessionDomain(_cookieConfig.get(__SessionDomainProperty));
 
         // set up the sessionPath if it isn't already
-        if (_sessionPath == null)
-            _sessionPath = _cookieConfig.get(__SessionPathProperty);
+        if (getSessionPath() == null)
+            setSessionPath(_cookieConfig.get(__SessionPathProperty));
 
         tmp = _cookieConfig.get(__CheckRemoteSessionEncoding);
         if (tmp != null)
-            _checkingRemoteSessionIdEncoding = Boolean.parseBoolean(tmp);
+            setCheckingRemoteSessionIdEncoding(Boolean.parseBoolean(tmp));
     }
     
     public Map<String, String> getCookieConfig()

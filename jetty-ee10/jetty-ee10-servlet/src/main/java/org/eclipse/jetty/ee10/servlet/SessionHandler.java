@@ -153,19 +153,19 @@ public class SessionHandler extends AbstractSessionHandler
         @Override
         public String getComment()
         {
-            return _sessionComment;
+            return getSessionComment();
         }
 
         @Override
         public String getDomain()
         {
-            return _sessionDomain;
+            return getSessionDomain();
         }
 
         @Override
         public int getMaxAge()
         {
-            return _maxCookieAge;
+            return getMaxCookieAge();
         }
 
         @Override
@@ -191,25 +191,25 @@ public class SessionHandler extends AbstractSessionHandler
         @Override
         public String getName()
         {
-            return _sessionCookie;
+            return getSessionCookie();
         }
 
         @Override
         public String getPath()
         {
-            return _sessionPath;
+            return getSessionPath();
         }
 
         @Override
         public boolean isHttpOnly()
         {
-            return _httpOnly;
+            return isHttpOnly();
         }
 
         @Override
         public boolean isSecure()
         {
-            return _secureCookies;
+            return isSecure();
         }
 
         @Override
@@ -217,7 +217,7 @@ public class SessionHandler extends AbstractSessionHandler
         {
             if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            _sessionComment = comment;
+            setSessionComment(comment);
         }
 
         @Override
@@ -225,7 +225,7 @@ public class SessionHandler extends AbstractSessionHandler
         {
             if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            _sessionDomain = domain;
+            setSessionDomain(domain);
         }
 
         @Override
@@ -233,7 +233,7 @@ public class SessionHandler extends AbstractSessionHandler
         {
             if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            _httpOnly = httpOnly;
+            setHttpOnly(httpOnly);
         }
 
         @Override
@@ -241,7 +241,7 @@ public class SessionHandler extends AbstractSessionHandler
         {
             if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            _maxCookieAge = maxAge;
+            setMaxAge(maxAge);
         }
 
         @Override
@@ -253,7 +253,7 @@ public class SessionHandler extends AbstractSessionHandler
                 throw new IllegalArgumentException("Blank cookie name");
             if (name != null)
                 Syntax.requireValidRFC2616Token(name, "Bad Session cookie name");
-            _sessionCookie = name;
+            setSessionCookie(name);
         }
 
         @Override
@@ -261,7 +261,7 @@ public class SessionHandler extends AbstractSessionHandler
         {
             if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            _sessionPath = path;
+            setSessionPath(path);
         }
 
         @Override
@@ -269,10 +269,10 @@ public class SessionHandler extends AbstractSessionHandler
         {
             if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            _secureCookies = secure;
+            setSecureCookies(secure);
         }
     }
-    
+
     public static class ServletAPISession implements HttpSession, Session.APISession
     {
         public static ServletAPISession wrapSession(Session session)
@@ -442,11 +442,11 @@ public class SessionHandler extends AbstractSessionHandler
     @Override
     public void doStart() throws Exception
     {
-
         super.doStart();
-        if (!(_context instanceof ServletContextHandler.Context))
+        if (!(getContext() instanceof ServletContextHandler.Context))
             throw new IllegalStateException("!ServlerContextHandler.Context");
-        _servletContextHandlerContext = (ServletContextHandler.Context)_context;
+        _servletContextHandlerContext = (ServletContextHandler.Context)getContext();
+        configureCookies();
     }
 
     /**
@@ -461,31 +461,31 @@ public class SessionHandler extends AbstractSessionHandler
             ServletContext servletContext = _servletContextHandlerContext.getServletContext();
             String tmp = servletContext.getInitParameter(__SessionCookieProperty);
             if (tmp != null)
-                _sessionCookie = tmp;
+                setSessionCookie(tmp);
 
             tmp = servletContext.getInitParameter(__SessionIdPathParameterNameProperty);
             if (tmp != null)
                 setSessionIdPathParameterName(tmp);
 
             // set up the max session cookie age if it isn't already
-            if (_maxCookieAge == -1)
+            if (getMaxCookieAge() == -1)
             {
                 tmp = servletContext.getInitParameter(__MaxAgeProperty);
                 if (tmp != null)
-                    _maxCookieAge = Integer.parseInt(tmp.trim());
+                    setMaxCookieAge(Integer.parseInt(tmp.trim()));
             }
 
             // set up the session domain if it isn't already
-            if (_sessionDomain == null)
-                _sessionDomain = servletContext.getInitParameter(__SessionDomainProperty);
+            if (getSessionDomain() == null)
+                setSessionDomain(servletContext.getInitParameter(__SessionDomainProperty));
 
             // set up the sessionPath if it isn't already
-            if (_sessionPath == null)
-                _sessionPath = servletContext.getInitParameter(__SessionPathProperty);
+            if (getSessionPath() == null)
+                setSessionPath(servletContext.getInitParameter(__SessionPathProperty));
 
             tmp = servletContext.getInitParameter(__CheckRemoteSessionEncoding);
             if (tmp != null)
-                _checkingRemoteSessionIdEncoding = Boolean.parseBoolean(tmp);
+                setCheckingRemoteSessionIdEncoding(Boolean.parseBoolean(tmp));
         }
     }
 
@@ -564,7 +564,8 @@ public class SessionHandler extends AbstractSessionHandler
                     }
                 }
             };
-            _sessionContext.run(r);
+
+            getSessionContext().run(r);
         }
     }
 
@@ -642,41 +643,47 @@ public class SessionHandler extends AbstractSessionHandler
             throw new IllegalArgumentException("sessionTrackingModes specifies a combination of SessionTrackingMode.SSL with a session tracking mode other than SessionTrackingMode.SSL");
         }
         _sessionTrackingModes = new HashSet<>(sessionTrackingModes);
-        _usingCookies = _sessionTrackingModes.contains(SessionTrackingMode.COOKIE);
-        _usingURLs = _sessionTrackingModes.contains(SessionTrackingMode.URL);
+        setUsingCookies(_sessionTrackingModes.contains(SessionTrackingMode.COOKIE));
+        setUsingURLs(_sessionTrackingModes.contains(SessionTrackingMode.URL));
     }
 
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
-        // find and set the session if one exists
-        RequestedSession requestedSession = resolveRequestedSessionId(request);
-        
         ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
         ServletContextRequest.ServletApiRequest servletApiRequest =
             (servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
-
-
-        //TODO if not the correct type of request, pass it on to our wrapped handlers?
         if (servletApiRequest == null)
-            throw new IllegalStateException("Request is not a MutableHttpServletRequest");
+            throw new IllegalStateException("Request is not a valid ServletContextRequest");
 
-        servletApiRequest.setSession(requestedSession.session());
-        servletApiRequest.setSessionManager(this);
-        servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
-        servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
+        Request.Processor processor = super.handle(request);
+        if (processor == null)
+            return null;
 
-        ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
-        
-        //Update the cookie
-        HttpCookie cookie = access(requestedSession.session(), request.getConnectionMetaData().isSecure());
+        // TODO rather than wrapping the processor yet again here, we could just inject the
+        //      SessionManager to the servletContextRequest, which already has the ability to
+        //      extend the processor as the ContextRequest is-a Request.WrapperProcessor
+        return (req, res, callback) ->
+        {
+            // find and set the session if one exists
+            RequestedSession requestedSession = resolveRequestedSessionId(req);
+            req.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, servletApiRequest, req));
 
-        // Handle changed ID or max-age refresh, but only if this is not a redispatched request
-        if (cookie != null)
-            Response.replaceCookie(servletContextResponse, cookie);
+            servletApiRequest.setSession(requestedSession.session());
+            servletApiRequest.setSessionManager(this);
+            servletApiRequest.setRequestedSessionId(requestedSession.sessionId());
+            servletApiRequest.setRequestedSessionIdFromCookie(requestedSession.sessionIdFromCookie());
 
-        request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, servletApiRequest, request));
+            HttpCookie cookie = access(requestedSession.session(), req.getConnectionMetaData().isSecure());
 
-        return super.handle(request);
+            // Handle changed ID or max-age refresh, but only if this is not a redispatched request
+            if (cookie != null)
+            {
+                ServletContextResponse servletContextResponse = servletContextRequest.getResponse();
+                Response.replaceCookie(servletContextResponse, cookie);
+            }
+
+            processor.process(req, res, callback);
+        };
     }
 }

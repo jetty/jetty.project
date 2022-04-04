@@ -88,7 +88,7 @@ public class SessionContext
      */
     public void run(Runnable r)
     {
-        if (_context != null)
+        if (_context != null) // TODO I don't think this can be null anymore
             _context.run(r);
         else
             r.run();

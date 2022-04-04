@@ -76,13 +76,7 @@ public interface SessionManager extends LifeCycle
     Session.APISession newSessionAPIWrapper(Session session);
     
     void sessionTimerExpired(Session session, long now);
-    
-    HttpCookie access(Session session, boolean secure);
-    
-    void commit(Session session);
-    
-    void complete(Session session);
-    
+
     void invalidate(String id) throws Exception;
     
     void scavenge() throws Exception;
@@ -91,52 +85,32 @@ public interface SessionManager extends LifeCycle
 
     boolean isUsingCookies();
     
-    public boolean isUsingURLs();
-    
-    void setUsingCookies(boolean usingCookies);
-    
+    boolean isUsingURLs();
+
     HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure);
     
     boolean isCheckingRemoteSessionIdEncoding();
-    
-    void setCheckingRemoteSessionIdEncoding(boolean remote);
-    
-    void setHttpOnly(boolean httpOnly);
-    
+
     boolean isHttpOnly();
-    
-    void setSecureRequestOnly(boolean secureRequestOnly);
-    
+
     boolean isSecureRequestOnly();
     
     String getSessionDomain();
     
     String getSessionPath();
-    
-    void setSessionCookie(String cookieName);
-    
+
     String getSessionIdPathParameterName();
-    
-    void setSessionIdPathParameterName(String param);
-    
+
     String getSessionIdPathParameterNamePrefix();
     
     int getMaxCookieAge();
-    
-    void setMaxCookieAge(int maxCookieAge);
-    
+
     int getRefreshCookieAge();
-    
-    void setRefreshCookieAge(int ageInSeconds);
-    
+
     boolean isSecureCookies();
-    
-    void setSecureCookies(boolean secure);
-    
+
     String getSessionCookie();
-    
-    void setSameSite(HttpCookie.SameSite sameSite); //TODO needed?
-    
+
     void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId) throws Exception;
     
     long calculateInactivityTimeout(String id, long timeRemaining, long maxInactiveMs);
@@ -144,34 +118,44 @@ public interface SessionManager extends LifeCycle
     SessionInactivityTimer newSessionInactivityTimer(Session session);
     
     Context getContext();
-    
-    void setSessionCache(SessionCache cache);
-    
-    void setSessionIdManager(SessionIdManager sessionIdManager);
-    
+
     SessionIdManager getSessionIdManager();
     
     SessionCache getSessionCache();
-    
-    void setMaxInactiveInterval(int msec);
-    
+
     int getMaxInactiveInterval();
     
-    void callSessionIdListeners(Session session, String oldId);
-   
-    void callSessionCreatedListeners(Session session);
-    
-    void callSessionDestroyedListeners(Session session);
-    
-    void callSessionAttributeListeners(Session session, String name, Object old, Object value);
-    
-    void callUnboundBindingListener(Session session, String name, Object value);
-    
-    void callBoundBindingListener(Session session, String name, Object value);
-    
-    void callSessionActivationListener(Session session, String name, Object value);
-    
-    void callSessionPassivationListener(Session session, String name, Object value);
+    default void callSessionIdListeners(Session session, String oldId)
+    {
+    }
+
+    default void callSessionCreatedListeners(Session session)
+    {
+    }
+
+    default void callSessionDestroyedListeners(Session session)
+    {
+    }
+
+    default void callSessionAttributeListeners(Session session, String name, Object old, Object value)
+    {
+    }
+
+    default void callUnboundBindingListener(Session session, String name, Object value)
+    {
+    }
+
+    default void callBoundBindingListener(Session session, String name, Object value)
+    {
+    }
+
+    default void callSessionActivationListener(Session session, String name, Object value)
+    {
+    }
+
+    default void callSessionPassivationListener(Session session, String name, Object value)
+    {
+    }
     
     void recordSessionTime(Session session);
     

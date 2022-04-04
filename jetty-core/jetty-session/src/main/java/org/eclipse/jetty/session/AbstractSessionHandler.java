@@ -52,37 +52,36 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * Setting of max inactive interval for new sessions
      * -1 means no timeout
      */
-    protected int _dftMaxIdleSecs = -1;
-    protected boolean _usingURLs;
-    protected boolean _usingCookies = true;
-    protected SessionIdManager _sessionIdManager;
-    protected ClassLoader _loader;
-    protected Context _context;
-    protected SessionContext _sessionContext;
-    protected SessionCache _sessionCache;
-    protected Set<String> _candidateSessionIdsForExpiry = ConcurrentHashMap.newKeySet();
-    protected Scheduler _scheduler;
-    protected boolean _ownScheduler = false;
-    protected boolean _httpOnly = false;
-    protected String _sessionCookie = __DefaultSessionCookie;
-    protected String _sessionIdPathParameterName = __DefaultSessionIdPathParameterName;
-    protected String _sessionIdPathParameterNamePrefix = ";" + _sessionIdPathParameterName + "=";
-    protected String _sessionDomain;
-    protected String _sessionPath;
-    protected String _sessionComment;
-    protected boolean _secureCookies = false;
-    protected boolean _secureRequestOnly = true;
-    protected int _maxCookieAge = -1;
-    protected int _refreshCookieAge;
-    protected boolean _checkingRemoteSessionIdEncoding;
+    private int _dftMaxIdleSecs = -1;
+
+    private boolean _usingURLs;
+    private boolean _usingCookies = true;
+    private SessionIdManager _sessionIdManager;
+    private ClassLoader _loader;
+    private Context _context;
+    private SessionContext _sessionContext;
+    private SessionCache _sessionCache;
+    private Set<String> _candidateSessionIdsForExpiry = ConcurrentHashMap.newKeySet();
+    private Scheduler _scheduler;
+    private boolean _ownScheduler = false;
+    private boolean _httpOnly = false;
+    private String _sessionCookie = __DefaultSessionCookie;
+    private String _sessionIdPathParameterName = __DefaultSessionIdPathParameterName;
+    private String _sessionIdPathParameterNamePrefix = ";" + _sessionIdPathParameterName + "=";
+    private String _sessionDomain;
+    private String _sessionPath;
+    private String _sessionComment;
+    private boolean _secureCookies = false;
+    private boolean _secureRequestOnly = true;
+    private int _maxCookieAge = -1;
+    private int _refreshCookieAge;
+    private boolean _checkingRemoteSessionIdEncoding;
     private final SampleStatistic _sessionTimeStats = new SampleStatistic();
     private final CounterStatistic _sessionsCreatedStats = new CounterStatistic();
     
     public record RequestedSession(Session session, String sessionId, boolean sessionIdFromCookie)
     {        
     }
-    
-    protected abstract void configureCookies();
     
     public AbstractSessionHandler()
     {
@@ -105,7 +104,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
             {
                 SessionCacheFactory ssFactory = server.getBean(SessionCacheFactory.class);
                 setSessionCache(ssFactory != null ? ssFactory.getSessionCache(this) : new DefaultSessionCache(this));
-                SessionDataStore sds = null;
+                SessionDataStore sds;
                 SessionDataStoreFactory sdsFactory = server.getBean(SessionDataStoreFactory.class);
                 if (sdsFactory != null)
                     sds = sdsFactory.getSessionDataStore(this);
@@ -154,8 +153,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         _sessionContext = new SessionContext(this);
         _sessionCache.initialize(_sessionContext);
         
-        configureCookies();
-        
         super.doStart();
     }
     
@@ -175,7 +172,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     /**
      * Find any Session associated with the Request.
      * 
-     * @param request
+     * @param request The request from which to obtain the ID
      */
     protected RequestedSession resolveRequestedSessionId(Request request)
     {
@@ -270,7 +267,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
             HttpURI uri = request.getHttpURI();
             String param = uri.getParam();
             param = (param == null ? null : param.trim());
-            if (param != null && param.indexOf(getSessionIdPathParameterName()) >= 0)
+            if (param != null && param.contains(getSessionIdPathParameterName()))
             {
                 requestedSessionId = param.substring(getSessionIdPathParameterName().length());
                 requestedSessionIdFromCookie = false;
@@ -319,7 +316,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * The client will only send the cookie value when requesting resources under this path.
      * @param requestIsSecure whether the client is accessing the server over a secure protocol (i.e. HTTPS).
      * @return if this <code>SessionManager</code> uses cookies, then this method will return a new
-     * {@link Cookie cookie object} that should be set on the client in order to link future HTTP requests
+     * {@link HttpCookie cookie object} that should be set on the client in order to link future HTTP requests
      * with the <code>session</code>. If cookies are not in use, this method returns <code>null</code>.
      */
     @Override
@@ -330,7 +327,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
             String sessionPath = (_sessionPath == null) ? contextPath : _sessionPath;
             sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
             String id = session.getExtendedId();
-            HttpCookie cookie = null;
+            HttpCookie cookie;
 
             cookie = new HttpCookie(
                 (_sessionCookie == null ? __DefaultSessionCookie : _sessionCookie),
@@ -349,16 +346,14 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         return null;
     }
     
-    @Override
     public void setRefreshCookieAge(int ageInSeconds)
     {
         _refreshCookieAge = ageInSeconds;
     }
 
     /**
-     * @param usingCookies 
+     * @param usingCookies true if cookies are used to track sessions
      */
-    @Override
     public void setUsingCookies(boolean usingCookies)
     {
         _usingCookies = usingCookies;
@@ -377,7 +372,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     /**
      * @param remote True if absolute URLs are check for remoteness before being session encoded.
      */
-    @Override
     public void setCheckingRemoteSessionIdEncoding(boolean remote)
     {
         _checkingRemoteSessionIdEncoding = remote;
@@ -388,6 +382,11 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     public String getSessionDomain()
     {
         return _sessionDomain;
+    }
+
+    public void setSessionDomain(String domain)
+    {
+        _sessionDomain = domain;
     }
     
     @ManagedAttribute("path of the session cookie, or null for default")
@@ -426,7 +425,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         return _maxCookieAge;
     }
     
-    @Override
     public void setMaxCookieAge(int maxCookieAge)
     {
         _maxCookieAge = maxCookieAge;
@@ -462,7 +460,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         return _secureCookies;
     }
     
-    @Override
     public void setSecureCookies(boolean secure)
     {
         _secureCookies = secure;
@@ -490,7 +487,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      *
      * @param secureRequestOnly true to set Session Cookie Config as secure
      */
-    @Override
     public void setSecureRequestOnly(boolean secureRequestOnly)
     {
         _secureRequestOnly = secureRequestOnly;
@@ -502,7 +498,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @param httpOnly True if cookies should be HttpOnly.
      * @see HttpCookie
      */
-    @Override
     public void setHttpOnly(boolean httpOnly)
     {
         _httpOnly = httpOnly;
@@ -510,11 +505,9 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     
     /**
      * Set Session cookie sameSite mode.
-     * Currently this is encoded in the session comment until sameSite is supported by {@link SessionCookieConfig}
      *
      * @param sameSite The sameSite setting for Session cookies (or null for no sameSite setting)
      */
-    @Override
     public void setSameSite(HttpCookie.SameSite sameSite)
     {
         // Encode in comment whilst not supported by SessionConfig, so that it can be set/saved in
@@ -523,7 +516,21 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         _sessionComment = HttpCookie.getCommentWithAttributes(_sessionComment, false, sameSite);
     }
 
-    @Override
+    public void setSessionPath(String sessionPath)
+    {
+        _sessionPath = sessionPath;
+    }
+
+    public String getSessionComment()
+    {
+        return _sessionComment;
+    }
+
+    public void setSessionComment(String sessionComment)
+    {
+        _sessionComment = sessionComment;
+    }
+
     public void setSessionCookie(String cookieName)
     {
         _sessionCookie = cookieName;
@@ -536,7 +543,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @see #getSessionIdPathParameterName()
      * @see #getSessionIdPathParameterNamePrefix()
      */
-    @Override
     public void setSessionIdPathParameterName(String param)
     {
         _sessionIdPathParameterName = (param == null || "none".equals(param)) ? null : param;
@@ -804,7 +810,12 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     {
         return _usingURLs;
     }
-    
+
+    public void setUsingURLs(boolean usingURLs)
+    {
+        _usingURLs = usingURLs;
+    }
+
     /**
      * @return true if using session cookies is allowed, false otherwise
      */
@@ -819,7 +830,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      *
      * @param session the session object
      */
-    @Override
     public void complete(Session session)
     {
         if (LOG.isDebugEnabled())
@@ -843,7 +853,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * so that any subsequent requests to other servers
      * will see the modifications.
      */
-    @Override
     public void commit(Session session)
     {
         if (session == null)
@@ -860,7 +869,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     }
     
     /**
-     * Called by the {@link SessionHandler} when a session is first accessed by a request.
+     * Called when a session is first accessed by request processing.
      *
      * Updates the last access time for the session and generates a fresh cookie if necessary.
      *
@@ -868,9 +877,8 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @param secure whether the request is secure or not
      * @return the session cookie. If not null, this cookie should be set on the response to either migrate
      * the session or to refresh a session cookie that may expire.
-     * @see #complete(HttpSession)
+     * @see #complete(Session)
      */
-    @Override
     public HttpCookie access(Session session, boolean secure)
     {
         if (session == null)
@@ -946,13 +954,15 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * and any idle eviction time configured.
      * The timer value will be the lesser of the above.
      *
-     * @param now the time at which to calculate remaining expiry
+     * @param id the ID of the session
+     * @param timeRemainingMs The time in milliseconds remaining before this session is considered Idle
+     * @param maxInactiveMs The maximum time in milliseconds that a session may be idle.
      * @return the time remaining before expiry or inactivity timeout
      */
     @Override
-    public long calculateInactivityTimeout(String id, long timeRemaining, long maxInactiveMs)
+    public long calculateInactivityTimeout(String id, long timeRemainingMs, long maxInactiveMs)
     {
-        long time = 0;
+        long time;
 
         int evictionPolicy = _sessionCache.getEvictionPolicy();
         if (maxInactiveMs <= 0)
@@ -979,7 +989,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
             if (evictionPolicy == SessionCache.NEVER_EVICT)
             {
                 //timeout is the time remaining until its expiry
-                time = (timeRemaining > 0 ? timeRemaining : 0);
+                time = (timeRemainingMs > 0 ? timeRemainingMs : 0);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Session {} no eviction", id);
             }
@@ -994,7 +1004,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
             {
                 // want to evict on idle: timeout is lesser of the session's
                 // expiration remaining and the eviction timeout
-                time = (timeRemaining > 0 ? (Math.min(maxInactiveMs, TimeUnit.SECONDS.toMillis(evictionPolicy))) : 0);
+                time = (timeRemainingMs > 0 ? (Math.min(maxInactiveMs, TimeUnit.SECONDS.toMillis(evictionPolicy))) : 0);
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Session {} timer set to lesser of maxInactive={} and inactivityEvict={}", id,
@@ -1020,7 +1030,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * 
      * @param cache the SessionCache to use
      */
-    @Override
     public void setSessionCache(SessionCache cache)
     {
         updateBean(_sessionCache, cache);
@@ -1041,7 +1050,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * 
      * @param sessionIdManager The sessionIdManager used for cross context session management.
      */
-    @Override
     public void setSessionIdManager(SessionIdManager sessionIdManager)
     {
         updateBean(_sessionIdManager, sessionIdManager);
@@ -1057,6 +1065,11 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     public org.eclipse.jetty.server.Context getContext()
     {
         return _context;
+    }
+
+    public SessionContext getSessionContext()
+    {
+        return _sessionContext;
     }
     
     /**
@@ -1076,7 +1089,6 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * @param seconds the max inactivity period, in seconds.
      * @see #getMaxInactiveInterval()
      */
-    @Override
     public void setMaxInactiveInterval(int seconds)
     {
         _dftMaxIdleSecs = seconds;
