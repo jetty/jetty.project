@@ -26,7 +26,6 @@ import java.util.HashSet;
 import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
-
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.Session;
