@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 
 /**
@@ -140,13 +141,22 @@ public class SimpleSessionHandlerTest
     @Test
     public void testNoSession() throws Exception
     {
-        HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse("""
+        LocalConnector.LocalEndPoint endPoint = _connector.connect();
+        endPoint.addInput("""
             GET / HTTP/1.1
             Host: localhost
-            Connection: close
             
-            """));
+            GET / HTTP/1.1
+            Host: localhost
+            Cookie: SIMPLE=oldCookieId
 
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getContent(), containsString("No Session"));
+
+        response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
         assertThat(response.getContent(), containsString("No Session"));
     }
@@ -158,9 +168,11 @@ public class SimpleSessionHandlerTest
         endPoint.addInput("""
             GET / HTTP/1.1
             Host: localhost
+            Cookie: SIMPLE=oldCookieId
             
             GET /create HTTP/1.1
             Host: localhost
+            Cookie: SIMPLE=oldCookieId
             
             """);
 
@@ -173,6 +185,7 @@ public class SimpleSessionHandlerTest
         String content = response.getContent();
         assertThat(content, startsWith("Session="));
         String id = content.substring(content.indexOf('=') + 1, content.indexOf('\n'));
+        assertThat(id, not(equalTo("oldCookieId")));
 
         endPoint.addInput("""
             GET / HTTP/1.1
