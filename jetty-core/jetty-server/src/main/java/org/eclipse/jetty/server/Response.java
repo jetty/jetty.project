@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.ListIterator;
 
@@ -27,9 +28,10 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
-import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;
@@ -41,7 +43,7 @@ import org.slf4j.LoggerFactory;
  */
 public interface Response extends Content.Writer
 {
-    Logger LOG = LoggerFactory.getLogger(ContextRequest.class);
+    Logger LOG = LoggerFactory.getLogger(Response.class);
 
     // This is needed so that response methods can access the wrapped Request#getContext method
     Request getRequest();
@@ -66,6 +68,8 @@ public interface Response extends Content.Writer
     }
 
     boolean isCommitted();
+
+    boolean isCompletedSuccessfully();
 
     void reset();
 
@@ -263,9 +267,6 @@ public interface Response extends Content.Writer
 
         Context context = request.getContext();
         Request.Processor errorProcessor = context.getErrorProcessor();
-        if (errorProcessor == null)
-            errorProcessor = request.getConnectionMetaData().getConnector().getServer().getErrorProcessor();
-
         if (errorProcessor != null)
         {
             Request errorRequest = new ErrorProcessor.ErrorRequest(request, status, message, cause);
@@ -298,7 +299,7 @@ public interface Response extends Content.Writer
     static long getContentBytesWritten(Response response)
     {
         Response originalResponse = getOriginalResponse(response);
-        if (originalResponse instanceof HttpChannel.ChannelResponse channelResponse)
+        if (originalResponse instanceof HttpChannelState.ChannelResponse channelResponse)
             return channelResponse.getContentBytesWritten();
         return -1;
     }
@@ -362,6 +363,12 @@ public interface Response extends Content.Writer
         }
 
         @Override
+        public boolean isCompletedSuccessfully()
+        {
+            return getWrapped().isCompletedSuccessfully();
+        }
+
+        @Override
         public void reset()
         {
             getWrapped().reset();
@@ -372,5 +379,56 @@ public interface Response extends Content.Writer
     static OutputStream asOutputStream(Response response)
     {
         return Content.asOutputStream(response);
+    }
+
+    // TODO test and document
+    static WritableByteChannel asWritableByteChannel(Response response)
+    {
+        ConnectionMetaData connectionMetaData = response.getRequest().getConnectionMetaData();
+
+        // TODO
+        // Return the socket channel when using HTTP11 without SSL to allow for zero-copy FileChannel.transferTo()
+//        if (connectionMetaData.getHttpVersion() == HttpVersion.HTTP_1_1 && !connectionMetaData.isSecure())
+//        {
+//            // This returns the socket channel.
+//            Object transport = connectionMetaData.getConnection().getEndPoint().getTransport();
+//            if (transport instanceof WritableByteChannel wbc)
+//                return wbc;
+//        }
+
+        return new WritableByteChannel()
+        {
+            private boolean closed;
+            @Override
+            public int write(ByteBuffer src) throws IOException
+            {
+                try (Blocking.Callback callback = Blocking.callback())
+                {
+                    int written = src.remaining();
+                    response.write(false, callback, src);
+                    callback.block();
+                    return written;
+                }
+            }
+
+            @Override
+            public boolean isOpen()
+            {
+                return !closed;
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                if (closed)
+                    return;
+                try (Blocking.Callback callback = Blocking.callback())
+                {
+                    response.write(true, callback, BufferUtil.EMPTY_BUFFER);
+                    callback.block();
+                    closed = true;
+                }
+            }
+        };
     }
 }

@@ -88,7 +88,7 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
-        _mappedServlet.handle(_servletHandler, new ErrorRequest(httpRequest), httpResponse);
+        _mappedServlet.handle(_servletHandler, _pathInContext, new ErrorRequest(httpRequest), httpResponse);
     }
 
     @Override
@@ -99,7 +99,7 @@ public class Dispatcher implements RequestDispatcher
 
         ServletContextRequest baseRequest = Objects.requireNonNull(ServletContextRequest.getBaseRequest(request));
         baseRequest.getResponse().resetForForward();
-        _mappedServlet.handle(_servletHandler, new ForwardRequest(httpRequest), httpResponse);
+        _mappedServlet.handle(_servletHandler, _pathInContext, new ForwardRequest(httpRequest), httpResponse);
 
         // If we are not async and not closed already, then close via the possibly wrapped response.
         if (!baseRequest.getState().isAsync() && !baseRequest.getHttpOutput().isClosed())
@@ -121,7 +121,7 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
-        _mappedServlet.handle(_servletHandler, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
+        _mappedServlet.handle(_servletHandler, _pathInContext, new IncludeRequest(httpRequest), new IncludeResponse(httpResponse));
     }
 
     public void async(ServletRequest request, ServletResponse response) throws ServletException, IOException
@@ -129,7 +129,7 @@ public class Dispatcher implements RequestDispatcher
         HttpServletRequest httpRequest = (request instanceof HttpServletRequest) ? (HttpServletRequest)request : new ServletRequestHttpWrapper(request);
         HttpServletResponse httpResponse = (response instanceof HttpServletResponse) ? (HttpServletResponse)response : new ServletResponseHttpWrapper(response);
 
-        _mappedServlet.handle(_servletHandler, new AsyncRequest(httpRequest), httpResponse);
+        _mappedServlet.handle(_servletHandler, _pathInContext, new AsyncRequest(httpRequest), httpResponse);
     }
 
     public class ParameterRequestWrapper extends HttpServletRequestWrapper

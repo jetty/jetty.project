@@ -850,7 +850,7 @@ public interface HttpFields extends Iterable<HttpField>
          */
         default Mutable putLongField(HttpHeader name, long value)
         {
-            return put(name, Long.toString(value));
+            return put(new HttpField.LongValueHttpField(name, value));
         }
 
         /**
@@ -1447,30 +1447,6 @@ public interface HttpFields extends Iterable<HttpField>
                     add(name, v);
             }
             return this;
-        }
-
-        @Override
-        public Mutable putDateField(HttpHeader name, long date)
-        {
-            return put(name, DateGenerator.formatDate(date));
-        }
-
-        @Override
-        public Mutable putDateField(String name, long date)
-        {
-            return put(name, DateGenerator.formatDate(date));
-        }
-
-        @Override
-        public Mutable putLongField(HttpHeader name, long value)
-        {
-            return put(name, Long.toString(value));
-        }
-
-        @Override
-        public Mutable putLongField(String name, long value)
-        {
-            return put(name, Long.toString(value));
         }
 
         @Override

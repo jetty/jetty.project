@@ -23,6 +23,7 @@ import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.List;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
@@ -39,7 +40,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_LENGTH;
@@ -59,7 +59,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * TODO: increase the testing going on here
  */
-@Disabled // TODO
 public class ResourceHandlerTest
 {
     private static String LN = System.getProperty("line.separator");
@@ -126,8 +125,8 @@ public class ResourceHandlerTest
 
         _resourceHandler = new ResourceHandler();
 
-        _resourceHandler.setResourceBase(MavenTestingUtils.getTargetFile("test-classes/simple").getAbsolutePath());
-        _resourceHandler.setWelcomeFiles(new String[]{"welcome.txt"});
+        _resourceHandler.setBaseResource(MavenTestingUtils.getTargetFile("test-classes/simple").toPath());
+        _resourceHandler.setWelcomeFiles(List.of("welcome.txt"));
 
         _contextHandler = new ContextHandler("/resource");
         _contextHandler.setHandler(_resourceHandler);
@@ -152,8 +151,8 @@ public class ResourceHandlerTest
     {
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(302));
-        assertThat(response.get(LOCATION), containsString("/resource/"));
+        assertThat(response.getStatus(), equalTo(301));
+        assertThat(response.get(LOCATION), endsWith("/resource/"));
     }
 
     @Test
@@ -199,6 +198,33 @@ public class ResourceHandlerTest
                 "\r\n"));
 
         assertThat(response.getStatus(), equalTo(304));
+    }
+
+    @Test
+    public void testResourceRedirect() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/simple.txt/ HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(302));
+        assertThat(response.get(LOCATION), endsWith("/resource/simple.txt"));
+    }
+
+    @Test
+    public void testDirectoryRedirect() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/directory HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(302));
+        assertThat(response.get(LOCATION), endsWith("/resource/directory/"));
+    }
+
+    @Test
+    public void testNonExistentFile() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/no-such-file.txt HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), equalTo(404));
+        assertThat(response.getContent(), Matchers.containsString("Error 404 Not Found"));
     }
 
     @Test

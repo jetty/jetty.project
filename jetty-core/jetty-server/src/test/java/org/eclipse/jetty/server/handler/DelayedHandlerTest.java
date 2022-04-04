@@ -20,24 +20,28 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.awaitility.Awaitility;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.FutureFormFields;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -250,16 +254,13 @@ public class DelayedHandlerTest
             output.flush();
         }
 
-        waitFor(processing, QOS);
-        assertThat(processing.get(), is(QOS));
+        await().atMost(5, TimeUnit.SECONDS).until(processing::get, equalTo(QOS));
 
         for (int i = 0; i < socket.length; i++)
         {
             semaphore.release();
             int count = i + 1;
-
-            waitFor(processing, QOS + Math.min(EXTRA, count));
-            assertThat(processing.get(), is(QOS + Math.min(EXTRA, count)));
+            await().atMost(5, TimeUnit.SECONDS).until(processing::get, equalTo(QOS + Math.min(EXTRA, count)));
         }
 
         assertTrue(complete.await(5, TimeUnit.SECONDS));
@@ -387,14 +388,73 @@ public class DelayedHandlerTest
         }
     }
 
-    private void waitFor(AtomicInteger test, int value) throws TimeoutException
+    @Test
+    public void testDelayedFormFields() throws Exception
     {
-        long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-        while (test.get() < value)
+        DelayedHandler delayedHandler = new DelayedHandler.UntilFormFields();
+
+        _server.setHandler(delayedHandler);
+        CountDownLatch processing = new CountDownLatch(2);
+        delayedHandler.setHandler(new Handler.Processor()
         {
-            if (System.nanoTime() > end)
-                throw new TimeoutException();
-            Thread.onSpinWait();
+            @Override
+            public void process(Request request, Response response, Callback callback) throws Exception
+            {
+                processing.countDown();
+                Fields fields = FutureFormFields.forRequest(request).get(1, TimeUnit.NANOSECONDS);
+                response.write(true, callback, String.valueOf(fields));
+            }
+        });
+        _server.start();
+
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
+        {
+            OutputStream output = socket.getOutputStream();
+
+            output.write("""
+                GET / HTTP/1.1
+                Host: localhost
+                
+                """.getBytes(StandardCharsets.UTF_8));
+            output.flush();
+
+            Awaitility.await().atMost(5, TimeUnit.SECONDS).until(processing::getCount, equalTo(1L));
+            HttpTester.Input input = HttpTester.from(socket.getInputStream());
+            HttpTester.Response response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            String content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, containsString("null"));
+
+            output.write("""
+                POST / HTTP/1.1
+                Host: localhost
+                Content-Type: %s
+                Content-Length: 22
+                
+                """.formatted(MimeTypes.Type.FORM_ENCODED).getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            assertFalse(processing.await(100, TimeUnit.MILLISECONDS));
+
+            output.write("name=value".getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            assertFalse(processing.await(100, TimeUnit.MILLISECONDS));
+
+            output.write("&x=1&x=2&".getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            assertFalse(processing.await(100, TimeUnit.MILLISECONDS));
+
+            output.write("x=3".getBytes(StandardCharsets.UTF_8));
+            output.flush();
+            assertTrue(processing.await(10, TimeUnit.SECONDS));
+
+            input = HttpTester.from(socket.getInputStream());
+            response = HttpTester.parseResponse(input);
+            assertNotNull(response);
+            assertEquals(HttpStatus.OK_200, response.getStatus());
+            content = new String(response.getContentBytes(), StandardCharsets.UTF_8);
+            assertThat(content, containsString("name=[value]"));
+            assertThat(content, containsString("x=[1, 2, 3]"));
         }
     }
 }

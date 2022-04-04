@@ -169,8 +169,8 @@ public class AllowSymLinkAliasCheckerTest
         server.addConnector(localConnector);
 
         ResourceHandler fileResourceHandler = new ResourceHandler();
-        fileResourceHandler.setDirectoriesListed(true);
-        fileResourceHandler.setWelcomeFiles(new String[]{"index.html"});
+        fileResourceHandler.setDirAllowed(true);
+        fileResourceHandler.setWelcomeFiles(List.of("index.html"));
         fileResourceHandler.setEtags(true);
 
         ContextHandler fileResourceContext = new ContextHandler();

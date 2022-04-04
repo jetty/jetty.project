@@ -49,8 +49,8 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -375,10 +375,11 @@ public class SSLEngineTest
             String sslId = sslData.getId();
             assertNotNull(sslId);
 
-            MultiMap<String> params = Request.extractQueryParameters(request);
-            if (params.get("dump") != null)
+            Fields fields = Request.extractQueryParameters(request);
+            Fields.Field dumpField = fields.get("dump");
+            if (dumpField != null)
             {
-                byte[] buf = new byte[Integer.parseInt(params.getValue("dump"))];
+                byte[] buf = new byte[dumpField.getValueAsInt()];
                 // System.err.println("DUMP "+buf.length);
                 for (int i = 0; i < buf.length; i++)
                 {

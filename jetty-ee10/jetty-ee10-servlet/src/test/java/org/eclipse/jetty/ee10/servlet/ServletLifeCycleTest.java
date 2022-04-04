@@ -76,50 +76,50 @@ public class ServletLifeCycleTest
         }, "/3/*");
 
         assertThat(events, Matchers.contains(
-            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener2",
-            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
-            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet3"));
+            "Decorate class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestListener2",
+            "Decorate class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestFilter2",
+            "Decorate class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet3"));
 
         events.clear();
         server.start();
         assertThat(events, Matchers.contains(
-            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener",
-            "ContextInitialized class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener2",
-            "ContextInitialized class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener",
-            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
-            "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
-            "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
-            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
-            "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
-            "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet3"));
+            "Decorate class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestListener",
+            "ContextInitialized class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestListener2",
+            "ContextInitialized class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestListener",
+            "Decorate class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestFilter",
+            "init class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestFilter",
+            "init class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestFilter2",
+            "Decorate class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet",
+            "init class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet",
+            "init class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet3"));
 
         events.clear();
         connector.getResponse("GET /2/info HTTP/1.0\r\n\r\n");
 
         assertThat(events, Matchers.contains(
-            "Decorate class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2",
-            "init class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2",
-            "doFilter class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
-            "doFilter class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
-            "service class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2"));
+            "Decorate class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet2",
+            "init class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet2",
+            "doFilter class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestFilter",
+            "doFilter class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestFilter2",
+            "service class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet2"));
 
         events.clear();
         server.stop();
 
         assertThat(events, Matchers.contains(
-            "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
-            "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter2",
-            "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
-            "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestFilter",
-            "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet3",
-            "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet3",
-            "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2",
-            "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet2",
-            "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
-            "destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestServlet",
-            "contextDestroyed class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener",
-            "contextDestroyed class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener2",
-            "Destroy class org.eclipse.jetty.servlet.ServletLifeCycleTest$TestListener"
+            "Destroy class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestFilter2",
+            "destroy class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestFilter2",
+            "Destroy class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestFilter",
+            "destroy class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestFilter",
+            "Destroy class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet3",
+            "destroy class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet3",
+            "Destroy class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet2",
+            "destroy class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet2",
+            "Destroy class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet",
+            "destroy class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestServlet",
+            "contextDestroyed class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestListener",
+            "contextDestroyed class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestListener2",
+            "Destroy class org.eclipse.jetty.ee10.servlet.ServletLifeCycleTest$TestListener"
         ));
 
         // Listener added before start is not destroyed

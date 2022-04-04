@@ -46,10 +46,10 @@ public class ServletRequestState
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServletRequestState.class);
 
-    private static final long DEFAULT_TIMEOUT = Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT", 30000L);
+    private static final long DEFAULT_TIMEOUT = Long.getLong("%s.DEFAULT_TIMEOUT".formatted(ServletRequestState.class.getName()), 30000L);
 
     /*
-     * The state of the HttpChannel,used to control the overall lifecycle.
+     * The state of the ServletChannel,used to control the overall lifecycle.
      * <pre>
      *     IDLE <-----> HANDLING ----> WAITING
      *       |                 ^       /

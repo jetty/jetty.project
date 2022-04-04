@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +50,7 @@ public abstract class AbstractHttpTest
         connector.setIdleTimeout(100000);
 
         server.addConnector(connector);
-        stacklessChannelLogging = new StacklessLogging(HttpChannel.class);
+        stacklessChannelLogging = new StacklessLogging(HttpChannelState.class);
     }
 
     @AfterEach

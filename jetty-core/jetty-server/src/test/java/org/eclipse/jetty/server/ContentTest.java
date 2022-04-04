@@ -278,7 +278,7 @@ public class ContentTest
     @Test
     public void testFields() throws Exception
     {
-        Content.FieldsFuture future = new Content.FieldsFuture(_provider);
+        FutureFormFields future = new FutureFormFields(_provider);
 
         Runnable todo = _provider.takeDemand();
         assertNotNull(todo);

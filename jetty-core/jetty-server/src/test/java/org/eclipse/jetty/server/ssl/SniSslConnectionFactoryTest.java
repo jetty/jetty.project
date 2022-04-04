@@ -493,8 +493,8 @@ public class SniSslConnectionFactoryTest
 
         assertEquals("customize connector class org.eclipse.jetty.io.ssl.SslConnection,false", history.poll());
         assertEquals("customize ssl class org.eclipse.jetty.io.ssl.SslConnection,false", history.poll());
-        assertEquals("customize connector class org.eclipse.jetty.server.HttpConnection,true", history.poll());
-        assertEquals("customize http class org.eclipse.jetty.server.HttpConnection,true", history.poll());
+        assertEquals("customize connector class org.eclipse.jetty.server.internal.HttpConnection,true", history.poll());
+        assertEquals("customize http class org.eclipse.jetty.server.internal.HttpConnection,true", history.poll());
         assertEquals(0, history.size());
     }
 

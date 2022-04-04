@@ -17,10 +17,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
-import org.eclipse.jetty.util.resource.Resource;
 
 public class PrecompressedHttpContent implements HttpContent
 {
@@ -52,7 +52,7 @@ public class PrecompressedHttpContent implements HttpContent
     }
 
     @Override
-    public Resource getResource()
+    public Path getResource()
     {
         return _content.getResource();
     }
@@ -66,7 +66,8 @@ public class PrecompressedHttpContent implements HttpContent
     @Override
     public String getETagValue()
     {
-        return _content.getResource().getWeakETag(_format.getEtagSuffix());
+        //return _content.getResource().getWeakETag(_format.getEtagSuffix());
+        return null;
     }
 
     @Override
@@ -166,7 +167,8 @@ public class PrecompressedHttpContent implements HttpContent
             this.getClass().getSimpleName(), hashCode(),
             _format,
             _content.getResource(), _precompressedContent.getResource(),
-            _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
+//            _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
+            0L, 0L,
             getContentType());
     }
 

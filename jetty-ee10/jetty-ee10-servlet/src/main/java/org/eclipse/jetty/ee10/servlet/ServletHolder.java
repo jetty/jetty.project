@@ -44,6 +44,8 @@ import jakarta.servlet.ServletRequestWrapper;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Loader;
@@ -1316,20 +1318,41 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
         {
             if (req.isAsyncSupported())
             {
-                getWrapped().service(new ServletRequestWrapper(req)
+                if (req instanceof HttpServletRequest httpServletRequest)
                 {
-                    @Override
-                    public boolean isAsyncSupported()
+                    getWrapped().service(new HttpServletRequestWrapper(httpServletRequest)
                     {
-                        return false;
-                    }
+                        @Override
+                        public boolean isAsyncSupported()
+                        {
+                            return false;
+                        }
 
-                    @Override
-                    public AsyncContext startAsync() throws IllegalStateException
+                        @Override
+                        public AsyncContext startAsync() throws IllegalStateException
+                        {
+                            throw new IllegalStateException("Async Not Supported");
+                        }
+                    }, res);
+                }
+                else
+                {
+                    //TODO is this necessary to support?
+                    getWrapped().service(new ServletRequestWrapper(req)
                     {
-                        throw new IllegalStateException("Async Not Supported");
-                    }
-                }, res);
+                        @Override
+                        public boolean isAsyncSupported()
+                        {
+                            return false;
+                        }
+
+                        @Override
+                        public AsyncContext startAsync() throws IllegalStateException
+                        {
+                            throw new IllegalStateException("Async Not Supported");
+                        }
+                    }, res);
+                }
             }
             else
             {

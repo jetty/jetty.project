@@ -31,13 +31,12 @@ import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.internal.ClassLoaderDump;
 import org.eclipse.jetty.util.Attributes;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
@@ -132,41 +131,6 @@ public class Server extends Handler.Wrapper implements Attributes
     public Context getContext()
     {
         return _serverContext;
-    }
-
-    void customizeHandleAndProcess(HttpChannel.ChannelRequest request, Response response, Callback callback)
-    {
-        if (!isStarted())
-            return;
-
-        HttpChannel httpChannel = request.getHttpChannel();
-        Request customized = request;
-        boolean processing = false;
-        try
-        {
-            // Customize before accepting.
-            HttpConfiguration configuration = httpChannel.getHttpConfiguration();
-
-            for (HttpConfiguration.Customizer customizer : configuration.getCustomizers())
-            {
-                Request next = customizer.customize(request, response.getHeaders());
-                customized = next == null ? customized : next;
-            }
-
-            Request.Processor processor = handle(customized);
-            processing = true;
-            httpChannel.enableProcessing();
-            if (processor == null)
-                Response.writeError(request, response, callback, HttpStatus.NOT_FOUND_404);
-            else
-                processor.process(customized, response, callback);
-        }
-        catch (Throwable x)
-        {
-            if (!processing)
-                httpChannel.enableProcessing();
-            callback.failed(x);
-        }
     }
 
     @Override

@@ -13,12 +13,33 @@
 
 package org.eclipse.jetty.server.handler;
 
-import org.junit.jupiter.api.Disabled;
+import java.net.Socket;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
-@Disabled // TODO
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.Callback;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.awaitility.Awaitility.await;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+
 public class ThreadLimitHandlerTest
 {
-    /* TODO
     private Server _server;
     private NetworkConnector _connector;
     private LocalConnector _local;
@@ -53,13 +74,13 @@ public class ThreadLimitHandlerTest
                 return super.getThreadLimit(ip);
             }
         };
-        handler.setHandler(new AbstractHandler()
+        handler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback)
             {
-                baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
+                callback.succeeded();
             }
         });
         _server.setHandler(handler);
@@ -67,15 +88,15 @@ public class ThreadLimitHandlerTest
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\n\r\n");
-        assertThat(last.get(), Matchers.is("0.0.0.0"));
+        assertThat(last.get(), is("0.0.0.0"));
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
-        assertThat(last.get(), Matchers.is("0.0.0.0"));
+        assertThat(last.get(), is("0.0.0.0"));
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
-        assertThat(last.get(), Matchers.is("0.0.0.0"));
+        assertThat(last.get(), is("0.0.0.0"));
     }
 
     @Test
@@ -91,24 +112,33 @@ public class ThreadLimitHandlerTest
                 return super.getThreadLimit(ip);
             }
         };
+        handler.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                response.setStatus(HttpStatus.OK_200);
+                callback.succeeded();
+            }
+        });
         _server.setHandler(handler);
         _server.start();
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\n\r\n");
-        assertThat(last.get(), Matchers.is("0.0.0.0"));
+        assertThat(last.get(), is("0.0.0.0"));
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
-        assertThat(last.get(), Matchers.is("1.2.3.4"));
+        assertThat(last.get(), is("1.2.3.4"));
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
-        assertThat(last.get(), Matchers.is("0.0.0.0"));
+        assertThat(last.get(), is("0.0.0.0"));
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nX-Forwarded-For: 6.6.6.6,1.2.3.4\r\nForwarded: for=1.2.3.4\r\n\r\n");
-        assertThat(last.get(), Matchers.is("1.2.3.4"));
+        assertThat(last.get(), is("1.2.3.4"));
     }
 
     @Test
@@ -124,24 +154,33 @@ public class ThreadLimitHandlerTest
                 return super.getThreadLimit(ip);
             }
         };
+        handler.setHandler(new Handler.Processor()
+        {
+            @Override
+            public void process(Request request, Response response, Callback callback)
+            {
+                response.setStatus(HttpStatus.OK_200);
+                callback.succeeded();
+            }
+        });
         _server.setHandler(handler);
         _server.start();
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\n\r\n");
-        assertThat(last.get(), Matchers.is("0.0.0.0"));
+        assertThat(last.get(), is("0.0.0.0"));
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.2.3.4\r\n\r\n");
-        assertThat(last.get(), Matchers.is("0.0.0.0"));
+        assertThat(last.get(), is("0.0.0.0"));
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n");
-        assertThat(last.get(), Matchers.is("1.2.3.4"));
+        assertThat(last.get(), is("1.2.3.4"));
 
         last.set(null);
         _local.getResponse("GET / HTTP/1.0\r\nX-Forwarded-For: 1.1.1.1\r\nForwarded: for=6.6.6.6; for=1.2.3.4\r\nX-Forwarded-For: 6.6.6.6\r\nForwarded: proto=https\r\n\r\n");
-        assertThat(last.get(), Matchers.is("1.2.3.4"));
+        assertThat(last.get(), is("1.2.3.4"));
     }
 
     @Test
@@ -154,30 +193,26 @@ public class ThreadLimitHandlerTest
         AtomicInteger count = new AtomicInteger(0);
         AtomicInteger total = new AtomicInteger(0);
         CountDownLatch latch = new CountDownLatch(1);
-        handler.setHandler(new AbstractHandler()
+        handler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
                 response.setStatus(HttpStatus.OK_200);
-                if ("/other".equals(target))
-                    return;
-
-                try
+                if (!"/other".equals(request.getPathInContext()))
                 {
-                    count.incrementAndGet();
-                    total.incrementAndGet();
-                    latch.await();
+                    try
+                    {
+                        count.incrementAndGet();
+                        total.incrementAndGet();
+                        latch.await();
+                    }
+                    finally
+                    {
+                        count.decrementAndGet();
+                    }
                 }
-                catch (InterruptedException e)
-                {
-                    throw new ServletException(e);
-                }
-                finally
-                {
-                    count.decrementAndGet();
-                }
+                callback.succeeded();
             }
         });
         _server.setHandler(handler);
@@ -189,33 +224,19 @@ public class ThreadLimitHandlerTest
             client[i] = new Socket("127.0.0.1", _connector.getLocalPort());
             client[i].getOutputStream().write(("GET /" + i + " HTTP/1.0\r\nForwarded: for=1.2.3.4\r\n\r\n").getBytes());
             client[i].getOutputStream().flush();
+            client[i].close();
         }
 
-        long wait = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
-        while (count.get() < 4 && System.nanoTime() < wait)
-        {
-            Thread.sleep(1);
-        }
-        assertThat(count.get(), is(4));
+        await().atMost(10, TimeUnit.SECONDS).until(count::get, is(4));
 
         // check that other requests are not blocked
-        assertThat(_local.getResponse("GET /other HTTP/1.0\r\nForwarded: for=6.6.6.6\r\n\r\n"), Matchers.containsString(" 200 OK"));
+        String response = _local.getResponse("GET /other HTTP/1.0\r\nForwarded: for=6.6.6.6\r\n\r\n");
+        assertThat(response, Matchers.containsString(" 200 OK"));
 
         // let the other requests go
         latch.countDown();
 
-        while (total.get() < 10 && System.nanoTime() < wait)
-        {
-            Thread.sleep(10);
-        }
-        assertThat(total.get(), is(10));
-
-        while (count.get() > 0 && System.nanoTime() < wait)
-        {
-            Thread.sleep(10);
-        }
-        assertThat(count.get(), is(0));
+        await().atMost(10, TimeUnit.SECONDS).until(total::get, is(10));
+        await().atMost(10, TimeUnit.SECONDS).until(count::get, is(0));
     }
-
-     */
 }

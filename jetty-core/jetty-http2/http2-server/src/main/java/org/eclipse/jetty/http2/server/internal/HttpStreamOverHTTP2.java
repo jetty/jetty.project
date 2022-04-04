@@ -502,16 +502,16 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public boolean onTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
-        Runnable runnable = _httpChannel.onError(failure);
+        Runnable runnable = _httpChannel.onFailure(failure);
         if (runnable != null)
             consumer.accept(runnable);
-        return !_httpChannel.isHandled();
+        return !_httpChannel.isRequestHandled();
     }
 
     @Override
     public Runnable onFailure(Throwable failure, Callback callback)
     {
-        Runnable runnable = _httpChannel.onError(failure);
+        Runnable runnable = _httpChannel.onFailure(failure);
         return () ->
         {
             if (runnable != null)
@@ -523,6 +523,8 @@ public class HttpStreamOverHTTP2 implements HttpStream, HTTP2Channel.Server
     @Override
     public void succeeded()
     {
+        _httpChannel.recycle();
+
         // If the stream is not closed, it is still reading the request content.
         // Send a reset to the other end so that it stops sending data.
         if (!_stream.isClosed())

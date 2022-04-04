@@ -30,8 +30,8 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.FuturePromise;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.hamcrest.Matchers;
@@ -394,8 +394,8 @@ public class GracefulStopTest
             handling.set(true);
             response.setStatus(200);
 
-            MultiMap<String> params = Request.extractQueryParameters(request);
-            if ("true".equals(params.getValue("commit")))
+            Fields fields = Request.extractQueryParameters(request);
+            if ("true".equals(fields.getValue("commit")))
             {
                 try (Blocking.Callback block = Blocking.callback())
                 {

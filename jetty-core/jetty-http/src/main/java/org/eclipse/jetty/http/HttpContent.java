@@ -17,10 +17,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
-import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * HttpContent interface.
@@ -32,6 +32,9 @@ import org.eclipse.jetty.util.resource.Resource;
  * reuse in from a cache).
  * </p>
  */
+// TODO can be a concrete class since Path abstracts out buffers, channel and streams -> only metadata is left
+// TODO also review metadata (like getContentLengthValue and getLastModifiedValue) to check if they can be removed as those
+//  are available via the Path API
 public interface HttpContent
 {
     HttpField getContentType();
@@ -58,20 +61,27 @@ public interface HttpContent
 
     String getETagValue();
 
+    //TODO remove
     ByteBuffer getIndirectBuffer();
 
+    //TODO remove
     ByteBuffer getDirectBuffer();
 
-    Resource getResource();
+    //TODO rename?
+    Path getResource();
 
+    //TODO remove
     InputStream getInputStream() throws IOException;
 
+    //TODO remove
     ReadableByteChannel getReadableByteChannel() throws IOException;
 
+    //TODO remove
     void release();
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
 
+    // TODO not needed anymore since path abstracts everything out already?
     public interface ContentFactory
     {
         /**
@@ -81,6 +91,7 @@ public interface HttpContent
          * @return A {@link HttpContent}
          * @throws IOException if unable to get content
          */
+        // TODO maxBuffer is not needed anymore
         HttpContent getContent(String path, int maxBuffer) throws IOException;
     }
 }

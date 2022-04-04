@@ -30,6 +30,7 @@ import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -60,7 +61,7 @@ public class ErrorProcessorTest
     @BeforeEach
     public void before() throws Exception
     {
-        stacklessLogging = new StacklessLogging(HttpChannel.class);
+        stacklessLogging = new StacklessLogging(HttpChannelState.class);
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
@@ -446,12 +447,12 @@ public class ErrorProcessorTest
             response.getHeaders().put("X-Error-Message", String.valueOf(request.getAttribute(ErrorProcessor.ERROR_MESSAGE)));
             response.getHeaders().put("X-Error-Status", Integer.toString(response.getStatus()));
             response.setStatus(302);
-            callback.succeeded();
+            response.write(true, callback);
         });
-        String rawResponse = connector.getResponse(
-            "GET / HTTP/1.1\r\n" +
-                "Host:\r\n" +
-                "\r\n");
+        String rawResponse = connector.getResponse("""
+                GET /no/host HTTP/1.1
+                
+                """);
 
         HttpTester.Response response = HttpTester.parseResponse(rawResponse);
 
@@ -459,7 +460,7 @@ public class ErrorProcessorTest
         assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), is(0));
         assertThat(response.get(HttpHeader.LOCATION), is("/error"));
         assertThat(response.get("X-Error-Status"), is("400"));
-        assertThat(response.get("X-Error-Message"), is("Blank Host"));
+        assertThat(response.get("X-Error-Message"), is("No Host"));
     }
 
     @ParameterizedTest

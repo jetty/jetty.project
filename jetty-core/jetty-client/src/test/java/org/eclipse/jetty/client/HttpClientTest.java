@@ -70,14 +70,15 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.SocketAddressResolver;
 import org.hamcrest.Matchers;
@@ -206,7 +207,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Throwable
             {
                 response.setContentType("text/plain;charset=UTF-8");
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String paramValue1 = fields.getValue(paramName1);
                 org.eclipse.jetty.server.Response.write(response, false, UTF_8.encode(paramValue1));
                 String paramValue2 = fields.getValue(paramName2);
@@ -238,7 +239,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response) throws Throwable
             {
                 response.setContentType("text/plain;charset=UTF-8");
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
 
                 List<String> paramValues1 = fields.getValues(paramName1);
                 for (String paramValue : paramValues1)
@@ -276,7 +277,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
@@ -308,7 +309,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             @Override
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
             {
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
@@ -342,7 +343,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback) throws Exception
             {
                 Content.consumeAll(request);
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 String value = fields.getValue(paramName);
                 if (paramValue.equals(value))
                 {
@@ -489,7 +490,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         client.setMaxConnectionsPerDestination(1);
 
-        try (StacklessLogging ignored = new StacklessLogging(org.eclipse.jetty.server.HttpChannel.class))
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannelState.class))
         {
             CountDownLatch latch = new CountDownLatch(2);
             client.newRequest("localhost", connector.getLocalPort())

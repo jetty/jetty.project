@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +48,7 @@ public class HttpStreamOverFCGI implements HttpStream
     private final HttpFields.Mutable _headers = HttpFields.build();
     private final ServerFCGIConnection _connection;
     private final ServerGenerator _generator;
-    private final HttpChannel _channel;
+    private final HttpChannel _httpChannel;
     private final int _id;
     private final long _nanoTime;
     private String _method;
@@ -60,18 +61,18 @@ public class HttpStreamOverFCGI implements HttpStream
     private boolean _shutdown;
     private boolean _aborted;
 
-    public HttpStreamOverFCGI(ServerFCGIConnection connection, ServerGenerator generator, HttpChannel channel, int id)
+    public HttpStreamOverFCGI(ServerFCGIConnection connection, ServerGenerator generator, HttpChannel httpChannel, int id)
     {
         _connection = connection;
         _generator = generator;
-        _channel = channel;
+        _httpChannel = httpChannel;
         _id = id;
         _nanoTime = System.nanoTime();
     }
 
     public HttpChannel getHttpChannel()
     {
-        return _channel;
+        return _httpChannel;
     }
 
     @Override
@@ -107,8 +108,8 @@ public class HttpStreamOverFCGI implements HttpStream
         String pathQuery = URIUtil.addPathQuery(_path, _query);
         // TODO https?
         MetaData.Request request = new MetaData.Request(_method, HttpScheme.HTTP.asString(), hostPort, pathQuery, HttpVersion.fromString(_version), _headers, Long.MIN_VALUE);
-        Runnable task = _channel.onRequest(request);
-        _headers.forEach(field -> _channel.getRequest().setAttribute(field.getName(), field.getValue()));
+        Runnable task = _httpChannel.onRequest(request);
+        _headers.forEach(field -> _httpChannel.getRequest().setAttribute(field.getName(), field.getValue()));
         // TODO: here we just execute the task.
         //  However, we should really return all the way back to onFillable()
         //  and feed the Runnable to an ExecutionStrategy.
@@ -181,7 +182,7 @@ public class HttpStreamOverFCGI implements HttpStream
 
     private void notifyContentAvailable()
     {
-        Runnable onContentAvailable = _channel.onContentAvailable();
+        Runnable onContentAvailable = _httpChannel.onContentAvailable();
         if (onContentAvailable != null)
             onContentAvailable.run();
     }
@@ -309,6 +310,7 @@ public class HttpStreamOverFCGI implements HttpStream
     @Override
     public void succeeded()
     {
+        _httpChannel.recycle();
         _connection.onCompleted(null);
     }
 
@@ -341,7 +343,7 @@ public class HttpStreamOverFCGI implements HttpStream
 
     public boolean onIdleTimeout(Throwable timeout)
     {
-        Runnable task = _channel.onError(timeout);
+        Runnable task = _httpChannel.onFailure(timeout);
         if (task != null)
             execute(task);
         return false;
@@ -363,7 +365,7 @@ public class HttpStreamOverFCGI implements HttpStream
         @Override
         public void failed(Throwable x)
         {
-            Runnable task = _channel.onError(x);
+            Runnable task = _httpChannel.onFailure(x);
             if (task != null)
                 _connection.getConnector().getExecutor().execute(task);
         }
@@ -371,7 +373,7 @@ public class HttpStreamOverFCGI implements HttpStream
         @Override
         public InvocationType getInvocationType()
         {
-            return _channel.getOnContentAvailableInvocationType();
+            return Invocable.getInvocationType(_httpChannel);
         }
     }
 }

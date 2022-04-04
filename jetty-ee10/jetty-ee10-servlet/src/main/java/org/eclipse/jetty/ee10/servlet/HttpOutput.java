@@ -36,7 +36,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -669,8 +668,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     private ByteBuffer acquireBuffer()
     {
-        boolean useOutputDirectByteBuffers = ((HttpConnection)_connectionMetaData.getConnection())
-            .getHttpConfiguration().isUseOutputDirectByteBuffers();
+        boolean useOutputDirectByteBuffers = _connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
         if (_aggregate == null)
             _aggregate = _byteBufferPool.acquire(getBufferSize(), useOutputDirectByteBuffers);
         return _aggregate;
@@ -1330,8 +1328,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("sendContent(http={},{})", httpContent, callback);
 
-        boolean useOutputDirectByteBuffers = ((HttpConnection)_connectionMetaData.getConnection())
-            .getHttpConfiguration().isUseOutputDirectByteBuffers();
+        boolean useOutputDirectByteBuffers = _connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
         ByteBuffer buffer = useOutputDirectByteBuffers ? httpContent.getDirectBuffer() : null;
         if (buffer == null)
             buffer = httpContent.getIndirectBuffer();
@@ -1852,8 +1849,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             super(callback, true);
             _in = in;
-            boolean useOutputDirectByteBuffers = ((HttpConnection)_connectionMetaData.getConnection())
-                .getHttpConfiguration().isUseOutputDirectByteBuffers();
+            boolean useOutputDirectByteBuffers = _connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
             _buffer = _byteBufferPool.acquire(getBufferSize(), useOutputDirectByteBuffers);
         }
 

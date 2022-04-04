@@ -90,6 +90,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -899,7 +900,7 @@ public class ServletContextHandlerTest
             assertTrue(l.isStarted());
             assertNotNull(l.getListener());
             //all listeners except the first should be programmatic
-            if (!"org.eclipse.jetty.servlet.ServletContextHandlerTest$InitialListener".equals(l.getClassName()))
+            if (!"org.eclipse.jetty.ee10.servlet.ServletContextHandlerTest$InitialListener".equals(l.getClassName()))
             {
                 assertFalse(root.isDurableListener(l.getListener()));
                 assertTrue(root.isProgrammaticListener(l.getListener()));
@@ -912,12 +913,12 @@ public class ServletContextHandlerTest
             listenerClassNames.add(l.getClass().getName());
         }
 
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySCAListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MyRequestListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MyRAListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySAListener"));
-        assertTrue(listenerClassNames.contains("org.eclipse.jetty.servlet.ServletContextHandlerTest$MySIListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee10.servlet.ServletContextHandlerTest$MySCAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee10.servlet.ServletContextHandlerTest$MyRequestListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee10.servlet.ServletContextHandlerTest$MyRAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee10.servlet.ServletContextHandlerTest$MySListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee10.servlet.ServletContextHandlerTest$MySAListener"));
+        assertTrue(listenerClassNames.contains("org.eclipse.jetty.ee10.servlet.ServletContextHandlerTest$MySIListener"));
 
         //test ServletRequestAttributeListener
         String response = _connector.getResponse("GET /test?req=all HTTP/1.0\r\n\r\n");
@@ -966,7 +967,9 @@ public class ServletContextHandlerTest
         response = _connector.getResponse(request.toString());
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals(1, MySIListener.changes);
-        sessionid = response.substring(response.indexOf("JSESSIONID"), response.indexOf(";"));
+        String tmp = response.substring(response.indexOf("JSESSIONID"), response.indexOf(";")); 
+        assertNotEquals(sessionid, tmp);
+        sessionid = tmp;
 
         //test HttpServletListener.sessionDestroyed
         request = new StringBuffer();

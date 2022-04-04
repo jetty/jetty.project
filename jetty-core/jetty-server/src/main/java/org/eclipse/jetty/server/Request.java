@@ -28,10 +28,11 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.HostPort;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -303,14 +304,13 @@ public interface Request extends Attributes, Content.Reader
         return Content.asInputStream(request);
     }
 
-    // TODO: use Fields rather than MultiMap!
-    static MultiMap<String> extractQueryParameters(Request request)
+    static Fields extractQueryParameters(Request request)
     {
-        MultiMap<String> params = new MultiMap<>();
+        Fields fields = new Fields(true);
         String query = request.getHttpURI().getQuery();
         if (StringUtil.isNotBlank(query))
-            UrlEncoded.decodeUtf8To(query, params);
-        return params;
+            UrlEncoded.decodeUtf8To(query, fields);
+        return fields;
     }
 
     @SuppressWarnings("unchecked")
@@ -322,12 +322,12 @@ public interface Request extends Attributes, Content.Reader
             return cookies;
 
         // TODO: review whether to store the cookie cache at the connection level, or whether to cache them at all.
-        CookieCache cookieCache = (CookieCache)request.getConnectionMetaData().getAttribute(Request.class.getCanonicalName() + ".CookieCache");
+        CookieCache cookieCache = (CookieCache)request.getComponents().getCache().get(Request.class.getCanonicalName() + ".CookieCache");
         if (cookieCache == null)
         {
             // TODO compliance listeners?
             cookieCache = new CookieCache(request.getConnectionMetaData().getHttpConfiguration().getRequestCookieCompliance(), null);
-            request.getConnectionMetaData().setAttribute(Request.class.getCanonicalName() + ".CookieCache", cookieCache);
+            request.getComponents().getCache().put(Request.class.getCanonicalName() + ".CookieCache", cookieCache);
         }
 
         cookies = cookieCache.getCookies(request.getHeaders());
@@ -569,7 +569,7 @@ public interface Request extends Attributes, Content.Reader
     static long getContentBytesRead(Request request)
     {
         Request originalRequest = unWrap(request);
-        if (originalRequest instanceof HttpChannel.ChannelRequest channelRequest)
+        if (originalRequest instanceof HttpChannelState.ChannelRequest channelRequest)
             return channelRequest.getContentBytesRead();
         return -1;
     }

@@ -51,8 +51,8 @@ public class MockHttpStream implements HttpStream
 
     public MockHttpStream(HttpChannel channel, boolean atEof)
     {
-        channel.setHttpStream(this);
         _channel = channel;
+        channel.setHttpStream(this);
         if (atEof)
             _content.set(Content.EOF);
     }
@@ -174,8 +174,8 @@ public class MockHttpStream implements HttpStream
             }
 
             if (response.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()) &&
-                _channel.getConnectionMetaData() instanceof MockConnectionMetaData)
-                ((MockConnectionMetaData)_channel.getConnectionMetaData()).notPersistent();
+                _channel.getConnectionMetaData() instanceof MockConnectionMetaData mock)
+                mock.notPersistent();
         }
 
         for (ByteBuffer buffer : content)
@@ -239,6 +239,7 @@ public class MockHttpStream implements HttpStream
     @Override
     public void succeeded()
     {
+        _channel.recycle();
         if (_complete.compareAndSet(null, SUCCEEDED))
             _completed.countDown();
     }
@@ -246,8 +247,8 @@ public class MockHttpStream implements HttpStream
     @Override
     public void failed(Throwable x)
     {
-        if (_channel.getConnectionMetaData() instanceof MockConnectionMetaData)
-            ((MockConnectionMetaData)_channel.getConnectionMetaData()).notPersistent();
+        if (_channel.getConnectionMetaData() instanceof MockConnectionMetaData mock)
+            mock.notPersistent();
         if (_complete.compareAndSet(null, x == null ? new Throwable() : x))
             _completed.countDown();
     }

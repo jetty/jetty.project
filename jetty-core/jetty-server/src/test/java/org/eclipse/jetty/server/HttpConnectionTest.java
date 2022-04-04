@@ -42,6 +42,8 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.DumpHandler;
+import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Invocable;
@@ -773,8 +775,10 @@ public class HttpConnectionTest
     {
         String response;
 
-        response = _connector.getResponse("GET / HTTP/1.1\r\n" +
-            "\r\n");
+        response = _connector.getResponse("""
+            GET / HTTP/1.1
+            
+            """);
         checkContains(response, 0, "HTTP/1.1 400");
     }
 
@@ -1148,7 +1152,7 @@ public class HttpConnectionTest
         _server.start();
 
         String response = null;
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging stackless = new StacklessLogging(HttpChannelState.class))
         {
             LOG.info("Expect IOException: Response header too large...");
             response = _connector.getResponse("GET / HTTP/1.1\r\n" +

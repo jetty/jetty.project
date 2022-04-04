@@ -34,5 +34,4 @@ module org.eclipse.jetty.server
 
     // TODO required for testing ????
     exports org.eclipse.jetty.server.ssl;
-
 }

@@ -13,6 +13,8 @@
 
 package org.eclipse.jetty.util;
 
+import java.nio.charset.CharacterCodingException;
+
 /**
  * UTF-8 StringBuilder.
  *
@@ -71,5 +73,25 @@ public class Utf8StringBuilder extends Utf8Appendable
     {
         checkState();
         return _buffer.toString();
+    }
+
+    @Override
+    public String takeString() throws CharacterCodingException
+    {
+        try
+        {
+            checkState();
+        }
+        catch (NotUtf8Exception e)
+        {
+            throw (CharacterCodingException)new CharacterCodingException().initCause(e);
+        }
+        catch (RuntimeException e)
+        {
+            throw (CharacterCodingException)new CharacterCodingException().initCause(e.getCause());
+        }
+        String s = _buffer.toString();
+        reset();
+        return s;
     }
 }

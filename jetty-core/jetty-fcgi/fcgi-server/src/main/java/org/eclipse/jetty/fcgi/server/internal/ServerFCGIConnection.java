@@ -45,6 +45,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
 {
     private static final Logger LOG = LoggerFactory.getLogger(ServerFCGIConnection.class);
 
+    private final HttpChannel.Factory httpChannelFactory = new HttpChannel.DefaultFactory();
     private final Attributes attributes = new Lazy();
     private final Connector connector;
     private final RetainableByteBufferPool networkByteBufferPool;
@@ -331,7 +332,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             // TODO: handle flags
             if (stream != null)
                 throw new UnsupportedOperationException("FastCGI Multiplexing");
-            HttpChannel channel = new HttpChannel(ServerFCGIConnection.this);
+            HttpChannel channel = httpChannelFactory.newHttpChannel(ServerFCGIConnection.this);
             ServerGenerator generator = new ServerGenerator(connector.getByteBufferPool(), isUseOutputDirectByteBuffers(), sendStatus200);
             stream = new HttpStreamOverFCGI(ServerFCGIConnection.this, generator, channel, request);
             channel.setHttpStream(stream);
@@ -397,7 +398,7 @@ public class ServerFCGIConnection extends AbstractConnection implements Connecti
             if (LOG.isDebugEnabled())
                 LOG.debug("Request {} failure on {}: {}", request, stream, failure);
             if (stream != null)
-                stream.getHttpChannel().onError(new BadMessageException(HttpStatus.BAD_REQUEST_400, null, failure));
+                stream.getHttpChannel().onFailure(new BadMessageException(HttpStatus.BAD_REQUEST_400, null, failure));
             stream = null;
         }
 

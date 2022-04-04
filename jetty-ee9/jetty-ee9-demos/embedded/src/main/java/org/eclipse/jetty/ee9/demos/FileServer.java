@@ -38,7 +38,7 @@ public class FileServer
 
         // Create the ResourceHandler. It is the object that will actually handle the request for a given file. It is
         // a Jetty Handler object so it is suitable for chaining with other handlers as you will see in other examples.
-        ResourceHandler resourceHandler = new ResourceHandler();
+        ResourceHandler resourceHandler = new ResourceHandler(_server);
 
         // Configure the ResourceHandler. Setting the resource base indicates where the files should be served out of.
         // In this example it is the current directory but it can be configured to anything that the jvm has access to.

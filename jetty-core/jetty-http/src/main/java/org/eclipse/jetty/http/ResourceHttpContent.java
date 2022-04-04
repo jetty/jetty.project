@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -185,9 +186,9 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public Resource getResource()
+    public Path getResource()
     {
-        return _resource;
+        return null;
     }
 
     @Override

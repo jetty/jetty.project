@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.toolchain.test.Net;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.junit.jupiter.api.Assumptions;
@@ -308,7 +307,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
             {
                 assertEquals(path, request.getPathInContext());
                 assertEquals(query, request.getHttpURI().getQuery());
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 assertEquals(value1, fields.getValue(name1));
                 assertEquals(value2, fields.getValue(name2));
             }
@@ -410,7 +409,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 assertEquals(name1, fields.getValue(name1));
                 assertEquals(name2, fields.getValue(name2));
             }
@@ -440,7 +439,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
                 assertEquals(rawQuery, request.getHttpURI().getQuery());
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 assertEquals(value, fields.getValue(name));
             }
         });
@@ -469,7 +468,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
                 assertEquals(rawQuery, request.getHttpURI().getQuery());
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 assertEquals(value, fields.getValue(name));
             }
         });
@@ -503,7 +502,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
             protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
                 assertEquals(query, request.getHttpURI().getQuery());
-                MultiMap<String> fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
+                Fields fields = org.eclipse.jetty.server.Request.extractQueryParameters(request);
                 assertEquals(value1, fields.getValue(name1));
                 assertEquals(value2, fields.getValue(name2));
             }

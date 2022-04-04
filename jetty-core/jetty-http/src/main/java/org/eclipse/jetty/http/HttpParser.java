@@ -1761,10 +1761,6 @@ public class HttpParser
                                 setState(State.CHUNK);
                             break;
 
-                        case SPACE:
-                            setState(State.CHUNK_PARAMS);
-                            break;
-
                         default:
                             if (t.isHexDigit())
                             {
@@ -1772,9 +1768,13 @@ public class HttpParser
                                     throw new BadMessageException(HttpStatus.PAYLOAD_TOO_LARGE_413);
                                 _chunkLength = _chunkLength * 16 + t.getHexDigit();
                             }
-                            else
+                            else if (t.getChar() == ';')
                             {
                                 setState(State.CHUNK_PARAMS);
+                            }
+                            else
+                            {
+                                throw new IllegalCharacterException(_state, t, buffer);
                             }
                     }
                     break;

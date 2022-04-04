@@ -44,16 +44,16 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     private final long nanoTime = System.nanoTime();
     private final ServerHTTP3StreamConnection connection;
-    private final HttpChannel channel;
+    private final HttpChannel httpChannel;
     private final HTTP3StreamServer stream;
     private Content content;
     private MetaData.Response metaData;
     private boolean committed;
 
-    public HttpStreamOverHTTP3(ServerHTTP3StreamConnection connection, HttpChannel channel, HTTP3StreamServer stream)
+    public HttpStreamOverHTTP3(ServerHTTP3StreamConnection connection, HttpChannel httpChannel, HTTP3StreamServer stream)
     {
         this.connection = connection;
-        this.channel = channel;
+        this.httpChannel = httpChannel;
         this.stream = stream;
     }
 
@@ -75,7 +75,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         {
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
 
-            Runnable handler = channel.onRequest(request);
+            Runnable handler = httpChannel.onRequest(request);
 
             if (frame.isLast())
                 content = Content.EOF;
@@ -159,7 +159,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
         }
 
         content = newContent(data);
-        return channel.onContentAvailable();
+        return httpChannel.onContentAvailable();
     }
 
     private Content.Abstract newContent(Stream.Data data)
@@ -190,7 +190,7 @@ public class HttpStreamOverHTTP3 implements HttpStream
                 System.lineSeparator(), trailers);
         }
         content = new Content.Trailers(trailers);
-        return channel.onContentAvailable();
+        return httpChannel.onContentAvailable();
     }
 
     @Override
@@ -454,6 +454,8 @@ public class HttpStreamOverHTTP3 implements HttpStream
     @Override
     public void succeeded()
     {
+        httpChannel.recycle();
+
         // If the stream is not closed, it is still reading the request content.
         // Send a reset to the other end so that it stops sending data.
         if (!stream.isClosed())
@@ -474,15 +476,14 @@ public class HttpStreamOverHTTP3 implements HttpStream
 
     public boolean onIdleTimeout(Throwable failure, Consumer<Runnable> consumer)
     {
-        Runnable runnable = channel.onError(failure);
+        Runnable runnable = httpChannel.onFailure(failure);
         if (runnable != null)
             consumer.accept(runnable);
-        // TODO: see http2.
-        return false;
+        return !httpChannel.isRequestHandled();
     }
 
     public Runnable onFailure(Throwable failure)
     {
-        return channel.onError(failure);
+        return httpChannel.onFailure(failure);
     }
 }

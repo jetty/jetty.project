@@ -286,6 +286,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         _servletHandler = servletHandler;
 
         _objFactory = new DecoratedObjectFactory();
+        addBean(_objFactory, true);
 
         // Link the handlers
         relinkHandlers();
@@ -2249,7 +2250,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 DecoratedObjectFactory.associateInfo(holder);
                 try
                 {
-                    return ((Class<T>)holder.getHeldClass()).getDeclaredConstructor().newInstance();
+                    return decorate(((Class<T>)holder.getHeldClass()).getDeclaredConstructor().newInstance());
                 }
                 catch (Exception e)
                 {
@@ -2595,16 +2596,15 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
         public <T> T createInstance(Class<T> clazz) throws ServletException
         {
-            T result;
             try
             {
-                result = clazz.getDeclaredConstructor().newInstance();
+                T result = getContext().decorate(clazz.getDeclaredConstructor().newInstance());
+                return result;
             }
             catch (Exception e)
             {
                 throw new ServletException(e);
             }
-            return _objFactory.decorate(result);
         }
 
         @Override
@@ -2752,7 +2752,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 throw new UnsupportedOperationException();
             try
             {
-                return clazz.getDeclaredConstructor().newInstance();
+                return createInstance(clazz);
             }
             catch (Exception e)
             {
@@ -2766,7 +2766,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 throw new UnsupportedOperationException();
             try
             {
-                return clazz.getDeclaredConstructor().newInstance();
+                return createInstance(clazz);
             }
             catch (Exception e)
             {
@@ -2792,7 +2792,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             }
             try
             {
-                return clazz.getDeclaredConstructor().newInstance();
+                return createInstance(clazz);
             }
             catch (Exception e)
             {

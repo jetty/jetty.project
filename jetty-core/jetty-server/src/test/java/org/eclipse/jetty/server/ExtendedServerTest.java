@@ -25,6 +25,8 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
+import org.eclipse.jetty.server.internal.HttpChannelState;
+import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -95,7 +97,7 @@ public class ExtendedServerTest extends HttpServerTestBase
         @Override
         protected HttpChannel newHttpChannel(Server server, HttpConfiguration configuration)
         {
-            return new HttpChannel(ExtendedHttpConnection.this)
+            return new HttpChannelState(ExtendedHttpConnection.this)
             {
                 @Override
                 public Runnable onRequest(MetaData.Request request)

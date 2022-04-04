@@ -26,6 +26,8 @@ import java.util.HashSet;
 import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionData;
@@ -166,7 +168,7 @@ public class SessionHandlerTest
             }
         }
         
-        try
+        try (StacklessLogging ignore = new StacklessLogging(ServletHandler.class, Session.class))
         {
             Listener1 listener = new Listener1();
             sessionHandler.addEventListener(listener);

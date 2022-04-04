@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +46,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+//TODO rework
 public class CachedContentFactory implements HttpContent.ContentFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(CachedContentFactory.class);
@@ -271,7 +274,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             {
                 String compressedPathInContext = pathInContext + format.getExtension();
                 CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
-                if (compressedContent != null && compressedContent.isValid() && compressedContent.getResource().lastModified() >= resource.lastModified())
+                if (compressedContent != null && compressedContent.isValid() && Files.getLastModifiedTime(compressedContent.getResource()).toMillis() >= resource.lastModified())
                     compressedContents.put(format, compressedContent);
 
                 // Is there a precompressed resource?
@@ -442,9 +445,9 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         }
 
         @Override
-        public Resource getResource()
+        public Path getResource()
         {
-            return _resource;
+            return null;
         }
 
         @Override
@@ -682,12 +685,13 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             _content = content;
             _precompressedContent = precompressedContent;
 
-            _etag = (CachedContentFactory.this._etags) ? new PreEncodedHttpField(HttpHeader.ETAG, _content.getResource().getWeakETag(format.getEtagSuffix())) : null;
+            // _etag = (CachedContentFactory.this._etags) ? new PreEncodedHttpField(HttpHeader.ETAG, _content.getResource().getWeakETag(format.getEtagSuffix())) : null;
+            _etag = null;
         }
 
         public boolean isValid()
         {
-            return _precompressedContent.isValid() && _content.isValid() && _content.getResource().lastModified() <= _precompressedContent.getResource().lastModified();
+            return _precompressedContent.isValid() && _content.isValid(); // && _content.getResource().lastModified() <= _precompressedContent.getResource().lastModified();
         }
 
         @Override

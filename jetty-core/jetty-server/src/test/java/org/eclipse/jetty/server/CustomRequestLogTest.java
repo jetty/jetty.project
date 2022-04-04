@@ -11,9 +11,8 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.servlet;
+package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -28,21 +27,13 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.http.HttpServlet;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.server.CustomRequestLog;
-import org.eclipse.jetty.server.ForwardedRequestCustomizer;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.io.QuietException;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DateCache;
-import org.eclipse.jetty.util.IO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -87,9 +78,8 @@ public class CustomRequestLogTest
         TestRequestLogWriter writer = new TestRequestLogWriter();
         _log = new CustomRequestLog(writer, formatString);
         _server.setRequestLog(_log);
-        ServletContextHandler contextHandler = new ServletContextHandler();
-        // contextHandler.setSecurityHandler(getSecurityHandler("username", "password", "testRealm"));
-        contextHandler.addServlet(new ServletHolder(new TestServlet()), "/");
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setHandler(new TestHandler());
         _server.setHandler(contextHandler);
         _server.start();
 
@@ -99,36 +89,6 @@ public class CustomRequestLogTest
 
         int localPort = _serverConnector.getLocalPort();
         _serverURI = new URI(String.format("http://%s:%d/", host, localPort));
-    }
-
-    @SuppressWarnings("SameParameterValue")
-    private static SecurityHandler getSecurityHandler(String username, String password, String realm)
-    {
-        /*
-        TODO
-        HashLoginService loginService = new HashLoginService();
-        UserStore userStore = new UserStore();
-        userStore.addUser(username, Credential.getCredential(password), new String[]{"user"});
-        loginService.setUserStore(userStore);
-        loginService.setName(realm);
-
-        Constraint constraint = new Constraint();
-        constraint.setName("auth");
-        constraint.setAuthenticate(true);
-        constraint.setRoles(new String[]{"**"});
-
-        ConstraintMapping mapping = new ConstraintMapping();
-        mapping.setPathSpec("/secure/*");
-        mapping.setConstraint(constraint);
-
-        ConstraintSecurityHandler security = new ConstraintSecurityHandler();
-        security.addConstraintMapping(mapping);
-        security.setAuthenticator(new BasicAuthenticator());
-        security.setLoginService(loginService);
-
-        return security;
-         */
-        return new SecurityHandler();
     }
 
     @AfterEach
@@ -154,6 +114,7 @@ public class CustomRequestLogTest
     }
 
     @Test
+    @Disabled // TODO
     public void testLogRemoteUser() throws Exception
     {
         String authHeader = HttpHeader.AUTHORIZATION + ": Basic " + Base64.getEncoder().encodeToString("username:password".getBytes());
@@ -350,10 +311,16 @@ public class CustomRequestLogTest
         testHandlerServerStart("KeepAliveRequests: %k");
 
         LocalConnector.LocalEndPoint connect = _connector.connect();
-        connect.addInput("GET /a HTTP/1.0\n" +
-            "Connection: keep-alive\n\n");
-        connect.addInput("GET /a HTTP/1.1\n" +
-            "Host: localhost\n\n");
+        connect.addInput("""
+            GET /a HTTP/1.0
+            Connection: keep-alive
+
+            """);
+        connect.addInput("""
+            GET /a HTTP/1.1
+            Host: localhost
+
+            """);
 
         assertThat(connect.getResponse(), containsString("200 OK"));
         assertThat(connect.getResponse(), containsString("200 OK"));
@@ -541,34 +508,55 @@ public class CustomRequestLogTest
         _connector.getResponse("GET /one HTTP/1.0\n\n");
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/one ConnectionStatus: 200 -"));
 
-        _connector.getResponse("GET /two HTTP/1.1\n" +
-            "Host: localhost\n" +
-            "Connection: close\n" +
-            "\n");
+        _connector.getResponse("""
+            GET /two HTTP/1.1
+            Host: localhost
+            Connection: close
+
+            """);
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/two ConnectionStatus: 200 -"));
 
         LocalConnector.LocalEndPoint connect = _connector.connect();
-        connect.addInput("GET /three HTTP/1.0\n" +
-            "Connection: keep-alive\n\n");
-        connect.addInput("GET /four HTTP/1.1\n" +
-            "Host: localhost\n\n");
-        connect.addInput("GET /BAD HTTP/1.1\n\n");
-        assertThat(connect.getResponse(), containsString("200 OK"));
-        assertThat(connect.getResponse(), containsString("200 OK"));
-        assertThat(connect.getResponse(), containsString("400 "));
+        connect.addInput("""
+            GET /three HTTP/1.0
+            Connection: keep-alive
 
+            """);
+        connect.addInput("""
+            GET /four HTTP/1.1
+            Host: localhost
+
+            """);
+        connect.addInput("""
+            GET /five HTTP/1.1
+            Host: localhost
+            Connection: close
+
+            """);
+        assertThat(connect.getResponse(), containsString("200 OK"));
+        assertThat(connect.getResponse(), containsString("200 OK"));
+        assertThat(connect.getResponse(), containsString("200 OK"));
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/three ConnectionStatus: 200 +"));
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/four ConnectionStatus: 200 +"));
-        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/BAD ConnectionStatus: 400 -"));
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/five ConnectionStatus: 200 -"));
 
-        _connector.getResponse("GET /abort HTTP/1.1\n" +
-            "Host: localhost\n" +
-            "\n");
+        _connector.getResponse("""
+            GET /no/host HTTP/1.1
+
+            """);
+        connect.getResponse();
+        assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/no/host ConnectionStatus: 400 X"));
+
+        _connector.getResponse("""
+            GET /abort HTTP/1.1
+            Host: localhost
+
+            """);
         connect.getResponse();
         assertThat(_entries.poll(5, TimeUnit.SECONDS), is("/abort ConnectionStatus: 200 X"));
     }
 
-    @Disabled
+    @Disabled // TODO
     @Test
     public void testLogRequestTrailer() throws Exception
     {
@@ -579,7 +567,7 @@ public class CustomRequestLogTest
         fail(log);
     }
 
-    @Disabled
+    @Disabled // TODO
     @Test
     public void testLogResponseTrailer() throws Exception
     {
@@ -621,38 +609,40 @@ public class CustomRequestLogTest
         return requestTime;
     }
 
-    private class TestServlet extends HttpServlet
+    private class TestHandler extends Handler.Processor
     {
         @Override
-        protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            ServletContextRequest baseRequest = Objects.requireNonNull(ServletContextRequest.getBaseRequest(request));
+            requestTimes.offer(request.getTimeStamp());
 
-            if (request.getRequestURI().contains("error404"))
+            if (request.getPathInContext().contains("error404"))
             {
                 response.setStatus(404);
             }
-            else if (request.getRequestURI().contains("error301"))
+            else if (request.getPathInContext().contains("error301"))
             {
                 response.setStatus(301);
             }
-            else if (request.getHeader("echo") != null)
+            else if (request.getHeaders().get("echo") != null)
             {
-                ServletOutputStream outputStream = response.getOutputStream();
-                outputStream.print(request.getHeader("echo"));
+                try (Blocking.Callback blocker = Blocking.callback())
+                {
+                    response.write(false, blocker, String.valueOf(request.getHeaders().get("echo")));
+                    blocker.block();
+                }
             }
-            else if (request.getRequestURI().contains("responseHeaders"))
+            else if (request.getPathInContext().contains("responseHeaders"))
             {
                 response.addHeader("Header1", "value1");
                 response.addHeader("Header2", "value2");
             }
-            else if (request.getRequestURI().contains("/abort"))
+            else if (request.getPathInContext().contains("/abort"))
             {
-                response.getOutputStream().println("data");
-                response.flushBuffer();
-                baseRequest.getServletChannel().abort(new QuietServletException("test abort"));
+                response.write(false, Callback.from(() -> callback.failed(new QuietException.Exception("test fail")), callback::failed), "data");
+                return;
             }
-            else if (request.getRequestURI().contains("delay"))
+            else if (request.getPathInContext().contains("delay"))
             {
                 try
                 {
@@ -664,12 +654,10 @@ public class CustomRequestLogTest
                 }
             }
 
-            requestTimes.offer(baseRequest.getTimeStamp());
-
             if (request.getContentLength() > 0)
-            {
-                IO.readBytes(request.getInputStream());
-            }
+                Content.readBytes(request);
+
+            callback.succeeded();
         }
     }
 }

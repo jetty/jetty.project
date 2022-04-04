@@ -35,8 +35,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
@@ -247,7 +249,7 @@ public class StatisticsHandlerTest
                 "Content-Length: 1000\r\n" +
                 "\r\n";
 
-        try (StacklessLogging ignore = new StacklessLogging(ContextRequest.class))
+        try (StacklessLogging ignore = new StacklessLogging(Response.class))
         {
             LocalConnector.LocalEndPoint endPoint = _connector.executeRequest(request);
 
@@ -375,6 +377,7 @@ public class StatisticsHandlerTest
         barrier[1].await();
         barrier[2].await();
         assertTrue(_latchHandler.await());
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
@@ -408,6 +411,8 @@ public class StatisticsHandlerTest
         barrier[1].await();
         barrier[2].await();
         assertTrue(_latchHandler.await());
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
+
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(1, _statsHandler.getRequestsActiveMax());
@@ -449,6 +454,7 @@ public class StatisticsHandlerTest
         barrier[1].await();
         barrier[2].await();
         assertTrue(_latchHandler.await());
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
         assertEquals(2, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());
         assertEquals(2, _statsHandler.getRequestsActiveMax());
@@ -641,6 +647,8 @@ public class StatisticsHandlerTest
         assertEquals(1, _statsHandler.getProcessingsMax());
         barrier[3].await();
         barrier[4].await();
+
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
 
         assertEquals(1, _statistics.getConnections());
         assertEquals(1, _statsHandler.getRequests());
@@ -928,6 +936,7 @@ public class StatisticsHandlerTest
         barrier[1].await();
         barrier[2].await();
         assertTrue(_latchHandler.await());
+        await().atMost(5, TimeUnit.SECONDS).until(_statsHandler::getRequestsActive, equalTo(0));
 
         assertEquals(1, _statsHandler.getRequests());
         assertEquals(0, _statsHandler.getRequestsActive());

@@ -41,10 +41,10 @@ import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
@@ -308,7 +308,7 @@ public class ProxyServletFailureTest
         long idleTimeout = 1000;
         serverConnector.setIdleTimeout(idleTimeout);
 
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannelState.class))
         {
             ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .body(new BytesRequestContent(content))
@@ -401,7 +401,7 @@ public class ProxyServletFailureTest
     @MethodSource("impls")
     public void testServerException(Class<? extends ProxyServlet> proxyServletClass) throws Exception
     {
-        try (StacklessLogging ignore = new StacklessLogging(HttpChannel.class))
+        try (StacklessLogging ignore = new StacklessLogging(HttpChannelState.class))
         {
             prepareProxy(proxyServletClass);
             prepareServer(new HttpServlet()

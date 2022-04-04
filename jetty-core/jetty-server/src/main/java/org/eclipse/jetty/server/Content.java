@@ -17,7 +17,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
@@ -439,7 +438,7 @@ public interface Content
             _reader = reader;
         }
 
-        public Reader getProvider()
+        public Reader getReader()
         {
             return _reader;
         }
@@ -713,117 +712,6 @@ public interface Content
         }
     }
 
-    class FieldsFuture extends CompletableFuture<Fields> implements Runnable
-    {
-        private final Reader _reader;
-        private final Fields _fields = new Fields();
-        private final Utf8StringBuilder _builder = new Utf8StringBuilder(); // TODO only UTF8???
-        private final int _maxFields;
-        private final int _maxSize;
-        private String _name;
-
-        public FieldsFuture(Reader reader)
-        {
-            this(reader, -1, -1);
-        }
-
-        public FieldsFuture(Reader reader, int maxFields, int maxSize)
-        {
-            _reader = reader;
-            _maxFields = maxFields;
-            _maxSize = maxSize; // TODO implement
-            run();
-        }
-
-        @Override
-        public void run()
-        {
-            while (true)
-            {
-                Content content = _reader.readContent();
-                if (content == null)
-                {
-                    _reader.demandContent(this);
-                    return;
-                }
-
-                if (content instanceof Error error)
-                {
-                    completeExceptionally(error.getCause());
-                    content.release();
-                    return;
-                }
-
-                Fields.Field field = parse(content.getByteBuffer(), content.isLast());
-                while (field != null)
-                {
-                    if (_maxFields >= 0 && _fields.getSize() >= _maxFields)
-                    {
-                        completeExceptionally(new IllegalStateException("Too many fields"));
-                        return;
-                    }
-                    _fields.put(field);
-                    field = parse(content.getByteBuffer(), content.isLast());
-                }
-
-                content.release();
-                if (content.isLast())
-                {
-                    complete(_fields);
-                    return;
-                }
-            }
-        }
-
-        protected Fields.Field parse(ByteBuffer buffer, boolean last)
-        {
-            String value = null;
-            while (BufferUtil.hasContent(buffer))
-            {
-                byte b = buffer.get();
-                if (_name == null)
-                {
-                    if (b == '=')
-                    {
-                        _name = _builder.toString();
-                        _builder.reset();
-                    }
-                    else
-                        _builder.append(b);
-                }
-                else
-                {
-                    if (b == '&')
-                    {
-                        value = _builder.toString();
-                        _builder.reset();
-                        break;
-                    }
-                    else
-                        _builder.append(b);
-                }
-            }
-
-            if (_name != null)
-            {
-                if (value == null && last)
-                {
-                    value = _builder.toString();
-                    _builder.reset();
-                }
-
-                if (value != null)
-                {
-                    Fields.Field field = new Fields.Field(_name, value);
-                    _name = null;
-                    return field;
-                }
-            }
-
-            return null;
-        }
-    }
-
     // TODO test and document
     static InputStream asInputStream(Reader reader)
     {
@@ -1046,6 +934,12 @@ public interface Content
                 if (content == null)
                 {
                     _reader.demandContent(this);
+                    return;
+                }
+
+                if (content instanceof Error error)
+                {
+                    _callback.failed(error.getCause());
                     return;
                 }
 

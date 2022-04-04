@@ -32,12 +32,12 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.internal.ClassLoaderDump;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -126,7 +126,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     @ManagedAttribute(value = "Context")
     public ContextHandler.Context getContext()
     {
-        return (ContextHandler.Context)_context;
+        return _context;
     }
 
     /**
@@ -292,14 +292,12 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     public String getClassPath()
     {
         // TODO may need to handle one level of parent classloader for API ?
-        if (_classLoader == null || !(_classLoader instanceof URLClassLoader))
+        if (_classLoader == null || !(_classLoader instanceof URLClassLoader loader))
             return null;
-        URLClassLoader loader = (URLClassLoader)_classLoader;
         URL[] urls = loader.getURLs();
         StringBuilder classpath = new StringBuilder();
-        for (int i = 0; i < urls.length; i++)
+        for (URL url : urls)
         {
-            URL url = urls[i];
             try
             {
                 // TODO do this without Resource?
@@ -529,7 +527,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         if ("/".equals(_context.getContextPath()))
             return path;
         if (path.length() == _context.getContextPath().length())
-            return "/";
+            return "";
         if (path.charAt(_context.getContextPath().length()) != '/')
             return null;
         return path.substring(_context.getContextPath().length());

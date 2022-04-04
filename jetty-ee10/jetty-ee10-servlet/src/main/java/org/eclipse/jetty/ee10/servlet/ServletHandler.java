@@ -293,7 +293,11 @@ public class ServletHandler extends Handler.Wrapper
             updateAndSet(_servletMappings, _servletMappings.stream().filter(m -> _servletNameMap.containsKey(m.getServletName())).collect(Collectors.toList()));
             updateAndSet(_filterMappings, _filterMappings.stream().filter(m -> _filterNameMap.containsKey(m.getFilterName())).collect(Collectors.toList()));
             updateMappings();
-
+            
+            //The listeners must be called before the listener list changes
+            if (_servletContextHandler != null)
+                _servletContextHandler.contextDestroyed();
+            
             //Retain only Listeners added via jetty apis (is Source.EMBEDDED)
             List<ListenerHolder> listenerHolders = new ArrayList<>();
             for (int i = _listeners.size(); i-- > 0; )
@@ -1466,9 +1470,8 @@ public class ServletHandler extends Handler.Wrapper
             return null;
         }
 
-        public void handle(ServletHandler servletHandler, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void handle(ServletHandler servletHandler, String pathInContext, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
-            String pathInContext = URIUtil.addPaths(request.getContextPath(), request.getServletPath());
             FilterChain filterChain = servletHandler.getFilterChain(request, pathInContext, _servletHolder);
             if (LOG.isDebugEnabled())
                 LOG.debug("chain={}", filterChain);
