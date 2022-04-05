@@ -60,6 +60,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final LongAdder _expires = new LongAdder();
     private final LongAdder _errors = new LongAdder();
 
+    private final LongAdder _responsesThrown = new LongAdder();
     private final LongAdder _responses1xx = new LongAdder();
     private final LongAdder _responses2xx = new LongAdder();
     private final LongAdder _responses3xx = new LongAdder();
@@ -109,7 +110,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             long numRequests = _requestStats.decrement();
             _requestTimeStats.record(elapsed);
 
-            updateResponse(request);
+            updateResponse(request, false);
 
             _asyncWaitStats.decrement();
 
@@ -174,9 +175,15 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             _asyncDispatches.increment();
         }
 
+        boolean thrownError = false;
         try
         {
             handler.handle(path, baseRequest, request, response);
+        }
+        catch (Throwable t)
+        {
+            thrownError = true;
+            throw t;
         }
         finally
         {
@@ -198,7 +205,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
                 {
                     numRequests = _requestStats.decrement();
                     _requestTimeStats.record(dispatched);
-                    updateResponse(baseRequest);
+                    updateResponse(baseRequest, thrownError);
                 }
             }
 
@@ -212,10 +219,14 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
     }
 
-    protected void updateResponse(Request request)
+    protected void updateResponse(Request request, boolean thrownError)
     {
         Response response = request.getResponse();
-        if (request.isHandled())
+        if (thrownError)
+        {
+            _responsesThrown.increment();
+        }
+        else if (request.isHandled())
         {
             switch (response.getStatus() / 100)
             {
@@ -549,6 +560,18 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     }
 
     /**
+     * @return the number of requests that threw an exception during handling
+     * since {@link #statsReset()} was last called. These may have resulted in
+     * some error responses which were unrecorded by the {@link StatisticsHandler}.
+     */
+    @ManagedAttribute("number of requests that threw an exception during handling")
+    public int getResponsesThrown()
+    {
+        return _responsesThrown.intValue();
+    }
+
+
+    /**
      * @return the milliseconds since the statistics were started with {@link #statsReset()}.
      */
     @ManagedAttribute("time in milliseconds stats have been collected for")
@@ -601,6 +624,7 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         sb.append("3xx responses: ").append(getResponses3xx()).append("<br />\n");
         sb.append("4xx responses: ").append(getResponses4xx()).append("<br />\n");
         sb.append("5xx responses: ").append(getResponses5xx()).append("<br />\n");
+        sb.append("responses thrown: ").append(getResponsesThrown()).append("<br />\n");
         sb.append("Bytes sent total: ").append(getResponsesBytesTotal()).append("<br />\n");
 
         return sb.toString();
