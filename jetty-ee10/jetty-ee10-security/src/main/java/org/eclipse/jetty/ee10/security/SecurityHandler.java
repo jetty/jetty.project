@@ -72,6 +72,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
     public class SecurityRequest extends Request.Wrapper
     {
         private Authentication _authentication;
+        private String _method;
 
         public SecurityRequest(Request wrapped)
         {
@@ -86,6 +87,20 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         public Authentication getAuthentication()
         {
             return _authentication;
+        }
+
+        @Override
+        public String getMethod()
+        {
+            if (_method == null)
+                return getWrapped().getMethod();
+            else
+                return _method;
+        }
+        
+        public void setMethod(String method)
+        {
+            _method = method;
         }
     }
 
@@ -475,7 +490,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
         if (processor == null)
             return null; //not handling this
         
-        final SecurityRequest securityRequest = Request.as(request, SecurityRequest.class);
+        final SecurityRequest securityRequest = new SecurityRequest(request);
         final Authenticator authenticator = _authenticator;
         
         //TODO this needs servletrequest stuff
