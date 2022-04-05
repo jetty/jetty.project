@@ -477,7 +477,7 @@ public class ContextHandlerTest
         HttpFields fields = HttpFields.build().add(HttpHeader.HOST, "localhost").asImmutable();
         MetaData.Request request = new MetaData.Request("GET", HttpURI.from("http://localhost/ctx/"), HttpVersion.HTTP_1_1, fields, 0);
         Runnable task = channel.onRequest(request);
-        try (StacklessLogging ignored = new StacklessLogging(ContextRequest.class))
+        try (StacklessLogging ignored = new StacklessLogging(Response.class))
         {
             task.run();
         }

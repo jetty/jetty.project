@@ -279,7 +279,7 @@ public class ContentTest
     public void testFields() throws Exception
     {
         FutureFormFields future = new FutureFormFields(_provider);
-
+        future.run();
         Runnable todo = _provider.takeDemand();
         assertNotNull(todo);
         _provider.add("one=1", false);
