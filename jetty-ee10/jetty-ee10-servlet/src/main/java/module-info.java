@@ -10,7 +10,7 @@
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
 //
-//
+
 import org.eclipse.jetty.ee10.servlet.security.Authenticator;
 
 module org.eclipse.jetty.ee10.servlet

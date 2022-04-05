@@ -22,12 +22,12 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.handler.Authentication;
-import org.eclipse.jetty.ee10.handler.Authentication.User;
-import org.eclipse.jetty.ee10.handler.UserIdentity;
-import org.eclipse.jetty.ee10.security.Authenticator;
-import org.eclipse.jetty.ee10.security.ServerAuthException;
-import org.eclipse.jetty.ee10.security.UserAuthentication;
+import org.eclipse.jetty.ee10.servlet.security.Authentication;
+import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
+import org.eclipse.jetty.ee10.servlet.security.Authenticator;
+import org.eclipse.jetty.ee10.servlet.security.ServerAuthException;
+import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
+import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 

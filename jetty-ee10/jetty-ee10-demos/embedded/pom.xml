@@ -31,10 +31,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-security</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-servlet-extras</artifactId>
     </dependency>
     <dependency>

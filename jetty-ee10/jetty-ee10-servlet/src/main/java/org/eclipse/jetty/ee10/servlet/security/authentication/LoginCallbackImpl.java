@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee10.servlet.security.authentication;
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.ee10.security.IdentityService;
+import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 
 /**
  * This is similar to the jaspi PasswordValidationCallback but includes user

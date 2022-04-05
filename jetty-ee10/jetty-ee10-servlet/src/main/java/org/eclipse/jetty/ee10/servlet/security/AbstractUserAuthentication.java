@@ -17,7 +17,6 @@ import java.io.Serializable;
 import java.util.Set;
 
 import jakarta.servlet.ServletRequest;
-
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity.Scope;
 import org.eclipse.jetty.ee10.servlet.security.authentication.LoginAuthenticator;

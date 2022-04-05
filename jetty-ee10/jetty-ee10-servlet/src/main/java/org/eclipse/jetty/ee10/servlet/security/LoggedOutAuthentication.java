@@ -14,9 +14,7 @@
 package org.eclipse.jetty.ee10.servlet.security;
 
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.ee10.handler.Authentication;
-import org.eclipse.jetty.ee10.handler.UserIdentity;
-import org.eclipse.jetty.ee10.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.ee10.servlet.security.authentication.LoginAuthenticator;
 
 /**
  * LoggedOutAuthentication

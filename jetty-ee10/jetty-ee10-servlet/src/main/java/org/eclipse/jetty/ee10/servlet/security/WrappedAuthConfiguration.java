@@ -15,7 +15,7 @@ package org.eclipse.jetty.ee10.servlet.security;
 
 import java.util.Set;
 
-import org.eclipse.jetty.ee10.security.Authenticator.AuthConfiguration;
+import org.eclipse.jetty.ee10.servlet.security.Authenticator.AuthConfiguration;
 
 /**
  * A wrapper for {@link AuthConfiguration}. This allows you create a new AuthConfiguration which can

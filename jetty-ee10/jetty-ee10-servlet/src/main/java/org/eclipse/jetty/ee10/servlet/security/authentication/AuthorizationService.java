@@ -14,8 +14,8 @@
 package org.eclipse.jetty.ee10.servlet.security.authentication;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.ee10.handler.UserIdentity;
-import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
 
 /**
  * <p>A service to query for user roles.</p>

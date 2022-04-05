@@ -16,8 +16,6 @@ package org.eclipse.jetty.ee10.servlet.security;
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.ee10.handler.UserIdentity;
-
 public class SpnegoUserIdentity implements UserIdentity
 {
     private final Subject _subject;
