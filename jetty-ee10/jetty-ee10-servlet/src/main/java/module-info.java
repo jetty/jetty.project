@@ -10,6 +10,8 @@
 // SPDX-License-Identifier: EPL-2.0 OR Apache-2.0
 // ========================================================================
 //
+//
+import org.eclipse.jetty.ee10.servlet.security.Authenticator;
 
 module org.eclipse.jetty.ee10.servlet
 {
@@ -26,12 +28,20 @@ module org.eclipse.jetty.ee10.servlet
     // Only required if using JMX.
     requires static org.eclipse.jetty.jmx;
     requires static org.eclipse.jetty.util.ajax;
+    // Only required if using SPNEGO.
+    requires static java.security.jgss;
+    // Only required if using JDBCLoginService.
+    requires static java.sql;
 
     exports org.eclipse.jetty.ee10.servlet;
     exports org.eclipse.jetty.ee10.servlet.listener;
+    exports org.ecilpse.jetty.ee10.servlet.security;
+    exports org.ecilpse.jetty.ee10.servlet.security.authentication;
     exports org.eclipse.jetty.ee10.servlet.util;
     exports org.eclipse.jetty.ee10.servlet.writer;
 
     exports org.eclipse.jetty.ee10.servlet.jmx to
          org.eclipse.jetty.jmx;
+
+    uses Authenticator.Factory;
 }
