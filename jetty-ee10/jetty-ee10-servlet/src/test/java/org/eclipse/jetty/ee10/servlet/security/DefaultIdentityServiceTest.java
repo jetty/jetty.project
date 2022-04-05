@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet.security;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import org.eclipse.jetty.ee10.handler.Authentication;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
