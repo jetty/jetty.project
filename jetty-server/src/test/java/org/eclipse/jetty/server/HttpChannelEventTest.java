@@ -207,7 +207,6 @@ public class HttpChannelEventTest
         request.setHeader("Connection", "close");
 
         HttpTester.Response response = HttpTester.parseResponse(connector.getResponse(request.toString(), 5, TimeUnit.SECONDS));
-        System.out.printf("Response: %s%n", response);
 
         assertTrue(latch.await(5, TimeUnit.SECONDS));
 
