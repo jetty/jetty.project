@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class DefaultSessionIdManagerTest
 {
-    private class TestSessionHandler extends TestableSessionHandler
+    private class TestSessionManager extends TestableSessionManager
     {
         private boolean _idInUse;
         
@@ -69,7 +69,7 @@ public class DefaultSessionIdManagerTest
 
         
         //test something that is not in use
-        TestSessionHandler tsh1 = new TestSessionHandler();
+        TestSessionManager tsh1 = new TestSessionManager();
         tsh1.setIdInUse(false);
         tsh1.setServer(server);
         server.addBean(tsh1);
@@ -77,7 +77,7 @@ public class DefaultSessionIdManagerTest
         assertFalse(sessionIdManager.isIdInUse("1234"));
         //test something that _is_ in use
         server.stop();
-        TestSessionHandler tsh2 = new TestSessionHandler();
+        TestSessionManager tsh2 = new TestSessionManager();
         tsh2.setIdInUse(true);
         tsh2.setServer(server);
         server.addBean(tsh2);
@@ -107,9 +107,10 @@ public class DefaultSessionIdManagerTest
         //it _is_ in use.
         Server server = new Server();
         DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(server);
-        TestSessionHandler tsh = new TestSessionHandler();
+        TestSessionManager tsh = new TestSessionManager();
         tsh.setIdInUse(true);
-        server.setHandler(tsh);
+        server.addBean(tsh);
+        tsh.setServer(server);
         server.start();
         
         String id = sessionIdManager.newSessionId(new TestableRequest(), "1234", System.currentTimeMillis());

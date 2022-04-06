@@ -38,35 +38,36 @@ public class SessionListenerTest
         DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
         server.addBean(idManager, true);
 
-        TestableSessionHandler sessionHandler = new TestableSessionHandler();
-        sessionHandler.setServer(server);
-        sessionHandler.setMaxInactiveInterval(6);
+        TestableSessionManager sessionManager = new TestableSessionManager();
+        sessionManager.setServer(server);
+        sessionManager.setMaxInactiveInterval(6);
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionHandler);
+        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionManager);
 
         TestableSessionDataStore store = new TestableSessionDataStore(false);
         cache.setSessionDataStore(store);
-        sessionHandler.setSessionCache(cache);
-        server.setHandler(sessionHandler);
+        sessionManager.setSessionCache(cache);
+        server.addBean(sessionManager);
+        sessionManager.setServer(server);
         server.start();
 
         try
         {
             //create the session, test that creation listener is called
-            Session session = sessionHandler.newSession(null, "1234");
+            Session session = sessionManager.newSession(null, "1234");
             session.setAttribute("a", "one");
-            assertEquals(1L, sessionHandler._sessionCreatedListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
-            assertEquals(1L, sessionHandler._sessionBoundListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
-            assertEquals(1L, sessionHandler._sessionAttributeListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
+            assertEquals(1L, sessionManager._sessionCreatedListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
+            assertEquals(1L, sessionManager._sessionBoundListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
+            assertEquals(1L, sessionManager._sessionAttributeListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
             
-            sessionHandler.clear();
+            sessionManager.clear();
 
             //invalidate the session, test that destroy listener is called, and unbinding listener called
             session.invalidate();
-            assertEquals(1L, sessionHandler._sessionDestroyedListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
-            assertEquals(1L, sessionHandler._sessionUnboundListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
-            assertEquals(1L, sessionHandler._sessionAttributeListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
+            assertEquals(1L, sessionManager._sessionDestroyedListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
+            assertEquals(1L, sessionManager._sessionUnboundListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
+            assertEquals(1L, sessionManager._sessionAttributeListenersCalled.stream().filter(s -> s.equals(session.getId())).count());
         }
         finally
         {
@@ -84,17 +85,18 @@ public class SessionListenerTest
         DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
         server.addBean(idManager, true);
 
-        TestableSessionHandler sessionHandler = new TestableSessionHandler();
-        sessionHandler.setServer(server);
-        sessionHandler.setMaxInactiveInterval(6);
+        TestableSessionManager sessionManager = new TestableSessionManager();
+        sessionManager.setServer(server);
+        sessionManager.setMaxInactiveInterval(6);
         DefaultSessionCacheFactory cacheFactory = new DefaultSessionCacheFactory();
         cacheFactory.setEvictionPolicy(SessionCache.NEVER_EVICT);
-        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionHandler);
+        DefaultSessionCache cache = (DefaultSessionCache)cacheFactory.getSessionCache(sessionManager);
 
         TestableSessionDataStore store = new TestableSessionDataStore(false);
         cache.setSessionDataStore(store);
-        sessionHandler.setSessionCache(cache);
-        server.setHandler(sessionHandler);
+        sessionManager.setSessionCache(cache);
+        server.addBean(sessionManager);
+        sessionManager.setServer(server);
         server.start();
 
         try
@@ -108,11 +110,11 @@ public class SessionListenerTest
             store.store("1234", data);
 
             //try to get the expired session, ensure that it wasn't used and that listeners were called for its expiry
-            Session session = sessionHandler.getSession("1234");
+            Session session = sessionManager.getSession("1234");
             assertNull(session);
-            assertEquals(1L, sessionHandler._sessionDestroyedListenersCalled.stream().filter(s -> s.equals("1234")).count());
-            assertEquals(1L, sessionHandler._sessionUnboundListenersCalled.stream().filter(s -> s.equals("1234")).count());
-            assertEquals(1L, sessionHandler._sessionAttributeListenersCalled.stream().filter(s -> s.equals("1234")).count());
+            assertEquals(1L, sessionManager._sessionDestroyedListenersCalled.stream().filter(s -> s.equals("1234")).count());
+            assertEquals(1L, sessionManager._sessionUnboundListenersCalled.stream().filter(s -> s.equals("1234")).count());
+            assertEquals(1L, sessionManager._sessionAttributeListenersCalled.stream().filter(s -> s.equals("1234")).count());
         }
         finally
         {

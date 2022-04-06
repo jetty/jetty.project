@@ -48,13 +48,13 @@ public class SimpleSessionHandlerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
 
-        SimpleSessionHandler sessionHandler = new SimpleSessionHandler();
-        sessionHandler.setSessionCookie("SIMPLE");
-        sessionHandler.setUsingCookies(true);
-        sessionHandler.setUsingURLs(false);
-        _server.setHandler(sessionHandler);
+        SimpleSessionHandler sessionManager = new SimpleSessionHandler();
+        sessionManager.setSessionCookie("SIMPLE");
+        sessionManager.setUsingCookies(true);
+        sessionManager.setUsingURLs(false);
+        _server.setHandler(sessionManager);
 
-        sessionHandler.setHandler(new Handler.Processor()
+        sessionManager.setHandler(new Handler.Processor()
         {
             @Override
             public void process(Request request, Response response, Callback callback)

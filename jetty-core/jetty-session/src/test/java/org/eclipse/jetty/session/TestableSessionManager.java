@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.Session.APISession;
 
 /**
@@ -25,8 +26,10 @@ import org.eclipse.jetty.session.Session.APISession;
  *
  * For testing convenience.
  */
-public class TestableSessionHandler extends AbstractSessionHandler
+public class TestableSessionManager extends AbstractSessionManager
 {
+    private Server _server;
+
     java.util.Collection<String> _sessionIdListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionCreatedListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionDestroyedListenersCalled = new ArrayList<>();
@@ -38,6 +41,17 @@ public class TestableSessionHandler extends AbstractSessionHandler
     java.util.Collection<String> _expiredIds = new ArrayList<>();
 
     protected Map<String, String> _cookieConfig = new HashMap<>();
+
+    public void setServer(Server server)
+    {
+        _server = server;
+    }
+
+    @Override
+    public Server getServer()
+    {
+        return _server;
+    }
 
     public void clear()
     {

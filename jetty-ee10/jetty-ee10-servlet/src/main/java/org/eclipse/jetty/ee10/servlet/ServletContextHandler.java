@@ -1183,7 +1183,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         }
     }
 
-    private void doSetHandler(Handler.Wrapper wrapper, Handler handler)
+    private void doSetHandler(Handler.Nested wrapper, Handler handler)
     {
         if (wrapper == this)
             super.setHandler(handler);
@@ -1194,7 +1194,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     // TODO: review this.
     private void relinkHandlers()
     {
-        Handler.Wrapper handler = this;
+        Handler.Nested handler = this;
 
         // link session handler
         if (getSessionHandler() != null)
@@ -1830,7 +1830,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         l.contextDestroyed(e);
     }
 
-    private void replaceHandler(Handler.Wrapper handler, Handler.Wrapper replacement)
+    private void replaceHandler(Handler.Nested handler, Handler.Nested replacement)
     {
         if (isStarted())
             throw new IllegalStateException("STARTED");
@@ -1890,11 +1890,12 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     /**
      * @param gzipHandler the GzipHandler for this ServletContextHandler
-     * @deprecated use {@link #insertHandler(Handler.Wrapper)} instead
+     * @deprecated use {@link #insertHandler(Handler.Nested)} instead
      */
     @Deprecated
     public void setGzipHandler(GzipHandler gzipHandler)
     {
+        // TODO remove
         insertHandler(gzipHandler);
         LOG.warn("ServletContextHandler.setGzipHandler(GzipHandler) is deprecated, use insertHandler(HandlerWrapper) instead.");
     }
@@ -1904,7 +1905,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      * but after any other HandlerWrappers.
      */
     @Override
-    public void insertHandler(Handler.Wrapper handler)
+    public void insertHandler(Handler.Nested handler)
     {
         if (handler instanceof SessionHandler)
             setSessionHandler((SessionHandler)handler);
@@ -1914,7 +1915,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             setServletHandler((ServletHandler)handler);
         else
         {
-            Handler.Wrapper tail = handler;
+            Handler.Nested tail = handler;
             while (tail.getHandler() instanceof Handler.Wrapper)
             {
                 tail = (Handler.Wrapper)tail.getHandler();
@@ -1923,10 +1924,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 throw new IllegalArgumentException("bad tail of inserted wrapper chain");
 
             // Skip any injected handlers
-            Handler.Wrapper h = this;
-            while (h.getHandler() instanceof Handler.Wrapper)
+            Handler.Nested h = this;
+            while (h.getHandler() instanceof Handler.Nested wrapper)
             {
-                Handler.Wrapper wrapper = (Handler.Wrapper)h.getHandler();
                 if (wrapper instanceof SessionHandler ||
                     wrapper instanceof SecurityHandler ||
                     wrapper instanceof ServletHandler)

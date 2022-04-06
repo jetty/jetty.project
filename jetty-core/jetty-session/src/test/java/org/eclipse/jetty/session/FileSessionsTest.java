@@ -67,11 +67,11 @@ public class FileSessionsTest
     public void testLoadForeignContext() throws Exception
     {
         //create the SessionDataStore
-        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        TestableSessionManager sessionManager = new TestableSessionManager();
         
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
-        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionHandler);
+        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionManager);
         store.setDeleteUnrestorableFiles(true);
         SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
         store.initialize(sessionContext);
@@ -89,10 +89,10 @@ public class FileSessionsTest
     public void testFilenamesWithContext() throws Exception
     {
         //create the SessionDataStore
-        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
-        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionHandler);
+        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionManager);
         SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
         store.initialize(sessionContext);
 
@@ -167,10 +167,10 @@ public class FileSessionsTest
     public void testFilenamesWithDefaultContext() throws Exception
     {
         //create the SessionDataStore
-        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
-        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionHandler);
+        FileSessionDataStore store = (FileSessionDataStore)factory.getSessionDataStore(sessionManager);
         //The root context path is translated into "" by Context.getContextPath
         SessionContext sessionContext = new TestSessionContext("foo", "", "0.0.0.0");
         store.initialize(sessionContext);
@@ -212,10 +212,10 @@ public class FileSessionsTest
     {
         int gracePeriodSec = 10;
         //create the SessionDataStore
-        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(gracePeriodSec);
-        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionDataStore store = factory.getSessionDataStore(sessionManager);
         SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/foobar"), "0.0.0.0");
         store.initialize(sessionContext);
 
@@ -284,10 +284,10 @@ public class FileSessionsTest
         throws Exception
     {
         //create the SessionDataStore
-        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
-        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionDataStore store = factory.getSessionDataStore(sessionManager);
         SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/"), "0.0.0.0");
         store.initialize(sessionContext);
 
@@ -351,10 +351,10 @@ public class FileSessionsTest
         throws Exception
     {
         //create the SessionDataStore
-        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(10);
-        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionDataStore store = factory.getSessionDataStore(sessionManager);
         SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
         ((FileSessionDataStore)store).setDeleteUnrestorableFiles(true); //invalid file will be removed
         store.initialize(sessionContext);
@@ -389,10 +389,10 @@ public class FileSessionsTest
         throws Exception
     {
         //create the SessionDataStore
-        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        TestableSessionManager sessionManager = new TestableSessionManager();
         SessionDataStoreFactory factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)factory).setGracePeriodSec(100);
-        SessionDataStore store = factory.getSessionDataStore(sessionHandler);
+        SessionDataStore store = factory.getSessionDataStore(sessionManager);
         SessionContext sessionContext = new TestSessionContext("foo", StringUtil.sanitizeFileSystemName("/test"), "0.0.0.0");
         store.initialize(sessionContext);
 

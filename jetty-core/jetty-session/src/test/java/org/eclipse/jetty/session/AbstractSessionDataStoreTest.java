@@ -60,7 +60,7 @@ public abstract class AbstractSessionDataStoreTest
 
     protected URLClassLoader _contextClassLoader;
     protected Server _server;
-    protected TestableSessionHandler _sessionHandler;
+    protected TestableSessionManager _sessionManager;
     protected DefaultSessionIdManager _sessionIdManager;
     protected SessionDataStoreFactory _factory;
     
@@ -110,10 +110,10 @@ public abstract class AbstractSessionDataStoreTest
         _sessionIdManager = new DefaultSessionIdManager(_server);
         _server.addBean(_sessionIdManager, true);
 
-        _sessionHandler = new TestableSessionHandler();
-        _sessionHandler.setSessionIdManager(_sessionIdManager);
-        _sessionHandler.setServer(_server);
-        contextHandler.setSessionManager(_sessionHandler);
+        _sessionManager = new TestableSessionManager();
+        _sessionManager.setSessionIdManager(_sessionIdManager);
+        _sessionManager.setServer(_server);
+        contextHandler.setSessionManager(_sessionManager);
         _factory = createSessionDataStoreFactory();
         ((AbstractSessionDataStoreFactory)_factory).setGracePeriodSec(GRACE_PERIOD_SEC);
         _server.addBean(_factory, true);
@@ -164,7 +164,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
         
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
         
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         SessionData data = null;
@@ -224,7 +224,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
 
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //create a session
         final long now = System.currentTimeMillis();
@@ -258,7 +258,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
 
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         SessionData data = null;
         try
@@ -329,7 +329,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
 
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //persist a session that is not expired
         long now = System.currentTimeMillis();
@@ -339,7 +339,7 @@ public abstract class AbstractSessionDataStoreTest
         _server.stop();
         _server.start(); //reindex the session files on disk
         
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //test that we can retrieve it
         SessionData loaded = store.load("aaa4");
@@ -360,7 +360,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
 
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
         //persist a session that is expired
         long now = System.currentTimeMillis();
         SessionData data = store.newSessionData("aaa5", 100, now - 20, now - 30, 10); //10 sec max idle
@@ -371,7 +371,7 @@ public abstract class AbstractSessionDataStoreTest
         _server.stop();
         _server.start();
 
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //test we can retrieve it
         SessionData loaded = store.load("aaa5");
@@ -392,7 +392,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
         
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         //test we can't retrieve a non-existent session
         SessionData loaded = store.load("111");
@@ -408,7 +408,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
 
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         //persist a session that is damaged and cannot be read
         long now = System.currentTimeMillis();
@@ -417,7 +417,7 @@ public abstract class AbstractSessionDataStoreTest
         persistUnreadableSession(data);
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //test that we can retrieve it
         try
@@ -441,7 +441,7 @@ public abstract class AbstractSessionDataStoreTest
     {
         setUp();
         _server.start();
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //persist a session that has no attributes
         long now = System.currentTimeMillis();
@@ -451,7 +451,7 @@ public abstract class AbstractSessionDataStoreTest
         store.store("aaa6", data);
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //test that we can retrieve it
         SessionData savedSession = store.load("aaa6");
@@ -466,7 +466,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
         
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //persist a session that has attributes
         long now = System.currentTimeMillis();
@@ -477,7 +477,7 @@ public abstract class AbstractSessionDataStoreTest
 
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //test that we can retrieve it
         SessionData savedSession = store.load("aaa7");
@@ -501,7 +501,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
         
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         //persist a session that is not expired
         long now = System.currentTimeMillis();
@@ -510,7 +510,7 @@ public abstract class AbstractSessionDataStoreTest
         persistSession(data);
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
         
         //delete the session via the store
         store.delete("aaa8");
@@ -527,7 +527,7 @@ public abstract class AbstractSessionDataStoreTest
     {
         setUp();
         _server.start();
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         //delete the non-existent session via the store
         store.delete("3333");
@@ -544,7 +544,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
 
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         //persist a session that is expired
         SessionData data = store.newSessionData("aaa9", 100, 101, 101, 10);
@@ -560,7 +560,7 @@ public abstract class AbstractSessionDataStoreTest
         
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
 
         Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"aaa9", "aaa10"}));
         Set<String> expiredIds = store.getExpired(candidates);
@@ -577,7 +577,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
         
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         long now = System.currentTimeMillis();
         //persist a session that is not expired
@@ -592,7 +592,7 @@ public abstract class AbstractSessionDataStoreTest
         
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
 
         Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"aaa11", "aaa12"}));
         Set<String> expiredIds = store.getExpired(candidates);
@@ -608,7 +608,7 @@ public abstract class AbstractSessionDataStoreTest
     {
         setUp();
         _server.start();
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
         Set<String> candidates = new HashSet<>(Arrays.asList(new String[]{"a", "b"}));
         Set<String> expiredIds = store.getExpired(candidates);
         assertThat(expiredIds, containsInAnyOrder("a", "b"));
@@ -625,7 +625,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
 
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
         //persist a session that is expired
         SessionData data = store.newSessionData("aaa13", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
         data.setLastNode(_sessionIdManager.getWorkerName());
@@ -639,7 +639,7 @@ public abstract class AbstractSessionDataStoreTest
         persistSession(data2);
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
         
         Set<String> candidates = new HashSet<>();
         Set<String> expiredIds = store.getExpired(candidates);
@@ -657,7 +657,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         _server.start();
         
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         //persist a session that is expired for a different node
         SessionData data = store.newSessionData("aaa15", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
@@ -667,7 +667,7 @@ public abstract class AbstractSessionDataStoreTest
 
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
         
         Set<String> candidates = new HashSet<>();
         Set<String> expiredIds = store.getExpired(candidates);
@@ -679,7 +679,7 @@ public abstract class AbstractSessionDataStoreTest
     {
         setUp();
         _server.start();
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         long now = System.currentTimeMillis();
         
@@ -746,7 +746,7 @@ public abstract class AbstractSessionDataStoreTest
         
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
         
         ((AbstractSessionDataStore)store).cleanOrphans(now - TimeUnit.SECONDS.toMillis(10 * GRACE_PERIOD_SEC));
 
@@ -776,7 +776,7 @@ public abstract class AbstractSessionDataStoreTest
     {
         setUp();
         _server.start();
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         long now = System.currentTimeMillis();
         //persist a session that is not expired
@@ -786,7 +786,7 @@ public abstract class AbstractSessionDataStoreTest
 
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
 
         assertTrue(store.exists("aaa16"));
     }
@@ -799,7 +799,7 @@ public abstract class AbstractSessionDataStoreTest
     {
         setUp();
         _server.start();
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         //persist a session that is expired
         SessionData data = store.newSessionData("aaa17", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
@@ -809,7 +809,7 @@ public abstract class AbstractSessionDataStoreTest
 
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
 
         assertFalse(store.exists("aaa17"));
     }
@@ -822,7 +822,7 @@ public abstract class AbstractSessionDataStoreTest
     {
         setUp();
         _server.start();
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         assertFalse(store.exists("8888"));
     }
@@ -832,7 +832,7 @@ public abstract class AbstractSessionDataStoreTest
     {
         setUp();
         _server.start();
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         //persist a session for a different context
         SessionData data = store.newSessionData("aaa18", 100, 101, 100, TimeUnit.MINUTES.toMillis(60));
@@ -842,7 +842,7 @@ public abstract class AbstractSessionDataStoreTest
 
         _server.stop();
         _server.start(); //reindex files
-        store = _sessionHandler.getSessionCache().getSessionDataStore();
+        store = _sessionManager.getSessionCache().getSessionDataStore();
 
         //check that session does not exist for this context
         assertFalse(store.exists("aaa18"));
@@ -858,7 +858,7 @@ public abstract class AbstractSessionDataStoreTest
         setUp();
         ((AbstractSessionDataStoreFactory)_factory).setSavePeriodSec(20);
         _server.start();
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         long now = System.currentTimeMillis();
 
@@ -891,7 +891,7 @@ public abstract class AbstractSessionDataStoreTest
     {
         setUp();
         _server.start();
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         long now = System.currentTimeMillis();
         //create a session that is not expired, and has never been saved before
@@ -913,7 +913,7 @@ public abstract class AbstractSessionDataStoreTest
     {
         setUp();
         _server.start();
-        SessionDataStore store = _sessionHandler.getSessionCache().getSessionDataStore();
+        SessionDataStore store = _sessionManager.getSessionCache().getSessionDataStore();
 
         //persist a session that is not expired
         long now = System.currentTimeMillis();

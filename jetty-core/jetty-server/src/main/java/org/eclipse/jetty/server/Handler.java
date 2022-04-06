@@ -14,6 +14,7 @@
 package org.eclipse.jetty.server;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.jetty.server.handler.ErrorProcessor;
@@ -171,11 +172,28 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         }
 
         /**
+         * Get a list of descendants of the passed type.
+         * The default implementation is not memory efficient and should be overridden.
          * @param type the type of {@code Handler}
          * @param <T> the type of {@code Handler}
          * @return an immutable collection of {@code Handler}s of the given type, descendants of this {@code Handler}
          */
-        <T extends Handler> List<T> getDescendants(Class<T> type);
+        default <T extends Handler> List<T> getDescendants(Class<T> type)
+        {
+            List<T> handlers = new ArrayList<>();
+            for (Handler h : getHandlers())
+            {
+                if (type.isInstance(h))
+                {
+                    @SuppressWarnings("unchecked")
+                    T t = (T)h;
+                    handlers.add(t);
+                }
+                if (h instanceof Container c)
+                    handlers.addAll(c.getDescendants(type));
+            }
+            return handlers;
+        }
 
         /**
          * @param type the type of {@code Handler}
@@ -183,7 +201,25 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
          * @return the first {@code Handler} of the given type, descendants of this {@code Handler},
          * or null if no such {@code Handler} exist
          */
-        <T extends Handler> T getDescendant(Class<T> type);
+        default <T extends Handler> T getDescendant(Class<T> type)
+        {
+            for (Handler h : getHandlers())
+            {
+                if (type.isInstance(h))
+                {
+                    @SuppressWarnings("unchecked")
+                    T t = (T)h;
+                    return t;
+                }
+                if (h instanceof Container c)
+                {
+                    T t = c.getDescendant(type);
+                    if (t != null)
+                        return t;
+                }
+            }
+            return null;
+        }
 
         /**
          * @param handler the child {@code Handler}
@@ -202,6 +238,48 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
                     return container;
             }
             return null;
+        }
+    }
+
+    /**
+     * <p>A {@link Handler.Container} that wraps a single other {@code Handler}.</p>
+     */
+    interface Nested extends Container
+    {
+        Handler getHandler();
+
+        void setHandler(Handler handler);
+
+        @Override
+        default List<Handler> getHandlers()
+        {
+            Handler h = getHandler();
+            if (h == null)
+                return Collections.emptyList();
+            return Collections.singletonList(h);
+        }
+
+        @Override
+        default void addHandler(Handler handler)
+        {
+            Handler existing = getHandler();
+            setHandler(handler);
+            if (handler instanceof Container container)
+                container.addHandler(existing);
+        }
+
+        default void insertHandler(Handler.Nested handler)
+        {
+            Handler.Nested tail = handler;
+            while (tail.getHandler() instanceof Handler.Wrapper)
+            {
+                tail = (Handler.Wrapper)tail.getHandler();
+            }
+            if (tail.getHandler() != null)
+                throw new IllegalArgumentException("bad tail of inserted wrapper chain");
+
+            tail.setHandler(getHandler());
+            setHandler(handler);
         }
     }
 
@@ -370,9 +448,9 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     }
 
     /**
-     * <p>A {@link Handler.Container} that wraps a single other {@code Handler}.</p>
+     * <p>An Abstract implementation of a {@link Nested} {@link Handler.Container} that wraps a single other {@code Handler}.</p>
      */
-    class Wrapper extends AbstractContainer
+    class Wrapper extends AbstractContainer implements Nested
     {
         private Handler _handler;
 
@@ -399,29 +477,6 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             updateBean(_handler, handler);
 
             _handler = handler;
-        }
-
-        @Override
-        public void addHandler(Handler handler)
-        {
-            Handler existing = getHandler();
-            setHandler(handler);
-            if (handler instanceof Container container)
-                container.addHandler(existing);
-        }
-
-        public void insertHandler(Handler.Wrapper handler)
-        {
-            Handler.Wrapper tail = handler;
-            while (tail.getHandler() instanceof Handler.Wrapper)
-            {
-                tail = (Handler.Wrapper)tail.getHandler();
-            }
-            if (tail.getHandler() != null)
-                throw new IllegalArgumentException("bad tail of inserted wrapper chain");
-
-            tail.setHandler(getHandler());
-            setHandler(handler);
         }
 
         @Override

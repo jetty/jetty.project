@@ -22,7 +22,7 @@ import org.eclipse.jetty.session.Session.APISession;
  *
  * For testing convenience.
  */
-public class TestSessionHandler extends AbstractSessionHandler
+public class TestSessionHandler extends AbstractSessionManager
 {
     java.util.Collection<String> _sessionIdListenersCalled = new ArrayList<>();
     java.util.Collection<String> _sessionCreatedListenersCalled = new ArrayList<>();

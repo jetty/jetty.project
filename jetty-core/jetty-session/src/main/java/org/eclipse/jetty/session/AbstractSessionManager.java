@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -36,6 +35,7 @@ import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -48,9 +48,9 @@ import org.slf4j.LoggerFactory;
  * AbstractSessionHandler
  * Class to implement most non-servlet-spec specific session behaviour.
  */
-public abstract class AbstractSessionHandler extends Handler.Wrapper implements SessionManager
+public abstract class AbstractSessionManager extends ContainerLifeCycle implements SessionManager
 {
-    static final Logger LOG = LoggerFactory.getLogger(AbstractSessionHandler.class);
+    static final Logger LOG = LoggerFactory.getLogger(AbstractSessionManager.class);
 
     /**
      * Setting of max inactive interval for new sessions
@@ -87,10 +87,12 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
     {        
     }
     
-    public AbstractSessionHandler()
+    public AbstractSessionManager()
     {
     }
-    
+
+    public abstract Server getServer();
+
     @Override
     public void doStart() throws Exception
     {
@@ -160,15 +162,9 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
         super.doStart();
     }
 
-    @Override
-    public Request.Processor handle(Request request) throws Exception
+    protected void addSessionStreamWrapper(Request request)
     {
-        Request.Processor processor = super.handle(request);
-        if (processor == null)
-            return null;
-
         request.addHttpStreamWrapper(s -> new SessionStreamWrapper(s, this, request));
-        return processor;
     }
 
     @Override

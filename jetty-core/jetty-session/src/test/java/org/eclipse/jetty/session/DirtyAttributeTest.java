@@ -13,13 +13,9 @@
 
 package org.eclipse.jetty.session;
 
-import java.io.IOException;
-import java.io.Serializable;
-
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -38,67 +34,68 @@ public class DirtyAttributeTest
         DefaultSessionIdManager idManager = new DefaultSessionIdManager(server);
         server.addBean(idManager, true);
         
-        TestableSessionHandler sessionHandler = new TestableSessionHandler();
+        TestableSessionManager sessionManager = new TestableSessionManager();
         TestableSessionDataStore sessionDataStore = new TestableSessionDataStore(true);
-        DefaultSessionCache sessionCache = new DefaultSessionCache(sessionHandler);
+        DefaultSessionCache sessionCache = new DefaultSessionCache(sessionManager);
         sessionCache.setSaveOnCreate(true); //ensure session will be saved when first created
         sessionCache.setSessionDataStore(sessionDataStore);
-        sessionHandler.setSessionCache(sessionCache);
+        sessionManager.setSessionCache(sessionCache);
         
-        server.setHandler(sessionHandler);
+        server.addBean(sessionManager);
+        sessionManager.setServer(server);
         server.start();
         
         //make a session
-        Session session = sessionHandler.newSession(null, "1234");
+        Session session = sessionManager.newSession(null, "1234");
         String id = session.getId();
         assertTrue(session.isValid());
         assertTrue(sessionDataStore.exists(id));
-        assertTrue(sessionHandler._sessionCreatedListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionCreatedListenersCalled.contains(id));
         //NOTE:  we don't call passivate and activate here because the session by definition 
         //_cannot_ contain any attributes, we have literally only just created it
         
-        sessionHandler.clear();
+        sessionManager.clear();
         
         //Mutate an attribute in the same request
         session.setAttribute("aaa", "one");
-        sessionHandler.commit(session);
-        sessionHandler.complete(session);
+        sessionManager.commit(session);
+        sessionManager.complete(session);
         assertTrue(session.isValid());
         assertTrue(sessionDataStore.exists(id));
-        assertTrue(sessionHandler._sessionPassivationListenersCalled.contains(id));
-        assertTrue(sessionHandler._sessionActivationListenersCalled.contains(id));
-        assertTrue(sessionHandler._sessionBoundListenersCalled.contains(id));
-        assertFalse(sessionHandler._sessionUnboundListenersCalled.contains(id));
-        assertTrue(sessionHandler._sessionAttributeListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionPassivationListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionActivationListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionBoundListenersCalled.contains(id));
+        assertFalse(sessionManager._sessionUnboundListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionAttributeListenersCalled.contains(id));
 
-        sessionHandler.clear();
+        sessionManager.clear();
         
         //simulate another request mutating the same attribute to the same value
         session = sessionCache.getAndEnter(id, true);
         session.setAttribute("aaa", "one");
-        sessionHandler.commit(session);
-        sessionHandler.complete(session);
+        sessionManager.commit(session);
+        sessionManager.complete(session);
         assertTrue(session.isValid());
         assertTrue(sessionDataStore.exists(id));
-        assertTrue(sessionHandler._sessionPassivationListenersCalled.contains(id));
-        assertTrue(sessionHandler._sessionActivationListenersCalled.contains(id));
-        assertFalse(sessionHandler._sessionUnboundListenersCalled.contains(id));
-        assertFalse(sessionHandler._sessionBoundListenersCalled.contains(id));
-        assertFalse(sessionHandler._sessionAttributeListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionPassivationListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionActivationListenersCalled.contains(id));
+        assertFalse(sessionManager._sessionUnboundListenersCalled.contains(id));
+        assertFalse(sessionManager._sessionBoundListenersCalled.contains(id));
+        assertFalse(sessionManager._sessionAttributeListenersCalled.contains(id));
 
-        sessionHandler.clear();
+        sessionManager.clear();
         
         //simulate another request mutating to a different value
         session = sessionCache.getAndEnter(id, true);
         session.setAttribute("aaa", "two");
-        sessionHandler.commit(session);
-        sessionHandler.complete(session);
+        sessionManager.commit(session);
+        sessionManager.complete(session);
         assertTrue(session.isValid());
         assertTrue(sessionDataStore.exists(id));
-        assertTrue(sessionHandler._sessionPassivationListenersCalled.contains(id));
-        assertTrue(sessionHandler._sessionActivationListenersCalled.contains(id));
-        assertTrue(sessionHandler._sessionUnboundListenersCalled.contains(id));
-        assertTrue(sessionHandler._sessionBoundListenersCalled.contains(id));
-        assertTrue(sessionHandler._sessionAttributeListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionPassivationListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionActivationListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionUnboundListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionBoundListenersCalled.contains(id));
+        assertTrue(sessionManager._sessionAttributeListenersCalled.contains(id));
     }
 }

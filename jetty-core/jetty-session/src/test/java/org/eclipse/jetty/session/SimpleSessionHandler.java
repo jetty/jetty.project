@@ -18,20 +18,55 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Callback;
 
 /**
  * SimpleSessionHandler example
  */
-public class SimpleSessionHandler extends AbstractSessionHandler
+public class SimpleSessionHandler extends AbstractSessionManager implements Handler.Nested
 {
+    private Server _server;
+    private Handler _handler;
+
+    @Override
+    public void setServer(Server server)
+    {
+        _server = server;
+    }
+
+    @Override
+    public Handler getHandler()
+    {
+        return _handler;
+    }
+
+    @Override
+    public void setHandler(Handler handler)
+    {
+        _handler = handler;
+    }
+
+    @Override
+    public Server getServer()
+    {
+        return _server;
+    }
+
     @Override
     public Request.Processor handle(Request request) throws Exception
     {
         SessionRequest sessionRequest = new SessionRequest(request);
-        return sessionRequest.wrapProcessor(super.handle(sessionRequest));
+
+        Request.Processor processor = getHandler().handle(sessionRequest);
+        if (processor == null)
+            return null;
+
+        addSessionStreamWrapper(request);
+        return sessionRequest.wrapProcessor(processor);
     }
 
     @Override

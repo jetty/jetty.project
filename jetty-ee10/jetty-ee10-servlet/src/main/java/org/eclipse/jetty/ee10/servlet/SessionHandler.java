@@ -40,15 +40,17 @@ import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest.ServletApiRequest;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.Syntax;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.session.AbstractSessionHandler;
+import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SessionHandler extends AbstractSessionHandler
+public class SessionHandler extends AbstractSessionManager implements Handler.Nested
 {    
     static final Logger LOG = LoggerFactory.getLogger(SessionHandler.class);
     
@@ -72,10 +74,37 @@ public class SessionHandler extends AbstractSessionHandler
     final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<>();
     final List<HttpSessionListener> _sessionListeners = new CopyOnWriteArrayList<>();
     final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
+    private final SessionCookieConfig _cookieConfig = new CookieConfig();
 
     private Set<SessionTrackingMode> _sessionTrackingModes;
-    private SessionCookieConfig _cookieConfig = new CookieConfig();
     private ServletContextHandler.Context _servletContextHandlerContext;
+
+    private Server _server;
+    private Handler _handler;
+
+    @Override
+    public void setServer(Server server)
+    {
+        _server = server;
+    }
+
+    @Override
+    public Handler getHandler()
+    {
+        return _handler;
+    }
+
+    @Override
+    public void setHandler(Handler handler)
+    {
+        _handler = handler;
+    }
+
+    @Override
+    public Server getServer()
+    {
+        return _server;
+    }
 
     /**
      * CookieConfig
@@ -111,14 +140,14 @@ public class SessionHandler extends AbstractSessionHandler
         @Override
         public void setAttribute(String name, String value)
         {
-            //TODO check servletcontext is not already started
+            // TODO check that context is not available
             _attributes.put(name, value);
         }
 
         @Override
         public String getAttribute(String name)
         {
-            //TODO use them
+            // TODO use these attributes
             return _attributes.get(name);
         }
 
@@ -207,6 +236,7 @@ public class SessionHandler extends AbstractSessionHandler
         @Override
         public void setSecure(boolean secure)
         {
+            // TODO refactor common check into a common method.
             if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
             setSecureCookies(secure);
@@ -603,9 +633,11 @@ public class SessionHandler extends AbstractSessionHandler
         if (servletApiRequest == null)
             throw new IllegalStateException("Request is not a valid ServletContextRequest");
 
-        Request.Processor processor = super.handle(request);
+        Request.Processor processor = getHandler().handle(request);
         if (processor == null)
             return null;
+
+        addSessionStreamWrapper(request);
 
         // TODO rather than wrapping the processor yet again here, we could just inject the
         //      SessionManager to the servletContextRequest, which already has the ability to
