@@ -69,7 +69,7 @@ public class HttpChannelEventTest
         start(new TestHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 ServletInputStream input = request.getInputStream();
                 int content = input.read();
@@ -111,7 +111,7 @@ public class HttpChannelEventTest
         start(new TestHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 response.getOutputStream().write(data);
             }
@@ -173,7 +173,7 @@ public class HttpChannelEventTest
         start(new TestHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void handle(HttpServletRequest request, HttpServletResponse response)
             {
                 response.setCharacterEncoding("utf-8");
                 response.setContentType("text/plain");
@@ -221,7 +221,7 @@ public class HttpChannelEventTest
         start(new TestHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void handle(HttpServletRequest request, HttpServletResponse response)
             {
                 // Closes all connections, response will fail.
                 connector.getConnectedEndPoints().forEach(EndPoint::close);
@@ -287,6 +287,7 @@ public class HttpChannelEventTest
         assertThat(elapsed.get(), Matchers.greaterThan(0L));
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void testTransientListener() throws Exception
     {
