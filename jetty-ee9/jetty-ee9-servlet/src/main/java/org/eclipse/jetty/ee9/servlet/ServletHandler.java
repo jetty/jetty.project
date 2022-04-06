@@ -1246,6 +1246,11 @@ public class ServletHandler extends ScopedHandler
         }
     }
 
+    protected ServletPathSpec asPathSpec(String pathSpec)
+    {
+        return new ServletPathSpec(pathSpec);
+    }
+
     protected void updateMappings()
     {
         try (AutoLock ignored = lock())
@@ -1354,7 +1359,7 @@ public class ServletHandler extends ScopedHandler
                         finalMapping.getServletName(),
                         getServlet(finalMapping.getServletName()).getSource());
 
-                ServletPathSpec servletPathSpec = new ServletPathSpec(pathSpec);
+                ServletPathSpec servletPathSpec = asPathSpec(pathSpec);
                 MappedServlet mappedServlet = new MappedServlet(servletPathSpec, getServlet(finalMapping.getServletName()));
                 pm.put(servletPathSpec, mappedServlet);
             }
