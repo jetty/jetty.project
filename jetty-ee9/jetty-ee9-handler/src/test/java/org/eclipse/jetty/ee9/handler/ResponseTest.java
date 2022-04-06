@@ -1667,7 +1667,7 @@ public class ResponseTest
         request.setSessionManager(handler);
         TestSession tsession = new TestSession(handler, "12345");
         tsession.setExtendedId(handler.getSessionIdManager().getExtendedId("12345", null));
-        request.setSession(tsession);
+        request.setCoreSession(tsession);
 
         handler.setCheckingRemoteSessionIdEncoding(false);
 
@@ -1775,7 +1775,7 @@ public class ResponseTest
                     idMgr.setWorkerName(null);
                     handler.setSessionIdManager(idMgr);
                     request.setSessionManager(handler);
-                    request.setSession(new TestSession(handler, "12345"));
+                    request.setCoreSession(new TestSession(handler, "12345"));
                     handler.setCheckingRemoteSessionIdEncoding(false);
 
                     response.sendRedirect(tests[i][0]);
@@ -1853,7 +1853,7 @@ public class ResponseTest
                     idMgr.setWorkerName(null);
                     handler.setSessionIdManager(idMgr);
                     request.setSessionManager(handler);
-                    request.setSession(new TestSession(handler, "12345"));
+                    request.setCoreSession(new TestSession(handler, "12345"));
                     handler.setCheckingRemoteSessionIdEncoding(false);
 
                     response.sendRedirect(tests[i][0]);
@@ -2314,7 +2314,7 @@ public class ResponseTest
 
     private static class TestServletContextHandler extends ContextHandler
     {
-        private class Context extends ContextHandler.Context
+        private class Context extends APIContext
         {
             private Map<String, Object> _attributes = new HashMap<>();
 

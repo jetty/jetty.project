@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -233,7 +234,7 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
         JettyHttpContext context = new JettyHttpContext(this, path, httpHandler);
         HttpSpiContextHandler jettyContextHandler = context.getJettyContextHandler();
 
-        ContextHandlerCollection chc = _server.getChildHandlerByClass(ContextHandlerCollection.class);
+        ContextHandlerCollection chc = _server.getDescendant(ContextHandlerCollection.class);
 
         if (chc == null)
             throw new RuntimeException("could not find ContextHandlerCollection, you must configure one");
@@ -270,10 +271,7 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
                 throw new RuntimeException("another context already bound to path " + path);
         }
 
-        Handler[] handlers = _server.getHandlers();
-        if (handlers == null)
-            return;
-
+        List<Handler> handlers = _server.getHandlers();
         for (Handler handler : handlers)
         {
             if (handler instanceof ContextHandler)
@@ -293,7 +291,7 @@ public class JettyHttpServer extends com.sun.net.httpserver.HttpServer
             return;
         HttpSpiContextHandler handler = context.getJettyContextHandler();
 
-        ContextHandlerCollection chc = _server.getChildHandlerByClass(ContextHandlerCollection.class);
+        ContextHandlerCollection chc = _server.getDescendant(ContextHandlerCollection.class);
         try
         {
             handler.stop();

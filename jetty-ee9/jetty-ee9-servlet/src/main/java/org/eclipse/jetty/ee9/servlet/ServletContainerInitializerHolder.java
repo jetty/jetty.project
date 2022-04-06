@@ -115,7 +115,7 @@ public class ServletContainerInitializerHolder extends BaseHolder<ServletContain
         //load all classnames
         classes.addAll(resolveStartupClasses());
 
-        ContextHandler.Context ctx = null;
+        ContextHandler.APIContext ctx = null;
         if (getServletHandler() != null)
         {
             ctx = getServletHandler().getServletContextHandler().getServletContext();    

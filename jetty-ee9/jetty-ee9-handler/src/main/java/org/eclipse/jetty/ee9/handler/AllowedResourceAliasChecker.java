@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.resource.PathResource;
@@ -62,7 +61,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
 
     protected void initialize()
     {
-        _base = getPath(_contextHandler.getBaseResource());
+        _base = _contextHandler.getCoreContextHandler().getResourceBase();
         if (_base == null)
             return;
 

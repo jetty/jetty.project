@@ -88,7 +88,7 @@ public class ErrorHandler extends AbstractHandler
         // This logic really should be in ErrorPageErrorHandler, but some implementations extend ErrorHandler
         // and implement ErrorPageMapper directly, so we do this here in the base class.
         String errorPage = (this instanceof ErrorPageMapper) ? ((ErrorPageMapper)this).getErrorPage(request) : null;
-        ContextHandler.Context context = baseRequest.getErrorContext();
+        ContextHandler.APIContext context = baseRequest.getErrorContext();
         Dispatcher errorDispatcher = (errorPage != null && context != null)
             ? (Dispatcher)context.getRequestDispatcher(errorPage) : null;
 

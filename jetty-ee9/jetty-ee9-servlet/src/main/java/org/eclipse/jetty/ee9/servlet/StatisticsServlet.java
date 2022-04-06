@@ -74,7 +74,7 @@ public class StatisticsServlet extends HttpServlet
     public void init() throws ServletException
     {
         ServletContext context = getServletContext();
-        ContextHandler.Context scontext = (ContextHandler.Context)context;
+        ContextHandler.APIContext scontext = (ContextHandler.APIContext)context;
         Server server = scontext.getContextHandler().getServer();
 
         _statsHandler = server.getChildHandlerByClass(StatisticsHandler.class);

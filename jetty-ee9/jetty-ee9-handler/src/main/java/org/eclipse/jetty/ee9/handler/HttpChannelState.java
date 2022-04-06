@@ -1177,7 +1177,7 @@ public class HttpChannelState
     {
         if (event != null)
         {
-            ContextHandler.Context context = ((ContextHandler.Context)event.getServletContext());
+            ContextHandler.APIContext context = ((ContextHandler.APIContext)event.getServletContext());
             if (context != null)
                 return context.getContextHandler();
         }

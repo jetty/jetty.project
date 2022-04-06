@@ -906,14 +906,18 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             getServer().getContext().execute(() -> run(runnable));
         }
 
+        protected DecoratedObjectFactory getDecoratedObjectFactory()
+        {
+            DecoratedObjectFactory factory = ContextHandler.this.getBean(DecoratedObjectFactory.class);
+            if (factory != null)
+                return factory;
+            return getServer().getBean(DecoratedObjectFactory.class);
+        }
+
         @Override
         public <T> T decorate(T o)
         {
-            // TODO cache factory lookup?
-            DecoratedObjectFactory factory = ContextHandler.this.getBean(DecoratedObjectFactory.class);
-            if (factory != null)
-                return factory.decorate(o);
-            factory = getServer().getBean(DecoratedObjectFactory.class);
+            DecoratedObjectFactory factory = getDecoratedObjectFactory();
             if (factory != null)
                 return factory.decorate(o);
             return o;
@@ -922,10 +926,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         @Override
         public void destroy(Object o)
         {
-            // TODO cache factory lookup?
-            DecoratedObjectFactory factory = ContextHandler.this.getBean(DecoratedObjectFactory.class);
-            if (factory == null)
-                factory = getServer().getBean(DecoratedObjectFactory.class);
+            DecoratedObjectFactory factory = getDecoratedObjectFactory();
             if (factory != null)
                 factory.destroy(o);
         }

@@ -29,7 +29,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.handler.Authentication;
 import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.ContextHandler.Context;
+import org.eclipse.jetty.ee9.handler.ContextHandler.APIContext;
 import org.eclipse.jetty.ee9.handler.Handler;
 import org.eclipse.jetty.ee9.handler.HandlerWrapper;
 import org.eclipse.jetty.ee9.handler.Request;
@@ -298,7 +298,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
         throws Exception
     {
         // copy security init parameters
-        ContextHandler.Context context = ContextHandler.getCurrentContext();
+        APIContext context = ContextHandler.getCurrentContext();
         if (context != null)
         {
             Enumeration<String> names = context.getInitParameterNames();
@@ -598,7 +598,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     public static SecurityHandler getCurrentSecurityHandler()
     {
-        Context context = ContextHandler.getCurrentContext();
+        APIContext context = ContextHandler.getCurrentContext();
         if (context == null)
             return null;
 

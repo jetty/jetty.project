@@ -159,9 +159,9 @@ public class ServletHandler extends ScopedHandler
     {
         try (AutoLock ignored = lock())
         {
-            ContextHandler.Context context = ContextHandler.getCurrentContext();
-            _servletContext = context == null ? new ContextHandler.StaticContext() : context;
-            _contextHandler = (ServletContextHandler)(context == null ? null : context.getContextHandler());
+            ContextHandler.APIContext context = ContextHandler.getCurrentContext();
+            _servletContext = context;
+            _contextHandler = (ServletContextHandler)context.getContextHandler();
 
             if (_contextHandler != null)
             {

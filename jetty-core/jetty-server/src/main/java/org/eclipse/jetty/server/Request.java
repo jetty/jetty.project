@@ -189,7 +189,13 @@ public interface Request extends Attributes, Content.Reader
     @Override
     void demandContent(Runnable onContentAvailable);
 
-    void push(MetaData.Request request);
+    // TODO should this be on the connectionMetaData?
+    default boolean isPushSupported()
+    {
+        return false; // TODO
+    }
+
+    void push(MetaData.Request request); // TODO
 
     /**
      * <p>Adds a listener for asynchronous errors.</p>

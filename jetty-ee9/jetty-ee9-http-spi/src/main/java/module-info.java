@@ -15,7 +15,7 @@ module org.eclipse.jetty.ee9.http.spi
 {
     requires transitive jdk.httpserver;
     requires transitive java.xml;
-    requires transitive org.eclipse.jetty.server;
+    requires transitive org.eclipse.jetty.ee9.handler;
     requires transitive org.eclipse.jetty.util;
 
     exports org.eclipse.jetty.ee9.http.spi;

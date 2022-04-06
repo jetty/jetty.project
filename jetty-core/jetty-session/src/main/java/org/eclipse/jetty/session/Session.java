@@ -189,7 +189,17 @@ public class Session
         }
     }
 
+    public void commit()
+    {
+        _manager.commit(this);
+    }
+
     public void complete()
+    {
+        _manager.complete(this);
+    }
+
+    void release()
     {
         try (AutoLock l = _lock.lock())
         {

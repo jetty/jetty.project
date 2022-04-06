@@ -87,7 +87,7 @@ public class Dispatcher implements RequestDispatcher
         final DispatcherType old_type = baseRequest.getDispatcherType();
         final Attributes old_attr = baseRequest.getAttributes();
         final MultiMap<String> old_query_params = baseRequest.getQueryParameters();
-        final ContextHandler.Context old_context = baseRequest.getContext();
+        final ContextHandler.APIContext old_context = baseRequest.getContext();
         final ServletPathMapping old_mapping = baseRequest.getServletPathMapping();
         try
         {
@@ -146,7 +146,7 @@ public class Dispatcher implements RequestDispatcher
             response = new ServletResponseHttpWrapper(response);
 
         final HttpURI old_uri = baseRequest.getHttpURI();
-        final ContextHandler.Context old_context = baseRequest.getContext();
+        final ContextHandler.APIContext old_context = baseRequest.getContext();
         final String old_path_in_context = baseRequest.getPathInContext();
         final ServletPathMapping old_mapping = baseRequest.getServletPathMapping();
         final ServletPathMapping source_mapping = baseRequest.findServletPathMapping();
@@ -371,7 +371,7 @@ public class Dispatcher implements RequestDispatcher
     /**
      * Attributes Wrapper to provide the {@link DispatcherType#INCLUDE} attributes.
      *
-     * The source {@link ContextHandler.Context} and
+     * The source {@link ContextHandler.APIContext} and
      * {@link ServletPathMapping} instances are also retained by this wrapper so they
      * may be used by {@link Request#getContextPath()}, {@link Request#getServletPath()},
      * {@link Request#getPathInfo()} and {@link Request#getHttpServletMapping()}.
@@ -379,13 +379,13 @@ public class Dispatcher implements RequestDispatcher
     class IncludeAttributes extends Attributes.Wrapper
     {
         private final Request _baseRequest;
-        private final ContextHandler.Context _sourceContext;
+        private final ContextHandler.APIContext _sourceContext;
         private final ServletPathMapping _sourceMapping;
         private final String _requestURI;
         private final String _pathInContext;
         private final String _query;
 
-        public IncludeAttributes(Attributes attributes, Request baseRequest, ContextHandler.Context sourceContext, ServletPathMapping sourceMapping, String requestURI, String pathInContext, String query)
+        public IncludeAttributes(Attributes attributes, Request baseRequest, ContextHandler.APIContext sourceContext, ServletPathMapping sourceMapping, String requestURI, String pathInContext, String query)
         {
             super(attributes);
             _baseRequest = baseRequest;
@@ -396,7 +396,7 @@ public class Dispatcher implements RequestDispatcher
             _query = query;
         }
 
-        ContextHandler.Context getSourceContext()
+        ContextHandler.APIContext getSourceContext()
         {
             return _sourceContext;
         }
@@ -425,7 +425,7 @@ public class Dispatcher implements RequestDispatcher
                     }
                     case INCLUDE_CONTEXT_PATH:
                     {
-                        ContextHandler.Context context = _baseRequest.getContext();
+                        ContextHandler.APIContext context = _baseRequest.getContext();
                         return context == null ? null : context.getContextHandler().getRequestContextPath();
                     }
                     case INCLUDE_QUERY_STRING:

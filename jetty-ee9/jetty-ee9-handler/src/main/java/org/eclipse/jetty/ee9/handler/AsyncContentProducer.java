@@ -19,6 +19,8 @@ import java.util.concurrent.locks.Condition;
 
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.slf4j.Logger;
@@ -31,7 +33,7 @@ import org.slf4j.LoggerFactory;
 class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
-    private static final HttpInput.ErrorContent RECYCLED_ERROR_CONTENT = new HttpInput.ErrorContent(new IllegalStateException("ContentProducer has been recycled"));
+    private static final Content.Error RECYCLED_ERROR_CONTENT = new Content.Error(new IllegalStateException("ContentProducer has been recycled"));
     private static final Throwable UNCONSUMED_CONTENT_EXCEPTION = new IOException("Unconsumed content")
     {
         @Override
@@ -44,8 +46,8 @@ class AsyncContentProducer implements ContentProducer
     private final AutoLock _lock = new AutoLock();
     private final HttpChannel _httpChannel;
     private HttpInput.Interceptor _interceptor;
-    private HttpInput.Content _rawContent;
-    private HttpInput.Content _transformedContent;
+    private Content _rawContent;
+    private Content _transformedContent;
     private boolean _error;
     private long _firstByteTimeStamp = Long.MIN_VALUE;
     private long _rawContentArrived;
@@ -116,7 +118,7 @@ class AsyncContentProducer implements ContentProducer
     public int available()
     {
         assertLocked();
-        HttpInput.Content content = nextTransformedContent();
+        Content content = nextTransformedContent();
         int available = content == null ? 0 : content.remaining();
         if (LOG.isDebugEnabled())
             LOG.debug("available = {} {}", available, this);
@@ -219,8 +221,8 @@ class AsyncContentProducer implements ContentProducer
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("failing currently held transformed content {} {}", x, this);
-                _transformedContent.skip(_transformedContent.remaining());
-                _transformedContent.failed(x);
+                Content.skip(_transformedContent, _transformedContent.remaining());
+                _transformedContent.release();
             }
             _transformedContent = null;
         }
@@ -229,12 +231,12 @@ class AsyncContentProducer implements ContentProducer
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failing currently held raw content {} {}", x, this);
-            _rawContent.skip(_rawContent.remaining());
-            _rawContent.failed(x);
+            Content.skip(_rawContent, _rawContent.remaining());
+            _rawContent.release();
             _rawContent = null;
         }
 
-        HttpInput.ErrorContent errorContent = new HttpInput.ErrorContent(x);
+        Content.Error errorContent = new Content.Error(x);
         _transformedContent = errorContent;
         _rawContent = errorContent;
     }
@@ -249,10 +251,10 @@ class AsyncContentProducer implements ContentProducer
     }
 
     @Override
-    public HttpInput.Content nextContent()
+    public Content nextContent()
     {
         assertLocked();
-        HttpInput.Content content = nextTransformedContent();
+        Content content = nextTransformedContent();
         if (LOG.isDebugEnabled())
             LOG.debug("nextContent = {} {}", content, this);
         if (content != null)
@@ -261,14 +263,14 @@ class AsyncContentProducer implements ContentProducer
     }
 
     @Override
-    public void reclaim(HttpInput.Content content)
+    public void reclaim(Content content)
     {
         assertLocked();
         if (LOG.isDebugEnabled())
             LOG.debug("reclaim {} {}", content, this);
         if (_transformedContent == content)
         {
-            content.succeeded();
+            content.release();
             if (_transformedContent == _rawContent)
                 _rawContent = null;
             _transformedContent = null;
@@ -279,7 +281,7 @@ class AsyncContentProducer implements ContentProducer
     public boolean isReady()
     {
         assertLocked();
-        HttpInput.Content content = nextTransformedContent();
+        Content content = nextTransformedContent();
         if (content != null)
         {
             if (LOG.isDebugEnabled())
@@ -288,25 +290,12 @@ class AsyncContentProducer implements ContentProducer
         }
 
         _httpChannel.getState().onReadUnready();
-        while (_httpChannel.needContent())
+        _httpChannel.getCoreRequest().demandContent(() ->
         {
-            content = nextTransformedContent();
-            if (LOG.isDebugEnabled())
-                LOG.debug("isReady(), got transformed content after needContent retry {} {}", content, this);
-            if (content != null)
-            {
-                _httpChannel.getState().onContentAdded();
-                return true;
-            }
-            else
-            {
-                // We could have read some rawContent but not enough to generate
-                // transformed content, so we need to call needContent() again
-                // to tell the channel that more content is needed.
-                if (LOG.isDebugEnabled())
-                    LOG.debug("isReady(), could not transform content after needContent retry {}", this);
-            }
-        }
+            if (_httpChannel.getRequest().getHttpInput().onContentProducible())
+                _httpChannel.handle();
+        });
+
         if (LOG.isDebugEnabled())
             LOG.debug("isReady(), no content for needContent retry {}", this);
         return false;
@@ -317,7 +306,7 @@ class AsyncContentProducer implements ContentProducer
         return _httpChannel.getState().isInputUnready();
     }
 
-    private HttpInput.Content nextTransformedContent()
+    private Content nextTransformedContent()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("nextTransformedContent {}", this);
@@ -328,16 +317,17 @@ class AsyncContentProducer implements ContentProducer
             {
                 if (_transformedContent.isSpecial() || !_transformedContent.isEmpty())
                 {
-                    if (_transformedContent.getError() != null && !_error)
+                    if (_transformedContent instanceof Content.Error && !_error)
                     {
                         // In case the _rawContent was set by consumeAll(), check the httpChannel
                         // to see if it has a more precise error. Otherwise, the exact same
                         // special content will be returned by the httpChannel; do not do that
                         // if the _error flag was set, meaning the current error is definitive.
-                        HttpInput.Content refreshedRawContent = produceRawContent();
+                        Content refreshedRawContent = produceRawContent();
                         if (refreshedRawContent != null)
                             _rawContent = _transformedContent = refreshedRawContent;
-                        _error = _rawContent.getError() != null;
+                        _error = _rawContent instanceof Content.Error;
+
                         if (LOG.isDebugEnabled())
                             LOG.debug("refreshed raw content: {} {}", _rawContent, this);
                     }
@@ -350,7 +340,8 @@ class AsyncContentProducer implements ContentProducer
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("current transformed content depleted {}", this);
-                    _transformedContent.succeeded();
+
+                    _transformedContent.release();
                     _transformedContent = null;
                 }
             }
@@ -387,7 +378,7 @@ class AsyncContentProducer implements ContentProducer
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("interceptor generated a special content, _rawContent must become that special content {}", this);
-                _rawContent.succeeded();
+                _rawContent.release();
                 _rawContent = _transformedContent;
                 return;
             }
@@ -397,7 +388,7 @@ class AsyncContentProducer implements ContentProducer
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("interceptor generated a null content, recycling the empty raw content now {}", this);
-                _rawContent.succeeded();
+                _rawContent.release();
                 _rawContent = null;
                 return;
             }
@@ -407,7 +398,7 @@ class AsyncContentProducer implements ContentProducer
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("interceptor returned the raw content, recycle the empty raw content now {}", this);
-                _rawContent.succeeded();
+                _rawContent.release();
                 _rawContent = _transformedContent = null;
             }
         }
@@ -418,7 +409,7 @@ class AsyncContentProducer implements ContentProducer
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("recycling the empty raw content now {}", this);
-                _rawContent.succeeded();
+                _rawContent.release();
                 _rawContent = null;
             }
 
@@ -428,24 +419,24 @@ class AsyncContentProducer implements ContentProducer
         }
     }
 
-    private HttpInput.Content intercept()
+    private Content intercept()
     {
         try
         {
             int remainingBeforeInterception = _rawContent.remaining();
-            HttpInput.Content content = _interceptor.readFrom(_rawContent);
+            Content content = _interceptor.readFrom(_rawContent);
             if (content != null && content.isSpecial() && !_rawContent.isSpecial())
             {
-                Throwable error = content.getError();
-                if (error != null)
+                if (content instanceof Content.Error errorContent)
                 {
                     // Set the _error flag to mark the content as definitive, i.e.:
                     // do not try to produce new raw content to get a fresher error
                     // when the special content was generated by the interceptor.
                     _error = true;
                     if (_httpChannel.getResponse().isCommitted())
-                        _httpChannel.abort(error);
+                        _httpChannel.abort(errorContent.getCause());
                 }
+
                 if (LOG.isDebugEnabled())
                     LOG.debug("interceptor generated special content {}", this);
             }
@@ -453,14 +444,14 @@ class AsyncContentProducer implements ContentProducer
             {
                 IOException failure = new IOException("Interceptor " + _interceptor + " did not consume any of the " + _rawContent.remaining() + " remaining byte(s) of content");
                 if (content != null)
-                    content.failed(failure);
+                    content.release();
                 failCurrentContent(failure);
                 // Set the _error flag to mark the content as definitive, i.e.:
                 // do not try to produce new raw content to get a fresher error
                 // when the special content was caused by the interceptor not
                 // consuming the raw content.
                 _error = true;
-                Response response = _httpChannel.getResponse();
+                org.eclipse.jetty.server.Response response = _httpChannel.getCoreResponse();
                 if (response.isCommitted())
                     _httpChannel.abort(failure);
                 if (LOG.isDebugEnabled())
@@ -480,7 +471,7 @@ class AsyncContentProducer implements ContentProducer
             // do not try to produce new raw content to get a fresher error
             // when the special content was caused by the interceptor throwing.
             _error = true;
-            Response response = _httpChannel.getResponse();
+            Response response = _httpChannel.getCoreResponse();
             if (response.isCommitted())
                 _httpChannel.abort(failure);
             if (LOG.isDebugEnabled())
@@ -489,9 +480,9 @@ class AsyncContentProducer implements ContentProducer
         }
     }
 
-    private HttpInput.Content produceRawContent()
+    private Content produceRawContent()
     {
-        HttpInput.Content content = _httpChannel.produceContent();
+        Content content = _httpChannel.getCoreRequest().readContent();
         if (content != null)
         {
             _rawContentArrived += content.remaining();
@@ -499,6 +490,14 @@ class AsyncContentProducer implements ContentProducer
                 _firstByteTimeStamp = System.nanoTime();
             if (LOG.isDebugEnabled())
                 LOG.debug("produceRawContent updated rawContentArrived to {} and firstByteTimeStamp to {} {}", _rawContentArrived, _firstByteTimeStamp, this);
+
+            // TODO do we really need these listeners?
+            if (content.hasRemaining())
+                _httpChannel.onContent(content);
+            if (content instanceof Content.Trailers trailers)
+                _httpChannel.onTrailers(trailers.getTrailers());
+            if (content.isLast())
+                _httpChannel.onContentComplete();
         }
         if (LOG.isDebugEnabled())
             LOG.debug("produceRawContent produced {} {}", content, this);
@@ -514,14 +513,13 @@ class AsyncContentProducer implements ContentProducer
     @Override
     public String toString()
     {
-        return String.format("%s@%x[r=%s,t=%s,i=%s,error=%b,c=%s]",
+        return String.format("%s@%x[r=%s,t=%s,i=%s,error=%b]",
             getClass().getSimpleName(),
             hashCode(),
             _rawContent,
             _transformedContent,
             _interceptor,
-            _error,
-            _httpChannel
+            _error
         );
     }
 

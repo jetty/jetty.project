@@ -252,9 +252,9 @@ public class ServletContextHandlerTest
     public static class MySCIStarter extends AbstractLifeCycle implements ServletContextHandler.ServletContainerInitializerCaller
     {
         ServletContainerInitializer _sci;
-        ContextHandler.Context _ctx;
+        ContextHandler.APIContext _ctx;
 
-        MySCIStarter(ContextHandler.Context ctx, ServletContainerInitializer sci)
+        MySCIStarter(ContextHandler.APIContext ctx, ServletContainerInitializer sci)
         {
             _ctx = ctx;
             _sci = sci;

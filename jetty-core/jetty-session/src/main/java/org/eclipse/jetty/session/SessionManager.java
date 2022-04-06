@@ -79,6 +79,10 @@ public interface SessionManager extends LifeCycle
     
     void sessionTimerExpired(Session session, long now);
 
+    void commit(Session session);
+
+    void complete(Session session);
+
     void invalidate(String id) throws Exception;
     
     void scavenge() throws Exception;

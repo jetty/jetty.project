@@ -841,6 +841,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      *
      * @param session the session object
      */
+    @Override
     public void complete(Session session)
     {
         if (LOG.isDebugEnabled())
@@ -864,6 +865,7 @@ public abstract class AbstractSessionHandler extends Handler.Wrapper implements 
      * so that any subsequent requests to other servers
      * will see the modifications.
      */
+    @Override
     public void commit(Session session)
     {
         if (session == null)

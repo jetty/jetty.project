@@ -47,7 +47,6 @@ import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletRequestAttributeEvent;
 import jakarta.servlet.ServletRequestAttributeListener;
@@ -62,7 +61,6 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import jakarta.servlet.http.PushBuilder;
-import jakarta.servlet.http.WebConnection;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.ComplianceViolation;
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -82,9 +80,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionManager;
 import org.eclipse.jetty.util.Attributes;
@@ -100,45 +96,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Jetty Request.
- * <p>
- * Implements {@link jakarta.servlet.http.HttpServletRequest} from the <code>jakarta.servlet.http</code> package.
- * </p>
- * <p>
- * The standard interface of mostly getters, is extended with setters so that the request is mutable by the handlers that it is passed to. This allows the
- * request object to be as lightweight as possible and not actually implement any significant behavior. For example
- * <ul>
- *
- * <li>the {@link Request#getContextPath()} method will return null, until the request has been passed to a {@link ContextHandler} which matches the
- * {@link Request#getPathInfo()} with a context path and calls {@link Request#setContext(ContextHandler.Context,String)} as a result.  For
- * some dispatch types (ie include and named dispatch) the context path may not reflect the {@link ServletContext} set
- * by {@link Request#setContext(ContextHandler.Context, String)}.</li>
- *
- * <li>the HTTP session methods will all return null sessions until such time as a request has been passed to a
- * org.eclipse.jetty.server.ee9.SessionHandler which checks for session cookies and enables the ability to create new sessions.</li>
- *
- * <li>The {@link Request#getServletPath()} method will return "" until the request has been passed to a <code>org.eclipse.jetty.servlet.ServletHandler</code>
- * and the pathInfo matched against the servlet URL patterns and {@link Request#setServletPathMapping(ServletPathMapping)} called as a result.</li>
- * </ul>
- *
- * <p>
- * A request instance is created for each connection accepted by the server and recycled for each HTTP request received via that connection.
- * An effort is made to avoid reparsing headers and cookies that are likely to be the same for requests from the same connection.
- * </p>
- * <p>
- * Request instances are recycled, which combined with badly written asynchronous applications can result in calls on requests that have been reset.
- * The code is written in a style to avoid NPE and ISE when such calls are made, as this has often proved generate exceptions that distraction
- * from debugging such bad asynchronous applications.  Instead, request methods attempt to not fail when called in an illegal state, so that hopefully
- * the bad application will proceed to a major state event (eg calling AsyncContext.onComplete) which has better asynchronous guards, true atomic state
- * and better failure behaviour that will assist in debugging.
- * </p>
- * <p>
- * The form content that a request can process is limited to protect from Denial of Service attacks. The size in bytes is limited by
- * {@link ContextHandler#getMaxFormContentSize()} or if there is no context then the "org.eclipse.jetty.server.Request.maxFormContentSize" {@link Server}
- * attribute. The number of parameters keys is limited by {@link ContextHandler#getMaxFormKeys()} or if there is no context then the
- * "org.eclipse.jetty.server.Request.maxFormKeys" {@link Server} attribute.
- * </p>
- * <p>If IOExceptions or timeouts occur while reading form parameters, these are thrown as unchecked Exceptions: ether {@link RuntimeIOException},
- * {@link BadMessageException} or {@link RuntimeException} as appropriate.</p>
  */
 public class Request implements HttpServletRequest
 {
@@ -193,7 +150,6 @@ public class Request implements HttpServletRequest
         return null;
     }
 
-    private org.eclipse.jetty.server.Request _coreRequest; // TODO
     private final HttpChannel _channel;
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
@@ -215,8 +171,8 @@ public class Request implements HttpServletRequest
     private Authentication _authentication;
     private String _contentType;
     private String _characterEncoding;
-    private ContextHandler.Context _context;
-    private ContextHandler.Context _errorContext;
+    private ContextHandler.APIContext _context;
+    private ContextHandler.APIContext _errorContext;
     private Cookies _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = INPUT_NONE;
@@ -229,7 +185,7 @@ public class Request implements HttpServletRequest
     private InetSocketAddress _remote;
     private String _requestedSessionId;
     private UserIdentity.Scope _scope;
-    private Session _session;
+    private Session _coreSession;
     private SessionManager _sessionManager;
     private long _timeStamp;
     private MultiPartFormInputStream _multiParts; //if the request is a multi-part mime
@@ -290,7 +246,7 @@ public class Request implements HttpServletRequest
 
     public boolean isPushSupported()
     {
-        return !isPush() && getHttpChannel().getHttpTransport().isPushSupported();
+        return !isPush() && getHttpChannel().getCoreRequest().isPushSupported();
     }
 
     private static final EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
@@ -393,8 +349,11 @@ public class Request implements HttpServletRequest
      *
      * @param s the session
      */
-    public void enterSession(Session s)
+    public void enterSession(HttpSession s)
     {
+        if (!(s instanceof Session))
+            return;
+
         if (_sessions == null)
             _sessions = new ArrayList<>();
         if (LOG.isDebugEnabled())
@@ -412,15 +371,13 @@ public class Request implements HttpServletRequest
         if (LOG.isDebugEnabled())
             LOG.debug("Request {} leaving session {}", this, session);
         //try and scope to a request and context before leaving the session
-        /* TODO
-        ServletContext ctx = session.getServletContext();
+        HttpSession httpSession = session.getAPISession();
+        ServletContext ctx = httpSession.getServletContext();
         ContextHandler handler = ContextHandler.getContextHandler(ctx);
         if (handler == null)
-            session.getSessionHandler().complete(session);
+            session.complete();
         else
-            handler.handle(this, () ->  session.getSessionHandler().complete(session));
-
-         */
+            handler.handle(this, session::complete);
     }
 
     /**
@@ -436,15 +393,13 @@ public class Request implements HttpServletRequest
             LOG.debug("Response {} committing for session {}", this, session);
         
         //try and scope to a request and context before committing the session
-        /* TODO
-        ServletContext ctx = session.getServletContext();
+        HttpSession httpSession = session.getAPISession();
+        ServletContext ctx = httpSession.getServletContext();
         ContextHandler handler = ContextHandler.getContextHandler(ctx);
         if (handler == null)
-            session.getSessionHandler().commit(session);
+            session.commit();
         else
-            handler.handle(this, () -> session.getSessionHandler().commit(session));
-
-         */
+            handler.handle(this, session::commit);
     }
 
     private MultiMap<String> getParameters()
@@ -658,7 +613,7 @@ public class Request implements HttpServletRequest
      * While these attributes may look like security problems, they are exposing nothing that is not already
      * available via reflection from a Request instance.
      *
-     * @see jakarta.servlet.ServletRequest#getAttribute(java.lang.String)
+     * @see ServletRequest#getAttribute(String)
      */
     @Override
     public Object getAttribute(String name)
@@ -669,9 +624,8 @@ public class Request implements HttpServletRequest
                 return _channel.getServer();
             if (HttpChannel.class.getName().equals(name))
                 return _channel;
-            if (HttpConnection.class.getName().equals(name) &&
-                _channel.getHttpTransport() instanceof HttpConnection)
-                return _channel.getHttpTransport();
+            if (Connection.class.getName().equals(name))
+                return _channel.getCoreRequest().getConnectionMetaData().getConnection();
         }
         return (_attributes == null) ? null : _attributes.getAttribute(name);
     }
@@ -782,18 +736,18 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * @return The current {@link ContextHandler.Context context} used for this request, or <code>null</code> if {@link #setContext} has not yet been called.
+     * @return The current {@link ContextHandler.APIContext context} used for this request, or <code>null</code> if {@link #setContext} has not yet been called.
      */
-    public ContextHandler.Context getContext()
+    public ContextHandler.APIContext getContext()
     {
         return _context;
     }
 
     /**
-     * @return The current {@link ContextHandler.Context context} used for this error handling for this request.  If the request is asynchronous,
+     * @return The current {@link ContextHandler.APIContext context} used for this error handling for this request.  If the request is asynchronous,
      * then it is the context that called async. Otherwise it is the last non-null context passed to #setContext
      */
-    public ContextHandler.Context getErrorContext()
+    public ContextHandler.APIContext getErrorContext()
     {
         if (isAsyncStarted())
         {
@@ -811,7 +765,7 @@ public class Request implements HttpServletRequest
         // The context path returned is normally for the current context.  Except during a cross context
         // INCLUDE dispatch, in which case this method returns the context path of the source context,
         // which we recover from the IncludeAttributes wrapper.
-        ContextHandler.Context context;
+        ContextHandler.APIContext context;
         if (_dispatcherType == DispatcherType.INCLUDE)
         {
             Dispatcher.IncludeAttributes include = Attributes.unwrap(_attributes, Dispatcher.IncludeAttributes.class);
@@ -834,7 +788,7 @@ public class Request implements HttpServletRequest
      * If no context is set, then the path in context is the full path.
      * @return The decoded part of the {@link #getRequestURI()} path after any {@link #getContextPath()}
      *         up to any {@link #getQueryString()}, excluding path parameters.
-     * @see #setContext(ContextHandler.Context, String)
+     * @see #setContext(ContextHandler.APIContext, String)
      */
     public String getPathInContext()
     {
@@ -1415,8 +1369,7 @@ public class Request implements HttpServletRequest
         if (session instanceof Session)
         {
             Session s = ((Session)session);
-            // TODO need to get the core request
-            s.renewId(_coreRequest);
+            s.renewId(getHttpChannel().getCoreRequest());
             if (getRemoteUser() != null)
                 s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
             if (s.isIdChanged() && _sessionManager.isUsingCookies())
@@ -1433,27 +1386,6 @@ public class Request implements HttpServletRequest
      */
     public void onCompleted()
     {
-        HttpChannel httpChannel = getHttpChannel();
-        // httpChannel can be null in some scenarios
-        // it's not possible to use requestlog in those scenarios anyway.
-        if (httpChannel != null)
-        {
-            RequestLog requestLog = httpChannel.getRequestLog();
-            if (requestLog != null)
-            {
-                // Don't allow pulling more parameters
-                _contentParamsExtracted = true;
-
-                // Reset the status code to what was committed
-                MetaData.Response committedResponse = getResponse().getCommittedMetaData();
-                if (committedResponse != null)
-                {
-                    getResponse().setStatus(committedResponse.getStatus());
-                    // TODO: Reset the response headers to what they were when committed
-                }
-            }
-        }
-
         if (_sessions != null)
         {
             for (Session s:_sessions)
@@ -1493,7 +1425,7 @@ public class Request implements HttpServletRequest
      * Find a session that this request has already entered for the
      * given SessionHandler
      *
-     * @param sessionManager the SessionManager (ie context) to check
+     * @param sessionManager the SessionHandler (ie context) to check
      * @return the session for the passed session handler or null
      */
     public HttpSession getSession(SessionManager sessionManager)
@@ -1501,17 +1433,18 @@ public class Request implements HttpServletRequest
         if (_sessions == null || _sessions.size() == 0 || sessionManager == null)
             return null;
 
-        HttpSession session = null;
-        for (Session s:_sessions)
+        HttpSession httpSession = null;
+
+        for (Session s : _sessions)
         {
             if (sessionManager == s.getSessionManager())
             {
-                session = s.getAPISession();
+                httpSession = s.getAPISession();
                 if (s.isValid())
-                    return session;
+                    return httpSession;
             }
         }
-        return session;
+        return httpSession;
     }
 
     @Override
@@ -1523,9 +1456,13 @@ public class Request implements HttpServletRequest
     @Override
     public HttpSession getSession(boolean create)
     {
-        if (_session != null && _session.isValid())
-            return _session.getAPISession();
-        _session = null;
+        if (_coreSession != null)
+        {
+            if (_sessionManager != null && !_coreSession.isValid())
+                _coreSession = null;
+            else
+                return _coreSession.getAPISession();
+        }
 
         if (!create)
             return null;
@@ -1536,15 +1473,15 @@ public class Request implements HttpServletRequest
         if (_sessionManager == null)
             throw new IllegalStateException("No SessionManager");
 
-        _session = _sessionManager.newSession(_coreRequest, getRequestedSessionId());
-        if (_session == null)
+        _coreSession = _sessionManager.newSession(getHttpChannel().getCoreRequest(), getRequestedSessionId());
+        if (_coreSession == null)
             throw new IllegalStateException("Create session failed");
 
-        HttpCookie cookie = _sessionManager.getSessionCookie(_session, getContextPath(), isSecure());
+        HttpCookie cookie = _sessionManager.getSessionCookie(_coreSession, getContextPath(), isSecure());
         if (cookie != null)
             _channel.getResponse().replaceCookie(cookie);
 
-        return _session.getAPISession();
+        return _coreSession.getAPISession();
     }
 
     /**
@@ -1673,11 +1610,10 @@ public class Request implements HttpServletRequest
     @Override
     public boolean isRequestedSessionIdValid()
     {
-        if (_requestedSessionId == null)
+        if (getRequestedSessionId() == null || _coreSession == null)
             return false;
 
-        HttpSession httpSession = getSession(false);
-        return httpSession != null && _sessionManager.getSessionIdManager().getId(_requestedSessionId).equals(httpSession.getId());
+        return (_sessionManager.getSessionIdManager().getId(getRequestedSessionId()).equals(_coreSession.getId()));
     }
 
     @Override
@@ -1763,7 +1699,7 @@ public class Request implements HttpServletRequest
             path = _uri.isAbsolute() ? "/" : null;
         else if (encoded.startsWith("/"))
         {
-            path = (encoded.length() == 1) ? "/" : _uri.getCanonicalPath();
+            path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();
         }
         else if ("*".equals(encoded) || HttpMethod.CONNECT.is(getMethod()))
         {
@@ -1782,7 +1718,7 @@ public class Request implements HttpServletRequest
         _pathInContext = path;
     }
 
-    public org.eclipse.jetty.http.MetaData.Request getMetaData()
+    public MetaData.Request getMetaData()
     {
         return _metaData;
     }
@@ -1857,7 +1793,7 @@ public class Request implements HttpServletRequest
         _remote = null;
         _requestedSessionId = null;
         _scope = null;
-        _session = null;
+        _coreSession = null;
         _sessionManager = null;
         _timeStamp = 0;
         _multiParts = null;
@@ -1899,7 +1835,7 @@ public class Request implements HttpServletRequest
      * Set a request attribute. if the attribute name is "org.eclipse.jetty.server.server.Request.queryEncoding" then the value is also passed in a call to
      * {@link #setQueryEncoding}.
      *
-     * @see jakarta.servlet.ServletRequest#setAttribute(java.lang.String, java.lang.Object)
+     * @see ServletRequest#setAttribute(String, Object)
      */
     @Override
     public void setAttribute(String name, Object value)
@@ -1933,7 +1869,7 @@ public class Request implements HttpServletRequest
     /**
      * Set the attributes for the request.
      *
-     * @param attributes The attributes, which must be a {@link org.eclipse.jetty.util.Attributes.Wrapper}
+     * @param attributes The attributes, which must be a {@link Attributes.Wrapper}
      *                   for which {@link Attributes#unwrap(Attributes)} will return the
      *                   original {@link ServletAttributes}.
      */
@@ -2067,7 +2003,7 @@ public class Request implements HttpServletRequest
      * @param pathInContext the part of the URI path that is withing the context.
      *                      For servlets, this is equal to servletPath + pathInfo
      */
-    public void setContext(ContextHandler.Context context, String pathInContext)
+    public void setContext(ContextHandler.APIContext context, String pathInContext)
     {
         _newContext = _context != context;
         _context = context;
@@ -2078,7 +2014,7 @@ public class Request implements HttpServletRequest
 
     /**
      * @return True if this is the first call of <code>takeNewContext()</code> since the last
-     * {@link #setContext(ContextHandler.Context, String)} call.
+     * {@link #setContext(ContextHandler.APIContext, String)} call.
      */
     public boolean takeNewContext()
     {
@@ -2158,11 +2094,11 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * @param session The session to set.
+     * @param coreSession The session to set.
      */
-    public void setSession(Session session)
+    public void setCoreSession(Session coreSession)
     {
-        _session = session;
+        _coreSession = coreSession;
     }
 
     /**
@@ -2425,95 +2361,8 @@ public class Request implements HttpServletRequest
     @Override
     public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException
     {
-        Response response = _channel.getResponse();
-        if (response.getStatus() != HttpStatus.SWITCHING_PROTOCOLS_101)
-            throw new IllegalStateException("Response status should be 101");
-        if (response.getHeader("Upgrade") == null)
-            throw new IllegalStateException("Missing Upgrade header");
-        if (!"Upgrade".equalsIgnoreCase(response.getHeader("Connection")))
-            throw new IllegalStateException("Invalid Connection header");
-        if (response.isCommitted())
-            throw new IllegalStateException("Cannot upgrade committed response");
-        if (_metaData == null || _metaData.getHttpVersion() != HttpVersion.HTTP_1_1)
-            throw new IllegalStateException("Only requests over HTTP/1.1 can be upgraded");
-
-        ServletOutputStream outputStream = response.getOutputStream();
-        ServletInputStream inputStream = getInputStream();
-        // TODO HttpChannelOverHttp httpChannel11 = (HttpChannelOverHttp)_channel;
-        HttpConnection httpConnection = (HttpConnection)_channel.getConnection();
-
-        T upgradeHandler;
-        try
-        {
-            upgradeHandler = handlerClass.getDeclaredConstructor().newInstance();
-        }
-        catch (Exception e)
-        {
-            throw new ServletException("Unable to instantiate handler class", e);
-        }
-
-        // TODO httpChannel11.servletUpgrade(); // tell the HTTP 1.1 channel that it is now handling an upgraded servlet
-        AsyncContext asyncContext = forceStartAsync(); // force the servlet in async mode
-
-        outputStream.flush(); // commit the 101 response
-        httpConnection.getGenerator().servletUpgrade(); // tell the generator it can send data as-is
-        httpConnection.addEventListener(new Connection.Listener()
-        {
-            @Override
-            public void onClosed(Connection connection)
-            {
-                try
-                {
-                    asyncContext.complete();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("error during upgrade AsyncContext complete", e);
-                }
-                try
-                {
-                    upgradeHandler.destroy();
-                }
-                catch (Exception e)
-                {
-                    LOG.warn("error during upgrade HttpUpgradeHandler destroy", e);
-                }
-            }
-
-            @Override
-            public void onOpened(Connection connection)
-            {
-            }
-        });
-
-        upgradeHandler.init(new WebConnection()
-        {
-            @Override
-            public void close() throws Exception
-            {
-                try
-                {
-                    inputStream.close();
-                }
-                finally
-                {
-                    outputStream.close();
-                }
-            }
-
-            @Override
-            public ServletInputStream getInputStream()
-            {
-                return inputStream;
-            }
-
-            @Override
-            public ServletOutputStream getOutputStream()
-            {
-                return outputStream;
-            }
-        });
-        return upgradeHandler;
+        // TODO ???
+        return null;
     }
 
     /**

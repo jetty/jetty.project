@@ -19,9 +19,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -540,7 +538,7 @@ public class DefaultSessionCacheTest extends AbstractSessionCacheTest
 
         //test  EVICT_ON_SESSION_EXIT - requests not active
         //this should not affect the session because this is an idle test only
-        session2.complete(); //NOTE:don't call cache.release as this will remove the session
+        session2.release(); //NOTE:don't call cache.release as this will remove the session
         cache.checkInactiveSession(session2);
         assertTrue(cache.contains("567"));
     }

@@ -19,7 +19,7 @@ package org.eclipse.jetty.ee9.handler;
  */
 public class CharEncodingContextHandler extends ContextHandler
 {
-    class Context extends ContextHandler.Context
+    class Context extends APIContext
     {
         @Override
         public String getRequestCharacterEncoding()
@@ -37,6 +37,6 @@ public class CharEncodingContextHandler extends ContextHandler
     public CharEncodingContextHandler()
     {
         super();
-        _scontext = new Context();
+        _apiContext = new Context();
     }
 }

@@ -22,7 +22,7 @@ import java.util.List;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.ContextHandler.Context;
+import org.eclipse.jetty.ee9.handler.ContextHandler.APIContext;
 import org.eclipse.jetty.ee9.handler.ResourceService.WelcomeFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpHeader;
@@ -91,7 +91,7 @@ public class ResourceHandler extends HandlerWrapper implements ResourceFactory, 
     @Override
     public void doStart() throws Exception
     {
-        Context scontext = ContextHandler.getCurrentContext();
+        APIContext scontext = ContextHandler.getCurrentContext();
         _context = (scontext == null ? null : scontext.getContextHandler());
         if (_mimeTypes == null)
             _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();

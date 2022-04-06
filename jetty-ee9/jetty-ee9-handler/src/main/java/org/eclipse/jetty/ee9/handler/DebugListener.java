@@ -285,7 +285,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
     final ContextHandler.ContextScopeListener _contextScopeListener = new ContextHandler.ContextScopeListener()
     {
         @Override
-        public void enterScope(ContextHandler.Context context, Request request, Object reason)
+        public void enterScope(ContextHandler.APIContext context, Request request, Object reason)
         {
             String cname = findContextName(context);
             if (request == null)
@@ -305,7 +305,7 @@ public class DebugListener extends AbstractLifeCycle implements ServletContextLi
         }
 
         @Override
-        public void exitScope(ContextHandler.Context context, Request request)
+        public void exitScope(ContextHandler.APIContext context, Request request)
         {
             String cname = findContextName(context);
             if (request == null)

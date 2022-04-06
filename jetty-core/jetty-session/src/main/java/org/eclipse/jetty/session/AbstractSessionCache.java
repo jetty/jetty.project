@@ -508,7 +508,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             if (session.isInvalid())
                 return;
 
-            session.complete();
+            session.release();
 
             //don't do anything with the session until the last request for it has finished
             if ((session.getRequests() <= 0))

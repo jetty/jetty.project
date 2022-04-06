@@ -23,7 +23,6 @@ module org.eclipse.jetty.ee9.handler
     requires static org.eclipse.jetty.jmx;
 
     exports org.eclipse.jetty.ee9.handler;
-    exports org.eclipse.jetty.ee9.handler.gzip;
     exports org.eclipse.jetty.ee9.handler.jmx to
         org.eclipse.jetty.jmx;
 }

@@ -239,7 +239,7 @@ public class Response implements HttpServletResponse
             return cookie;
 
         //sameSite is not set, use the default configured for the context, if one exists
-        SameSite contextDefault = HttpCookie.getSameSiteDefault(_channel.getRequest().getContext().getAttributes());
+        SameSite contextDefault = HttpCookie.getSameSiteDefault(_channel.getRequest().getContext().getCoreContext());
         if (contextDefault == null)
             return cookie; //no default set
 
@@ -349,7 +349,6 @@ public class Response implements HttpServletResponse
             return url;
 
         HttpURI uri = null;
-        /* TODO
         if (sessionManager.isCheckingRemoteSessionIdEncoding() && URIUtil.hasScheme(url))
         {
             uri = HttpURI.from(url);
@@ -371,7 +370,6 @@ public class Response implements HttpServletResponse
         String sessionURLPrefix = sessionManager.getSessionIdPathParameterNamePrefix();
         if (sessionURLPrefix == null)
             return url;
-
 
         if (url == null)
             return null;
@@ -395,17 +393,17 @@ public class Response implements HttpServletResponse
 
         // get session;
         HttpSession httpSession = request.getSession(false);
-        Session session = Session.getSession(httpSession);
 
         // no session
         if (httpSession == null)
             return url;
 
         // invalid session
-        if (!session.isValid())
+        Session coreSession = Session.getSession(httpSession);
+        if (coreSession.isValid())
             return url;
 
-        String id = session.getExtendedId();
+        String id = coreSession.getExtendedId();
 
         if (uri == null)
             uri = HttpURI.from(url);
@@ -424,7 +422,6 @@ public class Response implements HttpServletResponse
                 url.substring(suffix);
         }
 
-
         // edit the session
         int suffix = url.indexOf('?');
         if (suffix < 0)
@@ -439,8 +436,6 @@ public class Response implements HttpServletResponse
         return url.substring(0, suffix) +
             ((HttpScheme.HTTPS.is(uri.getScheme()) || HttpScheme.HTTP.is(uri.getScheme())) && uri.getPath() == null ? "/" : "") + //if no path so insert the root path
             sessionURLPrefix + id + url.substring(suffix);
-         */
-        return url; // TODO
     }
 
     @Override
@@ -508,7 +503,7 @@ public class Response implements HttpServletResponse
      * can still be sent.   This method is called by sendError if it is passed 102.
      *
      * @throws IOException if unable to send the 102 response
-     * @see jakarta.servlet.http.HttpServletResponse#sendError(int)
+     * @see HttpServletResponse#sendError(int)
      */
     public void sendProcessing() throws IOException
     {
@@ -821,7 +816,7 @@ public class Response implements HttpServletResponse
         }
 
         // Try any default char encoding for the context.
-        ContextHandler.Context context = _channel.getRequest().getContext();
+        ContextHandler.APIContext context = _channel.getRequest().getContext();
         if (context != null)
         {
             encoding = context.getResponseCharacterEncoding();
@@ -1198,11 +1193,11 @@ public class Response implements HttpServletResponse
         if (httpSession != null && httpSession.isNew())
         {
             SessionManager sessionManager = request.getSessionManager();
-            if (sessionManager != null)
+            if (sessionManager != null && httpSession instanceof Session.APISession apiSession)
             {
-                HttpCookie c = sessionManager.getSessionCookie(Session.getSession(httpSession), request.getContextPath(), request.isSecure());
-                if (c != null)
-                    addCookie(c);
+                HttpCookie cookie = sessionManager.getSessionCookie(apiSession.getCoreSession(), request.getContextPath(), request.isSecure());
+                if (cookie != null)
+                    addCookie(cookie);
             }
         }
     }
@@ -1341,7 +1336,7 @@ public class Response implements HttpServletResponse
             if (_outputType != OutputType.NONE)
                 return;
 
-            ContextHandler.Context context = _channel.getRequest().getContext();
+            ContextHandler.APIContext context = _channel.getRequest().getContext();
             if (context == null)
                 return;
 
@@ -1433,7 +1428,7 @@ public class Response implements HttpServletResponse
 
     public static void putHeaders(HttpServletResponse response, HttpContent content, long contentLength, boolean etag)
     {
-        long lml = content.getResource().lastModified();
+        long lml = content.getLastModified().getLongValue();
         if (lml >= 0)
             response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(), lml);
 

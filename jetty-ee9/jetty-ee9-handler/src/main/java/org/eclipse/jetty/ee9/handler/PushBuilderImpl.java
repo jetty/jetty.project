@@ -188,7 +188,7 @@ public class PushBuilderImpl implements PushBuilder
         if (LOG.isDebugEnabled())
             LOG.debug("Push {} {} inm={} ims={}", _method, uri, _fields.get(HttpHeader.IF_NONE_MATCH), _fields.get(HttpHeader.IF_MODIFIED_SINCE));
 
-        _request.getHttpChannel().getHttpTransport().push(push);
+        _request.getHttpChannel().getCoreRequest().push(push);
         _path = null;
         _lastModified = null;
     }

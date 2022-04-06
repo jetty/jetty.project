@@ -31,11 +31,11 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
     private static final Logger LOG = LoggerFactory.getLogger(ManagedAttributeListener.class);
 
     final Set<String> _managedAttributes = new HashSet<>();
-    final ContextHandler _context;
+    final ContextHandler _contextHandler;
 
-    public ManagedAttributeListener(ContextHandler context, String... managedAttributes)
+    public ManagedAttributeListener(ContextHandler contextHandler, String... managedAttributes)
     {
-        _context = context;
+        _contextHandler = contextHandler;
 
         for (String attr : managedAttributes)
         {
@@ -71,7 +71,7 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
     public void contextInitialized(ServletContextEvent event)
     {
         // Update existing attributes
-        for (String name : _context.getServletContext().getAttributes().getAttributeNameSet())
+        for (String name : _contextHandler.getCoreContextHandler().getContext().getAttributeNameSet())
         {
             if (_managedAttributes.contains(name))
                 updateBean(name, null, event.getServletContext().getAttribute(name));
@@ -81,7 +81,7 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
     @Override
     public void contextDestroyed(ServletContextEvent event)
     {
-        for (String name : _context.getServletContext().getAttributes().getAttributeNameSet())
+        for (String name : _contextHandler.getCoreContextHandler().getContext().getAttributeNameSet())
         {
             if (_managedAttributes.contains(name))
                 updateBean(name, event.getServletContext().getAttribute(name), null);
@@ -91,7 +91,7 @@ public class ManagedAttributeListener implements ServletContextListener, Servlet
     protected void updateBean(String name, Object oldBean, Object newBean)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("update {} {}->{} on {}", name, oldBean, newBean, _context);
-        _context.updateBean(oldBean, newBean, false);
+            LOG.debug("update {} {}->{} on {}", name, oldBean, newBean, _contextHandler);
+        _contextHandler.updateBean(oldBean, newBean, false);
     }
 }

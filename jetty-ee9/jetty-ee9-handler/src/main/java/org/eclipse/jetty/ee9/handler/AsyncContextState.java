@@ -140,7 +140,7 @@ public class AsyncContextState implements AsyncContext
             @Override
             public void run()
             {
-                ContextHandler.Context context = state().getAsyncContextEvent().getContext();
+                ContextHandler.APIContext context = state().getAsyncContextEvent().getContext();
                 if (context == null)
                     task.run();
                 else

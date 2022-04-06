@@ -62,7 +62,8 @@ public abstract class LoginAuthenticator implements Authenticator
         if (user != null)
         {
             Request request = Request.getBaseRequest(servletRequest);
-            renewSession(request, request == null ? null : request.getResponse());
+            if (request != null)
+                renewSession(request, request.getResponse());
             return user;
         }
         return null;
@@ -123,10 +124,10 @@ public abstract class LoginAuthenticator implements Authenticator
                     {
                         Session s = (Session)httpSession;
                         String oldId = s.getId();
-                        s.renewId(request);
+                        s.renewId(Request.getBaseRequest(request).getHttpChannel().getCoreRequest());
                         s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
                         if (s.isIdChanged() && (response instanceof Response))
-                            ((Response)response).replaceCookie(s.getSessionHandler().getSessionCookie(s, request.getContextPath(), request.isSecure()));
+                            ((Response)response).replaceCookie(s.getSessionManager().getSessionCookie(s, request.getContextPath(), request.isSecure()));
                         if (LOG.isDebugEnabled())
                             LOG.debug("renew {}->{}", oldId, s.getId());
                     }

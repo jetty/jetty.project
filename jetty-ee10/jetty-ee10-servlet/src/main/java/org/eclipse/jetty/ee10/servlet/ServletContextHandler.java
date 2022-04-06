@@ -1953,17 +1953,17 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     void destroyServlet(Servlet servlet)
     {
-        _objFactory.destroy(servlet);
+        getContext().destroy(servlet);
     }
 
     void destroyFilter(Filter filter)
     {
-        _objFactory.destroy(filter);
+        getContext().destroy(filter);
     }
 
     void destroyListener(EventListener listener)
     {
-        _objFactory.destroy(listener);
+        getContext().destroy(listener);
     }
 
     public static class JspPropertyGroup implements JspPropertyGroupDescriptor
@@ -2242,6 +2242,12 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             return ServletContextHandler.this;
         }
 
+        @Override
+        protected DecoratedObjectFactory getDecoratedObjectFactory()
+        {
+            return _objFactory;
+        }
+
         public <T> T createInstance(BaseHolder<T> holder) throws ServletException
         {
             try
@@ -2250,7 +2256,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 DecoratedObjectFactory.associateInfo(holder);
                 try
                 {
-                    return decorate(((Class<T>)holder.getHeldClass()).getDeclaredConstructor().newInstance());
+                    T t = holder.getHeldClass().getDeclaredConstructor().newInstance();
+                    return decorate(t);
                 }
                 catch (Exception e)
                 {

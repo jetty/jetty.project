@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee9.servlet;
+package org.eclipse.jetty.ee9.servlet.session;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -39,23 +39,23 @@ import jakarta.servlet.http.HttpSessionContext;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee9.handler.HandlerWrapper;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.session.AbstractSessionHandler;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SessionHandler extends AbstractSessionHandler
-{    
+public class SessionHandler extends HandlerWrapper
+{
     static final Logger LOG = LoggerFactory.getLogger(SessionHandler.class);
-    
-    public static final EnumSet<SessionTrackingMode> DEFAULT_TRACKING = 
+
+    public static final EnumSet<SessionTrackingMode> DEFAULT_TRACKING =
         EnumSet.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
-    
+
     public static final Set<SessionTrackingMode> DEFAULT_SESSION_TRACKING_MODES =
         Collections.unmodifiableSet(
             new HashSet<>(
@@ -69,14 +69,14 @@ public class SessionHandler extends AbstractSessionHandler
                 HttpSessionIdListener.class,
                 HttpSessionListener.class
             };
-    
+
     private final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<>();
     private final List<HttpSessionListener> _sessionListeners = new CopyOnWriteArrayList<>();
     private final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
 
     private Set<SessionTrackingMode> _sessionTrackingModes;
-    private SessionCookieConfig _cookieConfig = new CookieConfig();
-   
+    private SessionCookieConfig _cookieConfig = new SessionHandler.CookieConfig();
+
     /**
      * CookieConfig
      *
@@ -189,21 +189,21 @@ public class SessionHandler extends AbstractSessionHandler
             _secureCookies = secure;
         }
     }
-    
+
     public static class ServletAPISession implements HttpSession, Session.APISession
     {
-        public static ServletAPISession wrapSession(Session session)
+        public static org.eclipse.jetty.ee9.servlet.SessionHandler.ServletAPISession wrapSession(Session session)
         {
-            ServletAPISession apiSession = new ServletAPISession(session);
+            org.eclipse.jetty.ee9.servlet.SessionHandler.ServletAPISession apiSession = new org.eclipse.jetty.ee9.servlet.SessionHandler.ServletAPISession(session);
             session.setAPISessin(apiSession);
             return apiSession;
         }
-        
+
         private final Session _session;
-        
+
         private ServletAPISession(Session session)
         {
-            _session = session;           
+            _session = session;
         }
 
         @Override
@@ -324,13 +324,13 @@ public class SessionHandler extends AbstractSessionHandler
         public void putValue(String name, Object value)
         {
             // TODO Auto-generated method stub
-            
+
         }
 
         @Override
         public void removeValue(String name)
         {
-            // TODO Auto-generated method stub   
+            // TODO Auto-generated method stub
         }
     }
 
@@ -366,7 +366,7 @@ public class SessionHandler extends AbstractSessionHandler
             return true;
         }
         return false;
-    }    
+    }
 
     @Override
     public boolean removeEventListener(EventListener listener)
@@ -383,10 +383,10 @@ public class SessionHandler extends AbstractSessionHandler
         }
         return false;
     }
-    
+
     public Session.APISession newSessionAPIWrapper(Session session)
     {
-        return ServletAPISession.wrapSession(session);
+        return org.eclipse.jetty.ee9.servlet.SessionHandler.ServletAPISession.wrapSession(session);
     }
 
     @Override
@@ -407,7 +407,7 @@ public class SessionHandler extends AbstractSessionHandler
             }
         }
     }
-    
+
     /**
      * Call the session lifecycle listeners in the order
      * they were added.
@@ -429,7 +429,7 @@ public class SessionHandler extends AbstractSessionHandler
             }
         }
     }
- 
+
     /**
      * Call the session lifecycle listeners in
      * the reverse order they were added.
@@ -476,21 +476,21 @@ public class SessionHandler extends AbstractSessionHandler
             }
         }
     }
-    
+
     @Override
     public void callUnboundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
             ((HttpSessionBindingListener)value).valueUnbound(new HttpSessionBindingEvent(session.getAPISession(), name));
     }
-    
+
     @Override
     public void callBoundBindingListener(Session session, String name, Object value)
     {
         if (value instanceof HttpSessionBindingListener)
-            ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getAPISession(), name)); 
+            ((HttpSessionBindingListener)value).valueBound(new HttpSessionBindingEvent(session.getAPISession(), name));
     }
-    
+
     @Override
     public void callSessionActivationListener(Session session, String name, Object value)
     {
@@ -500,7 +500,7 @@ public class SessionHandler extends AbstractSessionHandler
             HttpSessionActivationListener listener = (HttpSessionActivationListener)value;
             listener.sessionDidActivate(event);
         }
-        
+
     }
 
     @Override
@@ -513,12 +513,12 @@ public class SessionHandler extends AbstractSessionHandler
             listener.sessionWillPassivate(event);
         }
     }
-    
+
     public SessionCookieConfig getSessionCookieConfig()
     {
         return _cookieConfig;
     }
-    
+
     public Set<SessionTrackingMode> getDefaultSessionTrackingModes()
     {
         return DEFAULT_SESSION_TRACKING_MODES;
@@ -540,8 +540,8 @@ public class SessionHandler extends AbstractSessionHandler
         _sessionTrackingModes = new HashSet<>(sessionTrackingModes);
         _usingCookies = _sessionTrackingModes.contains(SessionTrackingMode.COOKIE);
         _usingURLs = _sessionTrackingModes.contains(SessionTrackingMode.URL);
-    } 
-    
+    }
+
     /**
      * Look for a requested session ID in cookies and URI parameters
      *
@@ -555,8 +555,8 @@ public class SessionHandler extends AbstractSessionHandler
         if (requestedSessionId != null)
         {
             Session session = getSession(requestedSessionId);
-            
-            ServletAPISession apiSession = new ServletAPISession(session);
+
+            org.eclipse.jetty.ee9.servlet.SessionHandler.ServletAPISession apiSession = new org.eclipse.jetty.ee9.servlet.SessionHandler.ServletAPISession(session);
 
             if (session != null && session.isValid())
             {
@@ -620,7 +620,7 @@ public class SessionHandler extends AbstractSessionHandler
                             {
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("Multiple different valid session ids: {}, {}", requestedSessionId, id);
-                                
+
                                 //load the session to see if it is valid or not
                                 Session s = getSession(id);
                                 if (s != null && s.isValid())
@@ -690,15 +690,15 @@ public class SessionHandler extends AbstractSessionHandler
     }
 
     @Override
-    public Request.Processor handle(Request request) throws Exception
+    public org.eclipse.jetty.server.Request.Processor handle(Request request) throws Exception
     {
         ServletScopedRequest.MutableHttpServletRequest servletRequest =
             request.get(ServletScopedRequest.class, ServletScopedRequest::getMutableHttpServletRequest);
-        
+
         if (servletRequest == null)
             return false;
-        
-       //TODO need a response that I can set a cookie on, and work out if it is secure or not
+
+        //TODO need a response that I can set a cookie on, and work out if it is secure or not
 
         // TODO servletRequest can be mutable, so we can add session stuff to it
         servletRequest.setSessionManager(this);
@@ -717,42 +717,42 @@ public class SessionHandler extends AbstractSessionHandler
 
 
         request.getChannel().onStreamEvent(s ->
-        new Stream.APISession(s)
-        {
-            @Override
-            public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
+            new Stream.APISession(s)
             {
-                if (response != null)
+                @Override
+                public void send(MetaData.Response response, boolean last, Callback callback, ByteBuffer... content)
                 {
-                    // Write out session
+                    if (response != null)
+                    {
+                        // Write out session
+                        Session session = servletRequest.getBaseSession();
+                        if (session != null)
+                            commit(session);
+                    }
+                    super.send(response, last, callback, content);
+                }
+
+                @Override
+                public void succeeded()
+                {
+                    super.succeeded();
+                    // Leave session
                     Session session = servletRequest.getBaseSession();
                     if (session != null)
-                        commit(session);
+                        complete(session);
                 }
-                super.send(response, last, callback, content);
-            }
 
-            @Override
-            public void succeeded()
-            {
-                super.succeeded();
-                // Leave session
-                Session session = servletRequest.getBaseSession(); 
-                if (session != null)
-                    complete(session);
-            }
+                @Override
+                public void failed(Throwable x)
+                {
+                    super.failed(x);
+                    //Leave session
+                    Session session = servletRequest.getBaseSession();
+                    if (session != null)
+                        complete(session);
 
-            @Override
-            public void failed(Throwable x)
-            {
-                super.failed(x);
-                //Leave session
-                Session session = servletRequest.getBaseSession();
-                if (session != null)
-                    complete(session);
-
-            }
-        });
+                }
+            });
 
         return super.handle(request);
     }

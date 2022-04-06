@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test having multiple session cookies in a request.
@@ -379,7 +378,7 @@ public class DuplicateCookieTest
         data.setExpiry(now + TimeUnit.DAYS.toMillis(1));
         Session s = cache.newSession(data);
         cache.add(id, s);
-        s.complete(); //pretend a request that created the session is finished
+        s.release(); //pretend a request that created the session is finished
         return s;
     }
 
