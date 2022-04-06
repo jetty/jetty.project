@@ -178,7 +178,7 @@ public class HttpChannelEventTest
         start(new TestHandler()
         {
             @Override
-            protected void handle(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            protected void handle(HttpServletRequest request, HttpServletResponse response)
             {
                 response.setCharacterEncoding("utf-8");
                 response.setContentType("text/plain");
