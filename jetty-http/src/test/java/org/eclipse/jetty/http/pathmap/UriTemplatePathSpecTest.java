@@ -27,7 +27,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for URI Template Path Specs
@@ -145,6 +147,20 @@ public class UriTemplatePathSpecTest
         assertThat("Spec.pathParams", mapped, notNullValue());
         assertThat("Spec.pathParams.size", mapped.size(), is(1));
         assertEquals("b", mapped.get("var"), "Spec.pathParams[var]");
+    }
+
+    @Test
+    public void testPathInfo()
+    {
+        UriTemplatePathSpec spec = new UriTemplatePathSpec("/test/{var}");
+        assertTrue(spec.matches("/test/info"));
+        assertThat(spec.getPathMatch("/test/info"), equalTo("/test"));
+        assertThat(spec.getPathInfo("/test/info"), equalTo("info"));
+
+        spec = new UriTemplatePathSpec("/{x}/test/{y}");
+        assertTrue(spec.matches("/try/test/info"));
+        assertThat(spec.getPathMatch("/try/test/info"), equalTo("/try/test/info"));
+        assertThat(spec.getPathInfo("/try/test/info"), nullValue());
     }
 
     @Test

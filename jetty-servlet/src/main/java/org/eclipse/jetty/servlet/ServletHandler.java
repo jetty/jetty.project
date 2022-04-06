@@ -303,7 +303,7 @@ public class ServletHandler extends ScopedHandler
                     }
                 }
                 else
-                    servletHolders.add(_servlets[i]); //only retain embedded 
+                    servletHolders.add(_servlets[i]); //only retain embedded
             }
         }
 
@@ -314,7 +314,7 @@ public class ServletHandler extends ScopedHandler
         ServletMapping[] sms = servletMappings.toArray(new ServletMapping[0]);
         updateBeans(_servletMappings, sms);
         _servletMappings = sms;
-        
+
         if (_contextHandler != null)
             _contextHandler.contextDestroyed();
 
@@ -1151,7 +1151,7 @@ public class ServletHandler extends ScopedHandler
             else
             {
                 //there are existing entries. If this is a programmatic filtermapping, it is added at the end of the list.
-                //If this is a normal filtermapping, it is inserted after all the other filtermappings (matchBefores and normals), 
+                //If this is a normal filtermapping, it is inserted after all the other filtermappings (matchBefores and normals),
                 //but before the first matchAfter filtermapping.
                 if (source == Source.JAVAX_API)
                 {
@@ -1299,7 +1299,13 @@ public class ServletHandler extends ScopedHandler
         }
     }
 
-    protected synchronized void updateMappings()
+    protected PathSpec asPathSpec(String pathSpec)
+    {
+        // By default only allow servlet path specs
+        return new ServletPathSpec(pathSpec);
+    }
+
+    protected void updateMappings()
     {
         // update filter mappings
         if (_filterMappings == null)
@@ -1388,7 +1394,7 @@ public class ServletHandler extends ScopedHandler
                         finalMapping = mapping;
                     else
                     {
-                        //already have a candidate - only accept another one 
+                        //already have a candidate - only accept another one
                         //if the candidate is a default, or we're allowing duplicate mappings
                         if (finalMapping.isDefault())
                             finalMapping = mapping;
@@ -1421,7 +1427,7 @@ public class ServletHandler extends ScopedHandler
                         finalMapping.getServletName(),
                         _servletNameMap.get(finalMapping.getServletName()).getSource());
 
-                pm.put(new ServletPathSpec(pathSpec), _servletNameMap.get(finalMapping.getServletName()));
+                pm.put(asPathSpec(pathSpec), _servletNameMap.get(finalMapping.getServletName()));
             }
 
             _servletPathMap = pm;
