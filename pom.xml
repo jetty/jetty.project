@@ -100,7 +100,7 @@
     <exec.plugin.version>3.0.0</exec.plugin.version>
     <felix-bundle.plugin.version>3.5.1</felix-bundle.plugin.version>
     <h2spec.plugin.version>1.0.9</h2spec.plugin.version>
-    <jacoco.plugin.version>0.8.7</jacoco.plugin.version>
+    <jacoco.plugin.version>0.8.8</jacoco.plugin.version>
     <jetty-version-txt.plugin.version>2.7</jetty-version-txt.plugin.version>
     <license.plugin.version>4.1</license.plugin.version>
     <maven.antrun.plugin.version>3.0.0</maven.antrun.plugin.version>
