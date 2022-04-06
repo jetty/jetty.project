@@ -29,6 +29,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
@@ -111,13 +112,13 @@ public class DigestAuthenticator extends LoginAuthenticator
         if (!mandatory)
             return new DeferredAuthentication(this);
 
-        HttpServletRequest request = (HttpServletRequest)req;
-        HttpServletResponse response = (HttpServletResponse)res;
-        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+        HttpServletRequest httpRequest = (HttpServletRequest)req;
+        HttpServletResponse httpResponse = (HttpServletResponse)res;
+        String credentials = httpRequest.getHeader(HttpHeader.AUTHORIZATION.asString());
 
         try
         {
-            Request baseRequest = Request.getBaseRequest(request);
+            Request request = ServletContextRequest.getBaseRequest(httpRequest).getWrapped();
 
             boolean stale = false;
             if (credentials != null)
@@ -125,7 +126,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                 if (LOG.isDebugEnabled())
                     LOG.debug("Credentials: {}", credentials);
                 QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials, "=, ", true, false);
-                final Digest digest = new Digest(request.getMethod());
+                final Digest digest = new Digest(httpRequest.getMethod());
                 String last = null;
                 String name = null;
 
@@ -171,7 +172,7 @@ public class DigestAuthenticator extends LoginAuthenticator
                     }
                 }
 
-                int n = checkNonce(digest, baseRequest);
+                int n = checkNonce(digest, request);
 
                 if (n > 0)
                 {
@@ -186,18 +187,18 @@ public class DigestAuthenticator extends LoginAuthenticator
                     stale = true;
             }
 
-            if (!DeferredAuthentication.isDeferred(response))
+            if (!DeferredAuthentication.isDeferred(httpResponse))
             {
-                String domain = request.getContextPath();
+                String domain = httpRequest.getContextPath();
                 if (domain == null)
                     domain = "/";
-                response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
+                httpResponse.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
                     "\", domain=\"" + domain +
-                    "\", nonce=\"" + newNonce(baseRequest) +
+                    "\", nonce=\"" + newNonce(request) +
                     "\", algorithm=MD5" +
                     ", qop=\"auth\"" +
                     ", stale=" + stale);
-                response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED);
 
                 return Authentication.SEND_CONTINUE;
             }

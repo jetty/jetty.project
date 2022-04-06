@@ -55,6 +55,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
+import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -257,20 +258,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         return _mappedServlet;
     }
 
-    public static ServletContextRequest getRequest(HttpServletRequest httpServletRequest)
-    {
-        while (httpServletRequest != null)
-        {
-            if (httpServletRequest instanceof ServletChannel)
-                return ((ServletChannel)httpServletRequest).getRequest();
-            if (httpServletRequest instanceof HttpServletRequestWrapper)
-                httpServletRequest = (HttpServletRequest)((HttpServletRequestWrapper)httpServletRequest).getRequest();
-            else
-                break;
-        }
-        return null;
-    }
-
     public String getServletName()
     {
         if (_scope != null)
@@ -337,7 +324,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             return null;
         }
         
-        protected void setAuthentication(Authentication authentication)
+        public void setAuthentication(Authentication authentication)
         {
             _authentication = authentication;
         }
@@ -356,7 +343,8 @@ public class ServletContextRequest extends ContextRequest implements Runnable
                 return _method;
         }
         
-        protected void setMethod(String method)
+        //TODO shouldn't really be public?
+        public void setMethod(String method)
         {
             _method = method;
         }
@@ -858,6 +846,20 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         public Map<String, String[]> getParameterMap()
         {
             return Collections.unmodifiableMap(getParameters().toStringArrayMap());
+        }
+        
+        public Fields getContentParameters()
+        {
+            getParameters(); // ensure extracted
+            return _contentParameters;
+        }
+
+        public void setContentParameters(Fields params)
+        {
+            if (params == null || params.getSize() == 0)
+                _contentParameters = NO_PARAMS;
+            else
+                _contentParameters = params;
         }
 
         private Fields getParameters()

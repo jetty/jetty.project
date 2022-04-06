@@ -17,6 +17,8 @@ import java.security.Principal;
 import java.util.Map;
 import javax.security.auth.Subject;
 
+import org.eclipse.jetty.server.handler.ContextHandler;
+
 /**
  * User object that encapsulates user identity and operations such as run-as-role actions,
  * checking isUserInRole and getUserPrincipal.

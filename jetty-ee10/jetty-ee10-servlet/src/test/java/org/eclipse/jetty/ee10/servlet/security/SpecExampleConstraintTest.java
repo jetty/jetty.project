@@ -13,23 +13,24 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterEach;
@@ -53,6 +54,7 @@ public class SpecExampleConstraintTest
     private static Server _server;
     private static LocalConnector _connector;
     private static SessionHandler _session;
+    private static ServletContextHandler _context;
     private ConstraintSecurityHandler _security;
 
     @BeforeAll
@@ -62,7 +64,7 @@ public class SpecExampleConstraintTest
         _connector = new LocalConnector(_server);
         _server.setConnectors(new Connector[]{_connector});
 
-        ContextHandler context = new ContextHandler();
+        _context = new ServletContextHandler();
         _session = new SessionHandler();
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
@@ -72,9 +74,9 @@ public class SpecExampleConstraintTest
         loginService.putUser("chris", new Password("password"), new String[]{"CONTRACTOR"});
         loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});
 
-        context.setContextPath("/ctx");
-        _server.setHandler(context);
-        context.setHandler(_session);
+        _context.setContextPath("/ctx");
+        _server.setHandler(_context);
+        _context.setSessionHandler(_session);
 
         _server.addBean(loginService);
     }
@@ -83,7 +85,7 @@ public class SpecExampleConstraintTest
     public void setupSecurity()
     {
         _security = new ConstraintSecurityHandler();
-        _session.setHandler(_security);
+        _context.setSecurityHandler(_security);
         RequestHandler handler = new RequestHandler();
         _security.setHandler(handler);
 
@@ -328,20 +330,21 @@ public class SpecExampleConstraintTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
-    private class RequestHandler extends AbstractHandler
+    private class RequestHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            baseRequest.setHandled(true);
-
-            response.setStatus(200);
-            response.setContentType("text/plain; charset=UTF-8");
-            response.getWriter().println("URI=" + request.getRequestURI());
-            String user = request.getRemoteUser();
-            response.getWriter().println("user=" + user);
-            if (request.getParameter("test_parameter") != null)
-                response.getWriter().println(request.getParameter("test_parameter"));
+            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+            HttpServletRequest httpRequest = servletContextRequest.getHttpServletRequest();
+            HttpServletResponse httpResponse = servletContextRequest.getHttpServletResponse();
+            httpResponse.setContentType("text/plain; charset=UTF-8");
+            httpResponse.getWriter().println("URI=" + httpRequest.getRequestURI());
+            String user = httpRequest.getRemoteUser();
+            httpResponse.getWriter().println("user=" + user);
+            if (httpRequest.getParameter("test_parameter") != null)
+                httpResponse.getWriter().println(httpRequest.getParameter("test_parameter"));
+            callback.succeeded();
         }
     }
 }

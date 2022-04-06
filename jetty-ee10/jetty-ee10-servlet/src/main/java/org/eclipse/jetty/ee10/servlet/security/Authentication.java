@@ -17,6 +17,7 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.QuietServletException;
 
 /**
  * The Authentication state of a request.
@@ -47,17 +48,6 @@ public interface Authentication
         UserIdentity getUserIdentity();
 
         boolean isUserInRole(UserIdentity.Scope scope, String role);
-    }
-
-    /**
-     * A wrapped authentication with methods provide the
-     * wrapped request/response for use by the application
-     */
-    public interface Wrapped extends Authentication
-    {
-        HttpServletRequest getHttpServletRequest();
-
-        HttpServletResponse getHttpServletResponse();
     }
 
     /**

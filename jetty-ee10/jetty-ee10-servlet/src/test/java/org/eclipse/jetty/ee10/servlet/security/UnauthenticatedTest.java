@@ -13,21 +13,20 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.authentication.LoginAuthenticator;
-import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.security.Constraint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +46,9 @@ public class UnauthenticatedTest
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
+        ServletContextHandler context = new ServletContextHandler();
+        server.setHandler(context);
+        
         // Authenticator that always returns UNAUTHENTICATED.
         authenticator = new TestAuthenticator();
 
@@ -61,18 +63,18 @@ public class UnauthenticatedTest
         securityHandler.addConstraintMapping(constraintMapping);
 
         securityHandler.setAuthenticator(authenticator);
-        securityHandler.setHandler(new AbstractHandler()
+        securityHandler.setHandler(new Handler.Processor()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void process(Request request, Response response, Callback callback) throws Exception
             {
-                baseRequest.setHandled(true);
-                response.setStatus(HttpStatus.OK_200);
-                response.getWriter().println("authentication: " + baseRequest.getAuthentication());
+                ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+                servletContextRequest.getHttpServletResponse().getWriter().println("authentication: " + servletContextRequest.getServletApiRequest().getAuthentication());
+                callback.succeeded();
             }
         });
 
-        server.setHandler(securityHandler);
+        context.setSecurityHandler(securityHandler);
         server.start();
     }
 

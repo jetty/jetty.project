@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -22,19 +21,21 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
@@ -111,7 +112,9 @@ public class ClientCertAuthenticatorTest
         loginService.setConfig("src/test/resources/realm.properties");
 
         constraintSecurityHandler.setHandler(new FooHandler());
-        server.setHandler(constraintSecurityHandler);
+        ServletContextHandler servletContextHandler = new ServletContextHandler();
+        servletContextHandler.setSecurityHandler(constraintSecurityHandler);
+        server.setHandler(servletContextHandler);
         server.addBean(sslContextFactory);
         server.start();
 
@@ -174,20 +177,19 @@ public class ClientCertAuthenticatorTest
         assertThat("response code", connection.getResponseCode(), is(403));
     }
 
-    static class FooHandler extends AbstractHandler
+    static class FooHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request,
-                            HttpServletResponse response)
-            throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            response.setContentType("text/plain; charset=utf-8");
-            response.setStatus(HttpServletResponse.SC_OK);
+            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+            HttpServletResponse httpResponse = servletContextRequest.getHttpServletResponse();
+            httpResponse.setContentType("text/plain; charset=utf-8");
+            httpResponse.setStatus(HttpServletResponse.SC_OK);
 
-            PrintWriter out = response.getWriter();
-
+            PrintWriter out = httpResponse.getWriter();
             out.println(MESSAGE);
-            baseRequest.setHandled(true);
+            callback.succeeded();
         }
     }
 }

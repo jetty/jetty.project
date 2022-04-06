@@ -23,6 +23,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
 import org.eclipse.jetty.ee10.servlet.security.ConfigurableSpnegoLoginService;
@@ -33,7 +34,6 @@ import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,8 +105,11 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
         SpnegoUserIdentity user = (SpnegoUserIdentity)_loginService.login(username, password, servletRequest);
         if (user != null && user.isEstablished())
         {
-            Request request = Request.getBaseRequest(servletRequest);
-            renewSession(request, request == null ? null : request.getResponse());
+            ServletContextRequest request = ServletContextRequest.getBaseRequest(servletRequest);
+            HttpServletResponse response = (request == null ? null : request.getHttpServletResponse());
+
+            //TODO should throw here if request or response is null??
+            renewSession((request == null ? null : request.getHttpServletRequest()), response);
         }
         return user;
     }

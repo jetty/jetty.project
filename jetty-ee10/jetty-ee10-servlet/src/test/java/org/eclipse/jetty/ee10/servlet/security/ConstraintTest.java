@@ -39,6 +39,8 @@ import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee10.servlet.security.authentication.DigestAuthenticator;
@@ -47,14 +49,17 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Request.Processor;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
@@ -105,7 +110,7 @@ public class ConstraintTest
         _config = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _server.setConnectors(new Connector[]{_connector});
 
-        ContextHandler contextHandler = new ContextHandler();
+        ServletContextHandler contextHandler = new ServletContextHandler();
         SessionHandler sessionHandler = new SessionHandler();
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
@@ -118,12 +123,11 @@ public class ConstraintTest
 
         contextHandler.setContextPath("/ctx");
         _server.setHandler(contextHandler);
-        contextHandler.setHandler(sessionHandler);
 
         _server.addBean(loginService);
 
         _security = new ConstraintSecurityHandler();
-        sessionHandler.setHandler(_security);
+        contextHandler.setSecurityHandler(_security);
         RequestHandler requestHandler = new RequestHandler();
         _security.setHandler(requestHandler);
 
@@ -1971,66 +1975,74 @@ public class ConstraintTest
         }
     }
 
-    private class RoleRefHandler extends HandlerWrapper
+    private class RoleRefHandler extends Handler.Wrapper
     {
-
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public Request.Processor handle(Request request) throws Exception
         {
-            UserIdentity.Scope old = ((Request)request).getUserIdentityScope();
-
-            UserIdentity.Scope scope = new UserIdentity.Scope()
+            Request.Processor processor = super.handle(request);
+            if (processor == null)
+                return null;
+            
+            return (ignored, response, callback) -> 
             {
-                @Override
-                public ContextHandler getContextHandler()
-                {
-                    return null;
-                }
+                UserIdentity.Scope old = ((Request)request).getUserIdentityScope();
 
-                @Override
-                public String getContextPath()
+                UserIdentity.Scope scope = new UserIdentity.Scope()
                 {
-                    return "/";
-                }
+                    @Override
+                    public ContextHandler getContextHandler()
+                    {
+                        return null;
+                    }
 
-                @Override
-                public String getName()
-                {
-                    return "someServlet";
-                }
+                    @Override
+                    public String getContextPath()
+                    {
+                        return "/";
+                    }
 
-                @Override
-                public Map<String, String> getRoleRefMap()
+                    @Override
+                    public String getName()
+                    {
+                        return "someServlet";
+                    }
+
+                    @Override
+                    public Map<String, String> getRoleRefMap()
+                    {
+                        Map<String, String> map = new HashMap<>();
+                        map.put("untranslated", "user");
+                        return map;
+                    }
+                };
+
+                ((Request)request).setUserIdentityScope(scope);
+
+                try
                 {
-                    Map<String, String> map = new HashMap<>();
-                    map.put("untranslated", "user");
-                    return map;
+                    processor.process(request, response, callback);
+                }
+                finally
+                {
+                    ((Request)request).setUserIdentityScope(old);
                 }
             };
-
-            ((Request)request).setUserIdentityScope(scope);
-
-            try
-            {
-                super.handle(target, baseRequest, request, response);
-            }
-            finally
-            {
-                ((Request)request).setUserIdentityScope(old);
-            }
         }
     }
 
-    private class RoleCheckHandler extends AbstractHandler
-    {
+    private class RoleCheckHandler extends Handler.Processor
+    {       
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            ((Request)request).setHandled(true);
-            if (request.getAuthType() == null || "user".equals(request.getRemoteUser()) || request.isUserInRole("untranslated"))
-                response.setStatus(200);
+            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+            if (servletContextRequest.getHttpServletRequest().getAuthType() == null || 
+                "user".equals(servletContextRequest.getHttpServletRequest().getRemoteUser()) || 
+                servletContextRequest.getHttpServletRequest().isUserInRole("untranslated"))
+                callback.succeeded();
             else
-                response.sendError(500);
+                Response.writeError(request, response, callback, 500);
         }
     }
 

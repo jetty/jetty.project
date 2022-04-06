@@ -23,10 +23,13 @@ import java.util.Locale;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.ServletResponseWrapper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest.ServletApiRequest;
 import org.eclipse.jetty.ee10.servlet.writer.EncodingHttpWriter;
 import org.eclipse.jetty.ee10.servlet.writer.Iso88591HttpWriter;
 import org.eclipse.jetty.ee10.servlet.writer.ResponseWriter;
@@ -81,6 +84,22 @@ public class ServletContextResponse extends ContextResponse
     private ResponseWriter _writer;
 
     private long _contentLength = -1;
+    
+    public static ServletContextResponse getBaseResponse(ServletResponse response)
+    {
+        if (response instanceof ServletApiResponse)
+            return ((ServletApiResponse)response).getResponse();
+
+        while (response instanceof ServletResponseWrapper)
+        {
+            response = ((ServletResponseWrapper)response).getResponse();
+        }
+
+        if (response instanceof ServletApiResponse)
+            return ((ServletApiResponse)response).getResponse();
+
+        return null;
+    }
 
     public ServletContextResponse(ServletChannel servletChannel, ServletContextRequest request, Response response)
     {
@@ -442,6 +461,11 @@ public class ServletContextResponse extends ContextResponse
         ServletApiResponse(Response response)
         {
             _response = response;
+        }
+        
+        public ServletContextResponse getResponse()
+        {
+            return ServletContextResponse.this;
         }
 
         @Override
@@ -936,9 +960,22 @@ public class ServletContextResponse extends ContextResponse
         @Override
         public void reset()
         {
-            // TODO
+            //TODO
             if (!_response.isCommitted())
                 _response.reset();
+
+            Session session = _servletChannel.getRequest().getServletApiRequest().getCoreSession();
+            if (session != null && session.isNew())
+            {
+                ServletApiRequest servletApiRequest = _servletChannel.getRequest().getServletApiRequest();
+                SessionManager sessionManager = servletApiRequest.getSessionManager();
+                if (sessionManager != null)
+                {
+                    HttpCookie cookie = sessionManager.getSessionCookie(session, servletApiRequest.getContextPath(), servletApiRequest.getServletConnection().isSecure());
+                    if (cookie != null)
+                        addCookie(cookie);
+                }
+            }
         }
 
         @Override

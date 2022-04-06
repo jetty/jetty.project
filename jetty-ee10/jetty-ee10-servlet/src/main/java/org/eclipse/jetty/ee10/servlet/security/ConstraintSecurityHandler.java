@@ -33,6 +33,7 @@ import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.pathmap.MappedResource;
@@ -42,7 +43,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.security.Constraint;
@@ -567,7 +567,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * @see SecurityHandler#prepareConstraintInfo(java.lang.String, Request)
      */
     @Override
-    protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)
+    protected RoleInfo prepareConstraintInfo(String pathInContext, HttpServletRequest request)
     {
         MappedResource<Map<String, RoleInfo>> resource = _constraintRoles.getMatch(pathInContext);
         if (resource == null)
@@ -868,9 +868,9 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      */
     private boolean isInDurableState()
     {
-        ContextHandler context = ContextHandler.getContextHandler(null);
+        ServletContextHandler contextHandler = ServletContextHandler.getCurrentServletContextHandler();
         Server server = getServer();
 
-        return (context == null && server == null) || (context != null && !context.isRunning()) || (context == null && server != null && !server.isRunning());
+        return (contextHandler == null && server == null) || (contextHandler != null && !contextHandler.isRunning()) || (contextHandler == null && server != null && !server.isRunning());
     }
 }

@@ -19,12 +19,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -61,7 +61,7 @@ public class AliasedConstraintTest
         connector = new LocalConnector(server);
         server.setConnectors(new Connector[]{connector});
 
-        ContextHandler context = new ContextHandler();
+        ServletContextHandler context = new ServletContextHandler();
         SessionHandler session = new SessionHandler();
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
@@ -73,16 +73,16 @@ public class AliasedConstraintTest
         loginService.putUser("user3", new Password("password"), new String[]{"foo"});
 
         context.setContextPath("/ctx");
-        context.setResourceBase(MavenTestingUtils.getTestResourceDir("docroot").getAbsolutePath());
+        context.setResourceBase(MavenTestingUtils.getTestResourcePathDir("docroot"));
 
         server.setHandler(new HandlerList(context, new DefaultHandler()));
-        context.setHandler(session);
+        context.setSessionHandler(session);
         // context.addAliasCheck(new AllowSymLinkAliasChecker());
 
         server.addBean(loginService);
 
         security = new ConstraintSecurityHandler();
-        session.setHandler(security);
+        context.setSecurityHandler(security);
         ResourceHandler handler = new ResourceHandler();
         security.setHandler(handler);
 

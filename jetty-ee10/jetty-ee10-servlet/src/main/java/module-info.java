@@ -35,8 +35,8 @@ module org.eclipse.jetty.ee10.servlet
 
     exports org.eclipse.jetty.ee10.servlet;
     exports org.eclipse.jetty.ee10.servlet.listener;
-    exports org.ecilpse.jetty.ee10.servlet.security;
-    exports org.ecilpse.jetty.ee10.servlet.security.authentication;
+    exports org.eclipse.jetty.ee10.servlet.security;
+    exports org.eclipse.jetty.ee10.servlet.security.authentication;
     exports org.eclipse.jetty.ee10.servlet.util;
     exports org.eclipse.jetty.ee10.servlet.writer;
 

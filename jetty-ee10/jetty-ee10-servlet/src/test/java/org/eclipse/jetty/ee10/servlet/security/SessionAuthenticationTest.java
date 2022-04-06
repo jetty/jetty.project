@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.security.authentication.SessionAuthentication;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.security.Password;
@@ -44,9 +45,9 @@ public class SessionAuthenticationTest
         throws Exception
     {
 
-        ContextHandler contextHandler = new ContextHandler();
+        ServletContextHandler contextHandler = new ServletContextHandler();
         SecurityHandler securityHandler = new ConstraintSecurityHandler();
-        contextHandler.setHandler(securityHandler);
+        contextHandler.setSecurityHandler(securityHandler);
         TestLoginService loginService = new TestLoginService("SessionAuthTest");
         Password pwd = new Password("foo");
         loginService.putUser("foo", pwd, new String[]{"boss", "worker"});
@@ -58,7 +59,7 @@ public class SessionAuthenticationTest
         assertEquals("foo", user.getUserPrincipal().getName());
         SessionAuthentication sessionAuth = new SessionAuthentication("FORM", user, pwd);
         assertTrue(sessionAuth.isUserInRole(null, "boss"));
-        contextHandler.handle(new Runnable()
+        contextHandler.getContext().run(new Runnable()
         {
             public void run()
             {
