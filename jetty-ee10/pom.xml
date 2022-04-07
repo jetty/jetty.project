@@ -63,7 +63,6 @@
     <module>jetty-ee10-proxy</module>
     <module>jetty-ee10-quickstart</module>
     <module>jetty-ee10-runner</module>
-    <module>jetty-ee10-security</module>
     <module>jetty-ee10-servlet</module>
     <module>jetty-ee10-servlet-extras</module>
     <module>jetty-ee10-webapp</module>
@@ -139,11 +138,6 @@
       <dependency>
         <groupId>org.eclipse.jetty.ee10</groupId>
         <artifactId>jetty-ee10-quickstart</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.eclipse.jetty.ee10</groupId>
-        <artifactId>jetty-ee10-security</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

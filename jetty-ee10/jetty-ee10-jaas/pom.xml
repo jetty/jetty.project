@@ -39,9 +39,8 @@
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-security</artifactId>
+      <artifactId>jetty-ee10-servlet</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>

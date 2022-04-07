@@ -49,7 +49,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-security</artifactId>
+      <artifactId>jetty-ee10-servlet</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -62,11 +62,6 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.ee10</groupId>
-      <artifactId>jetty-ee10-servlet</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

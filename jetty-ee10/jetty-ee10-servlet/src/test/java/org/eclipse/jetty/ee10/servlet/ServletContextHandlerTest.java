@@ -60,6 +60,8 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -1000,7 +1002,7 @@ public class ServletContextHandlerTest
 
         SessionHandler session = root.getSessionHandler();
         ServletHandler servlet = root.getServletHandler();
-        SecurityHandler security = new SecurityHandler.ConstraintSecurityHandler();
+        SecurityHandler security = new ConstraintSecurityHandler();
         root.setSecurityHandler(security);
 
         _server.start();

@@ -54,6 +54,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.Part;
+import org.eclipse.jetty.ee10.servlet.security.Authentication;
+import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -256,20 +258,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         return _mappedServlet;
     }
 
-    public static ServletContextRequest getRequest(HttpServletRequest httpServletRequest)
-    {
-        while (httpServletRequest != null)
-        {
-            if (httpServletRequest instanceof ServletChannel)
-                return ((ServletChannel)httpServletRequest).getRequest();
-            if (httpServletRequest instanceof HttpServletRequestWrapper)
-                httpServletRequest = (HttpServletRequest)((HttpServletRequestWrapper)httpServletRequest).getRequest();
-            else
-                break;
-        }
-        return null;
-    }
-
     public String getServletName()
     {
         if (_scope != null)
@@ -311,6 +299,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
 
     public class ServletApiRequest implements HttpServletRequest
     {
+        //TODO review which fields should be in ServletContextRequest
         private AsyncContextState _async;
         private String _characterEncoding;
         private int _inputState = INPUT_NONE;
@@ -325,12 +314,39 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         private Session _coreSession;
         private String _requestedSessionId;
         private boolean _requestedSessionIdFromCookie;
+        private Authentication _authentication;
+        private String _method;
         
         public static Session getSession(HttpSession httpSession)
         {
             if (httpSession instanceof Session.APISession apiSession)
                 return apiSession.getCoreSession();
             return null;
+        }
+        
+        public void setAuthentication(Authentication authentication)
+        {
+            _authentication = authentication;
+        }
+
+        public Authentication getAuthentication()
+        {
+            return _authentication;
+        }
+
+        @Override
+        public String getMethod()
+        {
+            if (_method == null)
+                return getRequest().getMethod();
+            else
+                return _method;
+        }
+        
+        //TODO shouldn't really be public?
+        public void setMethod(String method)
+        {
+            _method = method;
         }
 
         void setCoreSession(Session session)
@@ -414,7 +430,11 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public String getAuthType()
         {
-            // TODO
+            if (_authentication instanceof Authentication.Deferred)
+                setAuthentication(((Authentication.Deferred)_authentication).authenticate(this));
+
+            if (_authentication instanceof Authentication.User)
+                return ((Authentication.User)_authentication).getAuthMethod();
             return null;
         }
 
@@ -455,12 +475,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         {
             HttpFields fields = getFields();
             return fields == null ? -1 : (int)fields.getLongField(name);
-        }
-
-        @Override
-        public String getMethod()
-        {
-            return getRequest().getMethod();
         }
 
         @Override
@@ -832,6 +846,20 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         public Map<String, String[]> getParameterMap()
         {
             return Collections.unmodifiableMap(getParameters().toStringArrayMap());
+        }
+        
+        public Fields getContentParameters()
+        {
+            getParameters(); // ensure extracted
+            return _contentParameters;
+        }
+
+        public void setContentParameters(Fields params)
+        {
+            if (params == null || params.getSize() == 0)
+                _contentParameters = NO_PARAMS;
+            else
+                _contentParameters = params;
         }
 
         private Fields getParameters()
