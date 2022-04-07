@@ -20,6 +20,11 @@ import jakarta.servlet.SessionCookieConfig;
 import jakarta.servlet.http.HttpServletRequest;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.session.AbstractSessionCache;
+import org.eclipse.jetty.session.DefaultSessionIdManager;
+import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.SessionData;
+import org.eclipse.jetty.session.SessionManager;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,7 +39,7 @@ public class SessionCookieTest
     public class MockSessionCache extends AbstractSessionCache
     {
 
-        public MockSessionCache(SessionHandler manager)
+        public MockSessionCache(SessionManager manager)
         {
             super(manager);
         }

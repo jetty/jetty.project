@@ -91,6 +91,11 @@ public interface Content
         return length;
     }
 
+    static Throwable getError(Content content)
+    {
+        return (content instanceof Error error) ? error.getCause() : null;
+    }
+
     static Content from(ByteBuffer buffer)
     {
         return from(buffer, false);
@@ -98,14 +103,7 @@ public interface Content
 
     static Content from(ByteBuffer buffer, boolean last)
     {
-        return new Abstract(false, last)
-        {
-            @Override
-            public ByteBuffer getByteBuffer()
-            {
-                return buffer;
-            }
-        };
+        return new Buffer(buffer, last);
     }
 
     static Content last(Content content)
@@ -195,6 +193,28 @@ public interface Content
                 BufferUtil.toDetailString(getByteBuffer()),
                 isSpecial(),
                 isLast());
+        }
+    }
+
+    class Buffer extends Abstract
+    {
+        private final ByteBuffer _buffer;
+
+        public Buffer(ByteBuffer buffer)
+        {
+            this(buffer, false);
+        }
+
+        public Buffer(ByteBuffer buffer, boolean last)
+        {
+            super(false, last);
+            _buffer = buffer;
+        }
+
+        @Override
+        public ByteBuffer getByteBuffer()
+        {
+            return _buffer;
         }
     }
 
