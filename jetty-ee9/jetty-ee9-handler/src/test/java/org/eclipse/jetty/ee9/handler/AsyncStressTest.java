@@ -54,6 +54,7 @@ public class AsyncStressTest
 
     protected QueuedThreadPool _threads = new QueuedThreadPool();
     protected Server _server = new Server(_threads);
+    protected ContextHandler _context = new ContextHandler(_server);
     protected SuspendHandler _handler = new SuspendHandler();
     protected ServerConnector _connector;
     protected InetAddress _addr;
@@ -77,7 +78,7 @@ public class AsyncStressTest
         _connector = new ServerConnector(_server);
         _connector.setIdleTimeout(120000);
         _server.setConnectors(new Connector[]{_connector});
-        _server.setHandler(_handler);
+        _context.setHandler(_handler);
         _server.start();
         _port = _connector.getLocalPort();
         _addr = InetAddress.getLocalHost();

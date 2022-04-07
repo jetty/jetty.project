@@ -164,7 +164,7 @@ public class ResponseTest
             }
 
             @Override
-            public HttpInput.Content produceContent()
+            public Content produceContent()
             {
                 return null;
             }

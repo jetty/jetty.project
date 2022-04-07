@@ -45,34 +45,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class AsyncRequestReadTest
 {
-    private static Server server;
-    private static ServerConnector connector;
+    private Server _server;
+    private ContextHandler _context;
+    private ServerConnector _connector;
     private static final BlockingQueue<Long> __total = new BlockingArrayQueue<>();
 
     @BeforeEach
     public void startServer() throws Exception
     {
-        server = new Server();
-        connector = new ServerConnector(server);
-        connector.setIdleTimeout(10000);
-        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
-        server.addConnector(connector);
+        _server = new Server();
+        _context = new ContextHandler(_server, "/");
+        _connector = new ServerConnector(_server);
+        _connector.setIdleTimeout(10000);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
+        _server.addConnector(_connector);
     }
 
     @AfterEach
     public void stopServer() throws Exception
     {
-        server.stop();
-        server.join();
+        _server.stop();
+        _server.join();
     }
 
     @Test
     public void testPipelined() throws Exception
     {
-        server.setHandler(new AsyncStreamHandler());
-        server.start();
+        _context.setHandler(new AsyncStreamHandler());
+        _server.start();
 
-        try (final Socket socket = new Socket("localhost", connector.getLocalPort()))
+        try (final Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
             socket.setSoTimeout(1000);
 
@@ -116,8 +118,8 @@ public class AsyncRequestReadTest
     @Test
     public void testAsyncReadsWithDelays() throws Exception
     {
-        server.setHandler(new AsyncStreamHandler());
-        server.start();
+        _context.setHandler(new AsyncStreamHandler());
+        _server.start();
 
         asyncReadTest(64, 4, 4, 20);
         asyncReadTest(256, 16, 16, 50);
@@ -132,7 +134,7 @@ public class AsyncRequestReadTest
         String tst = contentSize + "," + chunkSize + "," + chunks + "," + delayMS;
         //System.err.println(tst);
 
-        try (final Socket socket = new Socket("localhost", connector.getLocalPort()))
+        try (final Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
 
             byte[] content = new byte[contentSize];
@@ -215,10 +217,10 @@ public class AsyncRequestReadTest
     @Test
     public void testPartialRead() throws Exception
     {
-        server.setHandler(new PartialReaderHandler());
-        server.start();
+        _context.setHandler(new PartialReaderHandler());
+        _server.start();
 
-        try (final Socket socket = new Socket("localhost", connector.getLocalPort()))
+        try (final Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
             socket.setSoTimeout(10000);
 
@@ -265,10 +267,10 @@ public class AsyncRequestReadTest
     @Test
     public void testPartialReadThenShutdown() throws Exception
     {
-        server.setHandler(new PartialReaderHandler());
-        server.start();
+        _context.setHandler(new PartialReaderHandler());
+        _server.start();
 
-        try (final Socket socket = new Socket("localhost", connector.getLocalPort()))
+        try (final Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
             socket.setSoTimeout(10000);
 
@@ -301,10 +303,10 @@ public class AsyncRequestReadTest
     @Test
     public void testPartialReadThenClose() throws Exception
     {
-        server.setHandler(new PartialReaderHandler());
-        server.start();
+        _context.setHandler(new PartialReaderHandler());
+        _server.start();
 
-        try (final Socket socket = new Socket("localhost", connector.getLocalPort()))
+        try (final Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
             socket.setSoTimeout(1000);
 

@@ -60,6 +60,7 @@ public class HttpOutputTest
     public static final int OUTPUT_AGGREGATION_SIZE = 1024;
     public static final int OUTPUT_BUFFER_SIZE = 4096;
     private Server _server;
+    private ContextHandler _contextHandler;
     private LocalConnector _connector;
     private ContentHandler _handler;
     private HotSwapHandler _swap;
@@ -68,6 +69,7 @@ public class HttpOutputTest
     public void init() throws Exception
     {
         _server = new Server();
+        _contextHandler = new ContextHandler(_server, "/");
 
         _server.addBean(new ByteBufferPool()
         {
@@ -94,7 +96,7 @@ public class HttpOutputTest
         _swap = new HotSwapHandler();
         _handler = new ContentHandler();
         _swap.setHandler(_handler);
-        _server.setHandler(_swap);
+        _contextHandler.setHandler(_swap);
         _server.start();
     }
 

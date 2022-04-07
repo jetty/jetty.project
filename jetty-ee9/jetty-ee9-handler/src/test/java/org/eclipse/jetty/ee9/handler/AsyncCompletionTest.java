@@ -47,7 +47,6 @@ import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.HttpServerTestFixture;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.BlockingArrayQueue;
@@ -119,7 +118,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     {
         __transportComplete.set(false);
 
-        startServer(new ServerConnector(_server, new HttpConnectionFactory()
+        initServer(new ServerConnector(_server, new HttpConnectionFactory()
         {
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
@@ -203,7 +202,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     @MethodSource("asyncIOWriteTests")
     public void testAsyncIOWrite(AsyncIOWriteHandler handler) throws Exception
     {
-        configureServer(handler);
+        startServer(handler);
 
         int base = _threadPool.getBusyThreads();
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
@@ -485,7 +484,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     @MethodSource("blockingWriteTests")
     public void testBlockingWrite(BlockingWriteHandler handler) throws Exception
     {
-        configureServer(handler);
+        startServer(handler);
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {
@@ -646,7 +645,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
     @MethodSource("sendContentTests")
     public void testSendContent(SendContentHandler handler) throws Exception
     {
-        configureServer(handler);
+        startServer(handler);
 
         int base = _threadPool.getBusyThreads();
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))

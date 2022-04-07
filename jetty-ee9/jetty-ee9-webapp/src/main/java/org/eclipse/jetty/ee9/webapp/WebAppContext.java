@@ -1139,10 +1139,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * In certain circumstances you want may want to deny access of one webapp from another
      * when you may not fully trust the webapp.  Setting this white list will enable a
-     * check when a servlet called {@link ServletContextHandler.Context#getContext(String)}, validating that the uriInPath
+     * check when a servlet called {@link ServletContextHandler.ServletAPIContext#getContext(String)}, validating that the uriInPath
      * for the given webapp has been declaratively allows access to the context.
      *
-     * @param contextWhiteList the whitelist of contexts for {@link ServletContextHandler.Context#getContext(String)}
+     * @param contextWhiteList the whitelist of contexts for {@link ServletContextHandler.ServletAPIContext#getContext(String)}
      */
     public void setContextWhiteList(String... contextWhiteList)
     {
@@ -1410,7 +1410,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return unchangedURLMappings;
     }
 
-    public class Context extends ServletContextHandler.Context
+    public class Context extends ServletContextHandler.ServletAPIContext
     {
         @Override
         public void checkListener(Class<? extends EventListener> listener) throws IllegalStateException

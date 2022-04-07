@@ -75,7 +75,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionData;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
@@ -112,6 +111,7 @@ public class RequestTest
     private static final Logger LOG = LoggerFactory.getLogger(RequestTest.class);
     public WorkDir workDir;
     private Server _server;
+    private ContextHandler _context;
     private LocalConnector _connector;
     private RequestHandler _handler;
     private boolean _normalizeAddress = true;
@@ -120,6 +120,7 @@ public class RequestTest
     public void init() throws Exception
     {
         _server = new Server();
+        _context = new ContextHandler(_server);
         HttpConnectionFactory http = new HttpConnectionFactory()
         {
             @Override
@@ -154,7 +155,7 @@ public class RequestTest
         _server.addConnector(_connector);
         _connector.setIdleTimeout(500);
         _handler = new RequestHandler();
-        _server.setHandler(_handler);
+        _context.setHandler(_handler);
 
         ErrorHandler errors = new ErrorHandler();
         errors.setServer(_server);
@@ -178,7 +179,7 @@ public class RequestTest
 
         _server.stop();
         ContextHandler handler = new CharEncodingContextHandler();
-        _server.setHandler(handler);
+        _context.setHandler(handler);
         handler.setHandler(_handler);
         _handler._checker = (request, response) ->
         {
@@ -487,13 +488,11 @@ public class RequestTest
                 return s.count() == 2;
             }
         };
-
-        ContextHandler contextHandler = new ContextHandler();
-        contextHandler.setContextPath("/foo");
-        contextHandler.setResourceBase(".");
-        contextHandler.setHandler(new MultiPartRequestHandler(testTmpDir.toFile(), tester));
+        
         _server.stop();
-        _server.setHandler(contextHandler);
+        _context.setContextPath("/foo");
+        _context.setResourceBase(".");
+        _context.setHandler(new MultiPartRequestHandler(testTmpDir.toFile(), tester));
         _server.start();
 
         String multipart = "--AaB03x\r\n" +
@@ -535,12 +534,10 @@ public class RequestTest
         //a bad multipart where one of the fields has no name
         Path testTmpDir = workDir.getEmptyPathDir();
 
-        ContextHandler contextHandler = new ContextHandler();
-        contextHandler.setContextPath("/foo");
-        contextHandler.setResourceBase(".");
-        contextHandler.setHandler(new BadMultiPartRequestHandler(testTmpDir));
         _server.stop();
-        _server.setHandler(contextHandler);
+        _context.setContextPath("/foo");
+        _context.setResourceBase(".");
+        _context.setHandler(new BadMultiPartRequestHandler(testTmpDir));
         _server.start();
 
         String multipart = "--AaB03x\r\n" +
@@ -734,10 +731,8 @@ public class RequestTest
     public void testInvalidHostHeader() throws Exception
     {
         // Use a contextHandler with vhosts to force call to Request.getServerName()
-        ContextHandler context = new ContextHandler();
-        context.addVirtualHosts(new String[]{"something"});
         _server.stop();
-        _server.setHandler(context);
+        _context.addVirtualHosts(new String[]{"something"});
         _server.start();
 
         // Request with illegal Host header
@@ -1176,7 +1171,7 @@ public class RequestTest
             }
         };
         _server.stop();
-        _server.setHandler(handler);
+        _context.setHandler(handler);
         _server.start();
 
         String requests = "GET / HTTP/1.1\r\n" +
@@ -1224,7 +1219,7 @@ public class RequestTest
             }
         };
         _server.stop();
-        _server.setHandler(handler);
+        _context.setHandler(handler);
         _server.start();
 
         String request = "POST /?param=right HTTP/1.1\r\n" +
@@ -1266,7 +1261,7 @@ public class RequestTest
             }
         };
         _server.stop();
-        _server.setHandler(handler);
+        _context.setHandler(handler);
         _server.start();
         String response = _connector.getResponse("GET / HTTP/1.1\n" +
             "Host: myhost\n" +
@@ -1293,7 +1288,7 @@ public class RequestTest
             }
         };
         _server.stop();
-        _server.setHandler(handler);
+        _context.setHandler(handler);
         _server.start();
 
         String requests = "GET / HTTP/1.1\r\n" +

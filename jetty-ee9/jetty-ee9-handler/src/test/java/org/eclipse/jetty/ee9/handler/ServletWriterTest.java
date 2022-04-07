@@ -42,25 +42,27 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class ServletWriterTest
 {
-    private Server server;
-    private ServerConnector connector;
+    private Server _server;
+    private ContextHandler _context;
+    private ServerConnector _connector;
 
     private void start(int aggregationSize, Handler handler) throws Exception
     {
-        server = new Server();
+        _server = new Server();
+        _context = new ContextHandler(_server);
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setOutputBufferSize(2 * aggregationSize);
         httpConfig.setOutputAggregationSize(2 * aggregationSize);
-        connector = new ServerConnector(server, 1, 1, new HttpConnectionFactory(httpConfig));
-        server.addConnector(connector);
-        server.setHandler(handler);
-        server.start();
+        _connector = new ServerConnector(_server, 1, 1, new HttpConnectionFactory(httpConfig));
+        _server.addConnector(_connector);
+        _context.setHandler(handler);
+        _server.start();
     }
 
     @AfterEach
     public void dispose() throws Exception
     {
-        server.stop();
+        _server.stop();
     }
 
     @Test
@@ -88,7 +90,7 @@ public class ServletWriterTest
             }
         });
 
-        try (Socket socket = new Socket("localhost", connector.getLocalPort()))
+        try (Socket socket = new Socket("localhost", _connector.getLocalPort()))
         {
             String request = "GET / HTTP/1.1\r\n" +
                 "Host: localhost\r\n" +

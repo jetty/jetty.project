@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
@@ -51,7 +52,7 @@ public class HttpWriterTest
             }
 
             @Override
-            public HttpInput.Content produceContent()
+            public Content produceContent()
             {
                 return null;
             }

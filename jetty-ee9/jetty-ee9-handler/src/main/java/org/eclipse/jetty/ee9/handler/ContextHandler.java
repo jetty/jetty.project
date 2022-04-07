@@ -229,6 +229,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         this(null, null, contextPath);
     }
 
+    public ContextHandler(org.eclipse.jetty.server.Handler.Container parent)
+    {
+        this(null, parent, "/");
+    }
+
     public ContextHandler(org.eclipse.jetty.server.Handler.Container parent, String contextPath)
     {
         this(null, parent, contextPath);

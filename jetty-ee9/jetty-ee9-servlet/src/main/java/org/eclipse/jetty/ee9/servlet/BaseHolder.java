@@ -200,8 +200,8 @@ public abstract class BaseHolder<T> extends AbstractLifeCycle implements Dumpabl
             if (ctx == null)
                 return getHeldClass().getDeclaredConstructor().newInstance();
 
-            if (ServletContextHandler.Context.class.isAssignableFrom(ctx.getClass()))
-                return ((ServletContextHandler.Context)ctx).createInstance(this);
+            if (ServletContextHandler.ServletAPIContext.class.isAssignableFrom(ctx.getClass()))
+                return ((ServletContextHandler.ServletAPIContext)ctx).createInstance(this);
 
             return null;
         }

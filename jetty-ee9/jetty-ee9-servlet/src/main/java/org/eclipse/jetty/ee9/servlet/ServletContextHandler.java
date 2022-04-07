@@ -169,7 +169,7 @@ public class ServletContextHandler extends ContextHandler
     {
         super(null, parent, contextPath);
         _options = options;
-        _apiContext = new Context();
+        _apiContext = new ServletAPIContext();
         _sessionHandler = sessionHandler;
         _securityHandler = securityHandler;
         _servletHandler = servletHandler;
@@ -1017,7 +1017,7 @@ public class ServletContextHandler extends ContextHandler
         }
     }
 
-    public class Context extends APIContext
+    public class ServletAPIContext extends APIContext
     {
         @Override
         public RequestDispatcher getNamedDispatcher(String name)

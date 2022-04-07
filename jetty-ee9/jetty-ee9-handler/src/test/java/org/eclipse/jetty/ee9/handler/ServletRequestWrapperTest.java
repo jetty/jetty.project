@@ -32,20 +32,22 @@ import static org.hamcrest.Matchers.containsString;
 
 public class ServletRequestWrapperTest
 {
-    private Server server;
-    private LocalConnector connector;
-    private RequestHandler handler;
+    private Server _server;
+    private ContextHandler _context;
+    private LocalConnector _connector;
+    private RequestHandler _handler;
 
     @BeforeEach
     public void init() throws Exception
     {
-        server = new Server();
-        connector = new LocalConnector(server, new HttpConnectionFactory());
-        server.addConnector(connector);
+        _server = new Server();
+        _context = new ContextHandler(_server);
+        _connector = new LocalConnector(_server, new HttpConnectionFactory());
+        _server.addConnector(_connector);
 
-        handler = new RequestHandler();
-        server.setHandler(handler);
-        server.start();
+        _handler = new RequestHandler();
+        _context.setHandler(_handler);
+        _server.start();
     }
 
     @Test
@@ -55,7 +57,7 @@ public class ServletRequestWrapperTest
             "Host: whatever\r\n" +
             "\n";
 
-        String response = connector.getResponse(request);
+        String response = _connector.getResponse(request);
         assertThat("Response", response, containsString("200"));
     }
 
