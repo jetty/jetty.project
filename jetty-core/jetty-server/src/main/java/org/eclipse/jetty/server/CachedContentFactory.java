@@ -274,7 +274,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             {
                 String compressedPathInContext = pathInContext + format.getExtension();
                 CachedHttpContent compressedContent = _cache.get(compressedPathInContext);
-                if (compressedContent != null && compressedContent.isValid() && Files.getLastModifiedTime(compressedContent.getResource()).toMillis() >= resource.lastModified())
+                if (compressedContent != null && compressedContent.isValid() && Files.getLastModifiedTime(compressedContent.getPath()).toMillis() >= resource.lastModified())
                     compressedContents.put(format, compressedContent);
 
                 // Is there a precompressed resource?
@@ -445,9 +445,15 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         }
 
         @Override
-        public Path getResource()
+        public Path getPath()
         {
-            return null;
+            return _resource.getPath();
+        }
+
+        @Override
+        public Resource getResource()
+        {
+            return _resource;
         }
 
         @Override

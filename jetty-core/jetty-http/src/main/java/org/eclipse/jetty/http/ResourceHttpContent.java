@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.resource.Resource;
 public class ResourceHttpContent implements HttpContent
 {
     final Resource _resource;
+    final Path _path;
     final String _contentType;
     final int _maxBuffer;
     Map<CompressedContentFormat, HttpContent> _precompressedContents;
@@ -52,6 +53,7 @@ public class ResourceHttpContent implements HttpContent
     public ResourceHttpContent(final Resource resource, final String contentType, int maxBuffer, Map<CompressedContentFormat, HttpContent> precompressedContents)
     {
         _resource = resource;
+        _path = resource.getPath();
         _contentType = contentType;
         _maxBuffer = maxBuffer;
         if (precompressedContents == null)
@@ -186,9 +188,15 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public Path getResource()
+    public Path getPath()
     {
-        return null;
+        return _path;
+    }
+
+    @Override
+    public Resource getResource()
+    {
+        return _resource;
     }
 
     @Override

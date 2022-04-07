@@ -301,6 +301,18 @@ public abstract class Resource implements ResourceFactory, Closeable
         return r.isContainedIn(containingResource);
     }
 
+    public Path getPath()
+    {
+        try
+        {
+            return getFile().toPath();
+        }
+        catch (Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
     public abstract boolean isContainedIn(Resource r) throws MalformedURLException;
 
     /**

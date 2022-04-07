@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * HttpContent interface.
@@ -68,7 +69,9 @@ public interface HttpContent
     ByteBuffer getDirectBuffer();
 
     //TODO rename?
-    Path getResource();
+    Path getPath();
+
+    Resource getResource();
 
     //TODO remove
     InputStream getInputStream() throws IOException;

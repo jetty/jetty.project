@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.util.resource.Resource;
 
 public class PrecompressedHttpContent implements HttpContent
 {
@@ -52,7 +53,13 @@ public class PrecompressedHttpContent implements HttpContent
     }
 
     @Override
-    public Path getResource()
+    public Path getPath()
+    {
+        return _content.getPath();
+    }
+
+    @Override
+    public Resource getResource()
     {
         return _content.getResource();
     }
@@ -166,7 +173,7 @@ public class PrecompressedHttpContent implements HttpContent
         return String.format("%s@%x{e=%s,r=%s|%s,lm=%s|%s,ct=%s}",
             this.getClass().getSimpleName(), hashCode(),
             _format,
-            _content.getResource(), _precompressedContent.getResource(),
+            _content.getPath(), _precompressedContent.getPath(),
 //            _content.getResource().lastModified(), _precompressedContent.getResource().lastModified(),
             0L, 0L,
             getContentType());

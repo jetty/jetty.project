@@ -63,6 +63,8 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.resource.PathCollators;
+import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -220,7 +222,7 @@ public class ResourceHandler extends Handler.Wrapper
         try
         {
             // Directory?
-            if (Files.isDirectory(content.getResource()))
+            if (Files.isDirectory(content.getPath()))
             {
                 sendWelcome(content, pathInContext, endsWithSlash, request, response, callback);
                 return;
@@ -445,7 +447,7 @@ public class ResourceHandler extends Handler.Wrapper
                 }
 
                 long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE.asString());
-                if (ifmsl != -1 && Files.getLastModifiedTime(content.getResource()).toMillis() / 1000 <= ifmsl / 1000)
+                if (ifmsl != -1 && Files.getLastModifiedTime(content.getPath()).toMillis() / 1000 <= ifmsl / 1000)
                 {
                     Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
                     return false;
@@ -453,7 +455,7 @@ public class ResourceHandler extends Handler.Wrapper
             }
 
             // Parse the if[un]modified dates and compare to resource
-            if (ifums != -1 && Files.getLastModifiedTime(content.getResource()).toMillis() / 1000 > ifums / 1000)
+            if (ifums != -1 && Files.getLastModifiedTime(content.getPath()).toMillis() / 1000 > ifums / 1000)
             {
                 Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
                 return false;
@@ -496,7 +498,7 @@ public class ResourceHandler extends Handler.Wrapper
             return;
 
         if (passConditionalHeaders(request, response, content, callback))
-            sendDirectory(request, response, content.getResource(), callback, pathInContext);
+            sendDirectory(request, response, content.getPath(), callback, pathInContext);
     }
 
     private void sendDirectory(Request request, Response response, Path resource, Callback callback, String pathInContext) throws IOException
@@ -1243,9 +1245,16 @@ public class ResourceHandler extends Handler.Wrapper
         }
 
         @Override
-        public Path getResource()
+        public Path getPath()
         {
             return _path;
+        }
+
+        @Override
+        public Resource getResource()
+        {
+            // TODO cache or create in constructor?
+            return new PathResource(_path);
         }
 
         @Override
@@ -1296,7 +1305,7 @@ public class ResourceHandler extends Handler.Wrapper
 //            ByteBuffer source = content.getIndirectBuffer();
 //            target.write(true, callback, source.slice());
 
-            this.source = Files.newByteChannel(content.getResource());
+            this.source = Files.newByteChannel(content.getPath());
             this.target = target;
             this.callback = callback;
             HttpConfiguration httpConfiguration = target.getRequest().getConnectionMetaData().getHttpConfiguration();
