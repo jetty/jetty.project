@@ -16,6 +16,7 @@
     <compiler.source>11</compiler.source>
     <compiler.target>11</compiler.target>
     <compiler.release>11</compiler.release>
+    <maven.compiler.createMissingPackageInfoClass>false</maven.compiler.createMissingPackageInfoClass>
     <jetty.url>https://www.eclipse.org/jetty/</jetty.url>
     <jmhjar.name>benchmarks</jmhjar.name>
     <osgi.slf4j.import.packages>org.slf4j;version="[1.7,3.0)", org.slf4j.event;version="[1.7,3.0)", org.slf4j.helpers;version="[1.7,3.0)", org.slf4j.spi;version="[1.7,3.0)"</osgi.slf4j.import.packages>
@@ -50,7 +51,7 @@
     <hamcrest.version>2.2</hamcrest.version>
     <hawtio.version>2.14.5</hawtio.version>
     <hazelcast.version>4.2.4</hazelcast.version>
-    <infinispan.protostream.version>4.3.5.Final</infinispan.protostream.version>
+    <infinispan.protostream.version>4.4.2.Final</infinispan.protostream.version>
     <infinispan.version>11.0.15.Final</infinispan.version>
     <jackson.annotations.version>2.13.2</jackson.annotations.version>
     <jackson.core.version>2.13.2</jackson.core.version>
