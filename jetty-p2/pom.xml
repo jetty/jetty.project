@@ -12,7 +12,7 @@
   <description>Generates a (maven based) P2 Updatesite</description>
   <packaging>pom</packaging>
   <properties>
-    <tycho-version>2.7.0</tycho-version>
+    <tycho-version>2.7.1</tycho-version>
   </properties>
   <build>
     <plugins>
