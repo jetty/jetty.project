@@ -616,9 +616,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (response.isCommitted() || baseRequest.isHandled())
-            return;
-
         ServletContext context = baseRequest.getServletContext();
         String path = context == null ? baseRequest.getRequestURI() : URIUtil.addPaths(baseRequest.getServletPath(), baseRequest.getPathInfo());
         LOG.debug("{} handle {} in {}", this, baseRequest, context);
@@ -631,7 +628,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // Handle request inflation
-        if (_inflateBufferSize > 0)
+        if (_inflateBufferSize > 0 && !baseRequest.isHandled())
         {
             boolean inflate = false;
             for (ListIterator<HttpField> i = baseRequest.getHttpFields().listIterator(); i.hasNext(); )
@@ -674,6 +671,15 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
                     return new HttpField("X-Content-Length", length);
                 });
             }
+        }
+
+        // From here on out, the response output gzip determination is made
+
+        // Don't attempt to modify the response output if it's already committed.
+        if (response.isCommitted())
+        {
+            _handler.handle(target, baseRequest, request, response);
+            return;
         }
 
         // Are we already being gzipped?
