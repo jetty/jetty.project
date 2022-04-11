@@ -13,13 +13,11 @@
 
 package org.eclipse.jetty.ee10.servlet;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -54,29 +52,14 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
 {    
     static final Logger LOG = LoggerFactory.getLogger(SessionHandler.class);
     
-    public static final EnumSet<SessionTrackingMode> DEFAULT_TRACKING = 
+    public static final EnumSet<SessionTrackingMode> DEFAULT_SESSION_TRACKING_MODES =
         EnumSet.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
-    
-    public static final Set<SessionTrackingMode> DEFAULT_SESSION_TRACKING_MODES =
-        Collections.unmodifiableSet(
-            new HashSet<>(
-                Arrays.asList(SessionTrackingMode.COOKIE, SessionTrackingMode.URL)));
-
-    @SuppressWarnings("unchecked")
-    public static final Class<? extends EventListener>[] SESSION_LISTENER_TYPES =
-        new Class[]
-            {
-                HttpSessionAttributeListener.class,
-                HttpSessionIdListener.class,
-                HttpSessionListener.class
-            };
     
     final List<HttpSessionAttributeListener> _sessionAttributeListeners = new CopyOnWriteArrayList<>();
     final List<HttpSessionListener> _sessionListeners = new CopyOnWriteArrayList<>();
     final List<HttpSessionIdListener> _sessionIdListeners = new CopyOnWriteArrayList<>();
     private final SessionCookieConfig _cookieConfig = new CookieConfig();
 
-    private Set<SessionTrackingMode> _sessionTrackingModes;
     private ServletContextHandler.Context _servletContextHandlerContext;
 
     private Server _server;
@@ -116,8 +99,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
      */
     public final class CookieConfig implements SessionCookieConfig
     {
-        //TODO should this be on the AbstractSessionHandler
-        private Map<String, String> _attributes = new HashMap<>();
+        private final Map<String, String> _attributes = new HashMap<>();
 
         @Override
         public String getComment()
@@ -172,74 +154,72 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         @Override
         public boolean isHttpOnly()
         {
-            return isHttpOnly();
+            return SessionHandler.this.isHttpOnly();
         }
 
         @Override
         public boolean isSecure()
         {
-            return isSecure();
+            return SessionHandler.this.isSecureCookies();
         }
 
         @Override
         public void setComment(String comment)
         {
-            if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
-                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            setSessionComment(comment);
+            checkState();
+            SessionHandler.this.setSessionComment(comment);
         }
 
         @Override
         public void setDomain(String domain)
         {
-            if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
-                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            setSessionDomain(domain);
+            checkState();
+            SessionHandler.this.setSessionDomain(domain);
         }
 
         @Override
         public void setHttpOnly(boolean httpOnly)
         {
-            if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
-                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            setHttpOnly(httpOnly);
+            checkState();
+            SessionHandler.this.setHttpOnly(httpOnly);
         }
 
         @Override
         public void setMaxAge(int maxAge)
         {
-            if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
-                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            setMaxAge(maxAge);
+            checkState();
+            SessionHandler.this.setMaxCookieAge(maxAge);
         }
 
         @Override
         public void setName(String name)
         {
-            if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
-                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
+            checkState();
             if ("".equals(name))
                 throw new IllegalArgumentException("Blank cookie name");
             if (name != null)
                 Syntax.requireValidRFC2616Token(name, "Bad Session cookie name");
-            setSessionCookie(name);
+            SessionHandler.this.setSessionCookie(name);
         }
 
         @Override
         public void setPath(String path)
         {
-            if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
-                throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            setSessionPath(path);
+            checkState();
+            SessionHandler.this.setSessionPath(path);
         }
 
         @Override
         public void setSecure(boolean secure)
         {
-            // TODO refactor common check into a common method.
+            checkState();
+            SessionHandler.this.setSecureCookies(secure);
+        }
+
+        private void checkState()
+        {
             if (_servletContextHandlerContext != null && _servletContextHandlerContext.getServletContextHandler().isAvailable())
                 throw new IllegalStateException("CookieConfig cannot be set after ServletContext is started");
-            setSecureCookies(secure);
         }
     }
 
@@ -247,8 +227,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     {
         public static ServletAPISession wrapSession(Session session)
         {
-            ServletAPISession apiSession = new ServletAPISession(session);
-            return apiSession;
+            return new ServletAPISession(session);
         }
         
         public static Session getSession(HttpSession httpSession)
@@ -502,13 +481,10 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         if (session == null)
             return;
 
-        if (_sessionListeners != null)
+        HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+        for (HttpSessionListener  l : _sessionListeners)
         {
-            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
-            for (HttpSessionListener  l : _sessionListeners)
-            {
-                l.sessionCreated(event);
-            }
+            l.sessionCreated(event);
         }
     }
  
@@ -524,26 +500,17 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         if (session == null)
             return;
 
-        if (_sessionListeners != null)
+        //We annoint the calling thread with
+        //the webapp's classloader because the calling thread may
+        //come from the scavenger, rather than a request thread
+        getSessionContext().run(() ->
         {
-            //We annoint the calling thread with
-            //the webapp's classloader because the calling thread may
-            //come from the scavenger, rather than a request thread
-            Runnable r = new Runnable()
+            HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
+            for (int i = _sessionListeners.size() - 1; i >= 0; i--)
             {
-                @Override
-                public void run()
-                {
-                    HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
-                    for (int i = _sessionListeners.size() - 1; i >= 0; i--)
-                    {
-                        _sessionListeners.get(i).sessionDestroyed(event);
-                    }
-                }
-            };
-
-            getSessionContext().run(r);
-        }
+                _sessionListeners.get(i).sessionDestroyed(event);
+            }
+        });
     }
 
     @Override
@@ -577,10 +544,9 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     @Override
     public void callSessionActivationListener(Session session, String name, Object value)
     {
-        if (value instanceof HttpSessionActivationListener)
+        if (value instanceof HttpSessionActivationListener listener)
         {
             HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
-            HttpSessionActivationListener listener = (HttpSessionActivationListener)value;
             listener.sessionDidActivate(event);
         }
     }
@@ -588,10 +554,9 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     @Override
     public void callSessionPassivationListener(Session session, String name, Object value)
     {
-        if (value instanceof HttpSessionActivationListener)
+        if (value instanceof HttpSessionActivationListener listener)
         {
             HttpSessionEvent event = new HttpSessionEvent(session.getAPISession());
-            HttpSessionActivationListener listener = (HttpSessionActivationListener)value;
             listener.sessionWillPassivate(event);
         }
     }
@@ -608,7 +573,17 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
 
     public Set<SessionTrackingMode> getEffectiveSessionTrackingModes()
     {
-        return Collections.unmodifiableSet(_sessionTrackingModes);
+        if (isUsingCookies())
+        {
+            if (isUsingURLs())
+                return Set.of(SessionTrackingMode.COOKIE, SessionTrackingMode.URL);
+            return Set.of(SessionTrackingMode.COOKIE);
+        }
+
+        if (isUsingURLs())
+            return Set.of(SessionTrackingMode.URL);
+
+        return Collections.emptySet();
     }
 
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes)
@@ -619,9 +594,8 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
         {
             throw new IllegalArgumentException("sessionTrackingModes specifies a combination of SessionTrackingMode.SSL with a session tracking mode other than SessionTrackingMode.SSL");
         }
-        _sessionTrackingModes = new HashSet<>(sessionTrackingModes);
-        setUsingCookies(_sessionTrackingModes.contains(SessionTrackingMode.COOKIE));
-        setUsingURLs(_sessionTrackingModes.contains(SessionTrackingMode.URL));
+        setUsingCookies(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.COOKIE));
+        setUsingURLs(sessionTrackingModes != null && sessionTrackingModes.contains(SessionTrackingMode.URL));
     }
 
     @Override

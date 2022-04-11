@@ -25,6 +25,10 @@ import org.eclipse.jetty.util.component.LifeCycle;
  */
 public interface SessionManager extends LifeCycle
 {
+    // TODO break this interface into multiple interfaces:
+    //       - the configuration interface used to configure the manager
+    //       - the contract between the request and the manager
+    //       - maybe the contract with the ID managers?
     /**
      * Session cookie name.
      * Defaults to <code>JSESSIONID</code>, but can be set with the

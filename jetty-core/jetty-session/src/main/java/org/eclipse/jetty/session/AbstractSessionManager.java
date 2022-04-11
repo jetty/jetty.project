@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.Syntax;
 import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -540,6 +541,9 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
     public void setSessionCookie(String cookieName)
     {
+        if (StringUtil.isBlank(cookieName))
+            throw new IllegalArgumentException("Blank cookie name");
+        Syntax.requireValidRFC2616Token(cookieName, "Bad Session cookie name");
         _sessionCookie = cookieName;
     }
 

@@ -34,20 +34,20 @@ public interface Connection extends Closeable
      *
      * @param listener the listener to add
      */
-    public void addEventListener(EventListener listener);
+    void addEventListener(EventListener listener);
 
     /**
      * <p>Removes a listener of connection events.</p>
      *
      * @param listener the listener to remove
      */
-    public void removeEventListener(EventListener listener);
+    void removeEventListener(EventListener listener);
 
     /**
      * <p>Callback method invoked when this connection is opened.</p>
      * <p>Creators of the connection implementation are responsible for calling this method.</p>
      */
-    public void onOpen();
+    void onOpen();
 
     /**
      * <p>Callback method invoked when this connection is closed.</p>
@@ -55,12 +55,12 @@ public interface Connection extends Closeable
      *
      * @param cause The cause of the close or null for a normal close
      */
-    public void onClose(Throwable cause);
+    void onClose(Throwable cause);
 
     /**
      * @return the {@link EndPoint} associated with this Connection.
      */
-    public EndPoint getEndPoint();
+    EndPoint getEndPoint();
 
     /**
      * <p>Performs a logical close of this connection.</p>
@@ -69,7 +69,7 @@ public interface Connection extends Closeable
      * before closing the associated {@link EndPoint}.</p>
      */
     @Override
-    public void close();
+    void close();
 
     /**
      * <p>Callback method invoked upon an idle timeout event.</p>
@@ -82,17 +82,17 @@ public interface Connection extends Closeable
      * @return true to let the EndPoint handle the idle timeout,
      * false to tell the EndPoint to halt the handling of the idle timeout.
      */
-    public boolean onIdleExpired();
+    boolean onIdleExpired();
 
-    public long getMessagesIn();
+    long getMessagesIn();
 
-    public long getMessagesOut();
+    long getMessagesOut();
 
-    public long getBytesIn();
+    long getBytesIn();
 
-    public long getBytesOut();
+    long getBytesOut();
 
-    public long getCreatedTimeStamp();
+    long getCreatedTimeStamp();
 
     /**
      * <p>{@link Connection} implementations implement this interface when they
@@ -102,7 +102,7 @@ public interface Connection extends Closeable
      * @see EndPoint#upgrade(Connection)
      * @see UpgradeTo
      */
-    public interface UpgradeFrom
+    interface UpgradeFrom
     {
         /**
          * <p>Invoked during an {@link EndPoint#upgrade(Connection) upgrade}
@@ -115,7 +115,7 @@ public interface Connection extends Closeable
          * having consumed its bytes.
          * The returned buffer may be null if there are no unconsumed bytes.
          */
-        public ByteBuffer onUpgradeFrom();
+        ByteBuffer onUpgradeFrom();
     }
 
     /**
@@ -123,7 +123,7 @@ public interface Connection extends Closeable
      * can be upgraded to the protocol they speak (e.g. HTTP/2)
      * from a different protocol (e.g. HTTP/1.1).</p>
      */
-    public interface UpgradeTo
+    interface UpgradeTo
     {
         /**
          * <p>Invoked during an {@link EndPoint#upgrade(Connection) upgrade}
@@ -136,7 +136,7 @@ public interface Connection extends Closeable
          * The buffer does not belong to any pool and should be discarded after
          * having consumed its bytes.
          */
-        public void onUpgradeTo(ByteBuffer buffer);
+        void onUpgradeTo(ByteBuffer buffer);
     }
 
     /**
@@ -147,13 +147,13 @@ public interface Connection extends Closeable
      * the Connector or ConnectionFactory are added as listeners to all new connections
      * </p>
      */
-    public interface Listener extends EventListener
+    interface Listener extends EventListener
     {
-        public default void onOpened(Connection connection)
+        default void onOpened(Connection connection)
         {
         }
 
-        public default void onClosed(Connection connection)
+        default void onClosed(Connection connection)
         {
         }
     }
