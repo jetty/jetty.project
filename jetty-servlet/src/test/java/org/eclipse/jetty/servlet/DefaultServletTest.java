@@ -1932,6 +1932,16 @@ public class DefaultServletTest
         assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
         body = response.getContent();
         assertThat(body, containsString("fake gzip"));
+
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br\r\nAccept-Encoding:gzip, compress\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "11"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
+        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "br"));
+        body = response.getContent();
+        assertThat(body, containsString("fake brotli"));
     }
 
     @Test
