@@ -40,15 +40,14 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -125,7 +124,19 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             {
                 getHttpConfiguration().setOutputBufferSize(BUFFER_SIZE);
                 getHttpConfiguration().setOutputAggregationSize(BUFFER_SIZE);
-                return configure(new ExtendedHttpConnection(getHttpConfiguration(), connector, endPoint), connector, endPoint);
+                Connection connection = super.newConnection(connector, endPoint);
+                if (connection instanceof AbstractConnection abstractConnection)
+                {
+                    abstractConnection.addEventListener(new Connection.Listener()
+                    {
+                        @Override
+                        public void onClosed(Connection connection)
+                        {
+                            __transportComplete.compareAndSet(false, true);
+                        }
+                    });
+                }
+                return connection;
             }
         })
         {
@@ -150,21 +161,6 @@ public class AsyncCompletionTest extends HttpServerTestFixture
             PendingCallback delay = new PendingCallback(callback);
             super.write(delay, buffers);
             __queue.offer(delay);
-        }
-    }
-
-    private static class ExtendedHttpConnection extends HttpConnection
-    {
-        public ExtendedHttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
-        {
-            super(config, connector, endPoint, false);
-        }
-
-        @Override
-        public void onCompleted()
-        {
-            __transportComplete.compareAndSet(false, true);
-            super.onCompleted();
         }
     }
 

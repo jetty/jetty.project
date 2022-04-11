@@ -61,7 +61,6 @@ import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionData;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -94,6 +93,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ResponseTest
 {
     private Server _server;
+    private ContextHandler _context;
     private HttpChannel _channel;
     private ByteBuffer _content = BufferUtil.allocate(16 * 1024);
 
@@ -103,11 +103,12 @@ public class ResponseTest
         BufferUtil.clear(_content);
 
         _server = new Server();
+        _context = new ContextHandler(_server);
         Scheduler scheduler = new TimerScheduler();
         HttpConfiguration config = new HttpConfiguration();
         LocalConnector connector = new LocalConnector(_server, null, scheduler, null, 1, new HttpConnectionFactory(config));
         _server.addConnector(connector);
-        _server.setHandler(new DumpHandler());
+        _context.setHandler(new DumpHandler());
         _server.start();
 
         SocketAddress local = InetSocketAddress.createUnresolved("myhost", 8888);
@@ -435,7 +436,7 @@ public class ResponseTest
     {
         _server.stop();
         ContextHandler handler = new CharEncodingContextHandler();
-        _server.setHandler(handler);
+        _server.setHandler(handler.getCoreContextHandler());
         handler.setDefaultResponseCharacterEncoding("utf-16");
         handler.setHandler(new DumpHandler());
         _server.start();
@@ -497,15 +498,12 @@ public class ResponseTest
     {
         _server.stop();
         MimeTypes.getInferredEncodings().put("text/html", "iso-8859-1");
-        ContextHandler handler = new ContextHandler();
-        handler.addLocaleEncoding("ja", "euc-jp");
-        handler.addLocaleEncoding("zh_CN", "gb18030");
-        _server.setHandler(handler);
-        handler.setHandler(new DumpHandler());
+        _context.addLocaleEncoding("ja", "euc-jp");
+        _context.addLocaleEncoding("zh_CN", "gb18030");
         _server.start();
 
         Response response = getResponse();
-        response.getHttpChannel().getRequest().setContext(handler.getServletContext(), "/");
+        response.getHttpChannel().getRequest().setContext(_context.getServletContext(), "/");
 
         response.setContentType("text/html");
         assertEquals("iso-8859-1", response.getCharacterEncoding());
@@ -670,7 +668,7 @@ public class ResponseTest
         sessionHandler.setServer(_server);
         sessionHandler.setUsingCookies(true);
         sessionHandler.start();
-        request.setSessionManager(sessionHandler);
+        request.setSessionManager(sessionHandler.getSession);
         HttpSession session = request.getSession(true);
 
         assertThat(session, not(nullValue()));

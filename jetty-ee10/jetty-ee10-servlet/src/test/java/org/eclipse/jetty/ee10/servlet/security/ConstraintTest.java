@@ -13,7 +13,8 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
-import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintWriter;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,8 +38,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
@@ -49,13 +48,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Request.Processor;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -1878,100 +1875,120 @@ public class ConstraintTest
         return Base64.getEncoder().encodeToString(raw);
     }
 
-    private class RequestHandler extends AbstractHandler
+    private static class RequestHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            baseRequest.setHandled(true);
-            if (request.getAuthType() == null || "user".equals(request.getRemoteUser()) || request.isUserInRole("user") || request.isUserInRole("foo"))
+            ServletContextRequest wrappedRequest = Request.as(request, ServletContextRequest.class);
+            ServletContextRequest.ServletApiRequest baseRequest = wrappedRequest.getServletApiRequest();
+            if (baseRequest.getAuthType() == null || "user".equals(baseRequest.getRemoteUser()) || baseRequest.isUserInRole("user") || baseRequest.isUserInRole("foo"))
             {
                 response.setStatus(200);
                 response.setContentType("text/plain; charset=UTF-8");
-                response.getWriter().println("URI=" + request.getRequestURI());
-                String user = request.getRemoteUser();
-                response.getWriter().println("user=" + user);
-                if (request.getParameter("test_parameter") != null)
-                    response.getWriter().println(request.getParameter("test_parameter"));
+                String user = baseRequest.getRemoteUser();
+
+                ByteArrayOutputStream bout = new ByteArrayOutputStream();
+                PrintWriter out = new PrintWriter(bout);
+
+                out.println("URI=" + baseRequest.getRequestURI());
+                out.println("user=" + user);
+                if (baseRequest.getParameter("test_parameter") != null)
+                    out.println(baseRequest.getParameter("test_parameter"));
+                out.flush();
+                response.write(true, callback, out.toString());
             }
             else
-                response.sendError(500);
+            {
+                Response.writeError(request, response, callback, 500);
+            }
         }
     }
 
-    private class ProgrammaticLoginRequestHandler extends AbstractHandler
+    private class ProgrammaticLoginRequestHandler extends Handler.Processor
     {
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        public void process(Request request, Response response, Callback callback) throws Exception
         {
-            baseRequest.setHandled(true);
+            ServletContextRequest wrappedRequest = Request.as(request, ServletContextRequest.class);
+            ServletContextRequest.ServletApiRequest baseRequest = wrappedRequest.getServletApiRequest();
 
-            String action = request.getParameter("action");
+            String action = baseRequest.getParameter("action");
             if (StringUtil.isBlank(action))
             {
                 response.setStatus(200);
                 response.setContentType("text/plain; charset=UTF-8");
-                response.getWriter().println("user=" + request.getRemoteUser());
+                response.write(true, callback, "user=" + baseRequest.getRemoteUser());
                 return;
             }
-            else if ("loginauth".equals(action))
+
+            switch (action)
             {
-                request.login("admin", "password");
-                response.getWriter().println("userPrincipal=" + request.getUserPrincipal());
-                response.getWriter().println("remoteUser=" + request.getRemoteUser());
-                response.getWriter().println("authType=" + request.getAuthType());
-                response.getWriter().println("auth=" + request.authenticate(response));
-                return;
-            }
-            else if ("login".equals(action))
-            {
-                request.login("admin", "password");
-                return;
-            }
-            else if ("loginfail".equals(action))
-            {
-                request.login("admin", "fail");
-                return;
-            }
-            else if ("loginfaillogin".equals(action))
-            {
-                try
+                case "loginauth" ->
                 {
-                    request.login("admin", "fail");
+                    baseRequest.login("admin", "password");
+                    response.write(true, callback, """
+                        userPrincipal=%s
+                        remoteUser=%s
+                        authType=%s
+                        auth=%s
+                        """.formatted(
+                        baseRequest.getUserPrincipal(),
+                        baseRequest.getRemoteUser(),
+                        baseRequest.getAuthType(),
+                        baseRequest.authenticate(wrappedRequest.getHttpServletResponse())
+                        ));
                 }
-                catch (ServletException e)
+                case "login" ->
                 {
-                    request.login("admin", "password");
+                    baseRequest.login("admin", "password");
                 }
-                return;
+                case "loginfail" ->
+                {
+                    baseRequest.login("admin", "fail");
+                }
+                case "loginfaillogin" ->
+                {
+                    try
+                    {
+                        baseRequest.login("admin", "fail");
+                    }
+                    catch (ServletException e)
+                    {
+                        baseRequest.login("admin", "password");
+                    }
+                    return;
+                }
+                case "loginlogin" ->
+                {
+                    baseRequest.login("admin", "password");
+                    baseRequest.login("foo", "bar");
+                }
+                case "loginlogout" ->
+                {
+                    baseRequest.login("admin", "password");
+                    baseRequest.logout();
+                }
+                case "loginlogoutlogin" ->
+                {
+                    baseRequest.login("admin", "password");
+                    baseRequest.logout();
+                    baseRequest.login("user0", "password");
+                }
+                case "constraintlogin" ->
+                {
+                    baseRequest.getRemoteUser();
+                    baseRequest.login("admin", "password");
+                }
+                case "logout" -> baseRequest.logout();
+                default ->
+                {
+                    Response.writeError(request, response, callback, 500);
+                    return;
+                }
             }
-            else if ("loginlogin".equals(action))
-            {
-                request.login("admin", "password");
-                request.login("foo", "bar");
-            }
-            else if ("loginlogout".equals(action))
-            {
-                request.login("admin", "password");
-                request.logout();
-            }
-            else if ("loginlogoutlogin".equals(action))
-            {
-                request.login("admin", "password");
-                request.logout();
-                request.login("user0", "password");
-            }
-            else if ("constraintlogin".equals(action))
-            {
-                String user = request.getRemoteUser();
-                request.login("admin", "password");
-            }
-            else if ("logout".equals(action))
-            {
-                request.logout();
-            }
-            else
-                response.sendError(500);
+
+            response.write(true, callback);
         }
     }
 
@@ -1984,9 +2001,12 @@ public class ConstraintTest
             if (processor == null)
                 return null;
             
-            return (ignored, response, callback) -> 
+            return (ignored, response, callback) ->
             {
-                UserIdentity.Scope old = ((Request)request).getUserIdentityScope();
+                ServletContextRequest wrappedRequest = Request.as(request, ServletContextRequest.class);
+                ServletContextRequest.ServletApiRequest baseRequest = wrappedRequest.getServletApiRequest();
+
+                // TODO UserIdentity.Scope old = baseRequest.getUserIdentityScope();
 
                 UserIdentity.Scope scope = new UserIdentity.Scope()
                 {
@@ -2017,7 +2037,7 @@ public class ConstraintTest
                     }
                 };
 
-                ((Request)request).setUserIdentityScope(scope);
+                // TODO baseRequest.setUserIdentityScope(scope);
 
                 try
                 {
@@ -2025,7 +2045,7 @@ public class ConstraintTest
                 }
                 finally
                 {
-                    ((Request)request).setUserIdentityScope(old);
+                    // TODO baseRequest.setUserIdentityScope(old);
                 }
             };
         }

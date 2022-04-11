@@ -33,6 +33,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.handler.gzip.GzipHandler;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -62,11 +63,7 @@ public class BlockingTest
         connector = new ServerConnector(server);
         server.addConnector(connector);
 
-        context = new ContextHandler("/ctx");
-
-        HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[]{context, new DefaultHandler()});
-        server.setHandler(handlers);
+        context = new ContextHandler(server, "/ctx");
     }
 
     @AfterEach

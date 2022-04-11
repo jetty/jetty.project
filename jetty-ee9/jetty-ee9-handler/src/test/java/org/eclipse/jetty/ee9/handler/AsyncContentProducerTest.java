@@ -28,6 +28,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPOutputStream;
 
+import org.eclipse.jetty.ee9.handler.gzip.GzipHttpInputInterceptor;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Content;

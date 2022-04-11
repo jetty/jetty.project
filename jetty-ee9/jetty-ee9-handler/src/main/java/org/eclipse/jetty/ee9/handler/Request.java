@@ -2101,6 +2101,11 @@ public class Request implements HttpServletRequest
         _coreSession = coreSession;
     }
 
+    public Session getCoreSession()
+    {
+        return _coreSession;
+    }
+
     /**
      * @param sessionManager The SessionHandler to set.
      */

@@ -487,6 +487,10 @@ public class HttpCookie
         }
     }
 
+    /**
+     * @deprecated We should not need to do this now
+     */
+    @Deprecated
     public static String getCommentWithoutAttributes(String comment)
     {
         if (comment == null)
@@ -504,6 +508,10 @@ public class HttpCookie
         return strippedComment.length() == 0 ? null : strippedComment;
     }
 
+    /**
+     * @deprecated We should not need to do this now
+     */
+    @Deprecated
     public static String getCommentWithAttributes(String comment, boolean httpOnly, SameSite sameSite)
     {
         if (comment == null && sameSite == null)

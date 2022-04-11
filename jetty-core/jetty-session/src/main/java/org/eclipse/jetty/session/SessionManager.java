@@ -23,7 +23,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * Non-servlet spec specific contract implemented by all SessionHandlers.
  *
  */
-public interface SessionManager extends LifeCycle
+public interface SessionManager extends LifeCycle, SessionConfig
 {
     // TODO break this interface into multiple interfaces:
     //       - the configuration interface used to configure the manager
@@ -93,33 +93,7 @@ public interface SessionManager extends LifeCycle
     
     boolean isIdInUse(String id) throws Exception;
 
-    boolean isUsingCookies();
-    
-    boolean isUsingURLs();
-
     HttpCookie getSessionCookie(Session session, String contextPath, boolean requestIsSecure);
-    
-    boolean isCheckingRemoteSessionIdEncoding();
-
-    boolean isHttpOnly();
-
-    boolean isSecureRequestOnly();
-    
-    String getSessionDomain();
-    
-    String getSessionPath();
-
-    String getSessionIdPathParameterName();
-
-    String getSessionIdPathParameterNamePrefix();
-    
-    int getMaxCookieAge();
-
-    int getRefreshCookieAge();
-
-    boolean isSecureCookies();
-
-    String getSessionCookie();
 
     void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId) throws Exception;
     
@@ -133,8 +107,6 @@ public interface SessionManager extends LifeCycle
     
     SessionCache getSessionCache();
 
-    int getMaxInactiveInterval();
-    
     default void callSessionIdListeners(Session session, String oldId)
     {
     }
