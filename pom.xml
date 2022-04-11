@@ -71,7 +71,7 @@
     <jakarta.xml.bind.api.version>2.3.3</jakarta.xml.bind.api.version>
     <jakarta.xml.bind.impl.version>2.3.5</jakarta.xml.bind.impl.version>
     <jakarta.xml.jaxws.impl.version>2.3.5</jakarta.xml.jaxws.impl.version>
-    <jakarta.xml.ws.api.version>2.3.3</jakarta.xml.ws.api.version>
+    <jakarta.xml.ws.api.version>4.0.0</jakarta.xml.ws.api.version>
     <jamon.version>2.82</jamon.version>
     <javax.activation.impl.version>1.1.0.v201105071233</javax.activation.impl.version>
     <javax.cdi.api.version>2.0</javax.cdi.api.version>
