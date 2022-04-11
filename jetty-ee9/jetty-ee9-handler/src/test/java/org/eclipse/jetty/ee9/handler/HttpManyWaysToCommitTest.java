@@ -11,35 +11,13 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
-
-import java.io.IOException;
-import java.util.stream.Stream;
-
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.AbstractHandler;
-import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.http.HttpVersion;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.eclipse.jetty.http.tools.matchers.HttpFieldsMatchers.containsHeaderValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assumptions.assumingThat;
+package org.eclipse.jetty.ee9.handler;
 
 //TODO: reset buffer tests
 //TODO: add protocol specific tests for connection: close and/or chunking
 public class HttpManyWaysToCommitTest extends AbstractHttpTest
 {
+    /*
     public static Stream<Arguments> httpVersions()
     {
         return Stream.of(
@@ -698,4 +676,5 @@ public class HttpManyWaysToCommitTest extends AbstractHttpTest
             super.handle(target, baseRequest, request, response);
         }
     }
+     */
 }

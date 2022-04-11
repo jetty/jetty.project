@@ -19,8 +19,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.server.Content;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -42,21 +41,11 @@ public class HttpWriterTest
         _bytes = BufferUtil.allocate(2048);
 
         final ByteBufferPool pool = new ArrayByteBufferPool();
+        Server server = new Server();
+        ContextHandler contextHandler = new ContextHandler(server);
 
-        HttpChannel channel = new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
+        HttpChannel channel = new HttpChannel(contextHandler, new MockConnectionMetaData())
         {
-            @Override
-            public boolean needContent()
-            {
-                return false;
-            }
-
-            @Override
-            public Content produceContent()
-            {
-                return null;
-            }
-
             @Override
             public boolean failAllContent(Throwable failure)
             {

@@ -106,11 +106,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _connector = connectionMetaData.getConnector();
         _configuration = Objects.requireNonNull(connectionMetaData.getHttpConfiguration());
         _endPoint = connectionMetaData.getConnection().getEndPoint();
-
         _state = new HttpChannelState(this);
         _request = new Request(this, newHttpInput());
         _response = new Response(this, newHttpOutput());
-        _executor = _connector.getServer().getThreadPool(); // TODO requestcomponent?
+        _executor = _connector.getServer().getThreadPool();
 
         // TODO get real listeners from somewhere
         _combinedListener = /* (connector instanceof AbstractConnector)

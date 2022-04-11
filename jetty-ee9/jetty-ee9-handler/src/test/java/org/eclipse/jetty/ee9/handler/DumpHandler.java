@@ -100,6 +100,7 @@ public class DumpHandler extends AbstractHandler
         ByteArrayOutputStream buf = new ByteArrayOutputStream(2048);
         Writer writer = new OutputStreamWriter(buf, StandardCharsets.ISO_8859_1);
         writer.write("<html><h1>" + label + "</h1>");
+        writer.write("<pre>\ncontextPath=" + request.getContextPath() + "\n</pre>\n");
         writer.write("<pre>\npathInfo=" + request.getPathInfo() + "\n</pre>\n");
         writer.write("<pre>\ncontentType=" + request.getContentType() + "\n</pre>\n");
         writer.write("<pre>\nencoding=" + request.getCharacterEncoding() + "\n</pre>\n");
@@ -201,26 +202,29 @@ public class DumpHandler extends AbstractHandler
 
         writer.write("</pre>\n<h3>Content:</h3>\n<pre>");
 
-        if (read != null)
+        if (baseRequest.getContentRead() == 0)
         {
-            writer.write(read.toString());
-        }
-        else
-        {
-            char[] content = new char[4096];
-            int len;
-            try
+            if (read != null)
             {
-                Reader in = request.getReader();
-                while ((len = in.read(content)) >= 0)
-                {
-                    writer.write(new String(content, 0, len));
-                }
+                writer.write(read.toString());
             }
-            catch (IOException e)
+            else
             {
-                LOG.warn("Failed to copy request content", e);
-                writer.write(e.toString());
+                char[] content = new char[4096];
+                int len;
+                try
+                {
+                    Reader in = request.getReader();
+                    while ((len = in.read(content)) >= 0)
+                    {
+                        writer.write(new String(content, 0, len));
+                    }
+                }
+                catch (IOException e)
+                {
+                    LOG.warn("Failed to copy request content", e);
+                    writer.write(e.toString());
+                }
             }
         }
 

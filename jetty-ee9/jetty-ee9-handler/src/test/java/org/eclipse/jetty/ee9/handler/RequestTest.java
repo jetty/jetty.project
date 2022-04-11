@@ -73,8 +73,6 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.internal.HttpConnection;
-import org.eclipse.jetty.session.Session;
-import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
@@ -128,6 +126,7 @@ public class RequestTest
             {
                 HttpConnection conn = new HttpConnection(getHttpConfiguration(), connector, endPoint, isRecordHttpComplianceViolations())
                 {
+                    /*
                     @Override
                     protected HttpChannelOverHttp newHttpChannel()
                     {
@@ -142,6 +141,8 @@ public class RequestTest
                             }
                         };
                     }
+
+                     */
                 };
                 return configure(conn, connector, endPoint);
             }
@@ -2106,9 +2107,10 @@ public class RequestTest
         @Override
         public HttpSession getSession()
         {
-            Session session = new Session(new SessionHandler(), new SessionData(TEST_SESSION_ID, "", "0.0.0.0", 0, 0, 0, 300));
-            session.setResident(true); //necessary for session methods to not throw ISE
-            return session;
+            return null;
+//            Session session = new Session(new SessionHandler(), new SessionData(TEST_SESSION_ID, "", "0.0.0.0", 0, 0, 0, 300));
+//            session.setResident(true); //necessary for session methods to not throw ISE
+//            return session;
         }
 
         @Override

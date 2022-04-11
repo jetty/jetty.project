@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.ee9.handler;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,6 +21,8 @@ import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.session.Session;
+import org.eclipse.jetty.session.SessionData;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,9 +86,10 @@ public class SessionHandlerTest
             sessionHandler.addEventListener(new Listener2());
             sessionHandler.setServer(server);
             sessionHandler.start();
-            Session session = new Session(sessionHandler, new SessionData("aa", "_", "0.0", 0, 0, 0, 0));
-            sessionHandler.callSessionCreatedListeners(session);
-            sessionHandler.callSessionDestroyedListeners(session);
+
+            Session session = new Session(sessionHandler.getSessionManager(), new SessionData("aa", "_", "0.0", 0, 0, 0, 0));
+            sessionHandler.getSessionManager().callSessionCreatedListeners(session);
+            sessionHandler.getSessionManager().callSessionDestroyedListeners(session);
             assertEquals("Listener1 create;Listener2 create;Listener2 destroy;Listener1 destroy;", result.toString());
         }
         finally

@@ -67,8 +67,8 @@ public class ErrorHandlerTest
         server = new Server();
         connector = new LocalConnector(server);
         server.addConnector(connector);
-
-        server.setHandler(new AbstractHandler()
+        ContextHandler context = new ContextHandler(server);
+        context.setHandler(new AbstractHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
@@ -697,10 +697,7 @@ public class ErrorHandlerTest
     public void testErrorContextRecycle() throws Exception
     {
         server.stop();
-        ContextHandlerCollection contexts = new ContextHandlerCollection();
-        server.setHandler(contexts);
-        ContextHandler context = new ContextHandler("/foo");
-        contexts.addHandler(context);
+        ContextHandler context = new ContextHandler(server, "/foo");
         context.setErrorHandler(new ErrorHandler()
         {
             @Override
@@ -719,7 +716,7 @@ public class ErrorHandlerTest
             }
         });
 
-        server.setErrorHandler(new ErrorHandler()
+        context.setErrorHandler(new ErrorHandler()
         {
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

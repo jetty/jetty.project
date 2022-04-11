@@ -21,14 +21,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPOutputStream;
 
+import org.eclipse.jetty.ee9.handler.gzip.GzipHttpInputInterceptor;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Content;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -536,10 +535,11 @@ public class BlockingContentProducerTest
 
         public StaticContentHttpChannel(Content content)
         {
-            super(new MockConnector(), new HttpConfiguration(), null, null);
+            super(null, null);
             this.content = content;
         }
 
+        /*
         @Override
         public boolean needContent()
         {
@@ -553,6 +553,8 @@ public class BlockingContentProducerTest
             content = Content.EOF;
             return c;
         }
+
+         */
 
         @Override
         public boolean failAllContent(Throwable failure)
@@ -584,7 +586,7 @@ public class BlockingContentProducerTest
 
         public ArrayDelayedHttpChannel(ByteBuffer[] byteBuffers, Content finalContent, ScheduledExecutorService scheduledExecutorService, ContentListener contentListener)
         {
-            super(new MockConnector(), new HttpConfiguration(), null, null);
+            super(null, null);
             this.byteBuffers = new ByteBuffer[byteBuffers.length];
             this.finalContent = finalContent;
             this.scheduledExecutorService = scheduledExecutorService;
@@ -595,6 +597,7 @@ public class BlockingContentProducerTest
             }
         }
 
+        /*
         @Override
         public boolean needContent()
         {
@@ -618,6 +621,8 @@ public class BlockingContentProducerTest
             nextContent = null;
             return result;
         }
+
+         */
 
         @Override
         public boolean failAllContent(Throwable failure)

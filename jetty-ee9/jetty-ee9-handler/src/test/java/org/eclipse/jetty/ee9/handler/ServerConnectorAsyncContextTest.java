@@ -11,15 +11,11 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.server;
-
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
-
-import org.eclipse.jetty.util.IO;
+package org.eclipse.jetty.ee9.handler;
 
 public class ServerConnectorAsyncContextTest extends LocalAsyncContextTest
 {
+    /*
     @Override
     protected Connector initConnector()
     {
@@ -34,4 +30,6 @@ public class ServerConnectorAsyncContextTest extends LocalAsyncContextTest
         socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
         return IO.toString(socket.getInputStream());
     }
+
+     */
 }

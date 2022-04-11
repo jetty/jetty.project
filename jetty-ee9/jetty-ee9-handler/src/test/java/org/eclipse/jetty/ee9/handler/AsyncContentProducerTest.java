@@ -32,7 +32,7 @@ import org.eclipse.jetty.ee9.handler.gzip.GzipHttpInputInterceptor;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Content;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -543,11 +543,12 @@ public class AsyncContentProducerTest
 
         public ContentListHttpChannel(List<Content> contents, Content finalContent)
         {
-            super(new MockConnector(), new HttpConfiguration(), null, null);
+            super(null, null);
             this.contents = contents;
             this.finalContent = finalContent;
         }
 
+        /*
         @Override
         public boolean needContent()
         {
@@ -564,6 +565,8 @@ public class AsyncContentProducerTest
                 c = finalContent;
             return c;
         }
+
+         */
 
         @Override
         public boolean failAllContent(Throwable failure)
@@ -595,7 +598,7 @@ public class AsyncContentProducerTest
 
         public ArrayDelayedHttpChannel(ByteBuffer[] byteBuffers, Content finalContent, ScheduledExecutorService scheduledExecutorService, CyclicBarrier barrier)
         {
-            super(new MockConnector(), new HttpConfiguration(), null, null);
+            super(new ContextHandler(new Server()), new MockConnectionMetaData());
             this.byteBuffers = new ByteBuffer[byteBuffers.length];
             this.finalContent = finalContent;
             this.scheduledExecutorService = scheduledExecutorService;
@@ -606,6 +609,7 @@ public class AsyncContentProducerTest
             }
         }
 
+        /*
         @Override
         public boolean needContent()
         {
@@ -636,6 +640,8 @@ public class AsyncContentProducerTest
             nextContent = null;
             return result;
         }
+
+         */
 
         @Override
         public boolean failAllContent(Throwable failure)

@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.AbstractSessionManager;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionConfig;
+import org.eclipse.jetty.session.SessionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +64,11 @@ public class SessionHandler extends HandlerWrapper implements SessionConfig.Muta
     public SessionHandler()
     {
         setSessionTrackingModes(DEFAULT_SESSION_TRACKING_MODES);
+    }
+
+    public SessionManager getSessionManager()
+    {
+        return _sessionManager;
     }
 
     @Override

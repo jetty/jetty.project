@@ -457,6 +457,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      *
      * @param cache the SessionCache to use
      */
+    @Override
     public void setSessionCache(SessionCache cache)
     {
         updateBean(_sessionCache, cache);
@@ -578,6 +579,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      *
      * @param sessionIdManager The sessionIdManager used for cross context session management.
      */
+    @Override
     public void setSessionIdManager(SessionIdManager sessionIdManager)
     {
         updateBean(_sessionIdManager, sessionIdManager);

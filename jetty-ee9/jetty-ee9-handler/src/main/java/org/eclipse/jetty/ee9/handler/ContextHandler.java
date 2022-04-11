@@ -2466,6 +2466,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
+        public void setServer(Server server)
+        {
+            super.setServer(server);
+            ContextHandler.this.setServer(server);
+        }
+
+        @Override
         protected CoreContext newContext()
         {
             return new CoreContext();
@@ -2516,7 +2523,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             httpChannel.onRequest(coreRequest, response, callback);
             httpChannel.getRequest().setContext(_apiContext, coreRequest.getPathInContext());
 
-            ContextHandler.this.handle(coreRequest.getPathInContext(), httpChannel.getRequest(), httpChannel.getRequest(), httpChannel.getResponse());
+            httpChannel.handle();
         }
 
         class CoreContext extends org.eclipse.jetty.server.handler.ContextHandler.Context

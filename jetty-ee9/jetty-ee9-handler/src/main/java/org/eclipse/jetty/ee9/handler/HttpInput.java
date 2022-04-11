@@ -41,7 +41,6 @@ public class HttpInput extends ServletInputStream implements Runnable
     private final byte[] _oneByteBuffer = new byte[1];
     private BlockingContentProducer _blockingContentProducer;
     private AsyncContentProducer _asyncContentProducer;
-    private HttpChannelState _channelState;
     private final LongAdder _contentConsumed = new LongAdder();
     private volatile ContentProducer _contentProducer;
     private volatile boolean _consumedEof;
@@ -50,13 +49,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     public HttpInput(HttpChannel channel)
     {
         _httpChannel = channel;
-    }
-
-    public void init()
-    {
-        _channelState = _httpChannel.getState(); // TODO can we change lifecycle so this is known in constructor and can be final
-        _asyncContentProducer = new AsyncContentProducer(_httpChannel); // TODO avoid object creation or recycle
-        _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);  // TODO avoid object creation or recycle
+        _asyncContentProducer = new AsyncContentProducer(_httpChannel);
+        _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);
         _contentProducer = _blockingContentProducer;
     }
 
@@ -224,13 +218,13 @@ public class HttpInput extends ServletInputStream implements Runnable
         if (_readListener != null)
             throw new IllegalStateException("ReadListener already set");
         //illegal if async not started
-        if (!_channelState.isAsyncStarted())
+        if (!_httpChannel.getState().isAsyncStarted())
             throw new IllegalStateException("Async not started");
         _readListener = Objects.requireNonNull(readListener);
 
         _contentProducer = _asyncContentProducer;
         // trigger content production
-        if (isReady() && _channelState.onReadEof()) // onReadEof b/c we want to transition from WAITING to WOKEN
+        if (isReady() && _httpChannel.getState().onReadEof()) // onReadEof b/c we want to transition from WAITING to WOKEN
             scheduleReadListenerNotification(); // this is needed by AsyncServletIOTest.testStolenAsyncRead
     }
 
@@ -420,7 +414,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     public String toString()
     {
         return getClass().getSimpleName() + "@" + hashCode() +
-            " cs=" + _channelState +
+            " cs=" + _httpChannel.getState() +
             " cp=" + _contentProducer +
             " eof=" + _consumedEof;
     }

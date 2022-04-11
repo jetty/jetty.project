@@ -52,14 +52,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         _servletChannel = channel;
     }
 
-    public void init()
-    {
-        _channelState = _servletChannel.getState(); // TODO can we change lifecycle so this is known in constructor and can be final
-        _asyncContentProducer = new AsyncContentProducer(_servletChannel); // TODO avoid object creation or recycle
-        _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);  // TODO avoid object creation or recycle
-        _contentProducer = _blockingContentProducer;
-    }
-
+    // TODO avoid this init()
     public void recycle()
     {
         try (AutoLock lock = _contentProducer.lock())
@@ -82,6 +75,14 @@ public class HttpInput extends ServletInputStream implements Runnable
             _readListener = null;
             _contentConsumed.reset();
         }
+    }
+
+    public void init()
+    {
+        _channelState = _servletChannel.getState(); // TODO can we change lifecycle so this is known in constructor and can be final
+        _asyncContentProducer = new AsyncContentProducer(_servletChannel); // TODO avoid object creation or recycle
+        _blockingContentProducer = new BlockingContentProducer(_asyncContentProducer);  // TODO avoid object creation or recycle
+        _contentProducer = _blockingContentProducer;
     }
 
     /**

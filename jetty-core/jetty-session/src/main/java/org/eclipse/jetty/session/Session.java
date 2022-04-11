@@ -96,19 +96,19 @@ public class Session
      * entirely new session, or could be being re-inflated from
      * persistent store.
      *
-     * @param handler the SessionHandler that manages this session
+     * @param manager the SessionHandler that manages this session
      * @param data the session data
      */
-    public Session(SessionManager handler, SessionData data)
+    public Session(SessionManager manager, SessionData data)
     {
-        _manager = handler;
+        _manager = manager;
         _sessionData = data;
         if (_sessionData.getLastSaved() <= 0)
         {
             _newSession = true;
             _sessionData.setDirty(true);
         }
-        _sessionInactivityTimer = handler.newSessionInactivityTimer(this);
+        _sessionInactivityTimer = manager.newSessionInactivityTimer(this);
         _apiSession = _manager.newSessionAPIWrapper(this);
     }
 

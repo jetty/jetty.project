@@ -13,37 +13,26 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import java.io.IOException;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.NullByteBufferPool;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.thread.Scheduler;
 
-public class MockConnector extends ContainerLifeCycle implements Connector
+public class MockConnector extends AbstractConnector
 {
     private static final ByteBufferPool BUFFER_POOL = new NullByteBufferPool();
     private final Server _server;
 
     public MockConnector(Server server)
     {
+        super(server, server.getThreadPool(), server.getBean(Scheduler.class), BUFFER_POOL, 0);
         _server = server;
     }
 
     @Override
-    public Server getServer()
+    protected void accept(int acceptorID) throws IOException, InterruptedException
     {
-        return _server;
-    }
-
-    @Override
-    public Executor getExecutor()
-    {
-        return _server.getThreadPool();
     }
 
     @Override
@@ -56,74 +45,14 @@ public class MockConnector extends ContainerLifeCycle implements Connector
     public ByteBufferPool getByteBufferPool()
     {
         ByteBufferPool pool = _server.getBean(ByteBufferPool.class);
-        if (pool == null)
-            pool = BUFFER_POOL;
-        return pool;
-    }
-
-    @Override
-    public ConnectionFactory getConnectionFactory(String nextProtocol)
-    {
-        return null;
-    }
-
-    @Override
-    public <T> T getConnectionFactory(Class<T> factoryType)
-    {
-        return null;
-    }
-
-    @Override
-    public ConnectionFactory getDefaultConnectionFactory()
-    {
-        return null;
-    }
-
-    @Override
-    public Collection<ConnectionFactory> getConnectionFactories()
-    {
-        return null;
-    }
-
-    @Override
-    public List<String> getProtocols()
-    {
-        return null;
-    }
-
-    @Override
-    public long getIdleTimeout()
-    {
-        return 0;
+        if (pool != null)
+            return pool;
+        return super.getByteBufferPool();
     }
 
     @Override
     public Object getTransport()
     {
         return null;
-    }
-
-    @Override
-    public Collection<EndPoint> getConnectedEndPoints()
-    {
-        return null;
-    }
-
-    @Override
-    public String getName()
-    {
-        return null;
-    }
-
-    @Override
-    public CompletableFuture<Void> shutdown()
-    {
-        return null;
-    }
-
-    @Override
-    public boolean isShutdown()
-    {
-        return false;
     }
 }

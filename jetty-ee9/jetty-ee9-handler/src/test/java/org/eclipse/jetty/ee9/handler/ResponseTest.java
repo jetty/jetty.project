@@ -26,11 +26,10 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import jakarta.servlet.RequestDispatcher;
@@ -44,25 +43,26 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.NullSessionDataStore;
-import org.eclipse.jetty.session.Session;
-import org.eclipse.jetty.session.SessionData;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
@@ -120,73 +120,109 @@ public class ResponseTest
                 return local;
             }
         };
-        _channel = new HttpChannel(connector, new HttpConfiguration(), endPoint, new HttpTransport()
-        {
-            private Throwable _channelError;
 
-            @Override
-            public void send(MetaData.Request request, MetaData.Response response, ByteBuffer content, boolean lastContent, Callback callback)
-            {
-                if (BufferUtil.hasContent(content))
-                    BufferUtil.append(_content, content);
-                if (_channelError == null)
-                    callback.succeeded();
-                else
-                    callback.failed(_channelError);
-            }
-
-            @Override
-            public boolean isPushSupported()
-            {
-                return false;
-            }
-
-            @Override
-            public void push(org.eclipse.jetty.http.MetaData.Request request)
-            {
-            }
-
-            @Override
-            public void onCompleted()
-            {
-            }
-
-            @Override
-            public void abort(Throwable failure)
-            {
-                _channelError = failure;
-            }
-        })
+        ConnectionMetaData connectionMetaData = new ConnectionMetaData()
         {
             @Override
-            public boolean needContent()
+            public String getId()
             {
-                return false;
+                return toString();
             }
 
             @Override
-            public Content produceContent()
+            public HttpConfiguration getHttpConfiguration()
+            {
+                return config;
+            }
+
+            @Override
+            public HttpVersion getHttpVersion()
+            {
+                return HttpVersion.HTTP_1_0;
+            }
+
+            @Override
+            public String getProtocol()
+            {
+                return HttpScheme.HTTP.asString();
+            }
+
+            @Override
+            public Connection getConnection()
             {
                 return null;
             }
 
             @Override
-            public boolean failAllContent(Throwable failure)
+            public Connector getConnector()
+            {
+                return connector;
+            }
+
+            @Override
+            public boolean isPersistent()
             {
                 return false;
             }
 
             @Override
-            public boolean failed(Throwable x)
+            public boolean isSecure()
             {
                 return false;
             }
 
             @Override
-            protected boolean eof()
+            public SocketAddress getRemoteSocketAddress()
             {
-                return false;
+                return null;
             }
+
+            @Override
+            public SocketAddress getLocalSocketAddress()
+            {
+                return null;
+            }
+
+            @Override
+            public HostPort getServerAuthority()
+            {
+                return null;
+            }
+
+            @Override
+            public Object removeAttribute(String name)
+            {
+                return null;
+            }
+
+            @Override
+            public Object setAttribute(String name, Object attribute)
+            {
+                return null;
+            }
+
+            @Override
+            public Object getAttribute(String name)
+            {
+                return null;
+            }
+
+            @Override
+            public Set<String> getAttributeNameSet()
+            {
+                return null;
+            }
+
+            @Override
+            public void clearAttributes()
+            {
+
+            }
+        };
+
+        _channel = new HttpChannel(_context, connectionMetaData)
+        {
+
         };
     }
 
@@ -668,7 +704,7 @@ public class ResponseTest
         sessionHandler.setServer(_server);
         sessionHandler.setUsingCookies(true);
         sessionHandler.start();
-        request.setSessionManager(sessionHandler.getSession);
+        request.setSessionManager(sessionHandler.getSessionManager());
         HttpSession session = request.getSession(true);
 
         assertThat(session, not(nullValue()));
@@ -1656,16 +1692,13 @@ public class ResponseTest
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
         SessionHandler handler = new SessionHandler();
-        DefaultSessionCache ss = new DefaultSessionCache(handler);
+        DefaultSessionCache ss = new DefaultSessionCache(handler.getSessionManager());
         NullSessionDataStore ds = new NullSessionDataStore();
         ss.setSessionDataStore(ds);
-        DefaultSessionIdManager idMgr = new DefaultSessionIdManager(_server);
-        idMgr.setWorkerName(null);
-        handler.setSessionIdManager(idMgr);
-        request.setSessionManager(handler);
-        TestSession tsession = new TestSession(handler, "12345");
-        tsession.setExtendedId(handler.getSessionIdManager().getExtendedId("12345", null));
-        request.setCoreSession(tsession);
+        DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server);
+        sessionIdManager.setWorkerName(null);
+        handler.getSessionManager().setSessionIdManager(sessionIdManager);
+        request.setSessionManager(handler.getSessionManager());
 
         handler.setCheckingRemoteSessionIdEncoding(false);
 
@@ -1765,15 +1798,14 @@ public class ResponseTest
                     request.setRequestedSessionIdFromCookie(i > 2);
                     SessionHandler handler = new SessionHandler();
 
-                    NullSessionDataStore ds = new NullSessionDataStore();
-                    DefaultSessionCache ss = new DefaultSessionCache(handler);
-                    handler.setSessionCache(ss);
-                    ss.setSessionDataStore(ds);
-                    DefaultSessionIdManager idMgr = new DefaultSessionIdManager(_server);
-                    idMgr.setWorkerName(null);
-                    handler.setSessionIdManager(idMgr);
-                    request.setSessionManager(handler);
-                    request.setCoreSession(new TestSession(handler, "12345"));
+                    NullSessionDataStore dataStore = new NullSessionDataStore();
+                    DefaultSessionCache sessionCache = new DefaultSessionCache(handler.getSessionManager());
+                    handler.getSessionManager().setSessionCache(sessionCache);
+                    sessionCache.setSessionDataStore(dataStore);
+                    DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server);
+                    sessionIdManager.setWorkerName(null);
+                    handler.getSessionManager().setSessionIdManager(sessionIdManager);
+                    request.setSessionManager(handler.getSessionManager());
                     handler.setCheckingRemoteSessionIdEncoding(false);
 
                     response.sendRedirect(tests[i][0]);
@@ -1843,15 +1875,14 @@ public class ResponseTest
                     request.setRequestedSessionIdFromCookie(i > 2);
                     SessionHandler handler = new SessionHandler();
 
-                    NullSessionDataStore ds = new NullSessionDataStore();
-                    DefaultSessionCache ss = new DefaultSessionCache(handler);
-                    handler.setSessionCache(ss);
-                    ss.setSessionDataStore(ds);
-                    DefaultSessionIdManager idMgr = new DefaultSessionIdManager(_server);
-                    idMgr.setWorkerName(null);
-                    handler.setSessionIdManager(idMgr);
-                    request.setSessionManager(handler);
-                    request.setCoreSession(new TestSession(handler, "12345"));
+                    NullSessionDataStore dataStore = new NullSessionDataStore();
+                    DefaultSessionCache sessionCache = new DefaultSessionCache(handler.getSessionManager());
+                    handler.getSessionManager().setSessionCache(sessionCache);
+                    sessionCache.setSessionDataStore(dataStore);
+                    DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server);
+                    sessionIdManager.setWorkerName(null);
+                    handler.getSessionManager().setSessionIdManager(sessionIdManager);
+                    request.setSessionManager(handler.getSessionManager());
                     handler.setCheckingRemoteSessionIdEncoding(false);
 
                     response.sendRedirect(tests[i][0]);
@@ -1902,9 +1933,10 @@ public class ResponseTest
     public void testHead() throws Exception
     {
         Server server = new Server(0);
+        ContextHandler contextHandler = new ContextHandler(server);
         try
         {
-            server.setHandler(new AbstractHandler()
+            contextHandler.setHandler(new AbstractHandler()
             {
                 @Override
                 public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
@@ -2183,21 +2215,21 @@ public class ResponseTest
         response.addHeader(HttpHeader.SET_COOKIE.asString(), "Foo=123456");
         response.replaceCookie(new HttpCookie("Foo", "value"));
         List<String> actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
-        assertThat(actual, hasItems(new String[]{"Foo=value"}));
+        assertThat(actual, hasItems("Foo=value"));
 
         response.setHeader(HttpHeader.SET_COOKIE, "Foo=123456; domain=Bah; Path=/path");
         response.replaceCookie(new HttpCookie("Foo", "other"));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
-        assertThat(actual, hasItems(new String[]{"Foo=123456; domain=Bah; Path=/path", "Foo=other"}));
+        assertThat(actual, hasItems("Foo=123456; domain=Bah; Path=/path", "Foo=other"));
 
         response.replaceCookie(new HttpCookie("Foo", "replaced", "Bah", "/path"));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
-        assertThat(actual, hasItems(new String[]{"Foo=replaced; Path=/path; Domain=Bah", "Foo=other"}));
+        assertThat(actual, hasItems("Foo=replaced; Path=/path; Domain=Bah", "Foo=other"));
 
         response.setHeader(HttpHeader.SET_COOKIE, "Foo=123456; domain=Bah; Expires=Thu, 01-Jan-1970 00:00:00 GMT; Max-Age=0; Secure; HttpOnly; Path=/path");
         response.replaceCookie(new HttpCookie("Foo", "replaced", "Bah", "/path"));
         actual = Collections.list(response.getHttpFields().getValues("Set-Cookie"));
-        assertThat(actual, hasItems(new String[]{"Foo=replaced; Path=/path; Domain=Bah"}));
+        assertThat(actual, hasItems("Foo=replaced; Path=/path; Domain=Bah"));
     }
 
     @Test
@@ -2302,43 +2334,7 @@ public class ResponseTest
         return _channel.getResponse();
     }
 
-    private static class TestSession extends Session
-    {
-        protected TestSession(SessionHandler handler, String id)
-        {
-            super(handler, new SessionData(id, "", "0.0.0.0", 0, 0, 0, 300));
-        }
-    }
-
     private static class TestServletContextHandler extends ContextHandler
     {
-        private class Context extends APIContext
-        {
-            private Map<String, Object> _attributes = new HashMap<>();
-
-            @Override
-            public Object getAttribute(String name)
-            {
-                return _attributes.get(name);
-            }
-
-            @Override
-            public Enumeration<String> getAttributeNames()
-            {
-                return Collections.enumeration(_attributes.keySet());
-            }
-
-            @Override
-            public void setAttribute(String name, Object object)
-            {
-                _attributes.put(name, object);
-            }
-
-            @Override
-            public void removeAttribute(String name)
-            {
-                _attributes.remove(name);
-            }
-        }
     }
 }
