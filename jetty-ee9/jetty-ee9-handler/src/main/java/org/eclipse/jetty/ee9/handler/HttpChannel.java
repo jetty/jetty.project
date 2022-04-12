@@ -144,17 +144,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     /**
-     * Fail all content that is currently stored within the channel.
-     * @param failure the failure to fail the content with.
-     * @return true if EOF was reached while failing all content, false otherwise.
-     */
-    public boolean failAllContent(Throwable failure)
-    {
-        // TODO
-        return false;
-    }
-
-    /**
      * Fail the channel's input.
      * @param failure the failure.
      * @return true if the channel needs to be rescheduled.
@@ -640,11 +629,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public void ensureConsumeAllOrNotPersistent()
     {
+        // Just release content held by the HttpInput and act only if there is some unconsumed
+        // content there.  There could still be unconsumed content in the HttpStream, but we will
+        // let lower layers deal with that.
+        if (_request.getHttpInput().releaseContent())
+            return;
+
         switch (_request.getHttpVersion())
         {
             case HTTP_1_0:
-                if (_request.getHttpInput().consumeAll())
-                    return;
 
                 // Remove any keep-alive value in Connection headers
                 _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
@@ -662,9 +655,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 break;
 
             case HTTP_1_1:
-                if (_request.getHttpInput().consumeAll())
-                    return;
-
                 // Add close value to Connection headers
                 _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
                 {

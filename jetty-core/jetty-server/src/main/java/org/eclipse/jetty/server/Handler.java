@@ -264,7 +264,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         {
             Handler existing = getHandler();
             setHandler(handler);
-            if (handler instanceof Container container)
+            if (existing != null && handler instanceof Container container)
                 container.addHandler(existing);
         }
 
@@ -529,6 +529,12 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         public Collection(List<Handler> handlers)
         {
             setHandlers(handlers);
+        }
+
+        @Override
+        public String toString()
+        {
+            return super.toString();
         }
 
         @Override

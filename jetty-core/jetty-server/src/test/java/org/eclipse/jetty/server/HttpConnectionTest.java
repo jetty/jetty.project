@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.handler.ContextRequest;
 import org.eclipse.jetty.server.handler.DumpHandler;
@@ -63,6 +64,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1371,6 +1373,20 @@ public class HttpConnectionTest
         response = HttpTester.parseResponse(localEndPoint.getResponse());
         assertEquals(response.getStatus(), HttpStatus.OK_200);
         localEndPoint.close();
+    }
+
+    @Test
+    public void testBadURI() throws Exception
+    {
+        String request = """
+            GET /ambiguous/doubleSlash// HTTP/1.0
+            Host: whatever
+            
+            """;
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986_UNAMBIGUOUS);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
+        _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.UNSAFE);
+        assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 200"));
     }
 
     private int checkContains(String s, int offset, String c)

@@ -260,7 +260,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        super.dump(out, indent);
         dumpObjects(out, indent, new DumpableCollection("initparams " + this, getInitParams().entrySet()));
     }
 
@@ -2454,7 +2453,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         CoreContextHandler()
         {
-            setHandler(new Handler.Abstract()
+            super.setHandler(new Handler.Abstract()
             {
                 @Override
                 public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
@@ -2463,6 +2462,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 }
             });
             addBean(ContextHandler.this, true);
+        }
+
+        @Override
+        public void setHandler(Handler handler)
+        {
+            throw new UnsupportedOperationException();
         }
 
         @Override
@@ -2486,6 +2491,10 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             {
                 httpChannel = new HttpChannel(ContextHandler.this, request.getConnectionMetaData());
                 request.getComponents().getCache().put(HttpChannel.class.getName(), httpChannel);
+            }
+            else
+            {
+                httpChannel.recycle();
             }
 
             return new CoreContextRequest(this, this.getContext(), request, pathInContext, httpChannel);
@@ -2517,11 +2526,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
 
         @Override
-        public void process(org.eclipse.jetty.server.Request coreRequest, Response response, Callback callback) throws Exception
+        public void process(org.eclipse.jetty.server.Request request, Response response, Callback callback) throws Exception
         {
-            HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(coreRequest, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
-            httpChannel.onRequest(coreRequest, response, callback);
-            httpChannel.getRequest().setContext(_apiContext, coreRequest.getPathInContext());
+            HttpChannel httpChannel = org.eclipse.jetty.server.Request.get(request, CoreContextRequest.class, CoreContextRequest::getHttpChannel);
+            httpChannel.onRequest(request, response, callback);
+            httpChannel.getRequest().setContext(_apiContext, request.getPathInContext());
 
             httpChannel.handle();
         }

@@ -42,14 +42,13 @@ public interface ContentProducer
     void reopen();
 
     /**
-     * Fail all content currently available in this {@link ContentProducer} instance
-     * as well as in the underlying {@link org.eclipse.jetty.server.Content.Reader}.
+     * Release any held content.
      *
-     * This call is always non-blocking.
-     * Doesn't change state.
-     * @return true if EOF was reached.
+     * @return <code>Boolean.TRUE</code> if all content consumed and EOF reached,
+     *         <code>Boolean.FALSE</code> if there was some unconsumed content, and
+     *         null if all raw content was consumed, but EOF was not seen.
      */
-    boolean consumeAll();
+    Boolean releaseContent();
 
     /**
      * Check if the current data rate consumption is above the minimal rate.

@@ -359,7 +359,7 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 String badMessage = UriCompliance.checkUriCompliance(getConnectionMetaData().getHttpConfiguration().getUriCompliance(), uri);
                 if (badMessage != null)
-                    throw new BadMessageException(badMessage);
+                    return onFailure(new BadMessageException(badMessage));
             }
 
             // This is deliberately not serialized to allow a handler to block.

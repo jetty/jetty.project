@@ -46,11 +46,13 @@ public class HttpWriterTest
 
         HttpChannel channel = new HttpChannel(contextHandler, new MockConnectionMetaData())
         {
+            /*
             @Override
             public boolean failAllContent(Throwable failure)
             {
                 return false;
             }
+            */
 
             @Override
             public ByteBufferPool getByteBufferPool()

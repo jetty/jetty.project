@@ -152,20 +152,16 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    public boolean consumeAll()
+    public boolean releaseContent()
     {
         try (AutoLock lock = _contentProducer.lock())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("consumeAll {}", this);
-            boolean atEof = _contentProducer.consumeAll();
-            if (atEof)
+            Boolean released = _contentProducer.releaseContent();
+            if (Boolean.TRUE.equals(released))
                 _consumedEof = true;
-
-            if (isFinished())
-                return !isError();
-
-            return false;
+            return !Boolean.FALSE.equals(released);
         }
     }
 

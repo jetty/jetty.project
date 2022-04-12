@@ -327,4 +327,10 @@ public class ResponseHttpFields implements HttpFields.Mutable
     {
         return _committed.get() ? this : _fields.remove(name);
     }
+
+    @Override
+    public String toString()
+    {
+        return _fields.toString();
+    }
 }

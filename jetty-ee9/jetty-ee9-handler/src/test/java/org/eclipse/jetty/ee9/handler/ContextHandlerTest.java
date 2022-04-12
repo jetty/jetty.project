@@ -14,6 +14,8 @@
 package org.eclipse.jetty.ee9.handler;
 
 import java.io.IOException;
+import java.io.StringReader;
+import java.util.Properties;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,8 +33,11 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 
 public class ContextHandlerTest
 {
@@ -139,5 +144,72 @@ public class ContextHandlerTest
             C=3
             D=4
             """));
+    }
+
+    @Test
+    public void testPersistentConnection() throws Exception
+    {
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                org.eclipse.jetty.server.Request coreRequest = baseRequest.getHttpChannel().getCoreRequest();
+
+                baseRequest.setHandled(true);
+                response.setStatus(200);
+                response.setContentType("text/plain");
+                response.getOutputStream().print("""
+                    pathInContext=%s
+                    baseRequest.hashCode=%x
+                    coreRequest.id=%s
+                    coreRequest.connectionMetaData.id=%s
+                    coreRequest.connectionMetaData.persistent=%b
+                    
+                    """.formatted(
+                        coreRequest.getPathInContext(),
+                        baseRequest.hashCode(),
+                        coreRequest.getId(),
+                        coreRequest.getConnectionMetaData().getId(),
+                        coreRequest.getConnectionMetaData().isPersistent()
+                ));
+            }
+        });
+        _server.start();
+
+        LocalConnector.LocalEndPoint endPoint = _connector.connect();
+        endPoint.addInput("""
+            GET /one HTTP/1.1
+            Host: localhost
+            
+            GET /two HTTP/1.1
+            Host: localhost
+            
+            """);
+
+        String rawResponse = endPoint.getResponse();
+        System.err.println(rawResponse);
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        Properties one = new Properties();
+        one.load(new StringReader(response.getContent()));
+
+        rawResponse = endPoint.getResponse();
+        System.err.println(rawResponse);
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        Properties two = new Properties();
+        two.load(new StringReader(response.getContent()));
+
+        assertThat(one.getProperty("baseRequest.hashCode"), notNullValue());
+        assertThat(one.getProperty("baseRequest.hashCode"), equalTo(two.getProperty("baseRequest.hashCode")));
+
+        assertThat(one.getProperty("coreRequest.connectionMetaData.id"), notNullValue());
+        assertThat(one.getProperty("coreRequest.connectionMetaData.id"), equalTo(two.getProperty("coreRequest.connectionMetaData.id")));
+
+        assertThat(one.getProperty("coreRequest.id"), notNullValue());
+        assertThat(one.getProperty("coreRequest.id"), not(equalTo(two.getProperty("coreRequest.id"))));
     }
 }

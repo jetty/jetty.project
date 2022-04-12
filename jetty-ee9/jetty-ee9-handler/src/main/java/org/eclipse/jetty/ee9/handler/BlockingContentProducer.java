@@ -89,11 +89,11 @@ class BlockingContentProducer implements ContentProducer
     }
 
     @Override
-    public boolean consumeAll()
+    public Boolean releaseContent()
     {
-        boolean eof = _asyncContentProducer.consumeAll();
+        Boolean released = _asyncContentProducer.releaseContent();
         _semaphore.release();
-        return eof;
+        return released;
     }
 
     @Override

@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
@@ -681,20 +682,8 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     {
         List<String> vhosts = getVirtualHosts();
         StringBuilder b = new StringBuilder();
-        Package pkg = getClass().getPackage();
-        if (pkg != null)
-        {
-            String p = pkg.getName();
-            if (StringUtil.isNotBlank(p))
-            {
-                String[] ss = p.split("\\.");
-                for (String s : ss)
-                {
-                    b.append(s.charAt(0)).append('.');
-                }
-            }
-        }
-        b.append(getClass().getSimpleName()).append('@').append(Integer.toString(hashCode(), 16));
+
+        b.append(TypeUtil.toShortName(getClass())).append('@').append(Integer.toString(hashCode(), 16));
         b.append('{');
         if (getDisplayName() != null)
             b.append(getDisplayName()).append(',');

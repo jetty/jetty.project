@@ -1730,8 +1730,6 @@ public class Request implements HttpServletRequest
 
     protected void recycle()
     {
-        if (_context != null)
-            throw new IllegalStateException("Request in context!");
         if (_reader != null && _inputState == INPUT_READER)
         {
             try

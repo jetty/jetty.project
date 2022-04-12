@@ -79,8 +79,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 {
     private static final Logger LOG = LoggerFactory.getLogger(HttpConnection.class);
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
+    private static final AtomicLong __connectionIdGenerator = new AtomicLong();
 
-    private final AtomicLong _idGenerator = new AtomicLong();
+    private final AtomicLong _streamIdGenerator = new AtomicLong();
+    private final long _id;
     private final HttpConfiguration _configuration;
     private final Connector _connector;
     private final HttpChannel _httpChannel;
@@ -129,6 +131,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     public HttpConnection(HttpConfiguration configuration, Connector connector, EndPoint endPoint, boolean recordComplianceViolations)
     {
         super(endPoint, connector.getExecutor());
+        _id = __connectionIdGenerator.getAndIncrement();
         _configuration = configuration;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
@@ -209,7 +212,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public String getId()
     {
-        return getEndPoint() + "#" + _idGenerator.getAndIncrement();
+        return "%s@%x#%d".formatted(getEndPoint().getRemoteSocketAddress(), hashCode(), _id);
     }
 
     @Override
@@ -240,7 +243,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     @Override
     public boolean isPersistent()
     {
-        return _generator.isPersistent();
+        return _generator.isPersistent(getHttpVersion());
     }
 
     @Override
@@ -1057,7 +1060,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             }
 
             if (_httpChannel.getRequest() == null)
-                _httpChannel.onRequest(new MetaData.Request(stream._method, stream._uri, stream._version, HttpFields.EMPTY));
+            {
+                HttpURI uri = stream._uri;
+                if (uri.hasViolations())
+                    uri = HttpURI.from("/badURI");
+                _httpChannel.onRequest(new MetaData.Request(stream._method, uri, stream._version, HttpFields.EMPTY));
+            }
 
             Runnable todo = _httpChannel.onFailure(failure);
             if (todo != null)
@@ -1121,7 +1129,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
     protected class HttpStreamOverHTTP1 implements HttpStream
     {
         private final long _nanoTimestamp = System.nanoTime();
-        private final String _id;
+        private final long _id;
         private final String _method;
         private final HttpURI.Mutable _uri;
         private final HttpVersion _version;
@@ -1142,8 +1150,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
         protected HttpStreamOverHTTP1(String method, String uri, HttpVersion version)
         {
-            long id = _idGenerator.getAndIncrement();
-            _id = id == 0 ? "0" : Long.toString(_idGenerator.getAndIncrement());
+            _id = _streamIdGenerator.getAndIncrement();
             _method = method;
             _uri = uri == null ? null : HttpURI.build(method, uri);
             _version = version;
@@ -1342,7 +1349,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         @Override
         public String getId()
         {
-            return _id;
+            return "%s#%d".formatted(_version, _id);
         }
 
         @Override

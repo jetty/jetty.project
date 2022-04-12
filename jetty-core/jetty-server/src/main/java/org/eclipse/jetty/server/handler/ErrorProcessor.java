@@ -200,6 +200,7 @@ public class ErrorProcessor implements Request.Processor
         }
 
         int bufferSize = request.getConnectionMetaData().getHttpConfiguration().getOutputBufferSize();
+        bufferSize = Math.min(8192, bufferSize); // TODO ?
         ByteBuffer buffer = request.getComponents().getByteBufferPool().acquire(bufferSize, false);
 
         // write into the response aggregate buffer and flush it asynchronously.

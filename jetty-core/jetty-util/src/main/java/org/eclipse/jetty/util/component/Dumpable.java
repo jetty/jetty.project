@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 
@@ -101,11 +102,11 @@ public interface Dumpable
                 s = StringUtil.replace(s, '\n', '|');
             }
             else if (o instanceof Collection)
-                s = String.format("%s@%x(size=%d)", o.getClass().getName(), o.hashCode(), ((Collection)o).size());
+                s = String.format("%s@%x(size=%d)", TypeUtil.toShortName(o.getClass()), o.hashCode(), ((Collection)o).size());
             else if (o.getClass().isArray())
                 s = String.format("%s@%x[size=%d]", o.getClass().getComponentType(), o.hashCode(), Array.getLength(o));
             else if (o instanceof Map)
-                s = String.format("%s@%x{size=%d}", o.getClass().getName(), o.hashCode(), ((Map<?, ?>)o).size());
+                s = String.format("%s@%x{size=%d}", TypeUtil.toShortName(o.getClass()), o.hashCode(), ((Map<?, ?>)o).size());
             else
             {
                 s = String.valueOf(o);

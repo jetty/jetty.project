@@ -270,6 +270,36 @@ public class TypeUtil
         return class2Name.get(type);
     }
 
+    public static String toShortName(Class<?> type)
+    {
+        StringBuilder b = new StringBuilder();
+        Package pkg = type.getPackage();
+        if (pkg != null)
+        {
+            String p = pkg.getName();
+            if (StringUtil.isNotBlank(p))
+            {
+                String[] ss = p.split("\\.");
+                for (String s : ss)
+                    b.append(s.charAt(0));
+            }
+            b.append('.');
+        }
+        Class<?> enclosing = type.getEnclosingClass();
+        if (enclosing != null)
+            appendEnclosing(b, enclosing);
+        b.append(type.getSimpleName());
+        return b.toString();
+    }
+
+    private static void appendEnclosing(StringBuilder b, Class<?> enclosing)
+    {
+        Class<?> e = enclosing.getEnclosingClass();
+        if (e != null)
+            appendEnclosing(b, e);
+        b.append(enclosing.getSimpleName()).append('.');
+    }
+
     /**
      * Return the Classpath / Classloader reference for the
      * provided class file.

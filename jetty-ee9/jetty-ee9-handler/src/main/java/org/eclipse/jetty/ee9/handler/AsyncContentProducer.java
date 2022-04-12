@@ -34,14 +34,6 @@ class AsyncContentProducer implements ContentProducer
 {
     private static final Logger LOG = LoggerFactory.getLogger(AsyncContentProducer.class);
     private static final Content.Error RECYCLED_ERROR_CONTENT = new Content.Error(new IllegalStateException("ContentProducer has been recycled"));
-    private static final Throwable UNCONSUMED_CONTENT_EXCEPTION = new IOException("Unconsumed content")
-    {
-        @Override
-        public Throwable fillInStackTrace()
-        {
-            return this;
-        }
-    };
 
     private final AutoLock _lock = new AutoLock();
     private final HttpChannel _httpChannel;
@@ -169,7 +161,7 @@ class AsyncContentProducer implements ContentProducer
                             LOG.debug("checkMinDataRate aborting channel {}", this);
                         _httpChannel.abort(bad);
                     }
-                    failCurrentContent(bad);
+                    releaseContent();
                     throw bad;
                 }
             }
@@ -186,59 +178,47 @@ class AsyncContentProducer implements ContentProducer
     }
 
     @Override
-    public boolean consumeAll()
+    public Boolean releaseContent()
     {
         assertLocked();
-        Throwable x = UNCONSUMED_CONTENT_EXCEPTION;
-        if (LOG.isDebugEnabled())
-        {
-            x = new IOException("Unconsumed content");
-            LOG.debug("consumeAll {}", this, x);
-        }
-        failCurrentContent(x);
-        // A specific HttpChannel mechanism must be used as the following code
-        // does not guarantee that the channel will synchronously deliver all
-        // content it already contains:
-        //   while (true)
-        //   {
-        //       HttpInput.Content content = _httpChannel.produceContent();
-        //       ...
-        //   }
-        // as the HttpChannel's produceContent() contract makes no such promise;
-        // for instance the H2 implementation calls Stream.demand() that may
-        // deliver the content asynchronously. Tests in StreamResetTest cover this.
-        boolean atEof = _httpChannel.failAllContent(x);
-        if (LOG.isDebugEnabled())
-            LOG.debug("failed all content of http channel EOF={} {}", atEof, this);
-        return atEof;
-    }
 
-    private void failCurrentContent(Throwable x)
-    {
+        // release transformed content, ignoring any unconsumed.
         if (_transformedContent != null && !_transformedContent.isSpecial())
         {
             if (_transformedContent != _rawContent)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("failing currently held transformed content {} {}", x, this);
+                    LOG.debug("failing currently held transformed content {} {}", null, this);
                 Content.skip(_transformedContent, _transformedContent.remaining());
                 _transformedContent.release();
             }
             _transformedContent = null;
         }
 
+        boolean unconsumed = false;
         if (_rawContent != null && !_rawContent.isSpecial())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("failing currently held raw content {} {}", x, this);
-            Content.skip(_rawContent, _rawContent.remaining());
+                LOG.debug("failing currently held raw content {} {}", null, this);
+            if (_rawContent.hasRemaining())
+            {
+                unconsumed = true;
+                Content.skip(_rawContent, _rawContent.remaining());
+            }
             _rawContent.release();
             _rawContent = null;
         }
 
-        Content.Error errorContent = new Content.Error(x);
-        _transformedContent = errorContent;
-        _rawContent = errorContent;
+        if (unconsumed)
+        {
+            _transformedContent = new Content.Error(new IllegalStateException("unconsumed content"));
+            return Boolean.FALSE;
+        }
+
+        if (_rawContent != null && _rawContent.isLast())
+            return Boolean.TRUE;
+        return null;
+
     }
 
     @Override
@@ -445,7 +425,7 @@ class AsyncContentProducer implements ContentProducer
                 IOException failure = new IOException("Interceptor " + _interceptor + " did not consume any of the " + _rawContent.remaining() + " remaining byte(s) of content");
                 if (content != null)
                     content.release();
-                failCurrentContent(failure);
+                releaseContent();
                 // Set the _error flag to mark the content as definitive, i.e.:
                 // do not try to produce new raw content to get a fresher error
                 // when the special content was caused by the interceptor not
@@ -466,7 +446,7 @@ class AsyncContentProducer implements ContentProducer
         catch (Throwable x)
         {
             IOException failure = new IOException("Bad content", x);
-            failCurrentContent(failure);
+            releaseContent();
             // Set the _error flag to mark the content as definitive, i.e.:
             // do not try to produce new raw content to get a fresher error
             // when the special content was caused by the interceptor throwing.

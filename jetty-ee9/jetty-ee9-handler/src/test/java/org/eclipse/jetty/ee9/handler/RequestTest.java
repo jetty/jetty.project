@@ -63,16 +63,12 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.BufferUtil;
@@ -119,34 +115,7 @@ public class RequestTest
     {
         _server = new Server();
         _context = new ContextHandler(_server);
-        HttpConnectionFactory http = new HttpConnectionFactory()
-        {
-            @Override
-            public Connection newConnection(Connector connector, EndPoint endPoint)
-            {
-                HttpConnection conn = new HttpConnection(getHttpConfiguration(), connector, endPoint, isRecordHttpComplianceViolations())
-                {
-                    /*
-                    @Override
-                    protected HttpChannelOverHttp newHttpChannel()
-                    {
-                        return new HttpChannelOverHttp(this, getConnector(), getHttpConfiguration(), getEndPoint(), this)
-                        {
-                            @Override
-                            protected String formatAddrOrHost(String addr)
-                            {
-                                if (_normalizeAddress)
-                                    return super.formatAddrOrHost(addr);
-                                return addr;
-                            }
-                        };
-                    }
-
-                     */
-                };
-                return configure(conn, connector, endPoint);
-            }
-        };
+        HttpConnectionFactory http = new HttpConnectionFactory();
         http.setInputBufferSize(1024);
         http.getHttpConfiguration().setRequestHeaderSize(512);
         http.getHttpConfiguration().setResponseHeaderSize(512);
@@ -158,10 +127,10 @@ public class RequestTest
         _handler = new RequestHandler();
         _context.setHandler(_handler);
 
-        ErrorHandler errors = new ErrorHandler();
-        errors.setServer(_server);
-        errors.setShowStacks(true);
-        _server.addBean(errors);
+//        ErrorHandler errors = new ErrorHandler();
+//        errors.setServer(_server);
+//        errors.setShowStacks(true);
+//        _server.addBean(errors);
         _server.start();
     }
 
@@ -954,29 +923,26 @@ public class RequestTest
             0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8
         });
         final InetSocketAddress localAddr = new InetSocketAddress(local, 32768);
-        _handler._checker = new RequestTester()
+        _handler._checker = (request, response) ->
         {
-            @Override
-            public boolean check(HttpServletRequest request, HttpServletResponse response)
-            {
-                ((Request)request).setRemoteAddr(localAddr);
-                results.add(request.getRemoteAddr());
-                results.add(request.getRemoteHost());
-                results.add(Integer.toString(request.getRemotePort()));
-                results.add(request.getServerName());
-                results.add(Integer.toString(request.getServerPort()));
-                results.add(request.getLocalAddr());
-                results.add(Integer.toString(request.getLocalPort()));
-                return true;
-            }
+            ((Request)request).setRemoteAddr(localAddr);
+            results.add(request.getRemoteAddr());
+            results.add(request.getRemoteHost());
+            results.add(Integer.toString(request.getRemotePort()));
+            results.add(request.getServerName());
+            results.add(Integer.toString(request.getServerPort()));
+            results.add(request.getLocalAddr());
+            results.add(Integer.toString(request.getLocalPort()));
+            return true;
         };
 
         _normalizeAddress = true;
-        String response = _connector.getResponse(
-            "GET / HTTP/1.1\n" +
-                "Host: [::1]:8888\n" +
-                "Connection: close\n" +
-                "\n");
+        String response = _connector.getResponse("""
+            GET / HTTP/1.1
+            Host: [::1]:8888
+            Connection: close
+
+            """);
         int i = 0;
         assertThat(response, containsString("200 OK"));
         assertEquals("[1:2:3:4:5:6:7:8]", results.get(i++));
@@ -1888,9 +1854,11 @@ public class RequestTest
     public void testAmbiguousDoubleSlash() throws Exception
     {
         _handler._checker = (request, response) -> true;
-        String request = "GET /ambiguous/doubleSlash// HTTP/1.0\r\n" +
-            "Host: whatever\r\n" +
-            "\r\n";
+        String request = """
+            GET /ambiguous/doubleSlash// HTTP/1.0
+            Host: whatever
+            
+            """;
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.DEFAULT);
         assertThat(_connector.getResponse(request), startsWith("HTTP/1.1 400"));
         _connector.getBean(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.RFC3986_UNAMBIGUOUS);

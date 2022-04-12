@@ -569,12 +569,6 @@ public class AsyncContentProducerTest
          */
 
         @Override
-        public boolean failAllContent(Throwable failure)
-        {
-            return false;
-        }
-
-        @Override
         public boolean failed(Throwable failure)
         {
             return false;
@@ -641,8 +635,6 @@ public class AsyncContentProducerTest
             return result;
         }
 
-         */
-
         @Override
         public boolean failAllContent(Throwable failure)
         {
@@ -650,6 +642,7 @@ public class AsyncContentProducerTest
             counter = byteBuffers.length;
             return false;
         }
+         */
 
         @Override
         public boolean failed(Throwable x)

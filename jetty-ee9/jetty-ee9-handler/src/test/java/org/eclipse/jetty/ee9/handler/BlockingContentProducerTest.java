@@ -554,13 +554,13 @@ public class BlockingContentProducerTest
             return c;
         }
 
-         */
-
         @Override
         public boolean failAllContent(Throwable failure)
         {
             return false;
         }
+
+         */
 
         @Override
         public boolean failed(Throwable failure)
@@ -622,7 +622,6 @@ public class BlockingContentProducerTest
             return result;
         }
 
-         */
 
         @Override
         public boolean failAllContent(Throwable failure)
@@ -631,6 +630,7 @@ public class BlockingContentProducerTest
             counter = byteBuffers.length;
             return false;
         }
+         */
 
         @Override
         public boolean failed(Throwable x)
