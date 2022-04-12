@@ -252,7 +252,7 @@ public interface Request extends Attributes, Content.Reader
 
             InetAddress address = inetSocketAddress.getAddress();
             String result = address == null
-                ? ((InetSocketAddress)remote).getHostString()
+                ? inetSocketAddress.getHostString()
                 : address.getHostAddress();
             return HostPort.normalizeHost(result);
         }

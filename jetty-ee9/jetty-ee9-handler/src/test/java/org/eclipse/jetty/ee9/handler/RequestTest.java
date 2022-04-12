@@ -21,6 +21,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -62,6 +63,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -106,7 +108,6 @@ public class RequestTest
     private ContextHandler _context;
     private LocalConnector _connector;
     private RequestHandler _handler;
-    private boolean _normalizeAddress = true;
 
     @BeforeEach
     public void init() throws Exception
@@ -913,14 +914,47 @@ public class RequestTest
     @Test
     public void testIPv6() throws Exception
     {
+        _server.stop();
+
         final ArrayList<String> results = new ArrayList<>();
         final InetAddress local = Inet6Address.getByAddress("localIPv6", new byte[]{
             0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8
         });
-        final InetSocketAddress localAddr = new InetSocketAddress(local, 32768);
+        final InetSocketAddress remoteAddr = new InetSocketAddress(local, 32768);
+
+        org.eclipse.jetty.server.Handler.Wrapper handler = new org.eclipse.jetty.server.Handler.Wrapper()
+        {
+            @Override
+            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            {
+                ConnectionMetaData cmd = new ConnectionMetaData.Wrapper(request.getConnectionMetaData())
+                {
+                    @Override
+                    public SocketAddress getRemoteSocketAddress()
+                    {
+                        return remoteAddr;
+                    }
+                };
+
+                org.eclipse.jetty.server.Request.WrapperProcessor wrapper = new org.eclipse.jetty.server.Request.WrapperProcessor(request)
+                {
+                    @Override
+                    public ConnectionMetaData getConnectionMetaData()
+                    {
+                        return cmd;
+                    }
+                };
+
+                return wrapper.wrapProcessor(super.handle(wrapper));
+            }
+        };
+
+        _server.setHandler(handler);
+        handler.setHandler(_context.getCoreContextHandler());
+        _server.start();
+
         _handler._checker = (request, response) ->
         {
-            ((Request)request).setRemoteAddr(localAddr);
             results.add(request.getRemoteAddr());
             results.add(request.getRemoteHost());
             results.add(Integer.toString(request.getRemotePort()));
@@ -931,7 +965,6 @@ public class RequestTest
             return true;
         };
 
-        _normalizeAddress = true;
         String response = _connector.getResponse("""
             GET / HTTP/1.1
             Host: [::1]:8888
@@ -941,23 +974,6 @@ public class RequestTest
         int i = 0;
         assertThat(response, containsString("200 OK"));
         assertEquals("[1:2:3:4:5:6:7:8]", results.get(i++));
-        assertEquals("localIPv6", results.get(i++));
-        assertEquals("32768", results.get(i++));
-        assertEquals("[::1]", results.get(i++));
-        assertEquals("8888", results.get(i++));
-        assertEquals("0.0.0.0", results.get(i++));
-        assertEquals("0", results.get(i));
-
-        _normalizeAddress = false;
-        results.clear();
-        response = _connector.getResponse(
-            "GET / HTTP/1.1\n" +
-                "Host: [::1]:8888\n" +
-                "Connection: close\n" +
-                "\n");
-        i = 0;
-        assertThat(response, containsString("200 OK"));
-        assertEquals("1:2:3:4:5:6:7:8", results.get(i++));
         assertEquals("localIPv6", results.get(i++));
         assertEquals("32768", results.get(i++));
         assertEquals("[::1]", results.get(i++));

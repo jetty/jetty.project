@@ -78,6 +78,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private static final Logger LOG = LoggerFactory.getLogger(HttpChannel.class);
 
     private final ContextHandler _contextHandler;
+    private final ConnectionMetaData _connectionMetaData;
     private final AtomicLong _requests = new AtomicLong();
     private final Connector _connector;
     private final Executor _executor;
@@ -103,6 +104,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public HttpChannel(ContextHandler contextHandler, ConnectionMetaData connectionMetaData)
     {
         _contextHandler = contextHandler;
+        _connectionMetaData = connectionMetaData;
         _connector = connectionMetaData.getConnector();
         _configuration = Objects.requireNonNull(connectionMetaData.getHttpConfiguration());
         _endPoint = connectionMetaData.getConnection().getEndPoint();
@@ -129,18 +131,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _state.isSendError();
     }
 
-    /** Format the address or host returned from Request methods
-     * @param addr The address or host
-     * @return Default implementation returns {@link HostPort#normalizeHost(String)}
-     */
-    protected String formatAddrOrHost(String addr)
-    {
-        return HostPort.normalizeHost(addr);
-    }
-
     protected HttpInput newHttpInput()
     {
         return new HttpInput(this);
+    }
+
+    public ConnectionMetaData getConnectionMetaData()
+    {
+        return _connectionMetaData;
     }
 
     /**
@@ -365,21 +363,25 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (httpConfiguration != null)
         {
             SocketAddress localAddress = httpConfiguration.getLocalAddress();
-            if (localAddress instanceof InetSocketAddress)
-                return ((InetSocketAddress)localAddress);
+            if (localAddress instanceof InetSocketAddress inetSocketAddress)
+                return inetSocketAddress;
         }
 
-        SocketAddress local = _endPoint.getLocalSocketAddress();
-        if (local instanceof InetSocketAddress)
-            return (InetSocketAddress)local;
+        SocketAddress local = getConnectionMetaData().getLocalSocketAddress();
+        if (local == null)
+            local = _endPoint.getLocalSocketAddress();
+        if (local instanceof InetSocketAddress inetSocketAddress)
+            return inetSocketAddress;
         return null;
     }
 
     public InetSocketAddress getRemoteAddress()
     {
-        SocketAddress remote = _endPoint.getRemoteSocketAddress();
-        if (remote instanceof InetSocketAddress)
-            return (InetSocketAddress)remote;
+        SocketAddress remote = getConnectionMetaData().getRemoteSocketAddress();
+        if (remote == null)
+            remote = _endPoint.getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress inetSocketAddress)
+            return inetSocketAddress;
         return null;
     }
 

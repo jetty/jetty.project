@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
@@ -182,7 +183,6 @@ public class Request implements HttpServletRequest
     private MultiMap<String> _contentParameters;
     private MultiMap<String> _parameters;
     private Charset _queryEncoding;
-    private InetSocketAddress _remote;
     private String _requestedSessionId;
     private UserIdentity.Scope _scope;
     private Session _coreSession;
@@ -956,7 +956,7 @@ public class Request implements HttpServletRequest
                 ? local.getHostString()
                 : address.getHostAddress();
 
-            return formatAddrOrHost(result);
+            return HostPort.normalizeHost(result);
         }
 
         return "";
@@ -971,7 +971,7 @@ public class Request implements HttpServletRequest
         if (_channel != null)
         {
             String localName = _channel.getLocalName();
-            return formatAddrOrHost(localName);
+            return HostPort.normalizeHost(localName);
         }
 
         return ""; // not allowed to be null
@@ -980,13 +980,7 @@ public class Request implements HttpServletRequest
     @Override
     public int getLocalPort()
     {
-        if (_channel != null)
-        {
-            int localPort = _channel.getLocalPort();
-            if (localPort > 0)
-                return localPort;
-        }
-        return 0;
+        return _channel == null ? 0 : org.eclipse.jetty.server.Request.getLocalPort(_channel.getCoreRequest());
     }
 
     @Override
@@ -1145,11 +1139,8 @@ public class Request implements HttpServletRequest
      */
     public InetSocketAddress getRemoteInetSocketAddress()
     {
-        InetSocketAddress remote = _remote;
-        if (remote == null)
-            remote = _channel.getRemoteAddress();
-
-        return remote;
+        return _channel.getCoreRequest().getConnectionMetaData().getRemoteSocketAddress() instanceof InetSocketAddress inetSocketAddr
+            ? inetSocketAddr : null;
     }
 
     @Override
@@ -1161,23 +1152,16 @@ public class Request implements HttpServletRequest
     @Override
     public String getRemoteHost()
     {
-        InetSocketAddress remote = _remote;
-        if (remote == null)
-            remote = _channel.getRemoteAddress();
-        if (remote == null)
-            return "";
-
-        // We want the URI host, so add IPv6 brackets if necessary.
-        return formatAddrOrHost(remote.getHostString());
+        SocketAddress remote = _channel.getCoreRequest().getConnectionMetaData().getRemoteSocketAddress();
+        if (remote instanceof InetSocketAddress inetSocketAddress)
+            return inetSocketAddress.getHostString();
+        return remote.toString();
     }
 
     @Override
     public int getRemotePort()
     {
-        InetSocketAddress remote = _remote;
-        if (remote == null)
-            remote = _channel.getRemoteAddress();
-        return remote == null ? 0 : remote.getPort();
+        return org.eclipse.jetty.server.Request.getRemotePort(_channel.getCoreRequest());
     }
 
     @Override
@@ -1263,7 +1247,7 @@ public class Request implements HttpServletRequest
     public String getServerName()
     {
         if ((_uri != null) && StringUtil.isNotBlank(_uri.getAuthority()))
-            return formatAddrOrHost(_uri.getHost());
+            return HostPort.normalizeHost(_uri.getHost());
         else
             return findServerName();
     }
@@ -1274,13 +1258,13 @@ public class Request implements HttpServletRequest
         {
             HostPort serverAuthority = _channel.getServerAuthority();
             if (serverAuthority != null)
-                return formatAddrOrHost(serverAuthority.getHost());
+                return HostPort.normalizeHost(serverAuthority.getHost());
         }
 
         // Return host from connection
         String name = getLocalName();
         if (name != null)
-            return formatAddrOrHost(name);
+            return HostPort.normalizeHost(name);
 
         return ""; // not allowed to be null
     }
@@ -1773,7 +1757,6 @@ public class Request implements HttpServletRequest
         _contentParameters = null;
         _parameters = null;
         _queryEncoding = null;
-        _remote = null;
         _requestedSessionId = null;
         _scope = null;
         _coreSession = null;
@@ -2053,14 +2036,6 @@ public class Request implements HttpServletRequest
     }
 
     /**
-     * @param addr The address to set.
-     */
-    public void setRemoteAddr(InetSocketAddress addr)
-    {
-        _remote = addr;
-    }
-
-    /**
      * @param requestedSessionId The requestedSessionId to set.
      */
     public void setRequestedSessionId(String requestedSessionId)
@@ -2224,7 +2199,7 @@ public class Request implements HttpServletRequest
                 {
                     ByteArrayOutputStream os = new ByteArrayOutputStream();
                     IO.copy(is, os);
-                    formCharset = new String(os.toByteArray(), StandardCharsets.UTF_8);
+                    formCharset = os.toString(StandardCharsets.UTF_8);
                 }
             }
 
@@ -2262,7 +2237,7 @@ public class Request implements HttpServletRequest
                             os = new ByteArrayOutputStream();
                         IO.copy(is, os);
 
-                        String content = new String(os.toByteArray(), charset == null ? defaultCharset : Charset.forName(charset));
+                        String content = os.toString(charset == null ? defaultCharset : Charset.forName(charset));
                         if (_contentParameters == null)
                             _contentParameters = params == null ? new MultiMap<>() : params;
                         _contentParameters.add(p.getName(), content);
@@ -2406,10 +2381,5 @@ public class Request implements HttpServletRequest
         // INCLUDE dispatch, in which case this method returns the mapping of the source servlet,
         // which we recover from the IncludeAttributes wrapper.
         return findServletPathMapping();
-    }
-
-    private String formatAddrOrHost(String name)
-    {
-        return _channel == null ? HostPort.normalizeHost(name) : _channel.formatAddrOrHost(name);
     }
 }
