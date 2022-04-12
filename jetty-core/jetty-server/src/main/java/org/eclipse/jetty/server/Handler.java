@@ -243,11 +243,18 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
 
     /**
      * <p>A {@link Handler.Container} that wraps a single other {@code Handler}.</p>
+     * @see Handler.Wrapper for an implementation of nested.
      */
     interface Nested extends Container
     {
         Handler getHandler();
 
+        /**
+         * Set the nested handler.
+         * Implementations should check for loops, set the server and update any {@link ContainerLifeCycle} beans, all
+         * of which can be done by using the utility method {@link #updateHandler(Nested, Handler)}
+         * @param handler The handler to set.
+         */
         void setHandler(Handler handler);
 
         @Override
@@ -281,6 +288,40 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             tail.setHandler(getHandler());
             setHandler(handler);
         }
+
+        /**
+         * Utility method to: <ul>
+         *     <li>Check the server state and invocation type</li>
+         *     <li>Check for handler loops</li>
+         *     <li>Set the server on the handler</li>
+         *     <li>Update the beans on if the Nests is a {@link ContainerLifeCycle} </li>
+         * </ul>
+         * @param nested The Nested implementation to update
+         * @param handler The handle to set
+         * @return The set handler.
+         */
+        static Handler updateHandler(Nested nested, Handler handler)
+        {
+            // check state
+            Server server = nested.getServer();
+            if (server != null && server.isStarted() && handler != null &&
+                server.getInvocationType() != Invocable.combine(server.getInvocationType(), handler.getInvocationType()))
+                throw new IllegalArgumentException("Cannot change invocation type of started server");
+
+            // Check for loops.
+            if (handler == nested || (handler instanceof Handler.Container container &&
+                container.getDescendants().contains(nested)))
+                throw new IllegalStateException("setHandler loop");
+
+            if (handler != null)
+                handler.setServer(server);
+
+            if (nested instanceof org.eclipse.jetty.util.component.ContainerLifeCycle container)
+                container.updateBean(nested.getHandler(), handler);
+
+            return handler;
+        }
+
     }
 
     /**
@@ -448,7 +489,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     }
 
     /**
-     * <p>An Abstract implementation of a {@link Nested} {@link Handler.Container} that wraps a single other {@code Handler}.</p>
+     * An implementation of {@link Nested}, which is a {@link Handler.Container} that wraps a single other {@link Handler}.
      */
     class Wrapper extends AbstractContainer implements Nested
     {
@@ -461,22 +502,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
 
         public void setHandler(Handler handler)
         {
-            Server server = getServer();
-            if (server != null && server.isStarted() && handler != null &&
-                server.getInvocationType() != Invocable.combine(server.getInvocationType(), handler.getInvocationType()))
-                throw new IllegalArgumentException("Cannot change invocation type of started server");
-
-            // Check for loops.
-            if (handler == this || (handler instanceof Handler.Container container &&
-                container.getDescendants().contains(this)))
-                throw new IllegalStateException("setHandler loop");
-
-            if (handler != null)
-                handler.setServer(getServer());
-
-            updateBean(_handler, handler);
-
-            _handler = handler;
+            _handler = Nested.updateHandler(this, handler);
         }
 
         @Override

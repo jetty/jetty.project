@@ -191,7 +191,7 @@ public class HttpServerTestFixture
         public void process(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response, Callback callback)
         {
             response.setStatus(200);
-            Content.readUtf8String(request, Promise.from(
+            Content.readAll(request, Promise.from(
                 s -> response.write(true, callback, "read %d%n" + s.length()),
                 t -> response.write(true, callback, String.format("caught %s%n", t))
             ));
@@ -210,7 +210,7 @@ public class HttpServerTestFixture
         {
             response.setStatus(200);
 
-            String input = Content.readUtf8String(request);
+            String input = Content.readAll(request);
             Fields fields = Request.extractQueryParameters(request);
 
             String tmp = fields.getValue("writes");

@@ -105,7 +105,7 @@ public class InputStreamContentTest
             protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
             {
                 serverLatch.countDown();
-                if (Content.readBytes(request).hasRemaining())
+                if (Content.readAllBytes(request).hasRemaining())
                     throw new IOException();
             }
         });
@@ -179,7 +179,7 @@ public class InputStreamContentTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, Response response) throws Exception
             {
-                ByteBuffer buffer = Content.readBytes(request);
+                ByteBuffer buffer = Content.readAllBytes(request);
                 assertTrue(buffer.hasRemaining());
                 assertEquals(singleByteContent, buffer.get());
                 serverLatch.countDown();

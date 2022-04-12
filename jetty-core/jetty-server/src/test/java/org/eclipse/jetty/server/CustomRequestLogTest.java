@@ -655,7 +655,7 @@ public class CustomRequestLogTest
             }
 
             if (request.getContentLength() > 0)
-                Content.readBytes(request);
+                Content.readAllBytes(request);
 
             callback.succeeded();
         }

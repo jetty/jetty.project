@@ -80,7 +80,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     @Override
     public void setHandler(Handler handler)
     {
-        _handler = handler;
+        _handler = Nested.updateHandler(this, handler);
     }
 
     @Override

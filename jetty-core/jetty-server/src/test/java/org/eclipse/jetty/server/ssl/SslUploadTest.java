@@ -117,7 +117,7 @@ public class SslUploadTest
         @Override
         public void process(Request request, Response response, Callback callback) throws Exception
         {
-            ByteBuffer input = Content.readBytes(request);
+            ByteBuffer input = Content.readAllBytes(request);
             response.write(true, callback, BufferUtil.toBuffer(("Read " + input.remaining()).getBytes()));
         }
     }

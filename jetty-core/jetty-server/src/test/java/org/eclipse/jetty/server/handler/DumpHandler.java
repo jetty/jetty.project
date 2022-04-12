@@ -183,7 +183,7 @@ public class DumpHandler extends Handler.Processor
         if (read != null)
             writer.write(read.toString());
         else
-            writer.write(Content.readUtf8String(request));
+            writer.write(Content.readAll(request));
 
         writer.write("</pre>\n");
         writer.write("</html>\n");

@@ -13,14 +13,10 @@
 
 package org.eclipse.jetty.server.handler;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 
 /**
@@ -31,7 +27,6 @@ import org.eclipse.jetty.util.Callback;
 public class HelloHandler extends Handler.Processor
 {
     private final String _message;
-    private final ByteBuffer _byteBuffer;
 
     public HelloHandler()
     {
@@ -40,8 +35,8 @@ public class HelloHandler extends Handler.Processor
 
     public HelloHandler(String message)
     {
+        super(InvocationType.NON_BLOCKING);
         _message = message;
-        _byteBuffer = BufferUtil.toBuffer(_message, StandardCharsets.UTF_8);
     }
 
     public String getMessage()
@@ -54,7 +49,6 @@ public class HelloHandler extends Handler.Processor
     {
         response.setStatus(200);
         response.setContentType(MimeTypes.Type.TEXT_PLAIN_UTF_8.asString());
-        response.setContentLength(_byteBuffer.remaining());
-        response.write(true, callback, _byteBuffer.slice());
+        response.write(true, callback, _message);
     }
 }

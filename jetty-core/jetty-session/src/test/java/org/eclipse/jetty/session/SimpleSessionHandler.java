@@ -47,7 +47,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
     @Override
     public void setHandler(Handler handler)
     {
-        _handler = handler;
+        _handler = Nested.updateHandler(this, handler);
     }
 
     @Override

@@ -87,7 +87,7 @@ public class ContentTest
     public void testReadBytes() throws Exception
     {
         FuturePromise<ByteBuffer> promise = new FuturePromise<>();
-        Content.readBytes(_provider, promise);
+        Content.readAllBytes(_provider, promise);
 
         Runnable todo = _provider.takeDemand();
         assertNotNull(todo);
@@ -113,7 +113,7 @@ public class ContentTest
     public void testReadUtf8() throws Exception
     {
         FuturePromise<String> promise = new FuturePromise<>();
-        Content.readUtf8String(_provider, promise);
+        Content.readAll(_provider, promise);
 
         Runnable todo = _provider.takeDemand();
         assertNotNull(todo);

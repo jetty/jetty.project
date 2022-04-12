@@ -794,7 +794,7 @@ public class StreamResetTest extends AbstractTest
                     readLatch.await();
 
                     // Attempt to read after reset must throw.
-                    Content.readBytes(request);
+                    Content.readAllBytes(request);
                 }
                 catch (IOException expected)
                 {

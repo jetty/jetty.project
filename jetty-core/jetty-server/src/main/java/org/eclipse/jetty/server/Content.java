@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,6 +30,7 @@ import org.eclipse.jetty.io.ByteBufferAccumulator;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CharsetStringBuilder;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.MathUtils;
@@ -293,6 +296,9 @@ public interface Content
         }
     }
 
+    /**
+     * Content Reader contract.
+     */
     interface Reader
     {
         Content readContent();
@@ -300,9 +306,7 @@ public interface Content
         void demandContent(Runnable onContentAvailable);
     }
 
-    // TODO should these static methods be instance methods?   They are not very buffer efficient
-
-    static void readBytes(Reader reader, Promise<ByteBuffer> content)
+    static void readAllBytes(Reader reader, Promise<ByteBuffer> content)
     {
         ByteBufferAccumulator out = new ByteBufferAccumulator();
         Runnable onDataAvailable = new Runnable()
@@ -337,10 +341,17 @@ public interface Content
         onDataAvailable.run();
     }
 
-    static ByteBuffer readBytes(Reader reader) throws InterruptedException, IOException
+    /**
+     * Blocking read of all content
+     * @param reader The read to read from
+     * @return The byte buffer containing the read bytes
+     * @throws InterruptedException If interrupted
+     * @throws IOException If there was a problem reading.
+     */
+    static ByteBuffer readAllBytes(Reader reader) throws InterruptedException, IOException
     {
         Promise.Completable<ByteBuffer> result = new Promise.Completable<>();
-        readBytes(reader, result);
+        readAllBytes(reader, result);
         try
         {
             return result.get();
@@ -351,9 +362,14 @@ public interface Content
         }
     }
 
-    static void readUtf8String(Reader reader, Promise<String> content)
+    static void readAll(Reader reader, Promise<String> content)
     {
-        Utf8StringBuilder builder = new Utf8StringBuilder();
+        readAll(reader, content, StandardCharsets.UTF_8);
+    }
+
+    static void readAll(Reader reader, Promise<String> content, Charset charset)
+    {
+        CharsetStringBuilder builder = CharsetStringBuilder.forCharset(charset);
         Runnable onDataAvailable = new Runnable()
         {
             @Override
@@ -386,10 +402,15 @@ public interface Content
         onDataAvailable.run();
     }
 
-    static String readUtf8String(Reader reader) throws InterruptedException, IOException
+    static String readAll(Reader reader) throws InterruptedException, IOException
+    {
+        return readAll(reader, StandardCharsets.UTF_8);
+    }
+
+    static String readAll(Reader reader, Charset charset) throws InterruptedException, IOException
     {
         Promise.Completable<String> result = new Promise.Completable<>();
-        readUtf8String(reader, result);
+        readAll(reader, result, charset);
         try
         {
             return result.get();
@@ -409,7 +430,6 @@ public interface Content
         }
     }
 
-    // TODO test this
     static void consumeAll(Reader reader, Callback callback)
     {
         new Invocable.Task()
@@ -444,7 +464,7 @@ public interface Content
             @Override
             public InvocationType getInvocationType()
             {
-                return InvocationType.NON_BLOCKING; // TODO should be easier to make a non blocking runnable
+                return Invocable.getInvocationType(callback);
             }
         }.run();
     }
@@ -570,7 +590,7 @@ public interface Content
             private boolean _iterating;
             private long _demand;
             private Content _content;
-            private Utf8StringBuilder _builder = new Utf8StringBuilder(); // TODO only UTF8???
+            private Utf8StringBuilder _builder = new Utf8StringBuilder(); // TODO use CharsetStringBuilder
             private String _name;
             private boolean _last;
 
