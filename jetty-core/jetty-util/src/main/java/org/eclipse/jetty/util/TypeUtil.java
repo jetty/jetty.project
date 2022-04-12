@@ -297,7 +297,7 @@ public class TypeUtil
         Class<?> e = enclosing.getEnclosingClass();
         if (e != null)
             appendEnclosing(b, e);
-        b.append(enclosing.getSimpleName()).append('.');
+        b.append(enclosing.getSimpleName()).append('$');
     }
 
     /**
