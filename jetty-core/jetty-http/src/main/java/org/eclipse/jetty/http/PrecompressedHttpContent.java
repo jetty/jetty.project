@@ -13,10 +13,6 @@
 
 package org.eclipse.jetty.http;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -38,18 +34,6 @@ public class PrecompressedHttpContent implements HttpContent
         {
             throw new NullPointerException("Missing compressed content and/or format");
         }
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return _content.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-        return _content.equals(obj);
     }
 
     @Override
@@ -126,24 +110,6 @@ public class PrecompressedHttpContent implements HttpContent
     }
 
     @Override
-    public void release()
-    {
-        _content.release();
-    }
-
-    @Override
-    public ByteBuffer getIndirectBuffer()
-    {
-        return _precompressedContent.getIndirectBuffer();
-    }
-
-    @Override
-    public ByteBuffer getDirectBuffer()
-    {
-        return _precompressedContent.getDirectBuffer();
-    }
-
-    @Override
     public HttpField getContentLength()
     {
         return _precompressedContent.getContentLength();
@@ -153,18 +119,6 @@ public class PrecompressedHttpContent implements HttpContent
     public long getContentLengthValue()
     {
         return _precompressedContent.getContentLengthValue();
-    }
-
-    @Override
-    public InputStream getInputStream() throws IOException
-    {
-        return _precompressedContent.getInputStream();
-    }
-
-    @Override
-    public ReadableByteChannel getReadableByteChannel() throws IOException
-    {
-        return _precompressedContent.getReadableByteChannel();
     }
 
     @Override

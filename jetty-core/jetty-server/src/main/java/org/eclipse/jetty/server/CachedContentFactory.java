@@ -160,8 +160,7 @@ public class CachedContentFactory implements HttpContent.ContentFactory
      * <p>Returns an entry from the cache, or creates a new one.</p>
      *
      * @param pathInContext The key into the cache
-     * @param maxBufferSize The maximum buffer size allocated for this request.  For cached content, a larger buffer may have
-     * previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
+     * @param maxBufferSize The maximum buffer size allocated for this request.
      * @return The entry matching {@code pathInContext}, or a new entry
      * if no matching entry was found. If the content exists but is not cacheable,
      * then a {@link ResourceHttpContent} instance is returned. If
@@ -546,87 +545,6 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         }
 
         @Override
-        public void release()
-        {
-        }
-
-        @Override
-        public ByteBuffer getIndirectBuffer()
-        {
-            if (_resource.length() > _maxCachedFileSize)
-            {
-                return null;
-            }
-
-            ByteBuffer buffer = _indirectBuffer.get();
-            if (buffer == null)
-            {
-                ByteBuffer buffer2 = CachedContentFactory.this.getIndirectBuffer(_resource);
-                if (buffer2 == null)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Could not load indirect buffer from {}", this);
-                    return null;
-                }
-
-                if (_indirectBuffer.compareAndSet(null, buffer2))
-                {
-                    buffer = buffer2;
-                    if (_cachedSize.addAndGet(BufferUtil.length(buffer)) > _maxCacheSize)
-                        shrinkCache();
-                }
-                else
-                {
-                    buffer = _indirectBuffer.get();
-                }
-            }
-            return buffer == null ? null : buffer.asReadOnlyBuffer();
-        }
-
-        @Override
-        public ByteBuffer getDirectBuffer()
-        {
-            ByteBuffer buffer = _mappedBuffer.get();
-            if (buffer == null)
-                buffer = _directBuffer.get();
-            if (buffer == null)
-            {
-                ByteBuffer mapped = CachedContentFactory.this.getMappedBuffer(_resource);
-                if (mapped != null)
-                {
-                    if (_mappedBuffer.compareAndSet(null, mapped))
-                        buffer = mapped;
-                    else
-                        buffer = _mappedBuffer.get();
-                }
-                // Since MappedBuffers don't use heap, we don't care about the resource.length
-                else if (_resource.length() < _maxCachedFileSize)
-                {
-                    ByteBuffer direct = CachedContentFactory.this.getDirectBuffer(_resource);
-                    if (direct != null)
-                    {
-                        if (_directBuffer.compareAndSet(null, direct))
-                        {
-                            buffer = direct;
-                            if (_cachedSize.addAndGet(BufferUtil.length(buffer)) > _maxCacheSize)
-                                shrinkCache();
-                        }
-                        else
-                        {
-                            buffer = _directBuffer.get();
-                        }
-                    }
-                    else
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Could not load{}", this);
-                    }
-                }
-            }
-            return buffer == null ? null : buffer.asReadOnlyBuffer();
-        }
-
-        @Override
         public HttpField getContentLength()
         {
             return _contentLength;
@@ -636,22 +554,6 @@ public class CachedContentFactory implements HttpContent.ContentFactory
         public long getContentLengthValue()
         {
             return _contentLengthValue;
-        }
-
-        @Override
-        public InputStream getInputStream() throws IOException
-        {
-            ByteBuffer indirect = getIndirectBuffer();
-            if (indirect != null && indirect.hasArray())
-                return new ByteArrayInputStream(indirect.array(), indirect.arrayOffset() + indirect.position(), indirect.remaining());
-
-            return _resource.getInputStream();
-        }
-
-        @Override
-        public ReadableByteChannel getReadableByteChannel() throws IOException
-        {
-            return _resource.getReadableByteChannel();
         }
 
         @Override

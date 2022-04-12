@@ -121,21 +121,6 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public ByteBuffer getDirectBuffer()
-    {
-        if (_resource.length() <= 0 || _maxBuffer > 0 && _resource.length() > _maxBuffer)
-            return null;
-        try
-        {
-            return BufferUtil.toBuffer(_resource, true);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
-    }
-
-    @Override
     public HttpField getETag()
     {
         return new HttpField(HttpHeader.ETAG, getETagValue());
@@ -145,21 +130,6 @@ public class ResourceHttpContent implements HttpContent
     public String getETagValue()
     {
         return _resource.getWeakETag();
-    }
-
-    @Override
-    public ByteBuffer getIndirectBuffer()
-    {
-        if (_resource.length() <= 0 || _maxBuffer > 0 && _resource.length() > _maxBuffer)
-            return null;
-        try
-        {
-            return BufferUtil.toBuffer(_resource, false);
-        }
-        catch (IOException e)
-        {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
@@ -176,18 +146,6 @@ public class ResourceHttpContent implements HttpContent
     }
 
     @Override
-    public InputStream getInputStream() throws IOException
-    {
-        return _resource.getInputStream();
-    }
-
-    @Override
-    public ReadableByteChannel getReadableByteChannel() throws IOException
-    {
-        return _resource.getReadableByteChannel();
-    }
-
-    @Override
     public Path getPath()
     {
         return _path;
@@ -197,12 +155,6 @@ public class ResourceHttpContent implements HttpContent
     public Resource getResource()
     {
         return _resource;
-    }
-
-    @Override
-    public void release()
-    {
-        _resource.close();
     }
 
     @Override

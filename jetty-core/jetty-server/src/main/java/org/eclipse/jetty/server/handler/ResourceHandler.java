@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.DateParser;
@@ -117,7 +118,9 @@ public class ResourceHandler extends Handler.Wrapper
 //            _mimeTypes = _context == null ? new MimeTypes() : _context.getMimeTypes();
 
         _mimeTypes = new MimeTypes();
-        _contentFactory = new PathContentFactory();
+        //_contentFactory = new PathContentFactory();
+        // TODO make caching configurable
+        _contentFactory = new CachingContentFactory(new PathContentFactory());
         _welcomer = new DefaultWelcomer();
 
         super.doStart();
@@ -476,6 +479,7 @@ public class ResourceHandler extends Handler.Wrapper
         // Redirect to directory
         if (!endsWithSlash)
         {
+            // TODO need helper code to edit URIs
             StringBuilder buf = new StringBuilder(request.getHttpURI().asString());
             int param = buf.lastIndexOf(";");
             if (param < 0 || buf.lastIndexOf("/", param) > 0)
@@ -498,11 +502,12 @@ public class ResourceHandler extends Handler.Wrapper
             return;
 
         if (passConditionalHeaders(request, response, content, callback))
-            sendDirectory(request, response, content.getPath(), callback, pathInContext);
+            sendDirectory(request, response, content, callback, pathInContext);
     }
 
-    private void sendDirectory(Request request, Response response, Path resource, Callback callback, String pathInContext) throws IOException
+    private void sendDirectory(Request request, Response response, HttpContent httpContent, Callback callback, String pathInContext) throws IOException
     {
+        Path resource = httpContent.getPath();
         if (!_dirAllowed)
         {
             Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403);
@@ -892,7 +897,10 @@ public class ResourceHandler extends Handler.Wrapper
 
     private void writeContent(Response response, Callback callback, HttpContent content) throws IOException
     {
-        new ContentWriterIteratingCallback(content, response, callback).iterate();
+        if (content instanceof HttpContent.InMemory d)
+            response.write(true, callback, d.getBuffer());
+        else
+            new ContentWriterIteratingCallback(content, response, callback).iterate();
     }
 
     private void putHeaders(Response response, HttpContent content, long contentLength)
@@ -900,7 +908,7 @@ public class ResourceHandler extends Handler.Wrapper
         HttpFields.Mutable headers = response.getHeaders();
 
         // TODO it is very inefficient to do many put's to a HttpFields, as each put is a full iteration.
-        //      it might be better remove headers on mass and then just add the extras:
+        //      it might be better remove headers en masse and then just add the extras:
 //        headers.remove(EnumSet.of(
 //            HttpHeader.LAST_MODIFIED,
 //            HttpHeader.CONTENT_LENGTH,
@@ -1233,18 +1241,6 @@ public class ResourceHandler extends Handler.Wrapper
         }
 
         @Override
-        public ByteBuffer getIndirectBuffer()
-        {
-            return null; // TODO evaluate if it is worthwhile doing this for non-cached resources?
-        }
-
-        @Override
-        public ByteBuffer getDirectBuffer()
-        {
-            return null; // TODO evaluate if it is worthwhile doing this for non-cached resources?
-        }
-
-        @Override
         public Path getPath()
         {
             return _path;
@@ -1255,24 +1251,6 @@ public class ResourceHandler extends Handler.Wrapper
         {
             // TODO cache or create in constructor?
             return new PathResource(_path);
-        }
-
-        @Override
-        public InputStream getInputStream() throws IOException
-        {
-            return null;
-        }
-
-        @Override
-        public ReadableByteChannel getReadableByteChannel() throws IOException
-        {
-            return Files.newByteChannel(_path);
-        }
-
-        @Override
-        public void release()
-        {
-
         }
 
         @Override
@@ -1296,14 +1274,6 @@ public class ResourceHandler extends Handler.Wrapper
 //            WritableByteChannel c = Response.asWritableByteChannel(target);
 //            FileChannel fileChannel = (FileChannel) source;
 //            fileChannel.transferTo(0, contentLength, c);
-
-            // TODO GW: in order for caches and file mapped buffers to work we really need to try to flush like:
-//            ByteBuffer source = content.getDirectBuffer();
-//            target.write(true, callback, source.slice());
-            // TODO GW: or perhaps with an IteratingCallback to slice the buffer
-            //      even if not using direct buffers, we'd still want to allow caches to work with something like:
-//            ByteBuffer source = content.getIndirectBuffer();
-//            target.write(true, callback, source.slice());
 
             this.source = Files.newByteChannel(content.getPath());
             this.target = target;
@@ -1375,6 +1345,7 @@ public class ResourceHandler extends Handler.Wrapper
                     // Redirect to the index
                     response.setContentLength(0);
 
+                    // TODO need helper code to edit URIs
                     String uri = URIUtil.encodePath(URIUtil.addPaths(request.getContext().getContextPath(), welcome));
                     String q = request.getHttpURI().getQuery();
                     if (q != null && !q.isEmpty())

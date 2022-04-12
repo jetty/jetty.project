@@ -33,7 +33,6 @@ import org.eclipse.jetty.util.resource.Resource;
  * reuse in from a cache).
  * </p>
  */
-// TODO can be a concrete class since Path abstracts out buffers, channel and streams -> only metadata is left
 // TODO also review metadata (like getContentLengthValue and getLastModifiedValue) to check if they can be removed as those
 //  are available via the Path API
 public interface HttpContent
@@ -62,39 +61,28 @@ public interface HttpContent
 
     String getETagValue();
 
-    //TODO remove
-    ByteBuffer getIndirectBuffer();
-
-    //TODO remove
-    ByteBuffer getDirectBuffer();
-
-    //TODO rename?
+    // TODO rename?
     Path getPath();
 
+    // TODO getPath() is supposed to replace the following
     Resource getResource();
-
-    //TODO remove
-    InputStream getInputStream() throws IOException;
-
-    //TODO remove
-    ReadableByteChannel getReadableByteChannel() throws IOException;
-
-    //TODO remove
-    void release();
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
 
-    // TODO not needed anymore since path abstracts everything out already?
-    public interface ContentFactory
+    interface ContentFactory
     {
         /**
          * @param path The path within the context to the resource
-         * @param maxBuffer The maximum buffer to allocated for this request.  For cached content, a larger buffer may have
-         * previously been allocated and returned by the {@link HttpContent#getDirectBuffer()} or {@link HttpContent#getIndirectBuffer()} calls.
+         * @param maxBuffer The maximum buffer to allocated for this request.
          * @return A {@link HttpContent}
          * @throws IOException if unable to get content
          */
         // TODO maxBuffer is not needed anymore
         HttpContent getContent(String path, int maxBuffer) throws IOException;
+    }
+
+    interface InMemory extends HttpContent
+    {
+        ByteBuffer getBuffer();
     }
 }
