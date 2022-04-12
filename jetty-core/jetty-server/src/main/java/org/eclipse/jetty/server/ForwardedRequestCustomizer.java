@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.internal.HttpConnection;
 import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.Index;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -585,6 +586,19 @@ public class ForwardedRequestCustomizer implements HttpConfiguration.Customizer
                     return authority.getHostPort();
 
                 return super.getServerAuthority();
+            }
+
+            @Override
+            public String toString()
+            {
+                return "%s@%x{id=%s,remote=%s,authority=%s,%s}".formatted(
+                    TypeUtil.toShortName(this.getClass()),
+                    hashCode(),
+                    getId(),
+                    remote,
+                    authority,
+                    getWrappedConnectionMetaData()
+                );
             }
         };
 

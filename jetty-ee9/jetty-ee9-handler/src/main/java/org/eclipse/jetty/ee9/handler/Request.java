@@ -479,6 +479,7 @@ public class Request implements HttpServletRequest
 
     private void extractContentParameters()
     {
+        // TODO get from coreRequest
         String contentType = getContentType();
         if (contentType == null || contentType.isEmpty())
             _contentParameters = NO_PARAMS;
@@ -535,11 +536,6 @@ public class Request implements HttpServletRequest
                 ContextHandler contextHandler = _context.getContextHandler();
                 maxFormContentSize = contextHandler.getMaxFormContentSize();
                 maxFormKeys = contextHandler.getMaxFormKeys();
-            }
-            else
-            {
-                maxFormContentSize = lookupServerAttribute(ContextHandler.MAX_FORM_CONTENT_SIZE_KEY, maxFormContentSize);
-                maxFormKeys = lookupServerAttribute(ContextHandler.MAX_FORM_KEYS_KEY, maxFormKeys);
             }
 
             int contentLength = getContentLength();
@@ -1159,18 +1155,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getRemoteAddr()
     {
-        InetSocketAddress remote = _remote;
-        if (remote == null)
-            remote = _channel.getRemoteAddress();
-        if (remote == null)
-            return "";
-
-        InetAddress address = remote.getAddress();
-        String result = address == null
-                ? remote.getHostString()
-                : address.getHostAddress();
-
-        return formatAddrOrHost(result);
+        return org.eclipse.jetty.server.Request.getRemoteAddr(_channel.getCoreRequest());
     }
 
     @Override

@@ -635,56 +635,51 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (_request.getHttpInput().releaseContent())
             return;
 
-        switch (_request.getHttpVersion())
+        HttpVersion httpVersion = _request.getHttpVersion();
+
+        if (httpVersion == HttpVersion.HTTP_1_0)
         {
-            case HTTP_1_0:
+            // Remove any keep-alive value in Connection headers
+            _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
+            {
+                if (fields == null || fields.isEmpty())
+                    return null;
+                String v = fields.stream()
+                    .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
+                    .collect(Collectors.joining(", "));
+                if (StringUtil.isEmpty(v))
+                    return null;
 
-                // Remove any keep-alive value in Connection headers
-                _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
+                return new HttpField(HttpHeader.CONNECTION, v);
+            });
+        }
+        else
+        {
+            _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
+            {
+                if (fields == null || fields.isEmpty())
+                    return HttpFields.CONNECTION_CLOSE;
+
+                if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
                 {
-                    if (fields == null || fields.isEmpty())
-                        return null;
-                    String v = fields.stream()
-                        .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
-                        .collect(Collectors.joining(", "));
-                    if (StringUtil.isEmpty(v))
-                        return null;
-
-                    return new HttpField(HttpHeader.CONNECTION, v);
-                });
-                break;
-
-            case HTTP_1_1:
-                // Add close value to Connection headers
-                _response.getHttpFields().computeField(HttpHeader.CONNECTION, (h, fields) ->
-                {
-                    if (fields == null || fields.isEmpty())
-                        return HttpFields.CONNECTION_CLOSE;
-
-                    if (fields.stream().anyMatch(f -> f.contains(HttpHeaderValue.CLOSE.asString())))
+                    if (fields.size() == 1)
                     {
-                        if (fields.size() == 1)
-                        {
-                            HttpField f = fields.get(0);
-                            if (HttpFields.CONNECTION_CLOSE.equals(f))
-                                return f;
-                        }
-
-                        return new HttpField(HttpHeader.CONNECTION, fields.stream()
-                            .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
-                            .collect(Collectors.joining(", ")));
+                        HttpField f = fields.get(0);
+                        if (HttpFields.CONNECTION_CLOSE.equals(f))
+                            return f;
                     }
 
-                    return new HttpField(HttpHeader.CONNECTION,
-                        Stream.concat(fields.stream()
-                        .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))),
-                        Stream.of(HttpHeaderValue.CLOSE.asString()))
+                    return new HttpField(HttpHeader.CONNECTION, fields.stream()
+                        .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s)))
                         .collect(Collectors.joining(", ")));
-                });
-                break;
+                }
 
-            default:
-                break;
+                return new HttpField(HttpHeader.CONNECTION,
+                    Stream.concat(fields.stream()
+                                .flatMap(field -> Stream.of(field.getValues()).filter(s -> !HttpHeaderValue.KEEP_ALIVE.is(s))),
+                            Stream.of(HttpHeaderValue.CLOSE.asString()))
+                        .collect(Collectors.joining(", ")));
+            });
         }
     }
 

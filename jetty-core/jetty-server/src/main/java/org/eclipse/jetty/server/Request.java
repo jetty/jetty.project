@@ -245,9 +245,12 @@ public interface Request extends Attributes, Content.Reader
     static String getRemoteAddr(Request request)
     {
         SocketAddress remote = request.getConnectionMetaData().getRemoteSocketAddress();
-        if (remote instanceof InetSocketAddress)
+        if (remote instanceof InetSocketAddress inetSocketAddress)
         {
-            InetAddress address = ((InetSocketAddress)remote).getAddress();
+            if (inetSocketAddress.isUnresolved())
+                return inetSocketAddress.getHostString();
+
+            InetAddress address = inetSocketAddress.getAddress();
             String result = address == null
                 ? ((InetSocketAddress)remote).getHostString()
                 : address.getHostAddress();

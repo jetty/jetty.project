@@ -92,6 +92,11 @@ public interface ConnectionMetaData extends Attributes
             _wrapped = wrapped;
         }
 
+        protected ConnectionMetaData getWrappedConnectionMetaData()
+        {
+            return _wrapped;
+        }
+
         @Override
         public String getId()
         {
