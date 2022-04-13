@@ -69,6 +69,7 @@ public class SessionHandler extends AbstractSessionManager implements Handler.Ne
     public void setServer(Server server)
     {
         _server = server;
+        getHandler().setServer(server);
     }
 
     @Override

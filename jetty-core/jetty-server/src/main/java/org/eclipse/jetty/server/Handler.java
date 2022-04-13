@@ -313,7 +313,7 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
                 container.getDescendants().contains(nested)))
                 throw new IllegalStateException("setHandler loop");
 
-            if (handler != null)
+            if (handler != null && server != null)
                 handler.setServer(server);
 
             if (nested instanceof org.eclipse.jetty.util.component.ContainerLifeCycle container)
