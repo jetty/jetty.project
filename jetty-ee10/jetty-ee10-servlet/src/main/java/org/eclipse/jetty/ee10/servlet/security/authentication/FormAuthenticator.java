@@ -162,7 +162,6 @@ public class FormAuthenticator extends LoginAuthenticator
         UserIdentity user = super.login(username, password, request);
         if (user != null)
         {
-
             HttpSession session = servletContextRequest.getServletApiRequest().getSession(true);
             Authentication cached = new SessionAuthentication(getAuthMethod(), user, password);
             session.setAttribute(SessionAuthentication.__J_AUTHENTICATED, cached);
@@ -247,14 +246,15 @@ public class FormAuthenticator extends LoginAuthenticator
                 FormAuthentication formAuth;
                 synchronized (session)
                 {
-                    nuri = (String)session.getAttribute(__J_URI);
-
-                    if (nuri == null || nuri.length() == 0)
+                    HttpURI savedURI = (HttpURI)session.getAttribute(__J_URI);
+                    if (savedURI == null)
                     {
                         nuri = servletApiRequest.getContextPath();
                         if (nuri.length() == 0)
                             nuri = URIUtil.SLASH;
                     }
+                    else
+                        nuri = savedURI.asString();
                     formAuth = new FormAuthentication(getAuthMethod(), user);
                 }
                 LOG.debug("authenticated {}->{}", formAuth, nuri);
@@ -273,7 +273,7 @@ public class FormAuthenticator extends LoginAuthenticator
                 LOG.debug("auth failed {}->403", username);
                 Response.writeError(req, res, callback, HttpServletResponse.SC_FORBIDDEN);
             }
-            //TODO need to reinstant forward
+            //TODO need to reinstate forward
             /*                else if (_dispatch)
             {
                 LOG.debug("auth failed {}=={}", username, _formErrorPage);

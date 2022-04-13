@@ -116,31 +116,24 @@ public abstract class LoginAuthenticator implements Authenticator
     protected HttpSession renewSession(HttpServletRequest httpRequest, HttpServletResponse httpResponse)
     {
         HttpSession httpSession = httpRequest.getSession(false);
-
-        if (_renewSession && httpSession != null)
+        Session session = Session.getSession(httpSession);
+        if (_renewSession && session != null)
         {
-            synchronized (httpSession)
+            synchronized (session)
             {
                 //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
                 //(indicated by SESSION_SECURED not being set on the session) then we should change id
-                if (httpSession.getAttribute(Session.SESSION_CREATED_SECURE) != Boolean.TRUE)
+                if (session.getAttribute(Session.SESSION_CREATED_SECURE) != Boolean.TRUE)
                 {
-                    if (httpSession instanceof Session s)
-                    {
-                        ServletContextRequest servletContextRequest = ServletContextRequest.getBaseRequest(httpRequest);
-                        Response response = servletContextRequest.getResponse().getWrapped();
-                        String oldId = s.getId();
-                        s.renewId(servletContextRequest);
-                        s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-                        if (s.isIdChanged())
-                            Response.replaceCookie(response, s.getSessionManager().getSessionCookie(s, httpRequest.getContextPath(), httpRequest.isSecure()));
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("renew {}->{}", oldId, s.getId());
-                    }
-                    else
-                    {
-                        LOG.warn("Unable to renew session {}", httpSession);
-                    }
+                    ServletContextRequest servletContextRequest = ServletContextRequest.getBaseRequest(httpRequest);
+                    Response response = servletContextRequest.getResponse().getWrapped();
+                    String oldId = session.getId();
+                    session.renewId(servletContextRequest);
+                    session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+                    if (session.isIdChanged())
+                        Response.replaceCookie(response, session.getSessionManager().getSessionCookie(session, httpRequest.getContextPath(), httpRequest.isSecure()));
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("renew {}->{}", oldId, session.getId());
                     return httpSession;
                 }
             }
