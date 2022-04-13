@@ -77,6 +77,17 @@ import org.slf4j.LoggerFactory;
  * TODO there is a lot of URI manipulation, this should be factored out in a utility class.
  *
  * TODO GW: Work out how this logic can be reused by the DefaultServlet... potentially for wrapped output streams
+ *
+ * Missing:
+ *  - current context' mime types
+ *  - getContent in HttpContent should go
+ *  - Default stylesheet (needs Path impl for classpath resources)
+ *  - request ranges
+ *  - eTags
+ *  - a way to configure caching or not
+ *  - precompressed formats
+ *  - gzipEquivalentFileExtensions
+ *  - PreferredEncodingOrder
  */
 public class ResourceHandler extends Handler.Wrapper
 {

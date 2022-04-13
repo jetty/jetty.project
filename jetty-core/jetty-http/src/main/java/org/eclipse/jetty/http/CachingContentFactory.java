@@ -24,7 +24,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
@@ -46,7 +46,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
     private final HttpContent.ContentFactory _authority;
     private final boolean _useFileMappedBuffer;
     private final ConcurrentMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
-    private final AtomicInteger _cachedSize = new AtomicInteger();
+    private final AtomicLong _cachedSize = new AtomicLong();
     private int _maxCachedFileSize = 128 * 1024 * 1024;
     private int _maxCachedFiles = 2048;
     private int _maxCacheSize = 256 * 1024 * 1024;
@@ -62,7 +62,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         _useFileMappedBuffer = useFileMappedBuffer;
     }
 
-    public int getCachedSize()
+    public long getCachedSize()
     {
         return _cachedSize.get();
     }
@@ -139,25 +139,25 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             {
                 if (_cache.size() <= _maxCachedFiles && _cachedSize.get() <= _maxCacheSize)
                     break;
-                if (content == _cache.remove(content._cacheKey))
-                {
-                    _cachedSize.addAndGet((int)-content._contentLengthValue);
-                    content.invalidate();
-                }
+                removeFromCache(content);
             }
+        }
+    }
+
+    private void removeFromCache(CachingHttpContent content)
+    {
+        if (content == _cache.remove(content._cacheKey))
+        {
+            content.invalidate();
+            _cachedSize.addAndGet(-content._contentLengthValue);
         }
     }
 
     public void flushCache()
     {
-        for (String path : _cache.keySet())
+        for (CachingHttpContent content : _cache.values())
         {
-            CachingHttpContent content = _cache.remove(path);
-            if (content != null)
-            {
-                _cachedSize.addAndGet((int)-content._contentLengthValue);
-                content.invalidate();
-            }
+            removeFromCache(content);
         }
     }
 
@@ -168,15 +168,9 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         if (cachingHttpContent != null)
         {
             if (cachingHttpContent.isValid())
-            {
                 return cachingHttpContent;
-            }
             else
-            {
-                CachingHttpContent removed = _cache.remove(cachingHttpContent._cacheKey);
-                if (removed != null)
-                    _cachedSize.addAndGet((int)-removed._contentLengthValue);
-            }
+                removeFromCache(cachingHttpContent);
         }
         HttpContent httpContent = _authority.getContent(path, maxBuffer);
         // Do not cache directories or files that are too big
@@ -184,7 +178,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         {
             httpContent = cachingHttpContent = new CachingHttpContent(path, httpContent);
             _cache.put(path, cachingHttpContent);
-            _cachedSize.addAndGet((int)cachingHttpContent._contentLengthValue);
+            _cachedSize.addAndGet(cachingHttpContent._contentLengthValue);
             shrinkCache();
         }
         return httpContent;
@@ -234,6 +228,10 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         @Override
         public ByteBuffer getBuffer()
         {
+            // TODO this should return a RetainableByteBuffer otherwise there is a race between
+            //  threads serving the buffer while another thread invalidates it. That's going to
+            //  be a lot of fun since RetainableByteBuffer is only meant to be acquired from a pool
+            //  but the byte buffer here could be coming from a mmap'ed file.
             return _buffer.slice();
         }
 
