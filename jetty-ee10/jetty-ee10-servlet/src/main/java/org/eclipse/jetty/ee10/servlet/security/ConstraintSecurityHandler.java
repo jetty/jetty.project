@@ -703,7 +703,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         boolean isUserInRole = false;
         for (String role : roleInfo.getRoles())
         {
-            if (userIdentity.isUserInRole(role, null))
+            if (userIdentity.isUserInRole(role))
             {
                 isUserInRole = true;
                 break;

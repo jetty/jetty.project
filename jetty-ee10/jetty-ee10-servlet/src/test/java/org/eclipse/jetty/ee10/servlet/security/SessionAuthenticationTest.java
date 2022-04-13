@@ -58,7 +58,7 @@ public class SessionAuthenticationTest
         assertNotNull(user.getUserPrincipal());
         assertEquals("foo", user.getUserPrincipal().getName());
         SessionAuthentication sessionAuth = new SessionAuthentication("FORM", user, pwd);
-        assertTrue(sessionAuth.isUserInRole(null, "boss"));
+        assertTrue(sessionAuth.isUserInRole("boss"));
         contextHandler.getContext().run(new Runnable()
         {
             public void run()
@@ -76,7 +76,7 @@ public class SessionAuthenticationTest
                     assertNotNull(reactivatedSessionAuth.getUserIdentity().getUserPrincipal());
                     assertEquals("foo", reactivatedSessionAuth.getUserIdentity().getUserPrincipal().getName());
                     assertNotNull(reactivatedSessionAuth.getUserIdentity().getSubject());
-                    assertTrue(reactivatedSessionAuth.isUserInRole(null, "boss"));
+                    assertTrue(reactivatedSessionAuth.isUserInRole("boss"));
                 }
                 catch (Exception e)
                 {

@@ -18,8 +18,8 @@ import java.util.Set;
 
 import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
-import org.eclipse.jetty.ee10.servlet.security.UserIdentity.Scope;
 import org.eclipse.jetty.ee10.servlet.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.server.Request;
 
 /**
  * AbstractUserAuthentication
@@ -52,15 +52,10 @@ public abstract class AbstractUserAuthentication implements User, Serializable
     }
 
     @Override
-    public boolean isUserInRole(Scope scope, String role)
+    public boolean isUserInRole(String role)
     {
-        String roleToTest = null;
-        if (scope != null && scope.getRoleRefMap() != null)
-            roleToTest = scope.getRoleRefMap().get(role);
-        if (roleToTest == null)
-            roleToTest = role;
         //Servlet Spec 3.1 pg 125 if testing special role **
-        if ("**".equals(roleToTest.trim()))
+        if ("**".equals(role.trim()))
         {
             //if ** is NOT a declared role name, the we return true 
             //as the user is authenticated. If ** HAS been declared as a
@@ -68,10 +63,10 @@ public abstract class AbstractUserAuthentication implements User, Serializable
             if (!declaredRolesContains("**"))
                 return true;
             else
-                return _userIdentity.isUserInRole(role, scope);
+                return _userIdentity.isUserInRole(role);
         }
 
-        return _userIdentity.isUserInRole(role, scope);
+        return _userIdentity.isUserInRole(role);
     }
 
     public boolean declaredRolesContains(String roleName)
@@ -90,7 +85,7 @@ public abstract class AbstractUserAuthentication implements User, Serializable
     }
 
     @Override
-    public Authentication logout(ServletRequest request)
+    public Authentication logout(Request request)
     {
         SecurityHandler security = SecurityHandler.getCurrentSecurityHandler();
         if (security != null)

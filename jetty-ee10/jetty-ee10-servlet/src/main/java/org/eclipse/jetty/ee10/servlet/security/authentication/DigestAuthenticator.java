@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.servlet.security.authentication;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
@@ -25,11 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
@@ -38,6 +33,8 @@ import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
@@ -101,118 +98,107 @@ public class DigestAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
+    public boolean secureResponse(Request req, Response res, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }
 
     @Override
-    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(Request req, Response res, Callback callback, boolean mandatory) throws ServerAuthException
     {
         if (!mandatory)
             return new DeferredAuthentication(this);
 
-        HttpServletRequest httpRequest = (HttpServletRequest)req;
-        HttpServletResponse httpResponse = (HttpServletResponse)res;
-        String credentials = httpRequest.getHeader(HttpHeader.AUTHORIZATION.asString());
+        String credentials = req.getHeaders().get(HttpHeader.AUTHORIZATION);
 
-        try
+        boolean stale = false;
+        if (credentials != null)
         {
-            Request request = ServletContextRequest.getBaseRequest(httpRequest).getWrapped();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Credentials: {}", credentials);
+            QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials, "=, ", true, false);
+            final Digest digest = new Digest(req.getMethod());
+            String last = null;
+            String name = null;
 
-            boolean stale = false;
-            if (credentials != null)
+            while (tokenizer.hasMoreTokens())
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Credentials: {}", credentials);
-                QuotedStringTokenizer tokenizer = new QuotedStringTokenizer(credentials, "=, ", true, false);
-                final Digest digest = new Digest(httpRequest.getMethod());
-                String last = null;
-                String name = null;
+                String tok = tokenizer.nextToken();
+                char c = (tok.length() == 1) ? tok.charAt(0) : '\0';
 
-                while (tokenizer.hasMoreTokens())
+                switch (c)
                 {
-                    String tok = tokenizer.nextToken();
-                    char c = (tok.length() == 1) ? tok.charAt(0) : '\0';
+                    case '=':
+                        name = last;
+                        last = tok;
+                        break;
+                    case ',':
+                        name = null;
+                        break;
+                    case ' ':
+                        break;
 
-                    switch (c)
-                    {
-                        case '=':
-                            name = last;
-                            last = tok;
-                            break;
-                        case ',':
+                    default:
+                        last = tok;
+                        if (name != null)
+                        {
+                            if ("username".equalsIgnoreCase(name))
+                                digest.username = tok;
+                            else if ("realm".equalsIgnoreCase(name))
+                                digest.realm = tok;
+                            else if ("nonce".equalsIgnoreCase(name))
+                                digest.nonce = tok;
+                            else if ("nc".equalsIgnoreCase(name))
+                                digest.nc = tok;
+                            else if ("cnonce".equalsIgnoreCase(name))
+                                digest.cnonce = tok;
+                            else if ("qop".equalsIgnoreCase(name))
+                                digest.qop = tok;
+                            else if ("uri".equalsIgnoreCase(name))
+                                digest.uri = tok;
+                            else if ("response".equalsIgnoreCase(name))
+                                digest.response = tok;
                             name = null;
-                            break;
-                        case ' ':
-                            break;
-
-                        default:
-                            last = tok;
-                            if (name != null)
-                            {
-                                if ("username".equalsIgnoreCase(name))
-                                    digest.username = tok;
-                                else if ("realm".equalsIgnoreCase(name))
-                                    digest.realm = tok;
-                                else if ("nonce".equalsIgnoreCase(name))
-                                    digest.nonce = tok;
-                                else if ("nc".equalsIgnoreCase(name))
-                                    digest.nc = tok;
-                                else if ("cnonce".equalsIgnoreCase(name))
-                                    digest.cnonce = tok;
-                                else if ("qop".equalsIgnoreCase(name))
-                                    digest.qop = tok;
-                                else if ("uri".equalsIgnoreCase(name))
-                                    digest.uri = tok;
-                                else if ("response".equalsIgnoreCase(name))
-                                    digest.response = tok;
-                                name = null;
-                            }
-                    }
+                        }
                 }
-
-                int n = checkNonce(digest, request);
-
-                if (n > 0)
-                {
-                    //UserIdentity user = _loginService.login(digest.username,digest);
-                    UserIdentity user = login(digest.username, digest, req);
-                    if (user != null)
-                    {
-                        return new UserAuthentication(getAuthMethod(), user);
-                    }
-                }
-                else if (n == 0)
-                    stale = true;
             }
 
-            if (!DeferredAuthentication.isDeferred(httpResponse))
+            int n = checkNonce(digest, req);
+
+            if (n > 0)
             {
-                String domain = httpRequest.getContextPath();
-                if (domain == null)
-                    domain = "/";
-                httpResponse.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
-                    "\", domain=\"" + domain +
-                    "\", nonce=\"" + newNonce(request) +
-                    "\", algorithm=MD5" +
-                    ", qop=\"auth\"" +
-                    ", stale=" + stale);
-                httpResponse.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-
-                return Authentication.SEND_CONTINUE;
+                //UserIdentity user = _loginService.login(digest.username,digest);
+                UserIdentity user = login(digest.username, digest, req);
+                if (user != null)
+                {
+                    return new UserAuthentication(getAuthMethod(), user);
+                }
             }
+            else if (n == 0)
+                stale = true;
+        }
 
-            return Authentication.UNAUTHENTICATED;
-        }
-        catch (IOException e)
+        if (!DeferredAuthentication.isDeferred(res))
         {
-            throw new ServerAuthException(e);
+            String domain = req.getContext().getContextPath();
+            if (domain == null)
+                domain = "/";
+            res.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Digest realm=\"" + _loginService.getName() +
+                "\", domain=\"" + domain +
+                "\", nonce=\"" + newNonce(req) +
+                "\", algorithm=MD5" +
+                ", qop=\"auth\"" +
+                ", stale=" + stale);
+            Response.writeError(req, res, callback, HttpServletResponse.SC_UNAUTHORIZED);
+
+            return Authentication.SEND_CONTINUE;
         }
+
+        return Authentication.UNAUTHENTICATED;
     }
 
     @Override
-    public UserIdentity login(String username, Object credentials, ServletRequest request)
+    public UserIdentity login(String username, Object credentials, Request request)
     {
         Digest digest = (Digest)credentials;
         if (!Objects.equals(digest.realm, _loginService.getName()))

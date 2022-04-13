@@ -16,10 +16,11 @@ package org.eclipse.jetty.ee10.servlet.security;
 import java.util.Set;
 
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Authenticator Interface
@@ -55,16 +56,16 @@ public interface Authenticator
      * where the http method of the original request causing authentication
      * is not the same as the http method resulting from the redirect
      * after authentication.
-     *
-     * @param request the request to manipulate
+     * @param request TODO
      */
-    void prepareRequest(ServletRequest request);
+    void prepareRequest(Request request);
 
     /**
      * Validate a request
      *
      * @param request The request
      * @param response The response
+     * @param callback TODO
      * @param mandatory True if authentication is mandatory.
      * @return An Authentication.  If Authentication is successful, this will be a {@link Authentication.User}. If a response has
      * been sent by the Authenticator (which can be done for both successful and unsuccessful authentications), then the result will
@@ -72,19 +73,20 @@ public interface Authenticator
      * {@link Authentication.Deferred} may be returned.
      * @throws ServerAuthException if unable to validate request
      */
-    Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException;
+    Authentication validateRequest(Request request, Response response, Callback callback, boolean mandatory) throws ServerAuthException;
 
     /**
      * is response secure
      *
      * @param request the request
      * @param response the response
+     * @param callback TODO
      * @param mandatory if security is mandator
      * @param validatedUser the user that was validated
      * @return true if response is secure
      * @throws ServerAuthException if unable to test response
      */
-    boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser) throws ServerAuthException;
+    boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException;
 
     /**
      * Authenticator Configuration

@@ -13,24 +13,25 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterEach;
@@ -43,6 +44,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -51,21 +53,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class SpecExampleConstraintTest
 {
     private static final String TEST_REALM = "TestRealm";
-    private static Server _server;
-    private static LocalConnector _connector;
-    private static SessionHandler _session;
-    private static ServletContextHandler _context;
+    private Server _server;
+    private LocalConnector _connector;
+    private ServletContextHandler _context;
     private ConstraintSecurityHandler _security;
+    private SessionHandler _sessions;
 
-    @BeforeAll
-    public static void startServer()
+    @BeforeEach
+    public void setupServer()
     {
         _server = new Server();
         _connector = new LocalConnector(_server);
-        _server.setConnectors(new Connector[]{_connector});
+        _server.addConnector(_connector);
 
         _context = new ServletContextHandler();
-        _session = new SessionHandler();
+        _context.setContextPath("/ctx");
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
 
@@ -73,22 +75,15 @@ public class SpecExampleConstraintTest
         loginService.putUser("harry", new Password("password"), new String[]{"HOMEOWNER"});
         loginService.putUser("chris", new Password("password"), new String[]{"CONTRACTOR"});
         loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});
-
-        _context.setContextPath("/ctx");
-        _server.setHandler(_context);
-        _context.setSessionHandler(_session);
-
         _server.addBean(loginService);
-    }
-
-    @BeforeEach
-    public void setupSecurity()
-    {
+        
+        _context.addServlet(TestServlet.class, "/");
         _security = new ConstraintSecurityHandler();
         _context.setSecurityHandler(_security);
-        RequestHandler handler = new RequestHandler();
-        _security.setHandler(handler);
+        _sessions = new SessionHandler();
+        _context.setSessionHandler(_sessions);
 
+        _server.setHandler(_context);
         
         /*
         
@@ -269,6 +264,17 @@ public class SpecExampleConstraintTest
     }
 
     @Test
+    public void testNoAuth() throws Exception
+    {
+        _server.start();
+        
+        ServletContextHandler sch = (ServletContextHandler)_server.getHandler();
+        Handler.Nested h = (Handler.Nested)sch.getHandler();
+        String response = _connector.getResponse("GET /ctx/foo HTTP/1.0\r\n\r\n");
+        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+    }
+    
+    @Test
     public void testBasic() throws Exception
     {
 
@@ -330,21 +336,17 @@ public class SpecExampleConstraintTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
-    private class RequestHandler extends Handler.Processor
+    private static class TestServlet extends HttpServlet
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-            HttpServletRequest httpRequest = servletContextRequest.getHttpServletRequest();
-            HttpServletResponse httpResponse = servletContextRequest.getHttpServletResponse();
-            httpResponse.setContentType("text/plain; charset=UTF-8");
-            httpResponse.getWriter().println("URI=" + httpRequest.getRequestURI());
-            String user = httpRequest.getRemoteUser();
-            httpResponse.getWriter().println("user=" + user);
-            if (httpRequest.getParameter("test_parameter") != null)
-                httpResponse.getWriter().println(httpRequest.getParameter("test_parameter"));
-            callback.succeeded();
+            resp.setContentType("text/plain; charset=UTF-8");
+            resp.getWriter().println("""
+                URI=%s
+                user=%s
+                %s
+                """.formatted(req.getRequestURI(), req.getRemoteUser(), req.getParameter("test_parameter")));
         }
     }
 }

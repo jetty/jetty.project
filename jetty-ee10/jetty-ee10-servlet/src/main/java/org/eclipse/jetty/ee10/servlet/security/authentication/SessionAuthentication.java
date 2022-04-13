@@ -22,9 +22,11 @@ import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
 import org.eclipse.jetty.ee10.servlet.security.AbstractUserAuthentication;
+import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
+import org.eclipse.jetty.server.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

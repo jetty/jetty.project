@@ -68,6 +68,8 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
@@ -192,6 +194,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     public interface ServletContainerInitializerCaller extends LifeCycle {}
 
+    private Class<? extends SecurityHandler> _defaultSecurityHandlerClass = ConstraintSecurityHandler.class;
     private final ServletContextApi _servletContext = new ServletContextApi();
     protected ContextStatus _contextStatus = ContextStatus.NOTSET;
     private final Map<String, String> _initParams = new HashMap<>();
@@ -1203,9 +1206,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             while (!(handler.getHandler() instanceof SessionHandler) &&
                 !(handler.getHandler() instanceof SecurityHandler) &&
                 !(handler.getHandler() instanceof ServletHandler) &&
-                handler.getHandler() instanceof Handler.Wrapper)
+                handler.getHandler() instanceof Handler.Nested)
             {
-                handler = (Handler.Wrapper)handler.getHandler();
+                handler = (Handler.Nested)handler.getHandler();
             }
 
             if (handler.getHandler() != _sessionHandler)
@@ -1218,9 +1221,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             while (!(handler.getHandler() instanceof SecurityHandler) &&
                 !(handler.getHandler() instanceof ServletHandler) &&
-                handler.getHandler() instanceof Handler.Wrapper)
+                handler.getHandler() instanceof Handler.Nested)
             {
-                handler = (Handler.Wrapper)handler.getHandler();
+                handler = (Handler.Nested)handler.getHandler();
             }
 
             if (handler.getHandler() != _securityHandler)
@@ -1232,9 +1235,9 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (getServletHandler() != null)
         {
             while (!(handler.getHandler() instanceof ServletHandler) &&
-                handler.getHandler() instanceof Handler.Wrapper)
+                handler.getHandler() instanceof Handler.Nested)
             {
-                handler = (Handler.Wrapper)handler.getHandler();
+                handler = (Handler.Nested)handler.getHandler();
             }
 
             if (handler.getHandler() != _servletHandler)
@@ -1468,8 +1471,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     public Class<? extends SecurityHandler> getDefaultSecurityHandlerClass()
     {
-        // return _defaultSecurityHandlerClass;
-        return null;
+        return _defaultSecurityHandlerClass;
     }
 
     /**
@@ -1479,7 +1481,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     public void setDefaultSecurityHandlerClass(Class<? extends SecurityHandler> defaultSecurityHandlerClass)
     {
-        // _defaultSecurityHandlerClass = defaultSecurityHandlerClass;
+         _defaultSecurityHandlerClass = defaultSecurityHandlerClass;
     }
 
     protected SessionHandler newSessionHandler()

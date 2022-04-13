@@ -18,10 +18,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
 import org.eclipse.jetty.ee10.servlet.security.Authenticator;
 import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.session.Session;
 import org.slf4j.Logger;
@@ -40,7 +42,7 @@ public abstract class LoginAuthenticator implements Authenticator
     }
 
     @Override
-    public void prepareRequest(ServletRequest request)
+    public void prepareRequest(Request request)
     {
         //empty implementation as the default
     }
@@ -56,22 +58,26 @@ public abstract class LoginAuthenticator implements Authenticator
      * @param password the user's credential
      * @param servletRequest the inbound request that needs authentication
      */
-    public UserIdentity login(String username, Object password, ServletRequest servletRequest)
+    public UserIdentity login(String username, Object password, Request request)
     {
-        UserIdentity user = _loginService.login(username, password, servletRequest);
+        //TODO do we need to operate on a Response passed in, rather than the Response obtained from the Request
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        ServletContextResponse.ServletApiResponse servletApiResponse = servletContextRequest.getResponse().getServletApiResponse();
+        UserIdentity user = _loginService.login(username, password, servletApiRequest);
         if (user != null)
         {
-            ServletContextRequest request = ServletContextRequest.getBaseRequest(servletRequest);
-            renewSession(request.getHttpServletRequest(), request == null ? null : request.getResponse().getHttpServletResponse());
+            renewSession(servletApiRequest, servletApiResponse);
             return user;
         }
         return null;
     }
 
-    public void logout(ServletRequest request)
+    public void logout(Request request)
     {
-        HttpServletRequest httpRequest = (HttpServletRequest)request;
-        HttpSession session = httpRequest.getSession(false);
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        ServletContextRequest.ServletApiRequest servletApiRequest = servletContextRequest.getServletApiRequest();
+        HttpSession session = servletApiRequest.getSession(false);
         if (session == null)
             return;
 

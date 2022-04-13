@@ -49,7 +49,6 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpUpgradeHandler;
@@ -62,6 +61,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
@@ -121,7 +121,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
     ServletContextResponse _response;
     final HttpInput _httpInput;
     final String _pathInContext;
-    private UserIdentity.Scope _scope;
 
     final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
 
@@ -260,9 +259,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
 
     public String getServletName()
     {
-        if (_scope != null)
-            return _scope.getName();
-        return null;
+        return _mappedServlet.getServletHolder().getName();
     }
 
     Runnable onContentAvailable()
@@ -431,7 +428,7 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         public String getAuthType()
         {
             if (_authentication instanceof Authentication.Deferred)
-                setAuthentication(((Authentication.Deferred)_authentication).authenticate(this));
+                setAuthentication(((Authentication.Deferred)_authentication).authenticate(ServletContextRequest.this));
 
             if (_authentication instanceof Authentication.User)
                 return ((Authentication.User)_authentication).getAuthMethod();
@@ -516,14 +513,28 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public boolean isUserInRole(String role)
         {
-            // TODO
+            //obtain any substituted role name from the destination servlet
+            String linkedRole = _mappedServlet.getServletHolder().getUserRoleLink(role);
+            if (_authentication instanceof Authentication.Deferred)
+                setAuthentication(((Authentication.Deferred)_authentication).authenticate(ServletContextRequest.this));
+
+            if (_authentication instanceof Authentication.User)
+                return ((Authentication.User)_authentication).isUserInRole(linkedRole);
             return false;
         }
 
         @Override
         public Principal getUserPrincipal()
         {
-            // TODO
+            if (_authentication instanceof Authentication.Deferred)
+                setAuthentication(((Authentication.Deferred)_authentication).authenticate(ServletContextRequest.this));
+
+            if (_authentication instanceof Authentication.User)
+            {
+                UserIdentity user = ((Authentication.User)_authentication).getUserIdentity();
+                return user.getUserPrincipal();
+            }
+
             return null;
         }
 
@@ -651,8 +662,27 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
         {
-            // TODO
-            return false;
+            //if already authenticated, return true
+            if (getUserPrincipal() != null && getRemoteUser() != null && getAuthType() != null)
+                return true;
+
+            //do the authentication
+            if (_authentication instanceof Authentication.Deferred)
+            {
+                //TODO is this Response and the method param the same or possibly different object hierarchies?
+                setAuthentication(((Authentication.Deferred)_authentication).authenticate(ServletContextRequest.this, getResponse()));
+            }
+
+            //if the authentication did not succeed
+            if (_authentication instanceof Authentication.Deferred)
+                response.sendError(HttpStatus.UNAUTHORIZED_401);
+
+            //if the authentication is incomplete, return false
+            if (!(_authentication instanceof Authentication.ResponseSent))
+                return false;
+
+            //something has gone wrong
+            throw new ServletException("Authentication failed");
         }
 
         @Override

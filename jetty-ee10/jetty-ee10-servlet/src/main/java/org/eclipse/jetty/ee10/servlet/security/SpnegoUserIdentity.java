@@ -42,9 +42,9 @@ public class SpnegoUserIdentity implements UserIdentity
     }
 
     @Override
-    public boolean isUserInRole(String role, Scope scope)
+    public boolean isUserInRole(String role)
     {
-        return _roleDelegate != null && _roleDelegate.isUserInRole(role, scope);
+        return _roleDelegate != null && _roleDelegate.isUserInRole(role);
     }
 
     public boolean isEstablished()

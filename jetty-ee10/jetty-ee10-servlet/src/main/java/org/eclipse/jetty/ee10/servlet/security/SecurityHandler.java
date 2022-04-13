@@ -470,7 +470,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
             {
                 //See Servlet Spec 3.1 sec 13.6.3
                 if (authenticator != null)
-                    authenticator.prepareRequest(servletApiRequest);
+                    authenticator.prepareRequest(request);
 
                 RoleInfo roleInfo = prepareConstraintInfo(servletContextRequest.getPathInContext(), servletApiRequest);
 
@@ -498,7 +498,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                 {
                     Authentication authentication = servletApiRequest.getAuthentication();
                     if (authentication == null || authentication == Authentication.NOT_CHECKED)
-                        authentication = authenticator == null ? Authentication.UNAUTHENTICATED : authenticator.validateRequest(servletApiRequest, servletContextRequest.getHttpServletResponse(), isAuthMandatory);
+                        authentication = authenticator == null ? Authentication.UNAUTHENTICATED : authenticator.validateRequest(request, response, callback, isAuthMandatory);
 
                     if (authentication instanceof Authentication.ResponseSent)
                     {
@@ -526,7 +526,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                         processor.process(request, response, callback);
 
                         if (authenticator != null)
-                            authenticator.secureResponse(servletApiRequest, servletContextRequest.getHttpServletResponse(), isAuthMandatory, userAuth);
+                            authenticator.secureResponse(request, response, callback, isAuthMandatory, userAuth);
                     }
                     else if (authentication instanceof Authentication.Deferred)
                     {
@@ -549,10 +549,10 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                             if (auth instanceof Authentication.User)
                             {
                                 Authentication.User userAuth = (Authentication.User)auth;
-                                authenticator.secureResponse(servletApiRequest, servletContextRequest.getHttpServletResponse(), isAuthMandatory, userAuth);
+                                authenticator.secureResponse(request, response, callback, isAuthMandatory, userAuth);
                             }
                             else
-                                authenticator.secureResponse(servletApiRequest, servletContextRequest.getHttpServletResponse(), isAuthMandatory, null);
+                                authenticator.secureResponse(request, response, callback, isAuthMandatory, null);
                         }
                     }
                     else if (isAuthMandatory)
@@ -569,7 +569,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                         processor.process(request, response, callback);
 
                         if (authenticator != null)
-                            authenticator.secureResponse(servletApiRequest, servletContextRequest.getHttpServletResponse(), isAuthMandatory, null);
+                            authenticator.secureResponse(request, response, callback, isAuthMandatory, null);
                     }
                 }
                 catch (ServerAuthException e)

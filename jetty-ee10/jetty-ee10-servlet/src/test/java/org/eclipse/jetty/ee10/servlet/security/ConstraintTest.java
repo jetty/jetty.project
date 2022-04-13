@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee10.servlet.security;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -38,8 +39,13 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletSecurityElement;
 import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee10.servlet.security.authentication.DigestAuthenticator;
@@ -88,6 +94,7 @@ public class ConstraintTest
     private static final String TEST_REALM = "TestRealm";
     private Server _server;
     private LocalConnector _connector;
+    private ServletContextHandler _contextHandler;
     private ConstraintSecurityHandler _security;
     private HttpConfiguration _config;
     private Constraint _forbidConstraint;
@@ -107,7 +114,7 @@ public class ConstraintTest
         _config = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _server.setConnectors(new Connector[]{_connector});
 
-        ServletContextHandler contextHandler = new ServletContextHandler();
+        _contextHandler = new ServletContextHandler();
         SessionHandler sessionHandler = new SessionHandler();
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
@@ -118,13 +125,13 @@ public class ConstraintTest
         loginService.putUser("admin", new Password("password"), new String[]{"user", "administrator"});
         loginService.putUser("user3", new Password("password"), new String[]{"foo"});
 
-        contextHandler.setContextPath("/ctx");
-        _server.setHandler(contextHandler);
+        _contextHandler.setContextPath("/ctx");
+        _server.setHandler(_contextHandler);
 
         _server.addBean(loginService);
 
         _security = new ConstraintSecurityHandler();
-        contextHandler.setSecurityHandler(_security);
+        _contextHandler.setSecurityHandler(_security);
         RequestHandler requestHandler = new RequestHandler();
         _security.setHandler(requestHandler);
 
@@ -1210,7 +1217,7 @@ public class ConstraintTest
         // loginlogin - perform successful login then try another that should fail, next request should be logged in
         // loginlogout - perform successful login then logout, next request should not be logged in
         // loginlogoutlogin - perform successful login then logout then login successfully again, next request should be logged in
-        _security.setHandler(new ProgrammaticLoginRequestHandler());
+        _contextHandler.getServletHandler().addServletWithMapping(ProgrammaticLoginRequestServlet.class, "/prog/*");
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
         _server.start();
 
@@ -1722,8 +1729,10 @@ public class ConstraintTest
     @Test
     public void testRoleRef() throws Exception
     {
-        RoleCheckHandler check = new RoleCheckHandler();
-        _security.setHandler(check);
+        ServletHolder roleCheckHolder = new ServletHolder();
+        roleCheckHolder.setServlet(new RoleCheckServlet());
+
+        _contextHandler.addServlet(roleCheckHolder, "/");
         _security.setAuthenticator(new BasicAuthenticator());
 
         _server.start();
@@ -1738,16 +1747,10 @@ public class ConstraintTest
             "\r\n", 100000, TimeUnit.MILLISECONDS);
         response = HttpTester.parseResponse(rawResponse);
         assertThat(response.toString(), response.getStatus(), is(HttpStatus.INTERNAL_SERVER_ERROR_500));
-
+        //TODO do we need to insert the role link?
         _server.stop();
-
-        RoleRefHandler roleref = new RoleRefHandler();
-        roleref.setHandler(_security.getHandler());
-        _security.setHandler(roleref);
-        roleref.setHandler(check);
-
+        roleCheckHolder.setUserRoleLink("untranslated", "user");
         _server.start();
-
         rawResponse = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +
             "Authorization: Basic " + authBase64("user2:password") + "\r\n" +
             "\r\n", 100000, TimeUnit.MILLISECONDS);
@@ -1905,164 +1908,101 @@ public class ConstraintTest
         }
     }
 
-    private class ProgrammaticLoginRequestHandler extends Handler.Processor
+    private class ProgrammaticLoginRequestServlet extends HttpServlet
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            ServletContextRequest wrappedRequest = Request.as(request, ServletContextRequest.class);
-            ServletContextRequest.ServletApiRequest baseRequest = wrappedRequest.getServletApiRequest();
-
-            String action = baseRequest.getParameter("action");
+            String action = req.getParameter("action");
             if (StringUtil.isBlank(action))
             {
-                response.setStatus(200);
-                response.setContentType("text/plain; charset=UTF-8");
-                response.write(true, callback, "user=" + baseRequest.getRemoteUser());
+                resp.setStatus(200);
+                resp.setContentType("text/plain; charset=UTF-8");
+                resp.getWriter().println("user=" + req.getRemoteUser());
                 return;
             }
-
+            
             switch (action)
             {
                 case "loginauth" ->
                 {
-                    baseRequest.login("admin", "password");
-                    response.write(true, callback, """
+                    req.login("admin", "password");
+                    resp.getWriter().println("""
                         userPrincipal=%s
                         remoteUser=%s
                         authType=%s
                         auth=%s
                         """.formatted(
-                        baseRequest.getUserPrincipal(),
-                        baseRequest.getRemoteUser(),
-                        baseRequest.getAuthType(),
-                        baseRequest.authenticate(wrappedRequest.getHttpServletResponse())
+                        req.getUserPrincipal(),
+                        req.getRemoteUser(),
+                        req.getAuthType(),
+                        req.authenticate(resp)
                         ));
+                    return;
                 }
                 case "login" ->
                 {
-                    baseRequest.login("admin", "password");
+                    req.login("admin", "password");
                 }
                 case "loginfail" ->
                 {
-                    baseRequest.login("admin", "fail");
+                    req.login("admin", "fail");
                 }
                 case "loginfaillogin" ->
                 {
                     try
                     {
-                        baseRequest.login("admin", "fail");
+                        req.login("admin", "fail");
                     }
                     catch (ServletException e)
                     {
-                        baseRequest.login("admin", "password");
+                        req.login("admin", "password");
                     }
                     return;
                 }
                 case "loginlogin" ->
                 {
-                    baseRequest.login("admin", "password");
-                    baseRequest.login("foo", "bar");
+                    req.login("admin", "password");
+                    req.login("foo", "bar");
                 }
                 case "loginlogout" ->
                 {
-                    baseRequest.login("admin", "password");
-                    baseRequest.logout();
+                    req.login("admin", "password");
+                    req.logout();
                 }
                 case "loginlogoutlogin" ->
                 {
-                    baseRequest.login("admin", "password");
-                    baseRequest.logout();
-                    baseRequest.login("user0", "password");
+                    req.login("admin", "password");
+                    req.logout();
+                    req.login("user0", "password");
                 }
                 case "constraintlogin" ->
                 {
-                    baseRequest.getRemoteUser();
-                    baseRequest.login("admin", "password");
+                    req.getRemoteUser();
+                    req.login("admin", "password");
                 }
-                case "logout" -> baseRequest.logout();
+                case "logout" -> req.logout();
                 default ->
                 {
-                    Response.writeError(request, response, callback, 500);
+                    resp.sendError(500);
                     return;
                 }
             }
-
-            response.write(true, callback);
         }
     }
 
-    private class RoleRefHandler extends Handler.Wrapper
+    private class RoleCheckServlet extends HttpServlet
     {
         @Override
-        public Request.Processor handle(Request request) throws Exception
+        protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            Request.Processor processor = super.handle(request);
-            if (processor == null)
-                return null;
-            
-            return (ignored, response, callback) ->
-            {
-                ServletContextRequest wrappedRequest = Request.as(request, ServletContextRequest.class);
-                ServletContextRequest.ServletApiRequest baseRequest = wrappedRequest.getServletApiRequest();
 
-                // TODO UserIdentity.Scope old = baseRequest.getUserIdentityScope();
-
-                UserIdentity.Scope scope = new UserIdentity.Scope()
-                {
-                    @Override
-                    public ContextHandler getContextHandler()
-                    {
-                        return null;
-                    }
-
-                    @Override
-                    public String getContextPath()
-                    {
-                        return "/";
-                    }
-
-                    @Override
-                    public String getName()
-                    {
-                        return "someServlet";
-                    }
-
-                    @Override
-                    public Map<String, String> getRoleRefMap()
-                    {
-                        Map<String, String> map = new HashMap<>();
-                        map.put("untranslated", "user");
-                        return map;
-                    }
-                };
-
-                // TODO baseRequest.setUserIdentityScope(scope);
-
-                try
-                {
-                    processor.process(request, response, callback);
-                }
-                finally
-                {
-                    // TODO baseRequest.setUserIdentityScope(old);
-                }
-            };
-        }
-    }
-
-    private class RoleCheckHandler extends Handler.Processor
-    {       
-        @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
-        {
-            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-            if (servletContextRequest.getHttpServletRequest().getAuthType() == null || 
-                "user".equals(servletContextRequest.getHttpServletRequest().getRemoteUser()) || 
-                servletContextRequest.getHttpServletRequest().isUserInRole("untranslated"))
-                callback.succeeded();
+            if (req.getAuthType() == null || 
+                "user".equals(req.getRemoteUser()) || 
+                req.isUserInRole("untranslated"))
+                resp.setStatus(200);
             else
-                Response.writeError(request, response, callback, 500);
+                resp.sendError(500);
         }
     }
 

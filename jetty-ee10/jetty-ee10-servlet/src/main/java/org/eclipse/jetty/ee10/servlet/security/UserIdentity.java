@@ -14,10 +14,7 @@
 package org.eclipse.jetty.ee10.servlet.security;
 
 import java.security.Principal;
-import java.util.Map;
 import javax.security.auth.Subject;
-
-import org.eclipse.jetty.server.handler.ContextHandler;
 
 /**
  * User object that encapsulates user identity and operations such as run-as-role actions,
@@ -45,41 +42,9 @@ public interface UserIdentity
      * container code which will be using translated role names.
      *
      * @param role A role name.
-     * @param scope the scope
      * @return True if the user can act in that role.
      */
-    boolean isUserInRole(String role, Scope scope);
-
-    /**
-     * A UserIdentity Scope.
-     * A scope is the environment in which a User Identity is to
-     * be interpreted. Typically it is set by the target servlet of
-     * a request.
-     */
-    interface Scope
-    {
-
-        /**
-         * @return The context handler that the identity is being considered within
-         */
-        ContextHandler getContextHandler();
-
-        /**
-         * @return The context path that the identity is being considered within
-         */
-        String getContextPath();
-
-        /**
-         * @return The name of the identity context. Typically this is the servlet name.
-         */
-        String getName();
-
-        /**
-         * @return A map of role reference names that converts from names used by application code
-         * to names used by the context deployment.
-         */
-        Map<String, String> getRoleRefMap();
-    }
+    boolean isUserInRole(String role);
 
     public interface UnauthenticatedUserIdentity extends UserIdentity
     {
@@ -100,7 +65,7 @@ public interface UserIdentity
         }
 
         @Override
-        public boolean isUserInRole(String role, Scope scope)
+        public boolean isUserInRole(String role)
         {
             return false;
         }

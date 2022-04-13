@@ -18,9 +18,6 @@ import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Objects;
 
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
@@ -28,6 +25,9 @@ import org.eclipse.jetty.ee10.servlet.security.Authenticator;
 import org.eclipse.jetty.ee10.servlet.security.ServerAuthException;
 import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -55,14 +55,12 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(Request req, Response res, Callback callback, boolean mandatory) throws ServerAuthException
     {
         if (!mandatory)
             return new DeferredAuthentication(this);
 
-        HttpServletRequest request = (HttpServletRequest)req;
-        HttpServletResponse response = (HttpServletResponse)res;
-        X509Certificate[] certs = (X509Certificate[])request.getAttribute("jakarta.servlet.request.X509Certificate");
+        X509Certificate[] certs = (X509Certificate[])req.getAttribute("jakarta.servlet.request.X509Certificate");
 
         try
         {
@@ -106,9 +104,9 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
                 }
             }
 
-            if (!DeferredAuthentication.isDeferred(response))
+            if (!DeferredAuthentication.isDeferred(res))
             {
-                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                Response.writeError(req, res, callback, HttpServletResponse.SC_FORBIDDEN);
                 return Authentication.SEND_FAILURE;
             }
 
@@ -121,7 +119,7 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
+    public boolean secureResponse(Request req, Response res, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }

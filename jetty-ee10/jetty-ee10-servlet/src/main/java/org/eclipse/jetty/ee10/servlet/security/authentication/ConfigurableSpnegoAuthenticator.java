@@ -13,14 +13,10 @@
 
 package org.eclipse.jetty.ee10.servlet.security.authentication;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.time.Duration;
 import java.time.Instant;
 
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
@@ -32,8 +28,12 @@ import org.eclipse.jetty.ee10.servlet.security.SpnegoUserIdentity;
 import org.eclipse.jetty.ee10.servlet.security.SpnegoUserPrincipal;
 import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,66 +100,63 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
      * renew the session for any of the intermediate request/response handshakes.
      */
     @Override
-    public UserIdentity login(String username, Object password, ServletRequest servletRequest)
+    public UserIdentity login(String username, Object password, Request request)
     {
-        SpnegoUserIdentity user = (SpnegoUserIdentity)_loginService.login(username, password, servletRequest);
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        SpnegoUserIdentity user = (SpnegoUserIdentity)_loginService.login(username, password, servletContextRequest.getServletApiRequest());
         if (user != null && user.isEstablished())
         {
-            ServletContextRequest request = ServletContextRequest.getBaseRequest(servletRequest);
-            HttpServletResponse response = (request == null ? null : request.getHttpServletResponse());
-
-            //TODO should throw here if request or response is null??
-            renewSession((request == null ? null : request.getHttpServletRequest()), response);
+            renewSession(servletContextRequest.getServletApiRequest(), servletContextRequest.getResponse().getServletApiResponse());
         }
         return user;
     }
 
     @Override
-    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(Request req, Response res, Callback callback, boolean mandatory) throws ServerAuthException
     {
         if (!mandatory)
             return new DeferredAuthentication(this);
 
-        HttpServletRequest request = (HttpServletRequest)req;
-        HttpServletResponse response = (HttpServletResponse)res;
+        ServletContextRequest servletContextRequest = Request.as(req, ServletContextRequest.class);
 
-        String header = request.getHeader(HttpHeader.AUTHORIZATION.asString());
-        String spnegoToken = getSpnegoToken(header);
-        HttpSession httpSession = request.getSession(false);
+        HttpField header = req.getHeaders().getField(HttpHeader.AUTHORIZATION);
+        String spnegoToken = getSpnegoToken(header.getValue());
+        HttpSession httpSession = servletContextRequest.getServletApiRequest().getSession(false);
 
         // We have a token from the client, so run the login.
         if (header != null && spnegoToken != null)
         {
-            SpnegoUserIdentity identity = (SpnegoUserIdentity)login(null, spnegoToken, request);
+            SpnegoUserIdentity identity = (SpnegoUserIdentity)login(null, spnegoToken, req);
             if (identity.isEstablished())
             {
-                if (!DeferredAuthentication.isDeferred(response))
+                if (!DeferredAuthentication.isDeferred(res))
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Sending final token");
                     // Send to the client the final token so that the
                     // client can establish the GSS context with the server.
                     SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
-                    setSpnegoToken(response, principal.getEncodedToken());
+                    setSpnegoToken(res, principal.getEncodedToken());
                 }
 
                 Duration authnDuration = getAuthenticationDuration();
                 if (!authnDuration.isNegative())
                 {
                     if (httpSession == null)
-                        httpSession = request.getSession(true);
+                        httpSession = servletContextRequest.getServletApiRequest().getSession(true);
+
                     httpSession.setAttribute(UserIdentityHolder.ATTRIBUTE, new UserIdentityHolder(identity));
                 }
                 return new UserAuthentication(getAuthMethod(), identity);
             }
             else
             {
-                if (DeferredAuthentication.isDeferred(response))
+                if (DeferredAuthentication.isDeferred(res))
                     return Authentication.UNAUTHENTICATED;
                 if (LOG.isDebugEnabled())
                     LOG.debug("Sending intermediate challenge");
                 SpnegoUserPrincipal principal = (SpnegoUserPrincipal)identity.getUserPrincipal();
-                sendChallenge(response, principal.getEncodedToken());
+                sendChallenge(req, res, callback, principal.getEncodedToken());
                 return Authentication.SEND_CONTINUE;
             }
         }
@@ -179,36 +176,29 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
                         boolean expired = !authnDuration.isZero() && Instant.now().isAfter(holder._validFrom.plus(authnDuration));
                         // Allow non-GET requests even if they're expired, so that
                         // the client does not need to send the request content again.
-                        if (!expired || !HttpMethod.GET.is(request.getMethod()))
+                        if (!expired || !HttpMethod.GET.is(req.getMethod()))
                             return new UserAuthentication(getAuthMethod(), identity);
                     }
                 }
             }
         }
 
-        if (DeferredAuthentication.isDeferred(response))
+        if (DeferredAuthentication.isDeferred(res))
             return Authentication.UNAUTHENTICATED;
 
         if (LOG.isDebugEnabled())
             LOG.debug("Sending initial challenge");
-        sendChallenge(response, null);
+        sendChallenge(req, res, callback, null);
         return Authentication.SEND_CONTINUE;
     }
 
-    private void sendChallenge(HttpServletResponse response, String token) throws ServerAuthException
+    private void sendChallenge(Request req, Response res, Callback callback, String token) throws ServerAuthException
     {
-        try
-        {
-            setSpnegoToken(response, token);
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-        }
-        catch (IOException x)
-        {
-            throw new ServerAuthException(x);
-        }
+        setSpnegoToken(res, token);
+        Response.writeError(req, res, callback, HttpServletResponse.SC_UNAUTHORIZED);
     }
 
-    private void setSpnegoToken(HttpServletResponse response, String token)
+    private void setSpnegoToken(Response response, String token)
     {
         String value = HttpHeader.NEGOTIATE.asString();
         if (token != null)
@@ -227,7 +217,7 @@ public class ConfigurableSpnegoAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, User validatedUser)
+    public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, User validatedUser)
     {
         return true;
     }

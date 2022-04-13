@@ -13,8 +13,8 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
-import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.ee10.servlet.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.server.Request;
 
 /**
  * LoggedOutAuthentication
@@ -32,7 +32,7 @@ public class LoggedOutAuthentication implements Authentication.NonAuthenticated
     }
 
     @Override
-    public Authentication login(String username, Object password, ServletRequest request)
+    public Authentication login(String username, Object password, Request request)
     {
         if (username == null)
             return null;

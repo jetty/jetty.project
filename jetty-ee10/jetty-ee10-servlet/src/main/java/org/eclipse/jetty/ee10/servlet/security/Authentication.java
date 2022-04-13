@@ -13,11 +13,9 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.QuietServletException;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 
 /**
  * The Authentication state of a request.
@@ -47,7 +45,7 @@ public interface Authentication
 
         UserIdentity getUserIdentity();
 
-        boolean isUserInRole(UserIdentity.Scope scope, String role);
+        boolean isUserInRole(String role);
     }
 
     /**
@@ -65,7 +63,7 @@ public interface Authentication
          * @param request the request
          * @return The new Authentication state
          */
-        Authentication login(String username, Object password, ServletRequest request);
+        Authentication login(String username, Object password, Request request);
     }
 
     /**
@@ -82,7 +80,7 @@ public interface Authentication
          * @param request the request
          * @return NoAuthentication if we successfully logged out
          */
-        Authentication logout(ServletRequest request);
+        Authentication logout(Request request);
     }
 
     /**
@@ -100,7 +98,7 @@ public interface Authentication
          * @param request the request
          * @return The new Authentication state.
          */
-        Authentication authenticate(ServletRequest request);
+        Authentication authenticate(Request request);
 
         /**
          * Authenticate and possibly send a challenge.
@@ -111,7 +109,7 @@ public interface Authentication
          * @param response the response
          * @return The new Authentication state.
          */
-        Authentication authenticate(ServletRequest request, ServletResponse response);
+        Authentication authenticate(Request request, Response response);
     }
 
     /**

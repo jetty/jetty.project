@@ -13,12 +13,17 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.authentication.LoginAuthenticator;
 import org.eclipse.jetty.server.Handler;
@@ -63,16 +68,20 @@ public class UnauthenticatedTest
         securityHandler.addConstraintMapping(constraintMapping);
 
         securityHandler.setAuthenticator(authenticator);
-        securityHandler.setHandler(new Handler.Processor()
-        {
-            @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+
+        ServletHolder holder = new ServletHolder();
+        holder.setServlet(
+            new HttpServlet()
             {
-                ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-                servletContextRequest.getHttpServletResponse().getWriter().println("authentication: " + servletContextRequest.getServletApiRequest().getAuthentication());
-                callback.succeeded();
-            }
-        });
+                @Override
+                protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+                {
+                    ServletContextRequest scr = ServletContextRequest.getBaseRequest(req);
+                    resp.getWriter().println("authentication: " + scr.getServletApiRequest().getAuthentication());
+                }
+
+            });
+        context.getServletHandler().addServletWithMapping(holder, "/");
 
         context.setSecurityHandler(securityHandler);
         server.start();
@@ -126,19 +135,19 @@ public class UnauthenticatedTest
         }
 
         @Override
-        public void prepareRequest(ServletRequest request)
+        public void prepareRequest(Request request)
         {
             // Do nothing.
         }
 
         @Override
-        public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
+        public Authentication validateRequest(Request request, Response response, Callback callback, boolean mandatory) throws ServerAuthException
         {
             return AUTHENTICATION.get();
         }
 
         @Override
-        public boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, Authentication.User validatedUser) throws ServerAuthException
+        public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, Authentication.User validatedUser) throws ServerAuthException
         {
             return true;
         }

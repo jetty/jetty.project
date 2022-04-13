@@ -13,9 +13,10 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -68,18 +69,18 @@ public class DefaultIdentityServiceTest
         }
 
         @Override
-        public void prepareRequest(ServletRequest request)
+        public void prepareRequest(Request request)
         {
         }
 
         @Override
-        public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
+        public Authentication validateRequest(Request request, Response response, Callback callback, boolean mandatory) throws ServerAuthException
         {
             return null;
         }
 
         @Override
-        public boolean secureResponse(ServletRequest request, ServletResponse response, boolean mandatory, Authentication.User validatedUser) throws ServerAuthException
+        public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, Authentication.User validatedUser) throws ServerAuthException
         {
             return false;
         }

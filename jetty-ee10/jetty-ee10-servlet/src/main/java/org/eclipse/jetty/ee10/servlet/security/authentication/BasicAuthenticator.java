@@ -13,14 +13,10 @@
 
 package org.eclipse.jetty.ee10.servlet.security.authentication;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
@@ -28,6 +24,9 @@ import org.eclipse.jetty.ee10.servlet.security.ServerAuthException;
 import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.security.Constraint;
 
 public class BasicAuthenticator extends LoginAuthenticator
@@ -51,63 +50,54 @@ public class BasicAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(Request req, Response res, Callback callback, boolean mandatory) throws ServerAuthException
     {
-        HttpServletRequest request = (HttpServletRequest)req;
-        HttpServletResponse response = (HttpServletResponse)res;
-        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+        String credentials = req.getHeaders().get(HttpHeader.AUTHORIZATION);
 
-        try
+        if (!mandatory)
+            return new DeferredAuthentication(this);
+
+        if (credentials != null)
         {
-            if (!mandatory)
-                return new DeferredAuthentication(this);
-
-            if (credentials != null)
+            int space = credentials.indexOf(' ');
+            if (space > 0)
             {
-                int space = credentials.indexOf(' ');
-                if (space > 0)
+                String method = credentials.substring(0, space);
+                if ("basic".equalsIgnoreCase(method))
                 {
-                    String method = credentials.substring(0, space);
-                    if ("basic".equalsIgnoreCase(method))
+                    credentials = credentials.substring(space + 1);
+                    Charset charset = getCharset();
+                    if (charset == null)
+                        charset = StandardCharsets.ISO_8859_1;
+                    credentials = new String(Base64.getDecoder().decode(credentials), charset);
+                    int i = credentials.indexOf(':');
+                    if (i > 0)
                     {
-                        credentials = credentials.substring(space + 1);
-                        Charset charset = getCharset();
-                        if (charset == null)
-                            charset = StandardCharsets.ISO_8859_1;
-                        credentials = new String(Base64.getDecoder().decode(credentials), charset);
-                        int i = credentials.indexOf(':');
-                        if (i > 0)
-                        {
-                            String username = credentials.substring(0, i);
-                            String password = credentials.substring(i + 1);
+                        String username = credentials.substring(0, i);
+                        String password = credentials.substring(i + 1);
 
-                            UserIdentity user = login(username, password, request);
-                            if (user != null)
-                                return new UserAuthentication(getAuthMethod(), user);
-                        }
+                        UserIdentity user = login(username, password, req);
+                        if (user != null)
+                            return new UserAuthentication(getAuthMethod(), user);
                     }
                 }
             }
-
-            if (DeferredAuthentication.isDeferred(response))
-                return Authentication.UNAUTHENTICATED;
-
-            String value = "basic realm=\"" + _loginService.getName() + "\"";
-            Charset charset = getCharset();
-            if (charset != null)
-                value += ", charset=\"" + charset.name() + "\"";
-            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), value);
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
-            return Authentication.SEND_CONTINUE;
         }
-        catch (IOException e)
-        {
-            throw new ServerAuthException(e);
-        }
+
+        if (DeferredAuthentication.isDeferred(res))
+            return Authentication.UNAUTHENTICATED;
+
+        String value = "basic realm=\"" + _loginService.getName() + "\"";
+        Charset charset = getCharset();
+        if (charset != null)
+            value += ", charset=\"" + charset.name() + "\"";
+        res.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), value);
+        Response.writeError(req, res, callback, HttpServletResponse.SC_UNAUTHORIZED);
+        return Authentication.SEND_CONTINUE;
     }
 
     @Override
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
+    public boolean secureResponse(Request req, Response res, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException
     {
         return true;
     }
