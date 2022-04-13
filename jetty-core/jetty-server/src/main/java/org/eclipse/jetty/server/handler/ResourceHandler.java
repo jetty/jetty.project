@@ -119,11 +119,17 @@ public class ResourceHandler extends Handler.Wrapper
 
         _mimeTypes = new MimeTypes();
         //_contentFactory = new PathContentFactory();
-        // TODO make caching configurable
+        // TODO make caching configurable and disabled by default
         _contentFactory = new CachingContentFactory(new PathContentFactory());
         _welcomer = new DefaultWelcomer();
 
         super.doStart();
+    }
+
+    // for testing only
+    HttpContent.ContentFactory getContentFactory()
+    {
+        return _contentFactory;
     }
 
     /**
@@ -234,6 +240,7 @@ public class ResourceHandler extends Handler.Wrapper
             // Strip slash?
             if (endsWithSlash && pathInContext.length() > 1)
             {
+                // TODO need helper code to edit URIs
                 String q = request.getHttpURI().getQuery();
                 pathInContext = pathInContext.substring(0, pathInContext.length() - 1);
                 if (q != null && q.length() != 0)
@@ -1199,6 +1206,8 @@ public class ResourceHandler extends Handler.Wrapper
         {
             try
             {
+                if (Files.isDirectory(_path))
+                    return NO_CONTENT_LENGTH;
                 return Files.size(_path);
             }
             catch (IOException e)

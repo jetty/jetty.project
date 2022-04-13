@@ -20,9 +20,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,18 +37,115 @@ import org.slf4j.LoggerFactory;
  * Only HttpContent instances whose path is not a directory are cached.
  * HttpContent instances returned by getContent() implement HttpContent.InMemory when a cached instance is found.
  *
- * TODO cache config (sizing) is missing
+ * TODO should directories (generated HTML) and not-found contents be cached?
  */
 public class CachingContentFactory implements HttpContent.ContentFactory
 {
     private static final Logger LOG = LoggerFactory.getLogger(CachingContentFactory.class);
 
     private final HttpContent.ContentFactory _authority;
+    private final boolean _useFileMappedBuffer;
     private final ConcurrentMap<String, CachingHttpContent> _cache = new ConcurrentHashMap<>();
+    private final AtomicInteger _cachedSize = new AtomicInteger();
+    private int _maxCachedFileSize = 128 * 1024 * 1024;
+    private int _maxCachedFiles = 2048;
+    private int _maxCacheSize = 256 * 1024 * 1024;
 
-    public CachingContentFactory(HttpContent.ContentFactory _authority)
+    public CachingContentFactory(HttpContent.ContentFactory authority)
     {
-        this._authority = _authority;
+        this(authority, false);
+    }
+
+    public CachingContentFactory(HttpContent.ContentFactory authority, boolean useFileMappedBuffer)
+    {
+        _authority = authority;
+        _useFileMappedBuffer = useFileMappedBuffer;
+    }
+
+    public int getCachedSize()
+    {
+        return _cachedSize.get();
+    }
+
+    public int getCachedFiles()
+    {
+        return _cache.size();
+    }
+
+    public int getMaxCachedFileSize()
+    {
+        return _maxCachedFileSize;
+    }
+
+    public void setMaxCachedFileSize(int maxCachedFileSize)
+    {
+        _maxCachedFileSize = maxCachedFileSize;
+        shrinkCache();
+    }
+
+    public int getMaxCacheSize()
+    {
+        return _maxCacheSize;
+    }
+
+    public void setMaxCacheSize(int maxCacheSize)
+    {
+        _maxCacheSize = maxCacheSize;
+        shrinkCache();
+    }
+
+    /**
+     * @return the max number of cached files.
+     */
+    public int getMaxCachedFiles()
+    {
+        return _maxCachedFiles;
+    }
+
+    /**
+     * @param maxCachedFiles the max number of cached files.
+     */
+    public void setMaxCachedFiles(int maxCachedFiles)
+    {
+        _maxCachedFiles = maxCachedFiles;
+        shrinkCache();
+    }
+
+    public boolean isUseFileMappedBuffer()
+    {
+        return _useFileMappedBuffer;
+    }
+
+    private void shrinkCache()
+    {
+        // While we need to shrink
+        while (_cache.size() > 0 && (_cache.size() > _maxCachedFiles || _cachedSize.get() > _maxCacheSize))
+        {
+            // Scan the entire cache and generate an ordered list by last accessed time.
+            SortedSet<CachingHttpContent> sorted = new TreeSet<>((c1, c2) ->
+            {
+                if (c1._lastAccessed != c2._lastAccessed)
+                    return Long.compare(c1._lastAccessed, c2._lastAccessed);
+
+                if (c1._contentLengthValue < c2._contentLengthValue)
+                    return -1;
+
+                return c1._cacheKey.compareTo(c2._cacheKey);
+            });
+            sorted.addAll(_cache.values());
+
+            // Invalidate least recently used first
+            for (CachingHttpContent content : sorted)
+            {
+                if (_cache.size() <= _maxCachedFiles && _cachedSize.get() <= _maxCacheSize)
+                    break;
+                if (content == _cache.remove(content._cacheKey))
+                {
+                    _cachedSize.addAndGet((int)-content._contentLengthValue);
+                    content.invalidate();
+                }
+            }
+        }
     }
 
     public void flushCache()
@@ -53,7 +154,10 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         {
             CachingHttpContent content = _cache.remove(path);
             if (content != null)
+            {
+                _cachedSize.addAndGet((int)-content._contentLengthValue);
                 content.invalidate();
+            }
         }
     }
 
@@ -61,40 +165,70 @@ public class CachingContentFactory implements HttpContent.ContentFactory
     public HttpContent getContent(String path, int maxBuffer) throws IOException
     {
         CachingHttpContent cachingHttpContent = _cache.get(path);
-        if (cachingHttpContent != null && cachingHttpContent.isValid())
-            return cachingHttpContent;
-        HttpContent httpContent = _authority.getContent(path, maxBuffer);
-        // Do not cache directories
-        if (httpContent != null && !Files.isDirectory(httpContent.getPath()))
+        if (cachingHttpContent != null)
         {
-            httpContent = cachingHttpContent = new CachingHttpContent(httpContent);
+            if (cachingHttpContent.isValid())
+            {
+                return cachingHttpContent;
+            }
+            else
+            {
+                CachingHttpContent removed = _cache.remove(cachingHttpContent._cacheKey);
+                if (removed != null)
+                    _cachedSize.addAndGet((int)-removed._contentLengthValue);
+            }
+        }
+        HttpContent httpContent = _authority.getContent(path, maxBuffer);
+        // Do not cache directories or files that are too big
+        if (httpContent != null && !Files.isDirectory(httpContent.getPath()) && httpContent.getContentLengthValue() <= _maxCachedFileSize)
+        {
+            httpContent = cachingHttpContent = new CachingHttpContent(path, httpContent);
             _cache.put(path, cachingHttpContent);
+            _cachedSize.addAndGet((int)cachingHttpContent._contentLengthValue);
+            shrinkCache();
         }
         return httpContent;
     }
 
-    private static class CachingHttpContent implements HttpContent.InMemory
+    private class CachingHttpContent implements HttpContent.InMemory
     {
         private final HttpContent _delegate;
         private final ByteBuffer _buffer;
         private final FileTime _lastModifiedValue;
+        private final String _cacheKey;
+        private final long _contentLengthValue;
+        private volatile long _lastAccessed;
 
-        private CachingHttpContent(HttpContent httpContent) throws IOException
+        private CachingHttpContent(String key, HttpContent httpContent) throws IOException
         {
-            // load the content into memory
-            long contentLengthValue = httpContent.getContentLengthValue();
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect((int)contentLengthValue); // TODO use pool & check length limit
+            _contentLengthValue = httpContent.getContentLengthValue(); // TODO getContentLengthValue() could return -1
+            ByteBuffer byteBuffer;
 
-            SeekableByteChannel channel = Files.newByteChannel(httpContent.getPath());
-            // fill buffer
-            int read = 0;
-            while (read != contentLengthValue)
-                read += channel.read(byteBuffer);
-            byteBuffer.flip();
+            if (_useFileMappedBuffer)
+            {
+                // mmap the content into memory
+                byteBuffer = BufferUtil.toMappedBuffer(httpContent.getPath(), 0, _contentLengthValue);
+            }
+            else
+            {
+                // TODO use pool & check length limit
+                // load the content into memory
+                byteBuffer = ByteBuffer.allocateDirect((int)_contentLengthValue);
+                try (SeekableByteChannel channel = Files.newByteChannel(httpContent.getPath()))
+                {
+                    // fill buffer
+                    int read = 0;
+                    while (read != _contentLengthValue)
+                        read += channel.read(byteBuffer);
+                }
+                byteBuffer.flip();
+            }
 
+            _cacheKey = key;
             _buffer = byteBuffer;
             _lastModifiedValue = Files.getLastModifiedTime(httpContent.getPath());
             _delegate = httpContent;
+            _lastAccessed = System.nanoTime();
         }
 
         @Override
@@ -109,7 +243,10 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             {
                 FileTime lastModifiedTime = Files.getLastModifiedTime(_delegate.getPath());
                 if (lastModifiedTime.equals(_lastModifiedValue))
+                {
+                    _lastAccessed = System.nanoTime();
                     return true;
+                }
             }
             catch (IOException e)
             {
