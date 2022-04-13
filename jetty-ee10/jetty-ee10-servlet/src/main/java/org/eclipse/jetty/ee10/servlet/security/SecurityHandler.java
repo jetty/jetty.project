@@ -475,7 +475,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
                 RoleInfo roleInfo = prepareConstraintInfo(servletContextRequest.getPathInContext(), servletApiRequest);
 
                 // Check data constraints
-                if (!checkUserDataPermissions(servletContextRequest.getPathInContext(), servletContextRequest, response, roleInfo))
+                if (!checkUserDataPermissions(servletContextRequest.getPathInContext(), servletContextRequest, response, callback, roleInfo))
                 {
                     return;
                 }
@@ -620,7 +620,7 @@ public abstract class SecurityHandler extends Handler.Wrapper implements Authent
 
     protected abstract RoleInfo prepareConstraintInfo(String pathInContext, HttpServletRequest request);
 
-    protected abstract boolean checkUserDataPermissions(String pathInContext, Request request, Response response, RoleInfo constraintInfo) throws IOException;
+    protected abstract boolean checkUserDataPermissions(String pathInContext, Request request, Response response, Callback callback, RoleInfo constraintInfo) throws IOException;
 
     protected abstract boolean isAuthMandatory(Request baseRequest, Response baseResponse, Object constraintInfo);
 

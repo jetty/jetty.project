@@ -1771,7 +1771,7 @@ public class ServletContextHandlerTest
 
             @Override
             protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response,
-                                                       RoleInfo constraintInfo)
+                                                       Callback callback, RoleInfo constraintInfo)
             {
                 return false;
             }

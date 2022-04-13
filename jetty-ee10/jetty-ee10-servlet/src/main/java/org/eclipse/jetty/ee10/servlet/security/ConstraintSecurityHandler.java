@@ -43,6 +43,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.security.Constraint;
@@ -623,15 +624,14 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
      * Return true if ok to proceed, false otherwise.
      */
     @Override
-    protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response, RoleInfo roleInfo) throws IOException
+    protected boolean checkUserDataPermissions(String pathInContext, Request request, Response response, Callback callback, RoleInfo roleInfo) throws IOException
     {
         if (roleInfo == null)
             return true;
 
         if (roleInfo.isForbidden())
         {
-            //TODO - check this
-            Response.writeError(request, response, null, HttpServletResponse.SC_FORBIDDEN);
+            Response.writeError(request, response, callback, HttpServletResponse.SC_FORBIDDEN);
             return false;
         }
 
@@ -655,12 +655,10 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 String url = URIUtil.newURI(scheme, Request.getServerName(request), port, request.getHttpURI().getPath(), request.getHttpURI().getQuery());
                 response.setContentLength(0);
                 
-                //TODO - check this
-                Response.sendRedirect(request, response, null, HttpStatus.MOVED_TEMPORARILY_302, url, true);
+                Response.sendRedirect(request, response, callback, HttpStatus.MOVED_TEMPORARILY_302, url, true);
             }
             else
-                //TODO - check this
-                Response.writeError(request, response, null, HttpStatus.FORBIDDEN_403, "!Secure");
+                Response.writeError(request, response, callback, HttpStatus.FORBIDDEN_403, "!Secure");
             return false;
         }
         else
