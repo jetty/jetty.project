@@ -13,9 +13,14 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
+import java.io.IOException;
 import java.util.Arrays;
 
+import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
@@ -47,7 +52,7 @@ public class DataConstraintsTest
     private ConstraintSecurityHandler _security;
 
     @BeforeEach
-    public void startServer()
+    public void configureServer()
     {
         _server = new Server();
 
@@ -89,15 +94,8 @@ public class DataConstraintsTest
 
         _security = new ConstraintSecurityHandler();
         contextHandler.setSecurityHandler(_security);
-
-        _security.setHandler(new Handler.Processor()
-        {
-            @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
-            {
-                Response.writeError(request, response, callback, 404);
-            }
-        });
+        
+        contextHandler.getServletHandler().addServletWithMapping(TestServlet.class, "/");
     }
 
     @AfterEach
@@ -412,6 +410,16 @@ public class DataConstraintsTest
 
         response = _connectorS.getResponse("GET /ctx/restricted/info HTTP/1.0\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\n\n");
         assertThat(response, Matchers.containsString("HTTP/1.1 404 Not Found"));
+    }
+    
+    public static class TestServlet extends HttpServlet
+    {
+        @Override
+        protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.setContentType("text/plain; charset=UTF-8");
+            resp.sendError(404);
+        }
     }
 
     private class CustomLoginService implements LoginService

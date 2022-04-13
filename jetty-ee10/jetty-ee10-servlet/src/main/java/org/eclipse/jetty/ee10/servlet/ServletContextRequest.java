@@ -688,13 +688,25 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public void login(String username, String password) throws ServletException
         {
-            // TODO
+            if (_authentication instanceof Authentication.LoginAuthentication)
+            {
+                Authentication auth = ((Authentication.LoginAuthentication)_authentication).login(username, password, ServletContextRequest.this);
+                if (auth == null)
+                    throw new Authentication.Failed("Authentication failed for username '" + username + "'");
+                else
+                    _authentication = auth;
+            }
+            else
+            {
+                throw new Authentication.Failed("Authenticated failed for username '" + username + "'. Already authenticated as " + _authentication);
+            }
         }
 
         @Override
         public void logout() throws ServletException
         {
-            // TODO
+            if (_authentication instanceof Authentication.LogoutAuthentication)
+                _authentication = ((Authentication.LogoutAuthentication)_authentication).logout(ServletContextRequest.this);
         }
 
         @Override

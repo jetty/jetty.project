@@ -13,18 +13,14 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -43,7 +39,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
@@ -53,15 +49,10 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
@@ -114,7 +105,6 @@ public class ConstraintTest
         _server.setConnectors(new Connector[]{_connector});
 
         _contextHandler = new ServletContextHandler();
-        SessionHandler sessionHandler = new SessionHandler();
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
 
@@ -130,9 +120,9 @@ public class ConstraintTest
         _server.addBean(loginService);
 
         _security = new ConstraintSecurityHandler();
+        _contextHandler.setSessionHandler(new SessionHandler());
         _contextHandler.setSecurityHandler(_security);
-        RequestHandler requestHandler = new RequestHandler();
-        _security.setHandler(requestHandler);
+        _contextHandler.getServletHandler().addServletWithMapping(RequestServlet.class, "/");
 
         _security.setConstraintMappings(getConstraintMappings(), getKnownRoles());
     }
@@ -1209,6 +1199,9 @@ public class ConstraintTest
     @Test
     public void testFormProgrammaticLoginLogout() throws Exception
     {
+        //remove any previous servlet mappings
+        _contextHandler.setServletHandler(new ServletHandler());
+        
         //Test programmatic login/logout within same request:
         // login  - perform programmatic login that should succeed, next request should be also logged in
         // loginfail  - perform programmatic login that should fail, next request should not be logged in
@@ -1216,7 +1209,14 @@ public class ConstraintTest
         // loginlogin - perform successful login then try another that should fail, next request should be logged in
         // loginlogout - perform successful login then logout, next request should not be logged in
         // loginlogoutlogin - perform successful login then logout then login successfully again, next request should be logged in
-        _contextHandler.getServletHandler().addServletWithMapping(ProgrammaticLoginRequestServlet.class, "/prog/*");
+        ServletHolder programmaticHolder = new ServletHolder();
+        programmaticHolder.setServlet(new ProgrammaticLoginRequestServlet());
+        _contextHandler.getServletHandler().addServletWithMapping(programmaticHolder, "/prog/*");
+        
+        ServletHolder requestHolder = new ServletHolder();
+        requestHolder.setServlet(new RequestServlet());
+        _contextHandler.getServletHandler().addServletWithMapping(requestHolder, "/");
+        
         _security.setAuthenticator(new FormAuthenticator("/testLoginPage", "/testErrorPage", false));
         _server.start();
 
@@ -1728,6 +1728,8 @@ public class ConstraintTest
     @Test
     public void testRoleRef() throws Exception
     {
+        //remove previously set servlet
+        _contextHandler.setServletHandler(new ServletHandler());
         ServletHolder roleCheckHolder = new ServletHolder();
         roleCheckHolder.setServlet(new RoleCheckServlet());
 
@@ -1877,37 +1879,37 @@ public class ConstraintTest
         return Base64.getEncoder().encodeToString(raw);
     }
 
-    private static class RequestHandler extends Handler.Processor
+    public static class RequestServlet extends HttpServlet
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        protected void service(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
         {
-            ServletContextRequest wrappedRequest = Request.as(request, ServletContextRequest.class);
-            ServletContextRequest.ServletApiRequest baseRequest = wrappedRequest.getServletApiRequest();
-            if (baseRequest.getAuthType() == null || "user".equals(baseRequest.getRemoteUser()) || baseRequest.isUserInRole("user") || baseRequest.isUserInRole("foo"))
+            if (req.getAuthType() == null || "user".equals(req.getRemoteUser()) || req.isUserInRole("user") || req.isUserInRole("foo"))
             {
-                response.setStatus(200);
-                response.setContentType("text/plain; charset=UTF-8");
-                String user = baseRequest.getRemoteUser();
+                res.setStatus(200);
+                res.setContentType("text/plain; charset=UTF-8");
+                String user = req.getRemoteUser();
+                String result;
 
-                ByteArrayOutputStream bout = new ByteArrayOutputStream();
-                PrintWriter out = new PrintWriter(bout);
-
-                out.println("URI=" + baseRequest.getRequestURI());
-                out.println("user=" + user);
-                if (baseRequest.getParameter("test_parameter") != null)
-                    out.println(baseRequest.getParameter("test_parameter"));
-                out.flush();
-                response.write(true, callback, out.toString());
+                if (req.getParameter("test_parameter") != null)
+                    result =  """
+                    URI=%s
+                    user=%s
+                    %s""".formatted(req.getRequestURI(), user, req.getParameter("test_parameter"));
+                else
+                    result = """
+                    URI=%s
+                    user=%s""".formatted(req.getRequestURI(), user);
+                res.getWriter().println(result);
             }
             else
             {
-                Response.writeError(request, response, callback, 500);
+                res.sendError(500);
             }
         }
     }
 
-    private class ProgrammaticLoginRequestServlet extends HttpServlet
+    public class ProgrammaticLoginRequestServlet extends HttpServlet
     {
         @Override
         protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
@@ -1990,7 +1992,7 @@ public class ConstraintTest
         }
     }
 
-    private class RoleCheckServlet extends HttpServlet
+    public class RoleCheckServlet extends HttpServlet
     {
         @Override
         protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
