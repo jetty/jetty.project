@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -348,6 +349,7 @@ public class ServletRequestState
         {
             switch (_outputState)
             {
+                case COMPLETED:
                 case ABORTED:
                     return false;
 
@@ -890,6 +892,10 @@ public class ServletRequestState
         // No ISE, so good to modify request/state
         request.setAttribute(ERROR_EXCEPTION, th);
         request.setAttribute(ERROR_EXCEPTION_TYPE, th.getClass());
+
+        // Set Jetty specific attributes.
+        request.setAttribute(ErrorProcessor.ERROR_EXCEPTION, null);
+
         // Ensure any async lifecycle is ended!
         _requestState = RequestState.BLOCKING;
     }
@@ -937,6 +943,11 @@ public class ServletRequestState
             request.setAttribute(ERROR_SERVLET_NAME, servletContextRequest.getServletName());
             request.setAttribute(ERROR_STATUS_CODE, code);
             request.setAttribute(ERROR_MESSAGE, message);
+
+            // Set Jetty Specific Attributes.
+            request.setAttribute(ErrorProcessor.ERROR_CONTEXT, servletContextRequest.getContext());
+            request.setAttribute(ErrorProcessor.ERROR_MESSAGE, message);
+            request.setAttribute(ErrorProcessor.ERROR_STATUS, code);
 
             _sendError = true;
             if (_event != null)
