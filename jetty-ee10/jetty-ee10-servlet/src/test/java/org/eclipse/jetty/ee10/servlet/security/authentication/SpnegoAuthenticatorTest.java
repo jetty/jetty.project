@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class SpnegoAuthenticatorTest
 {
@@ -48,6 +49,7 @@ public class SpnegoAuthenticatorTest
     @Test
     public void testChallengeSentWithNoAuthorization() throws Exception
     {
+        /*
         HttpChannel channel = new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
         {
             @Override
@@ -108,11 +110,14 @@ public class SpnegoAuthenticatorTest
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
+         */
+        fail("re-write test case");
     }
 
     @Test
     public void testChallengeSentWithUnhandledAuthorization() throws Exception
     {
+        /*
         HttpChannel channel = new HttpChannel(new MockConnector(), new HttpConfiguration(), null, null)
         {
             @Override
@@ -177,6 +182,8 @@ public class SpnegoAuthenticatorTest
         assertEquals(Authentication.SEND_CONTINUE, _authenticator.validateRequest(req, res, true));
         assertEquals(HttpHeader.NEGOTIATE.asString(), res.getHeader(HttpHeader.WWW_AUTHENTICATE.asString()));
         assertEquals(HttpServletResponse.SC_UNAUTHORIZED, res.getStatus());
+         */
+        fail("re-write test case");
     }
 
     class MockConnector extends AbstractConnector

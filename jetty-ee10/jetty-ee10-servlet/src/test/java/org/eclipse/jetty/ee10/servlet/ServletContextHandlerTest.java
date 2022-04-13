@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.management.relation.RoleInfo;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -61,7 +60,9 @@ import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.RoleInfo;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
@@ -1763,7 +1764,7 @@ public class ServletContextHandlerTest
         SecurityHandler myHandler = new SecurityHandler()
         {
             @Override
-            protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)
+            protected RoleInfo prepareConstraintInfo(String pathInContext, HttpServletRequest request)
             {
                 return null;
             }

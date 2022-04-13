@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
@@ -64,14 +65,23 @@ public class DataConstraintsTest
         _connector.setIdleTimeout(300000);
 
         HttpConnectionFactory https = new HttpConnectionFactory();
-        https.getHttpConfiguration().addCustomizer(new HttpConfiguration.Customizer()
+        https.getHttpConfiguration().addCustomizer((request, responseHeaders) ->
         {
-            @Override
-            public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
+            HttpURI.Mutable uri = HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS);
+            return new Request.Wrapper(request)
             {
-                request.setHttpURI(HttpURI.build(request.getHttpURI()).scheme(HttpScheme.HTTPS));
-                request.setSecure(true);
-            }
+                @Override
+                public HttpURI getHttpURI()
+                {
+                    return uri;
+                }
+
+                @Override
+                public boolean isSecure()
+                {
+                    return true;
+                }
+            };
         });
 
         _connectorS = new LocalConnector(_server, https);
