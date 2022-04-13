@@ -38,6 +38,9 @@ import org.slf4j.LoggerFactory;
  * HttpContent instances returned by getContent() implement HttpContent.InMemory when a cached instance is found.
  *
  * TODO should directories (generated HTML) and not-found contents be cached?
+ * TODO this form of caching is done at a layer below the request processor (i.e.: done in the guts of the ResourceHandler)
+ *  Consider if caching should rather be done at a layer above using a CachingHandler that would intercept Response.write()
+ *  of a configured URI set, save that in a cache and serve that again.
  */
 public class CachingContentFactory implements HttpContent.ContentFactory
 {
