@@ -1155,10 +1155,23 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         {
             HttpURI uri = request.getHttpURI();
             String param = uri.getParam();
-            param = (param == null ? null : param.trim());
-            if (param != null && param.contains(getSessionIdPathParameterName()))
+            param = (param == null ? "" : param.trim());
+            int start = param.indexOf(getSessionIdPathParameterName());
+            if (start >= 0)
             {
-                requestedSessionId = param.substring(getSessionIdPathParameterName().length());
+                int s = start;
+                s += getSessionIdPathParameterName().length();
+                if (param.charAt(s) == '=')
+                    s++;
+                int i = s;
+                while (i < param.length())
+                {
+                    char c = param.charAt(i);
+                    if (c == ';' || c == '#' || c == '?' || c == '/')
+                        break;
+                    i++;
+                }
+                requestedSessionId = param.substring(s, i);
                 requestedSessionIdFromCookie = false;
 
                 if (LOG.isDebugEnabled())
