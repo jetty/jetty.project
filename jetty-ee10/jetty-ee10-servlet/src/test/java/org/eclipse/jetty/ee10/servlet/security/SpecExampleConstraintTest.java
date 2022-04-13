@@ -263,8 +263,6 @@ public class SpecExampleConstraintTest
     {
         _server.start();
         
-        ServletContextHandler sch = (ServletContextHandler)_server.getHandler();
-        Handler.Nested h = (Handler.Nested)sch.getHandler();
         String response = _connector.getResponse("GET /ctx/foo HTTP/1.0\r\n\r\n");
         assertTrue(response.startsWith("HTTP/1.1 200 OK"));
     }
