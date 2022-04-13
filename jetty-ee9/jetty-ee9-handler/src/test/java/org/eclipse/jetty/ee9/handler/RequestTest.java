@@ -325,11 +325,14 @@ public class RequestTest
             "\n" +
             "name=value";
 
-        LocalEndPoint endp = _connector.connect();
-        endp.addInput(request);
+        try (StacklessLogging ignore = new StacklessLogging(org.eclipse.jetty.server.Response.class))
+        {
+            LocalEndPoint endp = _connector.connect();
+            endp.addInput(request);
 
-        String response = BufferUtil.toString(endp.waitForResponse(false, 1, TimeUnit.SECONDS));
-        assertThat("Responses", response, startsWith("HTTP/1.1 500"));
+            String response = BufferUtil.toString(endp.waitForResponse(false, 1, TimeUnit.SECONDS));
+            assertThat("Responses", response, startsWith("HTTP/1.1 500"));
+        }
     }
 
     @Test
@@ -623,8 +626,6 @@ public class RequestTest
             "Connection: close\n" +
             "\n" +
             "<insert huge amount of content here>\n";
-
-        System.out.println(request);
 
         String responses = _connector.getResponse(request);
         assertThat(responses, startsWith("HTTP/1.1 200"));

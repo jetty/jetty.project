@@ -107,7 +107,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _connectionMetaData = connectionMetaData;
         _connector = connectionMetaData.getConnector();
         _configuration = Objects.requireNonNull(connectionMetaData.getHttpConfiguration());
-        _endPoint = connectionMetaData.getConnection() == null ? null : connectionMetaData.getConnection().getEndPoint();
+        _endPoint = connectionMetaData.getConnection().getEndPoint();
         _state = new HttpChannelState(this);
         _request = new Request(this, newHttpInput());
         _response = new Response(this, newHttpOutput());
@@ -929,7 +929,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         _request.onCompleted();
         _combinedListener.onComplete(_request);
-        _coreCallback.succeeded();
+        Callback callback = _coreCallback;
+        _coreCallback = null;
+        if (callback != null)
+            callback.succeeded();
     }
 
     public void onBadMessage(BadMessageException failure)
@@ -1148,7 +1151,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (_state.abortResponse())
         {
             _combinedListener.onResponseFailure(_request, failure);
-            _coreCallback.failed(failure);
+            Callback callback = _coreCallback;
+            _coreCallback = null;
+            if (callback != null)
+                callback.failed(failure);
         }
     }
 

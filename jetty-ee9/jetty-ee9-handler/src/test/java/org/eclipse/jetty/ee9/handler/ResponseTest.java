@@ -29,6 +29,9 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import jakarta.servlet.RequestDispatcher;
@@ -48,9 +51,13 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
@@ -58,6 +65,7 @@ import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
@@ -2230,7 +2238,140 @@ public class ResponseTest
     private Response getResponse(HttpVersion version)
     {
         _channel.recycle();
-        _channel.getRequest().setMetaData(new MetaData.Request("GET", HttpURI.from("/path/info"), version, HttpFields.EMPTY));
+
+        long now = System.currentTimeMillis();
+        Server server = new Server();
+        MetaData.Request reqMeta = new MetaData.Request("GET", HttpURI.from("/path/info"), version, HttpFields.EMPTY);
+
+        _channel.onRequest(new org.eclipse.jetty.server.Request()
+        {
+            @Override
+            public String getId()
+            {
+                return "test";
+            }
+
+            @Override
+            public Components getComponents()
+            {
+                return null;
+            }
+
+            @Override
+            public ConnectionMetaData getConnectionMetaData()
+            {
+                return new MockConnectionMetaData();
+            }
+
+            @Override
+            public String getMethod()
+            {
+                return reqMeta.getMethod();
+            }
+
+            @Override
+            public HttpURI getHttpURI()
+            {
+                return reqMeta.getURI();
+            }
+
+            @Override
+            public Context getContext()
+            {
+                return server.getContext();
+            }
+
+            @Override
+            public String getPathInContext()
+            {
+                return reqMeta.getURI().getCanonicalPath();
+            }
+
+            @Override
+            public HttpFields getHeaders()
+            {
+                return reqMeta.getFields();
+            }
+
+            @Override
+            public long getTimeStamp()
+            {
+                return now;
+            }
+
+            @Override
+            public boolean isSecure()
+            {
+                return false;
+            }
+
+            @Override
+            public long getContentLength()
+            {
+                return 0;
+            }
+
+            @Override
+            public Content readContent()
+            {
+                return null;
+            }
+
+            @Override
+            public void demandContent(Runnable onContentAvailable)
+            {
+
+            }
+
+            @Override
+            public void push(MetaData.Request request)
+            {
+
+            }
+
+            @Override
+            public boolean addErrorListener(Predicate<Throwable> onError)
+            {
+                return false;
+            }
+
+            @Override
+            public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+            {
+
+            }
+
+            @Override
+            public Object removeAttribute(String name)
+            {
+                return null;
+            }
+
+            @Override
+            public Object setAttribute(String name, Object attribute)
+            {
+                return null;
+            }
+
+            @Override
+            public Object getAttribute(String name)
+            {
+                return null;
+            }
+
+            @Override
+            public Set<String> getAttributeNameSet()
+            {
+                return null;
+            }
+
+            @Override
+            public void clearAttributes()
+            {
+
+            }
+        }, null, Callback.NOOP);
+
         BufferUtil.clear(_content);
         return _channel.getResponse();
     }

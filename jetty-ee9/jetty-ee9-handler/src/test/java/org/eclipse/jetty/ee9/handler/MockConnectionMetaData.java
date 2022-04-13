@@ -17,7 +17,10 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionMetaData;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -29,6 +32,14 @@ public class MockConnectionMetaData extends Attributes.Mapped implements Connect
 {
     private final HttpConfiguration _httpConfig = new HttpConfiguration();
     private final Connector _connector;
+    private final EndPoint _endPoint = new ByteArrayEndPoint();
+    private final Connection _connection = new AbstractConnection(_endPoint, Runnable::run)
+    {
+        @Override
+        public void onFillable()
+        {
+        }
+    };
     private boolean _persistent = true;
 
     public MockConnectionMetaData()
@@ -73,7 +84,7 @@ public class MockConnectionMetaData extends Attributes.Mapped implements Connect
     @Override
     public Connection getConnection()
     {
-        return null;
+        return _connection;
     }
 
     @Override

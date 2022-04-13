@@ -282,13 +282,9 @@ public class ErrorHandler extends AbstractHandler
         // write into the response aggregate buffer and flush it asynchronously.
         while (true)
         {
+            ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getBuffer();
             try
             {
-                // TODO currently the writer used here is of fixed size, so a large
-                // TODO error page may cause a BufferOverflow.  In which case we try
-                // TODO again with stacks disabled. If it still overflows, it is
-                // TODO written without a body.
-                ByteBuffer buffer = baseRequest.getResponse().getHttpOutput().getBuffer();
                 ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
                 PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, charset));
 
@@ -318,17 +314,19 @@ public class ErrorHandler extends AbstractHandler
             }
             catch (BufferOverflowException e)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Error page too large: {} {} {}", code, message, request, e);
-                else
-                    LOG.warn("Error page too large: {} {} {}", code, message, request);
                 baseRequest.getResponse().resetContent();
                 if (!_disableStacks)
                 {
-                    LOG.info("Disabling showsStacks for {}", this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Disabling showsStacks for {}", this);
                     _disableStacks = true;
                     continue;
                 }
+
+                if (LOG.isDebugEnabled())
+                    LOG.warn("Error page too large: >{} {} {} {}", buffer.capacity(), code, message, request, e);
+                else
+                    LOG.warn("Error page too large: >{} {} {} {}", buffer.capacity(), code, message, request);
                 break;
             }
         }

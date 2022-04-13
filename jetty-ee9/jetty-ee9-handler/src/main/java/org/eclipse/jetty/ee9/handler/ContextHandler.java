@@ -77,6 +77,7 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -1296,6 +1297,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public String toString()
     {
+        if (_coreContextHandler == null)
+            return "%s@%x.<init>".formatted(TypeUtil.toShortName(ContextHandler.class), hashCode());
+
         final String[] vhosts = getVirtualHosts();
 
         StringBuilder b = new StringBuilder();

@@ -227,16 +227,19 @@ public class ErrorProcessor implements Request.Processor
             }
             catch (BufferOverflowException e)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.warn("Error page too large: {} {} {}", code, message, request, e);
-                else
-                    LOG.warn("Error page too large: {} {} {}", code, message, request);
-
                 if (showStacks)
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Disable stacks for " + e.toString());
+
                     showStacks = false;
                     continue;
                 }
+                if (LOG.isDebugEnabled())
+                    LOG.warn("Error page too large: >{} {} {} {}", bufferSize, code, message, request, e);
+                else
+                    LOG.warn("Error page too large: >{} {} {} {}", bufferSize, code, message, request);
+
                 break;
             }
         }

@@ -1612,7 +1612,7 @@ public class Request implements HttpServletRequest
     /**
      * @param request the Request metadata
      */
-    public void setMetaData(MetaData.Request request)
+    void setMetaData(MetaData.Request request)
     {
         if (_metaData == null && _input != null && _channel != null)
         {
