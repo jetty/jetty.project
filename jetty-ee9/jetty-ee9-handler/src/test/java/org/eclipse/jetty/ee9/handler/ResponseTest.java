@@ -64,6 +64,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.NullSessionDataStore;
+import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -80,6 +81,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -124,7 +126,14 @@ public class ResponseTest
             }
         };
 
-        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector());
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(connector, endPoint)
+        {
+            @Override
+            public SocketAddress getLocalSocketAddress()
+            {
+                return local;
+            }
+        };
         _channel = new HttpChannel(_context, connectionMetaData)
         {
             @Override
@@ -1591,17 +1600,50 @@ public class ResponseTest
     @Test
     public void testEncodeRedirect() throws Exception
     {
-        Server server = new Server();
-        ContextHandler context = new ContextHandler(server, "/path");
+        SessionHandler sessionHandler = addSessionHandler();
+
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
         request.setHttpURI(HttpURI.build(request.getHttpURI()).host("myhost").port(8888));
-        request.setContext(context.getServletContext(), "/info");
 
         assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
 
+        request.setSessionManager(sessionHandler.getSessionManager());
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
+        assertNotNull(request.getSession(true));
+        assertThat(request.getSession(false).getId(), is("12345"));
+
+        assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
+        assertEquals("http://other:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost:8888/other/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
+
+        sessionHandler.setCheckingRemoteSessionIdEncoding(true);
+        assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
+        assertEquals("http://other:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
+        assertEquals("http://myhost/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
+
+        // TODO assertEquals("http://myhost:8888/other/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
+
+        request.setContext(_context.getServletContext(), "/");
+        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888"));
+        assertEquals("https://myhost:8888/;jsessionid=12345", response.encodeURL("https://myhost:8888"));
+        assertEquals("mailto:/foo", response.encodeURL("mailto:/foo"));
+        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888/"));
+        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888/;jsessionid=7777"));
+        assertEquals("http://myhost:8888/;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/;param?query=0&more=1#target"));
+        assertEquals("http://other:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
+        sessionHandler.setCheckingRemoteSessionIdEncoding(false);
+        assertEquals("/foo;jsessionid=12345", response.encodeURL("/foo"));
+        assertEquals("/;jsessionid=12345", response.encodeURL("/"));
+        assertEquals("/foo.html;jsessionid=12345#target", response.encodeURL("/foo.html#target"));
+        assertEquals(";jsessionid=12345", response.encodeURL(""));
+    }
+
+    private SessionHandler addSessionHandler() throws Exception
+    {
+        _server.stop();
         SessionHandler handler = new SessionHandler();
         DefaultSessionCache sessionCache = new DefaultSessionCache(handler.getSessionManager());
         NullSessionDataStore dataStore = new NullSessionDataStore();
@@ -1615,61 +1657,14 @@ public class ResponseTest
             }
         };
 
-        server.addBean(sessionIdManager);
+        _server.addBean(sessionIdManager);
         sessionIdManager.setWorkerName(null);
         handler.getSessionManager().setSessionCache(sessionCache);
         handler.getSessionManager().setSessionIdManager(sessionIdManager);
-        request.setSessionManager(handler.getSessionManager());
         handler.setCheckingRemoteSessionIdEncoding(false);
-        context.setHandler(handler);
-
-        server.start();
-
-        request.setContext(context.getServletContext(), "/path/info");
-
-        assertNotNull(request.getSession(true));
-        assertThat(request.getSession(false).getId(), is("12345"));
-
-        assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
-        assertEquals("http://other:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
-        assertEquals("http://myhost/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
-        assertEquals("http://myhost:8888/other/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
-
-        handler.setCheckingRemoteSessionIdEncoding(true);
-        assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
-        assertEquals("http://other:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
-        assertEquals("http://myhost/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost/path/info;param?query=0&more=1#target"));
-        assertEquals("http://myhost:8888/other/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/other/info;param?query=0&more=1#target"));
-
-        context = new ContextHandler("/");
-        request.setContext(context.getServletContext(), "/");
-        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888"));
-        assertEquals("https://myhost:8888/;jsessionid=12345", response.encodeURL("https://myhost:8888"));
-        assertEquals("mailto:/foo", response.encodeURL("mailto:/foo"));
-        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888/"));
-        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888/;jsessionid=7777"));
-        assertEquals("http://myhost:8888/;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/;param?query=0&more=1#target"));
-        assertEquals("http://other:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
-        handler.setCheckingRemoteSessionIdEncoding(false);
-        assertEquals("/foo;jsessionid=12345", response.encodeURL("/foo"));
-        assertEquals("/;jsessionid=12345", response.encodeURL("/"));
-        assertEquals("/foo.html;jsessionid=12345#target", response.encodeURL("/foo.html#target"));
-        assertEquals(";jsessionid=12345", response.encodeURL(""));
-
-        request.setContext(null, "/");
-        handler.setCheckingRemoteSessionIdEncoding(true);
-        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888"));
-        assertEquals("https://myhost:8888/;jsessionid=12345", response.encodeURL("https://myhost:8888"));
-        assertEquals("mailto:/foo", response.encodeURL("mailto:/foo"));
-        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888/"));
-        assertEquals("http://myhost:8888/;jsessionid=12345", response.encodeURL("http://myhost:8888/;jsessionid=7777"));
-        assertEquals("http://myhost:8888/;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/;param?query=0&more=1#target"));
-        assertEquals("http://other:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
-        handler.setCheckingRemoteSessionIdEncoding(false);
-        assertEquals("/foo;jsessionid=12345", response.encodeURL("/foo"));
-        assertEquals("/;jsessionid=12345", response.encodeURL("/"));
-        assertEquals("/foo.html;jsessionid=12345#target", response.encodeURL("/foo.html#target"));
-        assertEquals(";jsessionid=12345", response.encodeURL(""));
+        _context.setHandler(handler);
+        _server.start();
+        return handler;
     }
 
     public static Stream<Arguments> redirects()
@@ -1701,15 +1696,17 @@ public class ResponseTest
     public void testSendRedirect(String destination, String expected, boolean cookie)
         throws Exception
     {
-        ContextHandler context = new ContextHandler("/path");
+        SessionHandler sessionHandler = addSessionHandler();
+        _server.stop();
+        _context.setContextPath("/path");
+        _server.start();
+
         int[] ports = new int[]{8080, 80};
         String[] hosts = new String[]{null, "myhost", "192.168.0.1", "[0::1]"};
         for (int port : ports)
         {
             for (String host : hosts)
             {
-                // System.err.printf("%s %d %s%n",host,port,tests[i][0]);
-
                 Response response = getResponse();
                 Request request = response.getHttpChannel().getRequest();
 
@@ -1719,20 +1716,18 @@ public class ResponseTest
                 if (host != null)
                     uri.host(host).port(port);
                 request.setHttpURI(uri);
-                request.setContext(context.getServletContext(), "/info");
+
+                request.setSessionManager(sessionHandler.getSessionManager());
                 request.setRequestedSessionId("12345");
                 request.setRequestedSessionIdFromCookie(cookie);
-                SessionHandler handler = new SessionHandler();
 
-                NullSessionDataStore dataStore = new NullSessionDataStore();
-                DefaultSessionCache sessionCache = new DefaultSessionCache(handler.getSessionManager());
-                handler.getSessionManager().setSessionCache(sessionCache);
-                sessionCache.setSessionDataStore(dataStore);
-                DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server);
-                sessionIdManager.setWorkerName(null);
-                handler.getSessionManager().setSessionIdManager(sessionIdManager);
-                request.setSessionManager(handler.getSessionManager());
-                handler.setCheckingRemoteSessionIdEncoding(false);
+                Session session = sessionHandler.getSessionManager().getSession("12345");
+                if (session == null)
+                    request.getSession(true);
+                else
+                    request.setCoreSession(session);
+
+                assertThat(request.getSession(false).getId(), is("12345"));
 
                 response.sendRedirect(destination);
 
@@ -1741,8 +1736,7 @@ public class ResponseTest
                 expected = expected
                     .replace("@HOST@", host == null ? request.getLocalAddr() : host)
                     .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
-                assertEquals(expected, location,  host + ":" + port);
-                request.setContext(null, "/info");
+                assertThat(host + ":" + port, location, equalTo(expected));
             }
         }
     }
@@ -2257,7 +2251,7 @@ public class ResponseTest
 
         long now = System.currentTimeMillis();
 
-        MetaData.Request reqMeta = new MetaData.Request("GET", HttpURI.from("/path/info"), version, HttpFields.EMPTY);
+        MetaData.Request reqMeta = new MetaData.Request("GET", HttpURI.from("http://myhost:8888/path/info"), version, HttpFields.EMPTY);
 
         org.eclipse.jetty.server.Request coreRequest = new org.eclipse.jetty.server.Request()
         {

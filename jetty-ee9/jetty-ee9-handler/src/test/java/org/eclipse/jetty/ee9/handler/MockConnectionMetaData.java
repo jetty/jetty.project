@@ -32,14 +32,8 @@ public class MockConnectionMetaData extends Attributes.Mapped implements Connect
 {
     private final HttpConfiguration _httpConfig = new HttpConfiguration();
     private final Connector _connector;
-    private final EndPoint _endPoint = new ByteArrayEndPoint();
-    private final Connection _connection = new AbstractConnection(_endPoint, Runnable::run)
-    {
-        @Override
-        public void onFillable()
-        {
-        }
-    };
+    private final EndPoint _endPoint;
+    private final Connection _connection;
     private boolean _persistent = true;
 
     public MockConnectionMetaData()
@@ -49,7 +43,20 @@ public class MockConnectionMetaData extends Attributes.Mapped implements Connect
 
     public MockConnectionMetaData(Connector connector)
     {
+        this(connector, null);
+    }
+
+    public MockConnectionMetaData(Connector connector, EndPoint endPoint)
+    {
         _connector = connector;
+        _endPoint = endPoint == null ? new ByteArrayEndPoint() : endPoint;
+        _connection = new AbstractConnection(_endPoint, Runnable::run)
+        {
+            @Override
+            public void onFillable()
+            {
+            }
+        };
     }
 
     public void notPersistent()

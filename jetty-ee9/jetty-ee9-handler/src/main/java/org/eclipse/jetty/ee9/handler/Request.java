@@ -351,6 +351,7 @@ public class Request implements HttpServletRequest
      */
     public void enterSession(HttpSession s)
     {
+        // TODO use this?
         if (!(s instanceof Session))
             return;
 
@@ -1272,32 +1273,7 @@ public class Request implements HttpServletRequest
     @Override
     public int getServerPort()
     {
-        int port = -1;
-
-        if ((_uri != null) && StringUtil.isNotBlank(_uri.getAuthority()))
-            port = _uri.getPort();
-        else
-            port = findServerPort();
-
-        // If no port specified, return the default port for the scheme
-        if (port <= 0)
-            return HttpScheme.getDefaultPort(getScheme());
-
-        // return a specific port
-        return port;
-    }
-
-    private int findServerPort()
-    {
-        if (_channel != null)
-        {
-            HostPort serverAuthority = _channel.getServerAuthority();
-            if (serverAuthority != null)
-                return serverAuthority.getPort();
-        }
-
-        // Return host from connection
-        return getLocalPort();
+        return org.eclipse.jetty.server.Request.getServerPort(getHttpChannel().getCoreRequest());
     }
 
     @Override
@@ -1649,15 +1625,10 @@ public class Request implements HttpServletRequest
             if (!uri.hasAuthority())
             {
                 HttpField field = getHttpFields().getField(HttpHeader.HOST);
-                if (field instanceof HostPortHttpField)
-                {
-                    HostPortHttpField authority = (HostPortHttpField)field;
+                if (field instanceof HostPortHttpField authority)
                     builder.host(authority.getHost()).port(authority.getPort());
-                }
                 else
-                {
-                    builder.host(findServerName()).port(findServerPort());
-                }
+                    builder.host(findServerName()).port(org.eclipse.jetty.server.Request.getServerPort(getHttpChannel().getCoreRequest()));
             }
             _uri = builder.asImmutable();
         }
@@ -1666,8 +1637,8 @@ public class Request implements HttpServletRequest
         String encoded = _uri.getPath();
         String path;
         if (encoded == null)
-            // TODO this is not really right for CONNECT
-            path = _uri.isAbsolute() ? "/" : null;
+            path = _uri.isAbsolute() ? "/" : null;  // TODO this is not really right for CONNECT
+
         else if (encoded.startsWith("/"))
         {
             path = (encoded.length() == 1) ? "/" : _uri.getDecodedPath();

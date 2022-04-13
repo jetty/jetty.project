@@ -28,27 +28,13 @@
       <groupId>org.eclipse.jetty.fcgi</groupId>
       <artifactId>fcgi-client</artifactId>
     </dependency>
-    <!-- TODO: REMOVE -->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-proxy</artifactId>
-      <version>${project.version}</version>
-    </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-server</artifactId>
     </dependency>
-
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-slf4j-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- TODO: REMOVE -->
-    <dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-servlet</artifactId>
-      <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -61,11 +47,6 @@
       <artifactId>jetty-alpn-java-server</artifactId>
       <scope>test</scope>
     </dependency>
-    <!--<dependency>
-      <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-annotations</artifactId>
-      <scope>test</scope>
-    </dependency>-->
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-unixdomain-server</artifactId>
