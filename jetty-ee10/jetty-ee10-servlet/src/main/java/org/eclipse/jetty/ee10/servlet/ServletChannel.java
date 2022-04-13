@@ -36,7 +36,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocking;
@@ -619,7 +618,7 @@ public class ServletChannel implements Runnable
                 return false;
             }
 
-            Response.writeError(_request, getResponse(), _callback, HttpStatus.INTERNAL_SERVER_ERROR_500, message);
+            getResponse().getServletApiResponse().sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, message);
             return true;
         }
         catch (Throwable x)
@@ -791,7 +790,9 @@ public class ServletChannel implements Runnable
         if (idleTO >= 0 && getIdleTimeout() != _oldIdleTimeout)
             setIdleTimeout(_oldIdleTimeout);
 
-        _callback.succeeded();
+        // Callback will either be succeeded here or failed in abort().
+        if (_state.completeResponse())
+            _callback.succeeded();
         _combinedListener.onComplete(_request);
     }
 
@@ -831,6 +832,7 @@ public class ServletChannel implements Runnable
      */
     public void abort(Throwable failure)
     {
+        // Callback will either be failed here or succeeded in onCompleted().
         if (_state.abortResponse())
         {
             if (LOG.isDebugEnabled())

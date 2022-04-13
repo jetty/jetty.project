@@ -55,6 +55,7 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -1071,6 +1072,7 @@ public class HttpChannelState implements HttpChannel, Components
             HttpStream stream = null;
             Throwable failure = null;
             MetaData.Response responseMetaData = null;
+            boolean noop = false;
             try (AutoLock ignored = _request._lock.lock())
             {
                 httpChannel = _request.lockedGetHttpChannel();
@@ -1082,9 +1084,14 @@ public class HttpChannelState implements HttpChannel, Components
                 else if (httpChannel._error != null)
                     failure = httpChannel._error.getCause();
                 else if (last && httpChannel._lastWrite)
-                    failure = new IllegalStateException("last already written");
+                {
+                    if (BufferUtil.remaining(content) > 0)
+                        failure = new IllegalStateException("last already written");
+                    else
+                        noop = true;
+                }
 
-                if (failure == null)
+                if (failure == null && !noop)
                 {
                     httpChannel._writeCallback = callback;
                     for (ByteBuffer b : content)
@@ -1119,6 +1126,10 @@ public class HttpChannelState implements HttpChannel, Components
             {
                 Throwable t = failure;
                 httpChannel._serializedInvoker.run(() -> callback.failed(t));
+            }
+            else if (noop)
+            {
+                httpChannel._serializedInvoker.run(callback::succeeded);
             }
             else
             {
@@ -1372,7 +1383,7 @@ public class HttpChannelState implements HttpChannel, Components
                 {
                     if (LOG.isDebugEnabled())
                         LOG.warn("already completed {} by", _request, _completedBy);
-                    throw new IllegalStateException("channel is completing");
+                    throw new IllegalStateException("already completed");
                 }
                 default -> throw new IllegalStateException("not processing");
             };
