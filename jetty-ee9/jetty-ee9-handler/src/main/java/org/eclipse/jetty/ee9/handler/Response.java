@@ -400,7 +400,7 @@ public class Response implements HttpServletResponse
 
         // invalid session
         Session coreSession = Session.getSession(httpSession);
-        if (coreSession.isValid())
+        if (coreSession.isInvalid())
             return url;
 
         String id = coreSession.getExtendedId();

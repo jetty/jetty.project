@@ -64,6 +64,11 @@ public class SessionHandler extends HandlerWrapper implements SessionConfig.Muta
     public SessionHandler()
     {
         setSessionTrackingModes(DEFAULT_SESSION_TRACKING_MODES);
+        addBean(_sessionManager);
+        addBean(_cookieConfig);
+        addBean(_sessionListeners);
+        addBean(_sessionIdListeners);
+        addBean(_sessionAttributeListeners);
     }
 
     public SessionManager getSessionManager()

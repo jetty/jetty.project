@@ -609,10 +609,11 @@ public class ResponseTest
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
 
+        _server.stop();
         SessionHandler sessionHandler = new SessionHandler();
-        sessionHandler.setServer(_server);
         sessionHandler.setUsingCookies(true);
-        sessionHandler.start();
+        _context.setHandler(sessionHandler);
+        _server.start();
         request.setSessionManager(sessionHandler.getSessionManager());
         HttpSession session = request.getSession(true);
 
@@ -1588,9 +1589,10 @@ public class ResponseTest
     }
 
     @Test
-    public void testEncodeRedirect()
+    public void testEncodeRedirect() throws Exception
     {
-        ContextHandler context = new ContextHandler("/path");
+        Server server = new Server();
+        ContextHandler context = new ContextHandler(server, "/path");
         Response response = getResponse();
         Request request = response.getHttpChannel().getRequest();
         request.setHttpURI(HttpURI.build(request.getHttpURI()).host("myhost").port(8888));
@@ -1601,15 +1603,32 @@ public class ResponseTest
         request.setRequestedSessionId("12345");
         request.setRequestedSessionIdFromCookie(false);
         SessionHandler handler = new SessionHandler();
-        DefaultSessionCache ss = new DefaultSessionCache(handler.getSessionManager());
-        NullSessionDataStore ds = new NullSessionDataStore();
-        ss.setSessionDataStore(ds);
-        DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server);
+        DefaultSessionCache sessionCache = new DefaultSessionCache(handler.getSessionManager());
+        NullSessionDataStore dataStore = new NullSessionDataStore();
+        sessionCache.setSessionDataStore(dataStore);
+        DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server)
+        {
+            @Override
+            public boolean isIdInUse(String id)
+            {
+                return "12345".equals(id);
+            }
+        };
+
+        server.addBean(sessionIdManager);
         sessionIdManager.setWorkerName(null);
+        handler.getSessionManager().setSessionCache(sessionCache);
         handler.getSessionManager().setSessionIdManager(sessionIdManager);
         request.setSessionManager(handler.getSessionManager());
-
         handler.setCheckingRemoteSessionIdEncoding(false);
+        context.setHandler(handler);
+
+        server.start();
+
+        request.setContext(context.getServletContext(), "/path/info");
+
+        assertNotNull(request.getSession(true));
+        assertThat(request.getSession(false).getId(), is("12345"));
 
         assertEquals("http://myhost:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
         assertEquals("http://other:8888/path/info;param;jsessionid=12345?query=0&more=1#target", response.encodeURL("http://other:8888/path/info;param?query=0&more=1#target"));
@@ -1653,35 +1672,35 @@ public class ResponseTest
         assertEquals(";jsessionid=12345", response.encodeURL(""));
     }
 
-    @Test
-    public void testSendRedirect()
-        throws Exception
+    public static Stream<Arguments> redirects()
     {
-        // TODO parameterize
-        String[][] tests = {
+        return Stream.of(
             // No cookie
-            {
-                "http://myhost:8888/other/location;jsessionid=12345?name=value",
-                "http://myhost:8888/other/location;jsessionid=12345?name=value"
-            },
-            {"/other/location;jsessionid=12345?name=value", "http://@HOST@@PORT@/other/location;jsessionid=12345?name=value"},
-            {"./location;jsessionid=12345?name=value", "http://@HOST@@PORT@/path/location;jsessionid=12345?name=value"},
+            Arguments.of("http://myhost:8888/other/location;jsessionid=12345?name=value", "http://myhost:8888/other/location;jsessionid=12345?name=value", false),
+            Arguments.of("/other/location;jsessionid=12345?name=value", "http://@HOST@@PORT@/other/location;jsessionid=12345?name=value", false),
+            Arguments.of("./location;jsessionid=12345?name=value", "http://@HOST@@PORT@/path/location;jsessionid=12345?name=value", false),
 
             // From cookie
-            {"/other/location", "http://@HOST@@PORT@/other/location"},
-            {"/other/l%20cation", "http://@HOST@@PORT@/other/l%20cation"},
-            {"location", "http://@HOST@@PORT@/path/location"},
-            {"./location", "http://@HOST@@PORT@/path/location"},
-            {"../location", "http://@HOST@@PORT@/location"},
-            {"/other/l%20cation", "http://@HOST@@PORT@/other/l%20cation"},
-            {"l%20cation", "http://@HOST@@PORT@/path/l%20cation"},
-            {"./l%20cation", "http://@HOST@@PORT@/path/l%20cation"},
-            {"../l%20cation", "http://@HOST@@PORT@/l%20cation"},
-            {"../locati%C3%abn", "http://@HOST@@PORT@/locati%C3%abn"},
-            {"../other%2fplace", "http://@HOST@@PORT@/other%2fplace"},
-            {"http://somehost.com/other/location", "http://somehost.com/other/location"},
-            };
+            Arguments.of("/other/location", "http://@HOST@@PORT@/other/location", true),
+            Arguments.of("/other/l%20cation", "http://@HOST@@PORT@/other/l%20cation", true),
+            Arguments.of("location", "http://@HOST@@PORT@/path/location", true),
+            Arguments.of("./location", "http://@HOST@@PORT@/path/location", true),
+            Arguments.of("../location", "http://@HOST@@PORT@/location", true),
+            Arguments.of("/other/l%20cation", "http://@HOST@@PORT@/other/l%20cation", true),
+            Arguments.of("l%20cation", "http://@HOST@@PORT@/path/l%20cation", true),
+            Arguments.of("./l%20cation", "http://@HOST@@PORT@/path/l%20cation", true),
+            Arguments.of("../l%20cation", "http://@HOST@@PORT@/l%20cation", true),
+            Arguments.of("../locati%C3%abn", "http://@HOST@@PORT@/locati%C3%abn", true),
+            Arguments.of("../other%2fplace", "http://@HOST@@PORT@/other%2fplace", true),
+            Arguments.of("http://somehost.com/other/location", "http://somehost.com/other/location", true)
+        );
+    }
 
+    @ParameterizedTest
+    @MethodSource("redirects")
+    public void testSendRedirect(String destination, String expected, boolean cookie)
+        throws Exception
+    {
         ContextHandler context = new ContextHandler("/path");
         int[] ports = new int[]{8080, 80};
         String[] hosts = new String[]{null, "myhost", "192.168.0.1", "[0::1]"};
@@ -1689,44 +1708,41 @@ public class ResponseTest
         {
             for (String host : hosts)
             {
-                for (int i = 0; i < tests.length; i++)
-                {
-                    // System.err.printf("%s %d %s%n",host,port,tests[i][0]);
+                // System.err.printf("%s %d %s%n",host,port,tests[i][0]);
 
-                    Response response = getResponse();
-                    Request request = response.getHttpChannel().getRequest();
+                Response response = getResponse();
+                Request request = response.getHttpChannel().getRequest();
 
-                    HttpURI.Mutable uri = HttpURI.build(request.getHttpURI(),
-                        "/path/info;param;jsessionid=12345?query=0&more=1#target");
-                    uri.scheme("http");
-                    if (host != null)
-                        uri.host(host).port(port);
-                    request.setHttpURI(uri);
-                    request.setContext(context.getServletContext(), "/info");
-                    request.setRequestedSessionId("12345");
-                    request.setRequestedSessionIdFromCookie(i > 2);
-                    SessionHandler handler = new SessionHandler();
+                HttpURI.Mutable uri = HttpURI.build(request.getHttpURI(),
+                    "/path/info;param;jsessionid=12345?query=0&more=1#target");
+                uri.scheme("http");
+                if (host != null)
+                    uri.host(host).port(port);
+                request.setHttpURI(uri);
+                request.setContext(context.getServletContext(), "/info");
+                request.setRequestedSessionId("12345");
+                request.setRequestedSessionIdFromCookie(cookie);
+                SessionHandler handler = new SessionHandler();
 
-                    NullSessionDataStore dataStore = new NullSessionDataStore();
-                    DefaultSessionCache sessionCache = new DefaultSessionCache(handler.getSessionManager());
-                    handler.getSessionManager().setSessionCache(sessionCache);
-                    sessionCache.setSessionDataStore(dataStore);
-                    DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server);
-                    sessionIdManager.setWorkerName(null);
-                    handler.getSessionManager().setSessionIdManager(sessionIdManager);
-                    request.setSessionManager(handler.getSessionManager());
-                    handler.setCheckingRemoteSessionIdEncoding(false);
+                NullSessionDataStore dataStore = new NullSessionDataStore();
+                DefaultSessionCache sessionCache = new DefaultSessionCache(handler.getSessionManager());
+                handler.getSessionManager().setSessionCache(sessionCache);
+                sessionCache.setSessionDataStore(dataStore);
+                DefaultSessionIdManager sessionIdManager = new DefaultSessionIdManager(_server);
+                sessionIdManager.setWorkerName(null);
+                handler.getSessionManager().setSessionIdManager(sessionIdManager);
+                request.setSessionManager(handler.getSessionManager());
+                handler.setCheckingRemoteSessionIdEncoding(false);
 
-                    response.sendRedirect(tests[i][0]);
+                response.sendRedirect(destination);
 
-                    String location = response.getHeader("Location");
+                String location = response.getHeader("Location");
 
-                    String expected = tests[i][1]
-                        .replace("@HOST@", host == null ? request.getLocalAddr() : host)
-                        .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
-                    assertEquals(expected, location, "test-" + i + " " + host + ":" + port);
-                    request.setContext(null, "/info");
-                }
+                expected = expected
+                    .replace("@HOST@", host == null ? request.getLocalAddr() : host)
+                    .replace("@PORT@", host == null ? ":8888" : (port == 80 ? "" : (":" + port)));
+                assertEquals(expected, location,  host + ":" + port);
+                request.setContext(null, "/info");
             }
         }
     }
@@ -2240,10 +2256,10 @@ public class ResponseTest
         _channel.recycle();
 
         long now = System.currentTimeMillis();
-        Server server = new Server();
+
         MetaData.Request reqMeta = new MetaData.Request("GET", HttpURI.from("/path/info"), version, HttpFields.EMPTY);
 
-        _channel.onRequest(new org.eclipse.jetty.server.Request()
+        org.eclipse.jetty.server.Request coreRequest = new org.eclipse.jetty.server.Request()
         {
             @Override
             public String getId()
@@ -2278,7 +2294,7 @@ public class ResponseTest
             @Override
             public Context getContext()
             {
-                return server.getContext();
+                return _server.getContext();
             }
 
             @Override
@@ -2370,7 +2386,75 @@ public class ResponseTest
             {
 
             }
-        }, null, Callback.NOOP);
+        };
+        org.eclipse.jetty.server.Response coreResponse = new org.eclipse.jetty.server.Response()
+        {
+            int _status;
+            final HttpFields.Mutable _headers = HttpFields.build();
+            boolean _committed;
+            boolean _last;
+
+            @Override
+            public org.eclipse.jetty.server.Request getRequest()
+            {
+                return coreRequest;
+            }
+
+            @Override
+            public int getStatus()
+            {
+                return _status;
+            }
+
+            @Override
+            public void setStatus(int code)
+            {
+                _status = code;
+            }
+
+            @Override
+            public HttpFields.Mutable getHeaders()
+            {
+                return _headers;
+            }
+
+            @Override
+            public HttpFields.Mutable getTrailers()
+            {
+                return null;
+            }
+
+            @Override
+            public void write(boolean last, Callback callback, ByteBuffer... content)
+            {
+                for (ByteBuffer c : content)
+                    BufferUtil.append(_content, c);
+                _committed = true;
+                _last |= last;
+                callback.succeeded();
+            }
+
+            @Override
+            public boolean isCommitted()
+            {
+                return _committed;
+            }
+
+            @Override
+            public boolean isCompletedSuccessfully()
+            {
+                return _last;
+            }
+
+            @Override
+            public void reset()
+            {
+
+            }
+        };
+
+        _channel.onRequest(coreRequest, coreResponse, Callback.NOOP);
+        _channel.getRequest().setContext(_context.getServletContext(), "/path/info");
 
         BufferUtil.clear(_content);
         return _channel.getResponse();

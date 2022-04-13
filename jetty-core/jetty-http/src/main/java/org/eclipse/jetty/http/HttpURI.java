@@ -163,8 +163,7 @@ public interface HttpURI
     String getHost();
 
     /**
-     * Get a URI path parameter. Multiple and in segment parameters are ignored and only
-     * the last trailing parameter is returned.
+     * Get a URI path parameter. Only parameters from the last segment are returned.
      * @return The last path parameter or null
      */
     String getParam();
@@ -860,10 +859,9 @@ public interface HttpURI
         public Mutable param(String param)
         {
             _param = param;
-            if (_path != null && _param != null && !_path.contains(_param))
-            {
+            if (_path != null && _param != null)
                 _path += ";" + _param;
-            }
+
             _uri = null;
             return this;
         }
@@ -1316,7 +1314,6 @@ public interface HttpURI
                                 break;
                             case ';':
                                 // multiple parameters
-                                mark = i + 1;
                                 break;
                             default:
                                 break;

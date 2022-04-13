@@ -242,28 +242,28 @@ public class HttpURITest
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2", uri.toString());
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
         assertEquals("/f00/bar", uri.getCanonicalPath());
-        assertEquals("p2", uri.getParam());
+        assertEquals("p1;p2", uri.getParam());
         assertNull(uri.getQuery());
 
         uri = builder.pathQuery("/f%30%30;p0/bar;p1;p2?name=value").asImmutable();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2?name=value", uri.toString());
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
         assertEquals("/f00/bar", uri.getCanonicalPath());
-        assertEquals("p2", uri.getParam());
+        assertEquals("p1;p2", uri.getParam());
         assertEquals("name=value", uri.getQuery());
 
         uri = builder.pathQuery("/f%30%30;p0/bar;p1;p2").asImmutable();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2", uri.toString());
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
         assertEquals("/f00/bar", uri.getCanonicalPath());
-        assertEquals("p2", uri.getParam());
+        assertEquals("p1;p2", uri.getParam());
         assertNull(uri.getQuery());
 
         uri = builder.query("other=123456").asImmutable();
         assertEquals("http://host:8888/f%30%30;p0/bar;p1;p2?other=123456", uri.toString());
         assertEquals("/f%30%30;p0/bar;p1;p2", uri.getPath());
         assertEquals("/f00/bar", uri.getCanonicalPath());
-        assertEquals("p2", uri.getParam());
+        assertEquals("p1;p2", uri.getParam());
         assertEquals("other=123456", uri.getQuery());
     }
 
