@@ -43,6 +43,7 @@ import org.eclipse.jetty.ee9.handler.ContextHandler;
 import org.eclipse.jetty.ee9.handler.ErrorHandler;
 import org.eclipse.jetty.ee9.handler.HandlerContainer;
 import org.eclipse.jetty.ee9.handler.ManagedAttributeListener;
+import org.eclipse.jetty.ee9.handler.SessionHandler;
 import org.eclipse.jetty.ee9.security.ConstraintAware;
 import org.eclipse.jetty.ee9.security.ConstraintMapping;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;

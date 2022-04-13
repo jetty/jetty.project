@@ -101,9 +101,9 @@ public class GzipHandlerTest
         gzipHandler.setMinGzipSize(16);
         gzipHandler.setInflateBufferSize(4096);
 
-        context = new ServletContextHandler(gzipHandler, "/ctx");
+        context = new ServletContextHandler(_server, "/ctx");
+        context.insertHandler(gzipHandler);
 
-        _server.setHandler(gzipHandler);
         gzipHandler.setHandler(context);
         context.addServlet(MicroServlet.class, "/micro");
         context.addServlet(MicroChunkedServlet.class, "/microchunked");
@@ -457,7 +457,7 @@ public class GzipHandlerTest
     public void testAsyncEmptyResponse() throws Exception
     {
         int writes = 0;
-        _server.getChildHandlerByClass(GzipHandler.class).setMinGzipSize(0);
+        context.getChildHandlerByClass(GzipHandler.class).setMinGzipSize(0);
 
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();

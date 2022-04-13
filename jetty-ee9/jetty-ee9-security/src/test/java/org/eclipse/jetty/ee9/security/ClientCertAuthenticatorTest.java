@@ -26,6 +26,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.handler.AbstractHandler;
+import org.eclipse.jetty.ee9.handler.ContextHandler;
 import org.eclipse.jetty.ee9.handler.Request;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -67,6 +68,7 @@ public class ClientCertAuthenticatorTest
         origVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
 
         server = new Server();
+        ContextHandler context = new ContextHandler(server);
 
         int port = 32080;
         int securePort = 32443;
@@ -111,7 +113,7 @@ public class ClientCertAuthenticatorTest
         loginService.setConfig("src/test/resources/realm.properties");
 
         constraintSecurityHandler.setHandler(new FooHandler());
-        server.setHandler(constraintSecurityHandler);
+        context.setHandler(constraintSecurityHandler);
         server.addBean(sslContextFactory);
         server.start();
 

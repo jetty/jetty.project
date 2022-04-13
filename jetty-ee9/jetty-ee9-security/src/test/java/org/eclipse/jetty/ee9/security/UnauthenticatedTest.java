@@ -23,6 +23,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.handler.AbstractHandler;
 import org.eclipse.jetty.ee9.handler.Authentication;
+import org.eclipse.jetty.ee9.handler.ContextHandler;
 import org.eclipse.jetty.ee9.handler.Request;
 import org.eclipse.jetty.ee9.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
@@ -45,6 +46,7 @@ public class UnauthenticatedTest
     public void beforeEach() throws Exception
     {
         Server server = new Server();
+        ContextHandler context = new ContextHandler(server);
         connector = new LocalConnector(server);
         server.addConnector(connector);
 
@@ -73,7 +75,7 @@ public class UnauthenticatedTest
             }
         });
 
-        server.setHandler(securityHandler);
+        context.setHandler(securityHandler);
         server.start();
     }
 

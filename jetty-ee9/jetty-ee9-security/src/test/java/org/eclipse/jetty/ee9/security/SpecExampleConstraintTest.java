@@ -25,11 +25,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.handler.AbstractHandler;
 import org.eclipse.jetty.ee9.handler.ContextHandler;
 import org.eclipse.jetty.ee9.handler.Request;
+import org.eclipse.jetty.ee9.handler.SessionHandler;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterEach;
@@ -51,6 +51,7 @@ public class SpecExampleConstraintTest
 {
     private static final String TEST_REALM = "TestRealm";
     private static Server _server;
+    private static ContextHandler _context;
     private static LocalConnector _connector;
     private static SessionHandler _session;
     private ConstraintSecurityHandler _security;
@@ -59,6 +60,7 @@ public class SpecExampleConstraintTest
     public static void startServer()
     {
         _server = new Server();
+        _context = new ContextHandler(_server);
         _connector = new LocalConnector(_server);
         _server.setConnectors(new Connector[]{_connector});
 
@@ -73,7 +75,7 @@ public class SpecExampleConstraintTest
         loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});
 
         context.setContextPath("/ctx");
-        _server.setHandler(context);
+        _context.setHandler(context);
         context.setHandler(_session);
 
         _server.addBean(loginService);

@@ -30,7 +30,7 @@ module org.eclipse.jetty.webapp
     requires org.slf4j;
 
     requires transitive java.instrument;
-    requires transitive org.eclipse.jetty.servlet;
+    requires transitive org.eclipse.jetty.ee9.servlet;
     requires transitive org.eclipse.jetty.xml;
 
     exports org.eclipse.jetty.ee9.webapp;

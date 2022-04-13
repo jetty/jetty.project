@@ -23,17 +23,14 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.handler.AbstractHandler;
 import org.eclipse.jetty.ee9.handler.ContextHandler;
 import org.eclipse.jetty.ee9.handler.Request;
+import org.eclipse.jetty.ee9.handler.SessionHandler;
 import org.eclipse.jetty.ee9.handler.UserIdentity;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -62,6 +59,7 @@ public class DataConstraintsTest
         _connector.setIdleTimeout(300000);
 
         HttpConnectionFactory https = new HttpConnectionFactory();
+        /* TODO
         https.getHttpConfiguration().addCustomizer(new HttpConfiguration.Customizer()
         {
             @Override
@@ -72,6 +70,8 @@ public class DataConstraintsTest
             }
         });
 
+         */
+
         _connectorS = new LocalConnector(_server, https);
         _server.setConnectors(new Connector[]{_connector, _connectorS});
 
@@ -79,7 +79,7 @@ public class DataConstraintsTest
         _session = new SessionHandler();
 
         contextHandler.setContextPath("/ctx");
-        _server.setHandler(contextHandler);
+        _server.setHandler(contextHandler.getCoreContextHandler());
         contextHandler.setHandler(_session);
 
         _security = new ConstraintSecurityHandler();

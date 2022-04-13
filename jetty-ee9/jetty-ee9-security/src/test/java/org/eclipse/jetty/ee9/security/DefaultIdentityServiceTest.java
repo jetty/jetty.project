@@ -16,6 +16,7 @@ package org.eclipse.jetty.ee9.security;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import org.eclipse.jetty.ee9.handler.Authentication;
+import org.eclipse.jetty.ee9.handler.ContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
@@ -28,13 +29,14 @@ public class DefaultIdentityServiceTest
     public void testDefaultIdentityService() throws Exception
     {
         Server server = new Server();
+        ContextHandler context = new ContextHandler(server);
         ConstraintSecurityHandler securityHandler = new ConstraintSecurityHandler();
         TestAuthenticator authenticator = new TestAuthenticator();
         securityHandler.setAuthenticator(authenticator);
 
         try
         {
-            server.setHandler(securityHandler);
+            context.setHandler(securityHandler);
             server.start();
 
             // The DefaultIdentityService should have been created by default.

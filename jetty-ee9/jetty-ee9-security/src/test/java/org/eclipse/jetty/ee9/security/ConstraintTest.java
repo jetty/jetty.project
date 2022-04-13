@@ -43,6 +43,7 @@ import org.eclipse.jetty.ee9.handler.AbstractHandler;
 import org.eclipse.jetty.ee9.handler.ContextHandler;
 import org.eclipse.jetty.ee9.handler.HandlerWrapper;
 import org.eclipse.jetty.ee9.handler.Request;
+import org.eclipse.jetty.ee9.handler.SessionHandler;
 import org.eclipse.jetty.ee9.handler.UserIdentity;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.DigestAuthenticator;
@@ -55,7 +56,6 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Constraint;
@@ -86,6 +86,7 @@ public class ConstraintTest
 {
     private static final String TEST_REALM = "TestRealm";
     private Server _server;
+    private ContextHandler _context;
     private LocalConnector _connector;
     private ConstraintSecurityHandler _security;
     private HttpConfiguration _config;
@@ -102,6 +103,7 @@ public class ConstraintTest
     public void setupServer()
     {
         _server = new Server();
+        _context = new ContextHandler(_server);
         _connector = new LocalConnector(_server);
         _config = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _server.setConnectors(new Connector[]{_connector});
@@ -118,7 +120,7 @@ public class ConstraintTest
         loginService.putUser("user3", new Password("password"), new String[]{"foo"});
 
         contextHandler.setContextPath("/ctx");
-        _server.setHandler(contextHandler);
+        _context.setHandler(contextHandler);
         contextHandler.setHandler(sessionHandler);
 
         _server.addBean(loginService);

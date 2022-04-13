@@ -76,8 +76,7 @@ public class StatisticsServlet extends HttpServlet
         ServletContext context = getServletContext();
         ContextHandler.APIContext scontext = (ContextHandler.APIContext)context;
         Server server = scontext.getContextHandler().getServer();
-
-        _statsHandler = server.getChildHandlerByClass(StatisticsHandler.class);
+        _statsHandler = scontext.getContextHandler().getChildHandlerByClass(StatisticsHandler.class);
 
         if (_statsHandler == null)
         {
