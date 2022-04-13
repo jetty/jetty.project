@@ -980,7 +980,7 @@ public class Request implements HttpServletRequest
     @Override
     public int getLocalPort()
     {
-        return _channel == null ? 0 : org.eclipse.jetty.server.Request.getLocalPort(_channel.getCoreRequest());
+        return org.eclipse.jetty.server.Request.getLocalPort(_channel.getCoreRequest());
     }
 
     @Override
@@ -1355,6 +1355,8 @@ public class Request implements HttpServletRequest
      */
     public void onCompleted()
     {
+        _input.releaseContent();
+
         if (_sessions != null)
         {
             for (Session s:_sessions)

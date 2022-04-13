@@ -29,7 +29,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.stream.Stream;
 
 import jakarta.servlet.RequestDispatcher;
@@ -43,16 +42,13 @@ import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.ConnectionMetaData;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -62,7 +58,6 @@ import org.eclipse.jetty.session.DefaultSessionCache;
 import org.eclipse.jetty.session.DefaultSessionIdManager;
 import org.eclipse.jetty.session.NullSessionDataStore;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.HostPort;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.TimerScheduler;
 import org.hamcrest.Matchers;
@@ -121,108 +116,21 @@ public class ResponseTest
             }
         };
 
-        ConnectionMetaData connectionMetaData = new ConnectionMetaData()
-        {
-            @Override
-            public String getId()
-            {
-                return toString();
-            }
-
-            @Override
-            public HttpConfiguration getHttpConfiguration()
-            {
-                return config;
-            }
-
-            @Override
-            public HttpVersion getHttpVersion()
-            {
-                return HttpVersion.HTTP_1_0;
-            }
-
-            @Override
-            public String getProtocol()
-            {
-                return HttpScheme.HTTP.asString();
-            }
-
-            @Override
-            public Connection getConnection()
-            {
-                return null;
-            }
-
-            @Override
-            public Connector getConnector()
-            {
-                return connector;
-            }
-
-            @Override
-            public boolean isPersistent()
-            {
-                return false;
-            }
-
-            @Override
-            public boolean isSecure()
-            {
-                return false;
-            }
-
-            @Override
-            public SocketAddress getRemoteSocketAddress()
-            {
-                return null;
-            }
-
-            @Override
-            public SocketAddress getLocalSocketAddress()
-            {
-                return null;
-            }
-
-            @Override
-            public HostPort getServerAuthority()
-            {
-                return null;
-            }
-
-            @Override
-            public Object removeAttribute(String name)
-            {
-                return null;
-            }
-
-            @Override
-            public Object setAttribute(String name, Object attribute)
-            {
-                return null;
-            }
-
-            @Override
-            public Object getAttribute(String name)
-            {
-                return null;
-            }
-
-            @Override
-            public Set<String> getAttributeNameSet()
-            {
-                return null;
-            }
-
-            @Override
-            public void clearAttributes()
-            {
-
-            }
-        };
-
+        ConnectionMetaData connectionMetaData = new MockConnectionMetaData(new MockConnector());
         _channel = new HttpChannel(_context, connectionMetaData)
         {
-
+            @Override
+            protected HttpInput newHttpInput()
+            {
+                return new HttpInput(this)
+                {
+                    @Override
+                    public boolean consumeAll()
+                    {
+                        return false;
+                    }
+                };
+            }
         };
     }
 
@@ -470,16 +378,9 @@ public class ResponseTest
     @Test
     public void testResponseCharacterEncoding() throws Exception
     {
-        _server.stop();
-        ContextHandler handler = new CharEncodingContextHandler();
-        _server.setHandler(handler.getCoreContextHandler());
-        handler.setDefaultResponseCharacterEncoding("utf-16");
-        handler.setHandler(new DumpHandler());
-        _server.start();
-
         //test setting the default response character encoding
         Response response = getResponse();
-        response.getHttpChannel().getRequest().setContext(handler.getServletContext(), "/");
+        response.getHttpChannel().getRequest().setContext(_context.getServletContext(), "/");
         assertThat("utf-16", Matchers.equalTo(response.getCharacterEncoding()));
 
         _channel.getRequest().setContext(null, "/");
@@ -487,7 +388,7 @@ public class ResponseTest
 
         //test that explicit overrides default
         response = getResponse();
-        _channel.getRequest().setContext(handler.getServletContext(), "/");
+        _channel.getRequest().setContext(_context.getServletContext(), "/");
         response.setCharacterEncoding("ascii");
         assertThat("ascii", Matchers.equalTo(response.getCharacterEncoding()));
         //getWriter should not change explicit character encoding
@@ -499,7 +400,7 @@ public class ResponseTest
 
         //test that assumed overrides default
         response = getResponse();
-        _channel.getRequest().setContext(handler.getServletContext(), "/");
+        _channel.getRequest().setContext(_context.getServletContext(), "/");
         response.setContentType("application/json");
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
         response.getWriter();
@@ -511,7 +412,7 @@ public class ResponseTest
 
         //test that inferred overrides default
         response = getResponse();
-        _channel.getRequest().setContext(handler.getServletContext(), "/");
+        _channel.getRequest().setContext(_context.getServletContext(), "/");
         response.setContentType("application/xhtml+xml");
         assertThat("utf-8", Matchers.equalTo(response.getCharacterEncoding()));
         //getWriter should not have modified character encoding

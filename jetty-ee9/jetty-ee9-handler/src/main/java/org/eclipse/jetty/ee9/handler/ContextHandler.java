@@ -2241,25 +2241,25 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public String getRequestCharacterEncoding()
         {
-            return null;
+            return getDefaultRequestCharacterEncoding();
         }
 
         @Override
         public void setRequestCharacterEncoding(String encoding)
         {
-
+            setDefaultRequestCharacterEncoding(encoding);
         }
 
         @Override
         public String getResponseCharacterEncoding()
         {
-            return null;
+            return getDefaultResponseCharacterEncoding();
         }
 
         @Override
         public void setResponseCharacterEncoding(String encoding)
         {
-
+            setDefaultResponseCharacterEncoding(encoding);
         }
 
         @Override

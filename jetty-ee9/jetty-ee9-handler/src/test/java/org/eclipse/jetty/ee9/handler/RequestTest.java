@@ -146,10 +146,6 @@ public class RequestTest
         AtomicReference<String> result = new AtomicReference<>(null);
         AtomicReference<String> overrideCharEncoding = new AtomicReference<>(null);
 
-        _server.stop();
-        ContextHandler handler = new CharEncodingContextHandler();
-        _context.setHandler(handler);
-        handler.setHandler(_handler);
         _handler._checker = (request, response) ->
         {
             try
@@ -168,14 +164,16 @@ public class RequestTest
         };
         _server.start();
 
-        String request = "GET / HTTP/1.1\n" +
-            "Host: whatever\r\n" +
-            "Content-Type: text/html;charset=utf8\n" +
-            "Connection: close\n" +
-            "\n";
+        String request = """
+            GET / HTTP/1.1
+            Host: whatever
+            Content-Type: text/html;charset=utf8
+            Connection: close
+
+            """;
 
         //test setting the default char encoding
-        handler.setDefaultRequestCharacterEncoding("ascii");
+        _context.setDefaultRequestCharacterEncoding("ascii");
         String response = _connector.getResponse(request);
         assertTrue(response.startsWith("HTTP/1.1 200"));
         assertEquals("ascii", result.get());
@@ -190,7 +188,7 @@ public class RequestTest
         //test fallback to content-type encoding
         result.set(null);
         overrideCharEncoding.set(null);
-        handler.setDefaultRequestCharacterEncoding(null);
+        _context.setDefaultRequestCharacterEncoding(null);
         response = _connector.getResponse(request);
         assertTrue(response.startsWith("HTTP/1.1 200"));
         assertEquals("utf-8", result.get());
@@ -1259,7 +1257,7 @@ public class RequestTest
             {
                 baseRequest.setHandled(true);
                 InputStream in = request.getInputStream();
-                byte[] b = ("read=" + in.read() + "\n").getBytes(StandardCharsets.UTF_8);
+                byte[] b = ("read='" + in.read() + "'\n").getBytes(StandardCharsets.UTF_8);
                 response.setContentLength(b.length);
                 response.getOutputStream().write(b);
                 response.flushBuffer();
@@ -1269,28 +1267,28 @@ public class RequestTest
         _context.setHandler(handler);
         _server.start();
 
-        String requests = "GET / HTTP/1.1\r\n" +
-            "Host: whatever\r\n" +
-            "Content-Type: text/plane\r\n" +
-            "Content-Length: " + 10 + "\r\n" +
-            "\r\n" +
-            "0123456789\r\n" +
-            "GET / HTTP/1.1\r\n" +
-            "Host: whatever\r\n" +
-            "Content-Type: text/plane\r\n" +
-            "Content-Length: " + 10 + "\r\n" +
-            "Connection: close\r\n" +
-            "\r\n" +
-            "ABCDEFGHIJ\r\n";
+        String requests = """
+            GET / HTTP/1.1\r
+            Host: whatever\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            \r
+            0123456789\r
+            GET / HTTP/1.1\r
+            Host: whatever\r
+            Content-Type: text/plain\r
+            Content-Length: 10\r
+            Connection: close\r
+            \r
+            ABCDEFGHIJ\r
+            """;
 
         LocalEndPoint endp = _connector.executeRequest(requests);
-        String responses = endp.getResponse() + endp.getResponse();
+        String response = endp.getResponse();
+        assertThat(response, containsString("read='" + (int)'0' + "'"));
 
-        int index = responses.indexOf("read=" + (int)'0');
-        assertTrue(index > 0);
-
-        index = responses.indexOf("read=" + (int)'A', index + 7);
-        assertTrue(index > 0);
+        response = endp.getResponse();
+        assertThat(response, containsString("read='" + (int)'A' + "'"));
     }
 
     @Test
@@ -1707,7 +1705,7 @@ public class RequestTest
     @Test
     public void testGetterSafeFromNullPointerException()
     {
-        Request request = new Request(null, null);
+        Request request = new Request(new HttpChannel(null, new MockConnectionMetaData(new MockConnector())), null);
 
         assertNull(request.getAuthType());
         assertNull(request.getAuthentication());
@@ -1865,7 +1863,7 @@ public class RequestTest
     public void testPushBuilder()
     {
         String uri = "/foo/something";
-        Request request = new TestRequest(null, null);
+        Request request = new TestRequest(new HttpChannel(null, new MockConnectionMetaData(new MockConnector())), null);
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("good", "thumbsup", 100), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bonza", "bewdy", 1), CookieCompliance.RFC6265));
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bad", "thumbsdown", 0), CookieCompliance.RFC6265));
@@ -1899,7 +1897,7 @@ public class RequestTest
     public void testPushBuilderWithIdNoAuth()
     {
         String uri = "/foo/something";
-        Request request = new TestRequest(null, null)
+        Request request = new TestRequest(new HttpChannel(null, new MockConnectionMetaData(new MockConnector())), null)
         {
             @Override
             public Principal getUserPrincipal()

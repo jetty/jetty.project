@@ -107,7 +107,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _connectionMetaData = connectionMetaData;
         _connector = connectionMetaData.getConnector();
         _configuration = Objects.requireNonNull(connectionMetaData.getHttpConfiguration());
-        _endPoint = connectionMetaData.getConnection().getEndPoint();
+        _endPoint = connectionMetaData.getConnection() == null ? null : connectionMetaData.getConnection().getEndPoint();
         _state = new HttpChannelState(this);
         _request = new Request(this, newHttpInput());
         _response = new Response(this, newHttpOutput());
@@ -634,7 +634,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         // Just release content held by the HttpInput and act only if there is some unconsumed
         // content there.  There could still be unconsumed content in the HttpStream, but we will
         // let lower layers deal with that.
-        if (_request.getHttpInput().releaseContent())
+        if (_request.getHttpInput().consumeAll())
             return;
 
         HttpVersion httpVersion = _request.getHttpVersion();

@@ -14,6 +14,7 @@
 package org.eclipse.jetty.ee9.handler;
 
 import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.thread.AutoLock;
 
@@ -41,14 +42,22 @@ public interface ContentProducer
      */
     void reopen();
 
+
+    /**
+     * Consume all content currently available in this {@link ContentProducer} instance
+     * as well as in the underlying {@link HttpChannel}.
+     *
+     * This call is always non-blocking.
+     * @return true if EOF was reached.
+     */
+    boolean consumeAll();
+
     /**
      * Release any held content.
      *
-     * @return <code>Boolean.TRUE</code> if all content consumed and EOF reached,
-     *         <code>Boolean.FALSE</code> if there was some unconsumed content, and
-     *         null if all raw content was consumed, but EOF was not seen.
+     * @return true if EOF seen.
      */
-    Boolean releaseContent();
+    boolean releaseContent();
 
     /**
      * Check if the current data rate consumption is above the minimal rate.

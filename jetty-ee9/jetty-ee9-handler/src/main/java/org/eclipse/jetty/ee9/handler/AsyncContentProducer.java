@@ -178,7 +178,28 @@ class AsyncContentProducer implements ContentProducer
     }
 
     @Override
-    public Boolean releaseContent()
+    public boolean consumeAll()
+    {
+        assertLocked();
+
+        // release any raw content we have already and check for EOF
+        boolean eof = releaseContent();
+        if (eof)
+            return true;
+
+        while (true)
+        {
+            _rawContent = _httpChannel.getCoreRequest().readContent();
+            if (_rawContent == null)
+                return false;
+            _rawContent.release();
+            if (_rawContent.isLast())
+                return true;
+        }
+    }
+
+    @Override
+    public boolean releaseContent()
     {
         assertLocked();
 
@@ -195,30 +216,15 @@ class AsyncContentProducer implements ContentProducer
             _transformedContent = null;
         }
 
-        boolean unconsumed = false;
         if (_rawContent != null && !_rawContent.isSpecial())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("failing currently held raw content {} {}", null, this);
-            if (_rawContent.hasRemaining())
-            {
-                unconsumed = true;
-                Content.skip(_rawContent, _rawContent.remaining());
-            }
             _rawContent.release();
-            _rawContent = null;
+            _rawContent = _rawContent.isLast() ? Content.EOF : null;
         }
 
-        if (unconsumed)
-        {
-            _transformedContent = new Content.Error(new IllegalStateException("unconsumed content"));
-            return Boolean.FALSE;
-        }
-
-        if (_rawContent != null && _rawContent.isLast())
-            return Boolean.TRUE;
-        return null;
-
+        return _rawContent != null && _rawContent.isLast();
     }
 
     @Override

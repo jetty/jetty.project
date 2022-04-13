@@ -222,6 +222,8 @@ public interface Request extends Attributes, Content.Reader
 
     static String getLocalAddr(Request request)
     {
+        if (request == null)
+            return null;
         SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
         if (local instanceof InetSocketAddress)
         {
@@ -236,6 +238,8 @@ public interface Request extends Attributes, Content.Reader
 
     static int getLocalPort(Request request)
     {
+        if (request == null)
+            return -1;
         SocketAddress local = request.getConnectionMetaData().getLocalSocketAddress();
         if (local instanceof InetSocketAddress)
             return ((InetSocketAddress)local).getPort();
@@ -244,6 +248,8 @@ public interface Request extends Attributes, Content.Reader
 
     static String getRemoteAddr(Request request)
     {
+        if (request == null)
+            return null;
         SocketAddress remote = request.getConnectionMetaData().getRemoteSocketAddress();
         if (remote instanceof InetSocketAddress inetSocketAddress)
         {
@@ -261,6 +267,8 @@ public interface Request extends Attributes, Content.Reader
 
     static int getRemotePort(Request request)
     {
+        if (request == null)
+            return -1;
         SocketAddress remote = request.getConnectionMetaData().getRemoteSocketAddress();
         if (remote instanceof InetSocketAddress)
             return ((InetSocketAddress)remote).getPort();
@@ -269,6 +277,9 @@ public interface Request extends Attributes, Content.Reader
 
     static String getServerName(Request request)
     {
+        if (request == null)
+            return null;
+
         HttpURI uri = request.getHttpURI();
         if (uri.hasAuthority())
             return HostPort.normalizeHost(uri.getHost());
@@ -286,6 +297,8 @@ public interface Request extends Attributes, Content.Reader
 
     static int getServerPort(Request request)
     {
+        if (request == null)
+            return -1;
         HttpURI uri = request.getHttpURI();
         if (uri.hasAuthority() && uri.getPort() > 0)
             return uri.getPort();
