@@ -68,7 +68,6 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpURI;
@@ -1481,7 +1480,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     public void setDefaultSecurityHandlerClass(Class<? extends SecurityHandler> defaultSecurityHandlerClass)
     {
-         _defaultSecurityHandlerClass = defaultSecurityHandlerClass;
+        _defaultSecurityHandlerClass = defaultSecurityHandlerClass;
     }
 
     protected SessionHandler newSessionHandler()

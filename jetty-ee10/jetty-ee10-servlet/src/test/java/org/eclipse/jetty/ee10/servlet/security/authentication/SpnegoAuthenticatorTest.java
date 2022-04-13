@@ -15,25 +15,11 @@ package org.eclipse.jetty.ee10.servlet.security.authentication;
 
 import java.io.IOException;
 
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.servlet.HttpInput;
-import org.eclipse.jetty.ee10.servlet.HttpOutput;
-import org.eclipse.jetty.ee10.servlet.security.Authentication;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.AbstractConnector;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class SpnegoAuthenticatorTest
