@@ -48,7 +48,7 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  mavenBuild("jdk17", "clean install -f jetty-ee10 --fail-never", "maven3")
+                  mavenBuild("jdk17", "clean install -f jetty-ee10", "maven3")
                 }
               }
             }
@@ -59,7 +59,7 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  mavenBuild("jdk17", "clean install -f jetty-ee9 --fail-never", "maven3")
+                  mavenBuild("jdk17", "clean install -f jetty-ee9", "maven3")
                 }
               }
             }
@@ -70,7 +70,7 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  mavenBuild("jdk17", "clean install -f jetty-integrations --fail-never", "maven3")
+                  mavenBuild("jdk17", "clean install -f jetty-integrations", "maven3")
                 }
               }
             }
