@@ -7,8 +7,10 @@ pipeline {
   stages {
         stage("Checkout Jetty") {
           steps {
-            ws("jetty.project") {
-              checkout scm
+            container('jetty-build') {
+              ws("jetty.project") {
+                checkout scm
+              }
             }
           }
         }
