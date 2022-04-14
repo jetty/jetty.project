@@ -41,7 +41,6 @@ pipeline {
                   sh 'ls $WORKSPACE'
                   sh 'mkdir -p $WORKSPACE/buildy/.repository'
                   sh 'ls -la $WORKSPACE/buildy/.repository'
-                  sh 'which tree'
                   sh 'which find'
                   mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
                 }
