@@ -32,7 +32,7 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 ws("jetty.project") {
-                  mavenBuild("jdk17", "clean install -f core", "maven3")
+                  mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
                 }
               }
             }
