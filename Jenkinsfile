@@ -7,22 +7,26 @@ pipeline {
   stages {
 
         stage("Build / Test - JDK17 - build") {
-          timeout(time: 120, unit: 'MINUTES') {
+
             container('jetty-build') {
-              steps {
-                mavenBuild("jdk17", "clean install -f build", "maven3")
+              timeout(time: 120, unit: 'MINUTES') {
+                steps {
+                  mavenBuild("jdk17", "clean install -f build", "maven3")
+                }
               }
             }
-          }
+
         }
         stage("Build / Test - JDK17 - core") {
-          timeout(time: 120, unit: 'MINUTES') {
+
             container('jetty-build') {
-              steps {
-                mavenBuild("jdk17", "clean install -f core", "maven3")
+              timeout(time: 120, unit: 'MINUTES') {
+                steps {
+                  mavenBuild("jdk17", "clean install -f core", "maven3")
+                }
               }
             }
-          }
+
         }
   }
 }
