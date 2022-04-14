@@ -351,7 +351,7 @@ public class ErrorProcessor implements Request.Processor
         writer.write("</td></tr>\n");
     }
 
-    private void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
+    protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
     {
         writer.write("HTTP ERROR ");
         writer.write(Integer.toString(code));
