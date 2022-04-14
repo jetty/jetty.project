@@ -7,7 +7,7 @@ pipeline {
   stages {
         stage("Checkout Jetty") {
           steps {
-            wd("jetty.project") {
+            ws("jetty.project") {
               scm checkout
             }
           }
@@ -16,7 +16,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                wd("jetty.project") {
+                ws("jetty.project") {
                   mavenBuild("jdk17", "clean install -f build", "maven3")
                 }
               }
@@ -27,7 +27,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                wd("jetty.project") {
+                ws("jetty.project") {
                   mavenBuild("jdk17", "clean install -f core", "maven3")
                 }
               }
