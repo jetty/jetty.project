@@ -16,7 +16,7 @@ pipeline {
         }
       }
     }
-    stage("Build / Test - JDK17 - build") {
+    stage("Build : /build/") {
       steps {
         container('jetty-build') {
           timeout(time: 120, unit: 'MINUTES') {
@@ -27,23 +27,78 @@ pipeline {
         }
       }
     }
-    stage("Build / Test - JDK17 - httptools") {
-      steps {
-        container('jetty-build') {
-          timeout(time: 120, unit: 'MINUTES') {
-            ws("jetty.project") {
-              mavenBuild("jdk17", "clean install -f tests/jetty-http-tools", "maven3")
-            }
-          }
-        }
-      }
-    }
-    stage("Build / Test - JDK17 - core") {
+    stage("Build : /jetty-core/") {
       steps {
         container('jetty-build') {
           timeout(time: 120, unit: 'MINUTES') {
             ws("jetty.project") {
               mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
+            }
+          }
+        }
+      }
+    }
+    stage("Build : /jetty-ee10/") {
+      steps {
+        container('jetty-build') {
+          timeout(time: 120, unit: 'MINUTES') {
+            ws("jetty.project") {
+              mavenBuild("jdk17", "clean install -f jetty-ee10", "maven3")
+            }
+          }
+        }
+      }
+    }
+    stage("Build : /jetty-ee9/") {
+      steps {
+        container('jetty-build') {
+          timeout(time: 120, unit: 'MINUTES') {
+            ws("jetty.project") {
+              mavenBuild("jdk17", "clean install -f jetty-ee9", "maven3")
+            }
+          }
+        }
+      }
+    }
+    stage("Build : /jetty-integrations/") {
+      steps {
+        container('jetty-build') {
+          timeout(time: 120, unit: 'MINUTES') {
+            ws("jetty.project") {
+              mavenBuild("jdk17", "clean install -f jetty-integrations", "maven3")
+            }
+          }
+        }
+      }
+    }
+    stage("Build : /jetty-home/") {
+      steps {
+        container('jetty-build') {
+          timeout(time: 120, unit: 'MINUTES') {
+            ws("jetty.project") {
+              mavenBuild("jdk17", "clean install -f jetty-home", "maven3")
+            }
+          }
+        }
+      }
+    }
+    stage("Build : /tests/") {
+      steps {
+        container('jetty-build') {
+          timeout(time: 120, unit: 'MINUTES') {
+            ws("jetty.project") {
+              mavenBuild("jdk17", "clean install -f tests", "maven3")
+            }
+          }
+        }
+      }
+    }
+    stage("Build : /documentation/") {
+      steps {
+        container('jetty-build') {
+          timeout(time: 120, unit: 'MINUTES') {
+            ws("jetty.project") {
+              mavenBuild("jdk17", "clean install -f documentation", "maven3")
             }
           }
         }

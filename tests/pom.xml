@@ -46,7 +46,6 @@
   </build>
   <modules>
     <module>jetty-jmh</module>
-    <module>jetty-http-tools</module>
     <module>test-webapps</module>
     <module>test-sessions</module>
     <module>test-distribution</module>

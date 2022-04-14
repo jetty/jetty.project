@@ -807,7 +807,7 @@
     </dependency>
     <!-- Demo Apps -->
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-mock-resources</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
@@ -815,7 +815,7 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-jetty-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
@@ -829,7 +829,7 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-jaas-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
@@ -837,7 +837,7 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-jndi-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
@@ -845,7 +845,7 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-spec-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
@@ -853,7 +853,7 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-async-rest-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
@@ -861,7 +861,7 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-proxy-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
@@ -869,7 +869,7 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-simple-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
@@ -877,7 +877,7 @@
       <optional>true</optional>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.demos</groupId>
+      <groupId>org.eclipse.jetty.ee10.demos</groupId>
       <artifactId>demo-jsp-webapp</artifactId>
       <version>${project.version}</version>
       <classifier>config</classifier>
