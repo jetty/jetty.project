@@ -42,6 +42,7 @@ pipeline {
                   sh 'mkdir -p $WORKSPACE/buildy/.repository'
                   sh 'ls -la $WORKSPACE/buildy/.repository'
                   sh 'which find'
+                  sh 'find $WORKSPACE/buildy/.repository/org/eclipse/jetty -type f -name "*.jar"'
                   mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
                 }
               }
@@ -53,6 +54,7 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
+                  sh 'find $WORKSPACE/buildy/.repository/org/eclipse/jetty -type f -name "*.jar"'
                   mavenBuild("jdk17", "clean install -f jetty-ee10", "maven3")
                 }
               }
@@ -64,6 +66,7 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
+                  sh 'find $WORKSPACE/buildy/.repository/org/eclipse/jetty -type f -name "*.jar"'
                   mavenBuild("jdk17", "clean install -f jetty-ee9", "maven3")
                 }
               }
