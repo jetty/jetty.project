@@ -38,6 +38,9 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
+                  sh 'ls -la ${env.WORKSPACE}/buildy/.repository'
+                  sh 'which tree'
+                  sh 'which find'
                   mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
                 }
               }
