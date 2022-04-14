@@ -27,6 +27,7 @@ import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
 import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.SecureRequestCustomizer.SslSessionData;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -60,8 +61,11 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
         if (!mandatory)
             return new DeferredAuthentication(this);
 
-        X509Certificate[] certs = (X509Certificate[])req.getAttribute("jakarta.servlet.request.X509Certificate");
-
+        //TODO this seems fragile, to rely on this name
+        //X509Certificate[] certs = (X509Certificate[])req.getAttribute("jakarta.servlet.request.X509Certificate");
+        SslSessionData sslSessionData = (SslSessionData)req.getAttribute("org.eclipse.jetty.servlet.request.ssl_session_data");
+        X509Certificate[] certs = sslSessionData.getX509Certificates();
+        
         try
         {
             // Need certificates.

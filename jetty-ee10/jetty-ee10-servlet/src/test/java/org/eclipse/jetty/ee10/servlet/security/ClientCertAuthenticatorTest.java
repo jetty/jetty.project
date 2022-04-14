@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.ee10.servlet.security;
 
-import java.io.PrintWriter;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
@@ -21,21 +21,19 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
-import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Constraint;
@@ -112,9 +110,9 @@ public class ClientCertAuthenticatorTest
         constraintSecurityHandler.setLoginService(loginService);
         loginService.setConfig("src/test/resources/realm.properties");
 
-        constraintSecurityHandler.setHandler(new FooHandler());
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setSecurityHandler(constraintSecurityHandler);
+        servletContextHandler.addServlet(FooServlet.class, "/");
         server.setHandler(servletContextHandler);
         server.addBean(sslContextFactory);
         server.start();
@@ -179,19 +177,15 @@ public class ClientCertAuthenticatorTest
         assertThat("response code", connection.getResponseCode(), is(403));
     }
 
-    static class FooHandler extends Handler.Processor
+    public static class FooServlet extends HttpServlet
     {
         @Override
-        public void process(Request request, Response response, Callback callback) throws Exception
+        protected void service(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException
         {
-            ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
-            HttpServletResponse httpResponse = servletContextRequest.getHttpServletResponse();
-            httpResponse.setContentType("text/plain; charset=utf-8");
-            httpResponse.setStatus(HttpServletResponse.SC_OK);
+            res.setContentType("text/plain; charset=utf-8");
+            res.setStatus(HttpServletResponse.SC_OK);
 
-            PrintWriter out = httpResponse.getWriter();
-            out.println(MESSAGE);
-            callback.succeeded();
+            res.getWriter().println(MESSAGE);
         }
     }
 }

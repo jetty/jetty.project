@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
@@ -63,8 +64,7 @@ public class AliasedConstraintTest
         server.setConnectors(new Connector[]{connector});
 
         ServletContextHandler context = new ServletContextHandler();
-        SessionHandler session = new SessionHandler();
-
+        context.setSessionHandler(new SessionHandler());
         TestLoginService loginService = new TestLoginService(TEST_REALM);
 
         loginService.putUser("user0", new Password("password"), new String[]{});
@@ -77,13 +77,15 @@ public class AliasedConstraintTest
         context.setResourceBase(MavenTestingUtils.getTestResourcePathDir("docroot"));
 
         server.setHandler(new HandlerList(context, new DefaultHandler()));
-        context.setSessionHandler(session);
-        // context.addAliasCheck(new AllowSymLinkAliasChecker());
+
+        context.addAliasCheck(new AllowSymLinkAliasChecker());
 
         server.addBean(loginService);
 
         security = new ConstraintSecurityHandler();
         context.setSecurityHandler(security);
+        
+        //TODO this MUST be replaced by a Servlet instead of a handler!!!!
         ResourceHandler handler = new ResourceHandler();
         security.setHandler(handler);
 
