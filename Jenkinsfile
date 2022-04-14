@@ -18,23 +18,15 @@ pipeline {
     }
     stage("Build & Test - JDK17") {
       stages {
-        stage("Module : /build/") {
+        stage("Setup") {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  mavenBuild("jdk17", "clean install -f build", "maven3")
-                }
-              }
-            }
-          }
-        }
-        stage("Module : / (jetty-project only)") {
-          steps {
-            container('jetty-build') {
-              timeout(time: 120, unit: 'MINUTES') {
-                dir("${env.WORKSPACE}/buildy") {
+                  echo "Install org.eclipse.jetty:jetty-project"
                   mavenBuild("jdk17", "-N clean install", "maven3")
+                  echo "Install org.eclipse.jetty:build-resources"
+                  mavenBuild("jdk17", "clean install -f build", "maven3")
                 }
               }
             }
