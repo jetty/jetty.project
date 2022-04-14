@@ -23,10 +23,10 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  echo "Install org.eclipse.jetty:jetty-project"
-                  mavenBuild("jdk17", "-N clean install", "maven3")
                   echo "Install org.eclipse.jetty:build-resources"
                   mavenBuild("jdk17", "clean install -f build", "maven3")
+                  echo "Install org.eclipse.jetty:jetty-project"
+                  mavenBuild("jdk17", "-N clean install", "maven3")
                 }
               }
             }
