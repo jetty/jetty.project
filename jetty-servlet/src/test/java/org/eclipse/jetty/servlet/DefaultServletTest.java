@@ -40,12 +40,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.DateGenerator;
-import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpTester;
+import org.eclipse.jetty.http.*;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -1939,6 +1934,51 @@ public class DefaultServletTest
 
         ServletHolder defholder = context.addServlet(DefaultServlet.class, "/");
         defholder.setInitParameter("precompressed", "bzip2=.bz2,gzip=.gz,br=.br");
+        defholder.setInitParameter("resourceBase", docRoot.toString());
+
+        String rawResponse;
+        HttpTester.Response response;
+        String body;
+
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:bzip2, br, gzip\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "10"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
+        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "bzip2"));
+        body = response.getContent();
+        assertThat(body, containsString("fake bzip2"));
+
+        // TODO: show accept-encoding search order issue (shouldn't this request return data0.txt.br?)
+
+        rawResponse = connector.getResponse("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:br, gzip\r\n\r\n");
+        response = HttpTester.parseResponse(rawResponse);
+        assertThat(response.toString(), response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_LENGTH, "9"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_TYPE, "text/plain"));
+        assertThat(response, containsHeaderValue(HttpHeader.VARY, "Accept-Encoding"));
+        assertThat(response, containsHeaderValue(HttpHeader.CONTENT_ENCODING, "gzip"));
+        body = response.getContent();
+        assertThat(body, containsString("fake gzip"));
+    }
+
+    @Test
+    public void testProgrammaticCustomCompressionFormats() throws Exception
+    {
+        createFile(docRoot.resolve("data0.txt"), "Hello Text 0");
+        createFile(docRoot.resolve("data0.txt.br"), "fake brotli");
+        createFile(docRoot.resolve("data0.txt.gz"), "fake gzip");
+        createFile(docRoot.resolve("data0.txt.bz2"), "fake bzip2");
+
+        ResourceService resourceService = new ResourceService();
+        resourceService.setPrecompressedFormats(new CompressedContentFormat[]{
+                new CompressedContentFormat("bzip2", ".bz2"),
+                new CompressedContentFormat("gzip", ".gz"),
+                new CompressedContentFormat("br", ".br")
+        });
+        ServletHolder defholder = new ServletHolder(new DefaultServlet(resourceService));
+        context.addServlet(defholder, "/");
         defholder.setInitParameter("resourceBase", docRoot.toString());
 
         String rawResponse;
