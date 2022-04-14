@@ -29,6 +29,17 @@ pipeline {
             }
           }
         }
+        stage("Module : / (jetty-project only)") {
+          steps {
+            container('jetty-build') {
+              timeout(time: 120, unit: 'MINUTES') {
+                dir("${env.WORKSPACE}/buildy") {
+                  mavenBuild("jdk17", "-N clean install", "maven3")
+                }
+              }
+            }
+          }
+        }
         stage("Module : /jetty-core/") {
           steps {
             container('jetty-build') {
