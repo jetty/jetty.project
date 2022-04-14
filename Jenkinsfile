@@ -5,23 +5,25 @@ pipeline {
   // save some io during the build
   options { durabilityHint('PERFORMANCE_OPTIMIZED') }
   stages {
-      timeout(time: 240, unit: 'MINUTES') {
+
         stage("Build / Test - JDK17 - build") {
-          container('jetty-build') {
-            steps {
-              mavenBuild("jdk17", "clean install -f build", "maven3")
+          timeout(time: 120, unit: 'MINUTES') {
+            container('jetty-build') {
+              steps {
+                mavenBuild("jdk17", "clean install -f build", "maven3")
+              }
             }
           }
         }
         stage("Build / Test - JDK17 - core") {
-          container('jetty-build') {
-            steps {
-              mavenBuild("jdk17", "clean install -f core", "maven3")
+          timeout(time: 120, unit: 'MINUTES') {
+            container('jetty-build') {
+              steps {
+                mavenBuild("jdk17", "clean install -f core", "maven3")
+              }
             }
           }
         }
-      }
-
   }
 }
 
