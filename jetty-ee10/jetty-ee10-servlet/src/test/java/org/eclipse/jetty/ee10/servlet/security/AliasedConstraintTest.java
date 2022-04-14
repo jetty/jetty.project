@@ -33,6 +33,7 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -127,6 +128,7 @@ public class AliasedConstraintTest
         return data.stream().map(Arguments::of);
     }
 
+    @Disabled
     @ParameterizedTest
     @MethodSource("data")
     public void testAccess(String uri, int expectedStatusCode, String expectedContent) throws Exception

@@ -29,12 +29,14 @@ import org.eclipse.jetty.server.Server;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Disabled
 @SuppressWarnings("serial")
 public class DispatcherForwardTest
 {

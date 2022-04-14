@@ -38,6 +38,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -219,6 +220,7 @@ public class AsyncContextTest
         assertThat("http servlet mapping mappingMatch is correct", responseBody, containsString("async:run:attr:mapping:mappingMatch:EXACT"));
     }
 
+    @Disabled
     @Test
     public void testDispatchAsyncContextEncodedUrl() throws Exception
     {
@@ -273,6 +275,7 @@ public class AsyncContextTest
         assertThat("servlet request uri async", responseBody, containsString("doGet.ASYNC.requestURI:/ctx/self/hello%20there"));
     }
 
+    @Disabled
     @Test
     public void testDispatchAsyncContextEncodedPathAndQueryString() throws Exception
     {

@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -147,6 +148,7 @@ public class AsyncListenerTest
         assertThat(httpResponse, not(containsString(TestRuntimeException.class.getName())));
     }
 
+    @Disabled
     @Test
     public void testStartAsyncThrowOnErrorSendErrorCustomErrorPage() throws Exception
     {
@@ -299,6 +301,7 @@ public class AsyncListenerTest
         assertThat(httpResponse, containsString("HTTP/1.1 502 "));
     }
 
+    @Disabled
     @Test
     public void testStartAsyncOnTimeoutSendErrorCustomErrorPage() throws Exception
     {

@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,6 +143,7 @@ public class PostServletTest
         assertThat(ex1.get(), nullValue());
     }
 
+    @Disabled
     @Test
     public void testBadPost() throws Exception
     {
@@ -165,6 +167,7 @@ public class PostServletTest
         assertThat(ex1.get(), not(nullValue()));
     }
 
+    @Disabled
     @Test
     public void testDeferredBadPost() throws Exception
     {

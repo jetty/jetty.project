@@ -42,6 +42,7 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -155,6 +156,7 @@ public class ClientCertAuthenticatorTest
         return cf;
     }
 
+    @Disabled
     @Test
     public void authzPass() throws Exception
     {

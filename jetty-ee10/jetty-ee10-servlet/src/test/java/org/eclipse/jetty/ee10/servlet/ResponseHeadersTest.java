@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -182,6 +183,7 @@ public class ResponseHeadersTest
         assertThat("Response Header Connection", response.get("Connection"), is("Upgrade"));
     }
 
+    @Disabled
     @Test
     public void testMultilineResponseHeaderValue() throws Exception
     {

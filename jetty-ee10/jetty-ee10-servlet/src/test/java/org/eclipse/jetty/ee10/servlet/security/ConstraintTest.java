@@ -60,6 +60,7 @@ import org.eclipse.jetty.util.security.Password;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -707,6 +708,7 @@ public class ConstraintTest
         return scenarios.stream();
     }
 
+    @Disabled
     @ParameterizedTest
     @MethodSource("basicScenarios")
     public void testBasic(Scenario scenario) throws Exception
@@ -1084,6 +1086,7 @@ public class ConstraintTest
         assertThat(response, containsString("!role"));
     }
 
+    @Disabled
     @Test
     public void testNonFormPostRedirectHttp10() throws Exception
     {
@@ -1113,6 +1116,7 @@ public class ConstraintTest
         assertThat(response, not(containsString("Connection: keep-alive")));
     }
 
+    @Disabled
     @Test
     public void testNonFormPostRedirectHttp11() throws Exception
     {
