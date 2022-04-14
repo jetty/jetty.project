@@ -48,7 +48,7 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  mavenBuild("jdk17", "clean install -f jetty-ee10", "maven3")
+                  mavenBuild("jdk17", "clean install -f jetty-ee10 --fail-never", "maven3")
                 }
               }
             }
@@ -59,7 +59,7 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  mavenBuild("jdk17", "clean install -f jetty-ee9", "maven3")
+                  mavenBuild("jdk17", "clean install -f jetty-ee9 --fail-never", "maven3")
                 }
               }
             }
@@ -70,7 +70,7 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  mavenBuild("jdk17", "clean install -f jetty-integrations", "maven3")
+                  mavenBuild("jdk17", "clean install -f jetty-integrations --fail-never", "maven3")
                 }
               }
             }
@@ -130,7 +130,6 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh 'find /root/.m2/repository/org/eclipse/jetty/ -type f -name "*.jar"'
           sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Pci --show-version --batch-mode --errors -Djetty.testtracker.log=true -Dmaven.test.failure.ignore=true -DskipTests $cmdline"
         }
       }
