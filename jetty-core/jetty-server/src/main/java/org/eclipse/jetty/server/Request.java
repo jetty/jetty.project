@@ -17,13 +17,18 @@ import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.eclipse.jetty.http.CookieCache;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
@@ -108,6 +113,8 @@ import org.eclipse.jetty.util.thread.Invocable;
  */
 public interface Request extends Attributes, Content.Reader
 {
+    List<Locale> __defaultLocale = Collections.singletonList(Locale.getDefault());
+
     /**
      * an ID unique within the lifetime scope of the {@link ConnectionMetaData#getId()}).
      * This may be a protocol ID (eg HTTP/2 stream ID) or it may be unrelated to the protocol.
@@ -319,6 +326,32 @@ public interface Request extends Attributes, Content.Reader
             return scheme.getDefaultPort();
 
         return -1;
+    }
+
+    static List<Locale> getLocales(Request request)
+    {
+        HttpFields fields = request.getHeaders();
+        if (fields == null)
+            return __defaultLocale;
+
+        List<String> acceptable = fields.getQualityCSV(HttpHeader.ACCEPT_LANGUAGE);
+
+        // handle no locale
+        if (acceptable.isEmpty())
+            return __defaultLocale;
+
+        return acceptable.stream().map(language ->
+        {
+            language = HttpField.stripParameters(language);
+            String country = "";
+            int dash = language.indexOf('-');
+            if (dash > -1)
+            {
+                country = language.substring(dash + 1).trim();
+                language = language.substring(0, dash).trim();
+            }
+            return new Locale(language, country);
+        }).collect(Collectors.toList());
     }
 
     static InputStream asInputStream(Request request)
