@@ -28,8 +28,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPOutputStream;
 
-import org.eclipse.jetty.ee9.handler.gzip.GzipHttpInputInterceptor;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.Server;
@@ -360,88 +358,6 @@ public class AsyncContentProducerTest
         assertThat(contentReleasedCount.get(), is(1));
         assertThat(specialContentInterceptedCount.get(), is(1));
         assertThat(nullContentInterceptedCount.get(), is(1));
-    }
-
-    @Test
-    public void testAsyncContentProducerGzipInterceptor() throws Exception
-    {
-        ByteBuffer[] uncompressedBuffers = new ByteBuffer[3];
-        uncompressedBuffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(uncompressedBuffers);
-        final String originalContentString = asString(uncompressedBuffers);
-
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = gzipByteBuffer(uncompressedBuffers[0]);
-        buffers[1] = gzipByteBuffer(uncompressedBuffers[1]);
-        buffers[2] = gzipByteBuffer(uncompressedBuffers[2]);
-
-        CyclicBarrier barrier = new CyclicBarrier(2);
-
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.EOF, scheduledExecutorService, barrier));
-        try (AutoLock lock = contentProducer.lock())
-        {
-            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
-
-            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
-            assertThat(error, nullValue());
-        }
-    }
-
-    @Test
-    public void testAsyncContentProducerGzipInterceptorWithTinyBuffers() throws Exception
-    {
-        ByteBuffer[] uncompressedBuffers = new ByteBuffer[3];
-        uncompressedBuffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(uncompressedBuffers);
-        final String originalContentString = asString(uncompressedBuffers);
-
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = gzipByteBuffer(uncompressedBuffers[0]);
-        buffers[1] = gzipByteBuffer(uncompressedBuffers[1]);
-        buffers[2] = gzipByteBuffer(uncompressedBuffers[2]);
-
-        CyclicBarrier barrier = new CyclicBarrier(2);
-
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.EOF, scheduledExecutorService, barrier));
-        try (AutoLock lock = contentProducer.lock())
-        {
-            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 1));
-
-            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, totalContentBytesCount + buffers.length + 2, 25, 4, barrier);
-            assertThat(error, nullValue());
-        }
-    }
-
-    @Test
-    public void testAsyncContentProducerGzipInterceptorWithError() throws Exception
-    {
-        ByteBuffer[] uncompressedBuffers = new ByteBuffer[3];
-        uncompressedBuffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(uncompressedBuffers);
-        final String originalContentString = asString(uncompressedBuffers);
-        final Throwable expectedError = new Throwable("HttpInput idle timeout");
-
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = gzipByteBuffer(uncompressedBuffers[0]);
-        buffers[1] = gzipByteBuffer(uncompressedBuffers[1]);
-        buffers[2] = gzipByteBuffer(uncompressedBuffers[2]);
-
-        CyclicBarrier barrier = new CyclicBarrier(2);
-
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new Content.Error(expectedError), scheduledExecutorService, barrier));
-        try (AutoLock lock = contentProducer.lock())
-        {
-            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
-
-            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, contentProducer, (buffers.length + 1) * 2, 0, 4, barrier);
-            assertThat(error, is(expectedError));
-        }
     }
 
     private Throwable readAndAssertContent(int totalContentBytesCount, String originalContentString, ContentProducer contentProducer, int totalContentCount, int readyCount, int notReadyCount, CyclicBarrier barrier) throws InterruptedException, BrokenBarrierException, TimeoutException

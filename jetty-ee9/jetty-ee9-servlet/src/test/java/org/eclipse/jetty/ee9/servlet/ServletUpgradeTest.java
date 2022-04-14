@@ -27,11 +27,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpUpgradeHandler;
 import jakarta.servlet.http.WebConnection;
-import org.eclipse.jetty.ee9.handler.DefaultHandler;
-import org.eclipse.jetty.ee9.handler.Handler;
-import org.eclipse.jetty.ee9.handler.HandlerList;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,8 +60,8 @@ public class ServletUpgradeTest
         contextHandler.setContextPath("/");
         contextHandler.addServlet(new ServletHolder(new TestServlet()), "/TestServlet");
 
-        HandlerList handlers = new HandlerList();
-        handlers.setHandlers(new Handler[]{contextHandler, new DefaultHandler()});
+        org.eclipse.jetty.server.Handler.Collection handlers = new org.eclipse.jetty.server.Handler.Collection();
+        handlers.setHandlers(contextHandler.getCoreContextHandler(), new DefaultHandler());
         server.setHandler(handlers);
 
         server.start();
@@ -105,7 +103,7 @@ public class ServletUpgradeTest
                 .append("Content-type: application/x-www-form-urlencoded").append(CRLF)
                 .append(CRLF);
 
-            LOG.info("REQUEST=========" + reqStr.toString());
+            LOG.info("REQUEST=========" + reqStr);
             output.write(reqStr.toString().getBytes());
 
             LOG.info("Writing first chunk");
@@ -291,7 +289,7 @@ public class ServletUpgradeTest
                     String data = new String(b, 0, len);
                     sb.append(data);
                 }
-                output.println(delimiter + sb.toString());
+                output.println(delimiter + sb);
                 output.flush();
             }
             catch (Exception ex)

@@ -42,10 +42,10 @@ import org.eclipse.jetty.ee9.handler.DebugListener;
 import org.eclipse.jetty.ee9.handler.HttpChannel;
 import org.eclipse.jetty.ee9.handler.QuietServletException;
 import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.ee9.handler.Response;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
@@ -1034,11 +1034,11 @@ public class AsyncServletTest
     class Log extends AbstractLifeCycle implements RequestLog
     {
         @Override
-        public void log(Request request, Response response)
+        public void log(org.eclipse.jetty.server.Request request, org.eclipse.jetty.server.Response response)
         {
-            int status = response.getCommittedMetaData().getStatus();
-            long written = response.getHttpChannel().getBytesWritten();
-            _log.add(status + " " + written + " " + request.getRequestURI());
+            int status = response.getStatus();
+            long written = Response.getContentBytesWritten(response);
+            _log.add(status + " " + written + " " + request.getHttpURI().asString());
         }
     }
 }

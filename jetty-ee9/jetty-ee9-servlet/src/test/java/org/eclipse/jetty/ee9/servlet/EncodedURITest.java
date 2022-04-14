@@ -27,10 +27,10 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.URIUtil;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -62,14 +62,14 @@ public class EncodedURITest
 
         _context0 = new ServletContextHandler();
         _context0.setContextPath("/context path");
-        _contextCollection.addHandler(_context0);
+        _contextCollection.addHandler(_context0.getCoreContextHandler());
         _context0.addFilter(AsyncFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         _context0.addServlet(TestServlet.class, "/test servlet/*");
         _context0.addServlet(AsyncServlet.class, "/async servlet/*");
 
         _context1 = new ServletContextHandler();
         _context1.setContextPath("/redirecting context");
-        _contextCollection.addHandler(_context1);
+        _contextCollection.addHandler(_context1.getCoreContextHandler());
 
         _server.start();
     }

@@ -112,7 +112,7 @@ import org.slf4j.LoggerFactory;
  */
 // TODO make this work
 @ManagedObject("EE9 Context")
-public class ContextHandler extends ScopedHandler implements Attributes, Graceful
+public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Handler.CoreSupplier
 {
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
@@ -251,6 +251,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             setContextPath(contextPath);
         if (parent != null)
             parent.addHandler(_coreContextHandler);
+    }
+
+    @Override
+    public Handler getCoreHandler()
+    {
+        return _coreContextHandler;
     }
 
     public org.eclipse.jetty.server.handler.ContextHandler getCoreContextHandler()

@@ -33,10 +33,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.gzip.GzipHandler;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -210,12 +210,13 @@ public class BlockingTest
                 }
             }
         };
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setHandler(handler);
+
         GzipHandler gzipHandler = new GzipHandler();
         gzipHandler.setMinGzipSize(1);
-        gzipHandler.setHandler(handler);
-        context.setHandler(gzipHandler);
-        // using the GzipHandler is mandatory to reproduce the
-//        context.setHandler(handler);
+        gzipHandler.setHandler(contextHandler);
+        server.setHandler(gzipHandler);
         server.start();
 
         StringBuilder request = new StringBuilder();

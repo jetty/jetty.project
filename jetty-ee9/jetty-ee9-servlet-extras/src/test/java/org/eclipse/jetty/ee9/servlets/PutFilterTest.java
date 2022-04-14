@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,7 +69,7 @@ public class PutFilterTest
         connector = new LocalConnector(server);
         server.addConnector(connector);
         ServletContextHandler context = new ServletContextHandler(server, "/context");
-        context.setBaseResource(new PathResource(root));
+        context.setResourceBase(root);
         context.addServlet(DefaultServlet.class, "/");
         FilterHolder holder = context.addFilter(PutFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST));
         holder.setInitParameter("delAllowed", "true");

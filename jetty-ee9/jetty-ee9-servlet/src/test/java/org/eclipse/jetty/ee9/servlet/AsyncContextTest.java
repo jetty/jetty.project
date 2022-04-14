@@ -27,16 +27,16 @@ import jakarta.servlet.http.HttpServletMapping;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpServletResponseWrapper;
-import org.eclipse.jetty.ee9.handler.DefaultHandler;
-import org.eclipse.jetty.ee9.handler.HandlerList;
 import org.eclipse.jetty.ee9.handler.HttpChannel;
 import org.eclipse.jetty.ee9.handler.QuietServletException;
 import org.eclipse.jetty.ee9.handler.Request;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,7 +93,9 @@ public class AsyncContextTest
         errorHandler.addErrorPage(500, "/error/500");
         errorHandler.addErrorPage(IOException.class.getName(), "/error/IOE");
 
-        _server.setHandler(new HandlerList(_contextHandler, new DefaultHandler()));
+        Handler.Collection handlers = new Handler.Collection();
+        _server.setHandler(handlers);
+        handlers.setHandlers(_contextHandler.getCoreContextHandler(), new DefaultHandler());
         _server.start();
     }
 

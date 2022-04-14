@@ -59,24 +59,23 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee9.handler.AbstractHandler;
 import org.eclipse.jetty.ee9.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.ContextHandlerCollection;
-import org.eclipse.jetty.ee9.handler.HandlerList;
 import org.eclipse.jetty.ee9.handler.HandlerWrapper;
 import org.eclipse.jetty.ee9.handler.Request;
 import org.eclipse.jetty.ee9.handler.ResourceHandler;
 import org.eclipse.jetty.ee9.handler.Response;
+import org.eclipse.jetty.ee9.handler.SessionHandler;
 import org.eclipse.jetty.ee9.handler.UserIdentity;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.security.RoleInfo;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.session.SessionHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -95,6 +94,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -366,20 +366,23 @@ public class ServletContextHandlerTest
     {
         public void checkSessionListeners(int size)
         {
-            assertNotNull(_sessionListeners);
-            assertEquals(size, _sessionListeners.size());
+            List<HttpSessionListener> sessionListeners = getSessionListeners();
+            assertNotNull(sessionListeners);
+            assertEquals(size, sessionListeners.size());
         }
 
         public void checkSessionAttributeListeners(int size)
         {
-            assertNotNull(_sessionAttributeListeners);
-            assertEquals(size, _sessionAttributeListeners.size());
+            List<HttpSessionAttributeListener> sessionAttributeListeners = getSessionAttributeListeners();
+            assertNotNull(sessionAttributeListeners);
+            assertEquals(size, sessionAttributeListeners.size());
         }
 
         public void checkSessionIdListeners(int size)
         {
-            assertNotNull(_sessionIdListeners);
-            assertEquals(size, _sessionIdListeners.size());
+            List<HttpSessionIdListener> sessionIdListeners = getSessionIdListeners();
+            assertNotNull(sessionIdListeners);
+            assertEquals(size, sessionIdListeners.size());
         }
     }
 
@@ -671,7 +674,7 @@ public class ServletContextHandlerTest
     {
         //Test get/setInitParam with null throws NPE
         ServletContextHandler root = new ServletContextHandler(_server, "/", ServletContextHandler.SESSIONS);
-        _server.setHandler(root);
+        _server.setHandler(root.getCoreContextHandler());
         ListenerHolder initialListener = new ListenerHolder();
         initialListener.setListener(new ServletContextListener()
         {
@@ -708,7 +711,7 @@ public class ServletContextHandlerTest
                 resp.getWriter().printf("getContextPath()=[%s]", req.getContextPath());
             }
         }), "/dump");
-        _server.setHandler(contextHandler);
+        _server.setHandler(contextHandler.getCoreContextHandler());
         _server.start();
 
         StringBuilder rawRequest = new StringBuilder();
@@ -741,7 +744,7 @@ public class ServletContextHandlerTest
                 resp.getWriter().printf("getServletPath()=[%s]", req.getServletPath());
             }
         }), pathSpec);
-        _server.setHandler(contextHandler);
+        _server.setHandler(contextHandler.getCoreContextHandler());
         _server.start();
 
         StringBuilder rawRequest = new StringBuilder();
@@ -1007,9 +1010,9 @@ public class ServletContextHandlerTest
 
         _server.start();
 
-        assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, session));
-        assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, security));
-        assertEquals(root, AbstractHandlerContainer.findContainerOf(_server, ContextHandler.class, servlet));
+        assertEquals(root, AbstractHandlerContainer.findContainerOf(root, ContextHandler.class, session));
+        assertEquals(root, AbstractHandlerContainer.findContainerOf(root, ContextHandler.class, security));
+        assertEquals(root, AbstractHandlerContainer.findContainerOf(root, ContextHandler.class, servlet));
     }
 
     @Test
@@ -1024,7 +1027,7 @@ public class ServletContextHandlerTest
         holder2.setInitOrder(2);
 
         context.setContextPath("/");
-        _server.setHandler(context);
+        _server.setHandler(context.getCoreContextHandler());
         _server.start();
 
         assertEquals(2, __testServlets.get());
@@ -1070,7 +1073,7 @@ public class ServletContextHandlerTest
             context.getServletHandler().setStartWithUnavailable(false);
             holder.setInitOrder(0);
             context.setContextPath("/");
-            _server.setHandler(context);
+            _server.setHandler(context.getCoreContextHandler());
             ServletException se = assertThrows(ServletException.class, _server::start);
             assertThat("Servlet can only be added from SCI or SCL", se.getCause(), instanceOf(IllegalStateException.class));
         }
@@ -1160,7 +1163,7 @@ public class ServletContextHandlerTest
             context.getServletHandler().setStartWithUnavailable(false);
             holder.setInitOrder(0);
             context.setContextPath("/");
-            _server.setHandler(context);
+            _server.setHandler(context.getCoreContextHandler());
             ServletException se = assertThrows(ServletException.class, _server::start);
             assertThat("Filter can only be added from SCI or SCL", se.getCause(), instanceOf(IllegalStateException.class));
         }
@@ -1198,7 +1201,7 @@ public class ServletContextHandlerTest
             context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
             context.getServletHandler().setStartWithUnavailable(false);
             context.setContextPath("/");
-            _server.setHandler(context);
+            _server.setHandler(context.getCoreContextHandler());
             assertThrows(IllegalStateException.class, _server::start, "Servlet can only be added from SCI or SCL");
         }
     }
@@ -1235,7 +1238,7 @@ public class ServletContextHandlerTest
             context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
             context.getServletHandler().setStartWithUnavailable(false);
             context.setContextPath("/");
-            _server.setHandler(context);
+            _server.setHandler(context.getCoreContextHandler());
             assertThrows(IllegalStateException.class, _server::start, "Servlet can only be added from SCI or SCL");
         }
     }
@@ -1272,7 +1275,7 @@ public class ServletContextHandlerTest
             context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
             context.getServletHandler().setStartWithUnavailable(false);
             context.setContextPath("/");
-            _server.setHandler(context);
+            _server.setHandler(context.getCoreContextHandler());
             assertThrows(IllegalStateException.class, _server::start, "Servlet can only be added from SCI or SCL");
         }
     }
@@ -1300,7 +1303,7 @@ public class ServletContextHandlerTest
             {
             }
         });
-        _server.setHandler(context);
+        _server.setHandler(context.getCoreContextHandler());
         _server.start();
 
         StringBuilder request = new StringBuilder();
@@ -1498,7 +1501,7 @@ public class ServletContextHandlerTest
         ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class);
         reg.addMapping("/test");
 
-        _server.setHandler(context);
+        _server.setHandler(context.getCoreContextHandler());
         _server.start();
 
         StringBuilder request = new StringBuilder();
@@ -1877,7 +1880,7 @@ public class ServletContextHandlerTest
     @Test
     public void testFallThrough() throws Exception
     {
-        HandlerList list = new HandlerList();
+        Handler.Collection list = new Handler.Collection();
         _server.setHandler(list);
 
         ServletContextHandler root = new ServletContextHandler(list, "/", ServletContextHandler.SESSIONS);
@@ -1886,12 +1889,12 @@ public class ServletContextHandlerTest
         servlet.setEnsureDefaultServlet(false);
         servlet.addServletWithMapping(HelloServlet.class, "/hello/*");
 
-        list.addHandler(new AbstractHandler()
+        list.addHandler(new Handler.Abstract()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request coreRequest) throws Exception
             {
-                response.sendError(404, "Fell Through");
+                return (request, response, callback) -> org.eclipse.jetty.server.Response.writeError(request, response, callback, 404);
             }
         });
 

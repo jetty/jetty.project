@@ -32,7 +32,6 @@ import org.eclipse.jetty.server.SymlinkAllowedResourceAliasChecker;
 import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -124,7 +123,7 @@ public class AliasCheckerSymlinkTest
         _server.addConnector(_connector);
         _context = new ServletContextHandler();
         _context.setContextPath("/");
-        _context.setBaseResource(new PathResource(webRootPath));
+        _context.setResourceBase(webRootPath);
         _context.setWelcomeFiles(new String[]{"index.html"});
         _context.setProtectedTargets(new String[]{"/WEB-INF", "/META-INF"});
         _context.getMimeTypes().addMimeMapping("txt", "text/plain;charset=utf-8");

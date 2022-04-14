@@ -14,7 +14,7 @@
 package org.eclipse.jetty.ee9.servlet;
 
 import java.io.IOException;
-import java.io.Writer;
+import java.io.PrintWriter;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.servlet.AsyncContext;
@@ -25,13 +25,14 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.ErrorHandler;
 import org.eclipse.jetty.ee9.handler.QuietServletException;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -159,16 +160,16 @@ public class AsyncListenerTest
         });
 
         // Add a custom error page.
-        ErrorHandler errorHandler = new ErrorHandler()
+        ErrorProcessor errorProcessor = new ErrorProcessor()
         {
             @Override
-            protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
+            protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
             {
                 writer.write("CUSTOM\n");
-                super.writeErrorPageMessage(request, writer, code, message, uri);
+                super.writeErrorPlain(request, writer, code, message, cause, showStacks);
             }
         };
-        server.setErrorHandler(errorHandler);
+        server.setErrorProcessor(errorProcessor);
 
         String httpResponse = connector.getResponse(
             "GET /ctx/path HTTP/1.1\r\n" +
@@ -313,17 +314,15 @@ public class AsyncListenerTest
         });
 
         // Add a custom error page.
-        ErrorHandler errorHandler = new ErrorHandler()
+        ErrorProcessor errorProcessor = new ErrorProcessor()
         {
             @Override
-            protected void writeErrorPageMessage(HttpServletRequest request, Writer writer, int code, String message, String uri) throws IOException
+            protected void writeErrorPlain(Request request, PrintWriter writer, int code, String message, Throwable cause, boolean showStacks)
             {
                 writer.write("CUSTOM\n");
-                super.writeErrorPageMessage(request, writer, code, message, uri);
             }
         };
-        errorHandler.setServer(server);
-        server.setErrorHandler(errorHandler);
+        server.setErrorProcessor(errorProcessor);
 
         String httpResponse = connector.getResponse(
             "GET / HTTP/1.1\r\n" +

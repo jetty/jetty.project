@@ -40,11 +40,11 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.handler.HttpOutput;
-import org.eclipse.jetty.ee9.handler.gzip.GzipHandler;
 import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
@@ -102,7 +102,6 @@ public class GzipHandlerTest
         gzipHandler.setInflateBufferSize(4096);
 
         context = new ServletContextHandler(_server, "/ctx");
-        context.insertHandler(gzipHandler);
 
         gzipHandler.setHandler(context);
         context.addServlet(MicroServlet.class, "/micro");
@@ -339,7 +338,7 @@ public class GzipHandlerTest
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn, testOut);
 
-        assertEquals(__content, testOut.toString("UTF8"));
+        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -366,7 +365,7 @@ public class GzipHandlerTest
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn, testOut);
 
-        assertEquals(__content, testOut.toString("UTF8"));
+        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -392,7 +391,7 @@ public class GzipHandlerTest
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn, testOut);
 
-        assertEquals(__content, testOut.toString("UTF8"));
+        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -418,7 +417,7 @@ public class GzipHandlerTest
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn, testOut);
 
-        assertEquals(__content, testOut.toString("UTF8"));
+        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -457,7 +456,7 @@ public class GzipHandlerTest
     public void testAsyncEmptyResponse() throws Exception
     {
         int writes = 0;
-        context.getChildHandlerByClass(GzipHandler.class).setMinGzipSize(0);
+        gzipHandler.setMinGzipSize(0);
 
         // generated and parsed test
         HttpTester.Request request = HttpTester.newRequest();
@@ -501,7 +500,7 @@ public class GzipHandlerTest
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn, testOut);
 
-        assertEquals(__content, testOut.toString("UTF8"));
+        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -528,7 +527,7 @@ public class GzipHandlerTest
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn, testOut);
 
-        assertEquals(__micro, testOut.toString("UTF8"));
+        assertEquals(__micro, testOut.toString(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -557,7 +556,7 @@ public class GzipHandlerTest
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn, testOut);
 
-        assertEquals(__micro, testOut.toString("UTF8"));
+        assertEquals(__micro, testOut.toString(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -658,7 +657,7 @@ public class GzipHandlerTest
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn, testOut);
 
-        assertEquals(__content, testOut.toString("UTF8"));
+        assertEquals(__content, testOut.toString(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -685,7 +684,7 @@ public class GzipHandlerTest
         ByteArrayOutputStream testOut = new ByteArrayOutputStream();
         IO.copy(testIn, testOut);
 
-        assertEquals(__icontent, testOut.toString("UTF8"));
+        assertEquals(__icontent, testOut.toString(StandardCharsets.UTF_8));
     }
 
     @Test

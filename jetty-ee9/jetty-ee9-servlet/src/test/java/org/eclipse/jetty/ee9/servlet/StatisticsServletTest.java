@@ -30,13 +30,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.handler.ContextHandler;
+import org.eclipse.jetty.ee9.handler.SessionHandler;
 import org.eclipse.jetty.ee9.handler.StatisticsHandler;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,8 +81,11 @@ public class StatisticsServletTest
     private void addStatisticsHandler()
     {
         StatisticsHandler statsHandler = new StatisticsHandler();
-        _server.setHandler(statsHandler);
-        ServletContextHandler statsContext = new ServletContextHandler(statsHandler, "/");
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setHandler(statsHandler);
+        _server.setHandler(contextHandler);
+        ServletContextHandler statsContext = new ServletContextHandler(_server, "/");
+        statsHandler.setHandler(statsContext);
         statsContext.addServlet(new ServletHolder(new TestServlet()), "/test1");
         ServletHolder servletHolder = new ServletHolder(new StatisticsServlet());
         servletHolder.setInitParameter("restrictToLocalhost", "false");

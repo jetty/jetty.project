@@ -76,6 +76,21 @@ public class SessionHandler extends HandlerWrapper implements SessionConfig.Muta
         return _sessionManager;
     }
 
+    protected List<HttpSessionListener> getSessionListeners()
+    {
+        return _sessionListeners;
+    }
+
+    protected List<HttpSessionAttributeListener> getSessionAttributeListeners()
+    {
+        return _sessionAttributeListeners;
+    }
+
+    protected List<HttpSessionIdListener> getSessionIdListeners()
+    {
+        return _sessionIdListeners;
+    }
+
     @Override
     protected void doStart() throws Exception
     {

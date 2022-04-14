@@ -44,7 +44,6 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -267,7 +266,7 @@ public class WebAppContextTest
         FS.touch(someClass);
 
         WebAppContext context = new WebAppContext();
-        context.setBaseResource(new PathResource(tempDir));
+        context.setResourceBase(tempDir);
 
         context.setResourceAlias("/WEB-INF/classes/", "/classes/");
 
@@ -294,7 +293,7 @@ public class WebAppContextTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setBaseResource(new PathResource(testWebapp));
+        context.setResourceBase(testWebapp);
         context.setContextPath("/");
         server.setHandler(handlers);
         handlers.addHandler(contexts);
@@ -355,7 +354,7 @@ public class WebAppContextTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setBaseResource(new PathResource(testWebapp));
+        context.setResourceBase(testWebapp);
         context.setContextPath("/");
         server.setHandler(handlers);
         handlers.addHandler(contexts);
@@ -376,7 +375,7 @@ public class WebAppContextTest
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setBaseResource(new PathResource(testWebapp));
+        context.setResourceBase(testWebapp);
         context.setContextPath("/");
         server.setHandler(handlers);
         handlers.addHandler(contexts);
@@ -404,7 +403,7 @@ public class WebAppContextTest
         context.setContextPath("/");
 
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setBaseResource(new PathResource(testWebapp));
+        context.setResourceBase(testWebapp);
         server.setHandler(handlers);
         handlers.addHandler(contexts);
         contexts.addHandler(context);
@@ -488,7 +487,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
-        context.setBaseResource(new PathResource(warPath));
+        context.setResourceBase(warPath);
         context.setExtraClasspath(extraClasspathGlobReference);
 
         server.setHandler(context);
@@ -568,7 +567,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
-        context.setBaseResource(new PathResource(warPath));
+        context.setResourceBase(warPath);
 
         context.setExtraClasspath(extraClassPathReference);
 

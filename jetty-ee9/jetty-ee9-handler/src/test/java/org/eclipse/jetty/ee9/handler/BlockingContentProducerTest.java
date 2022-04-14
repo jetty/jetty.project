@@ -24,8 +24,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPOutputStream;
 
-import org.eclipse.jetty.ee9.handler.gzip.GzipHttpInputInterceptor;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.util.component.Destroyable;
@@ -344,94 +342,6 @@ public class BlockingContentProducerTest
         assertThat(contentSucceededCount.get(), is(1));
         assertThat(specialContentInterceptedCount.get(), is(1));
         assertThat(nullContentInterceptedCount.get(), is(1));
-    }
-
-    @Test
-    public void testBlockingContentProducerGzipInterceptor()
-    {
-        ByteBuffer[] uncompressedBuffers = new ByteBuffer[3];
-        uncompressedBuffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(uncompressedBuffers);
-        final String originalContentString = asString(uncompressedBuffers);
-
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = gzipByteBuffer(uncompressedBuffers[0]);
-        buffers[1] = gzipByteBuffer(uncompressedBuffers[1]);
-        buffers[2] = gzipByteBuffer(uncompressedBuffers[2]);
-
-        ContentListener contentListener = new ContentListener();
-        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, Content.EOF, scheduledExecutorService, contentListener);
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(httpChannel));
-        contentListener.setContentProducer(contentProducer);
-
-        try (AutoLock lock = contentProducer.lock())
-        {
-            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
-
-            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
-            assertThat(error, nullValue());
-        }
-    }
-
-    @Test
-    public void testBlockingContentProducerGzipInterceptorWithTinyBuffers()
-    {
-        ByteBuffer[] uncompressedBuffers = new ByteBuffer[3];
-        uncompressedBuffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(uncompressedBuffers);
-        final String originalContentString = asString(uncompressedBuffers);
-
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = gzipByteBuffer(uncompressedBuffers[0]);
-        buffers[1] = gzipByteBuffer(uncompressedBuffers[1]);
-        buffers[2] = gzipByteBuffer(uncompressedBuffers[2]);
-
-        ContentListener contentListener = new ContentListener();
-        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, Content.EOF, scheduledExecutorService, contentListener);
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(httpChannel));
-        contentListener.setContentProducer(contentProducer);
-
-        try (AutoLock lock = contentProducer.lock())
-        {
-            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 1));
-
-            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, totalContentBytesCount + 1, contentProducer);
-            assertThat(error, nullValue());
-        }
-    }
-
-    @Test
-    public void testBlockingContentProducerGzipInterceptorWithError()
-    {
-        ByteBuffer[] uncompressedBuffers = new ByteBuffer[3];
-        uncompressedBuffers[0] = ByteBuffer.wrap("1 hello 1".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[1] = ByteBuffer.wrap("2 howdy 2".getBytes(StandardCharsets.ISO_8859_1));
-        uncompressedBuffers[2] = ByteBuffer.wrap("3 hey ya 3".getBytes(StandardCharsets.ISO_8859_1));
-        final int totalContentBytesCount = countRemaining(uncompressedBuffers);
-        final String originalContentString = asString(uncompressedBuffers);
-        final Throwable expectedError = new Throwable("HttpInput idle timeout");
-
-        ByteBuffer[] buffers = new ByteBuffer[3];
-        buffers[0] = gzipByteBuffer(uncompressedBuffers[0]);
-        buffers[1] = gzipByteBuffer(uncompressedBuffers[1]);
-        buffers[2] = gzipByteBuffer(uncompressedBuffers[2]);
-
-        ContentListener contentListener = new ContentListener();
-        ArrayDelayedHttpChannel httpChannel = new ArrayDelayedHttpChannel(buffers, new Content.Error(expectedError), scheduledExecutorService, contentListener);
-        ContentProducer contentProducer = new BlockingContentProducer(new AsyncContentProducer(httpChannel));
-        contentListener.setContentProducer(contentProducer);
-
-        try (AutoLock lock = contentProducer.lock())
-        {
-            contentProducer.setInterceptor(new GzipHttpInputInterceptor(inflaterPool, new ArrayByteBufferPool(1, 1, 2), 32));
-
-            Throwable error = readAndAssertContent(totalContentBytesCount, originalContentString, buffers.length + 1, contentProducer);
-            assertThat(error, is(expectedError));
-        }
     }
 
     private Throwable readAndAssertContent(int totalContentBytesCount, String originalContentString, int totalContentCount, ContentProducer contentProducer)
