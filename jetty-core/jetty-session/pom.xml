@@ -48,7 +48,7 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
+      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-http-tools</artifactId>
       <scope>test</scope>
     </dependency>

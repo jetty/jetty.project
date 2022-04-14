@@ -22,7 +22,7 @@
     <dependency>
       <groupId>org.eclipse.jetty.ee10</groupId>
       <artifactId>jetty-ee10-servlet</artifactId>
-      <version>${pom.version}</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>

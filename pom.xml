@@ -1429,7 +1429,7 @@
         <version>${project.version}</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.jetty.tests</groupId>
+        <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-http-tools</artifactId>
         <version>${project.version}</version>
       </dependency>

@@ -23,8 +23,8 @@
         </configuration>
       </plugin>
       <plugin>
-        <groupId>org.eclipse.jetty.ee9</groupId>
-        <artifactId>jetty-ee9-maven-plugin</artifactId>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-maven-plugin</artifactId>
         <version>${project.version}</version>
         <configuration>
           <stopPort>8087</stopPort>
