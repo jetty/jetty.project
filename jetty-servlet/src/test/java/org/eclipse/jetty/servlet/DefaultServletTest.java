@@ -40,7 +40,13 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.*;
+import org.eclipse.jetty.http.CompressedContentFormat;
+import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.AllowedResourceAliasChecker;
 import org.eclipse.jetty.server.HttpConfiguration;

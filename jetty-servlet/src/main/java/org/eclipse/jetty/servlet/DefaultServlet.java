@@ -306,7 +306,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
 
     private CompressedContentFormat[] parsePrecompressedFormats(String precompressed, Boolean gzip, CompressedContentFormat[] dft)
     {
-        if (precompressed == null && gzip == null) {
+        if (precompressed == null && gzip == null)
+        {
             return dft;
         }
         List<CompressedContentFormat> ret = new ArrayList<>();
