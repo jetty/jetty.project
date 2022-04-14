@@ -37,23 +37,17 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee10.handler.AbstractHandler;
-import org.eclipse.jetty.ee10.handler.ContextHandler;
-import org.eclipse.jetty.ee10.handler.ErrorHandler;
-import org.eclipse.jetty.ee10.handler.HandlerContainer;
-import org.eclipse.jetty.ee10.handler.ManagedAttributeListener;
-import org.eclipse.jetty.ee10.security.ConstraintAware;
-import org.eclipse.jetty.ee10.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.security.SecurityHandler;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TopologicalSort;
@@ -71,7 +65,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * The WebAppContext handler is an extension of ContextHandler that
  * coordinates the construction and configuration of nested handlers:
- * {@link ConstraintSecurityHandler}, {@link org.eclipse.jetty.server.session.SessionHandler}
+ * {@link ConstraintSecurityHandler}, {@link org.eclipse.jetty.ee10.servlet.SessionHandler}
  * and {@link ServletHandler}.
  * The handlers are configured by pluggable configuration classes, with
  * the default being  {@link WebXmlConfiguration} and
@@ -100,7 +94,7 @@ import org.slf4j.LoggerFactory;
  * </li>
  * <li>{@link ServletContextHandler#doStart()}
  * <ul>
- * <li>{@link ContextHandler#doStart()}
+ * <li>{@link org.eclipse.jetty.server.handler.ContextHandler#doStart()}
  * <ul>
  * <li>Init {@link MimeTypes}</li>
  * <li>enterScope
@@ -119,9 +113,9 @@ import org.slf4j.LoggerFactory;
  * <li>{@link ServletContextHandler#startContext}
  * <ul>
  * <li>Decorate listeners</li>
- * <li>{@link ContextHandler#startContext}
+ * <li>{@link org.eclipse.jetty.server.handler.ContextHandler#startContext}
  * <ul>
- * <li>add {@link ManagedAttributeListener}</li>
+ * <li>add {@link org.eclipse.jetty.ee10.servlet.ManagedAttributeListener}</li>
  * <li>{@link AbstractHandler#doStart}</li>
  * <li>{@link #callContextInitialized(jakarta.servlet.ServletContextListener, jakarta.servlet.ServletContextEvent)}</li>
  * </ul>
