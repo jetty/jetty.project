@@ -10,7 +10,7 @@ pipeline {
     stage("Checkout Jetty") {
       steps {
         container('jetty-build') {
-          ws("build-jetty-workspace") {
+          ws("${env.WORKSPACE}/buildy") {
             checkout scm
             sh 'env > env.txt'
             sh 'cat env.txt'
@@ -24,7 +24,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("build-jetty-workspace") {
+                ws("${env.WORKSPACE}/buildy") {
                   sh 'env > env.txt'
                   sh 'cat env.txt'
                   mavenBuild("jdk17", "clean install -f build", "maven3")
@@ -37,7 +37,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("build-jetty-workspace") {
+                ws("${env.WORKSPACE}/buildy") {
                   mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
                 }
               }
@@ -48,7 +48,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("build-jetty-workspace") {
+                ws("${env.WORKSPACE}/buildy") {
                   mavenBuild("jdk17", "clean install -f jetty-ee10", "maven3")
                 }
               }
@@ -59,7 +59,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("build-jetty-workspace") {
+                ws("${env.WORKSPACE}/buildy") {
                   mavenBuild("jdk17", "clean install -f jetty-ee9", "maven3")
                 }
               }
@@ -70,7 +70,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("build-jetty-workspace") {
+                ws("${env.WORKSPACE}/buildy") {
                   mavenBuild("jdk17", "clean install -f jetty-integrations", "maven3")
                 }
               }
@@ -81,7 +81,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("build-jetty-workspace") {
+                ws("${env.WORKSPACE}/buildy") {
                   mavenBuild("jdk17", "clean install -f jetty-home", "maven3")
                 }
               }
@@ -92,7 +92,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("build-jetty-workspace") {
+                ws("${env.WORKSPACE}/buildy") {
                   mavenBuild("jdk17", "clean install -f tests", "maven3")
                 }
               }
@@ -103,7 +103,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("build-jetty-workspace") {
+                ws("${env.WORKSPACE}/buildy") {
                   mavenBuild("jdk17", "clean install -f documentation", "maven3")
                 }
               }
