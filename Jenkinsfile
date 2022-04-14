@@ -12,8 +12,6 @@ pipeline {
         container('jetty-build') {
           dir("${env.WORKSPACE}/buildy") {
             checkout scm
-            sh 'env > env.txt'
-            sh 'cat env.txt'
           }
         }
       }
@@ -25,8 +23,6 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  sh 'env > env.txt'
-                  sh 'cat env.txt'
                   mavenBuild("jdk17", "clean install -f build", "maven3")
                 }
               }
@@ -38,11 +34,6 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  sh 'ls $WORKSPACE'
-                  sh 'mkdir -p $WORKSPACE/buildy/.repository'
-                  sh 'ls -la $WORKSPACE/buildy/.repository'
-                  sh 'which find'
-                  sh 'find $WORKSPACE/buildy/.repository/org/eclipse/jetty -type f -name "*.jar"'
                   mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
                 }
               }
@@ -54,7 +45,6 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  sh 'find $WORKSPACE/buildy/.repository/org/eclipse/jetty -type f -name "*.jar"'
                   mavenBuild("jdk17", "clean install -f jetty-ee10", "maven3")
                 }
               }
@@ -66,7 +56,6 @@ pipeline {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 dir("${env.WORKSPACE}/buildy") {
-                  sh 'find $WORKSPACE/buildy/.repository/org/eclipse/jetty -type f -name "*.jar"'
                   mavenBuild("jdk17", "clean install -f jetty-ee9", "maven3")
                 }
               }
@@ -139,7 +128,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=${env.WORKSPACE}/buildy/.repository -Pci --show-version --batch-mode --errors -Djetty.testtracker.log=true -Dmaven.test.failure.ignore=true -DskipTests $cmdline"
+          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Pci --show-version --batch-mode --errors -Djetty.testtracker.log=true -Dmaven.test.failure.ignore=true -DskipTests $cmdline"
         }
       }
     }
