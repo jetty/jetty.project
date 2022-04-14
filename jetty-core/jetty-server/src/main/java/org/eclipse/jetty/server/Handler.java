@@ -500,6 +500,11 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
             return _handler;
         }
 
+        public void setHandler(Handler.CoreSupplier supplier)
+        {
+            setHandler(supplier.getCoreHandler());
+        }
+
         public void setHandler(Handler handler)
         {
             _handler = Nested.updateHandler(this, handler);
@@ -658,5 +663,10 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         {
             return this;
         }
+    }
+
+    interface CoreSupplier
+    {
+        Handler getCoreHandler();
     }
 }
