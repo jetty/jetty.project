@@ -6,14 +6,16 @@ pipeline {
   options { durabilityHint('PERFORMANCE_OPTIMIZED') }
   stages {
     stage("Parallel Stage") {
-      container('jetty-build') {
-        timeout(time: 240, unit: 'MINUTES') {
-          stage("Build / Test - JDK17 - build") {
+      timeout(time: 240, unit: 'MINUTES') {
+        stage("Build / Test - JDK17 - build") {
+          container('jetty-build') {
             steps {
               mavenBuild("jdk17", "clean install -f build", "maven3")
             }
           }
-          stage("Build / Test - JDK17 - core") {
+        }
+        stage("Build / Test - JDK17 - core") {
+          container('jetty-build') {
             steps {
               mavenBuild("jdk17", "clean install -f core", "maven3")
             }
