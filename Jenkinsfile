@@ -9,36 +9,33 @@ pipeline {
   stages {
         stage("Checkout Jetty") {
           steps {
-            //container('jetty-build') {
+            container('jetty-build') {
               ws("jetty.project") {
                 checkout scm
-                sh "ls -lrt"
               }
-            //}
+            }
           }
         }
         stage("Build / Test - JDK17 - build") {
           steps {
-            //container('jetty-build') {
+            container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 ws("jetty.project") {
-                  sh "ls -lrt"
-                  //mavenBuild("jdk17", "clean install -f build", "maven3")
+                  mavenBuild("jdk17", "clean install -f build", "maven3")
                 }
               }
-            //}
+            }
           }
         }
         stage("Build / Test - JDK17 - core") {
           steps {
-            //container('jetty-build') {
+            container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 ws("jetty.project") {
-                  sh "ls -lrt"
-                  //mavenBuild("jdk17", "clean install -f core", "maven3")
+                  mavenBuild("jdk17", "clean install -f core", "maven3")
                 }
               }
-            //}
+            }
           }
         }
   }
