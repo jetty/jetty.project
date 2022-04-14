@@ -52,10 +52,9 @@ import org.eclipse.jetty.ee9.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.internal.ClassLoaderDump;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TopologicalSort;
@@ -73,7 +72,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * The WebAppContext handler is an extension of ContextHandler that
  * coordinates the construction and configuration of nested handlers:
- * {@link ConstraintSecurityHandler}, {@link org.eclipse.jetty.server.session.SessionHandler}
+ * {@link ConstraintSecurityHandler}, {@link SessionHandler}
  * and {@link ServletHandler}.
  * The handlers are configured by pluggable configuration classes, with
  * the default being  {@link WebXmlConfiguration} and
@@ -949,7 +948,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             new DumpableCollection("Serverclasses " + name, serverClasses),
             new DumpableCollection("Configurations " + name, _configurations),
             new DumpableCollection("Handler attributes " + name, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
-            new DumpableCollection("Context attributes " + name, getServletContext().getAttributeEntrySet()),
+            new DumpableCollection("Context attributes " + name, getServletContext().getContextHandler().getAttributeNameSet()),
             new DumpableCollection("EventListeners " + this, getEventListeners()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );
@@ -1422,18 +1421,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             catch (IllegalArgumentException e)
             {
-                //not one of the standard servlet listeners, check our extended session listener types
-                boolean ok = false;
-                for (Class<?> l : SessionHandler.SESSION_LISTENER_TYPES)
-                {
-                    if (l.isAssignableFrom(listener))
-                    {
-                        ok = true;
-                        break;
-                    }
-                }
-                if (!ok)
-                    throw new IllegalArgumentException("Inappropriate listener type " + listener.getName());
+                // not one of the standard servlet listeners, check our extended session listener types
+                throw new IllegalArgumentException("Inappropriate listener type " + listener.getName());
             }
         }
 

@@ -33,6 +33,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -95,11 +96,11 @@ public class GzipHandlerNoReCompressTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         servletContextHandler.addServlet(TestStaticMimeTypeServlet.class, "/*");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
+        gzipHandler.setHandler(servletContextHandler.getCoreContextHandler());
+        server.setHandler(gzipHandler);
 
         // Prepare Server File
         Path testResource = MavenTestingUtils.getTestResourcePath(fileName);

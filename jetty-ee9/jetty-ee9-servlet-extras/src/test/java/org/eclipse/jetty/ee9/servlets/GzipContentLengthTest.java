@@ -31,6 +31,7 @@ import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,11 +48,6 @@ import static org.hamcrest.Matchers.not;
  */
 public class GzipContentLengthTest extends AbstractGzipTest
 {
-    enum GzipMode
-    {
-        INTERNAL, EXTERNAL
-    }
-
     public static Stream<Arguments> scenarios()
     {
         // The list of servlets that implement various content sending behaviors
@@ -124,22 +120,19 @@ public class GzipContentLengthTest extends AbstractGzipTest
 
         for (Class<? extends Servlet> servlet : servlets)
         {
-            for (GzipMode gzipMode : GzipMode.values())
-            {
-                // Not compressible (not large enough)
-                scenarios.add(Arguments.of(gzipMode, servlet, 0, "empty.txt", false));
-                scenarios.add(Arguments.of(gzipMode, servlet, GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2, "file-tiny.txt", false));
+            // Not compressible (not large enough)
+            scenarios.add(Arguments.of(servlet, 0, "empty.txt", false));
+            scenarios.add(Arguments.of(servlet, GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2, "file-tiny.txt", false));
 
-                // Compressible.
-                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE / 2, "file-small.txt", true));
-                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE, "file-medium.txt", true));
-                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE * 4, "file-large.txt", true));
+            // Compressible.
+            scenarios.add(Arguments.of(servlet, DEFAULT_OUTPUT_BUFFER_SIZE / 2, "file-small.txt", true));
+            scenarios.add(Arguments.of(servlet, DEFAULT_OUTPUT_BUFFER_SIZE, "file-medium.txt", true));
+            scenarios.add(Arguments.of(servlet, DEFAULT_OUTPUT_BUFFER_SIZE * 4, "file-large.txt", true));
 
-                // Not compressible (not a matching Content-Type)
-                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE / 2, "file-small.mp3", false));
-                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE, "file-medium.mp3", false));
-                scenarios.add(Arguments.of(gzipMode, servlet, DEFAULT_OUTPUT_BUFFER_SIZE * 4, "file-large.mp3", false));
-            }
+            // Not compressible (not a matching Content-Type)
+            scenarios.add(Arguments.of(servlet, DEFAULT_OUTPUT_BUFFER_SIZE / 2, "file-small.mp3", false));
+            scenarios.add(Arguments.of(servlet, DEFAULT_OUTPUT_BUFFER_SIZE, "file-medium.mp3", false));
+            scenarios.add(Arguments.of(servlet, DEFAULT_OUTPUT_BUFFER_SIZE * 4, "file-large.mp3", false));
         }
 
         return scenarios.stream();
@@ -155,7 +148,7 @@ public class GzipContentLengthTest extends AbstractGzipTest
 
     @ParameterizedTest
     @MethodSource("scenarios")
-    public void executeScenario(GzipMode gzipMode, Class<? extends Servlet> contentServlet, int fileSize, String fileName, boolean compressible) throws Exception
+    public void executeScenario(Class<? extends Servlet> contentServlet, int fileSize, String fileName, boolean compressible) throws Exception
     {
         server = new Server();
         LocalConnector localConnector = new LocalConnector(server);
@@ -166,21 +159,12 @@ public class GzipContentLengthTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         servletContextHandler.addServlet(contentServlet, "/*");
         GzipHandler gzipHandler = new GzipHandler();
 
-        switch (gzipMode)
-        {
-            case INTERNAL:
-                servletContextHandler.insertHandler(gzipHandler);
-                server.setHandler(servletContextHandler);
-                break;
-            case EXTERNAL:
-                gzipHandler.setHandler(servletContextHandler);
-                server.setHandler(gzipHandler);
-                break;
-        }
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
 
         Path file = createFile(contextDir, fileName, fileSize);
         String expectedSha1Sum = Sha1Sum.calculate(file);

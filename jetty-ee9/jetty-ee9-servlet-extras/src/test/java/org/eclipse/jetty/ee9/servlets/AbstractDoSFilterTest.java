@@ -62,7 +62,7 @@ public abstract class AbstractDoSFilterTest
         _server.addConnector(_connector);
         ServletContextHandler context = new ServletContextHandler(_server, "/ctx", true, false);
 
-        DefaultSessionCache sessionCache = new DefaultSessionCache(context.getSessionHandler());
+        DefaultSessionCache sessionCache = new DefaultSessionCache(context.getSessionHandler().getSessionManager());
         FileSessionDataStore fileStore = new FileSessionDataStore();
 
         Path p = workDir.getPathFile("sessions");
@@ -70,7 +70,7 @@ public abstract class AbstractDoSFilterTest
         fileStore.setStoreDir(p.toFile());
         sessionCache.setSessionDataStore(fileStore);
 
-        context.getSessionHandler().setSessionCache(sessionCache);
+        // FIXME context.getSessionHandler().setSessionCache(sessionCache);
 
         context.addServlet(TestServlet.class, "/*");
 

@@ -25,6 +25,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,7 +88,9 @@ public class WebAppDefaultServletTest
             output.write("standard hash dir welcome".getBytes(StandardCharsets.UTF_8));
         }
 
-        WebAppContext context = new WebAppContext(server, directoryPath.toString(), "/");
+        WebAppContext context = new WebAppContext();
+        context.setBaseResource(new PathResource(directoryPath));
+        context.setContextPath("/");
         server.setHandler(context);
         server.start();
 

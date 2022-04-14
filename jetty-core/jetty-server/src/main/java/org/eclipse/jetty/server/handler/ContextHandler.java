@@ -32,12 +32,12 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.internal.ClassLoaderDump;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
@@ -226,7 +226,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return; // do nothing
 
         for (String vh : virtualHosts)
+        {
             vhosts.remove(normalizeHostname(vh));
+        }
     }
 
     /**
@@ -342,14 +344,14 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
             return "ROOT";
         return _contextPath;
     }
-    
+
     /**
      * Add a context event listeners.
      *
      * @param listener the event listener to add
      * @return true if the listener was added
      * @see ContextScopeListener
-     * @see org.eclipse.jetty.util.component.ContainerLifeCycle#addEventListener(EventListener) 
+     * @see org.eclipse.jetty.util.component.ContainerLifeCycle#addEventListener(EventListener)
      */
     @Override
     public boolean addEventListener(EventListener listener)
@@ -382,7 +384,6 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     /**
      * @param request A request that is applicable to the scope, or null
-     *
      */
     protected void enterScope(Request request)
     {
@@ -690,7 +691,9 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         b.append(getContextPath()).append(',').append(getResourceBase()).append(',').append(isAvailable());
 
         for (String vh : vhosts)
+        {
             b.append(',').append(vh);
+        }
         b.append('}');
 
         return b.toString();

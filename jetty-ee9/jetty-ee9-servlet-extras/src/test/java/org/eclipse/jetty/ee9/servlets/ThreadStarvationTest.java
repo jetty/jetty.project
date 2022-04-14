@@ -38,22 +38,23 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee9.servlet.DefaultServlet;
 import org.eclipse.jetty.ee9.servlet.ServletContextHandler;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -234,7 +235,8 @@ public class ThreadStarvationTest
     @Test
     public void testFailureStarvation() throws Exception
     {
-        try (StacklessLogging stackless = new StacklessLogging(HttpChannelState.class))
+        Logger serverInternalLogger = LoggerFactory.getLogger("org.eclipse.jetty.server.internal");
+        try (StacklessLogging stackless = new StacklessLogging(serverInternalLogger))
         {
             int acceptors = 0;
             int selectors = 1;
@@ -266,10 +268,10 @@ public class ThreadStarvationTest
             _server.addConnector(connector);
 
             final AtomicInteger count = new AtomicInteger(0);
-            _server.setHandler(new AbstractHandler()
+            _server.setHandler(new Handler.Processor()
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public void process(Request request, Response response, Callback callback) throws Exception
                 {
                     int c = count.getAndIncrement();
                     try
@@ -283,11 +285,9 @@ public class ThreadStarvationTest
                     {
                         throw new ServletException(e);
                     }
-                    baseRequest.setHandled(true);
                     response.setStatus(200);
                     response.setContentLength(13);
-                    response.getWriter().print("Hello World!\n");
-                    response.getWriter().flush();
+                    response.write(true, callback, "Hello World!\n");
                 }
             });
 

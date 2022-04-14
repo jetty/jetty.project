@@ -36,6 +36,11 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
+      <artifactId>jetty-ee9-handler</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.ee9</groupId>
       <artifactId>jetty-ee9-webapp</artifactId>
       <scope>provided</scope>
     </dependency>

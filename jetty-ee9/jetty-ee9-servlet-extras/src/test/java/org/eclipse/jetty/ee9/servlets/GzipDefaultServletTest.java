@@ -39,6 +39,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.Sha1Sum;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -81,13 +82,13 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", WibbleDefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
+        gzipHandler.setHandler(servletContextHandler.getCoreContextHandler());
 
-        server.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
 
         // Prepare Server File
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 8;
@@ -163,13 +164,13 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
+        gzipHandler.setHandler(servletContextHandler.getCoreContextHandler());
+        server.setHandler(gzipHandler);
 
         // Prepare Server File
         int fileSize = 0;
@@ -226,13 +227,13 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
+        gzipHandler.setHandler(servletContextHandler);
 
-        server.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
 
         // Prepare Server File
         Path file = createFile(contextDir, "file.txt", fileSize);
@@ -283,13 +284,13 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
 
         // Prepare Server File
         Path file = createFile(contextDir, "file.txt", fileSize);
@@ -343,13 +344,13 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
 
         // Prepare Server File
         Path testResource = MavenTestingUtils.getTestResourcePath("test.svg");
@@ -402,14 +403,13 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
-
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
         // Prepare Server File
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
         createFile(contextDir, "file.txt", fileSize);
@@ -469,14 +469,13 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
-
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
         // Prepare Server File
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE / 4;
         Path file = createFile(contextDir, "file.txt", fileSize);
@@ -526,14 +525,13 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
-
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
         // Prepare Server File
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE / 4;
         Path file = createFile(contextDir, "file.txt", fileSize);
@@ -583,14 +581,13 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
-
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
         // Prepare Server File
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
         Path file = createFile(contextDir, "file.mp3", fileSize);
@@ -641,14 +638,13 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
-
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
         // Prepare Server File
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
         Path file = createFile(contextDir, "file.txt", fileSize);
@@ -699,15 +695,14 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         servletContextHandler.getMimeTypes().addMimeMapping("txt", "text/plain;charset=UTF-8");
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
-
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
         // Prepare Server File
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
         Path file = createFile(contextDir, "test_quotes.txt", fileSize);
@@ -758,13 +753,12 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
-
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
         // Prepare Server File
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
         Path file = createFile(contextDir, "file.txt", fileSize);
@@ -816,13 +810,12 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
-
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
         // Prepare Server File
         Path fileGood = createFile(contextDir, "file.txt", DEFAULT_OUTPUT_BUFFER_SIZE * 4);
         Path fileBad = createFile(contextDir, "bad.txt", DEFAULT_OUTPUT_BUFFER_SIZE * 2);
@@ -896,13 +889,12 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
-
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
         // Prepare Server File
         Path testResource = MavenTestingUtils.getTestResourcePath("test.svgz");
         Path file = contextDir.resolve("test.svgz");
@@ -953,14 +945,13 @@ public class GzipDefaultServletTest extends AbstractGzipTest
 
         ServletContextHandler servletContextHandler = new ServletContextHandler();
         servletContextHandler.setContextPath("/context");
-        servletContextHandler.setResourceBase(contextDir);
+        servletContextHandler.setBaseResource(new PathResource(contextDir));
         ServletHolder holder = new ServletHolder("default", DefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        servletContextHandler.insertHandler(gzipHandler);
 
-        server.setHandler(servletContextHandler);
-
+        gzipHandler.setHandler(servletContextHandler);
+        server.setHandler(gzipHandler);
         // Prepare Server File
         int fileSize = DEFAULT_OUTPUT_BUFFER_SIZE * 4;
         Path file = createFile(contextDir, "file.txt", fileSize);
