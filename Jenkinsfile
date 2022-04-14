@@ -1,38 +1,21 @@
 #!groovy
 
 pipeline {
-  agent any
+  agent { node { label 'linux' } }
   // save some io during the build
   options { durabilityHint('PERFORMANCE_OPTIMIZED') }
   stages {
     stage("Parallel Stage") {
-      parallel {
-        stage("Build / Test - JDK17") {
-          agent { node { label 'linux' } }
-          steps {
-            container('jetty-build') {
-              timeout( time: 240, unit: 'MINUTES' ) {
-                mavenBuild( "jdk17", "clean install -Perrorprone", "maven3")
-                // Collect up the jacoco execution results (only on main build)
-                jacoco inclusionPattern: '**/org/eclipse/jetty/**/*.class',
-                       exclusionPattern: '' +
-                               // build tools
-                               '**/org/eclipse/jetty/ant/**' + ',**/org/eclipse/jetty/maven/**' +
-                               ',**/org/eclipse/jetty/jspc/**' +
-                               // example code / documentation
-                               ',**/org/eclipse/jetty/embedded/**' + ',**/org/eclipse/jetty/asyncrest/**' +
-                               ',**/org/eclipse/jetty/demo/**' +
-                               // special environments / late integrations
-                               ',**/org/eclipse/jetty/gcloud/**' + ',**/org/eclipse/jetty/infinispan/**' +
-                               ',**/org/eclipse/jetty/osgi/**' +
-                               ',**/org/eclipse/jetty/http/spi/**' +
-                               // test classes
-                               ',**/org/eclipse/jetty/tests/**' + ',**/org/eclipse/jetty/test/**',
-                       execPattern: '**/target/jacoco.exec',
-                       classPattern: '**/target/classes',
-                       sourcePattern: '**/src/main/java'
-                recordIssues id: "jdk11", name: "Static Analysis jdk11", aggregatingResults: true, enabledForFailure: true, tools: [mavenConsole(), java(), checkStyle(), spotBugs(), pmdParser(), errorProne()]
-              }
+      container('jetty-build') {
+        timeout(time: 240, unit: 'MINUTES') {
+          stage("Build / Test - JDK17 - build") {
+            steps {
+              mavenBuild("jdk17", "clean install -f build", "maven3")
+            }
+          }
+          stage("Build / Test - JDK17 - core") {
+            steps {
+              mavenBuild("jdk17", "clean install -f core", "maven3")
             }
           }
         }
@@ -58,7 +41,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci --show-version --batch-mode --errors -Djetty.testtracker.log=true $cmdline"
+          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci --show-version --batch-mode --errors -Djetty.testtracker.log=true -Dmaven.test.failure.ignore=true $cmdline"
         }
       }
     }
