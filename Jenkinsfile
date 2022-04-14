@@ -7,37 +7,48 @@ pipeline {
   // save some io during the build
   options { durabilityHint('PERFORMANCE_OPTIMIZED') }
   stages {
-        stage("Checkout Jetty") {
-          steps {
-            container('jetty-build') {
-              ws("jetty.project") {
-                checkout scm
-              }
+    stage("Checkout Jetty") {
+      steps {
+        container('jetty-build') {
+          ws("jetty.project") {
+            checkout scm
+          }
+        }
+      }
+    }
+    stage("Build / Test - JDK17 - build") {
+      steps {
+        container('jetty-build') {
+          timeout(time: 120, unit: 'MINUTES') {
+            ws("jetty.project") {
+              mavenBuild("jdk17", "clean install -f build", "maven3")
             }
           }
         }
-        stage("Build / Test - JDK17 - build") {
-          steps {
-            container('jetty-build') {
-              timeout(time: 120, unit: 'MINUTES') {
-                ws("jetty.project") {
-                  mavenBuild("jdk17", "clean install -f build", "maven3")
-                }
-              }
+      }
+    }
+    stage("Build / Test - JDK17 - httptools") {
+      steps {
+        container('jetty-build') {
+          timeout(time: 120, unit: 'MINUTES') {
+            ws("jetty.project") {
+              mavenBuild("jdk17", "clean install -f tests/jetty-http-tools", "maven3")
             }
           }
         }
-        stage("Build / Test - JDK17 - core") {
-          steps {
-            container('jetty-build') {
-              timeout(time: 120, unit: 'MINUTES') {
-                ws("jetty.project") {
-                  mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
-                }
-              }
+      }
+    }
+    stage("Build / Test - JDK17 - core") {
+      steps {
+        container('jetty-build') {
+          timeout(time: 120, unit: 'MINUTES') {
+            ws("jetty.project") {
+              mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
             }
           }
         }
+      }
+    }
   }
 }
 
