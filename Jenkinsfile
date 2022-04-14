@@ -10,7 +10,7 @@ pipeline {
     stage("Checkout Jetty") {
       steps {
         container('jetty-build') {
-          ws("jetty.project") {
+          ws("build-jetty-workspace") {
             checkout scm
             sh 'env > env.txt'
             sh 'cat env.txt'
@@ -24,7 +24,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("jetty.project") {
+                ws("build-jetty-workspace") {
                   sh 'env > env.txt'
                   sh 'cat env.txt'
                   mavenBuild("jdk17", "clean install -f build", "maven3")
@@ -37,7 +37,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("jetty.project") {
+                ws("build-jetty-workspace") {
                   mavenBuild("jdk17", "clean install -f jetty-core", "maven3")
                 }
               }
@@ -48,7 +48,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("jetty.project") {
+                ws("build-jetty-workspace") {
                   mavenBuild("jdk17", "clean install -f jetty-ee10", "maven3")
                 }
               }
@@ -59,7 +59,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("jetty.project") {
+                ws("build-jetty-workspace") {
                   mavenBuild("jdk17", "clean install -f jetty-ee9", "maven3")
                 }
               }
@@ -70,7 +70,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("jetty.project") {
+                ws("build-jetty-workspace") {
                   mavenBuild("jdk17", "clean install -f jetty-integrations", "maven3")
                 }
               }
@@ -81,7 +81,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("jetty.project") {
+                ws("build-jetty-workspace") {
                   mavenBuild("jdk17", "clean install -f jetty-home", "maven3")
                 }
               }
@@ -92,7 +92,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("jetty.project") {
+                ws("build-jetty-workspace") {
                   mavenBuild("jdk17", "clean install -f tests", "maven3")
                 }
               }
@@ -103,7 +103,7 @@ pipeline {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
-                ws("jetty.project") {
+                ws("build-jetty-workspace") {
                   mavenBuild("jdk17", "clean install -f documentation", "maven3")
                 }
               }
@@ -132,7 +132,7 @@ def mavenBuild(jdk, cmdline, mvnName) {
                "MAVEN_OPTS=-Xms2g -Xmx4g -Djava.awt.headless=true"]) {
         configFileProvider(
                 [configFile(fileId: 'oss-settings.xml', variable: 'GLOBAL_MVN_SETTINGS')]) {
-          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=.repository -Pci --show-version --batch-mode --errors -Djetty.testtracker.log=true -Dmaven.test.failure.ignore=true $cmdline"
+          sh "mvn --no-transfer-progress -s $GLOBAL_MVN_SETTINGS -Dmaven.repo.local=${env.WORKSPACE}/.repository -Pci --show-version --batch-mode --errors -Djetty.testtracker.log=true -Dmaven.test.failure.ignore=true $cmdline"
         }
       }
     }
