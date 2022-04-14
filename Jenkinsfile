@@ -121,7 +121,6 @@ pipeline {
  * @return the Jenkinsfile step representing a maven build
  */
 def mavenBuild(jdk, cmdline, mvnName) {
-  script {
     try {
       withEnv(["JAVA_HOME=${ tool "$jdk" }",
                "PATH+MAVEN=${ tool "$jdk" }/bin:${tool "$mvnName"}/bin",
@@ -137,7 +136,6 @@ def mavenBuild(jdk, cmdline, mvnName) {
     {
       junit testResults: '**/target/surefire-reports/*.xml,**/target/invoker-reports/TEST*.xml', allowEmptyResults: true
     }
-  }
 }
 
 // vim: et:ts=2:sw=2:ft=groovy
