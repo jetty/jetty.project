@@ -5,7 +5,6 @@ pipeline {
   // save some io during the build
   options { durabilityHint('PERFORMANCE_OPTIMIZED') }
   stages {
-    stage("Parallel Stage") {
       timeout(time: 240, unit: 'MINUTES') {
         stage("Build / Test - JDK17 - build") {
           container('jetty-build') {
@@ -22,7 +21,7 @@ pipeline {
           }
         }
       }
-    }
+
   }
 }
 
