@@ -8,7 +8,7 @@ pipeline {
         stage("Checkout Jetty") {
           steps {
             ws("jetty.project") {
-              scm checkout
+              checkout scm
             }
           }
         }
