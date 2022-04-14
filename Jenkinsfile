@@ -1,39 +1,41 @@
 #!groovy
 
 pipeline {
-  agent { node { label 'linux' } }
+  agent {
+    node { label 'linux' }
+  }
   // save some io during the build
   options { durabilityHint('PERFORMANCE_OPTIMIZED') }
   stages {
         stage("Checkout Jetty") {
           steps {
-            container('jetty-build') {
+            //container('jetty-build') {
               ws("jetty.project") {
                 checkout scm
               }
-            }
+            //}
           }
         }
         stage("Build / Test - JDK17 - build") {
           steps {
-            container('jetty-build') {
+            //container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 ws("jetty.project") {
                   mavenBuild("jdk17", "clean install -f build", "maven3")
                 }
               }
-            }
+            //}
           }
         }
         stage("Build / Test - JDK17 - core") {
           steps {
-            container('jetty-build') {
+            //container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
                 ws("jetty.project") {
                   mavenBuild("jdk17", "clean install -f core", "maven3")
                 }
               }
-            }
+            //}
           }
         }
   }
