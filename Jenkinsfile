@@ -6,8 +6,10 @@ pipeline {
   options { durabilityHint('PERFORMANCE_OPTIMIZED') }
   stages {
         stage("Checkout Jetty") {
-          wd("jetty.project") {
-            scm checkout
+          steps {
+            wd("jetty.project") {
+              scm checkout
+            }
           }
         }
         stage("Build / Test - JDK17 - build") {
