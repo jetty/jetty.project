@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.util.paths;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,6 +30,8 @@ import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.eclipse.jetty.toolchain.test.ExtraMatchers.ordered;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,7 +49,7 @@ public class PathCollectionTest
     public WorkDir workDir;
 
     @Test
-    public void testEmptyPathCollection() throws Exception
+    public void testEmptyPathCollection()
     {
         PathCollection pathCollection = new PathCollection();
         assertThat("pathCollection.size", pathCollection.size(), is(0));
@@ -167,7 +170,7 @@ public class PathCollectionTest
             pathCollection.add(foo); // a.jar!/
             pathCollection.add(bar); // a.jar!/META-INF/resources/
 
-            pathCollection.add(getTestJar("example.jar"));
+            pathCollection.add(getTestJar("sub/example.jar"));
             pathCollection.add(getTestJar("jar-file-resource.jar"));
             pathCollection.add(getTestJar("test-base-resource.jar"));
 
@@ -193,6 +196,73 @@ public class PathCollectionTest
 
         Map<Path, FileSystemPool.FileSystemRefCount> fsCache = FileSystemPool.getCache();
         assertThat("Cache is empty", fsCache.size(), is(0));
+    }
+
+    @Test
+    public void testFromListEmpty() throws Exception
+    {
+        try (PathCollection pathCollection = PathCollection.fromList("", false))
+        {
+            assertThat(pathCollection.size(), is(0));
+        }
+    }
+
+    @Test
+    public void testFromListSimpleDir() throws Exception
+    {
+        String testDir = MavenTestingUtils.getTestResourcePathDir("TestData").toString();
+        try (PathCollection pathCollection = PathCollection.fromList(testDir, false))
+        {
+            assertThat(pathCollection.size(), is(1));
+            // See if we can get an expected file
+            Path entry = pathCollection.resolveFirstExisting("alphabet.txt");
+            assertTrue(Files.exists(entry), "The alphabet.txt should have been found");
+        }
+    }
+
+    /**
+     * Show a String that has 2 jars declared, becoming a PathCollection.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {",", ";"})
+    public void testFromListJarsDeclared(String delim) throws Exception
+    {
+        String jarA = getTestJar("sub/example.jar").toString();
+        String jarB = getTestJar("jar-file-resource.jar").toString();
+        String list = String.join(delim, jarA, jarB);
+
+        try (PathCollection pathCollection = PathCollection.fromList(list, false))
+        {
+            assertThat(pathCollection.size(), is(2));
+            // See if we can get an expected file from sub/example.jar
+            Path entry = pathCollection.resolveFirstExisting("org/example/InBoth.class");
+            assertTrue(Files.exists(entry), "The org/example/InBoth.class file should have been found");
+            // See if we can get an expected file from jar-file-resource.jar
+            entry = pathCollection.resolveFirstExisting("rez/deep/zzz");
+            assertTrue(Files.exists(entry), "The rez/deep/zzz file should have been found");
+        }
+    }
+
+    /**
+     * Show a String that uses glob ref, becoming a PathCollection.
+     */
+    @Test
+    public void testFromListJarsGlob() throws Exception
+    {
+        String list = MavenTestingUtils.getProjectDirPath("src/test/jars").toString() + File.separatorChar + '*';
+
+        try (PathCollection pathCollection = PathCollection.fromList(list, false))
+        {
+            // should only see the jars in the root of src/test/jars
+            // should not have the sub/*.jar added
+            assertThat(pathCollection.size(), is(2));
+            // See if we can get an expected file from test-base-resource.jar
+            Path entry = pathCollection.resolveFirstExisting("another%20one/bites%20the%20dust");
+            assertTrue(Files.exists(entry), "The another%20one/bites%20the%20dust file should have been found");
+            // See if we can get an expected file from jar-file-resource.jar
+            entry = pathCollection.resolveFirstExisting("rez/deep/zzz");
+            assertTrue(Files.exists(entry), "The rez/deep/zzz file should have been found");
+        }
     }
 
     private static Path getTestJar(String filename)

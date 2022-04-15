@@ -17,14 +17,18 @@ import java.io.IOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.StringTokenizer;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * Generic Loader for Multiple Path references.
@@ -34,6 +38,64 @@ import java.util.stream.Stream;
  */
 public class PathCollection extends ArrayList<Path> implements AutoCloseable
 {
+    /**
+     * Parse a delimited String of resource references and
+     * return a PathCollection it represents.
+     *
+     * <p>
+     * Supports glob references that end in {@code /*} or {@code \*}.
+     * Glob references will only iterate through the level specified and will not traverse
+     * found directories within the glob reference.
+     * </p>
+     *
+     * @param resources the comma {@code ,} or semicolon {@code ;} delimited
+     * String of path references.
+     * @param globDirs true to return directories in addition to files at the level of the glob
+     * @return the PathCollection parsed from input string.
+     */
+    public static PathCollection fromList(String resources, boolean globDirs) throws IOException
+    {
+        PathCollection paths = new PathCollection();
+        if (StringUtil.isBlank(resources))
+        {
+            return paths;
+        }
+
+        StringTokenizer tokenizer = new StringTokenizer(resources, StringUtil.DEFAULT_DELIMS);
+        while (tokenizer.hasMoreTokens())
+        {
+            String token = tokenizer.nextToken().trim();
+
+            // Is this a glob reference?
+            if (token.endsWith("/*") || token.endsWith("\\*"))
+            {
+                String dir = token.substring(0, token.length() - 2);
+
+                Path path = Paths.get(dir);
+                if (Files.isDirectory(path))
+                {
+                    // To obtain the list of entries
+                    Files.list(path)
+                        .sorted(PathCollators.byName(true))
+                        .forEach((entry) ->
+                        {
+                            if (!Files.isDirectory(entry) || globDirs)
+                            {
+                                paths.add(entry);
+                            }
+                        });
+                }
+            }
+            else
+            {
+                // Simple reference, add as-is
+                paths.add(Paths.get(token));
+            }
+        }
+
+        return paths;
+    }
+
     public PathCollection()
     {
     }

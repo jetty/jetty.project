@@ -38,7 +38,7 @@ public class PathClassLoader extends ClassLoader
         this.pathCollection = pathCollection;
     }
 
-    public PathCollection getpathCollection()
+    public PathCollection getPathCollection()
     {
         return pathCollection;
     }
