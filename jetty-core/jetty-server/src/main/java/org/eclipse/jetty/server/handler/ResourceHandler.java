@@ -14,7 +14,6 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.charset.StandardCharsets;
@@ -24,6 +23,7 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
@@ -411,7 +411,7 @@ public class ResourceHandler extends Handler.Wrapper
                 if (ifm != null)
                 {
                     boolean match = false;
-                    if (etag != null)
+                    if (etag != null && !etag.startsWith("W/"))
                     {
                         QuotedCSV quoted = new QuotedCSV(true, ifm);
                         for (String etagWithSuffix : quoted)
@@ -1251,13 +1251,63 @@ public class ResourceHandler extends Handler.Wrapper
         @Override
         public HttpField getETag()
         {
-            return null; // TODO
+            String weakETag = getWeakETag();
+            return weakETag == null ? null : new HttpField(HttpHeader.ETAG, weakETag);
         }
 
         @Override
         public String getETagValue()
         {
-            return null; // TODO
+            return getWeakETag();
+        }
+
+        private String getWeakETag()
+        {
+            StringBuilder b = new StringBuilder(32);
+            b.append("W/\"");
+
+            String name = _path.toAbsolutePath().toString();
+            int length = name.length();
+            long lhash = 0;
+            for (int i = 0; i < length; i++)
+            {
+                lhash = 31 * lhash + name.charAt(i);
+            }
+
+            Base64.Encoder encoder = Base64.getEncoder().withoutPadding();
+            try
+            {
+                long lastModifiedTime = Files.getLastModifiedTime(_path).toMillis();
+                b.append(encoder.encodeToString(longToBytes(lastModifiedTime ^ lhash)));
+            }
+            catch (IOException e)
+            {
+                LOG.debug("Unable to get last modified time of {}", _path, e);
+                return null;
+            }
+            try
+            {
+                long contentLengthValue = Files.size(_path);
+                b.append(encoder.encodeToString(longToBytes(contentLengthValue ^ lhash)));
+            }
+            catch (IOException e)
+            {
+                LOG.debug("Unable to get size of {}", _path, e);
+                return null;
+            }
+            b.append('"');
+            return b.toString();
+        }
+
+        private static byte[] longToBytes(long value)
+        {
+            byte[] result = new byte[Long.BYTES];
+            for (int i = Long.BYTES - 1; i >= 0; i--)
+            {
+                result[i] = (byte)(value & 0xFF);
+                value >>= 8;
+            }
+            return result;
         }
 
         @Override

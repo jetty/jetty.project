@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 import org.eclipse.jetty.http.CachingContentFactory;
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_LENGTH;
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
+import static org.eclipse.jetty.http.HttpHeader.ETAG;
 import static org.eclipse.jetty.http.HttpHeader.LAST_MODIFIED;
 import static org.eclipse.jetty.http.HttpHeader.LOCATION;
 import static org.eclipse.jetty.http.HttpHeader.SERVER;
@@ -55,6 +57,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.oneOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -162,7 +165,7 @@ public class ResourceHandlerTest
     {
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource/ HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("jetty-dir.css"));
         assertThat(response.getContent(), containsString("Directory: /resource/"));
         assertThat(response.getContent(), containsString("big.txt"));
@@ -176,9 +179,9 @@ public class ResourceHandlerTest
     {
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource/simple.txt HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
         assertThat(response.get(CONTENT_TYPE), equalTo("text/plain"));
-        assertThat(response.get(LAST_MODIFIED), Matchers.notNullValue());
+        assertThat(response.get(LAST_MODIFIED), notNullValue());
         assertThat(response.get(CONTENT_LENGTH), equalTo("11"));
         assertThat(response.get(SERVER), containsString("Jetty"));
         assertThat(response.getContent(), containsString("simple text"));
@@ -189,8 +192,8 @@ public class ResourceHandlerTest
     {
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource/simple.txt HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(200));
-        assertThat(response.get(LAST_MODIFIED), Matchers.notNullValue());
+        assertThat(response.getStatus(), equalTo(HttpStatus.OK_200));
+        assertThat(response.get(LAST_MODIFIED), notNullValue());
         assertThat(response.getContent(), containsString("simple text"));
         String lastModified = response.get(LAST_MODIFIED);
 
@@ -200,6 +203,55 @@ public class ResourceHandlerTest
                 "\r\n"));
 
         assertThat(response.getStatus(), equalTo(304));
+        assertThat(response.getContent(), is(""));
+    }
+
+    @Test
+    public void testIfUnmodifiedSinceWithUnmodifiedFile() throws Exception
+    {
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/simple.txt HTTP/1.0\r\n\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(LAST_MODIFIED), notNullValue());
+        assertThat(response.getContent(), containsString("simple text"));
+        String lastModified = response.get(LAST_MODIFIED);
+
+        response = HttpTester.parseResponse(_local.getResponse(
+            "GET /resource/simple.txt HTTP/1.0\r\n" +
+                "If-Unmodified-Since: " + lastModified + "\r\n" +
+                "\r\n"));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), containsString("simple text"));
+    }
+
+    @Test
+    public void testIfUnmodifiedSinceWithModifiedFile() throws Exception
+    {
+        Path testFile = _resourceHandler.getBaseResource().resolve("test-unmodified-since-file.txt");
+        try (BufferedWriter bw = Files.newBufferedWriter(testFile))
+        {
+            bw.write("some content\n");
+        }
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("GET /resource/test-unmodified-since-file.txt HTTP/1.0\r\n" +
+            "\r\n"));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), equalTo("some content\n"));
+        assertThat(response.get(LAST_MODIFIED), notNullValue());
+        String lastModified = response.get(LAST_MODIFIED);
+
+        Thread.sleep(1000);
+        try (BufferedWriter bw = Files.newBufferedWriter(testFile, StandardOpenOption.APPEND))
+        {
+            bw.write("some more content\n");
+        }
+
+        response = HttpTester.parseResponse(_local.getResponse("GET /resource/test-unmodified-since-file.txt HTTP/1.0\r\n" +
+            "If-Unmodified-Since: " + lastModified + " \r\n" +
+            "\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.PRECONDITION_FAILED_412));
     }
 
     @Test
@@ -207,7 +259,7 @@ public class ResourceHandlerTest
     {
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource/simple.txt/ HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(302));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.get(LOCATION), endsWith("/resource/simple.txt"));
     }
 
@@ -216,7 +268,7 @@ public class ResourceHandlerTest
     {
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource/directory HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(302));
+        assertThat(response.getStatus(), is(HttpStatus.MOVED_TEMPORARILY_302));
         assertThat(response.get(LOCATION), endsWith("/resource/directory/"));
     }
 
@@ -225,7 +277,7 @@ public class ResourceHandlerTest
     {
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource/no-such-file.txt HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(404));
+        assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
         assertThat(response.getContent(), Matchers.containsString("Error 404 Not Found"));
     }
 
@@ -236,7 +288,7 @@ public class ResourceHandlerTest
 
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), startsWith("     1\tThis is a big file"));
         assertThat(response.getContent(), endsWith("   400\tThis is a big file" + LN));
     }
@@ -248,7 +300,7 @@ public class ResourceHandlerTest
 
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), startsWith("     1\tThis is a big file"));
         assertThat(response.getContent(), endsWith("   400\tThis is a big file" + LN));
     }
@@ -260,7 +312,7 @@ public class ResourceHandlerTest
 
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), startsWith("     1\tThis is a big file"));
         assertThat(response.getContent(), endsWith("   400\tThis is a big file" + LN));
     }
@@ -284,7 +336,7 @@ public class ResourceHandlerTest
     {
         HttpTester.Response response = HttpTester.parseResponse(
             _local.getResponse("GET /resource/directory/ HTTP/1.0\r\n\r\n"));
-        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
         assertThat(response.getContent(), containsString("Hello"));
     }
 
@@ -296,7 +348,7 @@ public class ResourceHandlerTest
             _resourceHandler.setRedirectWelcome(true);
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/directory/ HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(302));
+            assertThat(response.getStatus(), is(HttpStatus.FOUND_302));
             assertThat(response.get(LOCATION), containsString("/resource/directory/welcome.txt"));
         }
         finally
@@ -359,7 +411,7 @@ public class ResourceHandlerTest
             "If-Match: \"NO_MATCH\"\r\n" +
             "\r\n"));
 
-        assertThat(response.getStatus(), equalTo(HttpStatus.PRECONDITION_FAILED_412));
+        assertThat(response.getStatus(), is(HttpStatus.PRECONDITION_FAILED_412));
     }
 
     @Test
@@ -372,21 +424,88 @@ public class ResourceHandlerTest
             "If-Match: \"NO_MATCH\"\r\n" +
             "\r\n"));
 
-        assertThat(response.getStatus(), equalTo(HttpStatus.PRECONDITION_FAILED_412));
+        assertThat(response.getStatus(), is(HttpStatus.PRECONDITION_FAILED_412));
+    }
+
+    @Test
+    public void testEtagIfMatchAlwaysFailsDueToWeakEtag() throws Exception
+    {
+        _resourceHandler.setEtags(true);
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+            "\r\n"));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(ETAG), notNullValue());
+        String etag = response.get(ETAG);
+
+        response = HttpTester.parseResponse(_local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+            "If-Match: " + etag + " \r\n" +
+            "\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.PRECONDITION_FAILED_412));
+    }
+
+    @Test
+    public void testEtagIfNoneMatchNotModifiedFile() throws Exception
+    {
+        _resourceHandler.setEtags(true);
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+            "\r\n"));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(ETAG), notNullValue());
+        String etag = response.get(ETAG);
+
+        response = HttpTester.parseResponse(_local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+            "If-None-Match: " + etag + " \r\n" +
+            "\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+        assertThat(response.getContent(), is(""));
+    }
+
+    @Test
+    public void testEtagIfNoneMatchModifiedFile() throws Exception
+    {
+        _resourceHandler.setEtags(true);
+        Path testFile = _resourceHandler.getBaseResource().resolve("test-etag-file.txt");
+        try (BufferedWriter bw = Files.newBufferedWriter(testFile))
+        {
+            bw.write("some content\n");
+        }
+
+        HttpTester.Response response = HttpTester.parseResponse(_local.getResponse("GET /resource/test-etag-file.txt HTTP/1.0\r\n" +
+            "\r\n"));
+
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), equalTo("some content\n"));
+        assertThat(response.get(ETAG), notNullValue());
+        String etag = response.get(ETAG);
+
+        try (BufferedWriter bw = Files.newBufferedWriter(testFile, StandardOpenOption.APPEND))
+        {
+            bw.write("some more content\n");
+        }
+
+        response = HttpTester.parseResponse(_local.getResponse("GET /resource/test-etag-file.txt HTTP/1.0\r\n" +
+            "If-None-Match: " + etag + " \r\n" +
+            "\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.getContent(), equalTo("some content\nsome more content\n"));
     }
 
     @Test
     public void testCachingFilesCached() throws Exception
     {
         // TODO explicitly turn on caching
-        int expectedSize = (int)Files.size(_resourceHandler.getBaseResource().resolve("big.txt"));
+        long expectedSize = Files.size(_resourceHandler.getBaseResource().resolve("big.txt"));
         CachingContentFactory contentFactory = (CachingContentFactory)_resourceHandler.getContentFactory();
 
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), startsWith("     1\tThis is a big file"));
             assertThat(response.getContent(), endsWith("   400\tThis is a big file" + LN));
         }
@@ -396,21 +515,21 @@ public class ResourceHandlerTest
 
         contentFactory.flushCache();
         assertThat(contentFactory.getCachedFiles(), is(0));
-        assertThat(contentFactory.getCachedSize(), is(0));
+        assertThat(contentFactory.getCachedSize(), is(0L));
     }
 
     @Test
     public void testCachingWelcomeFileCached() throws Exception
     {
         // TODO explicitly turn on caching
-        int expectedSize = (int)Files.size(_resourceHandler.getBaseResource().resolve("directory/welcome.txt"));
+        long expectedSize = Files.size(_resourceHandler.getBaseResource().resolve("directory/welcome.txt"));
         CachingContentFactory contentFactory = (CachingContentFactory)_resourceHandler.getContentFactory();
 
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/directory/ HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("Hello"));
         }
 
@@ -429,12 +548,12 @@ public class ResourceHandlerTest
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/directory/ HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), containsString("Directory: /resource/directory/"));
         }
 
         assertThat(contentFactory.getCachedFiles(), is(0));
-        assertThat(contentFactory.getCachedSize(), is(0));
+        assertThat(contentFactory.getCachedSize(), is(0L));
     }
 
     @Test
@@ -447,39 +566,39 @@ public class ResourceHandlerTest
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/does-not-exist HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(404));
+            assertThat(response.getStatus(), is(HttpStatus.NOT_FOUND_404));
             assertThat(response.getContent(), containsString("Error 404 Not Found"));
         }
 
         assertThat(contentFactory.getCachedFiles(), is(0));
-        assertThat(contentFactory.getCachedSize(), is(0));
+        assertThat(contentFactory.getCachedSize(), is(0L));
     }
 
     @Test
     public void testCachingMaxCachedFileSizeRespected() throws Exception
     {
         // TODO explicitly turn on caching
-        int expectedSize = (int)Files.size(_resourceHandler.getBaseResource().resolve("simple.txt"));
+        long expectedSize = Files.size(_resourceHandler.getBaseResource().resolve("simple.txt"));
         CachingContentFactory contentFactory = (CachingContentFactory)_resourceHandler.getContentFactory();
-        contentFactory.setMaxCachedFileSize(expectedSize);
+        contentFactory.setMaxCachedFileSize((int)expectedSize);
 
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), startsWith("     1\tThis is a big file"));
             assertThat(response.getContent(), endsWith("   400\tThis is a big file" + LN));
         }
 
         assertThat(contentFactory.getCachedFiles(), is(0));
-        assertThat(contentFactory.getCachedSize(), is(0));
+        assertThat(contentFactory.getCachedSize(), is(0L));
 
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/simple.txt HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), equalTo("simple text"));
         }
 
@@ -491,27 +610,27 @@ public class ResourceHandlerTest
     public void testCachingMaxCacheSizeRespected() throws Exception
     {
         // TODO explicitly turn on caching
-        int expectedSize = (int)Files.size(_resourceHandler.getBaseResource().resolve("simple.txt"));
+        long expectedSize = Files.size(_resourceHandler.getBaseResource().resolve("simple.txt"));
         CachingContentFactory contentFactory = (CachingContentFactory)_resourceHandler.getContentFactory();
-        contentFactory.setMaxCacheSize(expectedSize);
+        contentFactory.setMaxCacheSize((int)expectedSize);
 
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), startsWith("     1\tThis is a big file"));
             assertThat(response.getContent(), endsWith("   400\tThis is a big file" + LN));
         }
 
         assertThat(contentFactory.getCachedFiles(), is(0));
-        assertThat(contentFactory.getCachedSize(), is(0));
+        assertThat(contentFactory.getCachedSize(), is(0L));
 
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/simple.txt HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), equalTo("simple text"));
         }
 
@@ -523,8 +642,8 @@ public class ResourceHandlerTest
     public void testCachingMaxCachedFilesRespected() throws Exception
     {
         // TODO explicitly turn on caching
-        int expectedSizeBig = (int)Files.size(_resourceHandler.getBaseResource().resolve("big.txt"));
-        int expectedSizeSimple = (int)Files.size(_resourceHandler.getBaseResource().resolve("simple.txt"));
+        long expectedSizeBig = Files.size(_resourceHandler.getBaseResource().resolve("big.txt"));
+        long expectedSizeSimple = Files.size(_resourceHandler.getBaseResource().resolve("simple.txt"));
         CachingContentFactory contentFactory = (CachingContentFactory)_resourceHandler.getContentFactory();
         contentFactory.setMaxCachedFiles(1);
 
@@ -532,7 +651,7 @@ public class ResourceHandlerTest
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), startsWith("     1\tThis is a big file"));
             assertThat(response.getContent(), endsWith("   400\tThis is a big file" + LN));
         }
@@ -544,7 +663,7 @@ public class ResourceHandlerTest
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/simple.txt HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), equalTo("simple text"));
         }
 
@@ -561,7 +680,7 @@ public class ResourceHandlerTest
         {
             bufferedWriter.write("temp file");
         }
-        int expectedSize = (int)Files.size(tempPath);
+        long expectedSize = Files.size(tempPath);
 
         CachingContentFactory contentFactory = (CachingContentFactory)_resourceHandler.getContentFactory();
 
@@ -569,7 +688,7 @@ public class ResourceHandlerTest
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/temp.txt HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), equalTo("temp file"));
         }
 
@@ -580,13 +699,13 @@ public class ResourceHandlerTest
         {
             bufferedWriter.write("updated temp file");
         }
-        int newExpectedSize = (int)Files.size(tempPath);
+        long newExpectedSize = Files.size(tempPath);
 
         for (int i = 0; i < 10; i++)
         {
             HttpTester.Response response = HttpTester.parseResponse(
                 _local.getResponse("GET /resource/temp.txt HTTP/1.0\r\n\r\n"));
-            assertThat(response.getStatus(), equalTo(200));
+            assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), equalTo("updated temp file"));
         }
 
