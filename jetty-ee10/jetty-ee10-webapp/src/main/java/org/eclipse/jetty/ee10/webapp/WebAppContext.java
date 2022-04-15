@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.PermissionCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,9 +39,11 @@ import jakarta.servlet.http.HttpSessionAttributeListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.ee10.servlet.ErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
+import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
@@ -48,15 +52,13 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.DumpableCollection;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.paths.PathCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,10 +115,9 @@ import org.slf4j.LoggerFactory;
  * <li>{@link ServletContextHandler#startContext}
  * <ul>
  * <li>Decorate listeners</li>
- * <li>{@link org.eclipse.jetty.server.handler.ContextHandler#startContext}
+ * <li>{@link org.eclipse.jetty.ee10.servlet.ServletContextHandler#startContext}
  * <ul>
  * <li>add {@link org.eclipse.jetty.ee10.servlet.ManagedAttributeListener}</li>
- * <li>{@link AbstractHandler#doStart}</li>
  * <li>{@link #callContextInitialized(jakarta.servlet.ServletContextListener, jakarta.servlet.ServletContextEvent)}</li>
  * </ul>
  * </li>
@@ -176,8 +177,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private final ClassMatcher _serverClasses = new ClassMatcher(__dftServerClasses);
 
     private Configurations _configurations;
-    private String _defaultsDescriptor = WEB_DEFAULTS_XML;
-    private String _descriptor = null;
+    private String _defaultsDescriptor = WEB_DEFAULTS_XML; // TODO: make Path
+    private String _descriptor = null; // TODO: make Path
     private final List<String> _overrideDescriptors = new ArrayList<>();
     private boolean _distributable = false;
     private boolean _extractWAR = true;
@@ -189,11 +190,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private String[] _contextWhiteList = null;
 
-    private File _tmpDir;
+    private File _tmpDir; // TODO: make Path
     private boolean _persistTmpDir = false;
 
-    private String _war;
-    private List<Resource> _extraClasspath;
+    private Path _war;
+    private PathCollection _extraClasspath; // TODO: just modify the resourceBase directly
     private Throwable _unavailableException;
 
     private Map<String, String> _resourceAliases;
@@ -224,20 +225,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param contextPath The context path
      * @param webApp The URL or filename of the webapp directory or war file.
      */
-    public WebAppContext(String webApp, String contextPath)
+    public WebAppContext(Path webApp, String contextPath)
     {
         this(null, contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
         setWar(webApp);
-    }
-
-    /**
-     * @param contextPath The context path
-     * @param webApp The URL or filename of the webapp directory or war file.
-     */
-    public WebAppContext(Resource webApp, String contextPath)
-    {
-        this(null, contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
-        setWarResource(webApp);
     }
 
     /**
@@ -245,21 +236,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param contextPath The context path
      * @param webApp The URL or filename of the webapp directory or war file.
      */
-    public WebAppContext(HandlerContainer parent, String webApp, String contextPath)
+    public WebAppContext(Container parent, Path webApp, String contextPath)
     {
         this(parent, contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
         setWar(webApp);
-    }
-
-    /**
-     * @param parent The parent HandlerContainer.
-     * @param contextPath The context path
-     * @param webApp The webapp directory or war file.
-     */
-    public WebAppContext(HandlerContainer parent, Resource webApp, String contextPath)
-    {
-        this(parent, contextPath, null, null, null, new ErrorPageErrorHandler(), SESSIONS | SECURITY);
-        setWarResource(webApp);
     }
 
     /**
@@ -286,12 +266,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * @param errorHandler ErrorHandler for this web app
      * @param options the options ({@link ServletContextHandler#SESSIONS} and/or {@link ServletContextHandler#SECURITY})
      */
-    public WebAppContext(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
+    public WebAppContext(Container parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler, int options)
     {
         // always pass parent as null and then set below, so that any resulting setServer call
         // is done after this instance is constructed.
         super(null, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
-        _scontext = new Context();
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
         setProtectedTargets(__dftProtectedTargets);
         if (parent != null)
@@ -388,20 +367,20 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
-    public Resource getResource(String pathInContext) throws MalformedURLException
+    public Path getResource(String pathInContext) throws MalformedURLException
     {
         if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
             throw new MalformedURLException(pathInContext);
 
         MalformedURLException mue = null;
-        Resource resource = null;
+        Path resource = null;
         int loop = 0;
         while (pathInContext != null && loop++ < 100)
         {
             try
             {
                 resource = super.getResource(pathInContext);
-                if (resource != null && resource.exists())
+                if (resource != null)
                     return resource;
 
                 pathInContext = getResourceAlias(pathInContext);
@@ -541,7 +520,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     private void wrapConfigurations()
     {
-        Collection<Configuration.WrapperFunction> wrappers = getBeans(Configuration.WrapperFunction.class);
+        java.util.Collection<Configuration.WrapperFunction> wrappers = getBeans(Configuration.WrapperFunction.class);
         if (wrappers == null || wrappers.isEmpty())
             return;
 
@@ -797,23 +776,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * if the war has been expanded and/or copied.
      */
     @ManagedAttribute(value = "war file location", readonly = true)
-    public String getWar()
+    public Path getWar()
     {
-        if (_war == null)
-            _war = getResourceBase();
         return _war;
     }
 
-    public Resource getWebInf() throws IOException
+    public Path getWebInf()
     {
-        if (super.getBaseResource() == null)
-            return null;
-
-        // Iw there a WEB-INF directory?
-        Resource webInf = super.getBaseResource().addPath("WEB-INF/");
-        if (!webInf.exists() || !webInf.isDirectory())
-            return null;
-
+        Path webInf = getResourceBase().resolveFirst("WEB-INF/", Files::isDirectory);
         return webInf;
     }
 
@@ -913,18 +883,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         {
             if (_war != null)
             {
-                int webapps = _war.indexOf("/webapps/");
-                if (webapps >= 0)
-                    name = _war.substring(webapps + 8);
-                else
-                    name = _war;
+                name = _war.toString();
             }
             else if (getResourceBase() != null)
             {
-                name = getResourceBase();
-                int webapps = name.indexOf("/webapps/");
-                if (webapps >= 0)
-                    name = name.substring(webapps + 8);
+                name = getResourceBase().toString();
             }
             else
             {
@@ -939,8 +902,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             new DumpableCollection("Systemclasses " + name, systemClasses),
             new DumpableCollection("Serverclasses " + name, serverClasses),
             new DumpableCollection("Configurations " + name, _configurations),
-            new DumpableCollection("Handler attributes " + name, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
-            new DumpableCollection("Context attributes " + name, getServletContext().getAttributeEntrySet()),
+            new DumpableCollection("Context attributes " + name, Collections.list(getServletContext().getAttributeNames())),
             new DumpableCollection("EventListeners " + this, getEventListeners()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );
@@ -1131,10 +1093,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * In certain circumstances you want may want to deny access of one webapp from another
      * when you may not fully trust the webapp.  Setting this white list will enable a
-     * check when a servlet called {@link ServletContextHandler.Context#getContext(String)}, validating that the uriInPath
+     * check when a servlet called {@link ServletContext#getContext(String)}, validating that the uriInPath
      * for the given webapp has been declaratively allows access to the context.
      *
-     * @param contextWhiteList the whitelist of contexts for {@link ServletContextHandler.Context#getContext(String)}
+     * @param contextWhiteList the whitelist of contexts for {@link ServletContext#getContext(String)}
      */
     public void setContextWhiteList(String... contextWhiteList)
     {
@@ -1195,26 +1157,15 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * Set the war of the webapp. From this value a {@link #setResourceBase(String)}
+     * Set the war of the webapp. From this value a {@link #setResourceBases(Path...)}
      * value is computed by {@link WebInfConfiguration}, which may be changed from
      * the war URI by unpacking and/or copying.
      *
-     * @param war The war to set as a file name or URL.
+     * @param war The war to set as a path.
      */
-    public void setWar(String war)
+    public void setWar(Path war)
     {
         _war = war;
-    }
-
-    /**
-     * Set the war of the webapp as a {@link Resource}.
-     *
-     * @param war The war to set as a Resource.
-     * @see #setWar(String)
-     */
-    public void setWarResource(Resource war)
-    {
-        setWar(war == null ? null : war.toString());
     }
 
     /**
@@ -1224,7 +1175,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      */
     @Override
     @ManagedAttribute(value = "extra classpath for context classloader", readonly = true)
-    public List<Resource> getExtraClasspath()
+    public PathCollection getExtraClasspath()
     {
         return _extraClasspath;
     }
@@ -1232,21 +1183,21 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /**
      * Set the Extra ClassPath via delimited String.
      * <p>
-     * This is a convenience method for {@link #setExtraClasspath(List)}
+     * This is a convenience method for {@link #setExtraClasspath(PathCollection)}
      * </p>
      *
      * @param extraClasspath Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
-     * with '/'.
+     * with '/'. // FIXME: use FileSystem java.nio.file.PathMatcher logic here
      * @throws IOException if unable to resolve the resources referenced
-     * @see #setExtraClasspath(List)
+     * @see #setExtraClasspath(PathCollection)
      */
     public void setExtraClasspath(String extraClasspath) throws IOException
     {
-        setExtraClasspath(Resource.fromList(extraClasspath, false, this::newResource));
+        // FIXME : setExtraClasspath(Resource.fromList(extraClasspath, false, this::newResource));
     }
 
-    public void setExtraClasspath(List<Resource> extraClasspath)
+    public void setExtraClasspath(PathCollection extraClasspath)
     {
         _extraClasspath = extraClasspath;
     }
@@ -1347,7 +1298,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         this method establishes the security constraint for that pattern from the argument ServletSecurityElement. 
          */
 
-        Collection<String> pathMappings = registration.getMappings();
+        java.util.Collection<String> pathMappings = registration.getMappings();
         if (pathMappings != null)
         {
             ConstraintSecurityHandler.createConstraint(registration.getName(), servletSecurityElement);
@@ -1402,55 +1353,19 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return unchangedURLMappings;
     }
 
-    public class Context extends ServletContextHandler.Context
+    public class Context extends ServletContextHandler.ServletContextApi
     {
-        @Override
-        public void checkListener(Class<? extends EventListener> listener) throws IllegalStateException
-        {
-            try
-            {
-                super.checkListener(listener);
-            }
-            catch (IllegalArgumentException e)
-            {
-                //not one of the standard servlet listeners, check our extended session listener types
-                boolean ok = false;
-                for (Class<?> l : SessionHandler.SESSION_LISTENER_TYPES)
-                {
-                    if (l.isAssignableFrom(listener))
-                    {
-                        ok = true;
-                        break;
-                    }
-                }
-                if (!ok)
-                    throw new IllegalArgumentException("Inappropriate listener type " + listener.getName());
-            }
-        }
-
         @Override
         public URL getResource(String path) throws MalformedURLException
         {
             if (path == null)
                 return null;
 
-            Resource resource = WebAppContext.this.getResource(path);
-            if (resource == null || !resource.exists())
+            Path resource = WebAppContext.this.getResource(path);
+            if (resource == null)
                 return null;
 
-            // Should we go to the original war?
-            if (resource.isDirectory() && resource instanceof ResourceCollection && !WebAppContext.this.isExtractWAR())
-            {
-                List<Resource> resources = ((ResourceCollection)resource).getResources();
-                for (int i = resources.size(); i-- > 0; )
-                {
-                    Resource r = resources.get(i);
-                    if (r.getName().startsWith("jar:file"))
-                        return r.getURI().toURL();
-                }
-            }
-
-            return resource.getURI().toURL();
+            return resource.toUri().toURL();
         }
 
         @Override

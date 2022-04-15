@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -36,6 +37,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -93,7 +95,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
-import org.eclipse.jetty.util.resource.PathResource;
+import org.eclipse.jetty.util.paths.PathCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -226,6 +228,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
+    protected ErrorHandler _errorHandler;
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
 
@@ -299,6 +302,18 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (errorHandler != null)
             setErrorHandler(errorHandler);
         */
+    }
+
+    // TODO: error handling.
+    public void setErrorHandler(ErrorHandler errorHandler)
+    {
+        _errorHandler = errorHandler;
+    }
+
+    // TODO: error handling.
+    public ErrorHandler getErrorHandler()
+    {
+        return _errorHandler;
     }
 
     @Override
@@ -448,14 +463,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     public void setLogger(Logger logger)
     {
         _logger = logger;
-    }
-
-    public Resource getBaseResource()
-    {
-        Path resourceBase = getResourceBase();
-        if (resourceBase == null)
-            return null;
-        return new PathResource(resourceBase);
     }
 
     private String getLogNameSuffix()
@@ -868,21 +875,19 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      * @return the resource, or null if not available.
      * @throws MalformedURLException if unable to form a Resource from the provided path
      */
-    public Resource getResource(String pathInContext) throws MalformedURLException
+    public Path getResource(String pathInContext) throws MalformedURLException
     {
         if (pathInContext == null || !pathInContext.startsWith(URIUtil.SLASH))
             throw new MalformedURLException(pathInContext);
 
-        Resource baseResource = getBaseResource();
-        if (baseResource == null)
-            return null;
+        PathCollection paths = getResourceBase();
 
         try
         {
             // addPath with accept non-canonical paths that don't go above the root,
             // but will treat them as aliases. So unless allowed by an AliasChecker
             // they will be rejected below.
-            Resource resource = baseResource.addPath(pathInContext);
+            Path resource = paths.resolveFirstExisting(pathInContext);
 
             if (checkAlias(pathInContext, resource))
                 return resource;
@@ -901,26 +906,27 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      * @param resource the resource
      * @return True if the alias is OK
      */
-    public boolean checkAlias(String path, Resource resource)
+    public boolean checkAlias(String path, Path resource)
     {
         // Is the resource aliased?
-        if (resource.isAlias())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Aliased resource: {}~={}", resource, resource.getAlias());
-
-            // alias checks
-            for (AliasCheck check : getAliasChecks())
-            {
-                if (check.check(path, resource))
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Aliased resource: {} approved by {}", resource, check);
-                    return true;
-                }
-            }
-            return false;
-        }
+        // FIXME: use ee specific alias handling.
+//        if (resource.isAlias())
+//        {
+//            if (LOG.isDebugEnabled())
+//                LOG.debug("Aliased resource: {}~={}", resource, resource.getAlias());
+//
+//            // alias checks
+//            for (AliasCheck check : getAliasChecks())
+//            {
+//                if (check.check(path, resource))
+//                {
+//                    if (LOG.isDebugEnabled())
+//                        LOG.debug("Aliased resource: {} approved by {}", resource, check);
+//                    return true;
+//                }
+//            }
+//            return false;
+//        }
         return true;
     }
 
@@ -962,32 +968,16 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     public Set<String> getResourcePaths(String path)
     {
-        try
-        {
-            Resource resource = getResource(path);
-
-            if (resource != null && resource.exists())
-            {
-                if (!path.endsWith(URIUtil.SLASH))
-                    path = path + URIUtil.SLASH;
-
-                String[] l = resource.list();
-                if (l != null)
-                {
-                    HashSet<String> set = new HashSet<>();
-                    for (int i = 0; i < l.length; i++)
-                    {
-                        set.add(path + l[i]);
-                    }
-                    return set;
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            LOG.trace("IGNORED", e);
-        }
-        return Collections.emptySet();
+        return getResourceBase()
+            .resolveAll(path, Files::exists)
+            .stream()
+            .map((p)-> {
+                String str = p.toString();
+                if(Files.isDirectory(p))
+                    str += '/';
+                return str;
+            })
+            .collect(Collectors.toSet());
     }
 
     private String normalizeHostname(String host)
@@ -1068,7 +1058,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         void exitScope(Context context, ServletContextRequest request);
     }
 
-    public ServletContext getServletContext()
+    public ServletContextApi getServletContext()
     {
         return getContext().getServletContext();
     }
@@ -1254,11 +1244,6 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             if (getContextPath() == null)
                 throw new IllegalStateException("Null contextPath");
-
-            Resource baseResource = getBaseResource();
-            if (baseResource != null && baseResource.isAlias())
-                LOG.warn("BaseResource {} is aliased to {} in {}. May not be supported in future releases.",
-                    baseResource, baseResource.getAlias(), this);
 
             if (_logger == null)
                 _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
@@ -3100,12 +3085,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             try
             {
-                Resource resource = ServletContextHandler.this.getResource(path);
-                if (resource != null)
+                Path hit = getResourceBase().resolveFirst(path, (p)->true);
+                if (hit != null)
                 {
-                    File file = resource.getFile();
-                    if (file != null)
-                        return file.getCanonicalPath();
+                    return hit.toRealPath().toString();
                 }
             }
             catch (Exception e)
@@ -3125,9 +3108,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             path = URIUtil.canonicalPath(path);
             if (path == null)
                 return null;
-            Resource resource = ServletContextHandler.this.getResource(path);
-            if (resource != null && resource.exists())
-                return resource.getURI().toURL();
+
+            Path hit = getResourceBase().resolveFirstExisting(path);
+            if (hit != null)
+                return hit.toUri().toURL();
             return null;
         }
 

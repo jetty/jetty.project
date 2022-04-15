@@ -39,7 +39,6 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -307,7 +306,6 @@ public class MetaInfConfiguration extends AbstractConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-
         // Look for extra resource
         @SuppressWarnings("unchecked")
         Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
@@ -320,7 +318,7 @@ public class MetaInfConfiguration extends AbstractConfiguration
             {
                 collection[i++] = resource;
             }
-            context.setBaseResource(new ResourceCollection(collection));
+            context.addResourceBase(collection);
         }
     }
 

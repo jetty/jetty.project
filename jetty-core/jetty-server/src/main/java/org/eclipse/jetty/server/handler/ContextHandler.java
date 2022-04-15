@@ -46,6 +46,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.paths.PathCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.Invocable;
 import org.slf4j.Logger;
@@ -85,7 +86,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
 
     private String _displayName;
     private String _contextPath = "/";
-    private Path _resourceBase;
+    private PathCollection _resourceBase = new PathCollection();
     private ClassLoader _classLoader;
     private Request.Processor _errorProcessor;
     private boolean _allowNullPathInContext;
@@ -627,10 +628,10 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     }
 
     /**
-     * @return Returns the base resource as a string.
+     * @return Returns the base resource as a PathCollection.
      */
     @ManagedAttribute("document root for context")
-    public Path getResourceBase()
+    public PathCollection getResourceBase()
     {
         return _resourceBase;
     }
@@ -638,13 +639,26 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
     /**
      * Set the base resource for this context.
      *
-     * @param resourceBase The Path of the base resource for the context.
+     * @param resourceBases The list of Path of the base resource for the context.
      */
-    public void setResourceBase(Path resourceBase)
+    public void setResourceBases(Path ... resourceBases)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
-        _resourceBase = resourceBase;
+        _resourceBase.clear();
+        _resourceBase.addAll(List.of(resourceBases));
+    }
+
+    /**
+     * Set the base resource for this context.
+     *
+     * @param resourceBases The list of Path of the base resource for the context.
+     */
+    public void addResourceBase(Path ... resourceBases)
+    {
+        if (isStarted())
+            throw new IllegalStateException(getState());
+        _resourceBase.addAll(List.of(resourceBases));
     }
 
     /**
@@ -770,7 +784,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
         }
 
         @Override
-        public Path getResourceBase()
+        public PathCollection getResourceBase()
         {
             return _resourceBase;
         }
