@@ -319,7 +319,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
                 String encoding = setting[0].trim();
                 String extension = setting[1].trim();
                 ret.add(new CompressedContentFormat(encoding, extension));
-                if (gzip && !ret.contains(CompressedContentFormat.GZIP))
+                if (gzip == Boolean.TRUE && !ret.contains(CompressedContentFormat.GZIP))
                     ret.add(CompressedContentFormat.GZIP);
             }
         }
@@ -331,7 +331,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory, Welc
                 ret.add(CompressedContentFormat.GZIP);
             }
         }
-        else if (gzip)
+        else if (gzip == Boolean.TRUE)
         {
             // gzip handling is for backwards compatibility with older Jetty
             ret.add(CompressedContentFormat.GZIP);
