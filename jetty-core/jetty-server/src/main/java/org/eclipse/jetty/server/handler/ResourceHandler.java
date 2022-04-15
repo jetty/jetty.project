@@ -261,7 +261,7 @@ public class ResourceHandler extends Handler.Wrapper
             }
 
             // Conditional response?
-            if (!passConditionalHeaders(request, response, content, callback))
+            if (passConditionalHeaders(request, response, content, callback))
                 return;
 
             // Precompressed variant available?
@@ -376,7 +376,7 @@ public class ResourceHandler extends Handler.Wrapper
     }
 
     /**
-     * @return false if the request was processed, true otherwise.
+     * @return true if the request was processed, false otherwise.
      */
     private boolean passConditionalHeaders(Request request, Response response, HttpContent content, Callback callback) throws IOException
     {
@@ -427,7 +427,7 @@ public class ResourceHandler extends Handler.Wrapper
                     if (!match)
                     {
                         Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
-                        return false;
+                        return true;
                     }
                 }
 
@@ -437,7 +437,7 @@ public class ResourceHandler extends Handler.Wrapper
                     if (CompressedContentFormat.tagEquals(etag, ifnm) && ifnm.indexOf(',') < 0)
                     {
                         Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
-                        return false;
+                        return true;
                     }
 
                     // Handle list of tags
@@ -447,12 +447,12 @@ public class ResourceHandler extends Handler.Wrapper
                         if (CompressedContentFormat.tagEquals(etag, tag))
                         {
                             Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
-                            return false;
+                            return true;
                         }
                     }
 
                     // If etag requires content to be served, then do not check if-modified-since
-                    return true;
+                    return false;
                 }
             }
 
@@ -464,14 +464,14 @@ public class ResourceHandler extends Handler.Wrapper
                 if (ifms.equals(mdlm))
                 {
                     Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
-                    return false;
+                    return true;
                 }
 
                 long ifmsl = request.getHeaders().getDateField(HttpHeader.IF_MODIFIED_SINCE.asString());
                 if (ifmsl != -1 && Files.getLastModifiedTime(content.getPath()).toMillis() / 1000 <= ifmsl / 1000)
                 {
                     Response.writeError(request, response, callback, HttpStatus.NOT_MODIFIED_304);
-                    return false;
+                    return true;
                 }
             }
 
@@ -479,7 +479,7 @@ public class ResourceHandler extends Handler.Wrapper
             if (ifums != -1 && Files.getLastModifiedTime(content.getPath()).toMillis() / 1000 > ifums / 1000)
             {
                 Response.writeError(request, response, callback, HttpStatus.PRECONDITION_FAILED_412);
-                return false;
+                return true;
             }
         }
         catch (IllegalArgumentException iae)
@@ -489,7 +489,7 @@ public class ResourceHandler extends Handler.Wrapper
             throw iae;
         }
 
-        return true;
+        return false;
     }
 
     protected void sendWelcome(HttpContent content, String pathInContext, boolean endsWithSlash, Request request, Response response, Callback callback) throws Exception
@@ -519,7 +519,7 @@ public class ResourceHandler extends Handler.Wrapper
         if (_welcomer.welcome(request, response, callback))
             return;
 
-        if (passConditionalHeaders(request, response, content, callback))
+        if (!passConditionalHeaders(request, response, content, callback))
             sendDirectory(request, response, content, callback, pathInContext);
     }
 
