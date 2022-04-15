@@ -21,7 +21,7 @@ import java.util.function.BiPredicate;
 
 public class ClassFilePredicate implements BiPredicate<Path, BasicFileAttributes>
 {
-    private final List<String> IGNORED_DIRS = List.of("WEB-INF", "META-INF");
+    private static final List<String> IGNORED_DIRS = List.of("WEB-INF", "META-INF");
 
     @Override
     public boolean test(Path path, BasicFileAttributes basicFileAttributes)
