@@ -25,6 +25,7 @@ import java.util.Objects;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.paths.PathCollection;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
@@ -45,7 +46,7 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
     private final ContextHandler _contextHandler;
     private final List<Path> _protected = new ArrayList<>();
     private final AllowedResourceAliasCheckListener _listener = new AllowedResourceAliasCheckListener();
-    protected Path _base;
+    protected PathCollection _base;
 
     /**
      * @param contextHandler the context handler to use.
@@ -74,25 +75,19 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
 
     protected void initialize()
     {
-        _base = _contextHandler.getResourceBase();
+        PathCollection _base = _contextHandler.getResourceBase();
         if (_base == null)
             return;
 
-        try
+        String[] protectedTargets = getProtectedTargets();
+        if (protectedTargets != null)
         {
-            if (Files.exists(_base, NO_FOLLOW_LINKS))
-                _base = _base.toRealPath(FOLLOW_LINKS);
-            String[] protectedTargets = getProtectedTargets();
-            if (protectedTargets != null)
+            for (String s : protectedTargets)
             {
-                for (String s : protectedTargets)
-                    _protected.add(_base.getFileSystem().getPath(_base.toString(), s));
+                _contextHandler.getResourceBase()
+                    .resolveAll(s, Files::exists)
+                    .forEach(p -> _protected.add(p));
             }
-        }
-        catch (IOException e)
-        {
-            LOG.warn("Base resource failure ({} is disabled): {}", this.getClass().getName(), _base, e);
-            _base = null;
         }
     }
 
@@ -156,11 +151,6 @@ public class AllowedResourceAliasChecker extends AbstractLifeCycle implements Co
             // Walk the path parent links looking for the base resource, but failing if any steps are protected
             while (path != null)
             {
-                // If the path is the same file as the base, then it is contained in the base and
-                // is not protected.
-                if (isSameFile(path, _base))
-                    return true;
-
                 // If the path is the same file as any protected resources, then it is protected.
                 for (Path p : _protected)
                 {
