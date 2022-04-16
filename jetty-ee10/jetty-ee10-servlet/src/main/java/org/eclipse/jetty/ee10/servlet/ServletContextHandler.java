@@ -151,6 +151,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     /**
      * The type of protected target match
+     *
      * @see #_protectedTargets
      */
     protected enum ProtectedTargetType
@@ -224,7 +225,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     private final List<AliasCheck> _aliasChecks = new CopyOnWriteArrayList<>();
 
     protected final DecoratedObjectFactory _objFactory;
-//    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
+    //    protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass = org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
@@ -971,9 +972,10 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         return getResourceBase()
             .resolveAll(path, Files::exists)
             .stream()
-            .map((p)-> {
+            .map((p) ->
+            {
                 String str = p.toString();
-                if(Files.isDirectory(p))
+                if (Files.isDirectory(p))
                     str += '/';
                 return str;
             })
@@ -1237,8 +1239,8 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     @Override
     protected void doStart() throws Exception
     {
-        getContext().call(() -> 
-        {    
+        getContext().call(() ->
+        {
             _objFactory.addDecorator(new DeprecationWarning());
             getServletContext().setAttribute(DecoratedObjectFactory.ATTR, _objFactory);
 
@@ -1495,7 +1497,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
      */
     protected void startContext() throws Exception
     {
-        for (ServletContainerInitializerCaller  sci : getBeans(ServletContainerInitializerCaller.class))
+        for (ServletContainerInitializerCaller sci : getBeans(ServletContainerInitializerCaller.class))
         {
             if (sci.isStopped())
             {
@@ -1675,6 +1677,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     /**
      * Convenience method to programmatically add a {@link ServletContainerInitializer}.
+     *
      * @param sci the ServletContainerInitializer to register.
      * @return the ServletContainerInitializerHolder that was created
      */
@@ -1690,6 +1693,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
     /**
      * Convenience method to programmatically add a {@link ServletContainerInitializer}.
+     *
      * @param sci the ServletContainerInitializer to register.
      * @param classes the Set of application classes.
      * @return the ServletContainerInitializerHolder that was created
@@ -1703,10 +1707,11 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         addServletContainerInitializer(holder);
         return holder;
     }
-    
+
     /**
      * Convenience method to programmatically add a list of {@link ServletContainerInitializer}.
      * The initializers are guaranteed to be called in the order they are passed into this method.
+     *
      * @param sciHolders the ServletContainerInitializerHolders
      */
     public void addServletContainerInitializer(ServletContainerInitializerHolder... sciHolders)
@@ -2349,7 +2354,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             if (isStarted())
                 throw new IllegalStateException();
-            
+
             if (ServletContextHandler.this.getServletHandler().isInitialized())
                 throw new IllegalStateException();
 
@@ -2536,12 +2541,12 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             else
                 return null; //existing completed registration for servlet name
         }
-        
+
         @Override
         public ServletRegistration.Dynamic addJspFile(String servletName, String jspFile)
         {
             checkDynamic(servletName);
-            
+
             final ServletHandler handler = ServletContextHandler.this.getServletHandler();
             ServletHolder holder = handler.getServlet(servletName);
             if (holder == null)
@@ -2553,7 +2558,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 handler.addServlet(holder);
                 return dynamicHolderAdded(holder);
             }
-            
+
             //complete a partial registration
             if (holder.getClassName() == null && holder.getHeldClass() == null && holder.getForcedPath() == null)
             {
@@ -2606,7 +2611,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             if (!_enabled)
                 throw new UnsupportedOperationException();
-            
+
             if (_sessionHandler != null)
                 return _sessionHandler.getDefaultSessionTrackingModes();
             return null;
@@ -2617,7 +2622,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             if (!_enabled)
                 throw new UnsupportedOperationException();
-            
+
             if (_sessionHandler != null)
                 return _sessionHandler.getEffectiveSessionTrackingModes();
             return null;
@@ -2739,7 +2744,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 _sessionHandler.setMaxInactiveInterval((int)tmp);
             }
         }
-        
+
         public <T extends Servlet> T createServlet(Class<T> clazz) throws ServletException
         {
             if (!_enabled)
@@ -2767,7 +2772,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
                 throw new ServletException(e);
             }
         }
-        
+
         public <T extends EventListener> T createListener(Class<T> clazz) throws ServletException
         {
             if (!_enabled)
@@ -2852,7 +2857,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
             {
                 try
                 {
-                    holder.start();   
+                    holder.start();
                 }
                 catch (Exception e)
                 {
@@ -2920,7 +2925,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             if (!isStarting())
                 throw new IllegalStateException();
-            
+
             setDefaultRequestCharacterEncoding(encoding);
         }
 
@@ -2935,7 +2940,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         {
             if (!isStarting())
                 throw new IllegalStateException();
-            
+
             setDefaultResponseCharacterEncoding(encoding);
         }
 
@@ -3085,7 +3090,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
 
             try
             {
-                Path hit = getResourceBase().resolveFirst(path, (p)->true);
+                Path hit = getResourceBase().resolveFirst(path, (p) -> true);
                 if (hit != null)
                 {
                     return hit.toRealPath().toString();
@@ -3326,10 +3331,12 @@ public class ServletContextHandler extends ContextHandler implements Graceful
     {
         public void addServletContainerInitializerHolders(ServletContainerInitializerHolder... holders)
         {
-            for (ServletContainerInitializerHolder holder:holders)
+            for (ServletContainerInitializerHolder holder : holders)
+            {
                 addBean(holder, true);
+            }
         }
-        
+
         public java.util.Collection getServletContainerInitializerHolders()
         {
             return getContainedBeans(ServletContainerInitializerHolder.class);

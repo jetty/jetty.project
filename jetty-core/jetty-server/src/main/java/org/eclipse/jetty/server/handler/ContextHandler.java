@@ -641,7 +641,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      *
      * @param resourceBases The list of Path of the base resource for the context.
      */
-    public void setResourceBases(Path ... resourceBases)
+    public void setResourceBases(Path... resourceBases)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
@@ -654,7 +654,7 @@ public class ContextHandler extends Handler.Wrapper implements Attributes, Grace
      *
      * @param resourceBases The list of Path of the base resource for the context.
      */
-    public void addResourceBase(Path ... resourceBases)
+    public void addResourceBase(Path... resourceBases)
     {
         if (isStarted())
             throw new IllegalStateException(getState());
