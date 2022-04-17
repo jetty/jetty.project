@@ -37,7 +37,7 @@ public class AllowSymLinkAliasChecker implements AliasCheck
 
     public AllowSymLinkAliasChecker()
     {
-        LOG.warn("Deprecated, use SymlinkAllowedResourceAliasChecker instead.");
+        LOG.warn("AllowSymLinkAliasChecker is deprecated, use SymlinkAllowedResourceAliasChecker instead.");
     }
 
     @Override
