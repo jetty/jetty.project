@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -148,7 +149,7 @@ public class ResourceHandlerTest
     void tearDown() throws Exception
     {
         _server.stop();
-        _server.setHandler(null);
+        _server.setHandler((Handler)null);
     }
 
     @Test
