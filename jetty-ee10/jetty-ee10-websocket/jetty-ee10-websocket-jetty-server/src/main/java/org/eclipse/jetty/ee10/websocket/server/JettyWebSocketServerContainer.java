@@ -25,6 +25,7 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.websocket.api.Session;
 import org.eclipse.jetty.ee10.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.ee10.websocket.api.WebSocketContainer;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRe
 import org.eclipse.jetty.ee10.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.http.pathmap.PathSpec;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -78,8 +80,8 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             executor = contextHandler.getServer().getThreadPool();
 
         // Create the Jetty ServerContainer implementation.
-        WebSocketMappings mappings = WebSocketMappings.ensureMappings(servletContext);
-        WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(servletContext);
+        WebSocketMappings mappings = WebSocketMappings.ensureMappings(contextHandler);
+        WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(contextHandler);
         JettyWebSocketServerContainer container = new JettyWebSocketServerContainer(contextHandler, mappings, components, executor);
 
         // Manage the lifecycle of the Container.
@@ -145,7 +147,7 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
             throw new WebSocketException("Duplicate WebSocket Mapping for PathSpec");
 
         WebSocketUpgradeFilter.ensureFilter(contextHandler.getServletContext());
-        WebSocketCreator coreCreator = (req, resp) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+        WebSocketCreator coreCreator = (req, resp, cb) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
         webSocketMappings.addMapping(ps, coreCreator, frameHandlerFactory, customizer);
     }
 
@@ -177,11 +179,35 @@ public class JettyWebSocketServerContainer extends ContainerLifeCycle implements
      */
     public boolean upgrade(JettyWebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        WebSocketCreator coreCreator = (req, resp) -> creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
-        WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, frameHandlerFactory, customizer);
+        WebSocketCreator coreCreator = (req, resp, cb) ->
+        {
+            try
+            {
+                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+                cb.succeeded();
+                return webSocket;
+            }
+            catch (Throwable t)
+            {
+                cb.failed(t);
+                return null;
+            }
+        };
 
+        ServletContextRequest baseRequest = ServletContextRequest.getBaseRequest(request);
+        if (baseRequest == null)
+            throw new IllegalStateException("Base Request not available");
+
+        WebSocketNegotiator negotiator = WebSocketNegotiator.from(coreCreator, frameHandlerFactory, customizer);
         Handshaker handshaker = webSocketMappings.getHandshaker();
-        return handshaker.upgradeRequest(negotiator, request, response, components, null);
+
+        try (Blocking.Callback callback = Blocking.callback())
+        {
+            // TODO: throwing here?
+            boolean upgraded = handshaker.upgradeRequest(negotiator, baseRequest, baseRequest.getResponse(), callback, components, null);
+            callback.block();
+            return upgraded;
+        }
     }
 
     @Override

@@ -219,6 +219,23 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
         return negotiator;
     }
 
+    public boolean upgrade(Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws IOException
+    {
+        String target = request.getPathInContext();
+        WebSocketNegotiator negotiator = getMatchedNegotiator(target, pathSpec ->
+        {
+            // Store PathSpec resource mapping as request attribute,
+            // for WebSocketCreator implementors to use later if they wish.
+            request.setAttribute(PathSpec.class.getName(), pathSpec);
+        });
+
+        if (negotiator == null)
+            return false;
+
+        // We have an upgrade request
+        return handshaker.upgradeRequest(negotiator, request, response, callback, components, defaultCustomizer);
+    }
+
     public boolean upgrade(WebSocketNegotiator negotiator, Request request, Response response, Callback callback, Configuration.Customizer defaultCustomizer) throws IOException
     {
         if (negotiator == null)

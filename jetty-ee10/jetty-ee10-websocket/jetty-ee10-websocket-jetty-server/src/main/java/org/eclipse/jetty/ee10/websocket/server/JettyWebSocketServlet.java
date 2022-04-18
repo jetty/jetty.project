@@ -18,16 +18,19 @@ import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.util.Set;
 
-import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeResponse;
 import org.eclipse.jetty.ee10.websocket.server.internal.JettyServerFrameHandlerFactory;
 import org.eclipse.jetty.ee10.websocket.servlet.WebSocketUpgradeFilter;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Blocking;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.websocket.core.Configuration;
 import org.eclipse.jetty.websocket.core.WebSocketComponents;
 import org.eclipse.jetty.websocket.core.server.FrameHandlerFactory;
@@ -124,9 +127,8 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     {
         try
         {
-            ServletContext servletContext = getServletContext();
-
-            components = WebSocketServerComponents.getWebSocketComponents(servletContext);
+            ServletContextHandler context = ServletContextHandler.getServletContextHandler(getServletContext());
+            components = WebSocketServerComponents.getWebSocketComponents(context);
             mapping = new WebSocketMappings(components);
 
             String max = getInitParameter("idleTimeout");
@@ -177,9 +179,19 @@ public abstract class JettyWebSocketServlet extends HttpServlet
     protected void service(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException
     {
+        ServletContextRequest request = ServletContextRequest.getBaseRequest(req);
+        if (request == null)
+            throw new IllegalStateException("Base Request not available");
+
         // provide a null default customizer the customizer will be on the negotiator in the mapping
-        if (mapping.upgrade(req, resp, null))
-            return;
+        try (Blocking.Callback callback = Blocking.callback())
+        {
+            if (mapping.upgrade(request, request.getResponse(), callback, null))
+            {
+                callback.block();
+                return;
+            }
+        }
 
         // If we reach this point, it means we had an incoming request to upgrade
         // but it was either not a proper websocket upgrade, or it was possibly rejected
@@ -271,9 +283,19 @@ public abstract class JettyWebSocketServlet extends HttpServlet
         }
 
         @Override
-        public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp)
+        public Object createWebSocket(ServerUpgradeRequest req, ServerUpgradeResponse resp, Callback callback)
         {
-            return creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+            try
+            {
+                Object webSocket = creator.createWebSocket(new DelegatedServerUpgradeRequest(req), new DelegatedServerUpgradeResponse(resp));
+                callback.succeeded();
+                return webSocket;
+            }
+            catch (Throwable t)
+            {
+                callback.failed(t);
+                return null;
+            }
         }
     }
 }
