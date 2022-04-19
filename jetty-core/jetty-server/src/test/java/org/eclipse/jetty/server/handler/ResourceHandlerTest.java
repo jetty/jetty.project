@@ -684,7 +684,7 @@ public class ResourceHandlerTest
     {
         // TODO explicitly turn on caching
         Path tempPath = _resourceHandler.getBaseResource().resolve("temp.txt");
-        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(tempPath, StandardCharsets.ISO_8859_1))
+        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(tempPath))
         {
             bufferedWriter.write("temp file");
         }
@@ -703,10 +703,16 @@ public class ResourceHandlerTest
         assertThat(contentFactory.getCachedFiles(), is(1));
         assertThat(contentFactory.getCachedSize(), is(expectedSize));
 
-        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(tempPath, StandardCharsets.ISO_8859_1))
+        // re-write the file as long as its last modified timestamp did not change
+        FileTime before = Files.getLastModifiedTime(tempPath);
+        do
         {
-            bufferedWriter.write("updated temp file");
+            try (BufferedWriter bw = Files.newBufferedWriter(tempPath))
+            {
+                bw.write("updated temp file");
+            }
         }
+        while (Files.getLastModifiedTime(tempPath).equals(before));
         long newExpectedSize = Files.size(tempPath);
 
         for (int i = 0; i < 10; i++)

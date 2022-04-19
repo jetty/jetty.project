@@ -151,7 +151,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
     {
         if (content == _cache.remove(content._cacheKey))
         {
-            content.invalidate();
+            content.release();
             _cachedSize.addAndGet(-content._contentLengthValue);
         }
     }
@@ -187,7 +187,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
         return httpContent;
     }
 
-    private class CachingHttpContent implements HttpContent.InMemory
+    private class CachingHttpContent implements HttpContent
     {
         private final HttpContent _delegate;
         private final ByteBuffer _buffer;
@@ -253,11 +253,12 @@ public class CachingContentFactory implements HttpContent.ContentFactory
             {
                 LOG.debug("unable to get delegate path' LastModifiedTime", e);
             }
-            invalidate();
+            release();
             return false;
         }
 
-        public void invalidate()
+        @Override
+        public void release()
         {
             // TODO re-pool buffer
         }

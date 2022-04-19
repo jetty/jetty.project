@@ -83,7 +83,6 @@ import org.slf4j.LoggerFactory;
  *  - getContent in HttpContent should go
  *  - Default stylesheet (needs Path impl for classpath resources)
  *  - request ranges
- *  - eTags
  *  - a way to configure caching or not
  *  - precompressed formats
  *  - gzipEquivalentFileExtensions
@@ -915,8 +914,9 @@ public class ResourceHandler extends Handler.Wrapper
 
     private void writeContent(Response response, Callback callback, HttpContent content) throws IOException
     {
-        if (content instanceof HttpContent.InMemory d)
-            response.write(true, callback, d.getBuffer());
+        ByteBuffer buffer = content.getBuffer();
+        if (buffer != null)
+            response.write(true, callback, buffer);
         else
             new ContentWriterIteratingCallback(content, response, callback).iterate();
     }
@@ -1327,6 +1327,17 @@ public class ResourceHandler extends Handler.Wrapper
         public Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents()
         {
             return null;
+        }
+
+        @Override
+        public ByteBuffer getBuffer()
+        {
+            return null;
+        }
+
+        @Override
+        public void release()
+        {
         }
     }
 

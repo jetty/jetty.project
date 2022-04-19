@@ -168,4 +168,16 @@ public class ResourceHttpContent implements HttpContent
     {
         return _precompressedContents;
     }
+
+    @Override
+    public ByteBuffer getBuffer()
+    {
+        return null;
+    }
+
+    @Override
+    public void release()
+    {
+        _resource.close();
+    }
 }
