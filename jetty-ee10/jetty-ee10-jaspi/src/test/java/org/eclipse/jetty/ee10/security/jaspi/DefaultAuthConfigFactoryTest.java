@@ -33,14 +33,14 @@ public class DefaultAuthConfigFactoryTest
 
     private static final String MESSAGE_LAYER = "HttpServlet";
 
-    private final String jettyAuthConfigProvider = "org.eclipse.jetty.security.jaspi.provider.JaspiAuthConfigProvider";
+    private final String jettyAuthConfigProvider = "org.eclipse.jetty.ee10.security.jaspi.provider.JaspiAuthConfigProvider";
     private final String appContext = "server /test";
 
     private final Map<String, String> serverAuthModuleProperties = Map.of("ServerAuthModule",
-            "org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule", "AppContextID", appContext,
-            "org.eclipse.jetty.security.jaspi.modules.RealmName", "TestRealm");
+            "org.eclipse.jetty.ee10.security.jaspi.modules.BasicAuthenticationAuthModule", "AppContextID", appContext,
+            "org.eclipse.jetty.ee10.security.jaspi.modules.RealmName", "TestRealm");
 
-    private final String serverAuthModuleClassName = "org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule";
+    private final String serverAuthModuleClassName = "org.eclipse.jetty.ee10.security.jaspi.modules.BasicAuthenticationAuthModule";
     
     @Test
     public void testRegisterConfigProviderByClassName() throws Exception

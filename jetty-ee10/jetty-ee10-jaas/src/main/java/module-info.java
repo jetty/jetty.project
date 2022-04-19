@@ -16,7 +16,7 @@ module org.eclipse.jetty.ee10.jaas
     requires org.slf4j;
     requires org.eclipse.jetty.util;
 
-    requires transitive org.eclipse.jetty.ee10.security;
+    requires transitive org.eclipse.jetty.ee10.servlet;
 
     // Only required if using JDBCLoginModule.
     requires static java.sql;

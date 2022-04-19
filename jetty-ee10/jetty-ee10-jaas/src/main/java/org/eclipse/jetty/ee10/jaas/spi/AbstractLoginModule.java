@@ -29,7 +29,7 @@ import javax.security.auth.spi.LoginModule;
 
 import org.eclipse.jetty.ee10.jaas.JAASRole;
 import org.eclipse.jetty.ee10.jaas.callback.ObjectCallback;
-import org.eclipse.jetty.ee10.security.UserPrincipal;
+import org.eclipse.jetty.ee10.servlet.security.UserPrincipal;
 
 /**
  * AbstractLoginModule

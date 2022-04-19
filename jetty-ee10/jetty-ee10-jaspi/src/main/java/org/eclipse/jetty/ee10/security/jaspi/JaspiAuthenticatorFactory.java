@@ -20,11 +20,11 @@ import javax.security.auth.Subject;
 
 import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.ee10.security.Authenticator;
-import org.eclipse.jetty.ee10.security.Authenticator.AuthConfiguration;
-import org.eclipse.jetty.ee10.security.DefaultAuthenticatorFactory;
-import org.eclipse.jetty.ee10.security.IdentityService;
-import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.Authenticator;
+import org.eclipse.jetty.ee10.servlet.security.Authenticator.AuthConfiguration;
+import org.eclipse.jetty.ee10.servlet.security.DefaultAuthenticatorFactory;
+import org.eclipse.jetty.ee10.servlet.security.IdentityService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;

@@ -20,7 +20,7 @@ import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.ee10.jaas.callback.ServletRequestCallback;
 import org.eclipse.jetty.ee10.jaas.spi.AbstractLoginModule;
-import org.eclipse.jetty.ee10.security.UserPrincipal;
+import org.eclipse.jetty.ee10.servlet.security.UserPrincipal;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.security.Password;
 
@@ -38,7 +38,7 @@ public class TestLoginModule extends AbstractLoginModule
             @Override
             public List<String> doFetchRoles() throws Exception
             {
-                return Collections.emptyList();
+                return Collections.singletonList("users");
             }
         };
     }

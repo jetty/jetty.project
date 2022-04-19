@@ -13,12 +13,20 @@
 
 package org.eclipse.jetty.ee10.jaas;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
 import javax.security.auth.login.Configuration;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.directory.server.annotations.CreateLdapServer;
 import org.apache.directory.server.annotations.CreateTransport;
 import org.apache.directory.server.core.annotations.ApplyLdifs;
@@ -27,16 +35,20 @@ import org.apache.directory.server.core.annotations.CreatePartition;
 import org.apache.directory.server.core.integ.FrameworkRunner;
 import org.apache.directory.server.ldap.LdapServer;
 import org.eclipse.jetty.ee10.jaas.spi.LdapLoginModule;
-import org.eclipse.jetty.ee10.security.DefaultIdentityService;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHandler;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.DefaultIdentityService;
+import org.eclipse.jetty.ee10.servlet.security.authentication.BasicAuthenticator;
+import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.Server;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static java.nio.charset.StandardCharsets.ISO_8859_1;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.startsWith;
 
 /**
  * JAASLdapLoginServiceTest
@@ -115,34 +127,6 @@ import static org.junit.Assert.assertTrue;
 })
 public class JAASLdapLoginServiceTest
 {
-    private static LdapServer _ldapServer;
-
-    private JAASLoginService jaasLoginService(String name)
-    {
-        JAASLoginService ls = new JAASLoginService("foo");
-        ls.setCallbackHandlerClass("org.eclipse.jetty.ee10.jaas.callback.DefaultCallbackHandler");
-        ls.setIdentityService(new DefaultIdentityService());
-        ls.setConfiguration(new TestConfiguration(true));
-        return ls;
-    }
-
-    private UserIdentity doLogin(String username, String password) throws Exception
-    {
-        JAASLoginService ls = jaasLoginService("foo");
-        Request request = new Request(null, null);
-        return ls.login(username, password, request);
-    }
-
-    public static LdapServer getLdapServer()
-    {
-        return _ldapServer;
-    }
-
-    public static void setLdapServer(LdapServer ldapServer)
-    {
-        _ldapServer = ldapServer;
-    }
-
     public static class TestConfiguration extends Configuration
     {
         private boolean forceBindingLogin;
@@ -171,66 +155,160 @@ public class JAASLdapLoginServiceTest
         }
     }
 
-    @Test
-    public void testLdapUserIdentity() throws Exception
+    public static LdapServer getLdapServer()
     {
-        JAASLoginService ls = new JAASLoginService("foo");
-        ls.setCallbackHandlerClass("org.eclipse.jetty.ee10.jaas.callback.DefaultCallbackHandler");
-        ls.setIdentityService(new DefaultIdentityService());
-        ls.setConfiguration(new TestConfiguration(false));
-        Request request = new Request(null, null);
-        UserIdentity userIdentity = ls.login("someone", "complicatedpassword", request);
-        assertNotNull(userIdentity);
-        assertTrue(userIdentity.isUserInRole("developers", null));
-        assertTrue(userIdentity.isUserInRole("admin", null));
-        assertFalse(userIdentity.isUserInRole("blabla", null));
-
-        userIdentity = ls.login("someoneelse", "verycomplicatedpassword", request);
-        assertNotNull(userIdentity);
-        assertFalse(userIdentity.isUserInRole("developers", null));
-        assertTrue(userIdentity.isUserInRole("admin", null));
-        assertFalse(userIdentity.isUserInRole("blabla", null));
+        return _ldapServer;
     }
 
-    @Test
-    public void testLdapUserIdentityBindingLogin() throws Exception
+    public static void setLdapServer(LdapServer ldapServer)
+    {
+        _ldapServer = ldapServer;
+    }
+
+    private static LdapServer _ldapServer;
+    private Server _server;
+    private LocalConnector _connector;
+    private ServletContextHandler _context;
+    
+    public void setUp() throws Exception
+    {
+        _server = new Server();
+        _connector = new LocalConnector(_server);
+        _server.addConnector(_connector);
+
+        _context = new ServletContextHandler();
+        _context.setContextPath("/ctx");
+        _server.setHandler(_context);
+        ConstraintSecurityHandler security = new ConstraintSecurityHandler();
+        security.setAuthenticator(new BasicAuthenticator());
+        _context.setSecurityHandler(security);
+    }
+
+    private JAASLoginService jaasLoginService(String name)
     {
         JAASLoginService ls = new JAASLoginService("foo");
         ls.setCallbackHandlerClass("org.eclipse.jetty.ee10.jaas.callback.DefaultCallbackHandler");
         ls.setIdentityService(new DefaultIdentityService());
         ls.setConfiguration(new TestConfiguration(true));
-        Request request = new Request(null, null);
-        UserIdentity userIdentity = ls.login("someone", "complicatedpassword", request);
-        assertNotNull(userIdentity);
-        assertTrue(userIdentity.isUserInRole("developers", null));
-        assertTrue(userIdentity.isUserInRole("admin", null));
-        assertFalse(userIdentity.isUserInRole("blabla", null));
+        return ls;
+    }
 
-        userIdentity = ls.login("someone", "wrongpassword", request);
-        assertNull(userIdentity);
+    private String doLogin(String username, String password, List<String> hasRoles, List<String> hasntRoles) throws Exception
+    {
+        JAASLoginService ls = jaasLoginService("foo");
+        _server.addBean(ls, true);
+        
+        _context.setServletHandler(new ServletHandler());
+        ServletHolder holder = new ServletHolder();
+        holder.setServlet(new TestServlet(hasRoles, hasntRoles));
+        _context.getServletHandler().addServletWithMapping(holder, "/");
+        
+        _server.start();
+        
+        return _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
+            Base64.getEncoder().encodeToString("someone:complicatedpassword".getBytes(ISO_8859_1)) + "\n\n");
+    }
+
+    @Test
+    public void testLdapUserIdentity() throws Exception
+    {
+        setUp();
+        _context.setServletHandler(new ServletHandler());
+        ServletHolder holder = new ServletHolder();
+        holder.setServlet(new TestServlet(Arrays.asList("developers", "admin"), Arrays.asList("blabla")));
+        _context.getServletHandler().addServletWithMapping(holder, "/");
+        
+        JAASLoginService ls = new JAASLoginService("foo");
+        ls.setCallbackHandlerClass("org.eclipse.jetty.ee10.jaas.callback.DefaultCallbackHandler");
+        ls.setIdentityService(new DefaultIdentityService());
+        ls.setConfiguration(new TestConfiguration(false));
+        
+        _server.addBean(ls, true);
+        _server.start();
+        
+        String response = _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
+            Base64.getEncoder().encodeToString("someone:complicatedpassword".getBytes(ISO_8859_1)) + "\n\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        
+        _server.stop();
+        
+        _context.setServletHandler(new ServletHandler());
+        holder = new ServletHolder();
+        holder.setServlet(new TestServlet(Arrays.asList("admin"), Arrays.asList("developers, blabla")));
+        _context.getServletHandler().addServletWithMapping(holder, "/");
+        
+        _server.start();
+        
+        response = _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
+            Base64.getEncoder().encodeToString("someoneelse:verycomplicatedpassword".getBytes(ISO_8859_1)) + "\n\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+    }
+
+    @Test
+    public void testLdapUserIdentityBindingLogin() throws Exception
+    {
+        setUp();
+        _context.setServletHandler(new ServletHandler());
+        ServletHolder holder = new ServletHolder();
+        holder.setServlet(new TestServlet(Arrays.asList("developers", "admin"), Arrays.asList("blabla")));
+        _context.getServletHandler().addServletWithMapping(holder, "/");
+        JAASLoginService ls = new JAASLoginService("foo");
+        ls.setCallbackHandlerClass("org.eclipse.jetty.ee10.jaas.callback.DefaultCallbackHandler");
+        ls.setIdentityService(new DefaultIdentityService());
+        ls.setConfiguration(new TestConfiguration(true));
+        _server.addBean(ls, true);
+        _server.start();
+        
+        
+        String response = _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
+            Base64.getEncoder().encodeToString("someone:complicatedpassword".getBytes(ISO_8859_1)) + "\n\n");
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
+
+        _server.stop();
+        _context.setServletHandler(new ServletHandler());
+        _context.addServlet(new HttpServlet()
+            {
+                @Override
+                protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+                {
+                    //check authentication status
+                    if (req.getUserPrincipal() == null)
+                        req.authenticate(resp);
+                }
+            
+            }, "/");
+        _server.start();
+        
+        //TODO this test shows response already committed!
+        response = _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
+            Base64.getEncoder().encodeToString("someone:wrongpassword".getBytes(ISO_8859_1)) + "\n\n");
+        System.err.println(response);
+        assertThat(response, startsWith("HTTP/1.1 " + HttpServletResponse.SC_UNAUTHORIZED));
     }
 
     @Test
     public void testLdapBindingSubdirUniqueUserName() throws Exception
     {
-        UserIdentity userIdentity = doLogin("uniqueuser", "hello123");
-        assertNotNull(userIdentity);
-        assertTrue(userIdentity.isUserInRole("developers", null));
-        assertTrue(userIdentity.isUserInRole("admin", null));
-        assertFalse(userIdentity.isUserInRole("blabla", null));
+        setUp();
+        String response = doLogin("uniqueuser", "hello123", Arrays.asList("developers", "admin"), Arrays.asList("blabla"));
+        assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
+    //TODO test is failing, needs more work
     @Test
     public void testLdapBindingAmbiguousUserName() throws Exception
     {
-        UserIdentity userIdentity = doLogin("ambiguousone", "foobar");
-        assertNull(userIdentity);
+        setUp();
+        String response = doLogin("ambiguousone", "foobar", null, null);
+        assertThat(response, startsWith("HTTP/1.1 " + HttpServletResponse.SC_UNAUTHORIZED));
     }
 
+    //TODO test is failing, needs more work
     @Test
     public void testLdapBindingSubdirAmbiguousUserName() throws Exception
     {
-        UserIdentity userIdentity = doLogin("ambiguousone", "barfoo");
-        assertNull(userIdentity);
+        setUp();
+        String response = doLogin("ambiguousone", "barfoo", null, null);
+        assertThat(response, startsWith("HTTP/1.1 " + HttpServletResponse.SC_UNAUTHORIZED));
     }
 }
