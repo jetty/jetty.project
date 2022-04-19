@@ -495,6 +495,16 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     {
         private Handler _handler;
 
+        public Wrapper()
+        {
+            this(null);
+        }
+
+        public Wrapper(Handler handler)
+        {
+            _handler = handler == null ? null : Nested.updateHandler(this, handler);
+        }
+
         public Handler getHandler()
         {
             return _handler;

@@ -40,13 +40,10 @@ import jakarta.servlet.WriteListener;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
@@ -112,6 +109,41 @@ public class AsyncCompletionTest extends HttpServerTestFixture
         }
     }
 
+    @Override
+    protected void startServer(Handler handler) throws Exception
+    {
+        org.eclipse.jetty.server.Handler.Nested terminateHandler = new org.eclipse.jetty.server.Handler.Wrapper()
+        {
+            @Override
+            public org.eclipse.jetty.server.Request.Processor handle(org.eclipse.jetty.server.Request request) throws Exception
+            {
+                org.eclipse.jetty.server.Request.Processor processor = super.handle(request);
+                if (processor == null)
+                    return null;
+                request.addHttpStreamWrapper(s -> new HttpStream.Wrapper(s)
+                {
+                    @Override
+                    public void succeeded()
+                    {
+                        __transportComplete.set(true);
+                        super.succeeded();
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        __transportComplete.set(true);
+                        super.failed(x);
+                    }
+                });
+                return processor;
+            }
+        };
+        _server.insertHandler(terminateHandler);
+
+        super.startServer(handler);
+    }
+
     @BeforeEach
     public void init() throws Exception
     {
@@ -119,24 +151,9 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
         initServer(new ServerConnector(_server, new HttpConnectionFactory()
         {
-            @Override
-            public Connection newConnection(Connector connector, EndPoint endPoint)
             {
                 getHttpConfiguration().setOutputBufferSize(BUFFER_SIZE);
                 getHttpConfiguration().setOutputAggregationSize(BUFFER_SIZE);
-                Connection connection = super.newConnection(connector, endPoint);
-                if (connection instanceof AbstractConnection abstractConnection)
-                {
-                    abstractConnection.addEventListener(new Connection.Listener()
-                    {
-                        @Override
-                        public void onClosed(Connection connection)
-                        {
-                            __transportComplete.compareAndSet(false, true);
-                        }
-                    });
-                }
-                return connection;
             }
         })
         {
@@ -681,6 +698,7 @@ public class AsyncCompletionTest extends HttpServerTestFixture
                 {
                     // ignored
                 }
+                Thread.onSpinWait();
             }
 
             // Check we got a response!
@@ -739,13 +757,8 @@ public class AsyncCompletionTest extends HttpServerTestFixture
 
             switch (_style)
             {
-                case BUFFER:
-                    out.sendContent(BufferUtil.toBuffer(bytes), Callback.from(context::complete));
-                    break;
-
-                case STREAM:
-                    out.sendContent(new ByteArrayInputStream(bytes), Callback.from(context::complete));
-                    break;
+                case BUFFER -> out.sendContent(BufferUtil.toBuffer(bytes), Callback.from(context::complete));
+                case STREAM -> out.sendContent(new ByteArrayInputStream(bytes), Callback.from(context::complete));
             }
 
             _wait.countDown();
