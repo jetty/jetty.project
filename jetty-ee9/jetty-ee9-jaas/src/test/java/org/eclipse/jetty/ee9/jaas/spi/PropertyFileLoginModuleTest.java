@@ -21,10 +21,10 @@ import javax.security.auth.login.Configuration;
 
 import org.eclipse.jetty.ee9.jaas.JAASLoginService;
 import org.eclipse.jetty.ee9.jaas.PropertyUserStoreManager;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.DefaultIdentityService;
 import org.eclipse.jetty.ee9.security.PropertyUserStore;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.jupiter.api.Test;
 

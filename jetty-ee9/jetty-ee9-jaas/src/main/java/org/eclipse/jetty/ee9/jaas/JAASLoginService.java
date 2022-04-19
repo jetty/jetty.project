@@ -33,11 +33,11 @@ import javax.security.auth.login.LoginException;
 
 import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.ee9.jaas.callback.DefaultCallbackHandler;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.DefaultIdentityService;
 import org.eclipse.jetty.ee9.security.IdentityService;
 import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
