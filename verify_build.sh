@@ -147,7 +147,8 @@ reportFailures()
 output=$( mvn clean install -DskipTests -T 1C -fae 2>&1 )
 results=$( echo "$output" | egrep '^\[INFO\] .* (SUCCESS|FAILURE|SKIPPED)' )
 if [ "$(echo "$results" | wc -l)" -lt "10" ]; then
-	echo "Unknown Error"
+	echo "$output"
+	echo "$0: Error"
 	exit 1
 fi
 
