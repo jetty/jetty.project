@@ -21,18 +21,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPOutputStream;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.Destroyable;
-import org.eclipse.jetty.util.compression.InflaterPool;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,20 +48,27 @@ import static org.hamcrest.Matchers.nullValue;
 
 public class AsyncContentProducerTest
 {
-    private ScheduledExecutorService scheduledExecutorService;
-    private InflaterPool inflaterPool;
+    private Server _server;
+    private LocalConnector _connector;
+    private ContextHandler _contextHandler;
+    private TestHandler _testHandler;
 
     @BeforeEach
-    public void setUp()
+    public void setUp() throws Exception
     {
-        scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
-        inflaterPool = new InflaterPool(-1, true);
+        _server = new Server();
+        _connector = new LocalConnector(_server);
+        _server.addConnector(_connector);
+        _contextHandler = new ContextHandler();
+        _server.setHandler(_contextHandler.getCoreHandler());
+        _testHandler = new TestHandler();
+        _contextHandler.setHandler(_testHandler);
     }
 
     @AfterEach
-    public void tearDown()
+    public void tearDown() throws Exception
     {
-        scheduledExecutorService.shutdownNow();
+        _server.stop();
     }
 
     @Test
@@ -90,7 +99,7 @@ public class AsyncContentProducerTest
 
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.EOF, scheduledExecutorService, barrier));
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.EOF, null, barrier));
 
         try (AutoLock lock = contentProducer.lock())
         {
@@ -112,7 +121,7 @@ public class AsyncContentProducerTest
 
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new Content.Error(expectedError), scheduledExecutorService, barrier));
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new Content.Error(expectedError), null, barrier));
 
         try (AutoLock lock = contentProducer.lock())
         {
@@ -133,7 +142,7 @@ public class AsyncContentProducerTest
 
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.EOF, scheduledExecutorService, barrier));
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, Content.EOF, null, barrier));
         AccountingInterceptor interceptor = new AccountingInterceptor();
         try (AutoLock lock = contentProducer.lock())
         {
@@ -167,7 +176,7 @@ public class AsyncContentProducerTest
 
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new Content.Error(new Throwable("testAsyncContentProducerErrorContentIsPassedToInterceptor error")), scheduledExecutorService, barrier));
+        ContentProducer contentProducer = new AsyncContentProducer(new ArrayDelayedHttpChannel(buffers, new Content.Error(new Throwable("testAsyncContentProducerErrorContentIsPassedToInterceptor error")), null, barrier));
         AccountingInterceptor interceptor = new AccountingInterceptor();
         try (AutoLock lock = contentProducer.lock())
         {
@@ -508,7 +517,9 @@ public class AsyncContentProducerTest
 
         public ArrayDelayedHttpChannel(ByteBuffer[] byteBuffers, Content finalContent, ScheduledExecutorService scheduledExecutorService, CyclicBarrier barrier)
         {
-            super(new ContextHandler(new Server()), new MockConnectionMetaData());
+            super(new ContextHandler(), new MockConnectionMetaData(new MockConnector(new Server())));
+            getContextHandler().setServer(getConnectionMetaData().getConnector().getServer());
+
             this.byteBuffers = new ByteBuffer[byteBuffers.length];
             this.finalContent = finalContent;
             this.scheduledExecutorService = scheduledExecutorService;
@@ -600,6 +611,15 @@ public class AsyncContentProducerTest
             if (content.isSpecial() || !contents.contains(content))
                 contents.add(content);
             return content;
+        }
+    }
+
+    private static class TestHandler extends AbstractHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
         }
     }
 }

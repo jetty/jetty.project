@@ -17,12 +17,16 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Properties;
 
-import jakarta.servlet.ServletException;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -66,12 +70,12 @@ public class ContextHandlerTest
     }
 
     @Test
-    public void testHello() throws Exception
+    public void testSimple() throws Exception
     {
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 baseRequest.setHandled(true);
                 response.setStatus(200);
@@ -152,7 +156,7 @@ public class ContextHandlerTest
         _contextHandler.setHandler(new AbstractHandler()
         {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
             {
                 org.eclipse.jetty.server.Request coreRequest = baseRequest.getHttpChannel().getCoreRequest();
 
@@ -211,5 +215,368 @@ public class ContextHandlerTest
 
         assertThat(one.getProperty("coreRequest.id"), notNullValue());
         assertThat(one.getProperty("coreRequest.id"), not(equalTo(two.getProperty("coreRequest.id"))));
+    }
+
+    @Test
+    public void testAsyncDispatch() throws Exception
+    {
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+
+                switch (request.getDispatcherType())
+                {
+                    case REQUEST ->
+                    {
+                        AsyncContext async = request.startAsync();
+                        async.dispatch();
+                    }
+                    case ASYNC ->
+                    {
+                        response.setStatus(200);
+                        response.setContentType("text/plain");
+                        response.getOutputStream().print("Async\n");
+                    }
+
+                    default -> throw new IllegalStateException();
+                }
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET / HTTP/1.0
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Async"));
+    }
+
+    @Test
+    public void testAsyncDelayedDispatch() throws Exception
+    {
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+
+                switch (request.getDispatcherType())
+                {
+                    case REQUEST ->
+                    {
+                        AsyncContext async = request.startAsync();
+                        async.start(() ->
+                        {
+                            try
+                            {
+                                Thread.sleep(100);
+                                async.dispatch();
+                            }
+                            catch (Exception e)
+                            {
+                                e.printStackTrace();
+                            }
+                        });
+                    }
+                    case ASYNC ->
+                    {
+                        response.setStatus(200);
+                        response.setContentType("text/plain");
+                        response.getOutputStream().print("Async\n");
+                    }
+
+                    default -> throw new IllegalStateException();
+                }
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET / HTTP/1.0
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Async"));
+    }
+
+    @Test
+    public void testAsyncDispatchPath() throws Exception
+    {
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+
+                switch (request.getDispatcherType())
+                {
+                    case REQUEST ->
+                    {
+                        AsyncContext async = request.startAsync();
+                        async.dispatch("/async");
+                    }
+                    case ASYNC ->
+                    {
+                        response.setStatus(200);
+                        response.setContentType("text/plain");
+                        response.getOutputStream().print("Async %s\n".formatted(baseRequest.getPathInContext()));
+                    }
+
+                    default -> throw new IllegalStateException();
+                }
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET / HTTP/1.0
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Async /async"));
+    }
+
+    @Test
+    public void testAsyncDispatchWrapped() throws Exception
+    {
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+
+                switch (request.getDispatcherType())
+                {
+                    case REQUEST ->
+                    {
+                        AsyncContext async = request.startAsync(
+                            new HttpServletRequestWrapper(request)
+                            {
+                                @Override
+                                public String getRemoteUser()
+                                {
+                                    return "RemoteUser";
+                                }
+                            },
+                            new HttpServletResponseWrapper(response)
+                            {
+                                @Override
+                                public void setStatus(int sc)
+                                {
+                                    super.setStatus(sc == Integer.MAX_VALUE ? 200 : sc);
+                                }
+                            }
+                        );
+                        async.dispatch();
+                    }
+                    case ASYNC ->
+                    {
+                        response.setStatus(Integer.MAX_VALUE);
+                        response.setContentType("text/plain");
+                        response.getOutputStream().print("Async %s\n".formatted(request.getRemoteUser()));
+                    }
+
+                    default -> throw new IllegalStateException();
+                }
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET / HTTP/1.0
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Async RemoteUser"));
+    }
+
+    @Test
+    public void testAsyncComplete() throws Exception
+    {
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+
+                if (request.getDispatcherType() == DispatcherType.REQUEST)
+                {
+                    AsyncContext async = request.startAsync();
+                    response.setStatus(200);
+                    response.setContentType("text/plain");
+                    response.getOutputStream().print("Async\n");
+                    async.complete();
+                }
+                else
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET / HTTP/1.0
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Async"));
+    }
+
+    @Test
+    public void testAsyncDelayedComplete() throws Exception
+    {
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+            {
+                baseRequest.setHandled(true);
+
+                if (request.getDispatcherType() == DispatcherType.REQUEST)
+                {
+                    AsyncContext async = request.startAsync();
+                    async.start(() ->
+                    {
+                        try
+                        {
+                            Thread.sleep(100);
+                            response.setStatus(200);
+                            response.setContentType("text/plain");
+                            response.getOutputStream().print("Async\n");
+                            async.complete();
+                        }
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                    });
+                }
+                else
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET / HTTP/1.0
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(200));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("Async"));
+    }
+
+    @Test
+    public void testException() throws Exception
+    {
+        _contextHandler.setErrorHandler(new TestErrorHandler());
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                if (request.getDispatcherType() == DispatcherType.ERROR)
+                {
+                    response.setContentType("text/plain");
+                    response.getOutputStream().print("ERROR %s\n".formatted(baseRequest.getPathInContext()));
+                    return;
+                }
+
+                throw new RuntimeException("testing");
+            }
+        });
+        _server.start();
+
+        try (StacklessLogging ignored = new StacklessLogging(HttpChannel.class))
+        {
+            String rawResponse = _connector.getResponse("""
+                GET / HTTP/1.0
+                            
+                """);
+
+            HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+            assertThat(response.getStatus(), is(500));
+            assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+            assertThat(response.getContent(), containsString("ERROR /errorPage"));
+        }
+    }
+
+    @Test
+    public void testSendError() throws Exception
+    {
+        _contextHandler.setErrorHandler(new TestErrorHandler());
+        _contextHandler.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException
+            {
+                baseRequest.setHandled(true);
+                if (request.getDispatcherType() == DispatcherType.ERROR)
+                {
+                    response.setContentType("text/plain");
+                    response.getOutputStream().print("ERROR %s\n".formatted(baseRequest.getPathInContext()));
+                    return;
+                }
+
+                response.sendError(503);
+            }
+        });
+        _server.start();
+
+        String rawResponse = _connector.getResponse("""
+            GET / HTTP/1.0
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(rawResponse);
+
+        assertThat(response.getStatus(), is(503));
+        assertThat(response.getField(HttpHeader.CONTENT_LENGTH).getIntValue(), greaterThan(0));
+        assertThat(response.getContent(), containsString("ERROR /errorPage"));
+    }
+
+    private static class TestErrorHandler extends ErrorHandler implements ErrorHandler.ErrorPageMapper
+    {
+        @Override
+        public String getErrorPage(HttpServletRequest request)
+        {
+            return "/errorPage";
+        }
     }
 }

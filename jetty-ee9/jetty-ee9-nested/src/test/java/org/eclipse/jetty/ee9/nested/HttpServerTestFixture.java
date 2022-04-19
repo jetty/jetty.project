@@ -40,16 +40,12 @@ import org.junit.jupiter.api.BeforeEach;
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
 public class HttpServerTestFixture
 {
-    protected static final long PAUSE = 10L;
-    protected static final int LOOPS = 50;
-
     protected QueuedThreadPool _threadPool;
     protected Server _server;
     protected ContextHandler _context;
     protected URI _serverURI;
     protected HttpConfiguration _httpConfiguration;
     protected ServerConnector _connector;
-    protected String _scheme = "http";
 
     protected Socket newSocket(String host, int port) throws Exception
     {

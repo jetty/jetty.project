@@ -126,6 +126,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 _state);
     }
 
+    public ContextHandler getContextHandler()
+    {
+        return _contextHandler;
+    }
+
     public boolean isSendError()
     {
         return _state.isSendError();
