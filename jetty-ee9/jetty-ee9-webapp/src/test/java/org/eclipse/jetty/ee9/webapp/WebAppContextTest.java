@@ -234,12 +234,12 @@ public class WebAppContextTest
         WebAppContext contextA = new WebAppContext(".", "/A");
 
         contextA.addServlet(ServletA.class, "/s");
-        handlers.addHandler(contextA.getCoreContextHandler());
+        handlers.addHandler(contextA);
         WebAppContext contextB = new WebAppContext(".", "/B");
 
         contextB.addServlet(ServletB.class, "/s");
         contextB.setContextWhiteList("/doesnotexist", "/B/s");
-        handlers.addHandler(contextB.getCoreContextHandler());
+        handlers.addHandler(contextB);
 
         server.setHandler(handlers);
         server.start();
@@ -303,7 +303,7 @@ public class WebAppContextTest
         context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
 
-        contexts.addHandler(context.getCoreContextHandler());
+        contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
@@ -366,7 +366,7 @@ public class WebAppContextTest
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
-        contexts.addHandler(context.getCoreContextHandler());
+        contexts.addHandler(context);
 
         server.start();
 
@@ -390,7 +390,7 @@ public class WebAppContextTest
         context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
 
-        contexts.addHandler(context.getCoreContextHandler());
+        contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);
@@ -418,7 +418,7 @@ public class WebAppContextTest
         context.setContextPath("/");
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         context.setBaseResource(new PathResource(testWebapp));
-        contexts.addHandler(context.getCoreContextHandler());
+        contexts.addHandler(context);
 
         LocalConnector connector = new LocalConnector(server);
         server.addConnector(connector);

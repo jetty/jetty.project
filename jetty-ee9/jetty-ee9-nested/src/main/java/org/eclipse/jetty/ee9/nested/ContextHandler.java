@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Supplier;
 
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
@@ -112,7 +113,7 @@ import org.slf4j.LoggerFactory;
  */
 // TODO make this work
 @ManagedObject("EE9 Context")
-public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Handler.CoreSupplier
+public class ContextHandler extends ScopedHandler implements Attributes, Graceful, Supplier<Handler>
 {
     public static final int SERVLET_MAJOR_VERSION = 5;
     public static final int SERVLET_MINOR_VERSION = 0;
@@ -254,7 +255,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     @Override
-    public Handler getCoreHandler()
+    public Handler get()
     {
         return _coreContextHandler;
     }

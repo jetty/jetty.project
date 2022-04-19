@@ -312,7 +312,7 @@ public class ServletRequestLogTest
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);
         app.setContextPath("/");
-        contexts.addHandler(app.getCoreContextHandler());
+        contexts.addHandler(app);
 
         // Add the test servlet
         ServletHolder testHolder = new ServletHolder(testServlet);
@@ -391,7 +391,7 @@ public class ServletRequestLogTest
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);
         app.setContextPath("/");
-        contexts.addHandler(app.getCoreContextHandler());
+        contexts.addHandler(app);
 
         // Add the test servlet
         ServletHolder testHolder = new ServletHolder(testServlet);
@@ -466,7 +466,7 @@ public class ServletRequestLogTest
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);
         app.setContextPath("/");
-        contexts.addHandler(app.getCoreContextHandler());
+        contexts.addHandler(app);
 
         // Add the test servlet
         ServletHolder testHolder = new ServletHolder(testServlet);
@@ -550,7 +550,7 @@ public class ServletRequestLogTest
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);
         app.setContextPath("/");
-        contexts.addHandler(app.getCoreContextHandler());
+        contexts.addHandler(app);
 
         // Add the test servlet
         ServletHolder testHolder = new ServletHolder(testServlet);

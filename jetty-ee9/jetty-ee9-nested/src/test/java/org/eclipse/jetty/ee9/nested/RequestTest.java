@@ -949,7 +949,7 @@ public class RequestTest
         };
 
         _server.setHandler(handler);
-        handler.setHandler(_context.getCoreContextHandler());
+        handler.setHandler(_context);
         _server.start();
 
         _handler._checker = (request, response) ->

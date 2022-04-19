@@ -91,13 +91,13 @@ public class DispatcherTest
         _contextCollection = new ContextHandlerCollection();
         _contextHandler = new ServletContextHandler();
         _contextHandler.setContextPath("/context");
-        _contextCollection.addHandler(_contextHandler.getCoreContextHandler());
+        _contextCollection.addHandler(_contextHandler);
         _resourceHandler = new ResourceHandler();
         _resourceHandler.setResourceBase(MavenTestingUtils.getTestResourceDir("dispatchResourceTest").getAbsolutePath());
         _resourceHandler.setPathInfoOnly(true);
         ContextHandler resourceContextHandler = new ContextHandler("/resource");
         resourceContextHandler.setHandler(_resourceHandler);
-        _contextCollection.addHandler(resourceContextHandler.getCoreContextHandler());
+        _contextCollection.addHandler(resourceContextHandler);
         _server.setHandler(_contextCollection);
         _server.addConnector(_connector);
 

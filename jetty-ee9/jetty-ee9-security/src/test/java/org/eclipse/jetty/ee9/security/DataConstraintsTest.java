@@ -79,7 +79,7 @@ public class DataConstraintsTest
         _session = new SessionHandler();
 
         contextHandler.setContextPath("/ctx");
-        _server.setHandler(contextHandler.getCoreContextHandler());
+        _server.setHandler(contextHandler);
         contextHandler.setHandler(_session);
 
         _security = new ConstraintSecurityHandler();

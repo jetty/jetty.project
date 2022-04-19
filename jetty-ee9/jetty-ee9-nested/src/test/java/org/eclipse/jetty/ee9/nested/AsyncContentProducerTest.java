@@ -62,7 +62,7 @@ public class AsyncContentProducerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
         _contextHandler = new ContextHandler();
-        _server.setHandler(_contextHandler.getCoreHandler());
+        _server.setHandler(_contextHandler);
         _testHandler = new TestHandler();
         _contextHandler.setHandler(_testHandler);
     }

@@ -56,7 +56,7 @@ public class SessionHandlerTest
         _connector = new LocalConnector(_server);
         _server.addConnector(_connector);
         ContextHandler contextHandler = new ContextHandler();
-        _server.setHandler(contextHandler.getCoreHandler());
+        _server.setHandler(contextHandler);
 
         _sessionHandler = new SessionHandler();
         _sessionHandler.setSessionCookie("JSESSIONID");

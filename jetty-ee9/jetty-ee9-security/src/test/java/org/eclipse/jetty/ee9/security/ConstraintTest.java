@@ -86,7 +86,6 @@ public class ConstraintTest
 {
     private static final String TEST_REALM = "TestRealm";
     private Server _server;
-    private ContextHandler _context;
     private LocalConnector _connector;
     private ConstraintSecurityHandler _security;
     private HttpConfiguration _config;
@@ -103,7 +102,6 @@ public class ConstraintTest
     public void setupServer()
     {
         _server = new Server();
-        _context = new ContextHandler(_server);
         _connector = new LocalConnector(_server);
         _config = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _server.setConnectors(new Connector[]{_connector});
@@ -120,7 +118,7 @@ public class ConstraintTest
         loginService.putUser("user3", new Password("password"), new String[]{"foo"});
 
         contextHandler.setContextPath("/ctx");
-        _context.setHandler(contextHandler);
+        _server.setHandler(contextHandler);
         contextHandler.setHandler(sessionHandler);
 
         _server.addBean(loginService);
