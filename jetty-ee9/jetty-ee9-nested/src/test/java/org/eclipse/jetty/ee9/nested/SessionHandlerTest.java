@@ -23,13 +23,11 @@ import jakarta.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.session.Session;
 import org.eclipse.jetty.session.SessionData;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-@Disabled // TODO
 public class SessionHandlerTest
 {
     @Test
@@ -81,13 +79,16 @@ public class SessionHandlerTest
         }
 
         Server server = new Server();
+        ContextHandler contextHandler = new ContextHandler();
+        server.setHandler(contextHandler.getCoreHandler());
         SessionHandler sessionHandler = new SessionHandler();
+        contextHandler.setHandler(sessionHandler);
+
         try
         {
             sessionHandler.addEventListener(new Listener1());
             sessionHandler.addEventListener(new Listener2());
-            sessionHandler.setServer(server);
-            sessionHandler.start();
+            server.start();
 
             Session session = new Session(sessionHandler.getSessionManager(), new SessionData("aa", "_", "0.0", 0, 0, 0, 0));
             sessionHandler.getSessionManager().callSessionCreatedListeners(session);
