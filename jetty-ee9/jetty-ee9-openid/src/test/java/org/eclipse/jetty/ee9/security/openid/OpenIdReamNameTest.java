@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.ee9.security.openid;
 
-import org.eclipse.jetty.ee9.handler.ContextHandlerCollection;
+import org.eclipse.jetty.ee9.nested.ContextHandlerCollection;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.security.LoginService;

@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee9.security.openid;
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 
 public class OpenIdUserIdentity implements UserIdentity
 {

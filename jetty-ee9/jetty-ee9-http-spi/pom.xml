@@ -24,7 +24,7 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.ee9</groupId>
-      <artifactId>jetty-ee9-handler</artifactId>
+      <artifactId>jetty-ee9-nested</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

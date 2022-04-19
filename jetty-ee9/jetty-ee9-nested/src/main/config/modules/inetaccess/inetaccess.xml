@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New id="InetAccessHandler" class="org.eclipse.jetty.ee9.nested.InetAccessHandler">
+	<Call name="include"><Arg>127.0.0.1-127.0.0.255</Arg></Call>
+	<Call name="exclude"><Arg>127.0.0.128-127.0.0.129</Arg></Call>
+      </New>
+    </Arg>
+  </Call>
+</Configure>

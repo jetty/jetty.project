@@ -21,7 +21,7 @@ import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.ee9.servlets.DoSFilter.RateTracker;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
@@ -41,7 +41,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
 {
     public WorkDir workDir;
 
-    private static class RemoteAddressRequest extends org.eclipse.jetty.ee9.handler.Request
+    private static class RemoteAddressRequest extends org.eclipse.jetty.ee9.nested.Request
     {
         private String remoteAddr;
         private int remotePort;

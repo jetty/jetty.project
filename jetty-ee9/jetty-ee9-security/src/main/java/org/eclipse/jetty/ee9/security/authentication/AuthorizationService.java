@@ -14,7 +14,7 @@
 package org.eclipse.jetty.ee9.security.authentication;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.LoginService;
 
 /**

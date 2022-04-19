@@ -15,8 +15,8 @@ package org.eclipse.jetty.ee9.security;
 
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import org.eclipse.jetty.ee9.handler.Authentication;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.server.Server;
 import org.junit.jupiter.api.Test;
 
