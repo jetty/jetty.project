@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
 
 import org.eclipse.jetty.http.CachingContentFactory;
@@ -483,16 +484,22 @@ public class ResourceHandlerTest
         assertThat(response.get(ETAG), notNullValue());
         String etag = response.get(ETAG);
 
-        try (BufferedWriter bw = Files.newBufferedWriter(testFile, StandardOpenOption.APPEND))
+        // re-write the file as long as its last modified timestamp did not change
+        FileTime before = Files.getLastModifiedTime(testFile);
+        do
         {
-            bw.write("some more content\n");
+            try (BufferedWriter bw = Files.newBufferedWriter(testFile))
+            {
+                bw.write("some different content\n");
+            }
         }
+        while (Files.getLastModifiedTime(testFile).equals(before));
 
         response = HttpTester.parseResponse(_local.getResponse("GET /resource/test-etag-file.txt HTTP/1.0\r\n" +
             "If-None-Match: " + etag + " \r\n" +
             "\r\n"));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContent(), equalTo("some content\nsome more content\n"));
+        assertThat(response.getContent(), equalTo("some different content\n"));
     }
 
     @Test
