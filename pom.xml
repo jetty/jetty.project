@@ -167,14 +167,14 @@
 
   <modules>
     <module>build</module>
-    <module>documentation</module>
+<!--    <module>documentation</module>-->
     <module>jetty-core</module>
     <module>jetty-ee9</module>
     <module>jetty-ee10</module>
-    <module>jetty-home</module>
-    <module>jetty-integrations</module>
-    <module>jetty-p2</module>
-    <module>tests</module>
+<!--    <module>jetty-home</module>-->
+<!--    <module>jetty-integrations</module>-->
+<!--    <module>jetty-p2</module>-->
+<!--    <module>tests</module>-->
   </modules>
 
   <build>
