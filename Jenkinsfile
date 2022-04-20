@@ -65,7 +65,7 @@ pipeline {
             }
           }
         }
-        stage("Module : /jetty-integrations/") {
+        /*stage("Module : /jetty-integrations/") {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
@@ -75,8 +75,8 @@ pipeline {
               }
             }
           }
-        }
-        stage("Module : /jetty-home/") {
+        }*/
+        /*stage("Module : /jetty-home/") {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
@@ -86,7 +86,8 @@ pipeline {
               }
             }
           }
-        }
+        }*/
+        /*
         stage("Module : /tests/") {
           steps {
             container('jetty-build') {
@@ -97,8 +98,8 @@ pipeline {
               }
             }
           }
-        }
-        stage("Module : /documentation/") {
+        }*/
+        /*stage("Module : /documentation/") {
           steps {
             container('jetty-build') {
               timeout(time: 120, unit: 'MINUTES') {
@@ -108,7 +109,7 @@ pipeline {
               }
             }
           }
-        }
+        }*/
       }
     }
   }
