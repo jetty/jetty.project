@@ -29,10 +29,10 @@ import javax.naming.NamingException;
 import javax.sql.DataSource;
 
 import org.eclipse.jetty.ee10.plus.jndi.NamingEntryUtil;
-import org.eclipse.jetty.ee10.security.AbstractLoginService;
-import org.eclipse.jetty.ee10.security.IdentityService;
-import org.eclipse.jetty.ee10.security.RolePrincipal;
-import org.eclipse.jetty.ee10.security.UserPrincipal;
+import org.eclipse.jetty.ee10.servlet.security.AbstractLoginService;
+import org.eclipse.jetty.ee10.servlet.security.IdentityService;
+import org.eclipse.jetty.ee10.servlet.security.RolePrincipal;
+import org.eclipse.jetty.ee10.servlet.security.UserPrincipal;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;
