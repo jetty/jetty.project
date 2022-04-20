@@ -34,9 +34,12 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import jakarta.servlet.MultipartConfigElement;
@@ -57,15 +60,18 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.HttpURI;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Components;
 import org.eclipse.jetty.server.ConnectionMetaData;
+import org.eclipse.jetty.server.Content;
+import org.eclipse.jetty.server.Context;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.HttpStream;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.Server;
@@ -1870,7 +1876,8 @@ public class RequestTest
         request.getResponse().getHttpFields().add(new HttpCookie.SetCookieHttpField(new HttpCookie("bad", "thumbsdown", 0), CookieCompliance.RFC6265));
         HttpFields.Mutable fields = HttpFields.build();
         fields.add(HttpHeader.AUTHORIZATION, "Basic foo");
-        request.setMetaData(new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_1_0, fields));
+
+        request.setCoreRequest(new TestCoreRequest(uri, fields));
         assertTrue(request.isPushSupported());
         PushBuilder builder = request.newPushBuilder();
         assertNotNull(builder);
@@ -1907,7 +1914,7 @@ public class RequestTest
             }
         };
         HttpFields.Mutable fields = HttpFields.build();
-        request.setMetaData(new MetaData.Request("GET", HttpURI.from(uri), HttpVersion.HTTP_1_0, fields));
+        request.setCoreRequest(new TestCoreRequest(uri, fields));
         assertTrue(request.isPushSupported());
         PushBuilder builder = request.newPushBuilder();
         assertNotNull(builder);
@@ -2200,6 +2207,146 @@ public class RequestTest
             {
                 response.sendError(500);
             }
+        }
+    }
+
+    private static class TestCoreRequest implements org.eclipse.jetty.server.Request
+    {
+        private final ConnectionMetaData _connectionMetaData;
+        private final String _uri;
+        private final HttpFields.Mutable _fields;
+
+        public TestCoreRequest(String uri, HttpFields.Mutable fields)
+        {
+            _uri = uri;
+            _fields = fields;
+            _connectionMetaData = new MockConnectionMetaData();
+        }
+
+        @Override
+        public String getId()
+        {
+            return null;
+        }
+
+        @Override
+        public Components getComponents()
+        {
+            return null;
+        }
+
+        @Override
+        public ConnectionMetaData getConnectionMetaData()
+        {
+            return _connectionMetaData;
+        }
+
+        @Override
+        public String getMethod()
+        {
+            return "GET";
+        }
+
+        @Override
+        public HttpURI getHttpURI()
+        {
+            return HttpURI.from(_uri);
+        }
+
+        @Override
+        public Context getContext()
+        {
+            return null;
+        }
+
+        @Override
+        public String getPathInContext()
+        {
+            return _uri;
+        }
+
+        @Override
+        public HttpFields getHeaders()
+        {
+            return _fields;
+        }
+
+        @Override
+        public long getTimeStamp()
+        {
+            return 0;
+        }
+
+        @Override
+        public boolean isSecure()
+        {
+            return false;
+        }
+
+        @Override
+        public long getContentLength()
+        {
+            return 0;
+        }
+
+        @Override
+        public Content readContent()
+        {
+            return null;
+        }
+
+        @Override
+        public void demandContent(Runnable onContentAvailable)
+        {
+
+        }
+
+        @Override
+        public void push(MetaData.Request request)
+        {
+
+        }
+
+        @Override
+        public boolean addErrorListener(Predicate<Throwable> onError)
+        {
+            return false;
+        }
+
+        @Override
+        public void addHttpStreamWrapper(Function<HttpStream, HttpStream.Wrapper> wrapper)
+        {
+
+        }
+
+        @Override
+        public Object removeAttribute(String name)
+        {
+            return null;
+        }
+
+        @Override
+        public Object setAttribute(String name, Object attribute)
+        {
+            return null;
+        }
+
+        @Override
+        public Object getAttribute(String name)
+        {
+            return null;
+        }
+
+        @Override
+        public Set<String> getAttributeNameSet()
+        {
+            return null;
+        }
+
+        @Override
+        public void clearAttributes()
+        {
+
         }
     }
 }

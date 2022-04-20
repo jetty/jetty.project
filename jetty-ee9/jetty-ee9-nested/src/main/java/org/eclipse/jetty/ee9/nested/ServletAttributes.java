@@ -27,8 +27,13 @@ import org.eclipse.jetty.util.AttributesMap;
  */
 public class ServletAttributes implements Attributes
 {
-    private final Attributes _attributes = new AttributesMap();
+    private final Attributes _attributes;
     private AsyncAttributes _asyncAttributes;
+
+    ServletAttributes(Attributes attributes)
+    {
+        _attributes = attributes;
+    }
 
     public void setAsyncAttributes(String requestURI, String contextPath, String pathInContext, ServletPathMapping servletPathMapping, String queryString)
     {

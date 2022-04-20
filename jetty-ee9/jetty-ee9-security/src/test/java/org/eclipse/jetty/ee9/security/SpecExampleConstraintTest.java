@@ -64,7 +64,6 @@ public class SpecExampleConstraintTest
         _connector = new LocalConnector(_server);
         _server.setConnectors(new Connector[]{_connector});
 
-        ContextHandler context = new ContextHandler();
         _session = new SessionHandler();
 
         TestLoginService loginService = new TestLoginService(TEST_REALM);
@@ -74,9 +73,8 @@ public class SpecExampleConstraintTest
         loginService.putUser("chris", new Password("password"), new String[]{"CONTRACTOR"});
         loginService.putUser("steven", new Password("password"), new String[]{"SALESCLERK"});
 
-        context.setContextPath("/ctx");
-        _context.setHandler(context);
-        context.setHandler(_session);
+        _context.setContextPath("/ctx");
+        _context.setHandler(_session);
 
         _server.addBean(loginService);
     }

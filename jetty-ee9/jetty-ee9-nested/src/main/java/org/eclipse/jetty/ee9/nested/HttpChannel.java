@@ -814,19 +814,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         if (idleTO >= 0 && _oldIdleTimeout != idleTO)
             setIdleTimeout(idleTO);
 
-        MetaData.Request metaData = new MetaData.Request(
-            _coreRequest.getMethod(),
-            _coreRequest.getHttpURI(),
-            _coreRequest.getConnectionMetaData().getHttpVersion(),
-            _coreRequest.getHeaders());
-        _request.setMetaData(metaData);
+        _request.setCoreRequest(coreRequest);
 
         _combinedListener.onRequestBegin(_request);
 
         if (LOG.isDebugEnabled())
+        {
+            MetaData.Request metaData = _request.getMetaData();
             LOG.debug("REQUEST for {} on {}{}{} {} {}{}{}", metaData.getURIString(), this, System.lineSeparator(),
                 metaData.getMethod(), metaData.getURIString(), metaData.getHttpVersion(), System.lineSeparator(),
                 metaData.getFields());
+        }
     }
 
     void onContent(Content content)

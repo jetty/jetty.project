@@ -154,6 +154,7 @@ public class Request implements HttpServletRequest
     private final HttpChannel _channel;
     private final List<ServletRequestAttributeListener> _requestAttributeListeners = new ArrayList<>();
     private final HttpInput _input;
+    private org.eclipse.jetty.server.Request _coreRequest;
     private MetaData.Request _metaData;
     private HttpFields _httpFields;
     private HttpFields _trailers;
@@ -246,7 +247,7 @@ public class Request implements HttpServletRequest
 
     public boolean isPushSupported()
     {
-        return !isPush() && getHttpChannel().getCoreRequest().isPushSupported();
+        return !isPush() && getCoreRequest().isPushSupported();
     }
 
     private static final EnumSet<HttpHeader> NOT_PUSHED_HEADERS = EnumSet.of(
@@ -638,8 +639,6 @@ public class Request implements HttpServletRequest
 
     public Attributes getAttributes()
     {
-        if (_attributes == null)
-            _attributes = new ServletAttributes();
         return _attributes;
     }
 
@@ -1273,7 +1272,7 @@ public class Request implements HttpServletRequest
     @Override
     public int getServerPort()
     {
-        return org.eclipse.jetty.server.Request.getServerPort(getHttpChannel().getCoreRequest());
+        return org.eclipse.jetty.server.Request.getServerPort(getCoreRequest());
     }
 
     @Override
@@ -1317,7 +1316,7 @@ public class Request implements HttpServletRequest
             throw new IllegalStateException("No session");
 
         Session session = _coreSession;
-        session.renewId(getHttpChannel().getCoreRequest());
+        session.renewId(getCoreRequest());
         if (getRemoteUser() != null)
             session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
         if (session.isSetCookieNeeded())
@@ -1422,7 +1421,7 @@ public class Request implements HttpServletRequest
         if (_sessionManager == null)
             throw new IllegalStateException("No SessionManager");
 
-        _coreSession = _sessionManager.newSession(getHttpChannel().getCoreRequest(), getRequestedSessionId());
+        _coreSession = _sessionManager.newSession(getCoreRequest(), getRequestedSessionId());
         if (_coreSession == null)
             throw new IllegalStateException("Create session failed");
 
@@ -1587,20 +1586,20 @@ public class Request implements HttpServletRequest
         return false;
     }
 
-    /**
-     * @param request the Request metadata
-     */
-    void setMetaData(MetaData.Request request)
+    void setCoreRequest(org.eclipse.jetty.server.Request coreRequest)
     {
-        if (_metaData == null && _input != null && _channel != null)
-        {
-            _input.reopen();
-            _channel.getResponse().getHttpOutput().reopen();
-        }
-        _metaData = request;
-        _method = request.getMethod();
-        _httpFields = request.getFields();
-        final HttpURI uri = request.getURI();
+        _coreRequest = coreRequest;
+        _metaData = new MetaData.Request(
+            _coreRequest.getMethod(),
+            _coreRequest.getHttpURI(),
+            _coreRequest.getConnectionMetaData().getHttpVersion(),
+            _coreRequest.getHeaders());
+
+        _attributes = new ServletAttributes(coreRequest);
+
+        _method = _coreRequest.getMethod();
+        _httpFields = _coreRequest.getHeaders();
+        final HttpURI uri = _coreRequest.getHttpURI();
         UriCompliance compliance = null;
         if (uri.hasViolations())
         {
@@ -1630,7 +1629,7 @@ public class Request implements HttpServletRequest
                 if (field instanceof HostPortHttpField authority)
                     builder.host(authority.getHost()).port(authority.getPort());
                 else
-                    builder.host(findServerName()).port(org.eclipse.jetty.server.Request.getServerPort(getHttpChannel().getCoreRequest()));
+                    builder.host(findServerName()).port(org.eclipse.jetty.server.Request.getServerPort(getCoreRequest()));
             }
             _uri = builder.asImmutable();
         }
@@ -1660,6 +1659,11 @@ public class Request implements HttpServletRequest
             throw new BadMessageException(400, "Bad URI");
         }
         _pathInContext = path;
+    }
+
+    public org.eclipse.jetty.server.Request getCoreRequest()
+    {
+        return _coreRequest;
     }
 
     public MetaData.Request getMetaData()
@@ -1695,6 +1699,7 @@ public class Request implements HttpServletRequest
         getHttpChannelState().recycle();
         _requestAttributeListeners.clear();
         _input.recycle();
+        _coreRequest = null;
         _metaData = null;
         _httpFields = null;
         _trailers = null;
@@ -1788,9 +1793,8 @@ public class Request implements HttpServletRequest
         else if ("org.eclipse.jetty.server.sendContent".equals(name))
             LOG.warn("Deprecated: org.eclipse.jetty.server.sendContent");
 
-        if (_attributes == null)
-            _attributes = new ServletAttributes();
-        _attributes.setAttribute(name, value);
+        if (_attributes != null)
+            _attributes.setAttribute(name, value);
 
         if (!_requestAttributeListeners.isEmpty())
         {
@@ -1826,11 +1830,7 @@ public class Request implements HttpServletRequest
             return;
 
         // Unwrap the _attributes to get the base attributes instance.
-        Attributes baseAttributes;
-        if (_attributes == null)
-            baseAttributes = _attributes = new ServletAttributes();
-        else
-            baseAttributes = Attributes.unwrap(_attributes);
+        Attributes baseAttributes = Attributes.unwrap(_attributes);
 
         // We cannot use a apply AsyncAttribute via #setAttributes as that
         // will wrap over any dispatch specific attribute wrappers (eg.

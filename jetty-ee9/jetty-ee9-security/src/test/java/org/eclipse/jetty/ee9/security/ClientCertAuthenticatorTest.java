@@ -68,7 +68,8 @@ public class ClientCertAuthenticatorTest
         origVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
 
         server = new Server();
-        ContextHandler context = new ContextHandler(server);
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
 
         int port = 32080;
         int securePort = 32443;
