@@ -412,13 +412,13 @@ public class ServletChannel implements Runnable
                         {
                             String pathInContext = _request.getPathInContext();
                             AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
-                            String dispatchPath = asyncContextEvent.getDispatchPath();
+                            String dispatchString = asyncContextEvent.getDispatchPath();
                             HttpURI uri = asyncContextEvent.getBaseURI();
-                            if (dispatchPath != null)
+                            if (dispatchString != null)
                             {
-                                // TODO what about query strings?
-                                pathInContext = dispatchPath;
-                                uri = HttpURI.build(_request.getHttpURI()).path(dispatchPath);
+                                HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
+                                pathInContext = dispatchUri.getPath();
+                                uri = HttpURI.build(_request.getHttpURI()).path(pathInContext).query(dispatchUri.getQuery());
                             }
                             else if (uri == null)
                             {
