@@ -33,7 +33,6 @@ import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
 import org.eclipse.jetty.ee10.servlet.ListenerHolder;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.JspPropertyGroup;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.TagLib;
@@ -1319,12 +1318,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (config == null)
         {
             config = new JspConfig();
-            if (context.getServletContext() instanceof ServletContextHandler.ServletContextApi servletContextApi)
-            {
-                servletContextApi.setJspConfigDescriptor(config);
-            }
-            else
-                throw new IllegalStateException("Cannot configure taglib for non ServletContextApi"); //TODO
+            context.getContext().getServletContext().setJspConfigDescriptor(config);
         }
 
         TagLib tl = new TagLib();
@@ -1340,12 +1334,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (config == null)
         {
             config = new JspConfig();
-            if (context.getServletContext() instanceof ServletContextHandler.ServletContextApi servletContextApi)
-            {
-                servletContextApi.setJspConfigDescriptor(config);
-            }
-            else
-                throw new IllegalStateException("Cannot configure jspconfig for non ServletContextApi"); //TODO
+            context.getContext().getServletContext().setJspConfigDescriptor(config);
         }
 
         for (int i = 0; i < node.size(); i++)
