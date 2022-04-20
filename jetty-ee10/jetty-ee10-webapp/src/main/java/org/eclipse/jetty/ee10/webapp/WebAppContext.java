@@ -53,7 +53,6 @@ import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.URIUtil;
@@ -1363,6 +1362,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     public class ServletApiContext extends ServletContextHandler.ServletContextApi
     {
+
         @Override
         public ServletContext getContext(String uripath)
         {

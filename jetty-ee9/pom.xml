@@ -69,7 +69,7 @@
 <!--    <module>jetty-ee9-webapp</module>-->
 <!--    <module>jetty-ee9-websocket</module>-->
 <!--    <module>jetty-ee9-tests</module>-->
-<!--    <module>jetty-ee9-bom</module>-->
+    <module>jetty-ee9-bom</module>
   </modules>
 
   <dependencyManagement>

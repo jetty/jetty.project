@@ -96,7 +96,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         //reset the base resource back to what it was before we did any unpacking of resources
         if (context.getBaseResource() != null)
             context.getBaseResource().close();
-        context.setBaseResource(_preUnpackBaseResource);
+        context.setResourceBase(_preUnpackBaseResource.getPath());
     }
 
     @Override
@@ -450,7 +450,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (LOG.isDebugEnabled())
                 LOG.debug("context.resourcebase={}", rc);
 
-            context.setResourceBase(rc);
+            context.addResourceBase(rc.getPath());
         }
     }
 

@@ -33,12 +33,12 @@ import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
 import org.eclipse.jetty.ee10.servlet.ListenerHolder;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.JspPropertyGroup;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.TagLib;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
-import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.Source;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
@@ -741,6 +741,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
+                        //TODO: evaluate that is can never be null?!
                         if (!name.equals(context.getSessionHandler().getSessionCookie()))
                             throw new IllegalStateException("Conflicting cookie-config name " + name + " in " + descriptor.getResource());
                         break;
@@ -1134,7 +1135,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String location = node.getString("location", false, true);
         if (!location.startsWith("/"))
             throw new IllegalStateException("Missing leading '/' for location: " + location);
-        ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
+        //TODO is the ErrorProcessor always going to be an ErrorPageErrorHandler?
+        ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorProcessor();
         String originName = "error." + error;
         Origin origin = context.getMetaData().getOrigin(originName);
         switch (origin)
@@ -1317,7 +1319,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (config == null)
         {
             config = new JspConfig();
-            context.getServletContext().setJspConfigDescriptor(config);
+            if (context.getServletContext() instanceof ServletContextHandler.ServletContextApi servletContextApi)
+            {
+                servletContextApi.setJspConfigDescriptor(config);
+            }
+            else
+                throw new IllegalStateException("Cannot configure taglib for non ServletContextApi"); //TODO
         }
 
         TagLib tl = new TagLib();
@@ -1333,7 +1340,12 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (config == null)
         {
             config = new JspConfig();
-            context.getServletContext().setJspConfigDescriptor(config);
+            if (context.getServletContext() instanceof ServletContextHandler.ServletContextApi servletContextApi)
+            {
+                servletContextApi.setJspConfigDescriptor(config);
+            }
+            else
+                throw new IllegalStateException("Cannot configure jspconfig for non ServletContextApi"); //TODO
         }
 
         for (int i = 0; i < node.size(); i++)
