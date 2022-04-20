@@ -37,7 +37,7 @@ import org.eclipse.jetty.ee10.ant.types.Attribute;
 import org.eclipse.jetty.ee10.ant.types.Attributes;
 import org.eclipse.jetty.ee10.ant.types.FileMatchingConfiguration;
 import org.eclipse.jetty.ee10.ant.utils.TaskLog;
-import org.eclipse.jetty.ee10.plus.jndi.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;

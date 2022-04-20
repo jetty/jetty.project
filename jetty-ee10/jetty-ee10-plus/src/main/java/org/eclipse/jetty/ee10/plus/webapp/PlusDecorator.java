@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.plus.jndi.webapp;
+package org.eclipse.jetty.ee10.plus.webapp;
 
 import org.eclipse.jetty.ee10.plus.annotation.InjectionCollection;
 import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallbackCollection;

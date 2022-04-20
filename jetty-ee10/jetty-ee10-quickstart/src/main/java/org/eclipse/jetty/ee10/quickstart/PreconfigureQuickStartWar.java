@@ -16,8 +16,8 @@ package org.eclipse.jetty.ee10.quickstart;
 import java.util.Locale;
 
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee10.plus.jndi.webapp.EnvConfiguration;
-import org.eclipse.jetty.ee10.plus.jndi.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
