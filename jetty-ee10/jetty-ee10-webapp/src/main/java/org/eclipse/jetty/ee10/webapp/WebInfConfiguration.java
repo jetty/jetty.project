@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.jetty.server.Connector;
@@ -95,7 +96,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         //reset the base resource back to what it was before we did any unpacking of resources
         if (context.getBaseResource() != null)
             context.getBaseResource().close();
-        context.setBaseResource(_preUnpackBaseResource);
+        context.setResourceBase(_preUnpackBaseResource.getPath());
     }
 
     @Override
@@ -399,7 +400,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 throw new java.io.FileNotFoundException(war);
             }
 
-            context.setBaseResource(webApp);
+            context.setResourceBase(webApp.getPath());
 
             if (LOG.isDebugEnabled())
                 LOG.debug("webapp={}", webApp);
@@ -449,7 +450,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (LOG.isDebugEnabled())
                 LOG.debug("context.resourcebase={}", rc);
 
-            context.setBaseResource(rc);
+            context.setResourceBase(rc.getPath());
         }
     }
 
@@ -538,11 +539,11 @@ public class WebInfConfiguration extends AbstractConfiguration
 
         //Virtual host (if there is one)
         canonicalName.append("-");
-        String[] vhosts = context.getVirtualHosts();
-        if (vhosts == null || vhosts.length <= 0)
+        List<String> vhosts = context.getVirtualHosts();
+        if (vhosts == null || vhosts.size() <= 0)
             canonicalName.append("any");
         else
-            canonicalName.append(vhosts[0]);
+            canonicalName.append(vhosts.get(0));
 
         // sanitize
         for (int i = 0; i < canonicalName.length(); i++)

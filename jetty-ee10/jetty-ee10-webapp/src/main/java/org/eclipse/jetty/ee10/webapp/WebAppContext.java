@@ -52,7 +52,6 @@ import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.URIUtil;
@@ -292,8 +291,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // always pass parent as null and then set below, so that any resulting setServer call
         // is done after this instance is constructed.
         super(null, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
-        //TODO: need ErrorPageErrorProcessor
-        setErrorProcessor(errorHandler != null ? errorHandler : new ErrorProcessor());
+        setErrorProcessor(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
         setProtectedTargets(__dftProtectedTargets);
         if (parent != null)
             setParent(parent);
@@ -932,7 +930,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             }
             else if (getResourceBase() != null)
             {
-                name = getResourceBase();
+                name = getResourceBase().toUri().toASCIIString();
                 int webapps = name.indexOf("/webapps/");
                 if (webapps >= 0)
                     name = name.substring(webapps + 8);
@@ -1415,6 +1413,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     
     public class ServletApiContext extends ServletContextHandler.ServletContextApi
     {
+        
         @Override
         public ServletContext getContext(String uripath)
         {
