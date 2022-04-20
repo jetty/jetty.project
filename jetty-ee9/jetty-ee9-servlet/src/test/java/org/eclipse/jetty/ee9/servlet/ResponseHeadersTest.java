@@ -29,6 +29,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -183,6 +184,7 @@ public class ResponseHeadersTest
     }
 
     @Test
+    @Disabled // TODO
     public void testMultilineResponseHeaderValue() throws Exception
     {
         String actualPathInfo = "%0A%20Content-Type%3A%20image/png%0A%20Content-Length%3A%208%0A%20%0A%20yuck<!--";

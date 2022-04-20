@@ -40,6 +40,7 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.util.StringUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * <p/>
  * tests for #371649 and #371635
  */
+@Disabled // TODO
 public class AsyncContextTest
 {
     private Server _server;
