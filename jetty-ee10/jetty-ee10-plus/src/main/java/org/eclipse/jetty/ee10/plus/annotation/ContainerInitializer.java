@@ -25,6 +25,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
@@ -127,7 +130,8 @@ public class ContainerInitializer
                     classes.add(Loader.loadClass(s));
                 }
 
-                context.getServletContext().setExtendedListenerTypes(true);
+                context.getContext().getServletContext().setExtendedListenerTypes(true);
+                
                 if (LOG.isDebugEnabled())
                 {
                     long start = System.nanoTime();
@@ -139,7 +143,7 @@ public class ContainerInitializer
             }
             finally
             {
-                context.getServletContext().setExtendedListenerTypes(false);
+                context.getContext().getServletContext().setExtendedListenerTypes(false);
             }
         }
     }

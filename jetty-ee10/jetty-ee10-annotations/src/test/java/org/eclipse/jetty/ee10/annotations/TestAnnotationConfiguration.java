@@ -123,8 +123,8 @@ public class TestAnnotationConfiguration
         context25.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
         context25.setConfigurationDiscovered(false);
         context25.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
-        context25.getServletContext().setEffectiveMajorVersion(2);
-        context25.getServletContext().setEffectiveMinorVersion(5);
+        context25.getContext().getServletContext().setEffectiveMajorVersion(2);
+        context25.getContext().getServletContext().setEffectiveMinorVersion(5);
         config25.configure(context25);
         config25.assertAnnotationDiscovery(false);
 
@@ -135,8 +135,8 @@ public class TestAnnotationConfiguration
         context25b.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
         context25b.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
         context25b.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
-        context25b.getServletContext().setEffectiveMajorVersion(2);
-        context25b.getServletContext().setEffectiveMinorVersion(5);
+        context25b.getContext().getServletContext().setEffectiveMajorVersion(2);
+        context25b.getContext().getServletContext().setEffectiveMinorVersion(5);
         config25b.configure(context25b);
         config25b.assertAnnotationDiscovery(true);
 
@@ -147,8 +147,8 @@ public class TestAnnotationConfiguration
         context31.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
         context31.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
         context31.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31true)));
-        context31.getServletContext().setEffectiveMajorVersion(3);
-        context31.getServletContext().setEffectiveMinorVersion(1);
+        context31.getContext().getServletContext().setEffectiveMajorVersion(3);
+        context31.getContext().getServletContext().setEffectiveMinorVersion(1);
         config31.configure(context31);
         config31.assertAnnotationDiscovery(false);
 
@@ -159,8 +159,8 @@ public class TestAnnotationConfiguration
         context31b.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE);
         context31b.setAttribute(AnnotationConfiguration.MAX_SCAN_WAIT, 0);
         context31b.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31false)));
-        context31b.getServletContext().setEffectiveMajorVersion(3);
-        context31b.getServletContext().setEffectiveMinorVersion(1);
+        context31b.getContext().getServletContext().setEffectiveMajorVersion(3);
+        context31b.getContext().getServletContext().setEffectiveMinorVersion(1);
         config31b.configure(context31b);
         config31b.assertAnnotationDiscovery(true);
     }
@@ -182,8 +182,8 @@ public class TestAnnotationConfiguration
             context.getMetaData().addWebInfResource(Resource.newResource(testSciJar.toURI().toURL()));
             context.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31true)));
             context.getMetaData().setWebInfClassesResources(classes);
-            context.getServletContext().setEffectiveMajorVersion(3);
-            context.getServletContext().setEffectiveMinorVersion(1);
+            context.getContext().getServletContext().setEffectiveMajorVersion(3);
+            context.getContext().getServletContext().setEffectiveMinorVersion(1);
             scis = config.getNonExcludedInitializers(context);
             assertNotNull(scis);
             assertEquals(3, scis.size());
@@ -234,8 +234,8 @@ public class TestAnnotationConfiguration
             context.getMetaData().addWebInfResource(Resource.newResource(testSciJar.toURI().toURL()));
             context.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31true)));
             context.getMetaData().setWebInfClassesResources(classes);
-            context.getServletContext().setEffectiveMajorVersion(3);
-            context.getServletContext().setEffectiveMinorVersion(1);
+            context.getContext().getServletContext().setEffectiveMajorVersion(3);
+            context.getContext().getServletContext().setEffectiveMinorVersion(1);
             scis = config.getNonExcludedInitializers(context);
             assertNotNull(scis);
             assertEquals(3, scis.size());
@@ -265,8 +265,8 @@ public class TestAnnotationConfiguration
             context.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31false)));
             context.getMetaData().setWebInfClassesResources(classes);
             context.getMetaData().addWebInfResource(Resource.newResource(testSciJar.toURI().toURL()));
-            context.getServletContext().setEffectiveMajorVersion(3);
-            context.getServletContext().setEffectiveMinorVersion(1);
+            context.getContext().getServletContext().setEffectiveMajorVersion(3);
+            context.getContext().getServletContext().setEffectiveMinorVersion(1);
             scis = config.getNonExcludedInitializers(context);
             assertNotNull(scis);
             assertEquals(3, scis.size());
@@ -314,8 +314,8 @@ public class TestAnnotationConfiguration
             context.getMetaData().addWebInfResource(Resource.newResource(testSciJar.toURI().toURL()));
             context.getMetaData().setWebInfClassesResources(classes);
             context.getMetaData().orderFragments();
-            context.getServletContext().setEffectiveMajorVersion(3);
-            context.getServletContext().setEffectiveMinorVersion(1);
+            context.getContext().getServletContext().setEffectiveMajorVersion(3);
+            context.getContext().getServletContext().setEffectiveMinorVersion(1);
             scis = config.getNonExcludedInitializers(context);
             assertNotNull(scis);
             assertEquals(4, scis.size());
@@ -346,8 +346,8 @@ public class TestAnnotationConfiguration
             context.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
             context.getMetaData().setWebInfClassesResources(classes);
             context.getMetaData().addWebInfResource(Resource.newResource(testSciJar.toURI().toURL()));
-            context.getServletContext().setEffectiveMajorVersion(2);
-            context.getServletContext().setEffectiveMinorVersion(5);
+            context.getContext().getServletContext().setEffectiveMajorVersion(2);
+            context.getContext().getServletContext().setEffectiveMinorVersion(5);
             scis = config.getNonExcludedInitializers(context);
             assertNotNull(scis);
             for (ServletContainerInitializer s : scis)
@@ -383,8 +383,8 @@ public class TestAnnotationConfiguration
             context.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
             context.getMetaData().setWebInfClassesResources(classes);
             context.getMetaData().addWebInfResource(Resource.newResource(testSciJar.toURI().toURL()));
-            context.getServletContext().setEffectiveMajorVersion(2);
-            context.getServletContext().setEffectiveMinorVersion(5);
+            context.getContext().getServletContext().setEffectiveMajorVersion(2);
+            context.getContext().getServletContext().setEffectiveMinorVersion(5);
             scis = config.getNonExcludedInitializers(context);
             assertNotNull(scis);
             assertEquals(3, scis.size(), () ->  scis.toString());
