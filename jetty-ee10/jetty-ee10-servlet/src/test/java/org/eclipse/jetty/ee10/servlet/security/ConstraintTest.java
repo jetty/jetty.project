@@ -1007,6 +1007,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
+        assertThat(response, not(containsString("JSESSIONID=" + session)));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
             "Cookie: JSESSIONID=" + session + "\r\n" +

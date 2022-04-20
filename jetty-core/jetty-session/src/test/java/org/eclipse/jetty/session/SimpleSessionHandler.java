@@ -108,10 +108,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
                 _session.set(session = newSession(this, _requestedSessionId));
                 HttpCookie cookie = getSessionCookie(session, getContext().getContextPath(), getConnectionMetaData().isSecure());
                 if (cookie != null)
-                {
                     Response.replaceCookie(_response, cookie);
-                    session.setCookieSetTime();
-                }
             }
 
             return session == null || session.isInvalid() ? null : session.getAPISession();
@@ -184,11 +181,7 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
             SessionManager sessionManager = _coreSession.getSessionManager();
 
             if (sessionManager.isUsingCookies())
-            {
-                Response.replaceCookie(response,
-                    sessionManager.getSessionCookie(getCoreSession(), request.getContext().getContextPath(), request.isSecure()));
-                _coreSession.setCookieSetTime();
-            }
+                Response.replaceCookie(response, sessionManager.getSessionCookie(getCoreSession(), request.getContext().getContextPath(), request.isSecure()));
         }
     }
 }

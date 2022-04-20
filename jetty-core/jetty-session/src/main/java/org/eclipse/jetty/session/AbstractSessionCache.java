@@ -221,9 +221,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
         _sessionDataStore = sessionStore;
     }
 
-    /**
-     * @see org.eclipse.jetty.server.session.SessionCache#getEvictionPolicy()
-     */
     @ManagedAttribute(value = "session eviction policy", readonly = true)
     @Override
     public int getEvictionPolicy()
@@ -236,7 +233,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * 0 means we evict a session after the last request for it exits
      * &gt;0 is the number of seconds after which we evict inactive sessions from the cache
      *
-     * @see org.eclipse.jetty.server.session.SessionCache#setEvictionPolicy(int)
      */
     @Override
     public void setEvictionPolicy(int evictionTimeout)
@@ -298,7 +294,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * the data for it from a SessionDataStore associated with the
      * session manager. The usage count of the session is incremented.
      *
-     * @see org.eclipse.jetty.server.session.SessionCache#get(java.lang.String)
      */
     @Override
     public Session get(String id) throws Exception
@@ -490,7 +485,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * If the evictionPolicy == SessionCache.EVICT_ON_SESSION_EXIT then after we have saved
      * the session, we evict it from the cache.
      *
-     * @see org.eclipse.jetty.server.session.SessionCache#release(org.eclipse.jetty.server.session.Session)
      */
     @Override
     public void release(Session session) throws Exception
@@ -513,9 +507,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             //don't do anything with the session until the last request for it has finished
             if ((session.getRequests() <= 0))
             {
-                //reset the isIdChanged flag
-                session.setIdChanged(false);
-                
                 //save the session
                 if (!_sessionDataStore.isPassivating())
                 {
@@ -582,7 +573,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * it will check with the data store.
      *
      * @throws Exception the Exception
-     * @see org.eclipse.jetty.server.session.SessionCache#exists(java.lang.String)
      */
     @Override
     public boolean exists(String id) throws Exception
@@ -606,7 +596,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
      * Check to see if this cache contains an entry for the session
      * corresponding to the session id.
      *
-     * @see org.eclipse.jetty.server.session.SessionCache#contains(java.lang.String)
      */
     @Override
     public boolean contains(String id) throws Exception
@@ -618,7 +607,6 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
     /**
      * Remove a session object from this store and from any backing store.
      *
-     * @see org.eclipse.jetty.server.session.SessionCache#delete(java.lang.String)
      */
     @Override
     public Session delete(String id) throws Exception
@@ -761,7 +749,7 @@ public abstract class AbstractSessionCache extends ContainerLifeCycle implements
             session.getSessionData().setLastSaved(0); //pretend that the session has never been saved before to get a full save
             session.getSessionData().setDirty(true);  //ensure we will try to write the session out    
             session.setExtendedId(newExtendedId); //remember the new extended id
-            session.setIdChanged(true); //session id changed
+            session.onIdChanged(); //session id changed
 
             doPutIfAbsent(newId, session); //put the new id into our map
             doDelete(oldId); //take old out of map

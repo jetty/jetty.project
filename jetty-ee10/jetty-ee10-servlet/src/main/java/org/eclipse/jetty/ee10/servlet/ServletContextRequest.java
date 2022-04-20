@@ -630,7 +630,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             {
                 Response.replaceCookie(ServletContextRequest.getBaseRequest(_httpServletRequest).getResponse(),
                     getSessionManager().getSessionCookie(session, getContextPath(), isSecure()));
-                session.setCookieSetTime();
             }
 
             return session.getId();

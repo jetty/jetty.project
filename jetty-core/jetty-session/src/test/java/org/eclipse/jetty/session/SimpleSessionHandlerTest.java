@@ -290,6 +290,7 @@ public class SimpleSessionHandlerTest
 
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
         content = response.getContent();
         assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
         assertThat(content, containsString("attribute = value"));
@@ -302,6 +303,19 @@ public class SimpleSessionHandlerTest
         id = newId;
 
         content = response.getContent();
+        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+        assertThat(content, containsString("attribute = value"));
+
+        endPoint.addInput("""
+            GET / HTTP/1.1
+            Host: localhost
+            Cookie: SIMPLE=%s
+            
+            """.formatted(id));
+
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
         assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
         assertThat(content, containsString("attribute = value"));
     }

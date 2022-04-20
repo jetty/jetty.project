@@ -108,13 +108,11 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         {
             // Do we need to refresh the cookie?
             if (isUsingCookies() &&
-                (session.isIdChanged() ||
+                (session.isSetCookieNeeded() ||
                     (getMaxCookieAge() > 0 && getRefreshCookieAge() > 0 &&
                         ((now - session.getCookieSetTime()) / 1000 > getRefreshCookieAge()))))
             {
-                HttpCookie cookie = getSessionCookie(session, _context == null ? "/" : (_context.getContextPath()), secure);
-                session.setCookieSetTime();
-                return cookie;
+                return getSessionCookie(session, _context == null ? "/" : (_context.getContextPath()), secure);
             }
         }
         return null;
@@ -417,7 +415,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             }
 
             if (session != null && !session.getExtendedId().equals(extendedId))
-                session.setIdChanged(true);
+                session.onIdChanged();
 
             return session;
         }
@@ -521,9 +519,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             String sessionPath = (_sessionPath == null) ? contextPath : _sessionPath;
             sessionPath = (StringUtil.isEmpty(sessionPath)) ? "/" : sessionPath;
             String id = session.getExtendedId();
-            HttpCookie cookie;
-
-            cookie = new HttpCookie(
+            HttpCookie cookie = new HttpCookie(
                 (_sessionCookie == null ? __DefaultSessionCookie : _sessionCookie),
                 id,
                 _sessionDomain,
@@ -535,6 +531,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                 0,
                 HttpCookie.getSameSiteFromComment(_sessionComment));
 
+            session.onSetCookieGenerated();
             return cookie;
         }
         return null;

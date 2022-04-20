@@ -608,6 +608,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (_logger == null)
             _logger = LoggerFactory.getLogger(ContextHandler.class.getName() + getLogNameSuffix());
 
+        if (_errorHandler == null)
+            setErrorHandler(new ErrorHandler());
+
         setAttribute("org.eclipse.jetty.server.Executor", getServer().getThreadPool());
 
         if (_mimeTypes == null)

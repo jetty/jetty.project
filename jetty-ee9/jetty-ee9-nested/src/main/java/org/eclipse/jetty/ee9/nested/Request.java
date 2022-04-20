@@ -1320,11 +1320,8 @@ public class Request implements HttpServletRequest
         session.renewId(getHttpChannel().getCoreRequest());
         if (getRemoteUser() != null)
             session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-        if (session.isIdChanged() && _sessionManager.isUsingCookies())
-        {
+        if (session.isSetCookieNeeded())
             _channel.getResponse().replaceCookie(_sessionManager.getSessionCookie(session, getContextPath(), isSecure()));
-            session.setCookieSetTime();
-        }
 
         return httpSession.getId();
     }

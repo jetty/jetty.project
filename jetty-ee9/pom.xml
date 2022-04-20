@@ -47,29 +47,29 @@
     <module>jetty-ee9-nested</module>
     <module>jetty-ee9-security</module>
     <module>jetty-ee9-servlet</module>
-    <module>jetty-ee9-demos</module>
-    <module>jetty-ee9-apache-jsp</module>
-    <module>jetty-ee9-glassfish-jstl</module>
-    <module>jetty-ee9-annotations</module>
-    <module>jetty-ee9-ant</module>
-    <module>jetty-ee9-cdi</module>
-    <module>jetty-ee9-fcgi-server-proxy</module>
-    <module>jetty-ee9-http-spi</module>
-    <module>jetty-ee9-jaas</module>
-    <module>jetty-ee9-jaspi</module>
-    <module>jetty-ee9-jspc-maven-plugin</module>
-    <module>jetty-ee9-maven-plugin</module>
-    <module>jetty-ee9-openid</module>
-    <module>jetty-ee9-osgi</module>
-    <module>jetty-ee9-plus</module>
-    <module>jetty-ee9-proxy</module>
-    <module>jetty-ee9-quickstart</module>
-    <module>jetty-ee9-runner</module>
-    <module>jetty-ee9-servlet-extras</module>
-    <module>jetty-ee9-webapp</module>
-    <module>jetty-ee9-websocket</module>
-    <module>jetty-ee9-tests</module>
-    <module>jetty-ee9-bom</module>
+<!--    <module>jetty-ee9-demos</module>-->
+<!--    <module>jetty-ee9-apache-jsp</module>-->
+<!--    <module>jetty-ee9-glassfish-jstl</module>-->
+<!--    <module>jetty-ee9-annotations</module>-->
+<!--    <module>jetty-ee9-ant</module>-->
+<!--    <module>jetty-ee9-cdi</module>-->
+<!--    <module>jetty-ee9-fcgi-server-proxy</module>-->
+<!--    <module>jetty-ee9-http-spi</module>-->
+<!--    <module>jetty-ee9-jaas</module>-->
+<!--    <module>jetty-ee9-jaspi</module>-->
+<!--    <module>jetty-ee9-jspc-maven-plugin</module>-->
+<!--    <module>jetty-ee9-maven-plugin</module>-->
+<!--    <module>jetty-ee9-openid</module>-->
+<!--    <module>jetty-ee9-osgi</module>-->
+<!--    <module>jetty-ee9-plus</module>-->
+<!--    <module>jetty-ee9-proxy</module>-->
+<!--    <module>jetty-ee9-quickstart</module>-->
+<!--    <module>jetty-ee9-runner</module>-->
+<!--    <module>jetty-ee9-servlet-extras</module>-->
+<!--    <module>jetty-ee9-webapp</module>-->
+<!--    <module>jetty-ee9-websocket</module>-->
+<!--    <module>jetty-ee9-tests</module>-->
+<!--    <module>jetty-ee9-bom</module>-->
   </modules>
 
   <dependencyManagement>

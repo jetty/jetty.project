@@ -1288,11 +1288,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         _connectionKeepAlive &&
                         !_connectionClose ||
                         HttpMethod.CONNECT.is(_method);
+
+                    // Since persistent status is now exposed in the application API, we need to be more definitive earlier
+                    // if we are persistent or not.
+                    _generator.setPersistent(persistent);
                     if (!persistent)
-                    {
                         _connectionKeepAlive = false;
-                        _generator.setPersistent(false);
-                    }
 
                     break;
                 }
@@ -1309,8 +1310,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         !_connectionClose ||
                         HttpMethod.CONNECT.is(_method);
 
-                    if (!persistent)
-                        _generator.setPersistent(false);
+                    // Since persistent status is now exposed in the application API, we need to be more definitive earlier
+                    // if we are persistent or not.
+                    _generator.setPersistent(persistent);
 
                     if (_upgrade != null && HttpConnection.this.upgrade(_stream.get()))
                         return null; // TODO do we need to return a runnable to complete the upgrade ???

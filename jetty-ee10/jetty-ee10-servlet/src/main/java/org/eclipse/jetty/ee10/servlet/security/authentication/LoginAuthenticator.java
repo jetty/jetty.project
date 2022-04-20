@@ -130,7 +130,7 @@ public abstract class LoginAuthenticator implements Authenticator
                     String oldId = session.getId();
                     session.renewId(servletContextRequest);
                     session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-                    if (session.isIdChanged())
+                    if (session.isSetCookieNeeded())
                         Response.replaceCookie(response, session.getSessionManager().getSessionCookie(session, httpRequest.getContextPath(), httpRequest.isSecure()));
                     if (LOG.isDebugEnabled())
                         LOG.debug("renew {}->{}", oldId, session.getId());

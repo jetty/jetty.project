@@ -372,6 +372,7 @@ public class SessionHandler extends HandlerWrapper implements SessionConfig.Muta
         if (baseRequest.getDispatcherType() == DispatcherType.REQUEST)
         {
             org.eclipse.jetty.server.Request coreRequest = baseRequest.getHttpChannel().getCoreRequest();
+            _sessionManager.addSessionStreamWrapper(coreRequest);
 
             // find and set the session if one exists
             AbstractSessionManager.RequestedSession requestedSession = _sessionManager.resolveRequestedSessionId(coreRequest);
@@ -504,6 +505,12 @@ public class SessionHandler extends HandlerWrapper implements SessionConfig.Muta
         public Server getServer()
         {
             return SessionHandler.this.getServer();
+        }
+
+        @Override
+        protected void addSessionStreamWrapper(org.eclipse.jetty.server.Request request)
+        {
+            super.addSessionStreamWrapper(request);
         }
 
         @Override
