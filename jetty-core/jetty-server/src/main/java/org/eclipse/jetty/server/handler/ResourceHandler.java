@@ -70,6 +70,8 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Arrays.stream;
+
 /**
  * Resource Handler.
  *
@@ -85,9 +87,6 @@ import org.slf4j.LoggerFactory;
  *  - Default stylesheet (needs Path impl for classpath resources)
  *  - request ranges
  *  - a way to configure caching or not
- *  - precompressed formats
- *  - gzipEquivalentFileExtensions
- *  - PreferredEncodingOrder
  */
 public class ResourceHandler extends Handler.Wrapper
 {
@@ -1086,6 +1085,19 @@ public class ResourceHandler extends Handler.Wrapper
     public void setPrecompressedFormats(CompressedContentFormat[] precompressedFormats)
     {
         _precompressedFormats = precompressedFormats;
+        _preferredEncodingOrder = stream(_precompressedFormats).map(CompressedContentFormat::getEncoding).toArray(String[]::new);
+    }
+
+    public void setEncodingCacheSize(int encodingCacheSize)
+    {
+        _encodingCacheSize = encodingCacheSize;
+        if (encodingCacheSize > _preferredEncodingOrderCache.size())
+            _preferredEncodingOrderCache.clear();
+    }
+
+    public int getEncodingCacheSize()
+    {
+        return _encodingCacheSize;
     }
 
     public void setMimeTypes(MimeTypes mimeTypes)

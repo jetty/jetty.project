@@ -30,6 +30,8 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.eclipse.jetty.http.CachingContentFactory;
 import org.eclipse.jetty.http.CompressedContentFormat;
@@ -91,6 +93,7 @@ public class ResourceHandlerTest
         File dir = MavenTestingUtils.getTargetFile("test-classes/simple");
         File bigger = new File(dir, "bigger.txt");
         File bigGz = new File(dir, "big.txt.gz");
+        File bigZip = new File(dir, "big.txt.zip");
         File big = new File(dir, "big.txt");
         try (OutputStream out = new FileOutputStream(bigger))
         {
@@ -109,9 +112,18 @@ public class ResourceHandlerTest
                 IO.copy(in, gzOut);
             }
         }
+        try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(bigZip)))
+        {
+            zipOut.putNextEntry(new ZipEntry(big.getName()));
+            try (InputStream in = new FileInputStream(big))
+            {
+                IO.copy(in, zipOut);
+            }
+        }
 
         bigger.deleteOnExit();
         bigGz.deleteOnExit();
+        bigZip.deleteOnExit();
 
         // determine how the SCM of choice checked out the big.txt EOL
         // we can't just use whatever is the OS default.
@@ -194,6 +206,70 @@ public class ResourceHandlerTest
         assertThat(response2.get(CONTENT_ENCODING), is(nullValue()));
         assertThat(response2.getContent(), startsWith("     1\tThis is a big file"));
         assertThat(response2.getContent(), endsWith("   400\tThis is a big file" + LN));
+    }
+
+    @Test
+    public void testGzipEquivalentFileExtensions() throws Exception
+    {
+        _resourceHandler.setGzipEquivalentFileExtensions(List.of(CompressedContentFormat.GZIP.getExtension()));
+
+        HttpTester.Response response1 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt.gz HTTP/1.0\r\n" +
+                "\r\n"));
+        assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response1.get(CONTENT_ENCODING), is("gzip"));
+
+       HttpTester.Response response2 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "\r\n"));
+        assertThat(response2.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response2.get(CONTENT_ENCODING), is(nullValue()));
+    }
+
+    @Test
+    public void testPrecompressedPreferredEncodingOrderWithQuality() throws Exception
+    {
+        _resourceHandler.setEncodingCacheSize(0);
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{CompressedContentFormat.GZIP, new CompressedContentFormat("zip", ".zip")});
+
+        HttpTester.Response response1 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "Accept-Encoding: zip;q=0.5,gzip;q=1.0\r\n" +
+                "\r\n"));
+        assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response1.get(CONTENT_ENCODING), is("gzip"));
+
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{new CompressedContentFormat("zip", ".zip"), CompressedContentFormat.GZIP});
+
+        HttpTester.Response response2 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "Accept-Encoding: zip;q=1.0,gzip;q=0.5\r\n" +
+                "\r\n"));
+        assertThat(response2.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response2.get(CONTENT_ENCODING), is("zip"));
+    }
+
+    @Test
+    public void testPrecompressedPreferredEncodingOrder() throws Exception
+    {
+        _resourceHandler.setEncodingCacheSize(0);
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{new CompressedContentFormat("zip", ".zip"), CompressedContentFormat.GZIP});
+
+        HttpTester.Response response1 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "Accept-Encoding: zip,gzip\r\n" +
+                "\r\n"));
+        assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response1.get(CONTENT_ENCODING), is("zip"));
+
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{CompressedContentFormat.GZIP, new CompressedContentFormat("zip", ".zip")});
+
+        HttpTester.Response response2 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "Accept-Encoding: gzip,zip\r\n" +
+                "\r\n"));
+        assertThat(response2.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response2.get(CONTENT_ENCODING), is("gzip"));
     }
 
     @Test
