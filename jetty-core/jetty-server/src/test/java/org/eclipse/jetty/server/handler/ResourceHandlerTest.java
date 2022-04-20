@@ -219,7 +219,7 @@ public class ResourceHandlerTest
         assertThat(response1.getStatus(), is(HttpStatus.OK_200));
         assertThat(response1.get(CONTENT_ENCODING), is("gzip"));
 
-       HttpTester.Response response2 = HttpTester.parseResponse(
+        HttpTester.Response response2 = HttpTester.parseResponse(
             _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
                 "\r\n"));
         assertThat(response2.getStatus(), is(HttpStatus.OK_200));
