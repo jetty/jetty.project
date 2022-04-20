@@ -665,6 +665,9 @@ public class ServletContextRequest extends ContextRequest implements Runnable
         @Override
         public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
         {
+            //TODO: if authentication is deferred, we could authenticate first, otherwise we
+            //are re-authenticating for each of getUserPrincipal, getRemoteUser and getAuthType
+            
             //if already authenticated, return true
             if (getUserPrincipal() != null && getRemoteUser() != null && getAuthType() != null)
                 return true;
@@ -672,7 +675,6 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             //do the authentication
             if (_authentication instanceof Authentication.Deferred)
             {
-                //TODO is this Response and the method param the same or possibly different object hierarchies?
                 setAuthentication(((Authentication.Deferred)_authentication).authenticate(ServletContextRequest.this, getResponse()));
             }
 
@@ -684,6 +686,8 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             if (!(_authentication instanceof Authentication.ResponseSent))
                 return false;
 
+            //TODO: this should only be returned IFF the authenticator has NOT set the response,
+            //and the BasicAuthenticator at least will have set the response to SC_UNAUTHENTICATED
             //something has gone wrong
             throw new ServletException("Authentication failed");
         }

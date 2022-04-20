@@ -206,7 +206,7 @@ public class JAASLdapLoginServiceTest
         _server.start();
         
         return _connector.getResponse("GET /ctx/test HTTP/1.0\n" + "Authorization: Basic " +
-            Base64.getEncoder().encodeToString("someone:complicatedpassword".getBytes(ISO_8859_1)) + "\n\n");
+            Base64.getEncoder().encodeToString((username + ":" + password).getBytes(ISO_8859_1)) + "\n\n");
     }
 
     @Test

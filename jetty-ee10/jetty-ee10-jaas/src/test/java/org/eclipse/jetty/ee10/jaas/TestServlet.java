@@ -36,13 +36,29 @@ public class TestServlet extends HttpServlet
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        testHasRoles(req, resp);
-        testHasntRoles(req, resp);
+        if (_hasRoles == null && _hasntRoles == null)
+        {
+            try
+            {
+                req.authenticate(resp);
+            }
+            catch (ServletException e)
+            {
+                //TODO: a ServletException should only be thrown here if the response has
+                //not been set, but currently it seems that the ServletException is thrown
+                //anyway by ServletContextRequest.ServletApiRequest.authenticate.
+            }
+        }
+        else
+        {
+            testHasRoles(req, resp);
+            testHasntRoles(req, resp);
 
-        resp.setStatus(200);
-        resp.setContentType("text/plain");
-        resp.getWriter().println("All OK");
-        resp.getWriter().println("requestURI=" + req.getRequestURI());
+            resp.setStatus(200);
+            resp.setContentType("text/plain");
+            resp.getWriter().println("All OK");
+            resp.getWriter().println("requestURI=" + req.getRequestURI());
+        }
     }
 
     private void testHasRoles(HttpServletRequest req, HttpServletResponse resp) throws ServletException
@@ -51,6 +67,10 @@ public class TestServlet extends HttpServlet
         {
             for (String role : _hasRoles)
             {
+                //TODO: the response may already have been committed, because eg the
+                //BasicAuthenticator may have decided the authentication is invalid.
+                //Thus throwing ServletException here causes a problem because the HttpChannelState
+                //tries to set the response.
                 if (!req.isUserInRole(role))
                     throw new ServletException("! in role " + role);
             }
