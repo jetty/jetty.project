@@ -155,7 +155,6 @@ public class Session
     {
         try (AutoLock l = _lock.lock())
         {
-            _idChanged = false;
             _sessionData.setCookieSet(_sessionData.getAccessed());
         }
     }
