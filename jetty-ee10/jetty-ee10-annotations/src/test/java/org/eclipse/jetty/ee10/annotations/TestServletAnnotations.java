@@ -19,9 +19,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
-import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.webapp.DiscoveredAnnotation;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.junit.jupiter.api.Test;

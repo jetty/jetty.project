@@ -67,6 +67,10 @@ public interface HttpContent
 
     Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents();
 
+    ByteBuffer getBuffer();
+
+    void release();
+
     interface ContentFactory
     {
         /**
@@ -77,10 +81,5 @@ public interface HttpContent
          */
         // TODO maxBuffer is not needed anymore
         HttpContent getContent(String path, int maxBuffer) throws IOException;
-    }
-
-    interface InMemory extends HttpContent
-    {
-        ByteBuffer getBuffer();
     }
 }

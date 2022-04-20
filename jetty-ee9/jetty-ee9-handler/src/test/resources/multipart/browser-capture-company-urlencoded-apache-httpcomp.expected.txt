@@ -1,9 +1,0 @@
-Request-Header|Accept-Encoding|gzip,deflate
-Request-Header|Connection|keep-alive
-Request-Header|Content-Length|248
-Request-Header|Content-Type|multipart/form-data; boundary=DHbU6ChASebwm4iE8z9Lakv4ybMmkp
-Request-Header|Host|localhost:9090
-Request-Header|User-Agent|Apache-HttpClient/4.5.5 (Java/1.8.0_162)
-Request-Header|X-BrowserId|apache-httpcomp
-Parts-Count|1
-Part-ContainsContents|company|bob+%26+frank%27s+shoe+repair

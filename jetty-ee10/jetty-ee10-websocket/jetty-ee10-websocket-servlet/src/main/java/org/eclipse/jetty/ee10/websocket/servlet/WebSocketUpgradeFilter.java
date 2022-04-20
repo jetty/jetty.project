@@ -26,13 +26,13 @@ import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -155,12 +155,19 @@ public class WebSocketUpgradeFilter implements Filter, Dumpable
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        HttpServletRequest httpreq = (HttpServletRequest)request;
-        HttpServletResponse httpresp = (HttpServletResponse)response;
+        ServletContextRequest baseRequest = ServletContextRequest.getBaseRequest(request);
+        if (baseRequest == null)
+            throw new IllegalStateException("Base Request not available");
 
-        // TODO: how to use this without the original Request?
-        if (mappings.upgrade(httpreq, httpresp, defaultCustomizer))
-            return;
+        // provide a null default customizer the customizer will be on the negotiator in the mapping
+        try (Blocking.Callback callback = Blocking.callback())
+        {
+            if (mappings.upgrade(baseRequest, baseRequest.getResponse(), callback, null))
+            {
+                callback.block();
+                return;
+            }
+        }
 
         // If we reach this point, it means we had an incoming request to upgrade
         // but it was either not a proper websocket upgrade, or it was possibly rejected

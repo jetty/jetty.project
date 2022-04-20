@@ -23,18 +23,17 @@ import java.util.stream.Collectors;
 
 import jakarta.security.auth.message.config.AuthConfigFactory;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.security.AbstractLoginService;
-import org.eclipse.jetty.ee10.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.ee10.security.RolePrincipal;
-import org.eclipse.jetty.ee10.security.UserPrincipal;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
+import org.eclipse.jetty.ee10.servlet.security.AbstractLoginService;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.RolePrincipal;
+import org.eclipse.jetty.ee10.servlet.security.UserPrincipal;
 import org.eclipse.jetty.server.LocalConnector;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Credential;
@@ -94,14 +93,14 @@ public class JaspiTest
     {
         AuthConfigFactory factory = new DefaultAuthConfigFactory();
 
-        factory.registerConfigProvider("org.eclipse.jetty.security.jaspi.provider.JaspiAuthConfigProvider",
-            Map.of("ServerAuthModule", "org.eclipse.jetty.security.jaspi.modules.BasicAuthenticationAuthModule",
+        factory.registerConfigProvider("org.eclipse.jetty.ee10.security.jaspi.provider.JaspiAuthConfigProvider",
+            Map.of("ServerAuthModule", "org.eclipse.jetty.ee10.security.jaspi.modules.BasicAuthenticationAuthModule",
                 "AppContextID", "server /ctx",
-                "org.eclipse.jetty.security.jaspi.modules.RealmName", "TestRealm"),
+                "org.eclipse.jetty.ee10.security.jaspi.modules.RealmName", "TestRealm"),
             "HttpServlet", "server /ctx", "a test provider");
 
-        factory.registerConfigProvider("org.eclipse.jetty.security.jaspi.provider.JaspiAuthConfigProvider",
-            Map.of("ServerAuthModule", "org.eclipse.jetty.security.jaspi.HttpHeaderAuthModule",
+        factory.registerConfigProvider("org.eclipse.jetty.ee10.security.jaspi.provider.JaspiAuthConfigProvider",
+            Map.of("ServerAuthModule", "org.eclipse.jetty.ee10.security.jaspi.HttpHeaderAuthModule",
                 "AppContextID", "server /other"),
             "HttpServlet", "server /other", "another test provider");
 
@@ -129,9 +128,10 @@ public class JaspiTest
         loginService.putUser("admin", new Password("secret"), new String[] {"users", "admins"});
         _server.addBean(loginService);
 
-        ContextHandler context = new ContextHandler();
+        ServletContextHandler context = new ServletContextHandler();
         contexts.addHandler(context);
         context.setContextPath("/ctx");
+        context.addServlet(new TestServlet(), "/");
 
         JaspiAuthenticatorFactory jaspiAuthFactory = new JaspiAuthenticatorFactory();
 
@@ -147,17 +147,14 @@ public class JaspiTest
         mapping.setConstraint(constraint);
         security.addConstraintMapping(mapping);
 
-        TestHandler handler = new TestHandler();
-        security.setHandler(handler);
-
-        ContextHandler other = new ContextHandler();
+        ServletContextHandler other = new ServletContextHandler();
         contexts.addHandler(other);
         other.setContextPath("/other");
+        other.addServlet(new TestServlet(), "/");
         ConstraintSecurityHandler securityOther = new ConstraintSecurityHandler();
         other.setHandler(securityOther);
         securityOther.setAuthenticatorFactory(jaspiAuthFactory);
         securityOther.addConstraintMapping(mapping);
-        securityOther.setHandler(new TestHandler());
 
         _server.start();
     }
@@ -214,18 +211,15 @@ public class JaspiTest
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
     }
 
-    public class TestHandler extends AbstractHandler
+    public class TestServlet extends HttpServlet
     {
-
         @Override
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                throws IOException, ServletException
+        protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
         {
-            baseRequest.setHandled(true);
-            response.setStatus(200);
-            response.setContentType("text/plain");
-            response.getWriter().println("All OK");
-            response.getWriter().println("requestURI=" + request.getRequestURI());
+            resp.setStatus(200);
+            resp.setContentType("text/plain");
+            resp.getWriter().println("All OK");
+            resp.getWriter().println("requestURI=" + req.getRequestURI());
         }
     }
 }

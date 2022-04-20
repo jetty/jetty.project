@@ -15,7 +15,7 @@ module org.eclipse.jetty.ee9.servlet
 {
     requires org.slf4j;
 
-    requires transitive org.eclipse.jetty.ee9.handler;
+    requires transitive org.eclipse.jetty.ee9.nested;
     requires transitive org.eclipse.jetty.ee9.security;
 
     // Only required if using IntrospectorCleaner.

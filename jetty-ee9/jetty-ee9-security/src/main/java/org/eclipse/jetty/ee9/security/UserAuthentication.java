@@ -13,7 +13,7 @@
 
 package org.eclipse.jetty.ee9.security;
 
-import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 
 /**
  * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $

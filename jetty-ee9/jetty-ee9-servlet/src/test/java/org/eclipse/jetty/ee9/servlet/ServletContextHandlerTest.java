@@ -59,14 +59,14 @@ import jakarta.servlet.http.HttpSessionBindingEvent;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionIdListener;
 import jakarta.servlet.http.HttpSessionListener;
-import org.eclipse.jetty.ee9.handler.AbstractHandlerContainer;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.HandlerWrapper;
-import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.ee9.handler.ResourceHandler;
-import org.eclipse.jetty.ee9.handler.Response;
-import org.eclipse.jetty.ee9.handler.SessionHandler;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee9.nested.AbstractHandlerContainer;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.HandlerWrapper;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.ResourceHandler;
+import org.eclipse.jetty.ee9.nested.Response;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee9.security.RoleInfo;
 import org.eclipse.jetty.ee9.security.SecurityHandler;
@@ -674,7 +674,7 @@ public class ServletContextHandlerTest
     {
         //Test get/setInitParam with null throws NPE
         ServletContextHandler root = new ServletContextHandler(_server, "/", ServletContextHandler.SESSIONS);
-        _server.setHandler(root.getCoreContextHandler());
+        _server.setHandler(root);
         ListenerHolder initialListener = new ListenerHolder();
         initialListener.setListener(new ServletContextListener()
         {
@@ -711,7 +711,7 @@ public class ServletContextHandlerTest
                 resp.getWriter().printf("getContextPath()=[%s]", req.getContextPath());
             }
         }), "/dump");
-        _server.setHandler(contextHandler.getCoreContextHandler());
+        _server.setHandler(contextHandler);
         _server.start();
 
         StringBuilder rawRequest = new StringBuilder();
@@ -744,7 +744,7 @@ public class ServletContextHandlerTest
                 resp.getWriter().printf("getServletPath()=[%s]", req.getServletPath());
             }
         }), pathSpec);
-        _server.setHandler(contextHandler.getCoreContextHandler());
+        _server.setHandler(contextHandler);
         _server.start();
 
         StringBuilder rawRequest = new StringBuilder();
@@ -1027,7 +1027,7 @@ public class ServletContextHandlerTest
         holder2.setInitOrder(2);
 
         context.setContextPath("/");
-        _server.setHandler(context.getCoreContextHandler());
+        _server.setHandler(context);
         _server.start();
 
         assertEquals(2, __testServlets.get());
@@ -1073,7 +1073,7 @@ public class ServletContextHandlerTest
             context.getServletHandler().setStartWithUnavailable(false);
             holder.setInitOrder(0);
             context.setContextPath("/");
-            _server.setHandler(context.getCoreContextHandler());
+            _server.setHandler(context);
             ServletException se = assertThrows(ServletException.class, _server::start);
             assertThat("Servlet can only be added from SCI or SCL", se.getCause(), instanceOf(IllegalStateException.class));
         }
@@ -1163,7 +1163,7 @@ public class ServletContextHandlerTest
             context.getServletHandler().setStartWithUnavailable(false);
             holder.setInitOrder(0);
             context.setContextPath("/");
-            _server.setHandler(context.getCoreContextHandler());
+            _server.setHandler(context);
             ServletException se = assertThrows(ServletException.class, _server::start);
             assertThat("Filter can only be added from SCI or SCL", se.getCause(), instanceOf(IllegalStateException.class));
         }
@@ -1201,7 +1201,7 @@ public class ServletContextHandlerTest
             context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
             context.getServletHandler().setStartWithUnavailable(false);
             context.setContextPath("/");
-            _server.setHandler(context.getCoreContextHandler());
+            _server.setHandler(context);
             assertThrows(IllegalStateException.class, _server::start, "Servlet can only be added from SCI or SCL");
         }
     }
@@ -1238,7 +1238,7 @@ public class ServletContextHandlerTest
             context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
             context.getServletHandler().setStartWithUnavailable(false);
             context.setContextPath("/");
-            _server.setHandler(context.getCoreContextHandler());
+            _server.setHandler(context);
             assertThrows(IllegalStateException.class, _server::start, "Servlet can only be added from SCI or SCL");
         }
     }
@@ -1275,7 +1275,7 @@ public class ServletContextHandlerTest
             context.addFilter(holder, "/*", EnumSet.of(DispatcherType.REQUEST));
             context.getServletHandler().setStartWithUnavailable(false);
             context.setContextPath("/");
-            _server.setHandler(context.getCoreContextHandler());
+            _server.setHandler(context);
             assertThrows(IllegalStateException.class, _server::start, "Servlet can only be added from SCI or SCL");
         }
     }
@@ -1303,7 +1303,7 @@ public class ServletContextHandlerTest
             {
             }
         });
-        _server.setHandler(context.getCoreContextHandler());
+        _server.setHandler(context);
         _server.start();
 
         StringBuilder request = new StringBuilder();
@@ -1501,7 +1501,7 @@ public class ServletContextHandlerTest
         ServletRegistration reg = context.getServletContext().addServlet("test", TestServlet.class);
         reg.addMapping("/test");
 
-        _server.setHandler(context.getCoreContextHandler());
+        _server.setHandler(context);
         _server.start();
 
         StringBuilder request = new StringBuilder();

@@ -14,12 +14,9 @@
 package org.eclipse.jetty.util;
 
 import java.io.IOException;
-import java.util.AbstractMap;
-import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -91,13 +88,16 @@ public interface Attributes
     @SuppressWarnings("unchecked")
     static <T extends Attributes.Wrapper> T unwrap(Attributes attributes, Class<T> target)
     {
-        while (attributes instanceof Wrapper)
+        while (true)
         {
             if (target.isAssignableFrom(attributes.getClass()))
                 return (T)attributes;
-            attributes = ((Wrapper)attributes).getWrapped();
+
+            if (attributes instanceof Wrapper wrapper)
+                attributes = wrapper.getWrapped();
+            else
+                return null;
         }
-        return null;
     }
 
     /**

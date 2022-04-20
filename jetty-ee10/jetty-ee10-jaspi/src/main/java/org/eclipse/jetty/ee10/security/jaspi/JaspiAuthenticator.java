@@ -13,7 +13,6 @@
 
 package org.eclipse.jetty.ee10.security.jaspi;
 
-import java.io.IOException;
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,23 +28,25 @@ import jakarta.security.auth.message.config.AuthConfigProvider;
 import jakarta.security.auth.message.config.RegistrationListener;
 import jakarta.security.auth.message.config.ServerAuthConfig;
 import jakarta.security.auth.message.config.ServerAuthContext;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.eclipse.jetty.ee10.security.EmptyLoginService;
-import org.eclipse.jetty.ee10.security.IdentityService;
-import org.eclipse.jetty.ee10.security.LoginService;
-import org.eclipse.jetty.ee10.security.ServerAuthException;
-import org.eclipse.jetty.ee10.security.UserAuthentication;
-import org.eclipse.jetty.ee10.security.WrappedAuthConfiguration;
-import org.eclipse.jetty.ee10.security.authentication.DeferredAuthentication;
-import org.eclipse.jetty.ee10.security.authentication.LoginAuthenticator;
-import org.eclipse.jetty.ee10.security.authentication.SessionAuthentication;
-import org.eclipse.jetty.server.Authentication;
-import org.eclipse.jetty.server.Authentication.User;
-import org.eclipse.jetty.server.UserIdentity;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.security.Authentication;
+import org.eclipse.jetty.ee10.servlet.security.Authentication.User;
+import org.eclipse.jetty.ee10.servlet.security.EmptyLoginService;
+import org.eclipse.jetty.ee10.servlet.security.IdentityService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.ServerAuthException;
+import org.eclipse.jetty.ee10.servlet.security.UserAuthentication;
+import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
+import org.eclipse.jetty.ee10.servlet.security.WrappedAuthConfiguration;
+import org.eclipse.jetty.ee10.servlet.security.authentication.DeferredAuthentication;
+import org.eclipse.jetty.ee10.servlet.security.authentication.LoginAuthenticator;
+import org.eclipse.jetty.ee10.servlet.security.authentication.SessionAuthentication;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 import static org.eclipse.jetty.ee10.security.jaspi.JaspiAuthenticatorFactory.MESSAGE_LAYER;
 
@@ -137,9 +138,11 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public UserIdentity login(String username, Object password, ServletRequest request)
+    public UserIdentity login(String username, Object password, Request request)
     {
-        UserIdentity user = _loginService.login(username, password, request);
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        
+        UserIdentity user = _loginService.login(username, password, servletContextRequest == null ? null : servletContextRequest.getServletApiRequest());
         if (user != null)
         {
             renewSession((HttpServletRequest)request, null);
@@ -154,10 +157,10 @@ public class JaspiAuthenticator extends LoginAuthenticator
     }
 
     @Override
-    public Authentication validateRequest(ServletRequest request, ServletResponse response, boolean mandatory) throws ServerAuthException
+    public Authentication validateRequest(Request request, Response response, Callback callback, boolean mandatory) throws ServerAuthException
     {
-        JaspiMessageInfo info = new JaspiMessageInfo(request, response, mandatory);
-        request.setAttribute("org.eclipse.jetty.security.jaspi.info", info);
+        JaspiMessageInfo info = new JaspiMessageInfo(request, response, callback, mandatory);
+        request.setAttribute("org.eclipse.jetty.ee10.security.jaspi.info", info);
 
         Authentication a = validateRequest(info);
 
@@ -240,26 +243,25 @@ public class JaspiAuthenticator extends LoginAuthenticator
             }
             if (authStatus == AuthStatus.FAILURE)
             {
-                HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();
-                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                Response.writeError(messageInfo.getBaseRequest(), messageInfo.getBaseResponse(), messageInfo.getCallback(), HttpServletResponse.SC_FORBIDDEN);
                 return Authentication.SEND_FAILURE;
             }
             // should not happen
             throw new IllegalStateException("No AuthStatus returned");
         }
-        catch (IOException | AuthException e)
+        catch (AuthException e)
         {
             throw new ServerAuthException(e);
         }
     }
 
-    // most likely validatedUser is not needed here.
     @Override
-    public boolean secureResponse(ServletRequest req, ServletResponse res, boolean mandatory, User validatedUser) throws ServerAuthException
+    public boolean secureResponse(Request request, Response response, Callback callback, boolean mandatory, User validatedUser) throws ServerAuthException
     {
-        JaspiMessageInfo info = (JaspiMessageInfo)req.getAttribute("org.eclipse.jetty.security.jaspi.info");
+        ServletContextRequest servletContextRequest = Request.as(request, ServletContextRequest.class);
+        JaspiMessageInfo info = (JaspiMessageInfo)servletContextRequest.getServletApiRequest().getAttribute("org.eclipse.jetty.ee10.security.jaspi.info");
         if (info == null)
-            throw new NullPointerException("MessageInfo from request missing: " + req);
+            throw new NullPointerException("MessageInfo from request missing: " + request);
         return secureResponse(info, validatedUser);
     }
 
@@ -282,7 +284,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
         {
             throw new ServerAuthException(e);
         }
-    }
+    }   
 
     private static class JaspiAuthConfiguration extends WrappedAuthConfiguration
     {

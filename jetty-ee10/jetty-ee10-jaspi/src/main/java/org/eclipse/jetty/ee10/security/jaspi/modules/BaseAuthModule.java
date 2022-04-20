@@ -33,9 +33,9 @@ import jakarta.security.auth.message.config.ServerAuthContext;
 import jakarta.security.auth.message.module.ServerAuthModule;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.ee10.security.jaspi.JaspiMessageInfo;
 import org.eclipse.jetty.ee10.security.jaspi.callback.CredentialValidationCallback;
+import org.eclipse.jetty.ee10.servlet.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 
@@ -47,7 +47,7 @@ public abstract class BaseAuthModule implements ServerAuthModule, ServerAuthCont
 {
     private static final Class[] SUPPORTED_MESSAGE_TYPES = new Class[]{HttpServletRequest.class, HttpServletResponse.class};
 
-    protected static final String LOGIN_SERVICE_KEY = "org.eclipse.jetty.security.jaspi.modules.LoginService";
+    protected static final String LOGIN_SERVICE_KEY = "org.eclipse.jetty.ee10.security.jaspi.modules.LoginService";
 
     protected CallbackHandler callbackHandler;
 

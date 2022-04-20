@@ -21,6 +21,11 @@ import java.util.Set;
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.ServletContextResponse;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Almost an implementation of jaspi MessageInfo.
@@ -29,56 +34,81 @@ public class JaspiMessageInfo implements MessageInfo
 {
     public static final String MANDATORY_KEY = "jakarta.security.auth.message.MessagePolicy.isMandatory";
     public static final String AUTH_METHOD_KEY = "jakarta.servlet.http.authType";
-    private ServletRequest request;
-    private ServletResponse response;
-    private final MIMap map;
+    private Request _request;
+    private Response _response;
+    private Callback _callback;
+    private final MIMap _map;
 
-    public JaspiMessageInfo(ServletRequest request, ServletResponse response, boolean isAuthMandatory)
+    public JaspiMessageInfo(Request request, Response response, Callback callback, boolean isAuthMandatory)
     {
-        this.request = request;
-        this.response = response;
+        _request = request;
+        _response = response;
+        _callback = callback;
         //JASPI 3.8.1
-        map = new MIMap(isAuthMandatory);
+        _map = new MIMap(isAuthMandatory);
+    }
+    
+    public Callback getCallback()
+    {
+        return _callback;
     }
 
     @Override
     public Map getMap()
     {
-        return map;
+        return _map;
     }
 
+    public Request getBaseRequest()
+    {
+        return _request;
+    }
+    
+    public Response getBaseResponse()
+    {
+        return _response;
+    }
+    
     @Override
     public Object getRequestMessage()
     {
-        return request;
+        if (_request == null)
+            return null;
+        return Request.as(_request, ServletContextRequest.class).getServletApiRequest();
     }
 
     @Override
     public Object getResponseMessage()
     {
-        return response;
+        if (_response == null)
+            return null;
+        return Response.as(_response, ServletContextResponse.class).getServletApiResponse();
     }
 
     @Override
     public void setRequestMessage(Object request)
     {
-        this.request = (ServletRequest)request;
+        if (!(request instanceof ServletRequest))
+            throw new IllegalStateException("Not a ServletRequest");
+        _request = ServletContextRequest.getBaseRequest((ServletRequest)request);
     }
 
     @Override
     public void setResponseMessage(Object response)
     {
-        this.response = (ServletResponse)response;
+        if (!(response instanceof ServletResponse))
+            throw new IllegalStateException("Not a ServletResponse");
+        _response = ServletContextResponse.getBaseResponse((ServletResponse)response);
     }
 
     public String getAuthMethod()
     {
-        return map.getAuthMethod();
+        return _map.getAuthMethod();
     }
 
     public boolean isAuthMandatory()
     {
-        return map.isAuthMandatory();
+        return _map.isAuthMandatory();
     }
 
     //TODO this has bugs in the view implementations.  Changing them will not affect the hardcoded values.

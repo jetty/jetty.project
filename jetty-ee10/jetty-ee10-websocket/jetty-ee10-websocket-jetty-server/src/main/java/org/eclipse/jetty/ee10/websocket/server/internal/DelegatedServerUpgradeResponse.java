@@ -14,6 +14,8 @@
 package org.eclipse.jetty.ee10.websocket.server.internal;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -22,6 +24,9 @@ import java.util.stream.Collectors;
 import org.eclipse.jetty.ee10.websocket.api.ExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.common.JettyExtensionConfig;
 import org.eclipse.jetty.ee10.websocket.server.JettyServerUpgradeResponse;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.websocket.core.server.ServerUpgradeResponse;
 
 public class DelegatedServerUpgradeResponse implements JettyServerUpgradeResponse
@@ -36,19 +41,19 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public void addHeader(String name, String value)
     {
-        upgradeResponse.addHeader(name, value);
+        upgradeResponse.getHeaders().add(name, value);
     }
 
     @Override
     public void setHeader(String name, String value)
     {
-        upgradeResponse.setHeader(name, value);
+        upgradeResponse.getHeaders().put(name, value);
     }
 
     @Override
     public void setHeader(String name, List<String> values)
     {
-        upgradeResponse.setHeader(name, values);
+        upgradeResponse.getHeaders().put(name, values);
     }
 
     @Override
@@ -66,37 +71,43 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public String getHeader(String name)
     {
-        return upgradeResponse.getHeader(name);
+        return upgradeResponse.getHeaders().get(name);
     }
 
     @Override
     public Set<String> getHeaderNames()
     {
-        return upgradeResponse.getHeaderNames();
+        return upgradeResponse.getHeaders().getFieldNamesCollection();
     }
 
     @Override
     public Map<String, List<String>> getHeaders()
     {
-        return upgradeResponse.getHeadersMap();
+        Map<String, List<String>> headers = getHeaderNames().stream()
+            .collect(Collectors.toMap((name) -> name, (name) -> new ArrayList<>(getHeaders(name))));
+        return Collections.unmodifiableMap(headers);
     }
 
     @Override
     public List<String> getHeaders(String name)
     {
-        return upgradeResponse.getHeaders(name);
+        return upgradeResponse.getHeaders().getValuesList(name);
     }
 
     @Override
     public int getStatusCode()
     {
-        return upgradeResponse.getStatusCode();
+        return upgradeResponse.getStatus();
     }
 
     @Override
     public void sendForbidden(String message) throws IOException
     {
-        upgradeResponse.sendForbidden(message);
+        try (Blocking.Callback callback = Blocking.callback())
+        {
+            Response.writeError(upgradeResponse.getRequest(), upgradeResponse, callback, HttpStatus.FORBIDDEN_403, message);
+            callback.block();
+        }
     }
 
     @Override
@@ -116,7 +127,7 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public void setStatusCode(int statusCode)
     {
-        upgradeResponse.setStatusCode(statusCode);
+        upgradeResponse.setStatus(statusCode);
     }
 
     @Override
@@ -128,6 +139,10 @@ public class DelegatedServerUpgradeResponse implements JettyServerUpgradeRespons
     @Override
     public void sendError(int statusCode, String message) throws IOException
     {
-        upgradeResponse.sendError(statusCode, message);
+        try (Blocking.Callback callback = Blocking.callback())
+        {
+            Response.writeError(upgradeResponse.getRequest(), upgradeResponse, callback, statusCode, message);
+            callback.block();
+        }
     }
 }

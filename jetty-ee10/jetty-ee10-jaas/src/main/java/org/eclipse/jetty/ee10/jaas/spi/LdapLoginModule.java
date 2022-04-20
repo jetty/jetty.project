@@ -40,7 +40,7 @@ import javax.security.auth.login.FailedLoginException;
 import javax.security.auth.login.LoginException;
 
 import org.eclipse.jetty.ee10.jaas.callback.ObjectCallback;
-import org.eclipse.jetty.ee10.security.UserPrincipal;
+import org.eclipse.jetty.ee10.servlet.security.UserPrincipal;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.security.Credential;
 import org.slf4j.Logger;

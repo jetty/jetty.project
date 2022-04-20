@@ -52,6 +52,8 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.TopologicalSort;
 import org.eclipse.jetty.util.URIUtil;
@@ -204,6 +206,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     private boolean _throwUnavailableOnStartupException = false;
 
     private MetaData _metadata = new MetaData();
+    private ServletApiContext _servletApiContext = new ServletApiContext();
 
     public static WebAppContext getCurrentWebAppContext()
     {
@@ -232,7 +235,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * @param parent The parent HandlerContainer.
+     * @param parent The parent container.
      * @param contextPath The context path
      * @param webApp The URL or filename of the webapp directory or war file.
      */
@@ -243,8 +246,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * This constructor is used in the geronimo integration.
-     *
      * @param sessionHandler SessionHandler for this web app
      * @param securityHandler SecurityHandler for this web app
      * @param servletHandler ServletHandler for this web app
@@ -256,9 +257,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /**
-     * This constructor is used in the geronimo integration.
-     *
-     * @param parent the parent handler
+     * @param parent the parent container
      * @param contextPath the context path
      * @param sessionHandler SessionHandler for this web app
      * @param securityHandler SecurityHandler for this web app
@@ -272,6 +271,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         // is done after this instance is constructed.
         super(null, contextPath, sessionHandler, securityHandler, servletHandler, errorHandler, options);
         setErrorHandler(errorHandler != null ? errorHandler : new ErrorPageErrorHandler());
+        //TODO: need ErrorPageErrorProcessor
+        setErrorProcessor(errorHandler != null ? errorHandler : new ErrorProcessor());
         setProtectedTargets(__dftProtectedTargets);
         if (parent != null)
             setParent(parent);
@@ -854,6 +855,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     @Override
+    protected ContextHandler.Context newContext()
+    {
+        return new Context();
+    }
+
+    @Override
     public String toString()
     {
         if (_war != null)
@@ -902,7 +909,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             new DumpableCollection("Systemclasses " + name, systemClasses),
             new DumpableCollection("Serverclasses " + name, serverClasses),
             new DumpableCollection("Configurations " + name, _configurations),
-            new DumpableCollection("Context attributes " + name, Collections.list(getServletContext().getAttributeNames())),
+            // FIXME new DumpableCollection("Handler attributes " + name, ((AttributesMap)getAttributes()).getAttributeEntrySet()),
+            // FIXME new DumpableCollection("Context attributes " + name, getContext().getAttributeEntrySet()),
             new DumpableCollection("EventListeners " + this, getEventListeners()),
             new DumpableCollection("Initparams " + name, getInitParams().entrySet())
         );
@@ -1353,21 +1361,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         return unchangedURLMappings;
     }
 
-    public class Context extends ServletContextHandler.ServletContextApi
+    public class ServletApiContext extends ServletContextHandler.ServletContextApi
     {
-        @Override
-        public URL getResource(String path) throws MalformedURLException
-        {
-            if (path == null)
-                return null;
-
-            Path resource = WebAppContext.this.getResource(path);
-            if (resource == null)
-                return null;
-
-            return resource.toUri().toURL();
-        }
-
         @Override
         public ServletContext getContext(String uripath)
         {
@@ -1389,6 +1384,28 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             {
                 return servletContext;
             }
+        }
+
+        @Override
+        public URL getResource(String path) throws MalformedURLException
+        {
+            if (path == null)
+                return null;
+
+            Path resource = WebAppContext.this.getResource(path);
+            if (resource == null)
+                return null;
+
+            return resource.toUri().toURL();
+        }
+    }
+
+    public class Context extends ServletContextHandler.Context
+    {
+        @Override
+        public ServletContextApi getServletContext()
+        {
+            return _servletApiContext;
         }
     }
 

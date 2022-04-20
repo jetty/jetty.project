@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.slf4j.Logger;

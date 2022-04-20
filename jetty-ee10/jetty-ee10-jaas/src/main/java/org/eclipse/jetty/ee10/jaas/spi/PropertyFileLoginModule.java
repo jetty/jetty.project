@@ -22,9 +22,9 @@ import javax.security.auth.callback.CallbackHandler;
 
 import org.eclipse.jetty.ee10.jaas.JAASLoginService;
 import org.eclipse.jetty.ee10.jaas.PropertyUserStoreManager;
-import org.eclipse.jetty.ee10.security.PropertyUserStore;
-import org.eclipse.jetty.ee10.security.RolePrincipal;
-import org.eclipse.jetty.ee10.security.UserPrincipal;
+import org.eclipse.jetty.ee10.servlet.security.PropertyUserStore;
+import org.eclipse.jetty.ee10.servlet.security.RolePrincipal;
+import org.eclipse.jetty.ee10.servlet.security.UserPrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

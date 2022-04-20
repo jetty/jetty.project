@@ -461,6 +461,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                     getEndPoint().shutdownOutput();
                     break;
                 }
+                else if (_requestHandler._failure != null)
+                {
+                    // There was an error, don't fill more.
+                    break;
+                }
                 else if (filled == 0)
                 {
                     fillInterested();
@@ -957,6 +962,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
     protected class RequestHandler implements HttpParser.RequestHandler, ComplianceViolation.Listener
     {
+        private Throwable _failure;
+
         protected RequestHandler()
         {
         }
@@ -999,6 +1006,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
             stream._content = new Content.Abstract(false, false)
             {
                 final RetainableByteBuffer _retainable = _retainableByteBuffer;
+
                 @Override
                 public void release()
                 {
@@ -1049,6 +1057,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("badMessage {} {}", HttpConnection.this, failure);
+
+            _failure = failure;
             _generator.setPersistent(false);
 
             HttpStreamOverHTTP1 stream = _stream.get();
@@ -1288,11 +1298,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         _connectionKeepAlive &&
                         !_connectionClose ||
                         HttpMethod.CONNECT.is(_method);
+
+                    // Since persistent status is now exposed in the application API, we need to be more definitive earlier
+                    // if we are persistent or not.
+                    _generator.setPersistent(persistent);
                     if (!persistent)
-                    {
                         _connectionKeepAlive = false;
-                        _generator.setPersistent(false);
-                    }
 
                     break;
                 }
@@ -1309,8 +1320,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
                         !_connectionClose ||
                         HttpMethod.CONNECT.is(_method);
 
-                    if (!persistent)
-                        _generator.setPersistent(false);
+                    // Since persistent status is now exposed in the application API, we need to be more definitive earlier
+                    // if we are persistent or not.
+                    _generator.setPersistent(persistent);
 
                     if (_upgrade != null && HttpConnection.this.upgrade(_stream.get()))
                         return null; // TODO do we need to return a runnable to complete the upgrade ???
@@ -1498,11 +1510,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Writ
 
             // Find the upgrade factory
             ConnectionFactory.Upgrading factory = getConnector().getConnectionFactories().stream()
-                    .filter(f -> f instanceof ConnectionFactory.Upgrading)
-                    .map(ConnectionFactory.Upgrading.class::cast)
-                    .filter(f -> f.getProtocols().contains(_upgrade.getValue()))
-                    .findAny()
-                    .orElse(null);
+                .filter(f -> f instanceof ConnectionFactory.Upgrading)
+                .map(ConnectionFactory.Upgrading.class::cast)
+                .filter(f -> f.getProtocols().contains(_upgrade.getValue()))
+                .findAny()
+                .orElse(null);
 
             if (factory == null)
             {

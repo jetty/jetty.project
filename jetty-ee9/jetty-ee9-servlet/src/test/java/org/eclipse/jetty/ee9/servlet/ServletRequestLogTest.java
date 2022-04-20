@@ -30,10 +30,10 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.ErrorHandler;
-import org.eclipse.jetty.ee9.handler.HttpChannel;
-import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.ee9.handler.Response;
+import org.eclipse.jetty.ee9.nested.ErrorHandler;
+import org.eclipse.jetty.ee9.nested.HttpChannel;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.logging.StacklessLogging;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
@@ -312,7 +312,7 @@ public class ServletRequestLogTest
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);
         app.setContextPath("/");
-        contexts.addHandler(app.getCoreContextHandler());
+        contexts.addHandler(app);
 
         // Add the test servlet
         ServletHolder testHolder = new ServletHolder(testServlet);
@@ -391,7 +391,7 @@ public class ServletRequestLogTest
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);
         app.setContextPath("/");
-        contexts.addHandler(app.getCoreContextHandler());
+        contexts.addHandler(app);
 
         // Add the test servlet
         ServletHolder testHolder = new ServletHolder(testServlet);
@@ -466,7 +466,7 @@ public class ServletRequestLogTest
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);
         app.setContextPath("/");
-        contexts.addHandler(app.getCoreContextHandler());
+        contexts.addHandler(app);
 
         // Add the test servlet
         ServletHolder testHolder = new ServletHolder(testServlet);
@@ -550,7 +550,7 @@ public class ServletRequestLogTest
         // Add the Servlet Context
         ServletContextHandler app = new ServletContextHandler(ServletContextHandler.SESSIONS);
         app.setContextPath("/");
-        contexts.addHandler(app.getCoreContextHandler());
+        contexts.addHandler(app);
 
         // Add the test servlet
         ServletHolder testHolder = new ServletHolder(testServlet);

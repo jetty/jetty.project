@@ -38,6 +38,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler.JspPropertyGroup;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler.TagLib;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
+import org.eclipse.jetty.ee10.servlet.SessionHandler;
 import org.eclipse.jetty.ee10.servlet.Source;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
 import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;

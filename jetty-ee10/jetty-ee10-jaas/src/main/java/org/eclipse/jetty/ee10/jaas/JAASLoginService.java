@@ -33,11 +33,12 @@ import javax.security.auth.login.LoginException;
 
 import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.ee10.jaas.callback.DefaultCallbackHandler;
-import org.eclipse.jetty.ee10.security.DefaultIdentityService;
-import org.eclipse.jetty.ee10.security.IdentityService;
-import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
+import org.eclipse.jetty.ee10.servlet.security.DefaultIdentityService;
+import org.eclipse.jetty.ee10.servlet.security.IdentityService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -194,12 +195,11 @@ public class JAASLoginService extends ContainerLifeCycle implements LoginService
                 Class<?> clazz = Loader.loadClass(_callbackHandlerClass);
                 callbackHandler = (CallbackHandler)clazz.getDeclaredConstructor().newInstance();
             }
-            
+
             if (callbackHandler instanceof DefaultCallbackHandler)
             {
                 DefaultCallbackHandler dch = (DefaultCallbackHandler)callbackHandler;
-                if (request instanceof Request)
-                    dch.setRequest((Request)request);
+                dch.setRequest(ServletContextRequest.getBaseRequest(request));
                 dch.setCredential(credentials);
                 dch.setUserName(username);
             }

@@ -22,12 +22,13 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.Authentication;
-import org.eclipse.jetty.ee9.handler.Authentication.User;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.Authentication.User;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.ServerAuthException;
 import org.eclipse.jetty.ee9.security.UserAuthentication;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
@@ -62,7 +63,7 @@ public class SslClientCertAuthenticator extends LoginAuthenticator
 
         HttpServletRequest request = (HttpServletRequest)req;
         HttpServletResponse response = (HttpServletResponse)res;
-        X509Certificate[] certs = (X509Certificate[])request.getAttribute("jakarta.servlet.request.X509Certificate");
+        X509Certificate[] certs = (X509Certificate[])request.getAttribute(SecureRequestCustomizer.CERTIFICATES);
 
         try
         {

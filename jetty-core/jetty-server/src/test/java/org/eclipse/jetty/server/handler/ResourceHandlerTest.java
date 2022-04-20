@@ -15,6 +15,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -26,12 +27,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.util.List;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.eclipse.jetty.http.CachingContentFactory;
+import org.eclipse.jetty.http.CompressedContentFormat;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
@@ -40,12 +47,14 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.eclipse.jetty.http.HttpHeader.CONTENT_ENCODING;
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_LENGTH;
 import static org.eclipse.jetty.http.HttpHeader.CONTENT_TYPE;
 import static org.eclipse.jetty.http.HttpHeader.ETAG;
@@ -58,6 +67,7 @@ import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.oneOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -82,6 +92,8 @@ public class ResourceHandlerTest
     {
         File dir = MavenTestingUtils.getTargetFile("test-classes/simple");
         File bigger = new File(dir, "bigger.txt");
+        File bigGz = new File(dir, "big.txt.gz");
+        File bigZip = new File(dir, "big.txt.zip");
         File big = new File(dir, "big.txt");
         try (OutputStream out = new FileOutputStream(bigger))
         {
@@ -93,8 +105,25 @@ public class ResourceHandlerTest
                 }
             }
         }
+        try (OutputStream gzOut = new GZIPOutputStream(new FileOutputStream(bigGz)))
+        {
+            try (InputStream in = new FileInputStream(big))
+            {
+                IO.copy(in, gzOut);
+            }
+        }
+        try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(bigZip)))
+        {
+            zipOut.putNextEntry(new ZipEntry(big.getName()));
+            try (InputStream in = new FileInputStream(big))
+            {
+                IO.copy(in, zipOut);
+            }
+        }
 
         bigger.deleteOnExit();
+        bigGz.deleteOnExit();
+        bigZip.deleteOnExit();
 
         // determine how the SCM of choice checked out the big.txt EOL
         // we can't just use whatever is the OS default.
@@ -145,10 +174,145 @@ public class ResourceHandlerTest
     }
 
     @AfterEach
-    void tearDown() throws Exception
+    public void tearDown() throws Exception
     {
         _server.stop();
-        _server.setHandler(null);
+        _server.setHandler((Handler)null);
+    }
+
+    @Test
+    public void testPrecompressedGzipWorks() throws Exception
+    {
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{CompressedContentFormat.GZIP});
+
+        HttpTester.Response response1 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "Accept-Encoding: gzip\r\n" +
+                "\r\n"));
+        assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response1.get(CONTENT_ENCODING), is("gzip"));
+
+        // Load big.txt.gz into a byte array and assert its contents byte per byte.
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+        {
+            Files.copy(_resourceHandler.getBaseResource().resolve("big.txt.gz"), baos);
+            assertThat(response1.getContentBytes(), is(baos.toByteArray()));
+        }
+
+        HttpTester.Response response2 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "\r\n"));
+        assertThat(response2.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response2.get(CONTENT_ENCODING), is(nullValue()));
+        assertThat(response2.getContent(), startsWith("     1\tThis is a big file"));
+        assertThat(response2.getContent(), endsWith("   400\tThis is a big file" + LN));
+    }
+
+    @Test
+    public void testGzipEquivalentFileExtensions() throws Exception
+    {
+        _resourceHandler.setGzipEquivalentFileExtensions(List.of(CompressedContentFormat.GZIP.getExtension()));
+
+        HttpTester.Response response1 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt.gz HTTP/1.0\r\n" +
+                "\r\n"));
+        assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response1.get(CONTENT_ENCODING), is("gzip"));
+
+       HttpTester.Response response2 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "\r\n"));
+        assertThat(response2.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response2.get(CONTENT_ENCODING), is(nullValue()));
+    }
+
+    @Test
+    public void testPrecompressedPreferredEncodingOrderWithQuality() throws Exception
+    {
+        _resourceHandler.setEncodingCacheSize(0);
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{CompressedContentFormat.GZIP, new CompressedContentFormat("zip", ".zip")});
+
+        HttpTester.Response response1 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "Accept-Encoding: zip;q=0.5,gzip;q=1.0\r\n" +
+                "\r\n"));
+        assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response1.get(CONTENT_ENCODING), is("gzip"));
+
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{new CompressedContentFormat("zip", ".zip"), CompressedContentFormat.GZIP});
+
+        HttpTester.Response response2 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "Accept-Encoding: zip;q=1.0,gzip;q=0.5\r\n" +
+                "\r\n"));
+        assertThat(response2.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response2.get(CONTENT_ENCODING), is("zip"));
+    }
+
+    @Test
+    public void testPrecompressedPreferredEncodingOrder() throws Exception
+    {
+        _resourceHandler.setEncodingCacheSize(0);
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{new CompressedContentFormat("zip", ".zip"), CompressedContentFormat.GZIP});
+
+        HttpTester.Response response1 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "Accept-Encoding: zip,gzip\r\n" +
+                "\r\n"));
+        assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response1.get(CONTENT_ENCODING), is("zip"));
+
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{CompressedContentFormat.GZIP, new CompressedContentFormat("zip", ".zip")});
+
+        HttpTester.Response response2 = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "Accept-Encoding: gzip,zip\r\n" +
+                "\r\n"));
+        assertThat(response2.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response2.get(CONTENT_ENCODING), is("gzip"));
+    }
+
+    @Test
+    public void testPrecompressedGzipNoopsWhenCompressedFileDoesNotExist() throws Exception
+    {
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{CompressedContentFormat.GZIP});
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/simple.txt HTTP/1.0\r\n" +
+                "Accept-Encoding: gzip\r\n" +
+                "\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(CONTENT_ENCODING), is(nullValue()));
+        assertThat(response.getContent(), is("simple text"));
+    }
+
+    @Test
+    public void testPrecompressedGzipNoopWhenNoAcceptEncoding() throws Exception
+    {
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{CompressedContentFormat.GZIP});
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(CONTENT_ENCODING), is(nullValue()));
+        assertThat(response.getContent(), startsWith("     1\tThis is a big file"));
+        assertThat(response.getContent(), endsWith("   400\tThis is a big file" + LN));
+    }
+
+    @Test
+    public void testPrecompressedGzipNoopWhenNoMatchingAcceptEncoding() throws Exception
+    {
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{CompressedContentFormat.GZIP});
+
+        HttpTester.Response response = HttpTester.parseResponse(
+            _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                "Accept-Encoding: deflate\r\n" +
+                "\r\n"));
+        assertThat(response.getStatus(), is(HttpStatus.OK_200));
+        assertThat(response.get(CONTENT_ENCODING), is(nullValue()));
+        assertThat(response.getContent(), startsWith("     1\tThis is a big file"));
+        assertThat(response.getContent(), endsWith("   400\tThis is a big file" + LN));
     }
 
     @Test
@@ -482,16 +646,22 @@ public class ResourceHandlerTest
         assertThat(response.get(ETAG), notNullValue());
         String etag = response.get(ETAG);
 
-        try (BufferedWriter bw = Files.newBufferedWriter(testFile, StandardOpenOption.APPEND))
+        // re-write the file as long as its last modified timestamp did not change
+        FileTime before = Files.getLastModifiedTime(testFile);
+        do
         {
-            bw.write("some more content\n");
+            try (BufferedWriter bw = Files.newBufferedWriter(testFile))
+            {
+                bw.write("some different content\n");
+            }
         }
+        while (Files.getLastModifiedTime(testFile).equals(before));
 
         response = HttpTester.parseResponse(_local.getResponse("GET /resource/test-etag-file.txt HTTP/1.0\r\n" +
             "If-None-Match: " + etag + " \r\n" +
             "\r\n"));
         assertThat(response.getStatus(), is(HttpStatus.OK_200));
-        assertThat(response.getContent(), equalTo("some content\nsome more content\n"));
+        assertThat(response.getContent(), equalTo("some different content\n"));
     }
 
     @Test
@@ -508,6 +678,115 @@ public class ResourceHandlerTest
             assertThat(response.getStatus(), is(HttpStatus.OK_200));
             assertThat(response.getContent(), startsWith("     1\tThis is a big file"));
             assertThat(response.getContent(), endsWith("   400\tThis is a big file" + LN));
+        }
+
+        assertThat(contentFactory.getCachedFiles(), is(1));
+        assertThat(contentFactory.getCachedSize(), is(expectedSize));
+
+        contentFactory.flushCache();
+        assertThat(contentFactory.getCachedFiles(), is(0));
+        assertThat(contentFactory.getCachedSize(), is(0L));
+    }
+
+    @Test
+    public void testCachingPrecompressedFilesCached() throws Exception
+    {
+        // TODO explicitly turn on caching
+        long expectedSize = Files.size(_resourceHandler.getBaseResource().resolve("big.txt")) +
+            Files.size(_resourceHandler.getBaseResource().resolve("big.txt.gz"));
+        CachingContentFactory contentFactory = (CachingContentFactory)_resourceHandler.getContentFactory();
+
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{CompressedContentFormat.GZIP});
+
+        for (int i = 0; i < 10; i++)
+        {
+            HttpTester.Response response1 = HttpTester.parseResponse(
+                _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                    "Accept-Encoding: gzip\r\n" +
+                    "\r\n"));
+            assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response1.get(CONTENT_ENCODING), is("gzip"));
+            // Load big.txt.gz into a byte array and assert its contents byte per byte.
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+            {
+                Files.copy(_resourceHandler.getBaseResource().resolve("big.txt.gz"), baos);
+                assertThat(response1.getContentBytes(), is(baos.toByteArray()));
+            }
+
+            HttpTester.Response response2 = HttpTester.parseResponse(
+                _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                    "Accept-Encoding: deflate\r\n" +
+                    "\r\n"));
+            assertThat(response2.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response2.get(CONTENT_ENCODING), is(nullValue()));
+            assertThat(response2.getContent(), startsWith("     1\tThis is a big file"));
+            assertThat(response2.getContent(), endsWith("   400\tThis is a big file" + LN));
+        }
+
+        assertThat(contentFactory.getCachedFiles(), is(1));
+        assertThat(contentFactory.getCachedSize(), is(expectedSize));
+
+        contentFactory.flushCache();
+        assertThat(contentFactory.getCachedFiles(), is(0));
+        assertThat(contentFactory.getCachedSize(), is(0L));
+    }
+
+    @Test
+    public void testCachingPrecompressedFilesCachedEtagged() throws Exception
+    {
+        // TODO explicitly turn on caching
+        long expectedSize = Files.size(_resourceHandler.getBaseResource().resolve("big.txt")) +
+            Files.size(_resourceHandler.getBaseResource().resolve("big.txt.gz"));
+        CachingContentFactory contentFactory = (CachingContentFactory)_resourceHandler.getContentFactory();
+
+        _resourceHandler.setPrecompressedFormats(new CompressedContentFormat[]{CompressedContentFormat.GZIP});
+        _resourceHandler.setEtags(true);
+
+        for (int i = 0; i < 10; i++)
+        {
+            HttpTester.Response response1 = HttpTester.parseResponse(
+                _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                    "Accept-Encoding: gzip\r\n" +
+                    "\r\n"));
+            assertThat(response1.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response1.get(CONTENT_ENCODING), is("gzip"));
+            String eTag1 = response1.get(ETAG);
+            assertThat(eTag1, endsWith("--gzip\""));
+            assertThat(eTag1, startsWith("W/"));
+            String nakedEtag1 = QuotedStringTokenizer.unquote(eTag1.substring(2));
+            // Load big.txt.gz into a byte array and assert its contents byte per byte.
+            try (ByteArrayOutputStream baos = new ByteArrayOutputStream())
+            {
+                Files.copy(_resourceHandler.getBaseResource().resolve("big.txt.gz"), baos);
+                assertThat(response1.getContentBytes(), is(baos.toByteArray()));
+            }
+
+            HttpTester.Response response2 = HttpTester.parseResponse(
+                _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                    "Accept-Encoding: deflate\r\n" +
+                    "\r\n"));
+            assertThat(response2.getStatus(), is(HttpStatus.OK_200));
+            assertThat(response2.get(CONTENT_ENCODING), is(nullValue()));
+            String eTag2 = response2.get(ETAG);
+            assertThat(eTag2, startsWith("W/"));
+            String nakedEtag2 = QuotedStringTokenizer.unquote(eTag2.substring(2));
+            assertThat(nakedEtag1, startsWith(nakedEtag2));
+            assertThat(response2.getContent(), startsWith("     1\tThis is a big file"));
+            assertThat(response2.getContent(), endsWith("   400\tThis is a big file" + LN));
+
+            HttpTester.Response response3 = HttpTester.parseResponse(
+                _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                    "Accept-Encoding: gzip\r\n" +
+                    "If-None-Match: " + eTag1 + " \r\n" +
+                    "\r\n"));
+            assertThat(response3.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
+
+            HttpTester.Response response4 = HttpTester.parseResponse(
+                _local.getResponse("GET /resource/big.txt HTTP/1.0\r\n" +
+                    "Accept-Encoding: deflate\r\n" +
+                    "If-None-Match: " + eTag2 + " \r\n" +
+                    "\r\n"));
+            assertThat(response4.getStatus(), is(HttpStatus.NOT_MODIFIED_304));
         }
 
         assertThat(contentFactory.getCachedFiles(), is(1));
@@ -676,7 +955,7 @@ public class ResourceHandlerTest
     {
         // TODO explicitly turn on caching
         Path tempPath = _resourceHandler.getBaseResource().resolve("temp.txt");
-        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(tempPath, StandardCharsets.ISO_8859_1))
+        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(tempPath))
         {
             bufferedWriter.write("temp file");
         }
@@ -695,10 +974,16 @@ public class ResourceHandlerTest
         assertThat(contentFactory.getCachedFiles(), is(1));
         assertThat(contentFactory.getCachedSize(), is(expectedSize));
 
-        try (BufferedWriter bufferedWriter = Files.newBufferedWriter(tempPath, StandardCharsets.ISO_8859_1))
+        // re-write the file as long as its last modified timestamp did not change
+        FileTime before = Files.getLastModifiedTime(tempPath);
+        do
         {
-            bufferedWriter.write("updated temp file");
+            try (BufferedWriter bw = Files.newBufferedWriter(tempPath))
+            {
+                bw.write("updated temp file");
+            }
         }
+        while (Files.getLastModifiedTime(tempPath).equals(before));
         long newExpectedSize = Files.size(tempPath);
 
         for (int i = 0; i < 10; i++)

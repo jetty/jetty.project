@@ -31,7 +31,6 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.WriteListener;
-import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.ConnectionMetaData;
@@ -1198,21 +1197,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     }
 
     /**
-     * Blocking send of HTTP content.
-     *
-     * @param content The HTTP content to send
-     * @throws IOException if the send fails
-     */
-    public void sendContent(HttpContent content) throws IOException
-    {
-        try (Blocker blocker = _writeBlocker.acquire())
-        {
-            sendContent(content, blocker);
-            blocker.block();
-        }
-    }
-
-    /**
      * Asynchronous send of whole content.
      *
      * @param content The whole content to send
@@ -1315,66 +1299,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 _written += len;
             return true;
         }
-    }
-
-    /**
-     * Asynchronous send of HTTP content.
-     *
-     * @param httpContent The HTTP content to send
-     * @param callback The callback to use to notify success or failure
-     */
-    public void sendContent(HttpContent httpContent, Callback callback)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("sendContent(http={},{})", httpContent, callback);
-
-        boolean useOutputDirectByteBuffers = _connectionMetaData.getHttpConfiguration().isUseOutputDirectByteBuffers();
-        ByteBuffer buffer = useOutputDirectByteBuffers ? httpContent.getDirectBuffer() : null;
-        if (buffer == null)
-            buffer = httpContent.getIndirectBuffer();
-
-        if (buffer != null)
-        {
-            sendContent(buffer, callback);
-            return;
-        }
-
-        ReadableByteChannel rbc = null;
-        try
-        {
-            rbc = httpContent.getReadableByteChannel();
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to access ReadableByteChannel for content {}", httpContent, x);
-        }
-        if (rbc != null)
-        {
-            // Close of the rbc is done by the async sendContent
-            sendContent(rbc, callback);
-            return;
-        }
-
-        InputStream in = null;
-        try
-        {
-            in = httpContent.getInputStream();
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Unable to access InputStream for content {}", httpContent, x);
-        }
-        if (in != null)
-        {
-            sendContent(in, callback);
-            return;
-        }
-
-        Throwable cause = new IllegalArgumentException("unknown content for " + httpContent);
-        _servletChannel.abort(cause);
-        callback.failed(cause);
     }
 
     public int getBufferSize()

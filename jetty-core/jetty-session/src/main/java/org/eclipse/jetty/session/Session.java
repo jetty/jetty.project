@@ -79,7 +79,7 @@ public class Session
 
     protected long _requests;
 
-    protected boolean _idChanged;
+    protected boolean _needSetCookie;
 
     protected boolean _newSession;
 
@@ -148,11 +148,15 @@ public class Session
         _extendedId = extendedId;
     }
 
-    public void cookieSet()
+    /**
+     * Set the time that the cookie was set and clear the idChanged flag.
+     */
+    void onSetCookieGenerated()
     {
         try (AutoLock l = _lock.lock())
         {
             _sessionData.setCookieSet(_sessionData.getAccessed());
+            _needSetCookie = false;
         }
     }
 
@@ -582,7 +586,7 @@ public class Session
                     // Session object will not have been modified.
                     _sessionData.setId(newId);
                     setExtendedId(_manager.getSessionIdManager().getExtendedId(newId, request));
-                    setIdChanged(true);
+                    onIdChanged();
 
                     _state = State.VALID;
                     _stateChangeCompleted.signalAll();
@@ -761,19 +765,20 @@ public class Session
         }
     }
 
-    public void setIdChanged(boolean changed)
+    public void onIdChanged()
     {
         try (AutoLock l = _lock.lock())
         {
-            _idChanged = changed;
+            if (getSessionManager().isUsingCookies())
+                _needSetCookie = true;
         }
     }
 
-    public boolean isIdChanged()
+    public boolean isSetCookieNeeded()
     {
         try (AutoLock l = _lock.lock())
         {
-            return _idChanged;
+            return _needSetCookie;
         }
     }
 

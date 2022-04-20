@@ -15,6 +15,7 @@ package org.eclipse.jetty.ee10.jstl;
 
 import java.io.File;
 import java.net.URI;
+import java.nio.file.Path;
 
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 
@@ -30,6 +31,6 @@ public class JspConfig
         context.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",
             ".*/jetty-jakarta-servlet-api-[^/]*\\.jar$|.*jakarta.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard.*\\.jar");
         context.setWar(baseUri.toASCIIString());
-        context.setResourceBase(baseUri.toASCIIString());
+        context.setResourceBase(Path.of(baseUri));
     }
 }

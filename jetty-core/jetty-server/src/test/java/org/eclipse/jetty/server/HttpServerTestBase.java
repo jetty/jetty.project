@@ -232,6 +232,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     @Test
     public void testFullMethod() throws Exception
     {
+        // TODO this test is flakey
+        // The failure appears associated with the 431 BadMessageException being thrown
+
         startServer(new HelloHandler());
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());

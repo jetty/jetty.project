@@ -17,7 +17,7 @@ import java.util.Objects;
 import javax.security.auth.Subject;
 
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.IdentityService;
 import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;

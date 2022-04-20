@@ -17,9 +17,9 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.ee9.handler.Response;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.Response;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.Authenticator;
 import org.eclipse.jetty.ee9.security.IdentityService;
 import org.eclipse.jetty.ee9.security.LoginService;
@@ -120,16 +120,16 @@ public abstract class LoginAuthenticator implements Authenticator
                 //(indicated by SESSION_SECURED not being set on the session) then we should change id
                 if (httpSession.getAttribute(Session.SESSION_CREATED_SECURE) != Boolean.TRUE)
                 {
-                    if (httpSession instanceof Session)
+                    if (httpSession instanceof Session.APISession apiSession)
                     {
-                        Session s = (Session)httpSession;
-                        String oldId = s.getId();
-                        s.renewId(Request.getBaseRequest(request).getHttpChannel().getCoreRequest());
-                        s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-                        if (s.isIdChanged() && (response instanceof Response))
-                            ((Response)response).replaceCookie(s.getSessionManager().getSessionCookie(s, request.getContextPath(), request.isSecure()));
+                        Session session = apiSession.getCoreSession();
+                        String oldId = session.getId();
+                        session.renewId(Request.getBaseRequest(request).getHttpChannel().getCoreRequest());
+                        session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+                        if (session.isSetCookieNeeded() && (response instanceof Response))
+                            ((Response)response).replaceCookie(session.getSessionManager().getSessionCookie(session, request.getContextPath(), request.isSecure()));
                         if (LOG.isDebugEnabled())
-                            LOG.debug("renew {}->{}", oldId, s.getId());
+                            LOG.debug("renew {}->{}", oldId, session.getId());
                     }
                     else
                     {

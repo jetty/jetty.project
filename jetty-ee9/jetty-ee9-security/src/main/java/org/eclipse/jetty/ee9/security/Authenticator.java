@@ -18,8 +18,8 @@ import java.util.Set;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import org.eclipse.jetty.ee9.handler.Authentication;
-import org.eclipse.jetty.ee9.handler.Authentication.User;
+import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.Authentication.User;
 import org.eclipse.jetty.server.Server;
 
 /**

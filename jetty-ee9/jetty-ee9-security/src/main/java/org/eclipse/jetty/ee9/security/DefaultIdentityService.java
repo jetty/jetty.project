@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee9.security;
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 
 /**
  * Default Identity Service implementation.

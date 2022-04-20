@@ -13,8 +13,6 @@
 
 package org.eclipse.jetty.websocket.core.server;
 
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 
 /**
@@ -31,5 +29,5 @@ public interface FrameHandlerFactory
      * @return the API specific FrameHandler, or null if this implementation is unable to create
      * the FrameHandler (allowing another {@link FrameHandlerFactory} to try)
      */
-    FrameHandler newFrameHandler(Object websocketPojo, Request upgradeRequest, Response upgradeResponse);
+    FrameHandler newFrameHandler(Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse);
 }

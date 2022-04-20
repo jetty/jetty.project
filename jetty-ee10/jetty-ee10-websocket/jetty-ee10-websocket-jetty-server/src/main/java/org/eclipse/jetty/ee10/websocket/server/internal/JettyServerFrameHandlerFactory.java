@@ -39,6 +39,7 @@ public class JettyServerFrameHandlerFactory extends JettyWebSocketFrameHandlerFa
     @Override
     public FrameHandler newFrameHandler(Object websocketPojo, ServerUpgradeRequest upgradeRequest, ServerUpgradeResponse upgradeResponse)
     {
+        // TODO: do we need to extract and use the Servlet req/resp as this occurs within ServletChannel handling?
         JettyWebSocketFrameHandler frameHandler = super.newJettyFrameHandler(websocketPojo);
         frameHandler.setUpgradeRequest(new DelegatedServerUpgradeRequest(upgradeRequest));
         frameHandler.setUpgradeResponse(new DelegatedServerUpgradeResponse(upgradeResponse));

@@ -40,12 +40,10 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.client.internal.RequestContentAdapter;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.client.util.PathRequestContent;
 import org.eclipse.jetty.http.HttpField;
@@ -670,28 +668,6 @@ public class HttpRequest implements Request
     {
         this.upgradeProtocol = upgradeProtocol;
         return this;
-    }
-
-    @Override
-    public ContentProvider getContent()
-    {
-        if (content instanceof RequestContentAdapter)
-            return ((RequestContentAdapter)content).getContentProvider();
-        return null;
-    }
-
-    @Override
-    public Request content(ContentProvider content)
-    {
-        return content(content, null);
-    }
-
-    @Override
-    public Request content(ContentProvider content, String contentType)
-    {
-        if (contentType != null)
-            headers.put(HttpHeader.CONTENT_TYPE, contentType);
-        return body(ContentProvider.toRequestContent(content));
     }
 
     @Override
