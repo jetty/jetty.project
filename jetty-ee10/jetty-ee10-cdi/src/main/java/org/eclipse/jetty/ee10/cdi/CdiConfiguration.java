@@ -14,7 +14,7 @@
 package org.eclipse.jetty.ee10.cdi;
 
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee10.plus.jndi.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 
 /**

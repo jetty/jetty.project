@@ -11,8 +11,8 @@
 // ========================================================================
 //
 
-import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee10.plus.jndi.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee10.plus.jndi.webapp.PlusConfiguration;
 
 module org.eclipse.jetty.ee10.plus
 {
@@ -31,7 +31,7 @@ module org.eclipse.jetty.ee10.plus
     exports org.eclipse.jetty.ee10.plus.annotation;
     exports org.eclipse.jetty.ee10.plus.jndi;
     exports org.eclipse.jetty.ee10.plus.security;
-    exports org.eclipse.jetty.ee10.plus.webapp;
+    exports org.eclipse.jetty.ee10.plus.jndi.webapp;
 
     provides org.eclipse.jetty.ee10.webapp.Configuration with
         EnvConfiguration,

@@ -17,8 +17,8 @@ import java.io.FileNotFoundException;
 import java.nio.file.Path;
 import javax.naming.NamingException;
 
-import org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration;
-import org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration;
+import org.eclipse.jetty.ee10.plus.jndi.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee10.plus.jndi.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.resource.PathResource;

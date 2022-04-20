@@ -11,7 +11,7 @@
 // ========================================================================
 //
 
-package org.eclipse.jetty.ee10.plus.webapp;
+package org.eclipse.jetty.ee10.plus.jndi.webapp;
 
 import java.net.URL;
 import java.util.ArrayList;

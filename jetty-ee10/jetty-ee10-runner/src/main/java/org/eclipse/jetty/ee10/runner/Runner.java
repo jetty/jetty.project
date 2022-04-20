@@ -28,6 +28,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
+import org.eclipse.jetty.ee10.plus.jndi.webapp.EnvConfiguration;
+import org.eclipse.jetty.ee10.plus.jndi.webapp.PlusConfiguration;
 import org.eclipse.jetty.ee10.security.ConstraintMapping;
 import org.eclipse.jetty.ee10.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.ee10.security.HashLoginService;
@@ -78,8 +80,8 @@ public class Runner
             org.eclipse.jetty.ee10.webapp.WebXmlConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.ee10.webapp.MetaInfConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.ee10.webapp.FragmentConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee10.plus.webapp.EnvConfiguration.class.getCanonicalName(),
-            org.eclipse.jetty.ee10.plus.webapp.PlusConfiguration.class.getCanonicalName(),
+            EnvConfiguration.class.getCanonicalName(),
+            PlusConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.ee10.annotations.AnnotationConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.ee10.webapp.JettyWebXmlConfiguration.class.getCanonicalName(),
             org.eclipse.jetty.ee10.webapp.WebAppConfiguration.class.getCanonicalName(),
