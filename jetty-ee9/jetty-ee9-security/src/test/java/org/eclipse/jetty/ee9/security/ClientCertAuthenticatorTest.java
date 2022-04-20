@@ -25,9 +25,9 @@ import javax.net.ssl.SSLSocketFactory;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.AbstractHandler;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.Request;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -68,7 +68,8 @@ public class ClientCertAuthenticatorTest
         origVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
 
         server = new Server();
-        ContextHandler context = new ContextHandler(server);
+        ContextHandler context = new ContextHandler();
+        server.setHandler(context);
 
         int port = 32080;
         int securePort = 32443;

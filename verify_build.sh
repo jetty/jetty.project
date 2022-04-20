@@ -5,7 +5,6 @@
 # dependant module has failed, but it may not have any compile errors itself.
 
 ee9_allowed_failures=(
-	"Jetty EE9 :: Handler"
 	"EE9 :: Jetty :: Security"
 	"EE9 :: Jetty :: Servlet Handling"
 	"EE9 :: Jetty :: Webapp Application Support"

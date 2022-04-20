@@ -1,4 +1,0 @@
-jgroups:
-  transport: tcp
-  dnsPing:
-    query: infinispan-dns-ping.myproject.svc.cluster.local

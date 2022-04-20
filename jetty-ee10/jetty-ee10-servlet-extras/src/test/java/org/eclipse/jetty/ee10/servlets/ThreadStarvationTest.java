@@ -38,19 +38,19 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.ee10.servlet.DefaultServlet;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SocketChannelEndPoint;
 import org.eclipse.jetty.logging.StacklessLogging;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.internal.HttpChannelState;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -115,7 +115,9 @@ public class ThreadStarvationTest
         _server.addConnector(connector);
 
         ServletContextHandler context = new ServletContextHandler(_server, "/");
-        context.setResourceBase(directory.toURI().toString());
+        context.setResourceBase(directory.toPath());
+        
+        //TODO: Uses DefaultServlet, currently all commented out
         context.addServlet(DefaultServlet.class, "/*").setAsyncSupported(false);
         _server.setHandler(context);
 
@@ -266,10 +268,10 @@ public class ThreadStarvationTest
             _server.addConnector(connector);
 
             final AtomicInteger count = new AtomicInteger(0);
-            _server.setHandler(new AbstractHandler()
+            class TheHandler extends Handler.Processor
             {
                 @Override
-                public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+                public void process(Request request, Response response, Callback callback) throws Exception
                 {
                     int c = count.getAndIncrement();
                     try
@@ -283,13 +285,14 @@ public class ThreadStarvationTest
                     {
                         throw new ServletException(e);
                     }
-                    baseRequest.setHandled(true);
+
                     response.setStatus(200);
                     response.setContentLength(13);
-                    response.getWriter().print("Hello World!\n");
-                    response.getWriter().flush();
+                    response.write(true, callback, "Hello World!\n");
                 }
-            });
+            }
+            
+            _server.setHandler(new TheHandler());
 
             _server.start();
 

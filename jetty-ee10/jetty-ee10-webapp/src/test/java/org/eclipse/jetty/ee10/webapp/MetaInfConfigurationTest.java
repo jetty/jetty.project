@@ -85,8 +85,8 @@ public class MetaInfConfigurationTest
         WebAppContext context25 = new WebAppContext();
         context25.setConfigurationDiscovered(false);
         context25.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
-        context25.getServletContext().setEffectiveMajorVersion(2);
-        context25.getServletContext().setEffectiveMinorVersion(5);
+        context25.getContext().getServletContext().setEffectiveMajorVersion(2);
+        context25.getContext().getServletContext().setEffectiveMinorVersion(5);
         meta25.preConfigure(context25);
 
         //test a 2.5 webapp will look for fragments as configurationDiscovered default true
@@ -94,8 +94,8 @@ public class MetaInfConfigurationTest
             MetaInfConfiguration.__allScanTypes);
         WebAppContext context25b = new WebAppContext();
         context25b.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web25)));
-        context25b.getServletContext().setEffectiveMajorVersion(2);
-        context25b.getServletContext().setEffectiveMinorVersion(5);
+        context25b.getContext().getServletContext().setEffectiveMajorVersion(2);
+        context25b.getContext().getServletContext().setEffectiveMinorVersion(5);
         meta25b.preConfigure(context25b);
 
         //test a 3.x metadata-complete webapp will not look for fragments
@@ -103,8 +103,8 @@ public class MetaInfConfigurationTest
             Arrays.asList(MetaInfConfiguration.METAINF_TLDS, MetaInfConfiguration.METAINF_RESOURCES));
         WebAppContext context31 = new WebAppContext();
         context31.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31)));
-        context31.getServletContext().setEffectiveMajorVersion(3);
-        context31.getServletContext().setEffectiveMinorVersion(1);
+        context31.getContext().getServletContext().setEffectiveMajorVersion(3);
+        context31.getContext().getServletContext().setEffectiveMinorVersion(1);
         meta31.preConfigure(context31);
 
         //test a 3.x non metadata-complete webapp will look for fragments
@@ -113,8 +113,8 @@ public class MetaInfConfigurationTest
         WebAppContext context31false = new WebAppContext();
         context31false.setConfigurationDiscovered(true);
         context31false.getMetaData().setWebDescriptor(new WebDescriptor(Resource.newResource(web31false)));
-        context31false.getServletContext().setEffectiveMajorVersion(3);
-        context31false.getServletContext().setEffectiveMinorVersion(1);
+        context31false.getContext().getServletContext().setEffectiveMajorVersion(3);
+        context31false.getContext().getServletContext().setEffectiveMinorVersion(1);
         meta31false.preConfigure(context31false);
     }
 

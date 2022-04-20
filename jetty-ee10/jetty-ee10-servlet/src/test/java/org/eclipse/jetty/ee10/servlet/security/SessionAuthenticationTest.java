@@ -20,7 +20,6 @@ import java.io.ObjectOutputStream;
 
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.security.authentication.SessionAuthentication;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.jupiter.api.Test;
 
@@ -42,9 +41,7 @@ public class SessionAuthenticationTest
      */
     @Test
     public void testSessionAuthenticationSerialization()
-        throws Exception
     {
-
         ServletContextHandler contextHandler = new ServletContextHandler();
         SecurityHandler securityHandler = new ConstraintSecurityHandler();
         contextHandler.setSecurityHandler(securityHandler);

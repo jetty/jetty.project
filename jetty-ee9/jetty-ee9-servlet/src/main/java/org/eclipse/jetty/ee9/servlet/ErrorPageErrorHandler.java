@@ -21,9 +21,9 @@ import java.util.Map;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.Dispatcher;
-import org.eclipse.jetty.ee9.handler.ErrorHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.Dispatcher;
+import org.eclipse.jetty.ee9.nested.ErrorHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

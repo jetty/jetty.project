@@ -24,9 +24,11 @@ import jakarta.security.auth.message.AuthStatus;
 import jakarta.security.auth.message.MessageInfo;
 import jakarta.security.auth.message.MessagePolicy;
 import jakarta.security.auth.message.module.ServerAuthModule;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee10.security.jaspi.JaspiMessageInfo;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.security.Constraint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +40,9 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
 {
     private static final Logger LOG = LoggerFactory.getLogger(BasicAuthenticationAuthModule.class);
 
-    private String realmName;
+    private String _realmName;
 
-    private static final String REALM_KEY = "org.eclipse.jetty.security.jaspi.modules.RealmName";
+    private static final String REALM_KEY = "org.eclipse.jetty.ee10.security.jaspi.modules.RealmName";
 
     public BasicAuthenticationAuthModule()
     {
@@ -49,22 +51,27 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
     public BasicAuthenticationAuthModule(CallbackHandler callbackHandler, String realmName)
     {
         super(callbackHandler);
-        this.realmName = realmName;
+        _realmName = realmName;
     }
 
     @Override
     public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy, CallbackHandler callbackHandler, Map options) throws AuthException
     {
         super.initialize(requestPolicy, responsePolicy, callbackHandler, options);
-        realmName = (String)options.get(REALM_KEY);
+        _realmName = (String)options.get(REALM_KEY);
     }
 
     @Override
     public AuthStatus validateRequest(MessageInfo messageInfo, Subject clientSubject, Subject serviceSubject) throws AuthException
     {
-        HttpServletRequest request = (HttpServletRequest)messageInfo.getRequestMessage();
-        HttpServletResponse response = (HttpServletResponse)messageInfo.getResponseMessage();
-        String credentials = request.getHeader(HttpHeader.AUTHORIZATION.asString());
+        if (!(messageInfo instanceof JaspiMessageInfo))
+            throw new IllegalStateException("Not a JaspiMessageInfo");
+        JaspiMessageInfo jaspiMessageInfo = (JaspiMessageInfo)messageInfo;
+        
+        Request request = jaspiMessageInfo.getBaseRequest();
+        Response response = jaspiMessageInfo.getBaseResponse();
+        
+        String credentials = request.getHeaders().get(HttpHeader.AUTHORIZATION.asString());
 
         try
         {
@@ -82,8 +89,8 @@ public class BasicAuthenticationAuthModule extends BaseAuthModule
             {
                 return AuthStatus.SUCCESS;
             }
-            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + realmName + '"');
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "basic realm=\"" + _realmName + '"');
+            Response.writeError(request, response, jaspiMessageInfo.getCallback(), HttpServletResponse.SC_UNAUTHORIZED);
             return AuthStatus.SEND_CONTINUE;
         }
         catch (IOException | UnsupportedCallbackException e)

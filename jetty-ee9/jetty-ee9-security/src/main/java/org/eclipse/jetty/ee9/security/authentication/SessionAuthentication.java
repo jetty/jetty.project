@@ -21,7 +21,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionActivationListener;
 import jakarta.servlet.http.HttpSessionBindingListener;
 import jakarta.servlet.http.HttpSessionEvent;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.AbstractUserAuthentication;
 import org.eclipse.jetty.ee9.security.LoginService;
 import org.eclipse.jetty.ee9.security.SecurityHandler;

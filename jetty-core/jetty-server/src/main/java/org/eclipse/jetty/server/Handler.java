@@ -16,6 +16,7 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.eclipse.jetty.server.handler.ErrorProcessor;
 import org.eclipse.jetty.util.Callback;
@@ -157,6 +158,11 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     {
         void addHandler(Handler handler);
 
+        default void addHandler(Supplier<Handler> supplier)
+        {
+            addHandler(supplier.get());
+        }
+
         /**
          * @return an immutable collection of {@code Handler}s directly contained by this {@code Handler}.
          */
@@ -256,6 +262,15 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
          * @param handler The handler to set.
          */
         void setHandler(Handler handler);
+
+        /**
+         * Set the nested handler from a supplier.  This allows for Handler type conversion.
+         * @param supplier A supplier of a Handler.
+         */
+        default void setHandler(Supplier<Handler> supplier)
+        {
+            setHandler(supplier.get());
+        }
 
         @Override
         default List<Handler> getHandlers()
@@ -495,14 +510,19 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
     {
         private Handler _handler;
 
+        public Wrapper()
+        {
+            this(null);
+        }
+
+        public Wrapper(Handler handler)
+        {
+            _handler = handler == null ? null : Nested.updateHandler(this, handler);
+        }
+
         public Handler getHandler()
         {
             return _handler;
-        }
-
-        public void setHandler(Handler.CoreSupplier supplier)
-        {
-            setHandler(supplier.getCoreHandler());
         }
 
         public void setHandler(Handler handler)
@@ -663,10 +683,5 @@ public interface Handler extends LifeCycle, Destroyable, Invocable
         {
             return this;
         }
-    }
-
-    interface CoreSupplier
-    {
-        Handler getCoreHandler();
     }
 }

@@ -127,7 +127,8 @@ public class ContainerInitializer
                     classes.add(Loader.loadClass(s));
                 }
 
-                context.getServletContext().setExtendedListenerTypes(true);
+                context.getContext().getServletContext().setExtendedListenerTypes(true);
+                
                 if (LOG.isDebugEnabled())
                 {
                     long start = System.nanoTime();
@@ -139,7 +140,7 @@ public class ContainerInitializer
             }
             finally
             {
-                context.getServletContext().setExtendedListenerTypes(false);
+                context.getContext().getServletContext().setExtendedListenerTypes(false);
             }
         }
     }

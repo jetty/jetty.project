@@ -17,10 +17,10 @@ import java.io.Serializable;
 import java.util.Set;
 
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.ee9.handler.Authentication;
-import org.eclipse.jetty.ee9.handler.Authentication.User;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
-import org.eclipse.jetty.ee9.handler.UserIdentity.Scope;
+import org.eclipse.jetty.ee9.nested.Authentication;
+import org.eclipse.jetty.ee9.nested.Authentication.User;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
+import org.eclipse.jetty.ee9.nested.UserIdentity.Scope;
 import org.eclipse.jetty.ee9.security.authentication.LoginAuthenticator;
 
 /**

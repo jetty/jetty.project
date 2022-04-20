@@ -292,7 +292,7 @@ public class SessionRenewTest
                 assertFalse(sessionIdManager.isIdInUse(beforeSessionId));
 
 
-                if (((Session)afterSession).isIdChanged())
+                if (((Session)afterSession).isSetCookieNeeded())
                     ((org.eclipse.jetty.server.Response)response).replaceCookie(sessionManager.getSessionCookie(afterSession, request.getContextPath(), request.isSecure()));
             }
         }

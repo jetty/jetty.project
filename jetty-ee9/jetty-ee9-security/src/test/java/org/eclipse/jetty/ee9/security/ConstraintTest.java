@@ -39,12 +39,12 @@ import jakarta.servlet.annotation.ServletSecurity.EmptyRoleSemantic;
 import jakarta.servlet.annotation.ServletSecurity.TransportGuarantee;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.handler.AbstractHandler;
-import org.eclipse.jetty.ee9.handler.ContextHandler;
-import org.eclipse.jetty.ee9.handler.HandlerWrapper;
-import org.eclipse.jetty.ee9.handler.Request;
-import org.eclipse.jetty.ee9.handler.SessionHandler;
-import org.eclipse.jetty.ee9.handler.UserIdentity;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.ContextHandler;
+import org.eclipse.jetty.ee9.nested.HandlerWrapper;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.SessionHandler;
+import org.eclipse.jetty.ee9.nested.UserIdentity;
 import org.eclipse.jetty.ee9.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.DigestAuthenticator;
 import org.eclipse.jetty.ee9.security.authentication.FormAuthenticator;
@@ -86,7 +86,6 @@ public class ConstraintTest
 {
     private static final String TEST_REALM = "TestRealm";
     private Server _server;
-    private ContextHandler _context;
     private LocalConnector _connector;
     private ConstraintSecurityHandler _security;
     private HttpConfiguration _config;
@@ -103,7 +102,6 @@ public class ConstraintTest
     public void setupServer()
     {
         _server = new Server();
-        _context = new ContextHandler(_server);
         _connector = new LocalConnector(_server);
         _config = _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
         _server.setConnectors(new Connector[]{_connector});
@@ -120,7 +118,7 @@ public class ConstraintTest
         loginService.putUser("user3", new Password("password"), new String[]{"foo"});
 
         contextHandler.setContextPath("/ctx");
-        _context.setHandler(contextHandler);
+        _server.setHandler(contextHandler);
         contextHandler.setHandler(sessionHandler);
 
         _server.addBean(loginService);
@@ -1010,7 +1008,7 @@ public class ConstraintTest
             "Cookie: JSESSIONID=" + session + "\r\n" +
             "\r\n");
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
-        assertThat(response, containsString("JSESSIONID=" + session));
+        assertThat(response, not(containsString("JSESSIONID=" + session)));
 
         response = _connector.getResponse("GET /ctx/admin/info HTTP/1.0\r\n" +
             "Cookie: JSESSIONID=" + session + "\r\n" +

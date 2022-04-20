@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -196,19 +195,14 @@ public class ServletTester extends ContainerLifeCycle
         _context.setContextPath(contextPath);
     }
 
-    public Resource getBaseResource()
-    {
-        return _context.getBaseResource();
-    }
-
     public Path getResourceBase()
     {
         return _context.getResourceBase();
     }
 
-    public void setResourceBase(Path resourceBase)
+    public void setResourceBase(Path path)
     {
-        _context.setResourceBase(resourceBase);
+        _context.setResourceBase(path);
     }
 
     public ServletTester()

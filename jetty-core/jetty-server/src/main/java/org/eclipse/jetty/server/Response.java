@@ -120,6 +120,18 @@ public interface Response extends Content.Writer
             callback.block();
         }
     }
+    
+    @SuppressWarnings("unchecked")
+    static <T extends Response.Wrapper> T as(Response response, Class<T> type)
+    {
+        while (response instanceof Response.Wrapper wrapper)
+        {
+            if (type.isInstance(wrapper))
+                return (T)wrapper;
+            response = wrapper.getWrapped();
+        }
+        return null;
+    }
 
     static void sendRedirect(Request request, Response response, Callback callback, String location)
     {

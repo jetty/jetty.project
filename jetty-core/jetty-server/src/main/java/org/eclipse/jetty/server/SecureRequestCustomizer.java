@@ -49,6 +49,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
     private static final Logger LOG = LoggerFactory.getLogger(SecureRequestCustomizer.class);
     public static final String X509_CERT = "org.eclipse.jetty.server.x509_cert";
+    public static final String CERTIFICATES = "org.eclipse.jetty.server.certificates";
     private String _sslSessionAttribute = "org.eclipse.jetty.servlet.request.ssl_session"; // TODO better name?
     private String _sslSessionDataAttribute = _sslSessionAttribute + "_data"; // TODO better name?
 
@@ -273,15 +274,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         {
             String sniHost = (String)session.getValue(SslContextFactory.Server.SNI_HOST);
 
-            X509 x509 = (X509)session.getValue(X509_CERT);
+            X509 x509 = getX509(session);
             if (x509 == null)
-            {
-                Certificate[] certificates = session.getLocalCertificates();
-                if (certificates == null || certificates.length == 0 || !(certificates[0] instanceof X509Certificate))
-                    throw new BadMessageException(400, "Invalid SNI");
-                x509 = new X509(null, (X509Certificate)certificates[0]);
-                session.putValue(X509_CERT, x509);
-            }
+                throw new BadMessageException(400, "Invalid SNI");
             String serverName = Request.getServerName(request);
             if (LOG.isDebugEnabled())
                 LOG.debug("Host={}, SNI={}, SNI Certificate={}", serverName, sniHost, x509);
@@ -292,6 +287,20 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             if (isSniHostCheck() && !x509.matches(serverName))
                 throw new BadMessageException(400, "Invalid SNI");
         }
+    }
+
+    private X509 getX509(SSLSession session)
+    {
+        X509 x509 = (X509)session.getValue(X509_CERT);
+        if (x509 == null)
+        {
+            Certificate[] certificates = session.getLocalCertificates();
+            if (certificates == null || certificates.length == 0 || !(certificates[0] instanceof X509Certificate))
+                return null;
+            x509 = new X509(null, (X509Certificate)certificates[0]);
+            session.putValue(X509_CERT, x509);
+        }
+        return x509;
     }
 
     @Override
@@ -371,7 +380,12 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                     return _sslSessionData;
             }
 
-            return super.getAttribute(name);
+            return switch (name)
+            {
+                case X509_CERT -> getX509(_sslSession);
+                case CERTIFICATES -> _sslSessionData._certs;
+                default -> super.getAttribute(name);
+            };
         }
 
         @Override

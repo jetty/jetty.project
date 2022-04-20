@@ -15,7 +15,7 @@ package org.eclipse.jetty.ee10.servlets;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 
 /**
  * This is an extension to {@link DoSFilter} that uses Jetty APIs to
@@ -27,7 +27,8 @@ public class CloseableDoSFilter extends DoSFilter
     @Override
     protected void onRequestTimeout(HttpServletRequest request, HttpServletResponse response, Thread handlingThread)
     {
-        Request baseRequest = Request.getBaseRequest(request);
-        baseRequest.getHttpChannel().getEndPoint().close();
+        //TODO: need to change visibility of getServletChannel to make this work
+        ServletContextRequest baseRequest = ServletContextRequest.getBaseRequest(request);   
+        baseRequest.getServletChannel().getEndPoint().close();
     }
 }

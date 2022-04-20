@@ -171,6 +171,7 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                     {
                         response.setStatus(HttpStatus.PROXY_AUTHENTICATION_REQUIRED_407);
                         response.getHeaders().put(HttpHeader.PROXY_AUTHENTICATE, "Basic realm=\"" + realm + "\"");
+                        callback.succeeded();
                     }
                     else
                     {
@@ -182,13 +183,16 @@ public class HttpClientProxyTest extends AbstractHttpClientServerTest
                             {
                                 // Change also the host, to verify that proxy authentication works in this case too.
                                 Response.sendRedirect(request, response, callback, scenario.getScheme() + "://127.0.0.1:" + serverPort + "/server");
+                                return;
                             }
                         }
+                        callback.succeeded();
                     }
                 }
                 else if (target.startsWith("/server"))
                 {
                     response.setStatus(status);
+                    callback.succeeded();
                 }
                 else
                 {

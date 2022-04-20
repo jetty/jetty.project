@@ -20,6 +20,7 @@ import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 
+import org.eclipse.jetty.ee10.servlet.ServletContextRequest;
 import org.eclipse.jetty.server.Request;
 
 /**
@@ -57,15 +58,17 @@ public class DefaultCallbackHandler extends AbstractCallbackHandler
             }
             else if (callback instanceof RequestParameterCallback)
             {
-                if (_request != null)
+                ServletContextRequest servletContextRequest = Request.as(_request, ServletContextRequest.class);
+                if (servletContextRequest != null)
                 {
                     RequestParameterCallback rpc = (RequestParameterCallback)callback;
-                    rpc.setParameterValues(Arrays.asList(_request.getParameterValues(rpc.getParameterName())));
+                    rpc.setParameterValues(Arrays.asList(servletContextRequest.getServletApiRequest().getParameterValues(rpc.getParameterName())));
                 }
             }
             else if (callback instanceof ServletRequestCallback)
             {
-                ((ServletRequestCallback)callback).setRequest(_request);
+                ServletContextRequest servletContextRequest = Request.as(_request, ServletContextRequest.class);
+                ((ServletRequestCallback)callback).setRequest(servletContextRequest.getServletApiRequest());
             }
             else
                 throw new UnsupportedCallbackException(callback);

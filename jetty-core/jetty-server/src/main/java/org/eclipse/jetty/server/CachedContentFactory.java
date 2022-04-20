@@ -579,6 +579,18 @@ public class CachedContentFactory implements HttpContent.ContentFactory
             }
             return ret;
         }
+
+        @Override
+        public ByteBuffer getBuffer()
+        {
+            return _indirectBuffer.get();
+        }
+
+        @Override
+        public void release()
+        {
+            invalidate();
+        }
     }
 
     public class CachedPrecompressedHttpContent extends PrecompressedHttpContent

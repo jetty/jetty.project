@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import jakarta.servlet.ServletContext;
+import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.AutoLock;
@@ -473,8 +474,13 @@ public class MetaData
         // set the webxml version
         if (_webXmlRoot != null)
         {
-            context.getServletContext().setEffectiveMajorVersion(_webXmlRoot.getMajorVersion());
-            context.getServletContext().setEffectiveMinorVersion(_webXmlRoot.getMinorVersion());
+            if (context.getServletContext() instanceof ServletContextHandler.ServletContextApi servletContextApi)
+            {
+                servletContextApi.setEffectiveMajorVersion(_webXmlRoot.getMajorVersion());
+                servletContextApi.setEffectiveMinorVersion(_webXmlRoot.getMinorVersion());
+            }
+            else
+                throw new IllegalStateException("Can't configure effective versions for non ServletContextApi"); //TODO
         }
 
         //process web-defaults.xml, web.xml and override-web.xmls

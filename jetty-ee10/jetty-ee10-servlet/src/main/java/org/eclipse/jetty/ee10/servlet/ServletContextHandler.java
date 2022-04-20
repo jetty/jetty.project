@@ -1841,7 +1841,7 @@ public class ServletContextHandler extends ContextHandler implements Graceful
         if (handler != null)
         {
             next = handler.getHandler();
-            handler.setHandler(null);
+            handler.setHandler((Handler)null);
 
             Handler.Wrapper wrapper = this;
             while (wrapper != null)

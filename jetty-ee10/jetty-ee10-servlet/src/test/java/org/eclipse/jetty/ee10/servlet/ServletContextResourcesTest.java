@@ -81,7 +81,7 @@ public class ServletContextResourcesTest
 
         context = new ServletContextHandler();
         context.setContextPath("/context");
-        context.setResourceBase(resBase.toFile().toPath());
+        context.setResourceBase(resBase);
 
         server.setHandler(context);
         server.addConnector(connector);

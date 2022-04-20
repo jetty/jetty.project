@@ -86,7 +86,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         ServletHolder holder = new ServletHolder("default", WibbleDefaultServlet.class);
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
-        gzipHandler.setHandler(servletContextHandler.getCoreContextHandler());
+        gzipHandler.setHandler(servletContextHandler);
 
         server.setHandler(gzipHandler);
 
@@ -169,7 +169,7 @@ public class GzipDefaultServletTest extends AbstractGzipTest
         holder.setInitParameter("etags", "true");
         servletContextHandler.addServlet(holder, "/");
 
-        gzipHandler.setHandler(servletContextHandler.getCoreContextHandler());
+        gzipHandler.setHandler(servletContextHandler);
         server.setHandler(gzipHandler);
 
         // Prepare Server File

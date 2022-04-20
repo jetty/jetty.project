@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.Decorator;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,6 +46,7 @@ public class ServletLifeCycleTest
     static final Queue<String> events = new ConcurrentLinkedQueue<>();
 
     @Test
+    @Disabled // TODO
     public void testLifeCycle() throws Exception
     {
         Server server = new Server(0);

@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.http;
 
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -137,5 +138,17 @@ public class PrecompressedHttpContent implements HttpContent
     public Map<CompressedContentFormat, HttpContent> getPrecompressedContents()
     {
         return null;
+    }
+
+    @Override
+    public ByteBuffer getBuffer()
+    {
+        return _content.getBuffer();
+    }
+
+    @Override
+    public void release()
+    {
+        _content.release();
     }
 }

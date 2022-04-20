@@ -24,10 +24,8 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.Content;
 import org.eclipse.jetty.server.FutureFormFields;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
@@ -90,10 +88,10 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
         final String content = FormRequestContent.convert(fields);
         final String contentType = "text/plain;charset=UTF-8";
 
-        start(scenario, new Handler.Processor()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            protected void service(Request request, Response response) throws Throwable
             {
                 assertEquals("POST", request.getMethod());
                 assertEquals(contentType, request.getHeaders().get(HttpHeader.CONTENT_TYPE));
@@ -117,10 +115,10 @@ public class TypedContentProviderTest extends AbstractHttpClientServerTest
     {
         final String content = "data";
 
-        start(scenario, new Handler.Processor()
+        start(scenario, new EmptyServerHandler()
         {
             @Override
-            public void process(Request request, Response response, Callback callback) throws Exception
+            protected void service(Request request, Response response) throws Throwable
             {
                 assertEquals("GET", request.getMethod());
                 assertNotNull(request.getHeaders().get(HttpHeader.CONTENT_TYPE));

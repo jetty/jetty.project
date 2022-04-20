@@ -29,9 +29,6 @@ import java.util.concurrent.TimeUnit;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.SessionTrackingMode;
-import org.eclipse.jetty.ee10.security.ConstraintAware;
-import org.eclipse.jetty.ee10.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
@@ -42,8 +39,10 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler.TagLib;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
 import org.eclipse.jetty.ee10.servlet.Source;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.servlet.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.http.pathmap.ServletPathSpec;
-import org.eclipse.jetty.session.SessionHandler;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.security.Constraint;
@@ -741,7 +740,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     case WebFragment:
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
-                        if (!name.equals(SessionHandler.getSessionCookieName(context.getSessionHandler().getSessionCookieConfig())))
+                        //TODO: evaluate that is can never be null?!
+                        if (!name.equals(context.getSessionHandler().getSessionCookieConfig().getName()))
                             throw new IllegalStateException("Conflicting cookie-config name " + name + " in " + descriptor.getResource());
                         break;
                     }
@@ -1134,7 +1134,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         String location = node.getString("location", false, true);
         if (!location.startsWith("/"))
             throw new IllegalStateException("Missing leading '/' for location: " + location);
-        ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
+        //TODO is the ErrorProcessor always going to be an ErrorPageErrorHandler?
+        ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorProcessor();
         String originName = "error." + error;
         Origin origin = context.getMetaData().getOrigin(originName);
         switch (origin)
@@ -1317,7 +1318,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (config == null)
         {
             config = new JspConfig();
-            context.getServletContext().setJspConfigDescriptor(config);
+            context.getContext().getServletContext().setJspConfigDescriptor(config);
         }
 
         TagLib tl = new TagLib();
@@ -1333,7 +1334,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         if (config == null)
         {
             config = new JspConfig();
-            context.getServletContext().setJspConfigDescriptor(config);
+            context.getContext().getServletContext().setJspConfigDescriptor(config);
         }
 
         for (int i = 0; i < node.size(); i++)

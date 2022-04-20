@@ -32,6 +32,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -143,6 +144,7 @@ public class CacheControlHeaderTest
     }
 
     @Test
+    @Disabled // TODO
     public void testCacheControlFilterOverrideWithWrapper() throws Exception
     {
         try

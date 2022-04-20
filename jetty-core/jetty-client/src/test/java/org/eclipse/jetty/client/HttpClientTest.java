@@ -348,7 +348,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 if (paramValue.equals(value))
                 {
                     response.setContentType("text/plain;charset=UTF-8");
-                    response.write(true, callback, value);
+                    response.write(true, callback, ByteBuffer.wrap(content));
                 }
             }
         });
@@ -1344,6 +1344,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     {
         int maxRetries = 3;
         AtomicInteger requests = new AtomicInteger();
+        CountDownLatch latch = new CountDownLatch(2);
         start(scenario, new Handler.Processor()
         {
             @Override
@@ -1352,11 +1353,13 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 Content.consumeAll(request);
                 int count = requests.incrementAndGet();
                 if (count == maxRetries)
-                    callback.succeeded();
+                    latch.countDown();
+                else
+                    response.setStatus(HttpStatus.NOT_FOUND_404);
+                callback.succeeded();
             }
         });
 
-        CountDownLatch latch = new CountDownLatch(1);
         new RetryListener(client, scenario.getScheme(), "localhost", connector.getLocalPort(), maxRetries)
         {
             @Override

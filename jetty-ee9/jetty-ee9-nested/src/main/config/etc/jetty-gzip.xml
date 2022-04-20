@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Mixin the GZIP Handler                                          -->
+<!-- This applies the GZIP Handler to the entire server              -->
+<!-- If a GZIP handler is required for an individual context, then   -->
+<!-- use a context XML (see test.xml example in distribution)        -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Call name="insertHandler">
+    <Arg>
+      <New id="GzipHandler" class="org.eclipse.jetty.ee9.nested.gzip.GzipHandler">
+        <Set name="minGzipSize" property="jetty.gzip.minGzipSize"/>
+        <Set name="inflateBufferSize" property="jetty.gzip.inflateBufferSize"/>
+        <Set name="syncFlush" property="jetty.gzip.syncFlush"/>
+        <Set name="dispatcherTypes" property="jetty.gzip.dispatcherTypes"/>
+        <Set name="includedMethodList" property="jetty.gzip.includedMethodList"/>
+        <Set name="excludedMethodList" property="jetty.gzip.excludedMethodList"/>
+        <Set name="includedMimeTypesList" property="jetty.gzip.includedMimeTypeList"/>
+        <Set name="excludedMimeTypesList" property="jetty.gzip.excludedMimeTypeList"/>
+        <Set name="includedPaths" property="jetty.gzip.includedPathList"/>
+        <Set name="excludedPaths" property="jetty.gzip.excludedPathList"/>
+        <Set name="inflaterPool">
+            <New class="org.eclipse.jetty.util.compression.InflaterPool">
+                <Arg type="int"><Property name="jetty.gzip.inflaterPool.capacity" deprecated="jetty.gzip.inflaterPoolCapacity" default="1024"/></Arg>
+                <Arg type="boolean"><Property name="jetty.gzip.inflaterPool.noWrap" default="true"/></Arg>
+            </New>
+        </Set>
+        <Set name="deflaterPool">
+            <New class="org.eclipse.jetty.util.compression.DeflaterPool">
+                <Arg type="int"><Property name="jetty.gzip.deflaterPool.capacity" deprecated="jetty.gzip.deflaterPoolCapacity" default="1024"/></Arg>
+                <Arg type="int"><Property name="jetty.gzip.deflaterPool.compressionLevel" deprecated="jetty.gzip.compressionLevel" default="-1"/></Arg>
+                <Arg type="boolean"><Property name="jetty.gzip.deflaterPool.noWrap" default="true"/></Arg>
+            </New>
+        </Set>
+
+<!--
+        <Set name="includedMethods">
+          <Array type="String">
+            <Item>GET</Item>
+          </Array>
+        </Set>
+
+        <Set name="includedPaths">
+          <Array type="String">
+            <Item>/*</Item>
+          </Array>
+        </Set>
+
+        <Set name="excludedPaths">
+          <Array type="String">
+            <Item>*.gz</Item>
+          </Array>
+        </Set>
+
+        <Call name="addIncludedMimeTypes">
+          <Arg><Array type="String">
+            <Item>some/type</Item>
+          </Array></Arg>
+        </Call>
+
+        <Call name="addExcludedMimeTypes">
+          <Arg><Array type="String">
+            <Item>some/type</Item>
+          </Array></Arg>
+        </Call>
+-->
+
+      </New>
+    </Arg>
+  </Call>
+</Configure>
+
+
