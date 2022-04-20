@@ -28,22 +28,23 @@ import jakarta.servlet.GenericServlet;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import org.eclipse.jetty.ee10.handler.ContextHandlerCollection;
+import org.eclipse.jetty.ee10.handler.HandlerList;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.http.UriCompliance;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
 import org.eclipse.jetty.util.component.LifeCycle;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
@@ -59,8 +60,6 @@ import org.slf4j.LoggerFactory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -103,7 +102,7 @@ public class WebAppContextTest
         assertNotNull(webXmlEmptyPath);
 
         WebAppContext wac = new WebAppContext();
-        wac.setResourceBase(MavenTestingUtils.getTargetTestingPath());
+        wac.setResourceBase(MavenTestingUtils.getTargetTestingDir().getAbsolutePath());
         server.setHandler(wac);
 
         //test that an empty default-context-path defaults to root
@@ -229,7 +228,7 @@ public class WebAppContextTest
     public void testContextWhiteList() throws Exception
     {
         Server server = newServer();
-        Handler.Collection handlers = new Handler.Collection();
+        HandlerList handlers = new HandlerList();
         WebAppContext contextA = new WebAppContext(".", "/A");
 
         contextA.addServlet(ServletA.class, "/s");
@@ -268,7 +267,7 @@ public class WebAppContextTest
         FS.touch(someClass);
 
         WebAppContext context = new WebAppContext();
-        context.setResourceBase(tempDir);
+        context.setBaseResource(new PathResource(tempDir));
 
         context.setResourceAlias("/WEB-INF/classes/", "/classes/");
 
@@ -291,11 +290,11 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
+        HandlerList handlers = new HandlerList();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setResourceBase(testWebapp);
+        context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
         server.setHandler(handlers);
         handlers.addHandler(contexts);
@@ -352,11 +351,11 @@ public class WebAppContextTest
         server.addConnector(connector);
         connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setUriCompliance(UriCompliance.LEGACY);
 
-        Handler.Collection handlers = new Handler.Collection();
+        HandlerList handlers = new HandlerList();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setResourceBase(testWebapp);
+        context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
         server.setHandler(handlers);
         handlers.addHandler(contexts);
@@ -373,11 +372,11 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
+        HandlerList handlers = new HandlerList();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext();
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setResourceBase(testWebapp);
+        context.setBaseResource(new PathResource(testWebapp));
         context.setContextPath("/");
         server.setHandler(handlers);
         handlers.addHandler(contexts);
@@ -398,14 +397,14 @@ public class WebAppContextTest
     {
         Server server = newServer();
 
-        Handler.Collection handlers = new Handler.Collection();
+        HandlerList handlers = new HandlerList();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         WebAppContext context = new WebAppContext(null, null, null, null, null, new ErrorPageErrorHandler(),
             ServletContextHandler.NO_SESSIONS | ServletContextHandler.NO_SECURITY);
         context.setContextPath("/");
 
         Path testWebapp = MavenTestingUtils.getProjectDirPath("src/test/webapp");
-        context.setResourceBase(testWebapp);
+        context.setBaseResource(new PathResource(testWebapp));
         server.setHandler(handlers);
         handlers.addHandler(contexts);
         contexts.addHandler(context);
@@ -450,7 +449,7 @@ public class WebAppContextTest
         // On Unix / Linux this should have no issue.
         // On Windows with fully qualified paths such as "E:\mybase\webapps\dump.war" the
         // resolution of the Resource can trigger various URI issues with the "E:" portion of the provided String.
-        context.setResourceBase(warPath);
+        context.setResourceBase(warPath.toString());
 
         server.setHandler(context);
         server.start();
@@ -489,7 +488,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
-        context.setResourceBase(warPath);
+        context.setBaseResource(new PathResource(warPath));
         context.setExtraClasspath(extraClasspathGlobReference);
 
         server.setHandler(context);
@@ -569,7 +568,7 @@ public class WebAppContextTest
         WebAppContext context = new WebAppContext();
         context.setContextPath("/");
         Path warPath = MavenTestingUtils.getTestResourcePathFile("wars/dump.war");
-        context.setResourceBase(warPath);
+        context.setBaseResource(new PathResource(warPath));
 
         context.setExtraClasspath(extraClassPathReference);
 

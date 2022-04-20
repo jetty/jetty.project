@@ -54,9 +54,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * This class provides a resource abstraction, where a resource may be
  * a file, a URL or an entry in a jar file.
  * </p>
- * @deprecated
  */
-@Deprecated
+//TODO remove
 public abstract class Resource implements ResourceFactory, Closeable
 {
     private static final Logger LOG = LoggerFactory.getLogger(Resource.class);

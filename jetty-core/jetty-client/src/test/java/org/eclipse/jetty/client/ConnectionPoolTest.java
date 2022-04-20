@@ -211,7 +211,7 @@ public class ConnectionPoolTest
     private void run(CountDownLatch latch, int iterations, List<Throwable> failures)
     {
         long begin = System.nanoTime();
-        for (int i = 0; i < iterations && failures.isEmpty(); ++i)
+        for (int i = 0; i < iterations; ++i)
         {
             test(failures);
         }

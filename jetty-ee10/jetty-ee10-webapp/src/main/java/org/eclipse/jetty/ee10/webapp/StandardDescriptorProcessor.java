@@ -742,7 +742,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     {
                         //a web-fragment set the value, all web-fragments must have the same value
                         //TODO: evaluate that is can never be null?!
-                        if (!name.equals(context.getSessionHandler().getSessionCookie()))
+                        if (!name.equals(context.getSessionHandler().getSessionCookieConfig().getName()))
                             throw new IllegalStateException("Conflicting cookie-config name " + name + " in " + descriptor.getResource());
                         break;
                     }

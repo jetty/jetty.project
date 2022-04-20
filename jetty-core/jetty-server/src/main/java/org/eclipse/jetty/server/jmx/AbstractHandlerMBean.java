@@ -71,7 +71,7 @@ public class AbstractHandlerMBean extends ObjectMBean
         }
 
         if (name == null && context.getResourceBase() != null)
-            name = context.getDisplayName();
+            name = context.getResourceBase().toFile().getName();
 
         List<String> vhosts = context.getVirtualHosts();
         if (vhosts.size() > 0)

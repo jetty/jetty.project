@@ -400,7 +400,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 throw new java.io.FileNotFoundException(war);
             }
 
-            context.setResourceBase(webApp);
+            context.setResourceBase(webApp.getPath());
 
             if (LOG.isDebugEnabled())
                 LOG.debug("webapp={}", webApp);
@@ -450,7 +450,7 @@ public class WebInfConfiguration extends AbstractConfiguration
             if (LOG.isDebugEnabled())
                 LOG.debug("context.resourcebase={}", rc);
 
-            context.addResourceBase(rc.getPath());
+            context.setResourceBase(rc.getPath());
         }
     }
 

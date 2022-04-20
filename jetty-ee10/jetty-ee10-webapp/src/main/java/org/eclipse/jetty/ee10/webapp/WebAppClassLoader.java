@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.paths.PathCollection;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.slf4j.Logger;
@@ -108,8 +107,7 @@ public class WebAppClassLoader extends URLClassLoader implements ClassVisibility
          */
         boolean isParentLoaderPriority();
 
-        @Deprecated // TODO: remove, just modify the PathCollection directly
-        PathCollection getExtraClasspath();
+        List<Resource> getExtraClasspath();
 
         boolean isServerResource(String name, URL parentUrl);
 
