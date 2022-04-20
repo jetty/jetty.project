@@ -113,8 +113,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                         ((now - session.getCookieSetTime()) / 1000 > getRefreshCookieAge()))))
             {
                 HttpCookie cookie = getSessionCookie(session, _context == null ? "/" : (_context.getContextPath()), secure);
-                session.cookieSet();
-                session.setIdChanged(false);
+                session.setCookieSetTime();
                 return cookie;
             }
         }

@@ -1307,21 +1307,26 @@ public class Request implements HttpServletRequest
     @Override
     public String changeSessionId()
     {
-        HttpSession session = getSession(false);
-        if (session == null)
+        if (_coreSession == null)
+            return null;
+        if (_coreSession.isInvalid())
+            return _coreSession.getId();
+
+        HttpSession httpSession = _coreSession.getAPISession();
+        if (httpSession == null)
             throw new IllegalStateException("No session");
 
-        if (session instanceof Session)
+        Session session = _coreSession;
+        session.renewId(getHttpChannel().getCoreRequest());
+        if (getRemoteUser() != null)
+            session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+        if (session.isIdChanged() && _sessionManager.isUsingCookies())
         {
-            Session s = ((Session)session);
-            s.renewId(getHttpChannel().getCoreRequest());
-            if (getRemoteUser() != null)
-                s.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
-            if (s.isIdChanged() && _sessionManager.isUsingCookies())
-                _channel.getResponse().replaceCookie(_sessionManager.getSessionCookie(s, getContextPath(), isSecure()));
+            _channel.getResponse().replaceCookie(_sessionManager.getSessionCookie(session, getContextPath(), isSecure()));
+            session.setCookieSetTime();
         }
 
-        return session.getId();
+        return httpSession.getId();
     }
 
     /**

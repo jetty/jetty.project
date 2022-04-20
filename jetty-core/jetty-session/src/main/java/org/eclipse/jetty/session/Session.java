@@ -148,10 +148,14 @@ public class Session
         _extendedId = extendedId;
     }
 
-    public void cookieSet()
+    /**
+     * Set the time that the cookie was set and clear the idChanged flag.
+     */
+    public void setCookieSetTime()
     {
         try (AutoLock l = _lock.lock())
         {
+            _idChanged = false;
             _sessionData.setCookieSet(_sessionData.getAccessed());
         }
     }

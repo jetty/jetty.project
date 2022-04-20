@@ -626,9 +626,12 @@ public class ServletContextRequest extends ContextRequest implements Runnable
             if (getRemoteUser() != null)
                 session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
             
-            if (session.isIdChanged() && getSessionManager().isUsingCookies())
-                Response.replaceCookie(ServletContextRequest.getBaseRequest(_httpServletRequest).getResponse(), 
+            if (getSessionManager().isUsingCookies())
+            {
+                Response.replaceCookie(ServletContextRequest.getBaseRequest(_httpServletRequest).getResponse(),
                     getSessionManager().getSessionCookie(session, getContextPath(), isSecure()));
+                session.setCookieSetTime();
+            }
 
             return session.getId();
         }

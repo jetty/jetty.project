@@ -13,6 +13,7 @@
 
 package org.eclipse.jetty.session;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.LocalConnector;
@@ -30,10 +31,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 
 /**
- * HouseKeeperTest
+ * SimpleSessionHandlerTest
  */
 public class SimpleSessionHandlerTest
 {
@@ -112,6 +114,16 @@ public class SimpleSessionHandlerTest
                             }
                             session.invalidate();
                         }
+
+                        case "change" ->
+                        {
+                            if (session == null)
+                            {
+                                callback.failed(new IllegalStateException("No Session"));
+                                return;
+                            }
+                            session.renewId(request, response);
+                        }
                     }
                 }
 
@@ -182,10 +194,13 @@ public class SimpleSessionHandlerTest
 
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
+
+        String setCookie = response.get(HttpHeader.SET_COOKIE);
+        String id = setCookie.substring(setCookie.indexOf("SIMPLE=") + 7, setCookie.indexOf("; Path=/"));
+        assertThat(id, not(equalTo("oldCookieId")));
+
         String content = response.getContent();
         assertThat(content, startsWith("Session="));
-        String id = content.substring(content.indexOf('=') + 1, content.indexOf('\n'));
-        assertThat(id, not(equalTo("oldCookieId")));
 
         endPoint.addInput("""
             GET / HTTP/1.1
@@ -195,9 +210,10 @@ public class SimpleSessionHandlerTest
             """.formatted(id));
 
         response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
         assertThat(response.getStatus(), equalTo(200));
         content = response.getContent();
-        assertThat(content, containsString("Session=" + id));
+        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
     }
 
     @Test
@@ -212,9 +228,10 @@ public class SimpleSessionHandlerTest
 
         HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
+        String setCookie = response.get(HttpHeader.SET_COOKIE);
+        String id = setCookie.substring(setCookie.indexOf("SIMPLE=") + 7, setCookie.indexOf("; Path=/"));
         String content = response.getContent();
         assertThat(content, startsWith("Session="));
-        String id = content.substring(content.indexOf('=') + 1, content.indexOf('\n'));
 
         endPoint.addInput("""
             GET /set/attribute/value HTTP/1.1
@@ -229,15 +246,63 @@ public class SimpleSessionHandlerTest
 
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
+        assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
         content = response.getContent();
-        assertThat(content, containsString("Session=" + id));
+        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
         assertThat(content, containsString("attribute = value"));
 
         response = HttpTester.parseResponse(endPoint.getResponse());
         assertThat(response.getStatus(), equalTo(200));
         content = response.getContent();
-        assertThat(content, containsString("Session=" + id));
+        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
         assertThat(content, containsString("attribute = value"));
         assertThat(content, containsString("another = attribute"));
+    }
+
+    @Test
+    public void testChangeSessionId() throws Exception
+    {
+        LocalConnector.LocalEndPoint endPoint = _connector.connect();
+        endPoint.addInput("""
+            GET /create HTTP/1.1
+            Host: localhost
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        String content = response.getContent();
+        assertThat(content, startsWith("Session="));
+
+        String setCookie = response.get(HttpHeader.SET_COOKIE);
+        String id = setCookie.substring(setCookie.indexOf("SIMPLE=") + 7, setCookie.indexOf("; Path=/"));
+
+        endPoint.addInput("""
+            GET /set/attribute/value HTTP/1.1
+            Host: localhost
+            Cookie: SIMPLE=%s
+            
+            GET /change HTTP/1.1
+            Host: localhost
+            Cookie: SIMPLE=%s
+            
+            """.formatted(id, id));
+
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        content = response.getContent();
+        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+        assertThat(content, containsString("attribute = value"));
+
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        setCookie = response.get(HttpHeader.SET_COOKIE);
+        String newId = setCookie.substring(setCookie.indexOf("SIMPLE=") + 7, setCookie.indexOf("; Path=/"));
+        assertThat(newId, not(id));
+        id = newId;
+
+        content = response.getContent();
+        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+        assertThat(content, containsString("attribute = value"));
     }
 }

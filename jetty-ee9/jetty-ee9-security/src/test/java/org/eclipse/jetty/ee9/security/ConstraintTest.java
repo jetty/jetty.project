@@ -1581,6 +1581,7 @@ public class ConstraintTest
         assertThat(response, startsWith("HTTP/1.1 302 "));
         assertThat(response, containsString("Location"));
         assertThat(response, containsString("/ctx/auth/info"));
+        System.err.println(response);
         session = response.substring(response.indexOf("JSESSIONID=") + 11, response.indexOf("; Path=/ctx"));
 
         response = _connector.getResponse("GET /ctx/auth/info HTTP/1.0\r\n" +

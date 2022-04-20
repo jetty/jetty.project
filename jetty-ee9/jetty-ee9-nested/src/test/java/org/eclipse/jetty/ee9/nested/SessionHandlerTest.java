@@ -26,6 +26,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpSessionEvent;
 import jakarta.servlet.http.HttpSessionListener;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
@@ -39,6 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -109,6 +111,13 @@ public class SessionHandlerTest
                             if (session == null)
                                 throw new IllegalStateException("No Session");
                             session.invalidate();
+                        }
+
+                        case "change" ->
+                        {
+                            if (session == null)
+                                throw new IllegalStateException("No Session");
+                            request.changeSessionId();
                         }
                     }
                 }
@@ -297,5 +306,55 @@ public class SessionHandlerTest
         assertThat(content, containsString("Session=" + id));
         assertThat(content, containsString("attribute = value"));
         assertThat(content, containsString("another = attribute"));
+    }
+
+    @Test
+    public void testChangeSessionId() throws Exception
+    {
+        LocalConnector.LocalEndPoint endPoint = _connector.connect();
+        endPoint.addInput("""
+            GET /create HTTP/1.1
+            Host: localhost
+            
+            """);
+
+        HttpTester.Response response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        String content = response.getContent();
+        assertThat(content, startsWith("Session="));
+
+        String setCookie = response.get(HttpHeader.SET_COOKIE);
+        String id = setCookie.substring(setCookie.indexOf("JSESSIONID=") + 11, setCookie.indexOf("; Path=/"));
+
+        endPoint.addInput("""
+            GET /set/attribute/value HTTP/1.1
+            Host: localhost
+            Cookie: JSESSIONID=%s
+            
+            GET /change HTTP/1.1
+            Host: localhost
+            Cookie: JSESSIONID=%s
+            
+            """.formatted(id, id));
+
+        // response to set request
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.get(HttpHeader.SET_COOKIE), nullValue());
+        assertThat(response.getStatus(), equalTo(200));
+        content = response.getContent();
+        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+        assertThat(content, containsString("attribute = value"));
+
+        // response to change request
+        response = HttpTester.parseResponse(endPoint.getResponse());
+        assertThat(response.getStatus(), equalTo(200));
+        setCookie = response.get(HttpHeader.SET_COOKIE);
+        String newId = setCookie.substring(setCookie.indexOf("JSESSIONID=") + 11, setCookie.indexOf("; Path=/"));
+        assertThat(newId, not(id));
+        id = newId;
+
+        content = response.getContent();
+        assertThat(content, containsString("Session=" + id.substring(0, id.indexOf(".node0"))));
+        assertThat(content, containsString("attribute = value"));
     }
 }

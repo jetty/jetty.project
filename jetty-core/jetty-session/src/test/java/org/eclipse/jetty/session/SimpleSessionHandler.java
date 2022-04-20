@@ -14,7 +14,6 @@
 package org.eclipse.jetty.session;
 
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpCookie;
@@ -83,7 +82,6 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
 
     public class SessionRequest extends Request.WrapperProcessor
     {
-        private final AtomicBoolean _resolved = new AtomicBoolean();
         private final AtomicReference<Session> _session = new AtomicReference<>();
         private String _requestedSessionId;
         private Response _response;
@@ -103,31 +101,17 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
             if (_response == null)
                 throw new IllegalStateException("!processing");
 
-            Session session;
-            if (_resolved.compareAndSet(false, true))
-            {
-                RequestedSession requestedSession = resolveRequestedSessionId(this);
-                _requestedSessionId = requestedSession.sessionId();
-                _session.set(session = requestedSession.session());
-
-                if (session != null)
-                {
-                    HttpCookie cookie = access(session, getConnectionMetaData().isSecure());
-                    if (cookie != null)
-                        Response.replaceCookie(_response, cookie);
-                }
-            }
-            else
-            {
-                session = _session.get();
-            }
+            Session session = _session.get();
 
             if (session == null && create)
             {
                 _session.set(session = newSession(this, _requestedSessionId));
                 HttpCookie cookie = getSessionCookie(session, getContext().getContextPath(), getConnectionMetaData().isSecure());
                 if (cookie != null)
+                {
                     Response.replaceCookie(_response, cookie);
+                    session.setCookieSetTime();
+                }
             }
 
             return session == null || session.isInvalid() ? null : session.getAPISession();
@@ -137,6 +121,19 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
         public void process(Request ignored, Response response, Callback callback) throws Exception
         {
             _response = response;
+
+            RequestedSession requestedSession = resolveRequestedSessionId(this);
+            _requestedSessionId = requestedSession.sessionId();
+            Session session = requestedSession.session();
+            _session.set(session);
+
+            if (session != null)
+            {
+                HttpCookie cookie = access(session, getConnectionMetaData().isSecure());
+                if (cookie != null)
+                    Response.replaceCookie(_response, cookie);
+            }
+
             super.process(ignored, _response, callback);
         }
     }
@@ -179,6 +176,19 @@ public class SimpleSessionHandler extends AbstractSessionManager implements Hand
         public void invalidate()
         {
             _coreSession.invalidate();
+        }
+
+        public void renewId(Request request, Response response)
+        {
+            _coreSession.renewId(request);
+            SessionManager sessionManager = _coreSession.getSessionManager();
+
+            if (sessionManager.isUsingCookies())
+            {
+                Response.replaceCookie(response,
+                    sessionManager.getSessionCookie(getCoreSession(), request.getContext().getContextPath(), request.isSecure()));
+                _coreSession.setCookieSetTime();
+            }
         }
     }
 }
