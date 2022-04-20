@@ -14,10 +14,10 @@
 package org.eclipse.jetty.server;
 
 import java.io.File;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.paths.PathCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,9 +51,10 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
         // We rebuild the realURI, segment by segment, getting the real name at each step, so that we can distinguish between
         // alias types.  Specifically, so we can allow a symbolic link so long as it's realpath is not protected.
         String[] segments = pathInContext.substring(1).split("/");
-        Path fromBase = _base;
+        PathCollection fromBase = _base;
         StringBuilder realURI = new StringBuilder();
 
+        /* FIXME: need to support PathCollections (maybe), this should be in ee level anyway.
         try
         {
             for (String segment : segments)
@@ -84,6 +85,7 @@ public class SymlinkAllowedResourceAliasChecker extends AllowedResourceAliasChec
         }
 
         // No symlink found, so must be allowed. Double check it is the right path we checked.
-        return isSameFile(fromBase, path);
+        return isSameFile(fromBase, path);*/
+        return true;
     }
 }
