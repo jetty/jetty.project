@@ -160,7 +160,7 @@ public class ResourceHandlerTest
     }
 
     @AfterEach
-    void tearDown() throws Exception
+    public void tearDown() throws Exception
     {
         _server.stop();
         _server.setHandler((Handler)null);
