@@ -13,11 +13,13 @@
 
 package org.eclipse.jetty.client;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
 // TODO
+@Disabled
 public class HttpClientAuthenticationTest extends AbstractHttpClientServerTest
 {
     @Test

@@ -557,7 +557,7 @@ public class HttpClientURITest extends AbstractHttpClientServerTest
             @Override
             protected void service(org.eclipse.jetty.server.Request request, Response response)
             {
-                assertEquals("*", request.getHttpURI().asString());
+                assertEquals("*", request.getHttpURI().getPath());
                 assertEquals("*", request.getPathInContext());
             }
         });

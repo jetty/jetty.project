@@ -14,12 +14,14 @@
 package org.eclipse.jetty.client.util;
 
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
 // TODO
 // @checkstyle-disable-check : AvoidEscapedUnicodeCharactersCheck
+@Disabled
 public class MultiPartContentTest extends AbstractHttpClientServerTest
 {
     @Test
