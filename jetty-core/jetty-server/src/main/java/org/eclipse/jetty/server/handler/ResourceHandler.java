@@ -27,6 +27,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -1142,6 +1143,28 @@ public class ResourceHandler extends Handler.Wrapper
         @Override
         public HttpContent getContent(String path, int maxBuffer) throws IOException
         {
+            if (_precompressedFormats.length > 0)
+            {
+                // Is the precompressed content cached?
+                Map<CompressedContentFormat, HttpContent> compressedContents = new HashMap<>();
+                for (CompressedContentFormat format : _precompressedFormats)
+                {
+                    String compressedPathInContext = path + format.getExtension();
+
+                    // Is there a precompressed resource?
+                    PathHttpContent compressedContent = load(compressedPathInContext, null);
+                    if (compressedContent != null)
+                        compressedContents.put(format, compressedContent);
+                }
+                if (!compressedContents.isEmpty())
+                    return load(path, compressedContents);
+            }
+
+            return load(path, null);
+        }
+
+        private PathHttpContent load(String path, Map<CompressedContentFormat, HttpContent> compressedEquivalents)
+        {
             if (path.startsWith("/"))
                 path = path.substring(1);
             // TODO cache _baseResource.toUri()
@@ -1150,7 +1173,7 @@ public class ResourceHandler extends Handler.Wrapper
             if (!Files.exists(resolved))
                 return null;
             String mimeType = _mimeTypes.getMimeByExtension(resolved.getFileName().toString());
-            return new PathHttpContent(resolved, mimeType);
+            return new PathHttpContent(resolved, mimeType, compressedEquivalents);
         }
     }
 
@@ -1160,13 +1183,15 @@ public class ResourceHandler extends Handler.Wrapper
         private final PreEncodedHttpField _contentType;
         private final String _characterEncoding;
         private final MimeTypes.Type _mimeType;
+        private final Map<CompressedContentFormat, HttpContent> _compressedContents;
 
-        public PathHttpContent(Path path, String contentType)
+        public PathHttpContent(Path path, String contentType, Map<CompressedContentFormat, HttpContent> compressedEquivalents)
         {
             _path = path;
             _contentType = contentType == null ? null : new PreEncodedHttpField(HttpHeader.CONTENT_TYPE, contentType);
             _characterEncoding = _contentType == null ? null : MimeTypes.getCharsetFromContentType(contentType);
             _mimeType = _contentType == null ? null : MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
+            _compressedContents = compressedEquivalents;
         }
 
         @Override
@@ -1326,7 +1351,7 @@ public class ResourceHandler extends Handler.Wrapper
         @Override
         public Map<CompressedContentFormat, ? extends HttpContent> getPrecompressedContents()
         {
-            return null;
+            return _compressedContents;
         }
 
         @Override

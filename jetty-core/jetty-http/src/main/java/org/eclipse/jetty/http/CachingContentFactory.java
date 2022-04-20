@@ -167,6 +167,7 @@ public class CachingContentFactory implements HttpContent.ContentFactory
     @Override
     public HttpContent getContent(String path, int maxBuffer) throws IOException
     {
+        // TODO load precompressed otherwise it is never served from cache
         CachingHttpContent cachingHttpContent = _cache.get(path);
         if (cachingHttpContent != null)
         {
