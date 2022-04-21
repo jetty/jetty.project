@@ -25,7 +25,8 @@ import org.eclipse.jetty.ee10.ant.types.Connector;
 import org.eclipse.jetty.ee10.ant.types.ContextHandlers;
 import org.eclipse.jetty.ee10.ant.utils.ServerProxy;
 import org.eclipse.jetty.ee10.ant.utils.TaskLog;
-import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -33,8 +34,6 @@ import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
@@ -402,13 +401,13 @@ public class ServerProxyImpl implements ServerProxy
         if (requestLog != null)
             server.setRequestLog(requestLog);
 
-        contexts = server.getChildHandlerByClass(ContextHandlerCollection.class);
+        contexts = server.getDescendant(ContextHandlerCollection.class);
         if (contexts == null)
         {
             contexts = new ContextHandlerCollection();
-            HandlerCollection handlers = server.getChildHandlerByClass(HandlerCollection.class);
+            Handler.Collection handlers = server.getDescendant(Handler.Collection.class);
             if (handlers == null)
-                server.setHandler(new HandlerList(contexts, new DefaultHandler()));
+                server.setHandler(new Handler.Collection(contexts, new DefaultHandler()));
             else
                 handlers.addHandler(contexts);
         }

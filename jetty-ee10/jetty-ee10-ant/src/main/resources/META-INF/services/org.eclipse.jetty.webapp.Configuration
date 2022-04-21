@@ -1,2 +1,2 @@
-org.eclipse.jetty.ee9.ant.AntWebInfConfiguration
-org.eclipse.jetty.ee9.ant.AntWebXmlConfiguration
+org.eclipse.jetty.ee10.ant.AntWebInfConfiguration
+org.eclipse.jetty.ee10.ant.AntWebXmlConfiguration

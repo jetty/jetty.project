@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee10.ant.types;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
 
 /**
  * Specifies a jetty configuration &lt;loginServices/&gt; element for Ant build file.

@@ -4,11 +4,11 @@
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
   <Set name="handler">
-    <New class="org.eclipse.jetty.proxy.ConnectHandler">
+    <New class="org.eclipse.jetty.ee10.proxy.ConnectHandler">
       <Set name="handler">
-        <New class="org.eclipse.jetty.ee9.servlet.ServletHandler">
+        <New class="org.eclipse.jetty.ee10.servlet.ServletHandler">
           <Call id="proxyHolder" name="addServletWithMapping">
-            <Arg><Property name="jetty.proxy.servletClass" default="org.eclipse.jetty.proxy.ProxyServlet"/></Arg>
+            <Arg><Property name="jetty.proxy.servletClass" default="org.eclipse.jetty.ee10.proxy.ProxyServlet"/></Arg>
             <Arg><Property name="jetty.proxy.servletMapping" default="/*"/></Arg>
             <Call name="setInitParameter">
               <Arg>maxThreads</Arg>

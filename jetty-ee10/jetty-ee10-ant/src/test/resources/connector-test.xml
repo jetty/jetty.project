@@ -6,7 +6,7 @@
 	
   <taskdef classpathref="jetty.plugin.classpath" resource="tasks.properties" loaderref="jetty.loader" />
  
-	<typedef name="connector" classname="org.eclipse.jetty.ee9.ant.types.Connector"
+	<typedef name="connector" classname="org.eclipse.jetty.ee10.ant.types.Connector"
 		classpathref="jetty.plugin.classpath" loaderref="jetty.loader" />
 
   <target name="jetty.run">

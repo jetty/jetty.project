@@ -26,10 +26,10 @@ public class WebAppConfiguration extends AbstractConfiguration
         addDependencies(WebXmlConfiguration.class, MetaInfConfiguration.class, WebInfConfiguration.class);
         addDependents(JettyWebXmlConfiguration.class);
         protectAndExpose(
-            "org.eclipse.jetty.servlet.StatisticsServlet",
-            "org.eclipse.jetty.servlet.DefaultServlet",
-            "org.eclipse.jetty.servlet.NoJspServlet"
+            "org.eclipse.jetty.ee10.servlet.StatisticsServlet",
+            "org.eclipse.jetty.ee10.servlet.DefaultServlet",
+            "org.eclipse.jetty.ee10.servlet.NoJspServlet"
         );
-        expose("org.eclipse.jetty.servlet.listener.");
+        expose("org.eclipse.jetty.ee10.servlet.listener.");
     }
 }

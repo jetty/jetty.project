@@ -11,7 +11,7 @@ directory, additional configuration may be specified and hot deployments
 detected.
 ===================================================================== -->
 
-<Configure id="testWebapp" class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure id="testWebapp" class="org.eclipse.jetty.ee10.webapp.WebAppContext">
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- Required minimal context configuration :                        -->
@@ -23,9 +23,9 @@ detected.
   <Get name="servletHandler">
     <Call name="addServletWithMapping">
       <Arg>
-        <New class="org.eclipse.jetty.ee9.servlet.ServletHolder">
+        <New class="org.eclipse.jetty.ee10.servlet.ServletHolder">
           <Set name="name">FooServlet</Set>
-          <Set name="className">org.eclipse.jetty.quickstart.FooServlet</Set>
+          <Set name="className">org.eclipse.jetty.ee10.quickstart.FooServlet</Set>
         </New>
       </Arg>
       <Arg>/outer/*</Arg>
@@ -33,8 +33,8 @@ detected.
 
     <Call name="addFilterWithMapping">
       <Arg>
-        <New class="org.eclipse.jetty.ee9.servlet.FilterHolder">
-            <Set name="className">org.eclipse.jetty.quickstart.FooFilter</Set>
+        <New class="org.eclipse.jetty.ee10.servlet.FilterHolder">
+            <Set name="className">org.eclipse.jetty.ee10.quickstart.FooFilter</Set>
             <Set name="name">OuterFilter</Set>
         </New>
       </Arg>
@@ -44,9 +44,9 @@ detected.
     
     <Call name="addListener">
        <Arg>
-          <New class="org.eclipse.jetty.ee9.servlet.ListenerHolder">
+          <New class="org.eclipse.jetty.ee10.servlet.ListenerHolder">
             <Set name="listener">
-              <New class="org.eclipse.jetty.quickstart.FooContextListener"></New>
+              <New class="org.eclipse.jetty.ee10.quickstart.FooContextListener"></New>
             </Set>
           </New>
        </Arg>

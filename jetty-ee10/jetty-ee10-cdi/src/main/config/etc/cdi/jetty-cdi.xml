@@ -2,7 +2,7 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <Call name="setAttribute">
-    <Arg type="String">org.eclipse.jetty.ee9.cdi</Arg>
+    <Arg type="String">org.eclipse.jetty.ee10.cdi</Arg>
     <Arg><Property name="jetty.cdi.mode" default="CdiSpiDecorator"/></Arg>
   </Call>
 </Configure>

@@ -27,7 +27,7 @@ import org.eclipse.jetty.ee10.ant.types.ContextHandlers;
 import org.eclipse.jetty.ee10.ant.types.LoginServices;
 import org.eclipse.jetty.ee10.ant.types.SystemProperties;
 import org.eclipse.jetty.ee10.ant.utils.TaskLog;
-import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.RequestLog;
 
