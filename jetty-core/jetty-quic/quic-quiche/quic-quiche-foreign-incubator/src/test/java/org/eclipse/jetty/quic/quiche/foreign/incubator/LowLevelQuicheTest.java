@@ -32,6 +32,8 @@ import org.eclipse.jetty.quic.quiche.SSLKeyPair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
 import static org.eclipse.jetty.quic.quiche.Quiche.QUICHE_MIN_CLIENT_INITIAL_LEN;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -39,6 +41,8 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 
+// TODO: make this test work in Java 18 too.
+@EnabledOnJre(value = JRE.JAVA_17, disabledReason = "Java 18's Foreign APIs are incompatible withJava 17's Foreign APIs")
 public class LowLevelQuicheTest
 {
     private final Collection<ForeignIncubatorQuicheConnection> connectionsToDisposeOf = new ArrayList<>();
