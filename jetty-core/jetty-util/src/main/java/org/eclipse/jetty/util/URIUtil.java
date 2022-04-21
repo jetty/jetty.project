@@ -676,9 +676,19 @@ public class URIUtil
         }
     }
 
-    private static boolean safe(Utf8StringBuilder builder, int code)
+    private static boolean isSafe(int code)
     {
-        if (code >= __uriSupportedCharacters.length || __uriSupportedCharacters[code])
+        return (code >= __uriSupportedCharacters.length || __uriSupportedCharacters[code]);
+    }
+
+    /**
+     * @param code the character code to check
+     * @param builder The builder to encode into
+     * @return True if the character is safe and not encoded into the buffer
+     */
+    private static boolean isSafeElseEncode(int code, Utf8StringBuilder builder)
+    {
+        if (isSafe(code))
             return true;
 
         builder.append('%');
@@ -690,12 +700,19 @@ public class URIUtil
     }
 
     /**
+     * Normalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
+     * <p>
      * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
-     * Safe characters are ones that are not special delimiters and that can be
-     * passed to the JVM {@link URI} class.  For example the <code>%2f</code> will
-     * be left encoded in the normalized form <code>%2F</code>.
+     * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
+     * Unsafe characters, other than '/' will be encoded.  Encodings will be uppercase hex.
+     * The resulting URI path may be used in string comparisons with other normalized paths.
+     * <p>
+     * For example the path <code>/fo %2fo/b%61r</code> will be normalized to <code>/fo%20%2Fo/bar</code>,
+     * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
+     *
      * @see #decodePath(String)
      * @see #canonicalPath(String)
+     * @see URI
      */
     public static String normalizePath(String path)
     {
@@ -703,12 +720,19 @@ public class URIUtil
     }
 
     /**
+     * Normalize a URI path to a form that is unambiguous and safe to use with the JVM {@link URI} class.
+     * <p>
      * Decode only the safe characters in a URI path and strip parameters of UTF-8 path.
-     * Safe characters are ones that are not special delimiters and that can be
-     * passed to the JVM {@link URI} class. For example the <code>%2f</code> will
-     * be left encoded in the normalized form <code>%2F</code>.
+     * Safe characters are ones that are not special delimiters and that can be passed to the JVM {@link URI} class.
+     * Unsafe characters, other than '/' will be encoded.  Encodings will be uppercase hex.
+     * The resulting URI path may be used in string comparisons with other normalized paths.
+     * <p>
+     * For example the path <code>/fo %2fo/b%61r</code> will be normalized to <code>/fo%20%2Fo/bar</code>,
+     * whilst {@link #decodePath(String)} would result in the ambiguous and URI illegal <code>/fo /o/bar</code>.
+     *
      * @see #decodePath(String, int, int)
      * @see #canonicalPath(String)
+     * @see URI
      */
     public static String normalizePath(String path, int offset, int length)
     {
@@ -734,7 +758,7 @@ public class URIUtil
                             {
                                 // UTF16 encoding is only supported with UriCompliance.Violation.UTF16_ENCODINGS.
                                 int code = TypeUtil.parseInt(path, i + 2, 4, 16);
-                                if (safe(builder, code))
+                                if (isSafeElseEncode(code, builder))
                                 {
                                     char[] chars = Character.toChars(code);
                                     for (char ch : chars)
@@ -745,7 +769,7 @@ public class URIUtil
                             else
                             {
                                 int code = TypeUtil.convertHexDigit(u) * 16 + TypeUtil.convertHexDigit(path.charAt(i + 2));
-                                if (safe(builder, code))
+                                if (isSafeElseEncode(code, builder))
                                     builder.append((byte)(0xff & code));
                                 i += 2;
                             }
@@ -754,7 +778,6 @@ public class URIUtil
                         {
                             throw new IllegalArgumentException("Bad URI % encoding");
                         }
-
                         break;
 
                     case ';':
@@ -772,11 +795,21 @@ public class URIUtil
                                 break;
                             }
                         }
+                        break;
 
+                    case '/':
+                        if (builder != null)
+                            builder.append(c);
                         break;
 
                     default:
-                        if (builder != null)
+                        if (builder == null && !isSafe(c))
+                        {
+                            builder = new Utf8StringBuilder(path.length());
+                            builder.append(path, offset, i - offset);
+                        }
+
+                        if (builder != null && isSafeElseEncode(c, builder))
                             builder.append(c);
                         break;
                 }
