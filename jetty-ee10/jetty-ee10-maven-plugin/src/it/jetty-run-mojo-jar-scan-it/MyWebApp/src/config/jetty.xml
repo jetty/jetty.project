@@ -25,7 +25,7 @@
         </Arg>
         <Call name="addLifeCycleListener">
           <Arg>
-            <New class="org.eclipse.jetty.maven.plugin.ServerConnectorListener">
+            <New class="org.eclipse.jetty.ee10.maven.plugin.ServerConnectorListener">
               <Set name="fileName"><Property name="jetty.port.file" default="port.txt"/></Set>
             </New>
           </Arg>

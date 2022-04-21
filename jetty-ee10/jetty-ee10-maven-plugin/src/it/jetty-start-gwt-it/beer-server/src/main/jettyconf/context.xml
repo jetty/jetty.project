@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "https://www.eclipse.org/jetty/configure_10_0.dtd">
-<Configure class="org.eclipse.jetty.ee9.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
   <Call name="setInitParameter">
-    <Arg>org.eclipse.jetty.ee9.servlet.Default.useFileMappedBuffer</Arg>
+    <Arg>org.eclipse.jetty.ee10.servlet.Default.useFileMappedBuffer</Arg>
     <Arg>false</Arg>
   </Call>
 </Configure>

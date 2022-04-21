@@ -30,7 +30,6 @@ import java.util.Random;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.resource.Resource;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,7 +78,7 @@ public class TestForkedChild
                 MavenWebAppContext webapp = new MavenWebAppContext();
                 webapp.setContextPath("/foo");
                 webapp.setTempDirectory(tmpDir);
-                webapp.setBaseResource(Resource.newResource(baseDir));
+                webapp.setResourceBase(baseDir.toPath());
                 WebAppPropertyConverter.toProperties(webapp, webappPropsFile, null);
                 child = new JettyForkedChild(cmd.toArray(new String[cmd.size()]));
                 child.jetty.setExitVm(false); //ensure jetty doesn't stop vm for testing

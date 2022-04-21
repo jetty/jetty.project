@@ -48,7 +48,7 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.shared.transfer.artifact.resolve.ArtifactResolver;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.ee10.maven.plugin.utils.MavenProjectHelper;
-import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;

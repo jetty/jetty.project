@@ -90,7 +90,7 @@ public class TestWebAppPropertyConverter
 
         MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/foo");
-        webApp.setBaseResource(Resource.newResource(MavenTestingUtils.getTestResourceDir("root")));
+        webApp.setResourceBase(MavenTestingUtils.getTestResourceDir("root").toPath());
         webApp.setTempDirectory(tmpDir);
         webApp.setPersistTempDirectory(false);
         webApp.setClasses(classesDir);

@@ -17,7 +17,6 @@ import java.io.File;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,7 +32,7 @@ public class TestQuickStartGenerator
     {
         MavenWebAppContext webApp = new MavenWebAppContext();
         webApp.setContextPath("/shouldbeoverridden");
-        webApp.setBaseResource(Resource.newResource(MavenTestingUtils.getTestResourceDir("root")));
+        webApp.setResourceBase(MavenTestingUtils.getTestResourceDir("root").toPath());
         File quickstartFile = new File(MavenTestingUtils.getTargetTestingDir(), "quickstart-web.xml");
         QuickStartGenerator generator = new QuickStartGenerator(quickstartFile, webApp);
         generator.setContextXml(MavenTestingUtils.getTestResourceFile("embedder-context.xml").getAbsolutePath());

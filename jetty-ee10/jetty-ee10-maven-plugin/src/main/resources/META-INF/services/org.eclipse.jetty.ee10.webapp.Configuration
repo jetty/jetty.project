@@ -1,4 +1,4 @@
-org.eclipse.jetty.maven.plugin.MavenWebInfConfiguration
-org.eclipse.jetty.maven.plugin.MavenMetaInfConfiguration
+org.eclipse.jetty.ee10.maven.plugin.MavenWebInfConfiguration
+org.eclipse.jetty.ee10.maven.plugin.MavenMetaInfConfiguration
 #Do not list this because Quickstart is not present for distro
 #org.eclipse.jetty.maven.plugin.MavenQuickStartConfiguration

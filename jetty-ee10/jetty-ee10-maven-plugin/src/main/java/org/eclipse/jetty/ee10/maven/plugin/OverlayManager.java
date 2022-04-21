@@ -64,8 +64,8 @@ public class OverlayManager
             else
                 resourceBases.add(webApp.getBaseResource());
         }
-        
-        webApp.setBaseResource(new ResourceCollection(resourceBases.toArray(new Resource[resourceBases.size()])));
+        //TODO needs WebAppContext.setResourceBase sorted out
+       // webApp.setBaseResource(new ResourceCollection(resourceBases.toArray(new Resource[resourceBases.size()])));
     }
     
     /**

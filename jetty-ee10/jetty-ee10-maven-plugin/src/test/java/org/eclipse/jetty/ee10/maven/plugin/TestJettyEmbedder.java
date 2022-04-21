@@ -24,11 +24,10 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDir;
 import org.eclipse.jetty.toolchain.test.jupiter.WorkDirExtension;
-import org.eclipse.jetty.util.resource.PathResource;
-import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -42,7 +41,7 @@ public class TestJettyEmbedder
     {
         Path baseResource = workDir.getEmptyPathDir();
         MavenWebAppContext webApp = new MavenWebAppContext();
-        webApp.setBaseResource(new PathResource(baseResource));
+        webApp.setResourceBase(baseResource);
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);
 
@@ -80,14 +79,14 @@ public class TestJettyEmbedder
     {
         MavenWebAppContext webApp = new MavenWebAppContext();
         Path baseResource = workDir.getEmptyPathDir();
-        webApp.setBaseResource(Resource.newResource(baseResource));
+        webApp.setResourceBase(baseResource);
         Server server = new Server();
         Map<String, String> jettyProperties = new HashMap<>();
         jettyProperties.put("jetty.server.dumpAfterStart", "false");
 
         ContextHandler otherHandler = new ContextHandler();
         otherHandler.setContextPath("/other");
-        otherHandler.setBaseResource(Resource.newResource(MavenTestingUtils.getTestResourceDir("root")));
+        otherHandler.setResourceBase(MavenTestingUtils.getTestResourceDir("root").toPath());
 
         MavenServerConnector connector = new MavenServerConnector();
         connector.setPort(0);

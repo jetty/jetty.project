@@ -4,7 +4,7 @@
 
    <Call name="addEventListener">
      <Arg>
-       <New class="org.eclipse.jetty.maven.plugin.ServerListener">
+       <New class="org.eclipse.jetty.ee10.maven.plugin.ServerListener">
          <Set name="tokenFile"><Property name="jetty.token.file"/></Set>
        </New>
      </Arg>

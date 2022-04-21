@@ -19,17 +19,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.ee10.webapp.Configurations;
 import org.eclipse.jetty.ee10.webapp.WebAppContext;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -69,9 +68,9 @@ public class ServerSupport
         if (contexts == null)
         {
             contexts = new ContextHandlerCollection();
-            HandlerCollection handlers = server.getChildHandlerByClass(HandlerCollection.class);
+            Handler.Collection handlers = server.getDescendant(Handler.Collection.class);
             if (handlers == null)
-                server.setHandler(new HandlerList(contexts, new DefaultHandler()));
+                server.setHandler(new Handler.Collection(contexts, new DefaultHandler()));
             else
                 handlers.addHandler(contexts);
         } 
@@ -172,7 +171,7 @@ public class ServerSupport
         if (server == null)
             return null;
 
-        return server.getChildHandlerByClass(ContextHandlerCollection.class);
+        return server.getDescendant(ContextHandlerCollection.class);
     }
 
     /**

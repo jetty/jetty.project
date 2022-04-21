@@ -224,7 +224,8 @@ public class WebAppPropertyConverter
         {
             ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
             webApp.setWar(null);
-            webApp.setBaseResource(bases);
+            //TODO: needs WebAppContext.setResourceBase sorted out
+            //webApp.setBaseResource(bases);
         }
 
         str = webAppProperties.getProperty(WAR_FILE);
