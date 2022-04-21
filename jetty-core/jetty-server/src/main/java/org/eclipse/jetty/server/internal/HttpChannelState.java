@@ -666,12 +666,21 @@ public class HttpChannelState implements HttpChannel, Components
         {
             HttpStream stream;
             boolean complete;
+            boolean needLastWrite;
+            MetaData.Response responseMetaData = null;
             try (AutoLock ignored = _lock.lock())
             {
+                needLastWrite = !_lastWrite;
+                _lastWrite = true;
+                if (needLastWrite && _responseHeaders.commit())
+                    responseMetaData = _request._response.lockedPrepareResponse(HttpChannelState.this, true);
                 complete = _state == State.PROCESSED_AND_COMPLETED;
                 stream = _stream;
             }
-            if (complete)
+
+            if (needLastWrite)
+                stream.send(_request._metaData, responseMetaData, true, this);
+            else if (complete)
                 complete(stream, null);
         }
 

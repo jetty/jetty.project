@@ -277,6 +277,7 @@ public interface Response extends Content.Writer
 
         response.setStatus(status);
 
+        // TODO: detect recursion when an ErrorProcessor calls this method, otherwise StackOverflowError.
         Context context = request.getContext();
         Request.Processor errorProcessor = context.getErrorProcessor();
         if (errorProcessor != null)

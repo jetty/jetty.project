@@ -101,7 +101,7 @@ public class ErrorProcessor implements Request.Processor
 
         if (!errorPageForMethod(request.getMethod()) || HttpStatus.hasNoBody(code))
         {
-            response.write(true, callback);
+            callback.succeeded();
         }
         else
         {
