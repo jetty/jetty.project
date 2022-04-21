@@ -825,7 +825,7 @@ public class URIUtil
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} {}", path.substring(offset, offset + length), e.toString());
-            return decodeISO88591Path(path, offset, length);
+            throw e;
         }
         catch (IllegalArgumentException e)
         {

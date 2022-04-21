@@ -51,6 +51,7 @@ import org.eclipse.jetty.util.thread.Invocable;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -817,6 +818,7 @@ public class HttpConnectionTest
     }
 
     @Test
+    @Disabled("review this test. seems a security issue to fallback from utf-8 to iso-1, was there a reason to do that?")
     public void testBadUTF8FallsbackTo8859() throws Exception
     {
         LOG.info("badMessage: bad encoding expected ...");
