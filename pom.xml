@@ -76,14 +76,14 @@
     <log4j2.version>2.17.1</log4j2.version>
     <logback.version>1.2.11</logback.version>
     <maven.plugin-tools.version>3.6.4</maven.plugin-tools.version>
-    <maven.resolver.version>1.7.3</maven.resolver.version>
+    <maven.resolver.version>1.8.0</maven.resolver.version>
     <maven.version>3.8.4</maven.version>
     <mongodb.version>2.13.2</mongodb.version>
     <osgi.annotation.version>8.1.0</osgi.annotation.version>
     <osgi.core.version>6.0.0</osgi.core.version>
     <plexus-container.version>2.1.1</plexus-container.version>
     <plexus-utils.version>3.4.1</plexus-utils.version>
-    <slf4j.version>1.7.32</slf4j.version>
+    <slf4j.version>1.7.36</slf4j.version>
     <taglibs-standard-impl.version>1.2.5</taglibs-standard-impl.version>
     <taglibs-standard-spec.version>1.2.5</taglibs-standard-spec.version>
     <testcontainers.version>1.17.1</testcontainers.version>
