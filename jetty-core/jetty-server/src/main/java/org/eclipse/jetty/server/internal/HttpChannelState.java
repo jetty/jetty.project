@@ -480,7 +480,7 @@ public class HttpChannelState implements HttpChannel, Components
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("failing callback in {}", HttpChannelState.this, x);
+                        LOG.debug("failing callback in {}", this, x);
                     request._callback.failed(x);
                 }
             };
@@ -1344,8 +1344,8 @@ public class HttpChannelState implements HttpChannel, Components
 
             if (writeErrorResponse)
             {
-                ErrorResponse responseAndCallback = new ErrorResponse(request, stream);
-                Response.writeError(request, responseAndCallback, httpChannelState._handlerInvoker, failure);
+                ErrorResponse response = new ErrorResponse(request, stream);
+                Response.writeError(request, response, httpChannelState._handlerInvoker, failure);
             }
             else if (complete)
             {
