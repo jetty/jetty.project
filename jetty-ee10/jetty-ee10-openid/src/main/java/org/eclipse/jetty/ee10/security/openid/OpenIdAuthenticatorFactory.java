@@ -16,9 +16,9 @@ package org.eclipse.jetty.ee10.security.openid;
 import java.util.Collection;
 
 import jakarta.servlet.ServletContext;
-import org.eclipse.jetty.ee10.security.Authenticator;
-import org.eclipse.jetty.ee10.security.IdentityService;
-import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.Authenticator;
+import org.eclipse.jetty.ee10.servlet.security.IdentityService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.security.Constraint;
 

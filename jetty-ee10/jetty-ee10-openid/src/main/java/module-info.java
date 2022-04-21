@@ -12,13 +12,15 @@
 //
 
 import org.eclipse.jetty.ee10.security.openid.OpenIdAuthenticatorFactory;
+import org.eclipse.jetty.ee10.servlet.security.Authenticator;
 
 module org.eclipse.jetty.security.openid
 {
     requires org.eclipse.jetty.util.ajax;
 
     requires transitive org.eclipse.jetty.client;
-    requires transitive org.eclipse.jetty.security;
+    requires org.eclipse.jetty.ee10.servlet;
+    requires org.slf4j;
 
     exports org.eclipse.jetty.ee10.security.openid;
 

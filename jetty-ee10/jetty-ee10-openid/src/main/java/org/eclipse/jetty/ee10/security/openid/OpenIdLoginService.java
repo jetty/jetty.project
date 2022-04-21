@@ -17,9 +17,9 @@ import java.util.Objects;
 import javax.security.auth.Subject;
 
 import jakarta.servlet.ServletRequest;
-import org.eclipse.jetty.ee10.handler.UserIdentity;
-import org.eclipse.jetty.ee10.security.IdentityService;
-import org.eclipse.jetty.ee10.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.IdentityService;
+import org.eclipse.jetty.ee10.servlet.security.LoginService;
+import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -16,7 +16,7 @@ package org.eclipse.jetty.ee10.security.openid;
 import java.security.Principal;
 import javax.security.auth.Subject;
 
-import org.eclipse.jetty.ee10.handler.UserIdentity;
+import org.eclipse.jetty.ee10.servlet.security.UserIdentity;
 
 public class OpenIdUserIdentity implements UserIdentity
 {
@@ -44,8 +44,8 @@ public class OpenIdUserIdentity implements UserIdentity
     }
 
     @Override
-    public boolean isUserInRole(String role, Scope scope)
+    public boolean isUserInRole(String role)
     {
-        return userIdentity != null && userIdentity.isUserInRole(role, scope);
+        return userIdentity != null && userIdentity.isUserInRole(role);
     }
 }

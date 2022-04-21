@@ -15,7 +15,6 @@ package org.eclipse.jetty.ee10.servlet.security.authentication;
 
 import java.nio.ByteBuffer;
 
-import jakarta.servlet.ServletRequest;
 import org.eclipse.jetty.ee10.servlet.security.Authentication;
 import org.eclipse.jetty.ee10.servlet.security.IdentityService;
 import org.eclipse.jetty.ee10.servlet.security.LoggedOutAuthentication;
@@ -131,7 +130,7 @@ public class DeferredAuthentication implements Authentication.Deferred
 
     /**
      * @param response the response
-     * @return true if this response is from a deferred call to {@link #authenticate(ServletRequest)}
+     * @return true if this response is from a deferred call to {@link #authenticate(Request)}
      */
     public static boolean isDeferred(Response response)
     {

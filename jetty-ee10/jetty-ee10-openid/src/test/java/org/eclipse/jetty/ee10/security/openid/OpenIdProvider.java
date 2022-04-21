@@ -22,18 +22,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee10.handler.Request;
-import org.eclipse.jetty.ee10.handler.Response;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.StringUtil;
@@ -198,7 +194,7 @@ public class OpenIdProvider extends ContainerLifeCycle
             }
             else
             {
-                redirectUser(req, preAuthedUser, redirectUri, state);
+                redirectUser(resp, preAuthedUser, redirectUri, state);
             }
         }
 
@@ -227,22 +223,18 @@ public class OpenIdProvider extends ContainerLifeCycle
             }
 
             User user = new User(username);
-            redirectUser(req, user, redirectUri, state);
+            redirectUser(resp, user, redirectUri, state);
         }
 
-        public void redirectUser(HttpServletRequest request, User user, String redirectUri, String state) throws IOException
+        public void redirectUser(HttpServletResponse response, User user, String redirectUri, String state) throws IOException
         {
             String authCode = UUID.randomUUID().toString().replace("-", "");
             issuedAuthCodes.put(authCode, user);
 
             try
             {
-                final Request baseRequest = Objects.requireNonNull(Request.getBaseRequest(request));
-                final Response baseResponse = baseRequest.getResponse();
                 redirectUri += "?code=" + authCode + "&state=" + state;
-                int redirectCode = (baseRequest.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion()
-                    ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
-                baseResponse.sendRedirect(redirectCode, baseResponse.encodeRedirectURL(redirectUri));
+                response.sendRedirect(response.encodeRedirectURL(redirectUri));
             }
             catch (Throwable t)
             {
