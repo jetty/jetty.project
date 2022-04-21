@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 
 // TODO: make this test work in Java 18 too.
-@EnabledOnJre(value = JRE.JAVA_17, disabledReason = "Java 18's Foreign APIs are incompatible withJava 17's Foreign APIs")
+@EnabledOnJre(value = JRE.JAVA_17, disabledReason = "Java 18's Foreign APIs are incompatible with Java 17's Foreign APIs")
 public class LowLevelQuicheTest
 {
     private final Collection<ForeignIncubatorQuicheConnection> connectionsToDisposeOf = new ArrayList<>();
