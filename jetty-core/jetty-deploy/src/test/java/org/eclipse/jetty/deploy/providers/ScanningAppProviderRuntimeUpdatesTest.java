@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
  * deployed webapps due to incoming changes identified by the {@link ScanningAppProvider}.
  */
 @ExtendWith(WorkDirExtension.class)
+@Disabled // TODO
 public class ScanningAppProviderRuntimeUpdatesTest
 {
     private static final Logger LOG = LoggerFactory.getLogger(ScanningAppProviderRuntimeUpdatesTest.class);
