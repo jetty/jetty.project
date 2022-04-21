@@ -77,7 +77,7 @@ public class InvalidURIRule extends Rule
     @Override
     public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
     {
-        String path = input.getPathInContext();
+        String path = input.getHttpURI().getDecodedPath();
 
         int i = 0;
         while (i < path.length())
@@ -116,7 +116,8 @@ public class InvalidURIRule extends Rule
     {
         Character.UnicodeBlock block = Character.UnicodeBlock.of(codepoint);
 
-        LOG.debug("{} {} {} {}", Character.charCount(codepoint), codepoint, block, Character.isISOControl(codepoint));
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} {} {} {}", Character.charCount(codepoint), codepoint, block, Character.isISOControl(codepoint));
 
         return (!Character.isISOControl(codepoint)) && block != null && !Character.UnicodeBlock.SPECIALS.equals(block);
     }

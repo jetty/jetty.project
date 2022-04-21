@@ -33,13 +33,13 @@ public class RewritePatternRuleTest extends AbstractRuleTest
     public static Stream<Arguments> data()
     {
         return Stream.of(
-            Arguments.of("/foo/bar", "/", "/replace"),
-            Arguments.of("/foo/bar", "/*", "/replace/foo/bar"),
-            Arguments.of("/foo/bar", "/foo/*", "/replace/bar"),
-            Arguments.of("/foo/bar", "/foo/bar", "/replace"),
-            Arguments.of("/foo/bar.txt", "*.txt", "/replace"),
-            Arguments.of("/foo/bar/%20x", "/foo/*", "/replace/bar/%20x"),
-            Arguments.of("/old/context", "/old/context", "/replace?given=param")
+            Arguments.of("/", "/replace", "/foo/bar", "/replace"),
+            Arguments.of("/*", "/replace/foo/bar", "/foo/bar", "/replace/foo/bar/foo/bar"),
+            Arguments.of("/foo/*", "/replace/bar", "/foo/bar", "/replace/bar/bar"),
+            Arguments.of("/foo/bar", "/replace", "/foo/bar", "/replace"),
+            Arguments.of("*.txt", "/replace", "/foo/bar.txt", "/replace"),
+            Arguments.of("/foo/*", "/replace", "/foo/bar/%20x", "/replace/bar/%20x"),
+            Arguments.of("/old/context", "/replace?given=param", "/old/context", "/replace?given=param")
         );
     }
 
@@ -59,7 +59,7 @@ public class RewritePatternRuleTest extends AbstractRuleTest
 
     @ParameterizedTest
     @MethodSource("data")
-    public void testRewritePatternRule(String uri, String pattern, String replacement) throws Exception
+    public void testRewritePatternRule(String pattern, String replacement, String inputURI, String expectURI) throws Exception
     {
         RewritePatternRule rule = new RewritePatternRule(pattern, replacement);
         start(rule);
@@ -69,11 +69,11 @@ public class RewritePatternRuleTest extends AbstractRuleTest
             Host: localhost
             Connection: close
                         
-            """.replace("$U", uri);
+            """.replace("$U", inputURI);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals(replacement, response.get("X-URI"), "X-URI response header value");
+        assertEquals(expectURI, response.get("X-URI"), "X-URI response header value");
     }
 
     @Test

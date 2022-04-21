@@ -94,7 +94,8 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
      * <p>Processes the rules.</p>
      *
      * @param input the input {@code Request} and {@code Processor}
-     * @return a {@code Request} and {@code Processor}, possibly wrapped by rules to implement the rule's logic
+     * @return a {@code Request} and {@code Processor}, possibly wrapped by rules to implement the rule's logic,
+     * or {@code null} if no rule matched
      */
     @Override
     public Request.WrapperProcessor matchAndApply(Request.WrapperProcessor input) throws IOException
@@ -116,12 +117,12 @@ public class RuleContainer extends Rule implements Iterable<Rule>, Dumpable
             if (output == null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("did not match {}", rule);
+                    LOG.debug("no match {}", rule);
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("matched {}", rule);
+                    LOG.debug("match {}", rule);
 
                 match = true;
 

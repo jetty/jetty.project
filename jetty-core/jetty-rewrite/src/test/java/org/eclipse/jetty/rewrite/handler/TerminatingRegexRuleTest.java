@@ -36,6 +36,7 @@ public class TerminatingRegexRuleTest extends AbstractRuleTest
         TerminatingRegexRule rule1 = new TerminatingRegexRule("^/login.jsp$");
         _rewriteHandler.addRule(rule1);
         RedirectRegexRule rule2 = new RedirectRegexRule("^/login.*$", "http://login.company.com/");
+        rule2.setStatusCode(HttpStatus.SEE_OTHER_303);
         _rewriteHandler.addRule(rule2);
         start(new Handler.Processor()
         {
@@ -73,7 +74,7 @@ public class TerminatingRegexRuleTest extends AbstractRuleTest
             """.replace("$U", uri);
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
-        assertEquals(HttpStatus.CREATED_201, response.getStatus());
+        assertEquals(HttpStatus.SEE_OTHER_303, response.getStatus());
         assertEquals("http://login.company.com/", response.get(HttpHeader.LOCATION));
     }
 }

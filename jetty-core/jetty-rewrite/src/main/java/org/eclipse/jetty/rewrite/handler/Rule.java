@@ -53,6 +53,6 @@ public abstract class Rule
     @Override
     public String toString()
     {
-        return "%s@%x[completing=%b".formatted(getClass().getSimpleName(), hashCode(), isTerminating());
+        return "%s@%x[terminating=%b]".formatted(getClass().getSimpleName(), hashCode(), isTerminating());
     }
 }

@@ -73,7 +73,7 @@ public class VirtualHostRuleContainer extends RuleContainer
         }
 
         // No virtual host match, skip the other rules.
-        return input;
+        return null;
     }
 
     private String normalizeHostName(String host)

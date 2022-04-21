@@ -89,7 +89,7 @@ public class RewriteHandlerTest extends AbstractRuleTest
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("/ddd", response.get("X-Path"), "X-Path response value");
+        assertEquals("/ddd/bar", response.get("X-Path"), "X-Path response value");
         assertEquals("/aaa/bar", response.get("X-Original-Path"), "X-Original-Path response value");
     }
 
@@ -104,7 +104,7 @@ public class RewriteHandlerTest extends AbstractRuleTest
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("/ddd", response.get("X-Path"));
+        assertEquals("/ddd/x%20y", response.get("X-Path"));
         assertEquals("/ccc/x%20y", response.get("X-Original-Path"));
     }
 
@@ -119,7 +119,7 @@ public class RewriteHandlerTest extends AbstractRuleTest
 
         HttpTester.Response response = HttpTester.parseResponse(_connector.getResponse(request));
         assertEquals(HttpStatus.OK_200, response.getStatus());
-        assertEquals("/x y/zzz", response.get("X-Path"));
+        assertEquals("/x%20y/zzz", response.get("X-Path"));
         assertEquals("/xxx/x%20y", response.get("X-Original-Path"));
     }
 }

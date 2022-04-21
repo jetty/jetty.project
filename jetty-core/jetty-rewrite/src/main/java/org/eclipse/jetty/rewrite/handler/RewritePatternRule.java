@@ -16,15 +16,20 @@ package org.eclipse.jetty.rewrite.handler;
 import java.io.IOException;
 
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.pathmap.ServletPathSpec;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.Name;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>A rule to rewrite the path and query that match a Servlet pattern with a fixed string.</p>
  */
 public class RewritePatternRule extends PatternRule
 {
+    private static final Logger LOG = LoggerFactory.getLogger(RewritePatternRule.class);
+
     private String _path;
     private String _query;
 
@@ -59,7 +64,10 @@ public class RewritePatternRule extends PatternRule
     {
         HttpURI httpURI = input.getHttpURI();
         String newQuery = URIUtil.addQueries(httpURI.getQuery(), _query);
-        HttpURI newURI = HttpURI.build(httpURI, _path, httpURI.getParam(), newQuery);
+        String newPath = URIUtil.addPaths(_path, ServletPathSpec.pathInfo(getPattern(), httpURI.getPath()));
+        HttpURI newURI = HttpURI.build(httpURI, newPath, httpURI.getParam(), newQuery);
+        if (LOG.isDebugEnabled())
+            LOG.debug("rewriting {} to {}", httpURI, newURI);
         return new Request.WrapperProcessor(input)
         {
             @Override
