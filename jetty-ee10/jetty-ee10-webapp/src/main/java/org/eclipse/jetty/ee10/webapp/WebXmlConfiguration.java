@@ -16,9 +16,7 @@ package org.eclipse.jetty.ee10.webapp;
 import java.io.IOException;
 import java.net.MalformedURLException;
 
-import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
-import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,14 +60,8 @@ public class WebXmlConfiguration extends AbstractConfiguration
         if (webxml != null)
         {
             context.getMetaData().setWebDescriptor(new WebDescriptor(webxml));
-            ServletContext sc = context.getServletContext();
-            if (sc instanceof ServletContextHandler.ServletContextApi servletContextApi)
-            {
-                servletContextApi.setEffectiveMajorVersion(context.getMetaData().getWebDescriptor().getMajorVersion());
-                servletContextApi.setEffectiveMinorVersion(context.getMetaData().getWebDescriptor().getMinorVersion());
-            }
-            else
-                throw new IllegalStateException("Cannot configure a non ServletContextApi"); //TODO
+            context.getContext().getServletContext().setEffectiveMajorVersion(context.getMetaData().getWebDescriptor().getMajorVersion());
+            context.getContext().getServletContext().setEffectiveMinorVersion(context.getMetaData().getWebDescriptor().getMinorVersion());
         }
 
         //parse but don't process override-web.xml
