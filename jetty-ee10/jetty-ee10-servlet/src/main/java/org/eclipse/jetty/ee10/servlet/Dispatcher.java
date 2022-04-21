@@ -470,6 +470,12 @@ public class Dispatcher implements RequestDispatcher
         }
 
         @Override
+        public StringBuffer getRequestURL()
+        {
+            return _uri == null ? null : new StringBuffer(_uri.asString());
+        }
+
+        @Override
         public Object getAttribute(String name)
         {
             switch (name)

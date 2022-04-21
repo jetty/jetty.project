@@ -220,7 +220,6 @@ public class AsyncContextTest
         assertThat("http servlet mapping mappingMatch is correct", responseBody, containsString("async:run:attr:mapping:mappingMatch:EXACT"));
     }
 
-    @Disabled
     @Test
     public void testDispatchAsyncContextEncodedUrl() throws Exception
     {
@@ -236,19 +235,19 @@ public class AsyncContextTest
 
         // initial values
         assertThat("servlet gets right path", responseBody, containsString("doGet:getServletPath:/test2"));
-        assertThat("request uri has correct encoding", responseBody, containsString("doGet:getRequestURI:/ctx/test2/something%2felse"));
-        assertThat("request url has correct encoding", responseBody, containsString("doGet:getRequestURL:http://localhost/ctx/test2/something%2felse"));
-        assertThat("path info has correct encoding", responseBody, containsString("doGet:getPathInfo:/something/else"));
+        assertThat("request uri has correct encoding", responseBody, containsString("doGet:getRequestURI:/ctx/test2/something%2Felse"));
+        assertThat("request url has correct encoding", responseBody, containsString("doGet:getRequestURL:http://localhost/ctx/test2/something%2Felse"));
+        assertThat("path info has correct encoding", responseBody, containsString("doGet:getPathInfo:/something%2Felse"));
 
         // async values
         assertThat("async servlet gets right path", responseBody, containsString("doGet:async:getServletPath:/test2"));
-        assertThat("async request uri has correct encoding", responseBody, containsString("doGet:async:getRequestURI:/ctx/test2/something%2felse"));
-        assertThat("async request url has correct encoding", responseBody, containsString("doGet:async:getRequestURL:http://localhost/ctx/test2/something%2felse"));
-        assertThat("async path info has correct encoding", responseBody, containsString("doGet:async:getPathInfo:/something/else"));
+        assertThat("async request uri has correct encoding", responseBody, containsString("doGet:async:getRequestURI:/ctx/test2/something%2Felse"));
+        assertThat("async request url has correct encoding", responseBody, containsString("doGet:async:getRequestURL:http://localhost/ctx/test2/something%2Felse"));
+        assertThat("async path info has correct encoding", responseBody, containsString("doGet:async:getPathInfo:/something%2Felse"));
 
         // async run attributes
         assertThat("async run attr servlet path is original", responseBody, containsString("async:run:attr:servletPath:/test"));
-        assertThat("async run attr path info has correct encoding", responseBody, containsString("async:run:attr:pathInfo:/hello there"));
+        assertThat("async run attr path info has correct encoding", responseBody, containsString("async:run:attr:pathInfo:/hello%20there"));
         assertThat("async run attr query string", responseBody, containsString("async:run:attr:queryString:dispatch=true"));
         assertThat("async run context path", responseBody, containsString("async:run:attr:contextPath:/ctx"));
         assertThat("async run request uri has correct encoding", responseBody, containsString("async:run:attr:requestURI:/ctx/test/hello%20there"));
@@ -603,6 +602,8 @@ public class AsyncContextTest
         {
             if (request.getParameter("dispatch") != null)
             {
+                request.getServletContext().getRequestDispatcher("/");
+
                 AsyncContext asyncContext = request.startAsync(request, response);
                 asyncContext.dispatch(dispatchPath);
             }

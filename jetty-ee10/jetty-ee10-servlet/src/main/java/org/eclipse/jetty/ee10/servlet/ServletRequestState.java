@@ -28,6 +28,7 @@ import org.eclipse.jetty.io.QuietException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.ErrorProcessor;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.thread.AutoLock;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.slf4j.Logger;
@@ -574,6 +575,11 @@ public class ServletRequestState
     {
         boolean dispatch = false;
         AsyncContextEvent event;
+
+        // TODO: should we optionally completely decode?
+        if (path != null)
+            path = URIUtil.normalizePath(path);
+
         try (AutoLock l = lock())
         {
             if (LOG.isDebugEnabled())

@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Blocking;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HostPort;
+import org.eclipse.jetty.util.URIUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -410,25 +411,32 @@ public class ServletChannel implements Runnable
                     {
                         dispatch(DispatcherType.ASYNC, () ->
                         {
+                            HttpURI uri;
                             String pathInContext = _request.getPathInContext();
                             AsyncContextEvent asyncContextEvent = _state.getAsyncContextEvent();
                             String dispatchString = asyncContextEvent.getDispatchPath();
-                            HttpURI uri = asyncContextEvent.getBaseURI();
                             if (dispatchString != null)
                             {
+                                String contextPath = _request.getContext().getContextPath();
                                 HttpURI.Immutable dispatchUri = HttpURI.from(dispatchString);
                                 pathInContext = dispatchUri.getPath();
-                                uri = HttpURI.build(_request.getHttpURI()).path(pathInContext).query(dispatchUri.getQuery());
-                            }
-                            else if (uri == null)
-                            {
-                                uri = _request.getHttpURI();
+                                uri = HttpURI.build(_request.getHttpURI())
+                                    .path(URIUtil.addPaths(contextPath, pathInContext))
+                                    .query(dispatchUri.getQuery());
                             }
                             else
                             {
-                                pathInContext = uri.getCanonicalPath();
-                                if (_request.getContext().getContextPath().length() > 1)
-                                    pathInContext = pathInContext.substring(_request.getContext().getContextPath().length());
+                                uri = asyncContextEvent.getBaseURI();
+                                if (uri == null)
+                                {
+                                    uri = _request.getHttpURI();
+                                }
+                                else
+                                {
+                                    pathInContext = uri.getCanonicalPath();
+                                    if (_request.getContext().getContextPath().length() > 1)
+                                        pathInContext = pathInContext.substring(_request.getContext().getContextPath().length());
+                                }
                             }
 
                             Dispatcher dispatcher = new Dispatcher(getContextHandler(), uri, pathInContext);
