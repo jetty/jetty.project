@@ -274,6 +274,8 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
         {
             collection[i++] = resource;
         }
-        context.setBaseResource(new ResourceCollection(collection));
+        
+        //TODO: need to reinstate multiple resources as base of webapp
+        //context.setBaseResource(new ResourceCollection(collection));
     }
 }

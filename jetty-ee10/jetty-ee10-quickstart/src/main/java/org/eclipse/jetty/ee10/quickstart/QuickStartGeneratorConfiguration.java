@@ -33,10 +33,6 @@ import jakarta.servlet.descriptor.TaglibDescriptor;
 import org.eclipse.jetty.ee10.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallback;
 import org.eclipse.jetty.ee10.plus.annotation.LifeCycleCallbackCollection;
-import org.eclipse.jetty.ee10.security.ConstraintAware;
-import org.eclipse.jetty.ee10.security.ConstraintMapping;
-import org.eclipse.jetty.ee10.security.SecurityHandler;
-import org.eclipse.jetty.ee10.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.ee10.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.FilterMapping;
@@ -47,6 +43,10 @@ import org.eclipse.jetty.ee10.servlet.ServletHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.ServletMapping;
 import org.eclipse.jetty.ee10.servlet.Source;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintAware;
+import org.eclipse.jetty.ee10.servlet.security.ConstraintMapping;
+import org.eclipse.jetty.ee10.servlet.security.SecurityHandler;
+import org.eclipse.jetty.ee10.servlet.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.ee10.webapp.AbstractConfiguration;
 import org.eclipse.jetty.ee10.webapp.MetaData;
 import org.eclipse.jetty.ee10.webapp.MetaData.OriginInfo;
@@ -464,7 +464,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
         }
 
         //error-pages
-        Map<String, String> errorPages = ((ErrorPageErrorHandler)context.getErrorHandler()).getErrorPages();
+        Map<String, String> errorPages = ((ErrorPageErrorHandler)context.getErrorProcessor()).getErrorPages();
         if (errorPages != null)
         {
             for (Map.Entry<String, String> entry : errorPages.entrySet())
@@ -748,7 +748,7 @@ public class QuickStartGeneratorConfiguration extends AbstractConfiguration
                 .tag("role-name", s.getRunAsRole())
                 .closeTag();
 
-        Map<String, String> roles = s.getRoleRefMap();
+        Map<String, String> roles = s.getRoleLinks();
         if (roles != null)
         {
             for (Map.Entry<String, String> e : roles.entrySet())

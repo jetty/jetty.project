@@ -273,6 +273,14 @@ public class ServletHolder extends Holder<Servlet> implements Comparable<Servlet
             return (link == null) ? name : link;
         }
     }
+    
+    public Map<String, String> getRoleLinks()
+    {
+        if (_roleMap == null)
+            return Collections.EMPTY_MAP;
+        
+        return Collections.unmodifiableMap(_roleMap);
+    }
 
     /**
      * @return Returns the forcedPath.
