@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  * Mapping of pathSpec to a tupple of {@link WebSocketCreator}, {@link FrameHandlerFactory} and
  * {@link Configuration.Customizer}.
  * <p>
- * When the {@link #upgrade(WebSocketNegotiator, Request, Response, Configuration.Customizer)}
+ * When the {@link #upgrade(WebSocketNegotiator, Request, Response, Callback, Configuration.Customizer)}
  * method is called, a match for the pathSpec is looked for. If one is found then the
  * creator is used to create a POJO for the WebSocket endpoint, the factory is used to
  * wrap that POJO with a {@link FrameHandler} and the customizer is used to configure the resulting
@@ -65,6 +65,14 @@ public class WebSocketMappings implements Dumpable, LifeCycle.Listener
         {
             mapping = new WebSocketMappings(WebSocketServerComponents.getWebSocketComponents(contextHandler));
             contextHandler.setAttribute(WEBSOCKET_MAPPING_ATTRIBUTE, mapping);
+            contextHandler.addEventListener(new LifeCycle.Listener()
+            {
+                @Override
+                public void lifeCycleStopping(LifeCycle event)
+                {
+                    contextHandler.removeAttribute(WEBSOCKET_MAPPING_ATTRIBUTE);
+                }
+            });
         }
 
         return mapping;
