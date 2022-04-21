@@ -30,7 +30,7 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.dynamic.HttpClientTransportDynamic;
 import org.eclipse.jetty.client.http.HttpClientConnectionFactory;
-import org.eclipse.jetty.ee10.handler.HttpChannel;
+import org.eclipse.jetty.ee10.servlet.ServletChannel;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.websocket.api.Session;
@@ -40,6 +40,7 @@ import org.eclipse.jetty.ee10.websocket.client.WebSocketClient;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServlet;
 import org.eclipse.jetty.ee10.websocket.server.JettyWebSocketServletFactory;
 import org.eclipse.jetty.ee10.websocket.server.config.JettyWebSocketServletContainerInitializer;
+import org.eclipse.jetty.ee10.websocket.server.internal.DelegatedServerUpgradeRequest;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.ClientConnectionFactoryOverHTTP2;
@@ -294,7 +295,7 @@ public class WebSocketOverHTTP2Test
         startClient(clientConnector -> new ClientConnectionFactoryOverHTTP2.HTTP2(new HTTP2Client(clientConnector)));
 
         CountDownLatch latch = new CountDownLatch(1);
-        connector.addBean(new HttpChannel.Listener()
+        connector.addBean(new ServletChannel.Listener()
         {
             @Override
             public void onComplete(Request request)
@@ -350,9 +351,9 @@ public class WebSocketOverHTTP2Test
             });
             factory.addMapping("/ws/connectionClose", (request, response) ->
             {
-                UpgradeHttpServletRequest upgradeRequest = (UpgradeHttpServletRequest)request.getHttpServletRequest();
+                DelegatedServerUpgradeRequest upgradeRequest = (DelegatedServerUpgradeRequest)request.getHttpServletRequest();
                 Request baseRequest = (Request)upgradeRequest.getHttpServletRequest();
-                baseRequest.getHttpChannel().getEndPoint().close();
+                baseRequest.getConnectionMetaData().getConnection().getEndPoint().close();
                 return new EchoSocket();
             });
         }

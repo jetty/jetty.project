@@ -68,7 +68,7 @@ public class MaxOutgoingFramesTest
         JettyWebSocketServletContainerInitializer.configure(contextHandler, (context, container) ->
         {
             container.addMapping("/", (req, resp) -> serverSocket);
-            WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(context);
+            WebSocketComponents components = WebSocketServerComponents.getWebSocketComponents(contextHandler);
             components.getExtensionRegistry().register(BlockingOutgoingExtension.class.getName(), BlockingOutgoingExtension.class);
         });
 

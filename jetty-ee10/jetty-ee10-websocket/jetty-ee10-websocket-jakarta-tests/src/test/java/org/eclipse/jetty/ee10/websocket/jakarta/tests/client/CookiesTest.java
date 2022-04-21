@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.websocket.ClientEndpointConfig;
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.Endpoint;
@@ -32,6 +30,8 @@ import org.eclipse.jetty.ee10.websocket.jakarta.tests.CoreServer;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.DummyEndpoint;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.framehandlers.StaticText;
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.framehandlers.WholeMessageEcho;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.websocket.core.FrameHandler;
 import org.eclipse.jetty.websocket.core.server.WebSocketNegotiation;
@@ -70,17 +70,17 @@ public class CookiesTest
 
         startServer(negotiation ->
         {
-            HttpServletRequest request = negotiation.getRequest();
-            Cookie[] cookies = request.getCookies();
+            Request request = negotiation.getRequest();
+            List<org.eclipse.jetty.http.HttpCookie> cookies = Request.getCookies(request);
             assertThat("Cookies", cookies, notNullValue());
-            assertThat("Cookies", cookies.length, is(1));
-            Cookie cookie = cookies[0];
+            assertThat("Cookies", cookies.size(), is(1));
+            org.eclipse.jetty.http.HttpCookie cookie = cookies.get(0);
             assertEquals(cookieName, cookie.getName());
             assertEquals(cookieValue, cookie.getValue());
 
             StringBuilder requestHeaders = new StringBuilder();
-            Collections.list(request.getHeaderNames())
-                .forEach(name -> requestHeaders.append(name).append(": ").append(request.getHeader(name)).append("\n"));
+            request.getHeaders().getFieldNamesCollection()
+                .forEach(name -> requestHeaders.append(name).append(": ").append(request.getHeaders().get(name)).append("\n"));
 
             return new StaticText(requestHeaders.toString());
         });
@@ -114,10 +114,8 @@ public class CookiesTest
         final String cookiePath = "/path";
         startServer(negotiation ->
         {
-            Cookie cookie = new Cookie(cookieName, cookieValue);
-            cookie.setDomain(cookieDomain);
-            cookie.setPath(cookiePath);
-            negotiation.getResponse().addCookie(cookie);
+            org.eclipse.jetty.http.HttpCookie cookie = new org.eclipse.jetty.http.HttpCookie(cookieName, cookieValue, cookieDomain, cookiePath);
+            Response.addCookie(negotiation.getResponse(), cookie);
             return new WholeMessageEcho();
         });
 

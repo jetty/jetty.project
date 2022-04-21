@@ -30,7 +30,6 @@ import org.eclipse.jetty.ee10.websocket.jakarta.tests.server.sockets.InvalidOpen
 import org.eclipse.jetty.ee10.websocket.jakarta.tests.server.sockets.InvalidOpenSessionIntSocket;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.websocket.core.exception.InvalidSignatureException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,13 +68,13 @@ public class DeploymentExceptionTest
     }
 
     private Server server;
-    private HandlerCollection contexts;
+    private Handler.Collection contexts;
 
     @BeforeEach
     public void startServer() throws Exception
     {
         server = new Server(0);
-        contexts = new HandlerCollection(true, new Handler[0]);
+        contexts = new Handler.Collection();
         server.setHandler(contexts);
         server.start();
     }

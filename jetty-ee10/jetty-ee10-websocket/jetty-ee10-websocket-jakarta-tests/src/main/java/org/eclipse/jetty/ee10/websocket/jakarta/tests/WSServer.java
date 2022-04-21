@@ -31,7 +31,6 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.JAR;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.resource.PathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,7 +100,7 @@ public class WSServer extends LocalServer implements LocalFuzzer.Provider
             context = new WebAppContext();
             context.setContextPath("/" + contextName);
             context.setInitParameter("org.eclipse.jetty.ee10.servlet.Default.dirAllowed", "false");
-            context.setBaseResource(new PathResource(contextDir));
+            context.setResourceBase(contextDir);
             context.setAttribute("org.eclipse.jetty.websocket.jakarta", Boolean.TRUE);
             context.addConfiguration(new JakartaWebSocketConfiguration());
         }

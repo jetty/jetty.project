@@ -57,7 +57,7 @@ public class WebSocketStatsTest
         statistics = new IncludeExcludeConnectionStatistics();
         statistics.include(WebSocketConnection.class);
 
-        Connection.Listener.Adapter wsCloseListener = new Connection.Listener.Adapter()
+        Connection.Listener wsCloseListener = new Connection.Listener()
         {
             @Override
             public void onClosed(Connection connection)
