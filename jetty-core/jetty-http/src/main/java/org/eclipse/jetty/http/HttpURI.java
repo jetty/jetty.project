@@ -291,7 +291,7 @@ public interface HttpURI
             _query = builder._query;
             _fragment = builder._fragment;
             _uri = builder._uri;
-            _canonicalPath = builder._decodedPath;
+            _canonicalPath = builder._canonicalPath;
             _violations.addAll(builder._violations);
         }
 
@@ -560,7 +560,7 @@ public interface HttpURI
         private String _query;
         private String _fragment;
         private String _uri;
-        private String _decodedPath;
+        private String _canonicalPath;
         private final EnumSet<Violation> _violations = EnumSet.noneOf(Violation.class);
         private boolean _emptySegment;
 
@@ -689,7 +689,7 @@ public interface HttpURI
             _query = null;
             _fragment = null;
             _uri = null;
-            _decodedPath = null;
+            _canonicalPath = null;
             _emptySegment = false;
             _violations.clear();
             return this;
@@ -699,7 +699,7 @@ public interface HttpURI
         {
             _uri = null;
             _path = URIUtil.encodePath(path);
-            _decodedPath = path;
+            _canonicalPath = path;
             return this;
         }
 
@@ -736,9 +736,9 @@ public interface HttpURI
         @Override
         public String getCanonicalPath()
         {
-            if (_decodedPath == null && _path != null)
-                _decodedPath = URIUtil.canonicalPath(URIUtil.normalizePath(_path));
-            return _decodedPath;
+            if (_canonicalPath == null && _path != null)
+                _canonicalPath = URIUtil.canonicalPath(URIUtil.normalizePath(_path));
+            return _canonicalPath;
         }
 
         @Override
@@ -874,7 +874,7 @@ public interface HttpURI
         {
             _uri = null;
             _path = path;
-            _decodedPath = null;
+            _canonicalPath = null;
             return this;
         }
 
@@ -882,7 +882,7 @@ public interface HttpURI
         {
             _uri = null;
             _path = null;
-            _decodedPath = null;
+            _canonicalPath = null;
             _param = null;
             _query = null;
             if (pathQuery != null)
@@ -944,7 +944,7 @@ public interface HttpURI
             _param = uri.getParam();
             _query = uri.getQuery();
             _uri = null;
-            _decodedPath = uri.getCanonicalPath();
+            _canonicalPath = uri.getCanonicalPath();
             if (uri.hasAmbiguousSeparator())
                 _violations.add(Violation.AMBIGUOUS_PATH_SEPARATOR);
             if (uri.hasAmbiguousSegment())
@@ -1389,17 +1389,17 @@ public interface HttpURI
             if (!encodedPath && !dot)
             {
                 if (_param == null)
-                    _decodedPath = _path;
+                    _canonicalPath = _path;
                 else
-                    _decodedPath = _path.substring(0, _path.length() - _param.length() - 1);
+                    _canonicalPath = _path.substring(0, _path.length() - _param.length() - 1);
             }
             else if (_path != null)
             {
                 // The RFC requires this to be canonical before decoding, but this can leave dot segments and dot dot segments
                 // which are not canonicalized and could be used in an attempt to bypass security checks.
                 String decodedNonCanonical = URIUtil.normalizePath(_path);
-                _decodedPath = URIUtil.canonicalPath(decodedNonCanonical);
-                if (_decodedPath == null)
+                _canonicalPath = URIUtil.canonicalPath(decodedNonCanonical);
+                if (_canonicalPath == null)
                     throw new IllegalArgumentException("Bad URI");
             }
         }
